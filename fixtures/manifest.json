@@ -1,0 +1,36 @@
+{
+  "provenance": "sda-v2/design-handoff/fixtures/songs.json",
+  "tenant": "IASD Ermelinda",
+  "files": [
+    {
+      "id": "jesus-tu-es-a-minha-vida-1",
+      "title": "Jesus Tu És a Minha Vida",
+      "chars": 1514,
+      "role": "primary"
+    },
+    {
+      "id": "jesus-tu-es-a-minha-vida-2",
+      "title": "Jesus Tu És a Minha Vida",
+      "chars": 1547,
+      "role": "multi"
+    },
+    {
+      "id": "entrega-1",
+      "title": "Entrega",
+      "chars": 1560,
+      "role": "multi"
+    },
+    {
+      "id": "entrega-2",
+      "title": "Entrega",
+      "chars": 909,
+      "role": "multi"
+    },
+    {
+      "id": "entrega-3",
+      "title": "Entrega",
+      "chars": 1577,
+      "role": "multi"
+    }
+  ]
+}
