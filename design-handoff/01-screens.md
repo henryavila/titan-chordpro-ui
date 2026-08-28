@@ -46,7 +46,9 @@ Este produto **não** tem shell de aplicação.
 
 ## 1. Purpose
 
-Permitir que o **músico** leia e use **uma** cifra ChordPro no ensaio/ao vivo: ver letra+acordes com clareza, mudar o tom (se houver key), ajustar legibilidade, rolar automaticamente no ritmo, exportar, e **opcionalmente** ativar um modo que reflow/ajusta a cifra ao espaço do container — sempre podendo voltar ao layout padrão.
+Permitir que o **músico** leia e use **uma** cifra no ensaio/ao vivo: ver letra+acordes com clareza, mudar o tom (se houver key), ajustar legibilidade, rolar automaticamente no ritmo, exportar, e **opcionalmente** ativar um modo que reflow/ajusta a cifra ao espaço do container — sempre podendo voltar ao layout padrão.
+
+**Engine (fora da forma visual):** a entrada pode ser **ChordPro**, **OnSong** ou mista; o core normaliza para o mesmo modelo de leitura. A UI **não** expõe seletor/badge de formato — trata-se de uma única superfície de cifra. Detalhe: `docs/research-onsong-format.md`.
 
 ## 2. Visible information
 

@@ -23,7 +23,7 @@
 
 **chordpro-viewer** é um **viewer/player de uma cifra ChordPro**:
 
-- Entrada: arquivo/texto `.cho` / `.chordpro` (ou string).
+- Entrada: arquivo/texto **ChordPro** (`.cho` / `.chordpro` / …) **ou OnSong** (`.onsong` / texto com meta `Key:` / chords-over-lyrics) — inclusive misturas. Normalização é da **engine**; a UI não escolhe formato.
 - Saída: superfície visual profissional + PDF + export de texto.
 - Modos: **app standalone** (sem shell de produto) **e** **componente embutível** em outros projetos web.
 - O consumer (ex.: SDA) só fornece **shell**, **qual cifra** está ativa (multi-cifra), e eventualmente player/login — **não** reimplementa a experiência do músico na cifra.

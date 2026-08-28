@@ -17,6 +17,7 @@ Brief para o **agente de design** (ex. claude.ai/design).
 - Auto-scroll: base automática + afinação humana.
 - **Modo ajuste ao espaço:** opt-in (reflow + leve auto-size); **sem colunas**; fallback = layout padrão.
 - Fixtures reais — não inventar.
+- **ChordPro + OnSong** = requisito de **engine/parse** (não UI): ver `docs/research-onsong-format.md`.
 
 ## Próximo passo
 

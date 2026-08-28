@@ -33,7 +33,8 @@ Musicians need a **professional ChordPro viewer/player** (read / transpose / scr
 
 Ship:
 
-1. **Core** — parse → ViewModel → HTML themes → PDF + controller (no Vue).
+1. **Core** — parse → ViewModel → HTML themes → PDF + controller (no Vue).  
+   **Input formats (engine):** **ChordPro** and **OnSong** (incl. mixed / chords-over-lyrics). Normalize to the same `ChordProView`. UI does **not** select format. See `docs/research-onsong-format.md`.
 2. **Vue UI** — complete 1-cifra surface (standalone demo + embeddable in sda-v2).
 3. SDA becomes thin host (shell + multi-cifra). Titan can preview via core/CLI or a minimal Vue demo without the full SDA shell.
 
@@ -79,6 +80,7 @@ Ship:
 ```ts
 // chordpro-viewer (core)
 export function parse(source: string): ChordProView
+// parse() accepts ChordPro, OnSong, or mixed text; detection/normalization is internal.
 export function transpose(view: ChordProView, semitones: number): ChordProView
 export function setKey(view: ChordProView, targetKey: string): ChordProView  // or throw if unsupported
 export function renderHtml(view: ChordProView, opts?: { theme?: string }): string
@@ -238,17 +240,18 @@ Agent **must not** invent chord charts for snapshots.
 
 ## 8. CLI (v0.1)
 
-Input path may end in **`.cho`** or **`.chordpro`**.
+Input path may end in **`.cho`**, **`.chordpro`**, **`.onsong`**, or other plain-text chart extensions the detector accepts.
 
 ```bash
 chordpro-viewer html  song.cho --theme default -o out.html
 chordpro-viewer html  song.chordpro --theme default -o out.html
+chordpro-viewer html  song.onsong --theme light -o out.html
 chordpro-viewer pdf   song.chordpro --key A -o cifra-….pdf
 chordpro-viewer parse song.cho -o view.json          # dump ViewModel
 ```
 
 Exit codes: `0` ok · `1` user/input error · `2` internal.  
-Unknown/missing extension on a path that is still valid ChordPro text: still parse if `--format chordpro` is passed; otherwise prefer explicit `.cho` / `.chordpro`.
+Unknown extension: still attempt parse (auto-detect ChordPro vs OnSong); optional `--format chordpro|onsong|auto` (default `auto`).
 
 ---
 
@@ -261,7 +264,8 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 | A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.` and `./pdf` | `pnpm build` |
 | A2 | Filename helpers match §4.5 exactly | unit tests ported from SDA |
 | A3 | Scroll helpers match §4.6 exactly | unit tests ported from SDA |
-| A2b | CLI accepts `.cho` and `.chordpro` equally for `html`/`pdf`/`parse` | integration |
+| A2b | CLI accepts `.cho`, `.chordpro`, and `.onsong` (auto-detect) for `html`/`pdf`/`parse` | integration |
+| A2c | `parse` of OnSong-style source (chords-over-lyrics and/or `Key:` meta) yields ViewModel with ≥1 lyrics line when content present | unit + fixture |
 | A4 | `parse(jesus-1)` yields `meta.key === 'G'` (or display from content) and ≥1 lyrics line with chords | unit |
 | A5 | `transpose(parse(jesus-1), 2)` changes chord roots; `displayKey` reflects +2 when key known | unit |
 | A6 | `renderHtml` snapshot for jesus-1 theme `default` committed | snapshot test |

@@ -20,15 +20,15 @@ Vision + SPEC aligned (Vue-first + core). Not scaffolded yet. Agents: `AGENTS.md
 ## Mental model
 
 ```
-.cho | .chordpro | string
-  → parse() → ChordProView
+.cho | .chordpro | .onsong | string (ChordPro, OnSong, or mixed)
+  → parse() → ChordProView          // engine normalizes formats
   → createViewerController / transpose
   → renderHtml({ theme: 'light' | 'dark' | 'print' })
-  → Vue <ChordproViewer>  // UI completa 1 cifra
+  → Vue <ChordproViewer>  // UI completa 1 cifra (format-agnostic)
   → renderPdf()           // entry …/pdf
 ```
 
-Expansion later: `@…/react` or CE binding against the same core — not a fork, not a runtime plugin registry.
+OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` or CE — not a fork, not a plugin registry.
 
 ## Fixtures
 
