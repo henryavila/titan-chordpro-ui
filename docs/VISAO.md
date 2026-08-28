@@ -84,18 +84,18 @@ Nota vs SPEC legado: SPEC falava `default` / `print` / `stage`. Na visão de pro
 
 ---
 
-## 6. Stack — direção pragmática (pendente ratificação formal)
+## 6. Stack — **ratificada** (2026-08-28)
 
 Análises: [`research-stack.md`](./research-stack.md) · [`analysis-stack-pragmatismo.md`](./analysis-stack-pragmatismo.md) · [`analysis-expansao-futura.md`](./analysis-expansao-futura.md).
 
-**Proposta atual (contrapondo acolhido):**
+**Decisão:**
 
 - **Hoje:** Vue-first (stack favorita + sda-v2) para a UI completa da cifra.
-- **Expansão:** **não** fork e **não** plugin runtime multi-stack no v0.1.
-- **Facilitar já:** core TypeScript sem Vue + controller agnóstico (`getState/subscribe/dispatch`) + HTML/CSS contrato → bindings (`/vue` agora; `/react` depois sob demanda).
-- Padrão industrial: TipTap / Zag — core + packages por framework.
+- **Core:** TypeScript sem Vue — parse, transpose, `renderHtml`, PDF, filenames, scroll math + **controller agnóstico** (`getState` / `subscribe` / `dispatch`).
+- **Expansão:** bindings oficiais sob demanda (`/vue` agora; `/react` ou CE depois). **Não** fork do app. **Não** `VisualAdapter` runtime no v0.1.
+- Padrão: TipTap / Zag — core + packages por framework.
 
-**Constraint `AGENTS.md` (“No Vue in `src/`”):** reinterpretar como **no Vue in core**; UI Vue vive em `src/vue` ou pacote `@…/vue`.
+**Constraint `AGENTS.md` (“No Vue in `src/`”):** **no Vue in core**; UI Vue em `src/vue` ou pacote `@…/vue`.
 
 ---
 

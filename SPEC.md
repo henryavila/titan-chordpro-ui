@@ -1,25 +1,41 @@
 # SPEC — `chordpro-viewer` v0.1
 
-> **Audience:** implementing agent (and human reviewer). This is an **engineering contract**, not a visual mood board.
-> **Success = tests + CLI demos pass the acceptance table below.** Ambiguity → open a `question` in the PR, do not invent silently.
+> **Audience:** implementing agent (and human reviewer). This is an **engineering contract**, not a visual mood board.  
+> **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md) (ratified). This SPEC implements that vision.  
+> **Success = tests + CLI + Vue viewer package pass the acceptance table below.** Ambiguity → open a `question` in the PR, do not invent silently.
 
 | Field | Value |
 |---|---|
-| Package | `chordpro-viewer` (npm, TypeScript) |
+| Packages | `chordpro-viewer` (core TS) + `chordpro-viewer/vue` or `@chordpro-viewer/vue` (UI) |
 | Repo | `/Volumes/External/code/chordpro-viewer` |
 | Sibling generator | `titan-chordpro-lib` (audio → ChordPro text) — **out of scope** |
-| Sibling consumer | Virtual SDA Nuxt (`ChordproViewer.vue`) — host chrome |
-| Status | Spec draft → scaffold → green tests |
+| Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player |
+| Stack (ratified) | **Vue-first UI** + **framework-free core** + agnostic controller; React/CE bindings later |
+| Status | Vision + SPEC aligned → scaffold → green tests → UI |
+
+---
+
+## 0. Product amendment (supersedes older “lib-only” framing)
+
+Older drafts treated toolbar/RAF as host-only. **VISAO + interview supersede that:**
+
+- This product ships a **complete 1-cifra viewer UI** (transpose, font, auto-scroll, themes light/dark/auto, export CHO/PDF).
+- **Core** stays framework-free (testable, CLI, future React port).
+- **Vue package** owns cifra chrome + RAF (official binding v0.1).
+- **Host (sda-v2)** owns shell, which ChordPro string is active (multi-cifra), login, audio sync, i18n copy, sanitize policy.
+- **Not** a runtime multi-stack `VisualAdapter` in v0.1 — expansion = new binding against core/controller (see `docs/analysis-expansao-futura.md`).
 
 ---
 
 ## 1. Problem
 
-Titan **generates** ChordPro. SDA (and operators) need to **read / transpose / export** ChordPro as HTML + PDF with stable themes. Today that logic is trapped inside a Vue component + `chordproject-parser` + ad-hoc CSS/PDF. Extract a **framework-free** library so:
+Musicians need a **professional ChordPro viewer/player** (read / transpose / scroll / export / themes). Today that experience is trapped inside SDA Vue + `chordproject-parser` + ad-hoc CSS/PDF.
 
-1. SDA becomes a thin host.
-2. Titan can preview/PDF a generated `.chordpro` / `.cho` without Nuxt.
-3. Themes are swappable CSS (+ optional HTML structure variants), not forks of the parser.
+Ship:
+
+1. **Core** — parse → ViewModel → HTML themes → PDF + controller (no Vue).
+2. **Vue UI** — complete 1-cifra surface (standalone demo + embeddable in sda-v2).
+3. SDA becomes thin host (shell + multi-cifra). Titan can preview via core/CLI or a minimal Vue demo without the full SDA shell.
 
 ---
 
@@ -27,42 +43,41 @@ Titan **generates** ChordPro. SDA (and operators) need to **read / transpose / e
 
 | Out | Why |
 |---|---|
-| Audio sync / SyncedPlayer | Belongs to SDA |
-| Chord fret diagrams | Later theme / package |
-| ChordPro **editor** / drag-to-correct | Titan Phase-2 sibling |
+| Audio sync / SyncedPlayer | Belongs to SDA host |
+| Chord fret diagrams | Later |
+| ChordPro **editor** / drag-to-correct | Future / Titan sibling |
 | Titan ML / writer profiles | Generator stays in Titan |
-| Vue / React components in core | Optional later `@chordpro-viewer/vue` |
-| i18n strings | Host owns copy |
-| HTML sanitize policy | Host owns (`DOMPurify` etc.) before `innerHTML` |
+| React / Lit / CE official package | Later binding — not v0.1 |
+| Runtime VisualAdapter / plugin registry | YAGNI — see expansion analysis |
+| Multi-cifra selection UI | Host state |
+| i18n string catalogs | Host owns copy (Vue UI may accept label props) |
+| HTML sanitize policy | Host owns (`DOMPurify` etc.) before `innerHTML` when embedding |
 
 ---
 
-## 3. Boundary: lib vs host
+## 3. Boundary: core vs Vue package vs host
 
-| Concern | Lib | Host (SDA / CLI) |
-|---|---|---|
-| Parse ChordPro → ViewModel | ✅ | |
-| Transpose ViewModel / re-parse+transpose | ✅ | |
-| `renderHtml(view, { theme })` | ✅ | |
-| Theme CSS files | ✅ | May override CSS vars |
-| `renderPdf(view, opts)` → `Uint8Array` | ✅ (`/pdf` entry) | Trigger download / write file |
-| `buildPdfFilename` / `buildChoFilename` | ✅ | |
-| `exportCho(source, key)` raw text | ✅ | |
-| `calcScrollSpeed` / `adjustScrollSpeed` | ✅ pure | |
-| Auto-scroll **RAF loop** / DOM scrollTop | ❌ (or tiny util later) | ✅ host wires to element |
-| Multi-cifra **which** string is active | ❌ | ✅ host state |
-| Toolbar **widgets** (buttons) | ❌ in core | ✅ host UI **or** optional demo HTML in CLI |
-| Font-size class on wrapper | Host toggles class; theme documents CSS hooks | ✅ |
-| Login, shell, player | ❌ | ✅ |
+| Concern | Core | Vue package | Host (sda-v2) |
+|---|---|---|---|
+| Parse ChordPro → ViewModel | ✅ | | |
+| Transpose / controller state | ✅ | wires UI → `dispatch` | |
+| `renderHtml(view, { theme })` | ✅ | injects HTML | may sanitize |
+| Theme CSS (`light` / `dark` / print hooks) | ✅ | theme toggle + auto | may override CSS vars |
+| `renderPdf` → `Uint8Array` | ✅ (`/pdf`) | triggers download UX | may trigger download |
+| Filenames + scroll **math** | ✅ | | |
+| Auto-scroll **RAF** / scrollTop | optional `attachScroll` helper on controller | ✅ wires + controls | |
+| Cifra toolbar (tom, fonte, tema, export, scroll) | ❌ | ✅ | |
+| Multi-cifra which string is active | ❌ | ❌ | ✅ |
+| Login, shell, player, i18n catalogs | ❌ | ❌ | ✅ |
 
-**Auto-rolagem:** **in product scope** (ensaio de pé). Lib ships **speed math** + documents the contract; host implements the timer/RAF against the rendered root. Do not drop it from acceptance helpers.
+**Auto-rolagem:** in product scope. Core: speed math (+ optional attach helper). Vue package: controls + RAF against `[data-cpv-scroll]`.
 
 ---
 
 ## 4. Public API (must exist)
 
 ```ts
-// chordpro-viewer
+// chordpro-viewer (core)
 export function parse(source: string): ChordProView
 export function transpose(view: ChordProView, semitones: number): ChordProView
 export function setKey(view: ChordProView, targetKey: string): ChordProView  // or throw if unsupported
@@ -70,12 +85,17 @@ export function renderHtml(view: ChordProView, opts?: { theme?: string }): strin
 export function listThemes(): string[]
 export function buildChoFilename(title: string, key: string | null): string
 export function buildPdfFilename(title: string, key: string | null): string
-export function exportCho(source: string, opts?: { key?: string | null }): string  // transposed source or cleaned
+export function exportCho(source: string, opts?: { key?: string | null }): string
 export function calcScrollSpeed(contentHeight: number, durationSeconds: number | null, bpm: number | null): number
 export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): number
+export function createViewerController(opts: { source: string }): ViewerController
+// ViewerController: getState / subscribe / dispatch / optional attachScroll(el)
 
 // chordpro-viewer/pdf  (separate entry — do not force jspdf into core bundle)
 export function renderPdf(view: ChordProView, opts: PdfOptions): Promise<Uint8Array>
+
+// chordpro-viewer/vue  (or @chordpro-viewer/vue)
+export { ChordproViewer } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
 ```
 
 ### 4.1 ViewModel (`ChordProView`) — frozen shape for v0.1
@@ -180,20 +200,24 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
 | Theme id | v0.1 | Role |
 |---|---|---|
-| `default` | **required** | Screen reading; ship CSS + HTML structure |
-| `print` | **required** | Dense A4-oriented; used as PDF sibling / print CSS |
-| `stage` | optional | High-contrast / dark-stage variant |
+| `light` | **required** | Screen reading (claro); may alias `default` for compat |
+| `dark` | **required** | Escuro / palco |
+| `auto` | **required** (UI) | Segue `prefers-color-scheme` (Vue toggle); HTML resolve → light ou dark |
+| `print` | **required** | Dense A4-oriented; PDF sibling / print CSS |
+| `default` | compat alias | → `light` (SDA snapshots / SPEC legado) |
+| `stage` | optional | May alias `dark` |
 
-- `listThemes()` returns at least `['default', 'print']`.
+- `listThemes()` returns at least `['light', 'dark', 'print']` (and may include aliases).
 - Unknown theme → **throw** with known list (fail fast).
-- CSS variables documented in `themes/default.css` header comment (font stack, chord color, bg, fg). Host/SDA may remap vars to tenant tokens.
+- CSS variables documented in theme CSS header (`--cpv-*`: font stack, chord color, bg, fg). Host/SDA may remap vars to tenant tokens.
 
 **Visual quality bar (measurable, not taste):**
 
-1. Fixture `jesus-tu-es…` ChordPro → HTML snapshot stable under `default`.
+1. Fixture `jesus-tu-es…` ChordPro → HTML snapshot stable under `light` (and/or `default` alias).
 2. Every chord token from source that appears inline as `[X]` appears in HTML (count ≥ source bracket chords on lyric lines; directives ignored).
 3. Comment lines containing `INTRODUÇÃO` / `BEM SUAVE` from Jesus fixture survive in HTML.
 4. `print` theme produces HTML that still contains the same lyric text (normalize whitespace).
+5. `dark` theme still contains the same lyric text (normalize whitespace).
 
 ---
 
@@ -247,44 +271,50 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 | A10 | Empty source: `parse('')` → empty sections, `renderHtml` does not throw | unit |
 | A11 | Unknown theme throws | unit |
 | A12 | CLI `html` and `pdf` smoke on jesus-1 | integration |
-| A13 | README documents lib vs host boundary (§3) in ≤20 lines | doc review |
-| A14 | No Vue import in `src/` | grep gate |
+| A13 | README documents core vs Vue vs host boundary (§3) in ≤20 lines | doc review |
+| A14 | No Vue import in **core** (`src/core/**` or package root excluding `vue`) | grep gate |
+| A15 | `createViewerController` subscribe/dispatch transpose updates state + html | unit |
+| A16 | Vue `ChordproViewer` mounts fixture jesus-1; transpose control changes displayed chords | component/e2e smoke |
+| A17 | Vue package exposes light/dark/auto theme control | component smoke |
 
-**Not DONE if:** only a demo HTML without tests; or PDF ignores transpose; or theme is hardcoded with no `theme` option.
+**Not DONE if:** only a demo without tests; PDF ignores transpose; theme hardcoded with no `theme` option; cifra toolbar only exists inside sda-v2 and not in this repo’s Vue package.
 
 ---
 
 ## 10. Implementation phases (agent order)
 
-1. **Scaffold** — `package.json`, Vitest, `tsup`, `src/index.ts`, eslint.
-2. **Pure helpers** — filenames + scroll (copy tests from SDA `use-chordpro.test.ts`) → A2 A3 green.
+1. **Scaffold** — `package.json` / workspace, Vitest, `tsup`, `src/core`, eslint.
+2. **Pure helpers** — filenames + scroll (port from sda-v2 `use-chordpro.test.ts`) → A2 A3.
 3. **Parse adapter** — ViewModel + fixtures → A4 A10.
 4. **Transpose** → A5.
-5. **renderHtml + default theme CSS** → A6 A7 A11.
+5. **renderHtml + light/dark/print CSS** → A6 A7 A11.
 6. **PDF entry** → A8 A9.
-7. **CLI** → A12.
-8. **Docs** — README + this SPEC pointer → A13 A14.
+7. **Controller** — `createViewerController` → A15.
+8. **CLI** → A12.
+9. **Vue package** — complete 1-cifra UI + demo app → A16 A17.
+10. **Docs** — README + VISAO pointer → A13 A14.
 
-Do not start SDA integration until A1–A12 green.
+Do not start sda-v2 cutover until A1–A12 + A15–A17 green (or A1–A15 if UI design gated separately — UI package still required for product DONE).
 
 ---
 
 ## 11. SDA integration (after v0.1 tag)
 
-1. Depend on local path or published version.
-2. `ChordproViewer.vue` keeps toolbar / multi-cifra / RAF auto-scroll / sanitize / i18n.
-3. Replace inline `chordproject-parser` + HTML/PDF body with lib calls.
-4. Map host font steps to theme CSS classes documented by lib.
-5. Remove duplicated helpers from `useChordpro.ts` (re-export from lib or delete).
+1. Depend on local path or published version (`chordpro-viewer` + `/vue`).
+2. sda-v2 keeps **shell / multi-cifra / sanitize / i18n / player**.
+3. Replace inline parser + HTML/PDF/toolbar-of-cifra with `<ChordproViewer :source="activeCho" />` (or equivalent).
+4. Map host tokens to `--cpv-*` if needed.
+5. Remove duplicated helpers from `useChordpro.ts` (re-export from core or delete).
 
-Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SPEC.
+Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SPEC + `docs/VISAO.md`.
 
 ---
 
 ## 12. Open questions (block only if agent hits them)
 
-1. Package scope name under npm (`chordpro-viewer` vs `@henryavila/chordpro-viewer`).
+1. Package scope name under npm (`chordpro-viewer` vs `@henryavila/chordpro-viewer` vs `@chordpro-viewer/*` workspace).
 2. Whether `setKey` is required in v0.1 or only semitone `transpose` (SDA today = semitone offset).
 3. PDF engine long-term (jsPDF vs print-CSS + headless) — **v0.1 = jsPDF** for parity with SDA.
+4. Exact `ViewerController` action union (document in types when implementing).
 
-Default if unanswered: unscoped name ok for private; **semitone-only** transpose in v0.1; **jsPDF** in `./pdf`.
+Default if unanswered: scoped or unscoped ok for private; **semitone-only** transpose in v0.1; **jsPDF** in `./pdf`; controller actions mirror VISAO controls (transpose, theme, fontStep, scroll, export).

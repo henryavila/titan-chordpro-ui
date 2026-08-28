@@ -1,33 +1,35 @@
 # chordpro-viewer
 
-TypeScript library: **ChordPro → ViewModel → HTML themes → PDF**.
+Viewer/player de **uma** cifra ChordPro: **core TypeScript** + **UI Vue** (completa) + PDF.
 
+- **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
+- **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
 - **Generator (sibling):** [`titan-chordpro-lib`](../titan-chordpro-lib) — audio → `.chordpro`
-- **Consumer (sibling):** Virtual SDA Nuxt — host chrome around this lib
-- **Contract:** [`SPEC.md`](./SPEC.md) — read this before coding. Acceptance = table §9.
+- **Consumer (sibling):** sda-v2 Nuxt — shell / multi-cifra / player around this package
 
 ## Status
 
-Spec only (v0.1 not scaffolded yet). Implementing agents start at SPEC §10.
+Vision + SPEC aligned (Vue-first + core). Not scaffolded yet. Agents: `AGENTS.md` → SPEC §10.
 
-## Lib vs host (one glance)
+## Core vs Vue vs host
 
-| Lib | Host |
-|---|---|
-| parse, transpose, HTML, themes, PDF, filename + scroll-speed helpers | toolbar UI, multi-cifra selection, auto-scroll RAF, sanitize, i18n, shell/player |
+| Core | Vue package | Host (sda-v2) |
+|---|---|---|
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX | shell, multi-cifra, sanitize, i18n, audio sync |
 
-## Quick mental model
+## Mental model
 
 ```
-.cho | .chordpro | ChordPro string
-        → parse() → ChordProView
-        → transpose(n)
-        → renderHtml({ theme: 'default' | 'print' })
-        → renderPdf()   // entry chordpro-viewer/pdf
+.cho | .chordpro | string
+  → parse() → ChordProView
+  → createViewerController / transpose
+  → renderHtml({ theme: 'light' | 'dark' | 'print' })
+  → Vue <ChordproViewer>  // UI completa 1 cifra
+  → renderPdf()           // entry …/pdf
 ```
 
-Input extensions: **`.cho`** and **`.chordpro`** (same format). Export text helper defaults to `.cho`.
+Expansion later: `@…/react` or CE binding against the same core — not a fork, not a runtime plugin registry.
 
 ## Fixtures
 
-Real ChordPro from IASD Ermelinda (via SDA design-handoff). See `fixtures/` after extract step in SPEC §7.
+Real ChordPro (IASD Ermelinda via SDA design-handoff): `fixtures/`.
