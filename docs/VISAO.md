@@ -84,19 +84,18 @@ Nota vs SPEC legado: SPEC falava `default` / `print` / `stage`. Na visão de pro
 
 ---
 
-## 6. Stack — research feito; decisão pendente de ratificação
+## 6. Stack — direção pragmática (pendente ratificação formal)
 
-Pesquisa consolidada em [`research-stack.md`](./research-stack.md) (consumers locais + benchmarks + hipótese dual-stack).
+Análises: [`research-stack.md`](./research-stack.md) · [`analysis-stack-pragmatismo.md`](./analysis-stack-pragmatismo.md) · [`analysis-expansao-futura.md`](./analysis-expansao-futura.md).
 
-**Recomendação provisória do research (não ratificada):**
+**Proposta atual (contrapondo acolhido):**
 
-1. **D — Core TypeScript + UI Lit (CE)** — preferida (embed leve no Nuxt, standalone/Titan sem React, protege ViewModel).
-2. **B — Vue package** — se prioridade absoluta for cutover rápido no sda-v2.
-3. **C — React + r2wc** — só se o time insistir em React e aceitar ~45 KB+ de React dentro do host Vue.
+- **Hoje:** Vue-first (stack favorita + sda-v2) para a UI completa da cifra.
+- **Expansão:** **não** fork e **não** plugin runtime multi-stack no v0.1.
+- **Facilitar já:** core TypeScript sem Vue + controller agnóstico (`getState/subscribe/dispatch`) + HTML/CSS contrato → bindings (`/vue` agora; `/react` depois sob demanda).
+- Padrão industrial: TipTap / Zag — core + packages por framework.
 
-“Duas stacks” de UI reais = custo alto; React+r2wc = **uma** UI com fachada CE (ainda leva React no embed).
-
-**Constraint herdada de `AGENTS.md`:** “Do not add Vue to `src/`” — revisar após a escolha de stack.
+**Constraint `AGENTS.md` (“No Vue in `src/`”):** reinterpretar como **no Vue in core**; UI Vue vive em `src/vue` ou pacote `@…/vue`.
 
 ---
 
