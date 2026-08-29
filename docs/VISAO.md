@@ -1,8 +1,8 @@
-# Visão do produto — `chordpro-viewer`
+# Visão do produto — `titan-chordpro-ui` (seed: `chordpro-viewer`)
 
-> **Fonte de verdade de produto:** esta entrevista (2026-08-28), ratificada pelo usuário.  
-> **`SPEC.md`:** rascunho técnico legado (contrato de lib headless v0.1). Útil como inventário de comportamentos (parse, transpose, filenames, scroll math, fixtures), **não** como definição do produto.  
-> **Próxima sessão:** desenhar a UI (1 cifra) — sem implementar consumers.
+> **Fonte de verdade de produto:** entrevista viewer (2026-08-28) + **refocus naming/editor** (2026-08-28/29), ratificados.  
+> **Naming:** [`docs/NAMING.md`](./NAMING.md). **Design do editor:** [`projects/titan-chordpro-ui/editor/design.md`](../projects/titan-chordpro-ui/editor/design.md).  
+> **`SPEC.md`:** contrato de engenharia / inventário técnico — alinhar §2/§9 ao editor em follow-up; não redefine o produto sozinho.
 
 ---
 
@@ -10,28 +10,28 @@
 
 | Campo | Decisão |
 |---|---|
-| **Problema** | Músicos precisam de um **viewer/player ChordPro profissional**: ler, transpor, rolar, exportar e trocar tema — com visual elegante. Reuso em SDA/Titan é **canal de distribuição**, não o problema. |
-| **In-scope** | Camada **autossuficiente** de **1 cifra**: recebe ChordPro bruto → UI completa e funcional; roda **standalone** ou **embutida** em apps web. |
-| **Out-of-scope** | Edição de acordes; diagramas de braço; multi-cifra; shell de app (login, nav, player áudio sync); geração áudio→ChordPro (Titan). |
-| **Done-when (esta fase)** | Doc de visão ratificado: produto, fronteiras, temas, non-goals, opções de stack. |
-| **Stakes (caros de reverter)** | (1) Formato de embed (Web Component vs React vs Vue). (2) Contrato ViewModel / HTML da cifra. |
-| **Fontes** | Esta entrevista; `fixtures/` (cifras reais IASD Ermelinda); `SPEC.md` só como catálogo técnico legado; README atual descreve o modelo antigo. |
+| **Problema** | Músicos precisam de uma **UI ChordPro profissional**: **ler** (transpor, rolar, exportar, tema) **e editar** (corrigir pós-gen/import e criar do zero). Reuso em SDA / futuro `titan-chordpro` é **canal**, não o problema. |
+| **In-scope** | Camada **autossuficiente** de **1 cifra**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; standalone demo ou **embutida** (`sda-v2` primeiro). Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
+| **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`); diagramas de braço (ainda later). |
+| **Done-when (esta fase)** | Visão + naming + design do editor alinhados; implementação segue SPEC + gates E0–E4. |
+| **Stakes (caros de reverter)** | (1) Embed / binding Vue-first. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
+| **Fontes** | Esta visão; `docs/NAMING.md`; design do editor; `fixtures/`; researches OnSong / auto-ajuste; `SPEC.md` como catálogo técnico. |
 
 ---
 
 ## 2. O que é este projeto
 
-**chordpro-viewer** é um **viewer/player de uma cifra ChordPro**:
+**`titan-chordpro-ui`** (seed `chordpro-viewer`) é a **UI de uma cifra ChordPro** — **leitura + edição** numa camada:
 
-- Entrada: arquivo/texto **ChordPro** (`.cho` / `.chordpro` / …) **ou OnSong** (`.onsong` / texto com meta `Key:` / chords-over-lyrics) — inclusive misturas. Normalização é da **engine**; a UI não escolhe formato.
-- Saída: superfície visual profissional + PDF + export de texto.
-- Modos: **app standalone** (sem shell de produto) **e** **componente embutível** em outros projetos web.
-- O consumer (ex.: SDA) só fornece **shell**, **qual cifra** está ativa (multi-cifra), e eventualmente player/login — **não** reimplementa a experiência do músico na cifra.
+- Entrada: arquivo/texto **ChordPro** (`.cho` / `.chordpro` / …) **ou OnSong** (normalização na **engine**; a UI não escolhe formato). Em edição, OnSong = **convert-on-edit** → sessão/export ChordPro canônico.
+- Saída: superfície visual profissional + PDF + export de texto + **source editado** de volta ao host.
+- Modos de superfície: **`view`** (leitura limpa) e **`edit`** (visual-first; source pane sob demanda).
+- Hosts: **`sda-v2`** (primeiro) embute a UI; depois app **`titan-chordpro`** (shell próprio — fora deste repo). O consumer fornece shell, multicifra, player/login — **não** reimplementa a experiência da cifra.
 
 ```
 ChordPro (1 string)
-    → chordpro-viewer (UI completa da cifra)
-    → [opcional] host embute no app (shell / multi-cifra / áudio)
+    → titan-chordpro-ui (view + edit da cifra)
+    → host (sda-v2 agora; titan-chordpro depois)
 ```
 
 ---
@@ -51,24 +51,35 @@ ChordPro (1 string)
 | Multi-cifra (qual versão ativa) | ❌ | ✅ passa 1 string |
 | Shell, login, navegação | ❌ | ✅ |
 | Player áudio sincronizado | ❌ | ✅ |
-| Edição / fret diagrams | ❌ (futuro) | — |
+| Edição (source SoT; gates E0–E4) | ✅ | recebe `source` atualizado / dirty / media |
+| Fret diagrams | ❌ (later) | — |
 
 **Leitura da entrevista:** “sem toolbar/shell de **app**” ≠ “sem controles da cifra”. Controles do **músico na cifra** (tom, rolagem, fonte, tema, export) são **nossos**. Chrome do **produto** (menu, lista de músicas, auth) é do consumer.
 
 ---
 
-## 4. Funcionalidades da UI (visão v0 — 1 cifra)
+## 4. Funcionalidades da UI (visão — 1 cifra)
 
-Entregar **tudo que o músico precisa numa cifra**, sem edição:
+### 4.1 Leitura (view)
 
 1. **Leitura** elegante (acorde acima da letra, comentários de ensaio preservados, espaçamento).
 2. **Transposição** (semitons; reset ao original).
-3. **Tamanho de fonte** (passos documentados).
+3. **Tamanho de fonte** / bias (passos ou continuum — ver research auto-ajuste).
 4. **Export** `.cho` e PDF (nomes estáveis; PDF com tom exibido).
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
-6. **Temas:** claro e escuro, com opção de **troca automática** (preferência do sistema / toggle).
+6. **Temas:** claro e escuro, com opção de **troca automática**.
+7. **Modo ajuste ao espaço** opt-in (reflow + leve auto-size; sem colunas) — **só em view**; em edit o layout fica estável.
 
-**Fixtures obrigatórias:** cifras reais em `fixtures/` — não inventar charts para demos/snapshots.
+### 4.2 Edição (edit) — mapa + gates
+
+Detalhe normativo: [`projects/titan-chordpro-ui/editor/design.md`](../projects/titan-chordpro-ui/editor/design.md).
+
+- **SoT:** source ChordPro; visual é projeção que escreve no source e re-parseia.
+- **Mapa:** in-place + meta; source+preview; WYSIWYG estrutural; TAB; imagens (ref + host storage).
+- **Entrega:** gates **E0–E4** (não um único DONE sem aceite/fixtures).
+- **UX:** visual-first no ensaio; source sob demanda; progressive disclosure.
+
+**Fixtures obrigatórias:** cifras reais em `fixtures/` — não inventar charts; E4 exige fixture de imagem antes de DONE.
 
 ---
 
@@ -121,32 +132,28 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 
 | Peça | Papel |
 |---|---|
-| **titan-chordpro-lib** | Gera ChordPro a partir de áudio — **fora**. Pode **consumir** o viewer para preview. |
-| **Virtual SDA (Nuxt)** | Host: shell, multi-cifra, sanitize, i18n, player. Embute o viewer. |
-| **Este repo** | Viewer/player 1-cifra + (futuro) artefatos de embed. |
+| **titan-chordpro-gen** (hoje `titan-chordpro-lib`) | Gera ChordPro a partir de áudio — **fora**. Pode consumir a UI para preview. |
+| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Embute a UI (view+edit). |
+| **titan-chordpro** (futuro) | App standalone Titan (shell + extras) — **repo separado**; consome a mesma UI. |
+| **Este repo → `titan-chordpro-ui`** | UI 1-cifra view+edit + embed. |
 
 ---
 
-## 9. Open questions (próxima sessão)
+## 9. Open questions
 
-1. **Stack final** (A/B/C/D) e forma de embed no SDA.
-2. Controles da cifra: barra embutida no miolo vs chrome mínimo fixo (ainda “não-shell”).
+1. Sintaxe da diretiva de imagem + default capabilities no embed SDA (ver design do editor).
+2. Controles da cifra: barra no miolo vs chrome mínimo fixo (ainda “não-shell”).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
-4. Nome npm / escopo do pacote.
-5. Atualizar ou arquivar `SPEC.md` / `AGENTS.md` após a stack (evitar dois SoT).
+4. Nome npm / escopo do pacote no rename.
+5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4).
 
 ---
 
-## 10. Handoff — próxima sessão (desenhar UI)
+## 10. Handoff
 
-**Objetivo da sessão:** desenhar a UI do **chordpro-viewer** (1 cifra), com cifras reais de `fixtures/`.
-
-**Entrar com:**
-
-- Este `docs/VISAO.md` como brief de produto.
-- Decisão de stack (ou shortlist A vs C vs D).
-- Inventário de controles: tom, fonte, rolagem, tema claro/escuro/auto, export CHO/PDF.
-- Non-goals: sem multi-cifra, sem shell, sem edição, sem áudio sync.
+- **Design do editor:** aprovado via brainstorm → `projects/titan-chordpro-ui/editor/design.md`.
+- **Próximo:** `project new plan editor` (ou equivalente) a partir do design Approved; scaffold core+Vue; gates E0→…  
+- Non-goals permanentes: multicifra, shell Titan neste repo, áudio sync, collab.
 
 **Não entrar com:** implementação SDA; inventar fixtures; tratar SPEC §3 como lei de UI.
 
