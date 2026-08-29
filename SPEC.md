@@ -6,12 +6,15 @@
 
 | Field | Value |
 |---|---|
-| Packages | `chordpro-viewer` (core TS) + `chordpro-viewer/vue` or `@chordpro-viewer/vue` (UI) |
-| Repo | `/Volumes/External/code/chordpro-viewer` |
-| Sibling generator | `titan-chordpro-lib` (audio → ChordPro text) — **out of scope** |
-| Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player |
+| Target name | **`titan-chordpro-ui`** (view **+** edit, one package) — seed dir may still be `chordpro-viewer` |
+| Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
+| Packages (npm) | core TS + Vue binding (names follow rename to `@…/titan-chordpro-ui` when published) |
+| Repo (seed) | `/Volumes/External/code/chordpro-viewer` |
+| Sibling generator | **`titan-chordpro-gen`** (today `titan-chordpro-lib`) — audio → ChordPro — **out of scope** |
+| Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
+| Editor | Same UI package (later `./edit` / module) — **not** a third repo |
 | Stack (ratified) | **Vue-first UI** + **framework-free core** + agnostic controller; React/CE bindings later |
-| Status | Vision + SPEC aligned → scaffold → green tests → UI |
+| Status | Vision + SPEC + naming locked → scaffold → green tests → UI |
 
 ---
 

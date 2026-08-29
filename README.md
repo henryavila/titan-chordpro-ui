@@ -1,11 +1,13 @@
-# chordpro-viewer
+# chordpro-viewer → **`titan-chordpro-ui`**
 
-Viewer/player de **uma** cifra ChordPro: **core TypeScript** + **UI Vue** (completa) + PDF.
+Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF.  
+Nome alvo do repo/pacote: **`titan-chordpro-ui`**. Decisão: [`docs/NAMING.md`](docs/NAMING.md).
 
-- **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
+- **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md) (se existir)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
-- **Generator (sibling):** [`titan-chordpro-lib`](../titan-chordpro-lib) — audio → `.chordpro`
-- **Consumer (sibling):** sda-v2 Nuxt — shell / multi-cifra / player around this package
+- **Generator (sibling, repo separado):** **`titan-chordpro-gen`** (hoje `titan-chordpro-lib`) — audio → `.chordpro`
+- **App Titan:** nenhum por agora
+- **Consumer:** sda-v2 Nuxt — consome **só** a UI
 
 ## Status
 
