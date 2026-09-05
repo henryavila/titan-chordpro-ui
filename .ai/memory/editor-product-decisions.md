@@ -3,6 +3,8 @@
 ## Naming / hosts
 - Repo seed → **`titan-chordpro-ui`** (view + edit).
 - 1º host: **`sda-v2`** (página pública = view-only; autenticado+permissão = edit).
+- **`modes` default = `local`.** “Para todos” (`content` / `both`) é opt-in do consumer; emite `save-content`. Sugestão ao responsável é o flag `suggestions`.
+- Pacote npm: exports `.` / `./pdf` / `./vue` (+ `./vue/style.css`). Tipos Vue em `dist/vue`. CLI sem chunks.
 - App futuro: **`titan-chordpro`** (host separado).
 - Gen = **`titan-chordpro-gen`** — fora do escopo de UI.
 
