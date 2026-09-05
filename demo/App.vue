@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ChordproViewer } from 'titan-chordpro-ui/vue'
+import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import jesus1 from '../fixtures/jesus-tu-es-a-minha-vida-1.cho?raw'
 import adoralo from '../fixtures/ministerio-tons/010-adoralo.cho?raw'
 import eleVive from '../fixtures/ministerio-tons/013-ele-vive-em-mim.cho?raw'
@@ -8,7 +9,7 @@ import eleVivePartitura from '../fixtures/ministerio-tons/013-ele-vive-em-mim-pa
 import emGratidao from '../fixtures/ministerio-tons/002-em-gratidao.cho?raw'
 import ofertinha from '../fixtures/ministerio-tons/088-minha-ofertinha.cho?raw'
 
-const fixtures: Record<string, string> = {
+const bundled: Record<string, string> = {
   'jesus-1': jesus1,
   adoralo,
   'ele-vive': eleVive,
@@ -17,6 +18,8 @@ const fixtures: Record<string, string> = {
   ofertinha,
   vazio: '',
 }
+const fixtures = ref<Record<string, string>>({ ...bundled })
+const origin = ref<'demo' | 'gen'>('demo')
 
 // `{image:}` carries a reference, never a URL — the host resolves it. Here the
 // demo maps `assets/<file>` onto the bundled fixture images.
@@ -39,12 +42,23 @@ const images = [...byName.keys()].map((file) => ({
 }))
 
 const id = ref('jesus-1')
-const source = ref(fixtures[id.value] ?? '')
+const source = ref(fixtures.value[id.value] ?? '')
 
 function pick(next: string) {
   id.value = next
-  source.value = fixtures[next] ?? ''
+  source.value = fixtures.value[next] ?? ''
 }
+
+onMounted(async () => {
+  const catalog = await fetchPreviewCatalog()
+  if (!catalog) return
+  fixtures.value = catalogToFixtures(catalog)
+  origin.value = 'gen'
+  const wanted = new URLSearchParams(location.search).get('song')
+  const keys = Object.keys(fixtures.value)
+  const next = wanted && wanted in fixtures.value ? wanted : keys[0]
+  if (next) pick(next)
+})
 </script>
 
 <template>
@@ -57,8 +71,11 @@ function pick(next: string) {
       :images="images"
       @update:source="source = $event"
     />
-    <label style="position:absolute;top:8px;left:8px;z-index:50;display:flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 10px;border-radius:9px;background:var(--veil,#10131A);border:1px solid var(--line,rgba(255,255,255,.1));color:var(--muted,#888F9E);font-family:Sora,system-ui,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;backdrop-filter:blur(16px);">
-      Demo
+    <label
+      :data-preview-origin="origin"
+      style="position:absolute;top:8px;left:8px;z-index:50;display:flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 10px;border-radius:9px;background:var(--veil,#10131A);border:1px solid var(--line,rgba(255,255,255,.1));color:var(--muted,#888F9E);font-family:Sora,system-ui,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;backdrop-filter:blur(16px);"
+    >
+      {{ origin === 'gen' ? 'Gen' : 'Demo' }}
       <select :value="id" style="height:22px;border:0;background:transparent;color:var(--text,#EAECF2);font-family:inherit;font-size:11px;letter-spacing:0;text-transform:none;font-weight:600;" @change="pick(($event.target as HTMLSelectElement).value)">
         <option v-for="k in Object.keys(fixtures)" :key="k" :value="k">{{ k }}</option>
       </select>

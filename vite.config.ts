@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
+import { previewDirPlugin } from './demo/preview-plugin'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), previewDirPlugin()],
   root: 'demo',
   publicDir: false,
   resolve: {
