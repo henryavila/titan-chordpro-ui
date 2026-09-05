@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+html,body{margin:0;padding:0;background:#07090D;}
+*,*::before,*::after{box-sizing:border-box;}
+a{color:#6FD8E4;text-decoration:none;} a:hover{opacity:0.75;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:44px 44px 80px;background:#07090D;color:#EAECF2;font-family:Sora,system-ui,sans-serif;display:flex;flex-direction:column;gap:34px;">
+
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#6FD8E4;"></span>
+      <span style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;color:#888F9E;">Titan ChordPro · responsividade</span>
+    </div>
+    <div style="font-size:29px;font-weight:600;letter-spacing:-0.02em;line-height:1.15;">Três modelos de chrome, cinco larguras</div>
+    <div style="font-size:13.5px;line-height:1.6;color:#888F9E;text-wrap:pretty;">Telefone (&lt;640) usa dock único no rodapé e barra de identidade no topo. Tablet e desktop (≥640) usam a barra completa. Cada quadro é o viewer real, medido pela largura do próprio container.</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:30px;">
+
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#6FD8E4;">xs · 360</span>
+        <span style="font-size:11.5px;color:#888F9E;">telefone compacto</span>
+      </div>
+      <iframe src="./Titan%20Chordpro%20UI%20v2.dc.html" title="Breakpoint xs 360px" style="display:block;width:360px;height:740px;border:1px solid rgba(255,255,255,0.12);border-radius:22px;background:#0B0D12;box-shadow:0 30px 70px -30px rgba(0,0,0,0.9);"></iframe>
+      <ul style="margin:0;padding:0 0 0 15px;max-width:340px;display:flex;flex-direction:column;gap:5px;font-size:11.5px;line-height:1.5;color:#888F9E;">
+        <li>Uma só superfície embaixo: <strong style="color:#EAECF2;font-weight:600;">Rolar, A−/A+, tema, editar e Mais</strong>. Nada de pastilhas soltas sobre a cifra.</li>
+        <li>Topo é identidade, não controle: título, BPM e um botão de tom que abre a folha de tom e capo.</li>
+        <li>Toque no vazio da cifra esconde a moldura inteira; toque de novo traz de volta.</li>
+      </ul>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#6FD8E4;">sm · 430</span>
+        <span style="font-size:11.5px;color:#888F9E;">telefone grande</span>
+      </div>
+      <iframe src="./Titan%20Chordpro%20UI%20v2.dc.html" title="Breakpoint sm 430px" style="display:block;width:430px;height:860px;border:1px solid rgba(255,255,255,0.12);border-radius:24px;background:#0B0D12;box-shadow:0 30px 70px -30px rgba(0,0,0,0.9);"></iframe>
+      <ul style="margin:0;padding:0 0 0 15px;max-width:410px;display:flex;flex-direction:column;gap:5px;font-size:11.5px;line-height:1.5;color:#888F9E;">
+        <li>Mesmo dock, com o rótulo “Rolar” visível e mais margem lateral.</li>
+        <li>Com a rolagem ligada o dock ganha uma linha: velocidade, tempo restante e progresso — dentro da mesma superfície.</li>
+        <li>Versões, sugestões, lentes, metrônomo, ajuste e exportar vivem numa única folha “Mais”.</li>
+      </ul>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#6FD8E4;">md · 768</span>
+        <span style="font-size:11.5px;color:#888F9E;">tablet retrato</span>
+      </div>
+      <iframe src="./Titan%20Chordpro%20UI%20v2.dc.html" title="Breakpoint md 768px" style="display:block;width:768px;height:1000px;border:1px solid rgba(255,255,255,0.12);border-radius:20px;background:#0B0D12;box-shadow:0 30px 70px -30px rgba(0,0,0,0.9);"></iframe>
+      <ul style="margin:0;padding:0 0 0 15px;max-width:740px;display:flex;flex-direction:column;gap:5px;font-size:11.5px;line-height:1.5;color:#888F9E;">
+        <li>Acima de 640 o modelo troca: barra completa numa fileira e tom/capo de volta ao cabeçalho.</li>
+        <li>Cabeçalho recupera BPM, compasso e duração ao lado do título.</li>
+        <li>Coluna de leitura limitada a 760 px para a letra não esticar.</li>
+      </ul>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#6FD8E4;">lg · 1180</span>
+        <span style="font-size:11.5px;color:#888F9E;">notebook</span>
+      </div>
+      <iframe src="./Titan%20Chordpro%20UI%20v2.dc.html" title="Breakpoint lg 1180px" style="display:block;width:1180px;height:780px;border:1px solid rgba(255,255,255,0.12);border-radius:18px;background:#0B0D12;box-shadow:0 30px 70px -30px rgba(0,0,0,0.9);"></iframe>
+      <ul style="margin:0;padding:0 0 0 15px;max-width:1140px;display:flex;flex-direction:column;gap:5px;font-size:11.5px;line-height:1.5;color:#888F9E;">
+        <li>Altura curta: painéis flutuam sobre a cifra e o teclado (espaço, +/−, L, M, F) é o caminho principal.</li>
+        <li>Coluna de 880 px centrada, respiro lateral maior.</li>
+      </ul>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#6FD8E4;">xl · 1512</span>
+        <span style="font-size:11.5px;color:#888F9E;">desktop amplo</span>
+      </div>
+      <iframe src="./Titan%20Chordpro%20UI%20v2.dc.html" title="Breakpoint xl 1512px" style="display:block;width:1512px;height:900px;border:1px solid rgba(255,255,255,0.12);border-radius:18px;background:#0B0D12;box-shadow:0 30px 70px -30px rgba(0,0,0,0.9);"></iframe>
+      <ul style="margin:0;padding:0 0 0 15px;max-width:1460px;display:flex;flex-direction:column;gap:5px;font-size:11.5px;line-height:1.5;color:#888F9E;">
+        <li>Coluna de 980 px e margens de 40 px: a cifra vira o centro visual da tela.</li>
+        <li>Cabeçalho e barra acompanham a largura da coluna, sem esticar até as bordas.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

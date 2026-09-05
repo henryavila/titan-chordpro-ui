@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
+<style>
+:root{
+  --canvas:#0B0D12; --veil:rgba(20,23,31,0.72); --veil-2:rgba(14,17,23,0.86); --glow:rgba(132,223,166,0.06);
+  --line:rgba(255,255,255,0.10); --line-soft:rgba(255,255,255,0.06);
+  --text:#EAECF2; --muted:#888F9E; --lyric:#C4C9D4;
+  --chord:#84DFA6; --chord-ink:#10131A; --chord-soft:rgba(132,223,166,0.10); --chord-edge:rgba(132,223,166,0.30);
+  --chord-hover:rgba(132,223,166,0.15); --chord-fill:rgba(132,223,166,0.17);
+  --hover:rgba(255,255,255,0.08); --surface:rgba(255,255,255,0.04); --surface-hover:rgba(255,255,255,0.09);
+  --sel:rgba(255,255,255,0.10); --sel-line:rgba(255,255,255,0.22); --pill:#E8EAF0; --pill-ink:#13161D;
+  --danger:#FF8574; --focus:#9EB8FF;
+  --shadow:0 24px 60px -18px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+html,body{margin:0;padding:0;height:100%;background:var(--canvas);overflow:hidden;overscroll-behavior:none;}
+*,*::before,*::after{box-sizing:border-box;}
+a{color:var(--chord);text-decoration:none;} a:hover{opacity:0.75;}
+button{font-family:inherit;}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+<div style="position:relative;height:100dvh;min-height:600px;width:100%;overflow:hidden;background:var(--canvas);color:var(--text);font-family:Sora,system-ui,sans-serif;display:flex;flex-direction:column;">
+
+  <header style="flex:none;display:flex;align-items:center;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--veil);">
+    <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+      <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;white-space:nowrap;">Tua Vontade <span style="color:var(--muted);font-weight:400;">·</span> Solo do interlúdio</span>
+      <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);">4/4 · 92 BPM · afinação padrão</span>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div style="display:flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--line);border-radius:12px;background:var(--surface);">
+      <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+        <button onClick="{{ v.go }}" style="height:30px;padding:0 13px;border:0;border-radius:9px;background:{{ v.bg }};color:{{ v.ink }};font-size:12px;font-weight:{{ v.weight }};cursor:pointer;">{{ v.label }}</button>
+      </sc-for>
+    </div>
+
+    <button onClick="{{ togglePlay }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 15px;border:1px solid {{ playBorder }};border-radius:11px;background:{{ playBg }};color:{{ playInk }};font-size:12.5px;font-weight:600;cursor:pointer;">
+      <span style="width:10px;height:10px;background:currentColor;clip-path:{{ playClip }};"></span>{{ playLabel }}
+    </button>
+
+    <button style="height:36px;padding:0 15px;border:0;border-radius:11px;background:var(--pill);color:var(--pill-ink);font-size:12.5px;font-weight:700;cursor:pointer;">Salvar no bloco</button>
+  </header>
+
+  <section style="flex:1;min-height:0;overflow:auto;padding:26px 20px;display:flex;justify-content:center;">
+    <div style="width:100%;max-width:1080px;padding:18px 6px;border-radius:16px;background:var(--veil);border:1px solid var(--line-soft);box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);overflow-x:auto;">
+      <div ref="{{ hostRef }}" style="min-height:180px;"></div>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:44px 0;text-align:center;font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);">Toque numa corda abaixo para escrever a primeira nota</p>
+      </sc-if>
+    </div>
+  </section>
+
+  <div style="flex:none;display:flex;align-items:center;gap:14px;padding:0 20px 10px;">
+    <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--chord);font-weight:700;">{{ barStatus }}</span>
+    <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">{{ fillStatus }}</span>
+    <div style="flex:1;"></div>
+    <span style="font-size:11px;color:var(--muted);">Digite 0–12 para a casa · ←/→ anda · Backspace apaga</span>
+  </div>
+
+  <footer style="flex:none;display:flex;gap:16px;padding:14px 20px 20px;border-top:1px solid var(--line);background:var(--veil-2);">
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:7px;">
+      <span style="font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Figura</span>
+      <div style="display:flex;gap:5px;">
+        <sc-for list="{{ durs }}" as="d" hint-placeholder-count="5">
+          <button onClick="{{ d.go }}" title="{{ d.name }}" style="width:46px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid {{ d.border }};border-radius:11px;background:{{ d.bg }};color:{{ d.ink }};cursor:pointer;">
+            <span style="font-size:20px;line-height:1;">{{ d.glyph }}</span>
+            <span style="font-family:'Space Mono',monospace;font-size:8.5px;color:var(--muted);">{{ d.beats }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <button onClick="{{ toggleSlide }}" style="height:30px;padding:0 12px;border:1px solid {{ slideBorder }};border-radius:10px;background:{{ slideBg }};color:{{ slideInk }};font-size:11.5px;font-weight:600;cursor:pointer;">Slide</button>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;">
+      <span style="font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cordas · toque para escrever</span>
+      <div style="flex:1;overflow-x:auto;padding-bottom:4px;">
+        <div style="display:flex;flex-direction:column;gap:2px;width:max-content;min-width:100%;">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+            <div style="display:flex;align-items:stretch;height:26px;">
+              <span style="flex:none;width:20px;display:flex;align-items:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);">{{ r.label }}</span>
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="8">
+                <button onClick="{{ c.go }}" aria-label="{{ c.aria }}" style="flex:none;width:{{ c.w }};margin-right:2px;display:flex;align-items:center;justify-content:center;border:1px solid {{ c.border }};border-radius:7px;background:{{ c.bg }};color:{{ c.ink }};font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;position:relative;">{{ c.txt }}<span style="position:absolute;left:0;right:0;top:50%;height:1px;background:{{ c.rule }};"></span></button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:7px;">
+      <span style="font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Casa</span>
+      <div style="display:grid;grid-template-columns:repeat(7,34px);gap:4px;">
+        <sc-for list="{{ frets }}" as="f" hint-placeholder-count="14">
+          <button onClick="{{ f.go }}" style="height:26px;border:1px solid {{ f.border }};border-radius:8px;background:{{ f.bg }};color:{{ f.ink }};font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;cursor:pointer;">{{ f.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:840}}">
+const STR_MIDI = [64, 59, 55, 50, 45, 40];
+const STR_LBL = ["e", "B", "G", "D", "A", "E"];
+const NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
+const DURS = [
+  { d: "w", b: 4, glyph: "\u{1D15D}", name: "Semibreve" },
+  { d: "h", b: 2, glyph: "\u{1D15E}", name: "M\u00ednima" },
+  { d: "q", b: 1, glyph: "\u2669", name: "Sem\u00ednima" },
+  { d: "8", b: 0.5, glyph: "\u266A", name: "Colcheia" },
+  { d: "16", b: 0.25, glyph: "\u266C", name: "Semicolcheia" }
+];
+const INK = "#EAECF2";
+const BEATS = { w: 4, h: 2, q: 1, "8": 0.5, "16": 0.25 };
+
+class Component extends DCLogic {
+  state = {
+    view: "both", dur: "q", slide: false, sel: 3, playing: false, playIdx: -1,
+    notes: [
+      { str: 2, fret: 7, dur: "8", slide: false }, { str: 2, fret: 9, dur: "8", slide: false },
+      { str: 1, fret: 7, dur: "q", slide: false }, { str: 1, fret: 8, dur: "8", slide: true },
+      { str: 1, fret: 10, dur: "8", slide: false }, { str: 0, fret: 7, dur: "h", slide: false },
+      { str: 0, fret: 5, dur: "q", slide: false }, { str: 1, fret: 8, dur: "q", slide: false }
+    ]
+  };
+
+  hostRef = (el) => { this.host = el; };
+
+  componentDidMount() {
+    this.waitVex();
+    this.onKey = (e) => {
+      if (/^[0-9]$/.test(e.key)) { this.digit(e.key); e.preventDefault(); return; }
+      if (e.key === "ArrowLeft") { this.move(-1); e.preventDefault(); }
+      if (e.key === "ArrowRight") { this.move(1); e.preventDefault(); }
+      if (e.key === "Backspace") { this.del(); e.preventDefault(); }
+      if (e.key === " ") { this.togglePlay(); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", this.onKey);
+  }
+  componentWillUnmount() {
+    window.removeEventListener("keydown", this.onKey);
+    clearTimeout(this.playTimer);
+    if (this.ac) this.ac.close();
+  }
+  componentDidUpdate() { this.draw(); }
+
+  waitVex = () => {
+    if (window.Vex && window.Vex.Flow) { this.draw(); return; }
+    this.vexTimer = setTimeout(this.waitVex, 90);
+  };
+
+  // Compassos saem da figura de cada nota somada contra o compasso declarado —
+  // é o tempo da partitura que define a barra, não a largura na tela.
+  columns() {
+    const out = []; let acc = 0;
+    this.state.notes.forEach((n, i) => {
+      out.push({ kind: "note", i, n });
+      acc += BEATS[n.dur] || 1;
+      if (acc >= 4 && Math.abs(acc % 4) < 0.001) out.push({ kind: "bar" });
+    });
+    return out;
+  }
+  filled() {
+    let acc = 0;
+    for (const n of this.state.notes) acc += BEATS[n.dur] || 1;
+    return acc;
+  }
+
+  digit = (k) => {
+    const s = this.state.sel;
+    if (s === null || s < 0 || s >= this.state.notes.length) return;
+    const cur = this.state.notes[s];
+    const now = Date.now();
+    // Duas teclas seguidas viram casa de dois dígitos: 1 depois 2 = casa 12.
+    const two = this.lastKeyAt && now - this.lastKeyAt < 700 && cur.fret < 10;
+    const fret = two ? Math.min(24, cur.fret * 10 + Number(k)) : Number(k);
+    this.lastKeyAt = now;
+    this.patch(s, { fret });
+  };
+  patch(i, obj) {
+    this.setState(st => ({ notes: st.notes.map((n, j) => j === i ? { ...n, ...obj } : n) }));
+  }
+  move = (d) => this.setState(st => ({ sel: Math.max(0, Math.min(st.notes.length - 1, st.sel + d)) }));
+  del = () => this.setState(st => {
+    if (!st.notes.length) return null;
+    const notes = st.notes.filter((_, j) => j !== st.sel);
+    return { notes, sel: Math.max(0, Math.min(notes.length - 1, st.sel)) };
+  });
+
+  addAt = (str, at) => {
+    this.setState(st => {
+      const notes = st.notes.slice();
+      const note = { str, fret: 0, dur: st.dur, slide: st.slide };
+      const idx = at === null ? notes.length : at;
+      if (at === null) notes.push(note); else notes[at] = { ...notes[at], str, dur: st.dur, slide: st.slide };
+      return { notes, sel: idx };
+    });
+  };
+
+  setDur = (d) => () => this.setState(st => {
+    if (st.sel >= 0 && st.sel < st.notes.length) {
+      return { dur: d, notes: st.notes.map((n, j) => j === st.sel ? { ...n, dur: d } : n) };
+    }
+    return { dur: d };
+  });
+  toggleSlide = () => this.setState(st => {
+    const slide = !st.slide;
+    if (st.sel >= 0 && st.sel < st.notes.length) {
+      return { slide, notes: st.notes.map((n, j) => j === st.sel ? { ...n, slide } : n) };
+    }
+    return { slide };
+  });
+  setFret = (f) => () => {
+    if (this.state.sel >= 0 && this.state.sel < this.state.notes.length) this.patch(this.state.sel, { fret: f });
+  };
+
+  togglePlay = () => {
+    if (this.state.playing) { clearTimeout(this.playTimer); this.setState({ playing: false, playIdx: -1 }); return; }
+    if (!this.state.notes.length) return;
+    this.setState({ playing: true, playIdx: 0 }, () => this.step(0));
+  };
+  step(i) {
+    const n = this.state.notes[i];
+    if (!n) { this.setState({ playing: false, playIdx: -1 }); return; }
+    const sec = (BEATS[n.dur] || 1) * (60 / 92);
+    this.beep(STR_MIDI[n.str] + n.fret, sec);
+    this.setState({ playIdx: i });
+    this.playTimer = setTimeout(() => { if (this.state.playing) this.step(i + 1); }, sec * 1000);
+  }
+  beep(midi, sec) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ac = this.ac || new AC();
+      const t = this.ac.currentTime, o = this.ac.createOscillator(), g = this.ac.createGain();
+      o.type = "triangle";
+      o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.22, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.12, sec * 0.92));
+      o.connect(g).connect(this.ac.destination);
+      o.start(t); o.stop(t + sec + 0.05);
+    } catch (e) { /* sem áudio disponível */ }
+  }
+
+  key(midi) { return NAMES[midi % 12] + "/" + (Math.floor(midi / 12) - 1); }
+
+  draw() {
+    const V = window.Vex && window.Vex.Flow;
+    if (!V || !this.host) return;
+    const notes = this.state.notes;
+    this.host.innerHTML = "";
+    if (!notes.length) return;
+    const view = this.state.view;
+    const both = view === "both";
+    const W = Math.max(760, notes.length * 62 + 160);
+    const H = both ? 258 : 152;
+    const r = new V.Renderer(this.host, V.Renderer.Backends.SVG);
+    r.resize(W, H);
+    const ctx = r.getContext();
+    ctx.setFillStyle(INK); ctx.setStrokeStyle(INK);
+    const ink = { fillStyle: INK, strokeStyle: INK };
+
+    const cols = this.columns();
+    const sN = [], tN = [];
+    for (const c of cols) {
+      if (c.kind === "bar") { sN.push(new V.BarNote()); tN.push(new V.BarNote()); continue; }
+      const midi = STR_MIDI[c.n.str] + c.n.fret;
+      const sn = new V.StaveNote({ keys: [this.key(midi)], duration: c.n.dur, clef: "treble" });
+      if (NAMES[midi % 12].indexOf("#") > -1) sn.addModifier(new V.Accidental("#"), 0);
+      sn.setStyle(ink);
+      sN.push(sn);
+      const tn = new V.TabNote({ positions: [{ str: c.n.str + 1, fret: c.n.fret }], duration: c.n.dur });
+      tn.setStyle(ink);
+      tN.push(tn);
+    }
+    const total = this.filled() || 4;
+    const mk = (arr) => new V.Voice({ num_beats: total, beat_value: 4 }).setStrict(false).addTickables(arr);
+
+    let stave = null, tabstave = null, v1 = null, v2 = null;
+    if (view !== "tab") {
+      stave = new V.Stave(10, both ? 2 : 14, W - 24);
+      stave.addClef("treble").addTimeSignature("4/4").setStyle(ink).setContext(ctx).draw();
+      v1 = mk(sN);
+    }
+    if (view !== "score") {
+      tabstave = new V.TabStave(10, both ? 130 : 16, W - 24);
+      tabstave.addClef("tab").setStyle(ink).setContext(ctx).draw();
+      v2 = mk(tN);
+    }
+    const fm = new V.Formatter();
+    const vs = [];
+    if (v1) { fm.joinVoices([v1]); vs.push(v1); }
+    if (v2) { fm.joinVoices([v2]); vs.push(v2); }
+    fm.format(vs, W - 120);
+    if (v1) v1.draw(ctx, stave);
+    if (v2) v2.draw(ctx, tabstave);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const cols = this.columns();
+    const rows = STR_LBL.map((label, s) => ({
+      label,
+      cells: cols.map((c, ci) => {
+        if (c.kind === "bar") return { kind: "bar", w: "3px", txt: "", aria: "Barra de compasso", border: "transparent", bg: "var(--line)", ink: "transparent", rule: "transparent", go: () => {} };
+        const on = c.n.str === s;
+        const sel = c.i === st.sel;
+        const play = c.i === st.playIdx;
+        return {
+          w: "34px", txt: on ? String(c.n.fret) : "", aria: "Corda " + label + " coluna " + (ci + 1),
+          border: sel ? "var(--sel-line)" : (on ? "var(--chord-edge)" : "transparent"),
+          bg: play ? "var(--chord-fill)" : (on ? "var(--chord-soft)" : (sel ? "var(--surface)" : "transparent")),
+          ink: on ? "var(--chord)" : "var(--muted)",
+          rule: on ? "transparent" : "var(--line-soft)",
+          go: () => this.addAt(s, c.i)
+        };
+      }).concat([{
+        w: "34px", txt: "+", aria: "Nova nota na corda " + label,
+        border: "var(--line)", bg: "transparent", ink: "var(--muted)", rule: "transparent",
+        go: () => this.addAt(s, null)
+      }])
+    }));
+
+    const filled = this.filled();
+    const bar = Math.floor(filled / 4) + (filled % 4 === 0 ? 0 : 1);
+    const rest = filled % 4;
+
+    return {
+      hostRef: this.hostRef,
+      isEmpty: st.notes.length === 0,
+      rows,
+      views: [["score", "Partitura"], ["tab", "TAB"], ["both", "Ambos"]].map(([k, label]) => ({
+        label, go: () => this.setState({ view: k }),
+        bg: st.view === k ? "var(--pill)" : "transparent",
+        ink: st.view === k ? "var(--pill-ink)" : "var(--muted)",
+        weight: st.view === k ? 700 : 500
+      })),
+      durs: DURS.map(d => ({
+        glyph: d.glyph, name: d.name, beats: d.b + (d.b === 1 ? " tempo" : " tempos"),
+        go: this.setDur(d.d),
+        border: st.dur === d.d ? "var(--chord-edge)" : "var(--line)",
+        bg: st.dur === d.d ? "var(--chord-soft)" : "transparent",
+        ink: st.dur === d.d ? "var(--chord)" : "var(--text)"
+      })),
+      frets: Array.from({ length: 14 }, (_, f) => {
+        const cur = st.notes[st.sel];
+        const on = cur && cur.fret === f;
+        return {
+          label: String(f), go: this.setFret(f),
+          border: on ? "var(--chord-edge)" : "var(--line)",
+          bg: on ? "var(--chord-soft)" : "transparent",
+          ink: on ? "var(--chord)" : "var(--text)"
+        };
+      }),
+      slideBorder: st.slide ? "var(--chord-edge)" : "var(--line)",
+      slideBg: st.slide ? "var(--chord-soft)" : "transparent",
+      slideInk: st.slide ? "var(--chord)" : "var(--text)",
+      togglePlay: this.togglePlay, toggleSlide: this.toggleSlide,
+      playLabel: st.playing ? "Parar" : "Tocar",
+      playClip: st.playing ? "none" : "polygon(0 0, 100% 50%, 0 100%)",
+      playBg: st.playing ? "var(--pill)" : "transparent",
+      playInk: st.playing ? "var(--pill-ink)" : "var(--text)",
+      playBorder: st.playing ? "var(--pill)" : "var(--line)",
+      barStatus: "Compasso " + Math.max(1, bar),
+      fillStatus: rest === 0 ? "compasso fechado" : rest + " de 4 tempos escritos"
+    };
+  }
+}
+
+</script>
+</body>
+</html>
