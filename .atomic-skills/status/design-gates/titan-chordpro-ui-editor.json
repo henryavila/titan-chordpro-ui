@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "0.1",
+  "projectId": "titan-chordpro-ui",
+  "slug": "editor",
+  "interviewAccepted": true,
+  "debateGate": {
+    "invoked": true,
+    "readyForValidation": true,
+    "singleApproach": false
+  },
+  "researchDigest": "projects/titan-chordpro-ui/editor/research-digest.md",
+  "criticVerdict": "Approved",
+  "userApproved": true,
+  "status": "ready",
+  "updatedAt": "2026-08-29T10:50:11.525Z"
+}

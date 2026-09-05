@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "0.1",
+  "kind": "new-plan",
+  "projectId": "titan-chordpro-ui",
+  "slug": "editor",
+  "sourcePath": "projects/titan-chordpro-ui/editor/source.md",
+  "stage": "decompose-confirm",
+  "businessIntentAccepted": false,
+  "filesPlanned": [],
+  "filesWritten": [],
+  "status": "pending",
+  "updatedAt": "2026-08-29T10:57:08.549Z"
+}

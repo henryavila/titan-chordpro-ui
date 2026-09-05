@@ -1,0 +1,80 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F2",
+  "slug": "editor-f2-e2-wysiwyg-structural-commands",
+  "title": "E2 WYSIWYG structural commands",
+  "goal": "Command bus mutates source for common structure (sections, line breaks, common directives) without claiming pixel-perfect equals file.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Edit command bus on source",
+      "scopeBoundary": [
+        "No CRDT/collab; no OnSong dual-SoT; no image commands (E4)."
+      ],
+      "acceptance": [
+        "edit-commands.test.ts inserts or renames section markers on a fixtures cho sample and re-parses; unmappable command returns explicit error; never writes transposed display chords"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/edit-commands.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/edit/commands.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/edit-commands.test.ts"
+        }
+      ],
+      "summary": "Bus de comandos estruturais sobre o source.",
+      "weight": 3
+    },
+    {
+      "id": "T-002",
+      "title": "Vue structural edit chrome",
+      "scopeBoundary": [
+        "Do not replace source pane; do not enable under view; no TAB-specific UI (E3)."
+      ],
+      "acceptance": [
+        "e2-structural.test.ts shows StructuralToolbar only when edit and capabilities.wysiwyg; actions dispatch commands.ts and refresh preview"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/e2-structural.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/edit/StructuralToolbar.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/e2-structural.test.ts"
+        }
+      ],
+      "summary": "Toolbar estrutural Vue gated por capabilities.wysiwyg.",
+      "weight": 2
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F2-G1",
+      "description": "E2 command-bus and Vue structural tests green.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/edit-commands.test.ts tests/vue/e2-structural.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ],
+  "summary": "Command bus estrutural (seções/diretivas) com chrome WYSIWYG gated."
+}

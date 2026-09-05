@@ -1,0 +1,80 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F3",
+  "slug": "editor-f3-e3-tablatura-editavel",
+  "title": "E3 Tablatura editável",
+  "goal": "Edit sot/eot tab sections in source with round-trip on the existing TAB fixture.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Tab block parse + patch helpers",
+      "scopeBoundary": [
+        "No fretboard diagrams; no audio sync; no new SoT format."
+      ],
+      "acceptance": [
+        "tab-block.test.ts loads fixtures/ministerio-tons/013-ele-vive-em-mim.cho, locates tab spans, patches inside block, round-trips sot/eot"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/tab-block.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/edit/tab-block.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/tab-block.test.ts"
+        }
+      ],
+      "summary": "Helpers de parse/patch de bloco TAB no source.",
+      "weight": 3
+    },
+    {
+      "id": "T-002",
+      "title": "Vue tab editor surface",
+      "scopeBoundary": [
+        "Do not invent non-fixture tab songs; no image insert here."
+      ],
+      "acceptance": [
+        "e3-tab.test.ts edits tab via TabEditor.vue in edit with capabilities.tab and writes source; view mode read-only"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/e3-tab.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/edit/TabEditor.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/e3-tab.test.ts"
+        }
+      ],
+      "summary": "Superfície Vue TabEditor gated por capabilities.tab.",
+      "weight": 2
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F3-G1",
+      "description": "E3 tab tests green on 013-ele-vive-em-mim.cho.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/tab-block.test.ts tests/vue/e3-tab.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ],
+  "summary": "Edição de blocos de tablatura com round-trip na fixture 013."
+}

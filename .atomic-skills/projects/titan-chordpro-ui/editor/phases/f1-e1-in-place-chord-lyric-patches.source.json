@@ -1,0 +1,80 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F1",
+  "slug": "editor-f1-e1-in-place-chord-lyric-patches",
+  "title": "E1 In-place chord/lyric patches",
+  "goal": "Click/edit chord or lyric segment patches the ChordPro source at stable offsets and re-parses; oracle is string-diff against fixtures.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Source offset map for lyrics lines",
+      "scopeBoundary": [
+        "No DOM contenteditable yet; no section rewrite commands; no TAB grid editor."
+      ],
+      "acceptance": [
+        "source-map.test.ts maps chord and lyric spans on fixtures/jesus-tu-es-a-minha-vida-1.cho; patch changes chord; map errors when transposeSemitones is not 0"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/source-map.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/edit/source-map.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/source-map.test.ts"
+        }
+      ],
+      "summary": "Mapear offsets de acorde/letra no source ChordPro.",
+      "weight": 3
+    },
+    {
+      "id": "T-002",
+      "title": "Vue in-place edit gestures",
+      "scopeBoundary": [
+        "No structural section insert/delete UI; no image upload UI; do not edit under active fit-mode."
+      ],
+      "acceptance": [
+        "e1-inplace.test.ts updates source via source-map on chord commit in edit mode; gesture no-ops in view mode"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/e1-inplace.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/edit/InPlaceChord.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/e1-inplace.test.ts"
+        }
+      ],
+      "summary": "Gestos Vue in-place que commitam patches no source.",
+      "weight": 3
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F1-G1",
+      "description": "E1 source-map and in-place Vue tests green on real fixtures.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/source-map.test.ts tests/vue/e1-inplace.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ],
+  "summary": "Patches in-place de acorde/letra no source via mapa de offsets."
+}

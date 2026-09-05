@@ -1,0 +1,92 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F4",
+  "slug": "editor-f4-e4-imagens-partitura-media-bridge",
+  "title": "E4 Imagens (partitura) + media bridge",
+  "goal": "Insert image refs into source via host upload/resolve; fixture + directive syntax locked; E4 acceptance green.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Lock image directive + fixture",
+      "scopeBoundary": [
+        "Do not commit large binaries; use small placeholder plus documented ref; do not invent full songs beyond minimal image fixture wrapper."
+      ],
+      "acceptance": [
+        "docs/image-directive.md documents syntax; fixtures/with-image.cho references a media ref; fixtures/manifest.json lists with-image"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "test -f fixtures/with-image.cho && rg -n 'image' fixtures/with-image.cho docs/image-directive.md && rg -n 'with-image' fixtures/manifest.json",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "docs/image-directive.md"
+        },
+        {
+          "kind": "file",
+          "path": "fixtures/manifest.json"
+        },
+        {
+          "kind": "file",
+          "path": "fixtures/with-image.cho"
+        },
+        {
+          "kind": "file",
+          "path": "fixtures/media/README.md"
+        }
+      ],
+      "summary": "Travar sintaxe da diretiva e fixture with-image.",
+      "weight": 2
+    },
+    {
+      "id": "T-002",
+      "title": "Media bridge + insert command",
+      "scopeBoundary": [
+        "Host storage only via uploadImage/resolveImageUrl; no data-URL SoT; no collab."
+      ],
+      "acceptance": [
+        "image-ref.test.ts and e4-image.test.ts call uploadImage, write directive ref into source, resolve via resolveImageUrl; UI gated by capabilities.images"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/image-ref.test.ts tests/vue/e4-image.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/edit/image-ref.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/edit/InsertImage.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/image-ref.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/e4-image.test.ts"
+        }
+      ],
+      "summary": "InsertImage + image-ref com upload/resolve do host.",
+      "weight": 4
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F4-G1",
+      "description": "E4 image fixture exists and image-ref/e4 tests green.",
+      "verifier": {
+        "kind": "shell",
+        "command": "test -f fixtures/with-image.cho && pnpm exec vitest run tests/core/image-ref.test.ts tests/vue/e4-image.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ],
+  "summary": "Diretiva de imagem + bridge de mídia do host (upload/resolve)."
+}
