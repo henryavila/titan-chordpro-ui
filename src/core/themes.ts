@@ -96,13 +96,20 @@ export const THEME_VARS = {
 } as const
 
 /**
- * The chord colour is the one token the host may choose. Both accents were
- * measured against the two grounds: `#17713C` on `#F5F6F8` is ≈5.3:1 and
+ * The chord colour is the one token the host may choose. Both named accents
+ * were measured against the two grounds: `#17713C` on `#F5F6F8` is ≈5.3:1 and
  * `#0E6E7D` ≈5.1:1 — AA for normal text either way.
+ *
+ * A host that is not verde/teal passes a hex (`#4F46E5`) or `rgb(r,g,b)`.
+ * Light and dark are derived from that hue at the same lightnesses the named
+ * pair uses, so fills/edges/glow still come from one RGB.
  */
 export type AccentId = 'verde' | 'teal'
+export type AccentProp = AccentId | string
 
-const ACCENTS: Record<AccentId, Record<'light' | 'dark', { hex: string; rgb: string }>> = {
+type Swatch = { hex: string; rgb: string }
+
+const ACCENTS: Record<AccentId, Record<'light' | 'dark', Swatch>> = {
   verde: {
     dark: { hex: '#84DFA6', rgb: '132,223,166' },
     light: { hex: '#17713C', rgb: '23,113,60' },
@@ -113,8 +120,90 @@ const ACCENTS: Record<AccentId, Record<'light' | 'dark', { hex: string; rgb: str
   },
 }
 
+/** Lightness of verde light / verde dark — the dual-theme pair from one hue. */
+const LIGHT_L = 0.27
+const DARK_L = 0.7
+
 export function listAccents(): AccentId[] {
   return Object.keys(ACCENTS) as AccentId[]
+}
+
+function hexOf(r: number, g: number, b: number): string {
+  const h = (n: number) => Math.round(n).toString(16).padStart(2, '0')
+  return `#${h(r)}${h(g)}${h(b)}`.toUpperCase()
+}
+
+function swatch(r: number, g: number, b: number): Swatch {
+  return { hex: hexOf(r, g, b), rgb: `${Math.round(r)},${Math.round(g)},${Math.round(b)}` }
+}
+
+function parseColor(input: string): { r: number; g: number; b: number } | null {
+  const s = input.trim()
+  const hex = s.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  if (hex && hex[1]) {
+    let h = hex[1]
+    if (h.length === 3) h = [...h].map((c) => c + c).join('')
+    return {
+      r: Number.parseInt(h.slice(0, 2), 16),
+      g: Number.parseInt(h.slice(2, 4), 16),
+      b: Number.parseInt(h.slice(4, 6), 16),
+    }
+  }
+  const rgb = s.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i)
+  if (rgb) {
+    return { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) }
+  }
+  return null
+}
+
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  const R = r / 255
+  const G = g / 255
+  const B = b / 255
+  const max = Math.max(R, G, B)
+  const min = Math.min(R, G, B)
+  const l = (max + min) / 2
+  if (max === min) return { h: 0, s: 0, l }
+  const d = max - min
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+  let h = 0
+  if (max === R) h = ((G - B) / d + (G < B ? 6 : 0)) / 6
+  else if (max === G) h = ((B - R) / d + 2) / 6
+  else h = ((R - G) / d + 4) / 6
+  return { h, s, l }
+}
+
+function hue2rgb(p: number, q: number, t: number): number {
+  let T = t
+  if (T < 0) T += 1
+  if (T > 1) T -= 1
+  if (T < 1 / 6) return p + (q - p) * 6 * T
+  if (T < 1 / 2) return q
+  if (T < 2 / 3) return p + (q - p) * (2 / 3 - T) * 6
+  return p
+}
+
+function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+  if (s === 0) {
+    const v = l * 255
+    return { r: v, g: v, b: v }
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+  const p = 2 * l - q
+  return {
+    r: hue2rgb(p, q, h + 1 / 3) * 255,
+    g: hue2rgb(p, q, h) * 255,
+    b: hue2rgb(p, q, h - 1 / 3) * 255,
+  }
+}
+
+function resolveAccent(accent: string, mode: 'light' | 'dark'): Swatch {
+  if (accent === 'verde' || accent === 'teal') return ACCENTS[accent][mode]
+  const c = parseColor(accent)
+  if (!c) return ACCENTS.verde[mode]
+  const { h, s } = rgbToHsl(c.r, c.g, c.b)
+  const { r, g, b } = hslToRgb(h, s, mode === 'light' ? LIGHT_L : DARK_L)
+  return swatch(r, g, b)
 }
 
 /**
@@ -123,12 +212,11 @@ export function listAccents(): AccentId[] {
  * relationships between fill, edge and glow stay as the design set them.
  */
 export function accentVars(
-  accent: AccentId | string = 'verde',
+  accent: AccentProp = 'verde',
   mode: 'light' | 'dark' = 'dark',
   strength = 1,
 ): Record<string, string> {
-  const a = ACCENTS[accent as AccentId] ?? ACCENTS.verde
-  const { hex, rgb } = a[mode]
+  const { hex, rgb } = resolveAccent(accent, mode)
   const k = Math.max(0.5, Math.min(1.5, strength))
   // Two decimals is what the design tokens are written in, so strength 1
   // reproduces them character for character; a scaled value keeps what it needs.
@@ -152,7 +240,7 @@ export function accentVars(
 
 export function themeCssVars(
   theme: 'light' | 'dark' | 'print',
-  accent: AccentId | string = 'verde',
+  accent: AccentProp = 'verde',
   strength = 1,
 ): Record<string, string> {
   const mode = theme === 'print' ? 'light' : theme
@@ -161,7 +249,7 @@ export function themeCssVars(
 
 export function cssVarsString(
   theme: 'light' | 'dark' | 'print',
-  accent: AccentId | string = 'verde',
+  accent: AccentProp = 'verde',
   strength = 1,
 ): string {
   const vars = themeCssVars(theme, accent, strength)

@@ -1,10 +1,10 @@
 import { THEME_VARS, accentVars } from 'titan-chordpro-ui'
-import type { AccentId, ThemeId } from 'titan-chordpro-ui'
+import type { AccentProp, ThemeId } from 'titan-chordpro-ui'
 
 export function applyThemeVars(
   el: HTMLElement,
   mode: 'light' | 'dark',
-  accent: AccentId | string = 'verde',
+  accent: AccentProp = 'verde',
   strength = 1,
 ) {
   const vars = { ...THEME_VARS[mode], ...accentVars(accent, mode, strength) }

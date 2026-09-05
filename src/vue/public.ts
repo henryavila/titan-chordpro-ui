@@ -1,4 +1,4 @@
-import type { AccentId, ChartStore, ThemeId } from 'titan-chordpro-ui'
+import type { AccentProp, ChartStore, ThemeId } from 'titan-chordpro-ui'
 
 /** A score the host already has on file, offered when inserting `{image:}`. */
 export type ImageChoice = { file: string; label?: string }
@@ -37,8 +37,12 @@ export type ChordproViewerProps = {
   version?: string
   /** Scores the host can serve, offered when a `{image:}` block is inserted. */
   images?: ImageChoice[]
-  /** Colour of the chords, and of everything derived from them. */
-  accent?: AccentId
+  /**
+   * Colour of the chords, and of everything derived from them.
+   * Named `verde` / `teal`, or any host hex / `rgb()` — light and dark are
+   * derived from that hue.
+   */
+  accent?: AccentProp
   /** 0.5–1.5 over the derived fills, edges and glow. The hue does not move. */
   accentStrength?: number
   /**

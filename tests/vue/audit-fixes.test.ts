@@ -455,6 +455,17 @@ describe('M3 · the host may choose the accent', () => {
     w.unmount()
   })
 
+  it('accepts a host hex and still derives the fills', async () => {
+    const w = mountViewer({ accent: '#4F46E5', theme: 'light' })
+    await flushPromises()
+    const root = w.get('.cpv-root').element as HTMLElement
+    const chord = root.style.getPropertyValue('--chord')
+    expect(chord).toMatch(/^#[0-9A-F]{6}$/)
+    expect(chord).not.toBe('#17713C')
+    expect(root.style.getPropertyValue('--chord-soft')).toMatch(/^rgba\(\d+,\d+,\d+,0\.10\)$/)
+    w.unmount()
+  })
+
   it('scales the derivatives without moving the hue', async () => {
     const w = mountViewer({ accent: 'verde', theme: 'light', accentStrength: 1.5 })
     await flushPromises()

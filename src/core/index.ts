@@ -35,7 +35,7 @@ export {
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
-export type { AccentId } from './themes'
+export type { AccentId, AccentProp } from './themes'
 export { buildChoFilename, buildPdfFilename } from './filenames'
 export { exportCho, patchMeta } from './export-cho'
 export { calcScrollSpeed, adjustScrollSpeed, viewerMulStep } from './scroll'

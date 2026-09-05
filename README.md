@@ -58,7 +58,7 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 | `songId` | título da cifra | Identidade da música, chave da versão pessoal |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o host serve — o que “Inserir · Imagem” oferece |
-| `accent` | `'verde'` | `verde` \| `teal`: a cor dos acordes e tudo que deriva dela |
+| `accent` | `'verde'` | `verde` \| `teal` \| `#hex` \| `rgb()`: a cor dos acordes e tudo que deriva dela |
 | `accentStrength` | `1` | 0.5–1.5 sobre os preenchimentos derivados; a matiz não se move |
 | `storage` | `localStorage` | Onde o que o viewer lembra é gravado — ver abaixo |
 
@@ -66,15 +66,16 @@ Emite `update:source`, `update:mode`, `save`, `save-content`, `dirty`, `state`.
 
 ### O acento é a cor que o host escolhe
 
-Os dois acentos foram medidos contra os dois fundos: `#17713C` sobre `#F5F6F8`
+Os dois nomes foram medidos contra os dois fundos: `#17713C` sobre `#F5F6F8`
 dá ≈5,3:1 e `#0E6E7D` ≈5,1:1 — AA para texto normal nos dois casos.
 
-Os sete derivados (`--chord-soft`, `--chord-edge`, `--chord-hover`,
-`--chord-fill`, `--block`, `--block-line`, `--glow`) saem de **um** RGB em
-opacidades fixas, escaladas por `accentStrength`. Quer dizer que o host escolhe
-uma cor, não uma paleta: as relações entre preenchimento, borda e brilho
-continuam as que o design definiu. Em `accentStrength: 1` os valores saem
-caractere por caractere iguais aos tokens do handoff.
+Qualquer outra cor é um hex (`#4F46E5`) ou `rgb(79,70,229)`: a matiz fica, e
+o par claro/escuro usa as mesmas luminosidades do verde. Os sete derivados
+(`--chord-soft`, `--chord-edge`, `--chord-hover`, `--chord-fill`, `--block`,
+`--block-line`, `--glow`) saem de **um** RGB em opacidades fixas, escaladas
+por `accentStrength`. O host escolhe uma cor, não uma paleta. Em
+`accentStrength: 1` os nomes `verde`/`teal` saem carácter por carácter iguais
+aos tokens do handoff.
 
 `accentVars(accent, mode, strength)` e `listAccents()` são exportados para quem
 precisa das mesmas variáveis fora do componente — no HTML estático ou no PDF.
