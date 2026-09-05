@@ -1,4 +1,4 @@
-# Visão do produto — `titan-chordpro-ui` (seed: `chordpro-viewer`)
+# Visão do produto — `titan-chordpro-ui`
 
 > **Fonte de verdade de produto:** entrevista viewer (2026-08-28) + **refocus naming/editor** (2026-08-28/29), ratificados.  
 > **Naming:** [`docs/NAMING.md`](./NAMING.md). **Design do editor:** [`projects/titan-chordpro-ui/editor/design.md`](../projects/titan-chordpro-ui/editor/design.md).  
@@ -21,7 +21,7 @@
 
 ## 2. O que é este projeto
 
-**`titan-chordpro-ui`** (seed `chordpro-viewer`) é a **UI de uma cifra ChordPro** — **leitura + edição** numa camada:
+**`titan-chordpro-ui`** é a **UI de uma cifra ChordPro** — **leitura + edição** numa camada:
 
 - Entrada: arquivo/texto **ChordPro** (`.cho` / `.chordpro` / …) **ou OnSong** (normalização na **engine**; a UI não escolhe formato). Em edição, OnSong = **convert-on-edit** → sessão/export ChordPro canônico.
 - Saída: superfície visual profissional + PDF + export de texto + **source editado** de volta ao host.
@@ -132,7 +132,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 
 | Peça | Papel |
 |---|---|
-| **titan-chordpro-gen** (hoje `titan-chordpro-lib`) | Gera ChordPro a partir de áudio — **fora**. Pode consumir a UI para preview. |
+| **titan-chordpro-gen** | Gera ChordPro a partir de áudio — **fora**. Pode consumir a UI para preview. |
 | **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Embute a UI (view+edit). |
 | **titan-chordpro** (futuro) | App standalone Titan (shell + extras) — **repo separado**; consome a mesma UI. |
 | **Este repo → `titan-chordpro-ui`** | UI 1-cifra view+edit + embed. |
@@ -144,8 +144,8 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 1. Sintaxe da diretiva de imagem + default capabilities no embed SDA (ver design do editor).
 2. Controles da cifra: barra no miolo vs chrome mínimo fixo (ainda “não-shell”).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
-4. Nome npm / escopo do pacote no rename.
-5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4).
+4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
+5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING).
 
 ---
 

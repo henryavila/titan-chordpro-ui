@@ -1,4 +1,4 @@
-# design-handoff · chordpro-viewer
+# design-handoff · `titan-chordpro-ui` (view)
 
 Brief para o **agente de design** (ex. claude.ai/design).  
 **Isto é handoff para revisão humana** — não está “pronto/fechado” até sign-off (CP5) e correções.

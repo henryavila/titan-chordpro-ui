@@ -5,13 +5,13 @@
 | Piece | Role | Repo (target name) | Stack |
 |---|---|---|---|
 | **UI** | Viewer **+** editor (one layer) | **`titan-chordpro-ui`** | TypeScript / Vue |
-| **Generator** | Audio → `.chordpro` / `.cho` | **`titan-chordpro-gen`** (today: `titan-chordpro-lib`) — handoff: [`../titan-chordpro-lib/docs/REBRAND-HANDOFF.md`](../../titan-chordpro-lib/docs/REBRAND-HANDOFF.md) | Python |
+| **Generator** | Audio → `.chordpro` / `.cho` | **`titan-chordpro-gen`** — handoff: [`../titan-chordpro-gen/docs/REBRAND-HANDOFF.md`](../../titan-chordpro-gen/docs/REBRAND-HANDOFF.md) | Python |
 | **App / studio** | Standalone Titan host (shell + editor + extras) | **`titan-chordpro`** (future; none today) | TBD |
 | **SDA** | Church product host — **first consumer** | `sda-v2` (consumes **ui** only) | Nuxt |
 
 **Layout:** **separate repos** (not a monorepo). Revisit monorepo only when **`titan-chordpro`** exists and wants to glue gen+ui in one CI.
 
-**This folder** (`chordpro-viewer`) is the **seed** of `titan-chordpro-ui` — rename when scaffolding starts in earnest.
+**This repo** is **`titan-chordpro-ui`** (formerly seed folder `chordpro-viewer`). Rebrand checklist: [`REBRAND-HANDOFF.md`](./REBRAND-HANDOFF.md).
 
 ## Refocus (2026-08-28)
 
@@ -25,7 +25,7 @@
 Fluxo de adoção:
 
 ```
-titan-chordpro-ui  (este repo → rename)
+titan-chordpro-ui  (este repo)
         │
         ├─► sda-v2          (1º: embute viewer+editor na cifra)
         └─► titan-chordpro  (depois: app standalone Titan)

@@ -1,4 +1,4 @@
-# SPEC — `chordpro-viewer` v0.1
+# SPEC — `titan-chordpro-ui` v0.1
 
 > **Audience:** implementing agent (and human reviewer). This is an **engineering contract**, not a visual mood board.  
 > **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md) (ratified). This SPEC implements that vision.  
@@ -6,11 +6,11 @@
 
 | Field | Value |
 |---|---|
-| Target name | **`titan-chordpro-ui`** (view **+** edit, one package) — seed dir may still be `chordpro-viewer` |
+| Product / repo | **`titan-chordpro-ui`** (view **+** edit, one package) — formerly seed `chordpro-viewer` |
 | Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
-| Packages (npm) | core TS + Vue binding (names follow rename to `@…/titan-chordpro-ui` when published) |
-| Repo (seed) | `/Volumes/External/code/chordpro-viewer` |
-| Sibling generator | **`titan-chordpro-gen`** (today `titan-chordpro-lib`) — audio → ChordPro — **out of scope** |
+| Packages (npm) | **`titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./vue"` |
+| Repo path | `/Volumes/External/code/titan-chordpro-ui` |
+| Sibling generator | **`titan-chordpro-gen`** — audio → ChordPro — **out of scope** |
 | Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
 | Editor | Same UI package (later `./edit` / module) — **not** a third repo |
 | Stack (ratified) | **Vue-first UI** + **framework-free core** + agnostic controller; React/CE bindings later |
@@ -81,7 +81,7 @@ Ship:
 ## 4. Public API (must exist)
 
 ```ts
-// chordpro-viewer (core)
+// titan-chordpro-ui (core — export ".")
 export function parse(source: string): ChordProView
 // parse() accepts ChordPro, OnSong, or mixed text; detection/normalization is internal.
 export function transpose(view: ChordProView, semitones: number): ChordProView
@@ -96,10 +96,10 @@ export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): nu
 export function createViewerController(opts: { source: string }): ViewerController
 // ViewerController: getState / subscribe / dispatch / optional attachScroll(el)
 
-// chordpro-viewer/pdf  (separate entry — do not force jspdf into core bundle)
+// titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
 export function renderPdf(view: ChordProView, opts: PdfOptions): Promise<Uint8Array>
 
-// chordpro-viewer/vue  (or @chordpro-viewer/vue)
+// titan-chordpro-ui/vue
 export { ChordproViewer } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
 ```
 
@@ -246,11 +246,11 @@ Agent **must not** invent chord charts for snapshots.
 Input path may end in **`.cho`**, **`.chordpro`**, **`.onsong`**, or other plain-text chart extensions the detector accepts.
 
 ```bash
-chordpro-viewer html  song.cho --theme default -o out.html
-chordpro-viewer html  song.chordpro --theme default -o out.html
-chordpro-viewer html  song.onsong --theme light -o out.html
-chordpro-viewer pdf   song.chordpro --key A -o cifra-….pdf
-chordpro-viewer parse song.cho -o view.json          # dump ViewModel
+titan-chordpro-ui html  song.cho --theme default -o out.html
+titan-chordpro-ui html  song.chordpro --theme default -o out.html
+titan-chordpro-ui html  song.onsong --theme light -o out.html
+titan-chordpro-ui pdf   song.chordpro --key A -o cifra-….pdf
+titan-chordpro-ui parse song.cho -o view.json          # dump ViewModel
 ```
 
 Exit codes: `0` ok · `1` user/input error · `2` internal.  
@@ -307,7 +307,7 @@ Do not start sda-v2 cutover until A1–A12 + A15–A17 green (or A1–A15 if UI 
 
 ## 11. SDA integration (after v0.1 tag)
 
-1. Depend on local path or published version (`chordpro-viewer` + `/vue`).
+1. Depend on local path or published version (`titan-chordpro-ui` + `/vue`).
 2. sda-v2 keeps **shell / multi-cifra / sanitize / i18n / player**.
 3. Replace inline parser + HTML/PDF/toolbar-of-cifra with `<ChordproViewer :source="activeCho" />` (or equivalent).
 4. Map host tokens to `--cpv-*` if needed.
@@ -319,9 +319,9 @@ Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SP
 
 ## 12. Open questions (block only if agent hits them)
 
-1. Package scope name under npm (`chordpro-viewer` vs `@henryavila/chordpro-viewer` vs `@chordpro-viewer/*` workspace).
+1. ~~Package scope name under npm~~ — **locked:** unscoped `titan-chordpro-ui` with exports `"."` / `"./pdf"` / `"./vue"` (see `docs/REBRAND-HANDOFF.md`).
 2. Whether `setKey` is required in v0.1 or only semitone `transpose` (SDA today = semitone offset).
 3. PDF engine long-term (jsPDF vs print-CSS + headless) — **v0.1 = jsPDF** for parity with SDA.
 4. Exact `ViewerController` action union (document in types when implementing).
 
-Default if unanswered: scoped or unscoped ok for private; **semitone-only** transpose in v0.1; **jsPDF** in `./pdf`; controller actions mirror VISAO controls (transpose, theme, fontStep, scroll, export).
+Default if unanswered: **semitone-only** transpose in v0.1; **jsPDF** in `./pdf`; controller actions mirror VISAO controls (transpose, theme, fontStep, scroll, export).

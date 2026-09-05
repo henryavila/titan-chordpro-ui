@@ -1,4 +1,4 @@
-# Prompt — Telas · chordpro-viewer
+# Prompt — Telas · `titan-chordpro-ui` (view)
 
 > Consome o Design System de `00-design-system.md` **por nome semântico** — nunca o redefina.  
 > Se faltar algo no DS, **pare e sinalize**.

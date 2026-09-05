@@ -36,10 +36,10 @@ O medo de “ficar preso no Vue” só se materializa se transpose/PDF/HTML/scro
 ### A) Core headless + bindings por framework *(padrão vencedor na indústria)*
 
 ```
-chordpro-viewer          → parse, transpose, renderHtml, pdf, scroll math, createViewerController()
-@chordpro-viewer/vue     → SFC/composables (oficial, v0.1)
-@chordpro-viewer/react   → hooks/components (só quando houver demanda)
-@chordpro-viewer/element → CE opcional (só se HTML drop-in virar requisito)
+titan-chordpro-ui          → parse, transpose, renderHtml, pdf, scroll math, createViewerController()
+titan-chordpro-ui/vue      → SFC/composables (oficial, v0.1)
+titan-chordpro-ui/react    → hooks/components (só quando houver demanda — binding futuro)
+titan-chordpro-ui/element  → CE opcional (só se HTML drop-in virar requisito)
 ```
 
 **Exemplos reais:** TipTap (`@tiptap/core` + `@tiptap/vue-3` / `react`); Zag/Ark (machine core + bindings); relation-graph (core TS + packages por plataforma); pricing-renderer (ViewModel → element/React adapter).
@@ -79,7 +79,7 @@ Alguém copia o repo Vue e reescreve em React.
 | Ganha | Perde |
 |---|---|
 | Zero trabalho seu no curto prazo | Divergência de bugs, temas, PDF, fixtures |
-| | Você não controla qualidade do “React chordpro-viewer” |
+| | Você não controla qualidade do “React titan-chordpro-ui” |
 | | Comunidade sofre; você herda issues “por que o fork não tem X?” |
 
 **Só aceitável** se o monólito Vue **não** tiver core — e aí o fork é sintoma de falha de arquitetura, não estratégia.
@@ -109,7 +109,7 @@ Alguém copia o repo Vue e reescreve em React.
 1. **“Deixar plugável” sem consumidor** → inventar `VisualAdapter` vazio.  
 2. **Web Component wrapping do app Vue inteiro** cedo → possível, mas muda o problema (ainda Vue dentro); não substitui core limpo.  
 3. **Duplicar HTML no Vue e no core** → drift.  
-4. **Publicar só um SFC monolítico** “chordpro-viewer” → comunidade React = fork.
+4. **Publicar só um SFC monolítico** “titan-chordpro-ui” sem core exportável → comunidade React = fork.
 
 ---
 
@@ -149,12 +149,12 @@ Isso é a forma *leve* de “view plugável”: **a view é plugável porque o e
 
 ### Camada 4 — Pacote Vue (oficial)
 
-- [ ] `@chordpro-viewer/vue` (ou `chordpro-viewer/vue`) = UI completa da VISAO.
+- [ ] `titan-chordpro-ui/vue` = UI completa da VISAO.
 - [ ] Demo standalone Vue no repo (prova de vida sem sda-v2).
 
 ### Camada 5 — Adiar com consciência
 
-- [ ] `@chordpro-viewer/react`  
+- [ ] `titan-chordpro-ui/react` (binding futuro)  
 - [ ] Custom Element  
 - [ ] `VisualAdapter` registry  
 - [ ] Marketplace de temas JS  

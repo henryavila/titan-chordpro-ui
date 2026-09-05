@@ -1,4 +1,4 @@
-# Prompt — Design System · chordpro-viewer
+# Prompt — Design System · `titan-chordpro-ui` (view)
 
 > **Idioma:** pt-BR  
 > **Produto:** viewer/player de **1 cifra** ChordPro (standalone ou embutido).  

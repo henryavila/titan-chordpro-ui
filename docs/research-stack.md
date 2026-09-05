@@ -1,4 +1,4 @@
-# Research digest — stack do `chordpro-viewer`
+# Research digest — stack do `titan-chordpro-ui`
 
 > Data: 2026-08-28 · Objetivo: dados sólidos para decidir stack (standalone + embed).  
 > Produto (SoT): [`VISAO.md`](./VISAO.md) — UI completa de **1 cifra**, standalone **e** embutível.  
@@ -12,7 +12,7 @@
 |---|---|---|
 | **sda** (legado) | Vue 3 + Inertia + Laravel + Vite; `chordproject-parser` | Consumer Vue clássico |
 | **sda-v2** | **Nuxt 4.3** + Vue + Pinia + Tailwind 4; `ChordproViewer.vue` (~536 LOC) + `useChordpro.ts`; `jspdf` + `chordproject-parser` | **Consumer principal** — precisa embutir 1 cifra |
-| **titan-chordpro-lib** | **Python** (`pyproject.toml`) | Gera `.chordpro`; preview pode ser HTML estático / CLI / página mínima — **não é app Vue/React** |
+| **titan-chordpro-gen** | **Python** (`pyproject.toml`) | Gera `.chordpro`; preview pode ser HTML estático / CLI / página mínima — **não é app Vue/React** |
 
 Implicação: o embed crítico é **Vue/Nuxt**. Standalone e Titan precisam de algo que rode **sem** o runtime do SDA. Dois “mundos” reais: **host Vue** e **shell sem framework** (HTML/CLI/demo).
 
@@ -55,7 +55,7 @@ Números aproximados de runtime / hello-world (fontes 2024–2026; medir de novo
 
 ### A — Lit (Web Component) como produto único
 
-**Como:** `<chordpro-viewer source="…">` (ou property). Standalone = página HTML que carrega o mesmo CE. SDA-v2: `client-only` + import do CE.
+**Como:** `<titan-chordpro-ui source="…">` (ou property). Standalone = página HTML que carrega o mesmo CE. SDA-v2: `client-only` + import do CE.
 
 | Ganha | Perde |
 |---|---|
@@ -84,7 +84,7 @@ Números aproximados de runtime / hello-world (fontes 2024–2026; medir de novo
 
 ### C — React standalone + embed via `@r2wc` (a hipótese “2 stacks”)
 
-**Como:** desenvolver a UI em React; exportar também `customElements.define('chordpro-viewer', r2wc(App, { props, shadow }))`.
+**Como:** desenvolver a UI em React; exportar também `customElements.define('titan-chordpro-ui', r2wc(App, { props, shadow }))`.
 
 **Resposta direta:** não são duas stacks de UI — é **uma stack React** com **fachada Web Component**. O embed em Vue **ainda baixa React** (~45 KB+ gzip só do runtime, mais o app).
 
@@ -213,7 +213,7 @@ Ordenada pelo research + consumers reais:
 - `/Volumes/External/code/sda/package.json` — Vue 3 + Inertia  
 - `/Volumes/External/code/sda-v2/frontend/package.json` — Nuxt 4.3  
 - `/Volumes/External/code/sda-v2/frontend/app/components/ChordproViewer.vue`  
-- `/Volumes/External/code/titan-chordpro-lib/pyproject.toml` — Python  
+- `/Volumes/External/code/titan-chordpro-gen/pyproject.toml` — Python  
 - `docs/VISAO.md`, `SPEC.md` (legado técnico)
 
 **Externas (amostra)**

@@ -40,10 +40,10 @@ Reuso “pela comunidade” **não exige** multi-stack no lançamento: a maioria
 
 ```
 ┌─────────────────────────────┐
-│  @chordpro-viewer/vue       │  ← UI completa (controles + RAF + temas)
+│  titan-chordpro-ui/vue      │  ← UI completa (controles + RAF + temas)
 │  (SFC / composables)        │
 ├─────────────────────────────┤
-│  chordpro-viewer (core TS)  │  ← parse, transpose, filenames, scroll math, pdf
+│  titan-chordpro-ui (core)   │  ← parse, transpose, filenames, scroll math, pdf
 └─────────────────────────────┘
         ↑ sda-v2 importa
         ↑ demo Vite/Nuxt standalone

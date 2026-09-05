@@ -1,4 +1,4 @@
-# Fixtures · chordpro-viewer (R8 — dados reais)
+# Fixtures · `titan-chordpro-ui` (R8 — dados reais)
 
 **Fonte (rung 1, verified):**  
 - `fixtures/jesus-*.cho`, `fixtures/entrega-*.cho` — IASD Ermelinda via SDA  
