@@ -26,10 +26,9 @@ import {
   shiftLabel,
   toggleBlockDual as toggleBlockDualOn,
   unhideBlock as unhideBlockAt,
-} from '../../core/block-edit'
-import type { Harmony, InsertKind } from '../../core/block-edit'
-import type { ChartBlock } from '../../core/types'
-import type { WriteMode } from './useOverlay'
+} from 'titan-chordpro-ui'
+import type { ChartBlock, Harmony, InsertKind } from 'titan-chordpro-ui'
+import type { WriteMode } from '../public'
 
 export type BlockEditOpts = {
   /** The text being edited, as the editor sees it right now. */
@@ -50,7 +49,7 @@ export type BlockEditOpts = {
 export type ChordEdit = { li: number; idx: number }
 export type PickerMode = 'insert' | 'replace' | null
 /** A score the host already has on file, offered as a reference for the source. */
-export type ImageChoice = { file: string; label?: string }
+export type { ImageChoice } from '../public'
 
 /** A lyric row as the editor draws it: measurable syllables plus loose chords. */
 export type EditToken = { isWord: boolean; chars: Array<{ ch: string; i: number }> }

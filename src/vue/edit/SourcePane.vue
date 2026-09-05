@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import type { LintResult } from '../../core/lint'
+import type { LintResult } from 'titan-chordpro-ui'
 
 const props = defineProps<{
   source: string

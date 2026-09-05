@@ -5,7 +5,20 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    {
+      name: 'cpv-css-import',
+      generateBundle(_opts, bundle) {
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type !== 'chunk' || chunk.fileName !== 'vue/index.js') continue
+          if (!chunk.code.includes("import './style.css'") && !chunk.code.includes('import "./style.css"')) {
+            chunk.code = `import './style.css'\n${chunk.code}`
+          }
+        }
+      },
+    },
+  ],
   resolve: {
     alias: {
       'titan-chordpro-ui/pdf': `${root}src/pdf/index.ts`,

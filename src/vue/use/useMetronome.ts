@@ -1,7 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
-import { beatsPerBar, sheetBpm } from '../../core/timeline'
-import { STORE_KEYS, readJson, writeJson } from '../../core/storage'
-import type { ChartStore } from '../../core/storage'
+import { beatsPerBar, sheetBpm, STORE_KEYS, readStoredJson as readJson, writeStoredJson as writeJson } from 'titan-chordpro-ui'
+import type { ChartStore } from 'titan-chordpro-ui'
 
 export type MetronomeOpts = {
   /** Identity of the song, so a tempo edit does not leak into the next one. */

@@ -17,12 +17,15 @@ type Viewer = ReturnType<typeof mountViewer>
 
 /** Into the editor, writing for everyone — where delete and hide both exist. */
 async function edit(props: Record<string, unknown> = {}) {
-  const w = mountViewer(props)
+  const w = mountViewer({ modes: 'content', ...props })
   await flushPromises()
   await w.get('[data-edit]').trigger('click')
   await flushPromises()
-  await w.get('[data-mode-content]').trigger('click')
-  await flushPromises()
+  const pick = w.find('[data-mode-content]')
+  if (pick.exists()) {
+    await pick.trigger('click')
+    await flushPromises()
+  }
   return w
 }
 

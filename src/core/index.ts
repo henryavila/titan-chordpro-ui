@@ -11,6 +11,8 @@ export type {
   ChordProView,
   Lens,
   LineSpan,
+  ParseIssue,
+  SectionKind,
   SongBlockExtras,
   TabStave,
   TabToken,
@@ -32,7 +34,7 @@ export {
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export { renderHtml, isParseFatal } from './render-html'
-export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents } from './themes'
+export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId } from './themes'
 export { buildChoFilename, buildPdfFilename } from './filenames'
 export { exportCho, patchMeta } from './export-cho'
@@ -156,5 +158,5 @@ export {
 export type { Dur, LayoutItem, ParsedScore, ScoreMeta, ScoreNote, TabPos } from './score'
 export { lintSource } from './lint'
 export type { LintResult } from './lint'
-export { transposeToken, usesFlats, keyRootOf, nashvilleToken } from './transpose'
+export { transposeToken, usesFlats, keyRootOf, nashvilleToken, semitoneDelta, transposeTextChords } from './transpose'
 export { looksLikeOnSong, normalizeOnSong } from './onsong'

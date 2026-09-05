@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Lens } from '../../core/types'
+import type { Lens } from 'titan-chordpro-ui'
 
 const props = defineProps<{
   compact: boolean

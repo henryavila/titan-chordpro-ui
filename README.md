@@ -29,6 +29,18 @@ pnpm build
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
+## Consumer
+
+```ts
+import { parse, memoryStore } from 'titan-chordpro-ui'
+import type { ChartStore } from 'titan-chordpro-ui'
+import { renderPdf } from 'titan-chordpro-ui/pdf'
+import { ChordproViewer } from 'titan-chordpro-ui/vue'
+import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
+```
+
+`titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
+
 ### `<ChordproViewer>` props
 
 | Prop | Default | Papel |
@@ -41,7 +53,7 @@ Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo:
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |
-| `modes` | `'both'` | `none` \| `local` \| `content` \| `both`: onde um salvamento cai |
+| `modes` | `'local'` | `none` \| `local` \| `content` \| `both`. Default = só local. `content` ou `both` liga **Para todos** (emite `save-content`) |
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
 | `songId` | título da cifra | Identidade da música, chave da versão pessoal |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
@@ -171,10 +183,11 @@ chegaria a quem personalizou. Cada ajuste vira uma **operação ancorada na linh
 original** (`src/core/overlay.ts`, framework-free): dá para reverter um trecho
 pelo ponto ao lado dele, reaplicar tudo sobre uma versão nova, e o que o
 responsável aceitou **sai** do overlay em vez de virar conflito com o próprio
-leitor. `modes` decide o que o host permite: `local` salva no aparelho
-(`localStorage`, sem botão de salvar), `content` publica — salvar É publicar, e
-o host recebe `save-content`. Uma sugestão enviada entra na fila do responsável
-(cifras → pedidos → ajustes), aceita item por item.
+leitor. `modes` é o interruptor do consumer: omitido ou `'local'` = só a edição
+pessoal (salva no aparelho, sem botão de publicar). `'content'` ou `'both'`
+liga a UI **Para todos** — salvar emite `save-content` para o host gravar a
+cifra oficial. Uma sugestão do leitor (`suggestions`) entra na fila do
+responsável (cifras → pedidos → ajustes), aceita item por item.
 
 ### Auto-rolagem: tempo musical, não px/s
 

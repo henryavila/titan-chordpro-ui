@@ -52,6 +52,7 @@ function pick(next: string) {
     <ChordproViewer
       :source="source"
       :song-id="id"
+      modes="both"
       :resolve-image="resolveImage"
       :images="images"
       @update:source="source = $event"

@@ -8,20 +8,16 @@ import {
   opCtxNote,
   opLabel,
   overlaid,
-  tuneText,
-} from '../../core/overlay'
-import type { Overlay, OverlayOp, ReadingCtx, Suggestion, TuneOp } from '../../core/overlay'
-import {
-  STORE_KEYS,
   overlayKey,
-  readJson as readStored,
-  writeJson as writeStored,
-} from '../../core/storage'
-import type { ChartStore } from '../../core/storage'
+  STORE_KEYS,
+  tuneText,
+  readStoredJson as readStored,
+  writeStoredJson as writeStored,
+} from 'titan-chordpro-ui'
+import type { ChartStore, Overlay, OverlayOp, ReadingCtx, Suggestion, TuneOp } from 'titan-chordpro-ui'
+import type { WriteMode } from '../public'
 
-/** How a save lands: on this phone only, or on the chart everyone reads. */
-export type WriteMode = 'local' | 'content'
-export type ModesProp = 'none' | 'local' | 'content' | 'both'
+export type { ModesProp, WriteMode } from '../public'
 
 export type OverlayOpts = {
   songId: Ref<string>

@@ -7,7 +7,7 @@ describe('E0 Vue bridge', () => {
   it('view↔edit, source pane, dirty, transpose reset', async () => {
     const src = loadFixture(JESUS_1)
     const w = mount(ChordproViewer, {
-      props: { source: src, theme: 'dark', autoHide: false, mode: 'view' },
+      props: { source: src, theme: 'dark', autoHide: false, mode: 'view', modes: 'content' },
       attachTo: document.body,
     })
     await flushPromises()
@@ -16,9 +16,6 @@ describe('E0 Vue bridge', () => {
     await flushPromises()
     expect(w.get('[data-display-key]').text()).toBe('A')
     await w.get('[data-edit]').trigger('click')
-    await flushPromises()
-    // Both saves are allowed here, so the editor asks where this one lands.
-    await w.get('[data-mode-content]').trigger('click')
     await flushPromises()
     expect(w.text()).toMatch(/Para todos/)
     expect(w.text()).toContain('Ler')

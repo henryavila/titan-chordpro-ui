@@ -57,8 +57,11 @@ async function editLyric(w: ReturnType<typeof mountViewer>, plain: string, next:
 async function personalise(w: ReturnType<typeof mountViewer>) {
   await w.get('[data-edit]').trigger('click')
   await flushPromises()
-  await w.get('[data-mode-local]').trigger('click')
-  await flushPromises()
+  const pick = w.find('[data-mode-local]')
+  if (pick.exists()) {
+    await pick.trigger('click')
+    await flushPromises()
+  }
   await editLyric(w, PLAIN, `${PLAIN} (meu)`)
   await w.get('[data-read]').trigger('click')
   await flushPromises()

@@ -8,12 +8,14 @@ export default defineConfig([
     sourcemap: true,
     clean: true,
     treeshake: true,
+    splitting: false,
   },
   {
     entry: { 'pdf/index': 'src/pdf/index.ts' },
     format: ['esm'],
     dts: true,
     sourcemap: true,
+    splitting: false,
     external: ['jspdf'],
   },
   {
@@ -21,6 +23,7 @@ export default defineConfig([
     format: ['esm'],
     dts: false,
     sourcemap: true,
+    splitting: false,
     banner: { js: '#!/usr/bin/env node' },
   },
 ])

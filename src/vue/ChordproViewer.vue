@@ -24,12 +24,10 @@ import {
   typeScale,
   usesFlats,
   viewerMulStep,
+  STORE_KEYS,
+  browserStore,
 } from 'titan-chordpro-ui'
-import type { Lens, ThemeId } from '../core/types'
-import type { Timeline, TimelineBlock } from '../core/timeline'
-import { STORE_KEYS, browserStore } from '../core/storage'
-import type { AccentId } from '../core/themes'
-import type { ChartStore } from '../core/storage'
+import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from 'titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import LensSheet from './sheets/LensSheet.vue'
@@ -45,51 +43,19 @@ import MyVersionPanel from './overlay/MyVersionPanel.vue'
 import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
 import { useBlockEdit } from './use/useBlockEdit'
-import type { ImageChoice } from './use/useBlockEdit'
 import { useMetronome } from './use/useMetronome'
 import { useOverlay } from './use/useOverlay'
-import type { ModesProp, WriteMode } from './use/useOverlay'
-import type { ReadingCtx } from '../core/overlay'
+import type { ChordproViewerEmits, ChordproViewerProps, WriteMode } from './public'
 import { applyThemeVars, cycleTheme, themeGlyph, themeLabel } from './use/useTheme'
 import './cpv.css'
 
 const props = withDefaults(
-  defineProps<{
-    source?: string
-    mode?: 'view' | 'edit'
-    theme?: ThemeId
-    loading?: boolean
-    autoHide?: boolean
-    fitDefault?: boolean
-    canEdit?: boolean
-    autoInvertScores?: boolean
-    /** Maps a `{image:}` reference to a URL the host can serve. */
-    resolveImage?: (src: string) => string
-    /** Which saves this host allows: the phone, everyone's chart, or both. */
-    modes?: ModesProp
-    /** Whether a reader may send their adjustments to whoever owns the chart. */
-    suggestions?: boolean
-    /** Identity of the chart, so a personal version follows the right song. */
-    songId?: string
-    /** Version of the official chart: a bump asks the reader what to keep. */
-    version?: string
-    /** Scores the host can serve, offered when a `{image:}` block is inserted. */
-    images?: ImageChoice[]
-    /** Colour of the chords, and of everything derived from them. */
-    accent?: AccentId
-    /** 0.5–1.5 over the derived fills, edges and glow. The hue does not move. */
-    accentStrength?: number
-    /**
-     * Where what the viewer remembers is kept: reading preferences, per-song
-     * tempo, the reader's personal version, the suggestion queue. The default
-     * is this device's `localStorage`; a host that keeps them on the account
-     * passes its own. The behaviour built on them never leaves this package.
-     */
-    storage?: ChartStore
-    forceParseError?: boolean
-    pdfShouldFail?: boolean
-    capabilities?: { sourcePane?: boolean }
-  }>(),
+  defineProps<
+    ChordproViewerProps & {
+      forceParseError?: boolean
+      pdfShouldFail?: boolean
+    }
+  >(),
   {
     source: '',
     mode: 'view',
@@ -102,7 +68,7 @@ const props = withDefaults(
     resolveImage: (src: string) => src,
     accent: 'verde',
     accentStrength: 1,
-    modes: 'both',
+    modes: 'local',
     suggestions: true,
     songId: '',
     version: 'v1',
@@ -113,15 +79,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<{
-  'update:source': [value: string]
-  'update:mode': [value: 'view' | 'edit']
-  dirty: [value: boolean]
-  save: [value: string]
-  /** A "for everyone" save: this text is the chart from now on. */
-  'save-content': [value: string]
-  state: [value: Record<string, unknown>]
-}>()
+const emit = defineEmits<ChordproViewerEmits>()
 
 /**
  * One object with a stable identity, so the composables can hold it, while a
@@ -304,9 +262,13 @@ const toastBottom = computed(() => {
 })
 const meta = computed(() => parsed.value.meta)
 
-/** Which saves this host allows. No mode at all means a read-only viewer. */
+/**
+ * Which saves this host allows. Default is local-only: "Para todos" is a
+ * host capability (`content` / `both`), not something a public embed gets
+ * unless the consumer turns it on.
+ */
 const modes = computed<WriteMode[]>(() => {
-  const m = props.modes ?? 'both'
+  const m = props.modes ?? 'local'
   if (m === 'none') return []
   if (m === 'local' || m === 'content') return [m]
   return ['local', 'content']
@@ -919,8 +881,17 @@ function toggleOriginal(orig: boolean) {
 }
 
 function pickMode(kind: WriteMode) {
+  if (!modes.value.includes(kind)) return
   beginEdit(kind)
 }
+
+watch(
+  () => props.modes,
+  () => {
+    if (modePick.value && modes.value.length <= 1) modePick.value = false
+    if (wMode.value && !modes.value.includes(wMode.value)) exitEdit()
+  },
+)
 
 function onFixTune() {
   ov.fixTune(offset.value, capo.value, capoMap.value)
@@ -2163,6 +2134,8 @@ defineExpose({ enterEdit, exitEdit, shift, toggleScroll, toggleZen, openQueue: o
 
     <ModePickDialog
       v-if="modePick"
+      :allow-local="modes.includes('local')"
+      :allow-content="modes.includes('content')"
       @close="modePick = false"
       @local="pickMode('local')"
       @content="pickMode('content')"

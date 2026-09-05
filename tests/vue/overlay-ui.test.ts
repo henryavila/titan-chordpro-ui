@@ -45,8 +45,11 @@ async function editLyric(w: ReturnType<typeof mountViewer>, plain: string, next:
 async function personalise(w: ReturnType<typeof mountViewer>, text = ' (meu)') {
   await w.get('[data-edit]').trigger('click')
   await flushPromises()
-  await w.get('[data-mode-local]').trigger('click')
-  await flushPromises()
+  const pick = w.find('[data-mode-local]')
+  if (pick.exists()) {
+    await pick.trigger('click')
+    await flushPromises()
+  }
   await editLyric(w, PLAIN, PLAIN + text)
   await w.get('[data-read]').trigger('click')
   await flushPromises()
@@ -56,12 +59,31 @@ beforeEach(() => localStorage.clear())
 afterEach(() => localStorage.clear())
 
 describe('choosing where a save lands', () => {
-  it('asks when both are allowed, and never after something was typed', async () => {
+  it('default is local-only: no "Para todos" unless the host turns it on', async () => {
     const w = mountViewer()
     await flushPromises()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
+    expect(w.find('[data-mode-local]').exists()).toBe(false)
+    expect(w.find('[data-mode-content]').exists()).toBe(false)
+    expect(w.get('[data-edit-badge]').text()).toBe('Só para mim')
+    expect(w.find('[data-save]').exists()).toBe(false)
+
+    await editLyric(w, PLAIN, `${PLAIN} (meu)`)
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-content')).toBeUndefined()
+    expect(w.find('[data-queue-chip]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('asks when both are allowed, and never after something was typed', async () => {
+    const w = mountViewer({ modes: 'both' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
     expect(w.find('[data-mode-local]').exists()).toBe(true)
+    expect(w.find('[data-mode-content]').exists()).toBe(true)
     expect(w.find('[data-edit-badge]').exists()).toBe(false)
 
     await w.get('[data-mode-local]').trigger('click')
@@ -72,13 +94,28 @@ describe('choosing where a save lands', () => {
     w.unmount()
   })
 
-  it('goes straight in when the host allows only one', async () => {
+  it('modes="content" is how the host activates "Para todos"', async () => {
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
     expect(w.find('[data-mode-local]').exists()).toBe(false)
+    expect(w.find('[data-mode-content]').exists()).toBe(false)
     expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    w.unmount()
+  })
+
+  it('modes="local" never offers the publish path even after an edit', async () => {
+    const w = mountViewer({ modes: 'local' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-mode-content]').exists()).toBe(false)
+    expect(w.get('[data-edit-badge]').text()).toBe('Só para mim')
+    expect(w.find('[data-save]').exists()).toBe(false)
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-content')).toBeUndefined()
     w.unmount()
   })
 
@@ -86,6 +123,24 @@ describe('choosing where a save lands', () => {
     const w = mountViewer({ modes: 'none' })
     await flushPromises()
     expect(w.find('[data-edit]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('modes="both" → Para todos emits save-content for the host to persist', async () => {
+    const w = mountViewer({ modes: 'both' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-mode-content]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    const title = w.get('input[aria-label="Título"]')
+    await title.setValue('Oficial agora')
+    await title.trigger('blur')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    expect(String(w.emitted('save-content')?.at(-1)?.[0] ?? '')).toContain('{title: Oficial agora}')
     w.unmount()
   })
 })
@@ -234,7 +289,8 @@ describe('the official chart moved', () => {
 
 describe('suggesting to whoever owns the chart', () => {
   it('queues the ops and hands them over one at a time', async () => {
-    const w = mountViewer()
+    // The owner queue is part of the "for everyone" surface.
+    const w = mountViewer({ modes: 'both' })
     await flushPromises()
     await personalise(w)
 
@@ -265,7 +321,7 @@ describe('suggesting to whoever owns the chart', () => {
   })
 
   it('refusing drops the request without touching the chart', async () => {
-    const w = mountViewer()
+    const w = mountViewer({ modes: 'both' })
     await flushPromises()
     await personalise(w)
     await w.get('[data-open-my]').trigger('click')

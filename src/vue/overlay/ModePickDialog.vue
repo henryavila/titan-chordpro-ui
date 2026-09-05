@@ -1,4 +1,13 @@
 <script setup lang="ts">
+withDefaults(
+  defineProps<{
+    /** Host turned on "Só para mim". */
+    allowLocal?: boolean
+    /** Host turned on "Para todos" (`modes` includes `content`). */
+    allowContent?: boolean
+  }>(),
+  { allowLocal: true, allowContent: true },
+)
 const emit = defineEmits<{ close: []; local: []; content: [] }>()
 </script>
 
@@ -10,6 +19,7 @@ const emit = defineEmits<{ close: []; local: []; content: [] }>()
       <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Como editar</span>
 
       <button
+        v-if="allowLocal"
         data-mode-local
         style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:13px 14px;border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
         @click="emit('local')"
@@ -19,12 +29,13 @@ const emit = defineEmits<{ close: []; local: []; content: [] }>()
       </button>
 
       <button
+        v-if="allowContent"
         data-mode-content
         style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:13px 14px;border:1px solid var(--danger);border-radius:14px;background:var(--danger-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
         @click="emit('content')"
       >
         <span style="font-size:14.5px;font-weight:700;color:var(--danger);">Para todos</span>
-        <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Altera a cifra do sistema — todos os músicos passam a ler assim. Salvar já vale.</span>
+        <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Altera a cifra do sistema — todos os músicos passam a ler assim. Salvar já vale. O host recebe o texto para gravar.</span>
       </button>
 
       <button

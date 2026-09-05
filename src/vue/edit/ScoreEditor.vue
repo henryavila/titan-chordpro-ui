@@ -8,14 +8,14 @@ import {
   PT,
   STR_LBL,
   STR_MIDI,
-  beatsPerBar,
-  layout,
   parseScore,
-  serialize,
+  scoreBeatsPerBar as beatsPerBar,
+  scoreLayout as layout,
+  serializeScore as serialize,
   tabOf,
   toTab,
-} from '../../core/score'
-import type { Dur, ScoreMeta, ScoreNote } from '../../core/score'
+} from 'titan-chordpro-ui'
+import type { Dur, ScoreMeta, ScoreNote } from 'titan-chordpro-ui'
 import { drawScore, loadVex } from './score-draw'
 
 const props = withDefaults(

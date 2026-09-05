@@ -66,18 +66,21 @@ describe('zen', () => {
   })
 })
 
-/** Both saves are on by default: the editor asks which one before opening. */
+/** Host-activated "Para todos": skip the picker when that is the only mode. */
 async function enterContentEdit(w: ReturnType<typeof mountViewer>) {
   await w.get('[data-edit]').trigger('click')
   await flushPromises()
-  await w.get('[data-mode-content]').trigger('click')
-  await flushPromises()
+  const pick = w.find('[data-mode-content]')
+  if (pick.exists()) {
+    await pick.trigger('click')
+    await flushPromises()
+  }
 }
 
 describe('edit chrome (E0)', () => {
   it('editing meta marks the chart dirty and rewrites the directive', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
-    const w = mountViewer()
+    const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
 
@@ -100,7 +103,7 @@ describe('edit chrome (E0)', () => {
 
   it('carries an unsaved draft into reading and back into editing', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
-    const w = mountViewer()
+    const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
     const title = w.get('input[aria-label="Título"]')
@@ -121,7 +124,7 @@ describe('edit chrome (E0)', () => {
 
   it('asks twice before discarding, then goes back to the last saved text', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
-    const w = mountViewer()
+    const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
     const title = w.get('input[aria-label="Título"]')
@@ -145,7 +148,7 @@ describe('edit chrome (E0)', () => {
 
   it('offers redo only once something has been undone', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
-    const w = mountViewer()
+    const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
     expect(w.find('[data-redo]').exists()).toBe(false)

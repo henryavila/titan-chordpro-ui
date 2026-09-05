@@ -4,30 +4,41 @@
   "description": "UI ChordPro: leitura + edição. Core TypeScript + binding Vue.",
   "type": "module",
   "license": "UNLICENSED",
+  "main": "./dist/core/index.js",
+  "module": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
   "bin": {
     "titan-chordpro-ui": "./dist/cli/index.js"
   },
   "exports": {
     ".": {
       "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js"
+      "import": "./dist/core/index.js",
+      "default": "./dist/core/index.js"
     },
     "./pdf": {
       "types": "./dist/pdf/index.d.ts",
-      "import": "./dist/pdf/index.js"
+      "import": "./dist/pdf/index.js",
+      "default": "./dist/pdf/index.js"
     },
     "./vue": {
-      "types": "./src/vue/index.ts",
-      "import": "./dist/vue/index.js"
+      "types": "./dist/vue/index.d.ts",
+      "import": "./dist/vue/index.js",
+      "default": "./dist/vue/index.js"
     },
-    "./vue/style.css": "./dist/vue/style.css"
+    "./vue/style.css": "./dist/vue/style.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
   ],
+  "sideEffects": [
+    "**/*.css",
+    "./dist/vue/index.js"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsup && vite build --config vite.lib.config.ts",
+    "build": "tsup && vite build --config vite.lib.config.ts && tsx scripts/pack-vue.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
