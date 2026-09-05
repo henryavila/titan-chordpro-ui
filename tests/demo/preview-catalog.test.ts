@@ -1,0 +1,102 @@
+import { describe, expect, it, vi } from 'vitest'
+import { catalogToFixtures, fetchPreviewCatalog } from '../../demo/preview-catalog'
+import { handlePreviewRequest, listPreviewFiles } from '../../demo/preview-plugin'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+
+function tmpCharts(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'titan-preview-'))
+  writeFileSync(join(dir, 'Ao-olhar-pra-cruz.txt'), '{title: Ao olhar pra cruz}\n[C]oi\n')
+  writeFileSync(join(dir, 'song.chordpro'), '{title: Song}\n[G]hey\n')
+  writeFileSync(join(dir, 'readme.md'), 'nope')
+  mkdirSync(join(dir, 'nested'))
+  return dir
+}
+
+describe('preview catalog', () => {
+  it('returns null on 204', async () => {
+    const fetcher = vi.fn(async () => new Response(null, { status: 204 }))
+    expect(await fetchPreviewCatalog(fetcher as unknown as typeof fetch)).toBeNull()
+  })
+
+  it('returns null when files is empty', async () => {
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify({ files: [] }), { status: 200 }),
+    )
+    expect(await fetchPreviewCatalog(fetcher as unknown as typeof fetch)).toBeNull()
+  })
+
+  it('maps catalog ids to sources', async () => {
+    const payload = {
+      files: [
+        { id: 'ao-olhar', name: 'Ao-olhar-pra-cruz.txt', source: '{title: A}\n' },
+        { id: 'song', name: 'song.chordpro', source: '{title: S}\n' },
+      ],
+    }
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify(payload), { status: 200 }),
+    )
+    const catalog = await fetchPreviewCatalog(fetcher as unknown as typeof fetch)
+    expect(catalogToFixtures(catalog!)).toEqual({
+      'ao-olhar': '{title: A}\n',
+      song: '{title: S}\n',
+    })
+  })
+})
+
+describe('preview plugin', () => {
+  it('lists txt and chordpro, skips other files', () => {
+    const dir = tmpCharts()
+    const files = listPreviewFiles(dir)
+    const names = files.map((f) => f.name).sort()
+    expect(names).toEqual(['Ao-olhar-pra-cruz.txt', 'song.chordpro'])
+    expect(files.find((f) => f.id === 'Ao-olhar-pra-cruz')?.source).toContain('{title: Ao olhar')
+  })
+
+  it('writes JSON for GET /__titan_preview', () => {
+    const dir = tmpCharts()
+    const chunks: Buffer[] = []
+    const res = {
+      statusCode: 0,
+      headers: {} as Record<string, string>,
+      setHeader(k: string, v: string) {
+        this.headers[k] = v
+      },
+      end(body?: string | Buffer) {
+        if (body) chunks.push(Buffer.from(body))
+      },
+    }
+    const req = { url: '/__titan_preview' }
+    let nextCalled = false
+    handlePreviewRequest(dir)(
+      req as IncomingMessage,
+      res as unknown as ServerResponse,
+      () => {
+        nextCalled = true
+      },
+    )
+    expect(nextCalled).toBe(false)
+    expect(res.headers['Content-Type']).toMatch(/json/)
+    const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+      files: { id: string }[]
+    }
+    expect(body.files).toHaveLength(2)
+  })
+
+  it('204 when dir is unset', () => {
+    const res = {
+      statusCode: 0,
+      end() {},
+    }
+    handlePreviewRequest(undefined)(
+      { url: '/__titan_preview' } as IncomingMessage,
+      res as unknown as ServerResponse,
+      () => {
+        throw new Error('should not next')
+      },
+    )
+    expect(res.statusCode).toBe(204)
+  })
+})

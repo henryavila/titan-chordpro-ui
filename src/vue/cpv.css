@@ -30,9 +30,9 @@
   --danger: #FF8574;
   --danger-soft: rgba(255, 133, 116, 0.14);
   --focus: #9EB8FF;
-  --capo: #96A0B4;
-  --capo-soft: rgba(150, 160, 180, 0.12);
-  --capo-edge: rgba(150, 160, 180, 0.3);
+  --capo: #6E7686;
+  --capo-soft: rgba(110, 118, 134, 0.10);
+  --capo-edge: rgba(110, 118, 134, 0.22);
   --shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 .cpv-root[data-theme='light'] {
@@ -65,9 +65,9 @@
   --danger: #B02016;
   --danger-soft: rgba(176, 32, 22, 0.08);
   --focus: #2563EB;
-  --capo: #5B6270;
-  --capo-soft: rgba(91, 98, 112, 0.09);
-  --capo-edge: rgba(91, 98, 112, 0.26);
+  --capo: #8D94A0;
+  --capo-soft: rgba(141, 148, 160, 0.08);
+  --capo-edge: rgba(141, 148, 160, 0.20);
   --shadow: 0 20px 44px -20px rgba(18, 23, 30, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
@@ -394,15 +394,23 @@
 }
 .cpv-chord,
 .cpv-shape {
-  font-weight: 700;
   letter-spacing: -0.005em;
   line-height: 1;
 }
 .cpv-chord {
+  font-weight: 700;
   color: var(--chord);
 }
+/* Dual capo shape: quieter than the sounding chord so the green stays the read. */
 .cpv-shape {
+  font-weight: 500;
   color: var(--capo);
+  opacity: 0.72;
+}
+@media (max-width: 640px) {
+  .cpv-shape {
+    opacity: 0.55;
+  }
 }
 .cpv-block-tag-row {
   display: flex;
