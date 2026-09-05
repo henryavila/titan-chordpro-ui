@@ -143,6 +143,7 @@ const session = createSourceSession({ source: props.source ?? '' })
 /** Working source: the draft while editing, the host source otherwise. */
 const working = ref(props.source ?? '')
 const rev = ref(0)
+let lastSrc: string | null = null
 function touch() {
   working.value = session.getSource()
   rev.value += 1
@@ -151,7 +152,21 @@ function touch() {
   // A local edit saves itself: there is no button, so every keystroke becomes
   // an anchored adjustment on top of the official text.
   if (isEdit.value && wMode.value === 'local') ov.commitLocalFrom(working.value, enterCtx)
+  // Content mode is the official chart: the host must see the draft so a
+  // form submit (Nova, etc.) can persist it even before "Salvar para todos".
+  publishContentSource()
   emit('dirty', dirty.value)
+}
+
+/**
+ * Echo the working source to the host without the watcher treating it as a
+ * new chart. `lastSrc` is the same guard `save()` uses.
+ */
+function publishContentSource() {
+  if (!isEdit.value || wMode.value !== 'content') return
+  const cur = session.getSource()
+  lastSrc = cur
+  emit('update:source', cur)
 }
 
 /**
@@ -168,7 +183,6 @@ function forceBase() {
   touch()
 }
 
-let lastSrc: string | null = null
 let raf = 0
 let written = 0
 /** Fraction of the song already played by the reading playhead. */
@@ -1397,7 +1411,15 @@ onUnmounted(() => {
   headRo?.disconnect()
 })
 
-defineExpose({ enterEdit, exitEdit, shift, toggleScroll, toggleZen, openQueue: ov.openQueue })
+defineExpose({
+  enterEdit,
+  exitEdit,
+  shift,
+  toggleScroll,
+  toggleZen,
+  openQueue: ov.openQueue,
+  getSource: () => session.getSource(),
+})
 </script>
 
 <template>
