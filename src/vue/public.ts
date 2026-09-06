@@ -15,7 +15,10 @@ export type ViewerCapabilities = { sourcePane?: boolean }
 export type ChordproViewerProps = {
   source?: string
   mode?: 'view' | 'edit'
+  /** Initial fallback in preference mode; authoritative value in host mode. */
   theme?: ThemeId
+  /** Default preference: musician choice persists. Host: prop always wins. */
+  themeControl?: 'preference' | 'host'
   loading?: boolean
   autoHide?: boolean
   fitDefault?: boolean
@@ -55,6 +58,8 @@ export type ChordproViewerProps = {
 
 export type ChordproViewerEmits = {
   'update:source': [value: string]
+  /** Request only in host mode: the host accepts by updating its theme prop. */
+  'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
   dirty: [value: boolean]
   save: [value: string]

@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 import type { ChartBlock } from 'titan-chordpro-ui'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import ScoreFigure from './ScoreFigure.vue'
+import { readingWords } from './readingWords'
 
 const props = withDefaults(
   defineProps<{
@@ -401,7 +402,7 @@ watch(
               <div
                 v-for="(row, ri) in block.rows"
                 :key="ri"
-                class="cpv-row"
+                class="cpv-row cpv-reading-row"
                 :style="{ padding: `${rowPad} 0` }"
               >
                 <!-- A line the reader changed carries their mark, and the mark is
@@ -414,23 +415,27 @@ watch(
                   aria-label="Voltar este trecho ao original"
                   @click.stop="emit('revertLine', row.li)"
                 ><span /></button>
-                <span v-for="(s, si) in row.segs" :key="si" class="cpv-word">
-                  <span
-                    class="cpv-chord-box"
-                    :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
-                  >
-                    <span
-                      v-if="s.loose || s.tight"
-                      class="cpv-chord-stack"
-                      :class="{ 'cpv-chord-stack--tight': s.tight }"
-                    >
-                      <!-- Capo shape on top, in the quiet grey; the chord that
-                           actually sounds stays green, glued to the lyric. -->
-                      <span v-if="s.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ s.shape }}</span>
-                      <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ s.chord }}</span>
+                <span class="cpv-reading-flow">
+                  <span v-for="(word, wi) in readingWords(row.segs)" :key="wi" class="cpv-reading-word">
+                    <span v-for="(s, si) in word" :key="si" class="cpv-word">
+                      <span
+                        class="cpv-chord-box"
+                        :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
+                      >
+                        <span
+                          v-if="s.loose || s.tight"
+                          class="cpv-chord-stack"
+                          :class="{ 'cpv-chord-stack--tight': s.tight }"
+                        >
+                          <!-- Capo shape on top, in the quiet grey; the chord that
+                               actually sounds stays green, glued to the lyric. -->
+                          <span v-if="s.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ s.shape }}</span>
+                          <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ s.chord }}</span>
+                        </span>
+                      </span>
+                      <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ s.text }}</span>
                     </span>
                   </span>
-                  <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ s.text }}</span>
                 </span>
               </div>
             </template>

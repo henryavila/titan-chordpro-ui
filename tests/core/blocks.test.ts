@@ -7,7 +7,9 @@ const ELE_VIVE_IMG = 'ministerio-tons/013-ele-vive-em-mim-partitura.cho'
 
 describe('CRLF sources', () => {
   it('normalises line endings so no \\r leaks into lyrics', () => {
-    const raw = loadFixture(ELE_VIVE)
+    // Exercise the transport encoding explicitly: Git may check the real
+    // fixture out with LF. The fixture file and its musical content stay intact.
+    const raw = loadFixture(ELE_VIVE).replace(/\r?\n/g, '\r\n')
     expect(raw).toContain('\r')
     const view = parse(raw)
     expect(view.source).not.toContain('\r')

@@ -21,3 +21,8 @@ demo/dist/
 
 # Claude Design export archive (extracted form lives in design-source/)
 *.zip
+
+# Playwright local output
+/test-results/
+/playwright-report/
+/artifacts/

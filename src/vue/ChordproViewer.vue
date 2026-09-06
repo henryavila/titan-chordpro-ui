@@ -60,6 +60,7 @@ const props = withDefaults(
     source: '',
     mode: 'view',
     theme: 'auto',
+    themeControl: 'preference',
     loading: false,
     autoHide: true,
     fitDefault: false,
@@ -204,7 +205,17 @@ let zenSeen = false
 
 const mode = computed(() => localMode.value ?? props.mode)
 const isEdit = computed(() => mode.value === 'edit')
-const themeMode = computed(() => theme.value ?? props.theme ?? 'auto')
+const themeMode = computed(() =>
+  props.themeControl === 'host' ? props.theme : theme.value ?? props.theme,
+)
+function requestTheme() {
+  const next = cycleTheme(themeMode.value)
+  if (props.themeControl === 'host') emit('update:theme', next)
+  else theme.value = next
+}
+const themeTitle = computed(() => props.themeControl === 'host'
+  ? 'Tema controlado pelo site — solicitar alteração'
+  : 'Tema claro / escuro / automático')
 const effTheme = computed<'light' | 'dark'>(() =>
   themeMode.value === 'auto'
     ? sysDark.value
@@ -508,8 +519,13 @@ function persistPrefs() {
   // Only what diverges from the default is stored: touching a control must not
   // become a permanent preference by accident.
   try {
-    const p: Record<string, unknown> = {}
-    if (theme.value) p.theme = theme.value
+    let saved: unknown = null
+    try { saved = JSON.parse(store.get(STORE_KEYS.prefs) ?? '{}') } catch { /* repair malformed prefs on the next choice */ }
+    const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
+    // Preserve the free theme preference (including older values) while the
+    // host controls appearance; other controls must not rewrite that policy.
+    for (const key of ['bias', 'fit', 'metSound', 'metFollow']) delete p[key]
+    if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
     if (met.sound.value === false) p.metSound = false
@@ -1176,7 +1192,7 @@ function onKey(e: KeyboardEvent) {
   else if (k === 'l' || k === 'L') toggleLens()
   else if (k === 'm' || k === 'M') met.toggle()
   else if (k === 'f' || k === 'F') toggleFs()
-  else if (k === 't' || k === 'T') theme.value = cycleTheme(themeMode.value)
+  else if (k === 't' || k === 'T') requestTheme()
   else if (k === 'a' || k === 'A') toggleFit()
   else if (k === 'c' || k === 'C') capoOpen.value = !capoOpen.value
   else if (k === 'Escape') {
@@ -1840,7 +1856,7 @@ defineExpose({
           />{{ met.running.value ? `${met.bpm.value} BPM` : 'Metrônomo' }}
         </button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-        <button data-theme-btn class="cpv-ghost" title="Tema claro / escuro / automático" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="theme = cycleTheme(themeMode)">
+        <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="requestTheme">
           <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
         </button>
         <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
@@ -1889,7 +1905,7 @@ defineExpose({
             <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: bp === 'xs' ? '38px' : '42px', height: bp === 'xs' ? '40px' : '44px' }" style="font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: bp === 'xs' ? '38px' : '42px', height: bp === 'xs' ? '40px' : '44px' }" style="font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
-          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" title="Tema claro / escuro / automático" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:16px;line-height:1;" @click="theme = cycleTheme(themeMode)">{{ themeGlyph(themeMode) }}</button>
+          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
           <button v-if="canEditNow" data-edit aria-label="Editar esta cifra" title="Editar esta cifra" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="enterEdit">✎</button>
           <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
         </div>
@@ -1992,7 +2008,7 @@ defineExpose({
         </button>
         <button class="cpv-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
         <button class="cpv-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
-        <button data-theme-btn class="cpv-ghost cpv-glyph" title="Tema" style="width:36px;height:36px;font-size:13px;" @click="theme = cycleTheme(themeMode)">{{ themeGlyph(themeMode) }}</button>
+        <button data-theme-btn class="cpv-ghost cpv-glyph" :title="themeTitle" style="width:36px;height:36px;font-size:13px;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
       </div>
     </div>
 

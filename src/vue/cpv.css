@@ -79,7 +79,7 @@
   overflow: hidden;
   background: var(--canvas);
   color: var(--text);
-  font-family: Sora, system-ui, -apple-system, sans-serif;
+  font-family: var(--cpv-font-controls, Sora, system-ui, -apple-system, sans-serif);
   box-sizing: border-box;
   overscroll-behavior: none;
 }
@@ -367,6 +367,23 @@
   align-items: flex-start;
   row-gap: 7px;
 }
+/* A word may contain several chord anchors, but wraps only at real spaces.
+   Intrinsic widths follow font loading, transpose, capo and resize without JS. */
+.cpv-reading-word {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.cpv-reading-word > .cpv-word {
+  flex: 0 0 auto;
+}
+.cpv-reading-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 7px;
+  width: 100%;
+  overflow-x: auto;
+}
 .cpv-word {
   display: flex;
   flex-direction: column;
@@ -382,15 +399,14 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 1px;
-  font-family: 'Space Mono', monospace;
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
   line-height: 1;
   padding-right: 0.8em;
   white-space: nowrap;
 }
 .cpv-chord-stack--tight {
-  width: 0;
-  overflow: visible;
-  padding-right: 0;
+  /* Reserve the larger of chord/shape and lyric, plus a visible chord gap. */
+  padding-right: 4px;
 }
 .cpv-chord,
 .cpv-shape {
@@ -477,6 +493,7 @@
   background: var(--line);
 }
 .cpv-lyric {
+  font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
   line-height: 1.32;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1211,7 +1228,7 @@
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
   color: var(--chord);
-  font-family: 'Space Mono', monospace;
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
   font-weight: 700;
   line-height: 1;
   cursor: grab;
@@ -1355,7 +1372,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 700;
-  font-family: Sora, system-ui, sans-serif;
+  font-family: var(--cpv-font-controls, Sora, system-ui, sans-serif);
 }
 .cpv-selbar-dual {
   height: 26px;
@@ -1620,7 +1637,7 @@
   overflow: hidden;
   background: var(--canvas);
   color: var(--text);
-  font-family: Sora, system-ui, sans-serif;
+  font-family: var(--cpv-font-controls, Sora, system-ui, sans-serif);
   display: flex;
   flex-direction: column;
 }
@@ -1928,4 +1945,16 @@
   z-index: 36;
   background: var(--canvas);
   animation: cpv-rise 0.18s ease-out;
+}
+
+/* Public typography tokens accept font-family lists and inherit from ancestors. Defaults are
+   standalone; the host owns font loading. Source/TAB retain monospace. */
+.cpv-row-input:not(.cpv-row-input--comment):not(.cpv-row-input--note),
+.cpv-editrow {
+  font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
+}
+
+.cpv-reading-word .cpv-lyric {
+  white-space: pre;
+  overflow-wrap: normal;
 }

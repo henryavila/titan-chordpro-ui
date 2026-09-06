@@ -43,7 +43,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "jspdf": "^2.5.1"
@@ -61,6 +62,10 @@
     }
   },
   "devDependencies": {
+    "@fontsource/figtree": "^5.3.0",
+    "@fontsource/sora": "^5.3.0",
+    "@fontsource/space-mono": "^5.3.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^24.3.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/test-utils": "^2.4.6",

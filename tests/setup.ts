@@ -21,3 +21,9 @@ if (!window.matchMedia) {
     },
   })) as typeof window.matchMedia
 }
+
+// Node 25+ exposes a global localStorage accessor without backing storage.
+// Browser tests must consistently use jsdom's origin-scoped implementation.
+const domWindow = (globalThis as unknown as { jsdom: { window: Window } }).jsdom.window
+Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: domWindow.localStorage })
+Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: domWindow.sessionStorage })

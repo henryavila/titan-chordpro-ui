@@ -216,3 +216,29 @@ OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` 
 ## Fixtures
 
 Real ChordPro (IASD Ermelinda via SDA design-handoff): `fixtures/`.
+
+### Tema e tipografia no embed
+
+`<ChordproViewer :theme="hostTheme" theme-control="host" />` torna a prop
+imediatamente autoritativa, mesmo com preferência antiga. O default
+`theme-control="preference"` preserva a escolha do músico; `theme` é fallback.
+`auto` segue o SO. Em modo host, `update:theme` solicita a mudança; o host
+aceita atualizando a prop. Retornar ao modo livre retoma a preferência anterior.
+
+```css
+.sda-cifra {
+  --cpv-font-lyrics: Figtree, system-ui, sans-serif;
+  --cpv-font-controls: Figtree, system-ui, sans-serif;
+  --cpv-font-chords: 'Space Mono', monospace;
+}
+```
+
+Use `class="sda-cifra"` no componente; carregue as fontes no host. Para herdar
+só a fonte dos controles, `font-family: inherit` na mesma classe é uma
+alternativa ao token explícito. Source/TAB mantêm monospace. Defaults:
+Sora para letra/controles e Space Mono para acordes, com fallback de sistema.
+
+[Contrato completo, precedência, fontes e distribuição ao SDA](docs/EMBED-SDA.md).
+A integração real SDA/Nova (A6) não foi executada nesta alteração.
+[Testes de navegador e evidência da regressão](docs/SDA-VIEWER-VALIDATION.md):
+`pnpm exec playwright install chromium webkit` e `pnpm test:browser`.
