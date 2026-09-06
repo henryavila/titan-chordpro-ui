@@ -106,3 +106,13 @@ em memória a partir da mesma música real, sem modificar qualquer fixture.
 Esta evidência não substitui o aceite do host A6 nem os gates de lifecycle do
 responsável pela entrega. WebKit automatizado não é uma validação no Safari
 do SDA real; o teste não acessa esse host.
+
+## Preservação no Git e em checkout novo
+
+A revisão de distribuição identificou `core.autocrlf=input`: a fixture original
+no working tree tinha 1276 bytes/49 CRLF e SHA d7d80…, mas o blob anterior no
+Git tinha 1227 bytes/LF e SHA f7adbb…. `.gitattributes` agora define `-text`
+somente para `fixtures/escuta-meu-clamor-sda-86.cho`, e o arquivo original foi
+reindexado sem modificar seus bytes. A verificação captura o blob binário
+diretamente e extrai `git archive` para conferir o SHA original também fora
+do working tree. Isso evita depender de conversão de finais de linha local.

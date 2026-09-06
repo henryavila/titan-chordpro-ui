@@ -1,0 +1,2 @@
+# Preserve the exact HTTP-captured fixture bytes, including physical CRLF.
+fixtures/escuta-meu-clamor-sda-86.cho -text
