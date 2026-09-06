@@ -3,8 +3,8 @@ schemaVersion: "0.1"
 sourcePath: docs/HANDOFF-SDA-VIEWER-2026-09-06.md
 slug: sda-viewer-quality
 branch: plan/sda-viewer-quality
-status: finalizing
-currentPhase: FINALIZE
+status: archived
+currentPhase: ARCHIVE
 phases:
   - id: P0
     title: Qualidade do viewer e contrato de embed — somente Titan UI
@@ -65,34 +65,46 @@ phases:
         revisão entre famílias.
   - id: FINALIZE
     title: Finalize — validation, PR, intent vs delivered
-    status: active
+    status: done
     terminal: true
     tasks:
       - id: T-FINALIZE
         title: Operator validates intent vs delivered; open/update PR if needed
-        status: pending
+        status: done
         outputs: []
         scopeBoundary: []
         acceptance:
           - Intent-vs-delivered surface presented to operator
           - Operator explicit validation recorded
         verifier: null
-        evidence: null
+        evidence:
+          passed: true
+          kind: operator-validation
+          userValidatedAt: 2026-09-06T11:34:37.722Z
   - id: ARCHIVE
     title: Archive — clean worktree, branch bookkeeping, terminal handoff
-    status: pending
+    status: done
     terminal: true
     tasks:
       - id: T-ARCHIVE
         title: Remove worktree, record branch disposition, stamp archived
-        status: pending
+        status: done
         outputs: []
         scopeBoundary: []
         acceptance:
           - Worktree removed or explicitly retained with reason
           - Sidecar status is archived
         verifier: null
-        evidence: null
+        evidence:
+          passed: true
+          kind: archive
+          archivedAt: 2026-09-06T11:34:37.730Z
+          worktreeRemoved: false
+          worktreePath: .worktrees/sda-viewer-quality
+          branchDisposition: merged into main; branch retained
+          note: Usuário aprovou a entrega e pediu commit all. Worktree retida para
+            preservar artefatos locais de execução; implementação integrada em
+            main.
 intent:
   value: Cifras legíveis e embed configurável no Titan UI
   doneWhen: A1–A5 verificados; documentação de A6 entregue, sem tocar SDA
@@ -114,18 +126,38 @@ groundTruth:
   finalAddendum: "Adendo externo preservado: Bm/E musical não inferido pelo
     viewer; fixture guarda dois tokens originais apenas para reproduzir colisão.
     Bytes verificados são 49 CRLF físicos, não escapes literais."
-finalize: null
-archive: null
+finalize:
+  userValidatedAt: 2026-09-06T11:34:37.722Z
+  intentVsDelivered:
+    - id: V1
+      status: matched
+      evidence: 244 testes e 10 testes Chromium/WebKit;
+        audit-delivery-viewer-embed-20260906.md
+    - id: V2
+      status: matched
+      evidence: themeControl host/preference e persistência verificados
+    - id: V3
+      status: matched
+      evidence: tokens CSS, geometria e edição verificados
+    - id: A6
+      status: excluded
+      evidence: Usuário restringiu ao Titan UI; SDA não modificado
+  prUrl: null
+  packagePresentedAt: 2026-09-06T11:29:26.072Z
+archive:
+  archivedAt: 2026-09-06T11:34:37.730Z
+  worktreeRemoved: false
+  worktreePath: .worktrees/sda-viewer-quality
+  branchDisposition: merged into main; branch retained
+  note: Usuário aprovou a entrega e pediu commit all. Worktree retida para
+    preservar artefatos locais de execução; implementação integrada em main.
 handoff:
-  narrative: V1/V2/V3 e A1–A5 implementados e verificados no checkout principal.
-    A6 excluído por instrução do usuário; SDA não modificado. Tarball local
-    pronto, sem push/publicação.
-  decisionLog: Tema host opt-in; tokens separados; largura intrínseca e
-    agrupamento por espaços; original RAW protegido no Git. Todos R1/R2/R3
-    corrigidos. Adendo concorrente do handoff preservado. Nenhuma validação
-    humana de FINALIZE/ARCHIVE registrada.
-  nextAction: Revisar a entrega em docs/EMBED-SDA.md e registrar validação humana
-    de FINALIZE se desejada.
+  narrative: Entrega aprovada pelo usuário ("aprovado. comit all"). Implementação
+    em main; fixture adicional de Downloads salva e exibida no Safari.
+  decisionLog: Aprovação humana registrada. Conteúdo original preservado, SDA não
+    modificado. Worktree e artefatos locais retidos; sem push.
+  nextAction: Nenhuma tarefa pendente neste handoff; nova execução depende de
+    solicitação do usuário.
   verbatimState: |-
     rtk proxy pnpm typecheck
     rtk proxy pnpm build
@@ -133,7 +165,6 @@ handoff:
     rtk proxy pnpm test:browser
     artifacts/titan-chordpro-ui-0.1.0.tgz
     verifiedCommit: c4a4a5a4317ce3d7f2f92c114fbe069ab1a4cdab
-  uncommitted: Checkpoint final contém apenas sidecar e relatórios de verificação;
-    produto já comprometido. Worktree de execução retida para rastreabilidade;
-    main contém a implementação.
+  uncommitted: Fixture adicional e este registro de aprovação incluídos no commit
+    de fechamento.
 entryChoice: foreign
