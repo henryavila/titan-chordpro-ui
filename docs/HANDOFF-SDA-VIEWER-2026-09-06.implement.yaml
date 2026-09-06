@@ -1,0 +1,109 @@
+kind: foreign-plan
+schemaVersion: "0.1"
+sourcePath: docs/HANDOFF-SDA-VIEWER-2026-09-06.md
+slug: sda-viewer-quality
+branch: plan/sda-viewer-quality
+status: active
+currentPhase: P0
+phases:
+  - id: P0
+    title: Qualidade do viewer e contrato de embed — somente Titan UI
+    status: active
+    terminal: false
+    tasks:
+      - id: T-UI
+        title: V1/V2/V3, regressões A1–A5 e documentação de integração
+        status: active
+        outputs:
+          - path: src/vue/chart/ChartBody.vue
+          - path: src/vue/cpv.css
+          - path: src/vue/public.ts
+          - path: src/vue/ChordproViewer.vue
+          - path: tests
+          - path: README.md
+          - path: docs/EMBED-SDA.md
+        scopeBoundary:
+          - Somente titan-chordpro-ui; não ler nem alterar SDA nesta execução
+          - Não modificar conteúdo de fixtures; core sem Vue; sem VisualAdapter
+          - A6 integração real excluída pelo usuário; entregar instruções e
+            pacote local
+        acceptance:
+          - "A1/A2: cifras sem colisões, letra/acordes/source preservados na
+            fixture SDA 86"
+          - "A3: navegador real desktop/móvel, transpose/capo, fontes e resize"
+          - "A4: controle host opt-in, preferência livre default, mudanças de
+            prop e overlays preservados"
+          - "A5: tokens de fontes separados e regressão geométrica"
+          - typecheck, suíte completa, build e testes de navegador passam
+        verifier:
+          kind: shell
+          command: rtk proxy pnpm typecheck && rtk proxy pnpm test && rtk proxy pnpm build
+            && rtk proxy pnpm test:browser
+          expectExitCode: 0
+        evidence: null
+  - id: FINALIZE
+    title: Finalize — validation, PR, intent vs delivered
+    status: pending
+    terminal: true
+    tasks:
+      - id: T-FINALIZE
+        title: Operator validates intent vs delivered; open/update PR if needed
+        status: pending
+        outputs: []
+        scopeBoundary: []
+        acceptance:
+          - Intent-vs-delivered surface presented to operator
+          - Operator explicit validation recorded
+        verifier: null
+        evidence: null
+  - id: ARCHIVE
+    title: Archive — clean worktree, branch bookkeeping, terminal handoff
+    status: pending
+    terminal: true
+    tasks:
+      - id: T-ARCHIVE
+        title: Remove worktree, record branch disposition, stamp archived
+        status: pending
+        outputs: []
+        scopeBoundary: []
+        acceptance:
+          - Worktree removed or explicitly retained with reason
+          - Sidecar status is archived
+        verifier: null
+        evidence: null
+intent:
+  value: Cifras legíveis e embed configurável no Titan UI
+  doneWhen: A1–A5 verificados; documentação de A6 entregue, sem tocar SDA
+  outOfScope:
+    - SDA/Nova runtime, banco, integração real A6
+groundTruth:
+  status: complete
+  mode: ground-truth
+  at: 2026-09-06T11:04:15.296Z
+  fingerprint: 69af59b0417cfa27a229b5fa744d8b08b3acc3564d09c7768ebdb79911b04681
+  summary: "A+B: layout.ts:84 markTight depende de espaços; cpv.css:390 largura
+    zero; ChartBody.vue:417 aplica tight em leitura; editor layoutPills só
+    edição. themeMode prioriza theme ref sobre prop e mount restaura prefs.
+    cpv.css usa Sora/Space Mono fixos. Vitest usa jsdom sem geometria. Source
+    fixture contém escapes literais e deve passar por normalize/parse. V1/V2/V3
+    mapeados a código existente; I1/I2/I3 somente documentação por restrição
+    explícita do usuário."
+finalize: null
+archive: null
+handoff:
+  narrative: Escopo restrito pelo usuário exclusivamente ao Titan UI. Preparada
+    execução direta do handoff, com um escritor isolado e verificação
+    independente.
+  decisionLog: Sem promoção a inventário AS; controle de tema opt-in para
+    compatibilidade; tokens CSS para tipografia; não tocar SDA. Nenhum aceite de
+    conclusão registrado.
+  nextAction: Implementar T-UI em .worktrees/sda-viewer-quality.
+  verbatimState: |-
+    rtk proxy pnpm typecheck
+    rtk proxy pnpm test
+    rtk proxy pnpm build
+    rtk proxy pnpm test:browser
+  uncommitted: docs/HANDOFF-SDA-VIEWER-2026-09-06.md;
+    fixtures/escuta-meu-clamor-sda-86.cho;
+    docs/HANDOFF-SDA-VIEWER-2026-09-06.implement.yaml (checkpoint de entrada)
+entryChoice: foreign
