@@ -37,7 +37,7 @@ phases:
           - typecheck, suíte completa, build e testes de navegador passam
         verifier:
           kind: shell
-          command: rtk proxy pnpm typecheck && rtk proxy pnpm test && rtk proxy pnpm build
+          command: rtk proxy pnpm typecheck && rtk proxy pnpm build && rtk proxy pnpm test
             && rtk proxy pnpm test:browser
           expectExitCode: 0
         evidence: null
@@ -100,10 +100,8 @@ handoff:
   nextAction: Implementar T-UI em .worktrees/sda-viewer-quality.
   verbatimState: |-
     rtk proxy pnpm typecheck
-    rtk proxy pnpm test
     rtk proxy pnpm build
+    rtk proxy pnpm test
     rtk proxy pnpm test:browser
-  uncommitted: docs/HANDOFF-SDA-VIEWER-2026-09-06.md;
-    fixtures/escuta-meu-clamor-sda-86.cho;
-    docs/HANDOFF-SDA-VIEWER-2026-09-06.implement.yaml (checkpoint de entrada)
+  uncommitted: "Checkpoint de entrada 562f1a8 limpo; escritor implement_ui ativo, alterações de produto sob sua responsabilidade."
 entryChoice: foreign
