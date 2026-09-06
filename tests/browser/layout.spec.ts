@@ -31,7 +31,8 @@ async function checkGeometry(page: Page, semitones = 0, capo = 0) {
       const ys = [...word.querySelectorAll('.cpv-lyric')].map(el => el.getBoundingClientRect().y)
       if (Math.max(...ys) - Math.min(...ys) > 1) failures.push('word broken at internal chord')
     }
-    if (row.scrollWidth > row.clientWidth + 1) failures.push('row overflows container')
+    const flow = row.querySelector('.cpv-reading-flow')!
+    if (flow.scrollWidth > flow.clientWidth + 1) failures.push('reading flow overflows container')
     return {
       failures,
       lyric: [...row.querySelectorAll('.cpv-lyric')].map(e => e.textContent).join(''),

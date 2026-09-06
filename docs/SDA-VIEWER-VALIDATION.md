@@ -3,7 +3,9 @@
 Escopo executado: somente Titan UI; A6/SDA/Nova e banco não foram acessados.
 Fixture: `fixtures/escuta-meu-clamor-sda-86.cho`, SHA-256
 `d7d80be43cac373bf4615b8c0413c14b96a62804a57972da1173054ed38b3be2`.
-O teste entrega o arquivo bruto ao parse/viewer, incluindo escapes literais.
+O teste entrega o arquivo bruto ao parse/viewer. A inspeção binária confirmou
+49 CRLF físicos; os bytes do arquivo governam o teste, apesar da descrição de
+escapes literais no handoff diagnóstico original.
 
 ## Reprodução antes da correção
 
@@ -69,7 +71,7 @@ comparar fallback, webfonts prontas e tokens Figtree/inherit/Sora.
 O teste geométrico compara caixas de cada acorde e forma de capo na mesma
 linha, verifica respiro >=3.5px (tolerância subpixel para os 4px), ancoragem x,
 letra/acordes/forma contra `layoutChartFull(parse(fixture))`, ausência de quebra
-interna da palavra e overflow da linha. Executa desktop e móvel, +2 semitons,
+interna da palavra e overflow do `.cpv-reading-flow` (o scroller real da linha). Executa desktop e móvel, +2 semitons,
 capo 2, resize posterior para 320px e retorno. A fixture é protegida pelo hash.
 Screenshots são anexados à execução Playwright; falhas retêm trace local.
 
