@@ -117,3 +117,15 @@ Fora deste recorte: harmonização do shell do SDA, autenticação/Nova, redesig
 - `/Volumes/External/code/sda/.atomic-skills/reviews/audit-delivery-titan-chordpro-20260906.md`: auditoria anterior, com risco separado de confirmação de salvamento antes do PUT; não assumir que esse problema foi corrigido por este handoff.
 
 Este arquivo e a fixture são a entrega desta solicitação. Nenhuma implementação ou correção foi executada ao gerá-los.
+
+
+## Atualização — Bm/E em “cura” (2026-09-06)
+
+O usuário esclareceu que o acorde musicalmente correto neste trecho é **Bm/E**, não uma mudança Bm → E entre “cu” e “ra”. Consulta direta à cifra id 86 no MySQL e resposta HTTP confirmaram que o conteúdo salvo é `Eu [D]oro [G]pela  [Bm]cu[E]ra`. O backup local `vsda_tenant.dump` também contém essa forma. Portanto a ausência da barra já está nos dados anteriores à renderização; esta investigação não determinou qual edição/importação introduziu o erro original.
+
+Teste executado com `parse()` do pacote instalado:
+- Fonte atual: tokens `{chord: "Bm", lyric: "cu"}` e `{chord: "E", lyric: "ra"}`.
+- Substituição apenas em memória, conforme indicação do usuário, por `[Bm/E]cura`: token único `{chord: "Bm/E", lyric: "cura"}`.
+- G/D, E/D, Gm/D e Em7/D da mesma cifra também mantêm a barra no parser.
+
+**Correção do diagnóstico:** a colisão visual observada entre dois tokens continua evidência de layout, mas não explica a ausência de `/` nem valida musicalmente a fonte. Este trecho requer correção do conteúdo para `[Bm/E]cura`; não deve ser usado como expectativa musical de dois acordes em regressão. Não inferir automaticamente acordes com baixo a partir de tokens adjacentes no viewer. Fonte/fixture original preservada para rastreabilidade; nenhuma alteração feita na cifra do BD durante esta análise.
