@@ -3,17 +3,17 @@ schemaVersion: "0.1"
 sourcePath: docs/HANDOFF-SDA-VIEWER-2026-09-06.md
 slug: sda-viewer-quality
 branch: plan/sda-viewer-quality
-status: active
-currentPhase: P0
+status: finalizing
+currentPhase: FINALIZE
 phases:
   - id: P0
     title: Qualidade do viewer e contrato de embed — somente Titan UI
-    status: active
+    status: done
     terminal: false
     tasks:
       - id: T-UI
         title: V1/V2/V3, regressões A1–A5 e documentação de integração
-        status: active
+        status: done
         outputs:
           - path: src/vue/chart/ChartBody.vue
           - path: src/vue/cpv.css
@@ -40,10 +40,32 @@ phases:
           command: rtk proxy pnpm typecheck && rtk proxy pnpm build && rtk proxy pnpm test
             && rtk proxy pnpm test:browser
           expectExitCode: 0
-        evidence: null
+        evidence:
+          verifierKind: shell
+          verifiedAt: 2026-09-06T11:29:26.072Z
+          verifiedCommit: c4a4a5a4317ce3d7f2f92c114fbe069ab1a4cdab
+          passed: true
+          exitCode: 0
+          testsCollected: 254
+          outputSummary: "No checkout principal: typecheck exit 0; build exit 0; Vitest:
+            30 files, 244 passed, 0 skipped; Playwright: 10 passed (4.3s),
+            Chromium/WebKit. Artefato inspecionado byte a byte vs dist; SHA-256
+            ab046e8e9b09bff3b70086ef840a91314493797ad30ab16921a64d6937f8719e."
+          closedAt: 2026-09-06T11:29:26.077Z
+    deliveryAuditGate:
+      status: passed
+      reportPath: .atomic-skills/reviews/audit-delivery-viewer-embed-20260906.md
+      verdict: CLOSED
+      verifiedAt: 2026-09-06T11:29:26.072Z
+    reviewGate:
+      mode: local
+      at: 2026-09-06T11:29:26.072Z
+      reviewFile: .atomic-skills/reviews/review-code-viewer-embed-20260906.md
+      overrideReason: Revisão independente local com contexto limpo; sem alegação de
+        revisão entre famílias.
   - id: FINALIZE
     title: Finalize — validation, PR, intent vs delivered
-    status: pending
+    status: active
     terminal: true
     tasks:
       - id: T-FINALIZE
@@ -88,20 +110,30 @@ groundTruth:
     fixture contém escapes literais e deve passar por normalize/parse. V1/V2/V3
     mapeados a código existente; I1/I2/I3 somente documentação por restrição
     explícita do usuário."
+  finalSourceFingerprint: 643eaeaf990f3cb93133b79067fbba27f08d4fdf612c72d6ec3d157a614186fe
+  finalAddendum: "Adendo externo preservado: Bm/E musical não inferido pelo
+    viewer; fixture guarda dois tokens originais apenas para reproduzir colisão.
+    Bytes verificados são 49 CRLF físicos, não escapes literais."
 finalize: null
 archive: null
 handoff:
-  narrative: Escopo restrito pelo usuário exclusivamente ao Titan UI. Preparada
-    execução direta do handoff, com um escritor isolado e verificação
-    independente.
-  decisionLog: Sem promoção a inventário AS; controle de tema opt-in para
-    compatibilidade; tokens CSS para tipografia; não tocar SDA. Nenhum aceite de
-    conclusão registrado.
-  nextAction: Implementar T-UI em .worktrees/sda-viewer-quality.
+  narrative: V1/V2/V3 e A1–A5 implementados e verificados no checkout principal.
+    A6 excluído por instrução do usuário; SDA não modificado. Tarball local
+    pronto, sem push/publicação.
+  decisionLog: Tema host opt-in; tokens separados; largura intrínseca e
+    agrupamento por espaços; original RAW protegido no Git. Todos R1/R2/R3
+    corrigidos. Adendo concorrente do handoff preservado. Nenhuma validação
+    humana de FINALIZE/ARCHIVE registrada.
+  nextAction: Revisar a entrega em docs/EMBED-SDA.md e registrar validação humana
+    de FINALIZE se desejada.
   verbatimState: |-
     rtk proxy pnpm typecheck
     rtk proxy pnpm build
     rtk proxy pnpm test
     rtk proxy pnpm test:browser
-  uncommitted: "Checkpoint de entrada 562f1a8 limpo; escritor implement_ui ativo, alterações de produto sob sua responsabilidade."
+    artifacts/titan-chordpro-ui-0.1.0.tgz
+    verifiedCommit: c4a4a5a4317ce3d7f2f92c114fbe069ab1a4cdab
+  uncommitted: Checkpoint final contém apenas sidecar e relatórios de verificação;
+    produto já comprometido. Worktree de execução retida para rastreabilidade;
+    main contém a implementação.
 entryChoice: foreign

@@ -1,0 +1,634 @@
+diff --git a/.gitignore b/.gitignore
+index c4b0dc2..ee13315 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -21,3 +21,7 @@ demo/dist/
+ 
+ # Claude Design export archive (extracted form lives in design-source/)
+ *.zip
++
++# Playwright local output
++/test-results/
++/playwright-report/
+diff --git a/package.json b/package.json
+index 2899b7c..2bf940e 100644
+--- a/package.json
++++ b/package.json
+@@ -43,7 +43,8 @@
+     "test": "vitest run",
+     "test:watch": "vitest",
+     "typecheck": "vue-tsc --noEmit",
+-    "preview": "vite preview"
++    "preview": "vite preview",
++    "test:browser": "playwright test"
+   },
+   "dependencies": {
+     "jspdf": "^2.5.1"
+@@ -61,6 +62,10 @@
+     }
+   },
+   "devDependencies": {
++    "@fontsource/figtree": "^5.3.0",
++    "@fontsource/sora": "^5.3.0",
++    "@fontsource/space-mono": "^5.3.0",
++    "@playwright/test": "^1.63.0",
+     "@types/node": "^24.3.0",
+     "@vitejs/plugin-vue": "^6.0.1",
+     "@vue/test-utils": "^2.4.6",
+diff --git a/src/vue/ChordproViewer.vue b/src/vue/ChordproViewer.vue
+index fefb018..6ccb0c1 100644
+--- a/src/vue/ChordproViewer.vue
++++ b/src/vue/ChordproViewer.vue
+@@ -60,6 +60,7 @@ const props = withDefaults(
+     source: '',
+     mode: 'view',
+     theme: 'auto',
++    themeControl: 'preference',
+     loading: false,
+     autoHide: true,
+     fitDefault: false,
+@@ -204,7 +205,17 @@ let zenSeen = false
+ 
+ const mode = computed(() => localMode.value ?? props.mode)
+ const isEdit = computed(() => mode.value === 'edit')
+-const themeMode = computed(() => theme.value ?? props.theme ?? 'auto')
++const themeMode = computed(() =>
++  props.themeControl === 'host' ? props.theme : theme.value ?? props.theme,
++)
++function requestTheme() {
++  const next = cycleTheme(themeMode.value)
++  if (props.themeControl === 'host') emit('update:theme', next)
++  else theme.value = next
++}
++const themeTitle = computed(() => props.themeControl === 'host'
++  ? 'Tema controlado pelo site — solicitar alteração'
++  : 'Tema claro / escuro / automático')
+ const effTheme = computed<'light' | 'dark'>(() =>
+   themeMode.value === 'auto'
+     ? sysDark.value
+@@ -508,8 +519,12 @@ function persistPrefs() {
+   // Only what diverges from the default is stored: touching a control must not
+   // become a permanent preference by accident.
+   try {
+-    const p: Record<string, unknown> = {}
+-    if (theme.value) p.theme = theme.value
++    const saved = JSON.parse(store.get(STORE_KEYS.prefs) ?? '{}')
++    const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
++    // Preserve the free theme preference (including older values) while the
++    // host controls appearance; other controls must not rewrite that policy.
++    for (const key of ['bias', 'fit', 'metSound', 'metFollow']) delete p[key]
++    if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
+     if (bias.value) p.bias = bias.value
+     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
+     if (met.sound.value === false) p.metSound = false
+@@ -1176,7 +1191,7 @@ function onKey(e: KeyboardEvent) {
+   else if (k === 'l' || k === 'L') toggleLens()
+   else if (k === 'm' || k === 'M') met.toggle()
+   else if (k === 'f' || k === 'F') toggleFs()
+-  else if (k === 't' || k === 'T') theme.value = cycleTheme(themeMode.value)
++  else if (k === 't' || k === 'T') requestTheme()
+   else if (k === 'a' || k === 'A') toggleFit()
+   else if (k === 'c' || k === 'C') capoOpen.value = !capoOpen.value
+   else if (k === 'Escape') {
+@@ -1840,7 +1855,7 @@ defineExpose({
+           />{{ met.running.value ? `${met.bpm.value} BPM` : 'Metrônomo' }}
+         </button>
+         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
+-        <button data-theme-btn class="cpv-ghost" title="Tema claro / escuro / automático" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="theme = cycleTheme(themeMode)">
++        <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="requestTheme">
+           <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
+         </button>
+         <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
+@@ -1889,7 +1904,7 @@ defineExpose({
+             <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: bp === 'xs' ? '38px' : '42px', height: bp === 'xs' ? '40px' : '44px' }" style="font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
+             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: bp === 'xs' ? '38px' : '42px', height: bp === 'xs' ? '40px' : '44px' }" style="font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
+           </span>
+-          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" title="Tema claro / escuro / automático" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:16px;line-height:1;" @click="theme = cycleTheme(themeMode)">{{ themeGlyph(themeMode) }}</button>
++          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+           <button v-if="canEditNow" data-edit aria-label="Editar esta cifra" title="Editar esta cifra" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="enterEdit">✎</button>
+           <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
+         </div>
+@@ -1992,7 +2007,7 @@ defineExpose({
+         </button>
+         <button class="cpv-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
+         <button class="cpv-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
+-        <button data-theme-btn class="cpv-ghost cpv-glyph" title="Tema" style="width:36px;height:36px;font-size:13px;" @click="theme = cycleTheme(themeMode)">{{ themeGlyph(themeMode) }}</button>
++        <button data-theme-btn class="cpv-ghost cpv-glyph" :title="themeTitle" style="width:36px;height:36px;font-size:13px;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+       </div>
+     </div>
+ 
+diff --git a/src/vue/chart/ChartBody.vue b/src/vue/chart/ChartBody.vue
+index 1f62519..8caf74c 100644
+--- a/src/vue/chart/ChartBody.vue
++++ b/src/vue/chart/ChartBody.vue
+@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
+ import type { ChartBlock } from 'titan-chordpro-ui'
+ import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
+ import ScoreFigure from './ScoreFigure.vue'
++import { readingWords } from './readingWords'
+ 
+ const props = withDefaults(
+   defineProps<{
+@@ -401,7 +402,7 @@ watch(
+               <div
+                 v-for="(row, ri) in block.rows"
+                 :key="ri"
+-                class="cpv-row"
++                class="cpv-row cpv-reading-row"
+                 :style="{ padding: `${rowPad} 0` }"
+               >
+                 <!-- A line the reader changed carries their mark, and the mark is
+@@ -414,7 +415,8 @@ watch(
+                   aria-label="Voltar este trecho ao original"
+                   @click.stop="emit('revertLine', row.li)"
+                 ><span /></button>
+-                <span v-for="(s, si) in row.segs" :key="si" class="cpv-word">
++                <span v-for="(word, wi) in readingWords(row.segs)" :key="wi" class="cpv-reading-word">
++                <span v-for="(s, si) in word" :key="si" class="cpv-word">
+                   <span
+                     class="cpv-chord-box"
+                     :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
+@@ -432,6 +434,7 @@ watch(
+                   </span>
+                   <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ s.text }}</span>
+                 </span>
++                </span>
+               </div>
+             </template>
+ 
+diff --git a/src/vue/cpv.css b/src/vue/cpv.css
+index 57fae43..24b7496 100644
+--- a/src/vue/cpv.css
++++ b/src/vue/cpv.css
+@@ -79,7 +79,7 @@
+   overflow: hidden;
+   background: var(--canvas);
+   color: var(--text);
+-  font-family: Sora, system-ui, -apple-system, sans-serif;
++  font-family: var(--cpv-font-controls, Sora, system-ui, -apple-system, sans-serif);
+   box-sizing: border-box;
+   overscroll-behavior: none;
+ }
+@@ -367,6 +367,18 @@
+   align-items: flex-start;
+   row-gap: 7px;
+ }
++/* A word may contain several chord anchors, but wraps only at real spaces.
++   Intrinsic widths follow font loading, transpose, capo and resize without JS. */
++.cpv-reading-word {
++  display: inline-flex;
++  flex: 0 0 auto;
++}
++.cpv-reading-word > .cpv-word {
++  flex: 0 0 auto;
++}
++.cpv-reading-row {
++  overflow-x: auto;
++}
+ .cpv-word {
+   display: flex;
+   flex-direction: column;
+@@ -382,15 +394,14 @@
+   flex-direction: column;
+   align-items: flex-start;
+   gap: 1px;
+-  font-family: 'Space Mono', monospace;
++  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+   line-height: 1;
+   padding-right: 0.8em;
+   white-space: nowrap;
+ }
+ .cpv-chord-stack--tight {
+-  width: 0;
+-  overflow: visible;
+-  padding-right: 0;
++  /* Reserve the larger of chord/shape and lyric, plus a visible chord gap. */
++  padding-right: 4px;
+ }
+ .cpv-chord,
+ .cpv-shape {
+@@ -477,6 +488,7 @@
+   background: var(--line);
+ }
+ .cpv-lyric {
++  font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
+   line-height: 1.32;
+   white-space: pre-wrap;
+   overflow-wrap: anywhere;
+@@ -1211,7 +1223,7 @@
+   background: var(--chord-soft);
+   border: 1px solid var(--chord-edge);
+   color: var(--chord);
+-  font-family: 'Space Mono', monospace;
++  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+   font-weight: 700;
+   line-height: 1;
+   cursor: grab;
+@@ -1355,7 +1367,7 @@
+   letter-spacing: 0.1em;
+   text-transform: uppercase;
+   font-weight: 700;
+-  font-family: Sora, system-ui, sans-serif;
++  font-family: var(--cpv-font-controls, Sora, system-ui, sans-serif);
+ }
+ .cpv-selbar-dual {
+   height: 26px;
+@@ -1620,7 +1632,7 @@
+   overflow: hidden;
+   background: var(--canvas);
+   color: var(--text);
+-  font-family: Sora, system-ui, sans-serif;
++  font-family: var(--cpv-font-controls, Sora, system-ui, sans-serif);
+   display: flex;
+   flex-direction: column;
+ }
+@@ -1929,3 +1941,15 @@
+   background: var(--canvas);
+   animation: cpv-rise 0.18s ease-out;
+ }
++
++/* Public typography tokens accept a font-family list or inherit. Defaults are
++   standalone; the host owns font loading. Source/TAB retain monospace. */
++.cpv-row-input:not(.cpv-row-input--comment):not(.cpv-row-input--note),
++.cpv-editrow {
++  font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
++}
++
++.cpv-reading-word .cpv-lyric {
++  white-space: pre;
++  overflow-wrap: normal;
++}
+diff --git a/src/vue/public.ts b/src/vue/public.ts
+index 78b47a1..ce0916c 100644
+--- a/src/vue/public.ts
++++ b/src/vue/public.ts
+@@ -15,7 +15,10 @@ export type ViewerCapabilities = { sourcePane?: boolean }
+ export type ChordproViewerProps = {
+   source?: string
+   mode?: 'view' | 'edit'
++  /** Initial fallback in preference mode; authoritative value in host mode. */
+   theme?: ThemeId
++  /** Default preference: musician choice persists. Host: prop always wins. */
++  themeControl?: 'preference' | 'host'
+   loading?: boolean
+   autoHide?: boolean
+   fitDefault?: boolean
+@@ -55,6 +58,8 @@ export type ChordproViewerProps = {
+ 
+ export type ChordproViewerEmits = {
+   'update:source': [value: string]
++  /** Request only in host mode: the host accepts by updating its theme prop. */
++  'update:theme': [value: ThemeId]
+   'update:mode': [value: 'view' | 'edit']
+   dirty: [value: boolean]
+   save: [value: string]
+diff --git a/tests/setup.ts b/tests/setup.ts
+index 908e973..c7c58f5 100644
+--- a/tests/setup.ts
++++ b/tests/setup.ts
+@@ -21,3 +21,9 @@ if (!window.matchMedia) {
+     },
+   })) as typeof window.matchMedia
+ }
++
++// Node 25+ exposes a global localStorage accessor without backing storage.
++// Browser tests must consistently use jsdom's origin-scoped implementation.
++const domWindow = (globalThis as unknown as { jsdom: { window: Window } }).jsdom.window
++Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: domWindow.localStorage })
++Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: domWindow.sessionStorage })
+diff --git a/tests/vue/storage-seam.test.ts b/tests/vue/storage-seam.test.ts
+index b524455..b17f0bb 100644
+--- a/tests/vue/storage-seam.test.ts
++++ b/tests/vue/storage-seam.test.ts
+@@ -147,3 +147,24 @@ describe('storage seam', () => {
+     w.unmount()
+   })
+ })
++
++// A real personal edit survives host policy changes and unrelated pref writes.
++it('keeps the overlay and free theme preference while the host controls appearance', async () => {
++  const store = hostStore()
++  store.set(STORE_KEYS.prefs, JSON.stringify({ theme: 'dark' }))
++  const w = mountViewer(store, { theme: 'light', themeControl: 'host' })
++  await personalise(w)
++  const key = overlayKey('jesus-1')
++  const overlay = store.get(key)
++  expect(overlay).toBeTruthy()
++  await w.setProps({ theme: 'auto' })
++  await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
++  await flushPromises()
++  expect(JSON.parse(store.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: true })
++  expect(store.get(key)).toBe(overlay)
++  await w.setProps({ theme: 'light', themeControl: 'preference' })
++  expect(w.get('[data-cpv-root]').attributes('data-theme')).toBe('dark')
++  expect(w.html()).toContain('(meu)')
++  expect(store.get(key)).toBe(overlay)
++  w.unmount()
++})
+diff --git a/playwright.config.ts b/playwright.config.ts
+new file mode 100644
+index 0000000..f288f41
+--- /dev/null
++++ b/playwright.config.ts
+@@ -0,0 +1,8 @@
++import { defineConfig } from '@playwright/test'
++export default defineConfig({
++  testDir: './tests/browser', testMatch: '**/*.spec.ts', fullyParallel: true,
++  use: { baseURL: 'http://127.0.0.1:5187', trace: 'retain-on-failure' },
++  projects: [{ name: 'chromium', use: { browserName: 'chromium' } },
++    { name: 'webkit', use: { browserName: 'webkit' } }],
++  webServer: { command: 'pnpm exec vite --config vite.browser.config.ts', url: 'http://127.0.0.1:5187', reuseExistingServer: false },
++})
+diff --git a/src/vue/chart/readingWords.ts b/src/vue/chart/readingWords.ts
+new file mode 100644
+index 0000000..d258d2e
+--- /dev/null
++++ b/src/vue/chart/readingWords.ts
+@@ -0,0 +1,27 @@
++import type { ChartSeg } from 'titan-chordpro-ui'
++
++/** Reading-only fragments: wrap at source whitespace, never a chord change
++ * inside a word. A chord stays on the first fragment of its original segment;
++ * neither the ViewModel nor the source is modified. */
++export function readingWords(segs: ChartSeg[]): ChartSeg[][] {
++  const groups: ChartSeg[][] = []
++  let group: ChartSeg[] = []
++  const finish = () => {
++    if (group.length) groups.push(group)
++    group = []
++  }
++  for (const seg of segs) {
++    const parts = seg.text.match(/\S+\s*|\s+/g) ?? ['']
++    parts.forEach((text, index) => {
++      // Leading whitespace is a real word boundary too, even when it belongs
++      // to the following chord's segment (e.g. [Em7/D] mo[A]tivos).
++      if (/^\s/.test(text)) finish()
++      group.push(index === 0 ? { ...seg, text } : {
++        ...seg, text, chord: '', shape: '', hasShape: false, tight: false, loose: false,
++      })
++      if (/\s$/.test(text)) finish()
++    })
++  }
++  finish()
++  return groups
++}
+diff --git a/tests/browser/Harness.vue b/tests/browser/Harness.vue
+new file mode 100644
+index 0000000..8769a48
+--- /dev/null
++++ b/tests/browser/Harness.vue
+@@ -0,0 +1,22 @@
++<script setup lang="ts">
++import { ref } from 'vue'
++import { ChordproViewer } from '../../src/vue'
++import source from '../../fixtures/escuta-meu-clamor-sda-86.cho?raw'
++const fonts = ref('fallback')
++async function loadFonts() {
++  await Promise.all([import('@fontsource/figtree/400.css'), import('@fontsource/sora/400.css'), import('@fontsource/space-mono/700.css')])
++  await Promise.all([document.fonts.load('18px Figtree'), document.fonts.load('18px Sora'), document.fonts.load('700 22px "Space Mono"')])
++  fonts.value = 'loaded'
++}
++const theme = ref<'auto' | 'light' | 'dark'>('light')
++const themeControl = ref<'host' | 'preference'>('host')
++</script>
++<template>
++  <div id="host" style="font-family:Arial,sans-serif;height:calc(100vh - 30px)">
++    <button id="load-fonts" @click="loadFonts">Load fonts</button>
++    <span id="fonts-state">{{ fonts }}</span>
++    <select id="host-theme" v-model="theme"><option>light</option><option>dark</option><option>auto</option></select>
++    <select id="host-control" v-model="themeControl"><option>host</option><option>preference</option></select>
++    <ChordproViewer :source="source" :theme="theme" :theme-control="themeControl" :auto-hide="false" modes="content" />
++  </div>
++</template>
+diff --git a/tests/browser/index.html b/tests/browser/index.html
+new file mode 100644
+index 0000000..14596cb
+--- /dev/null
++++ b/tests/browser/index.html
+@@ -0,0 +1 @@
++<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0"><div id="app"></div><script type="module" src="/main.ts"></script></body></html>
+\ No newline at end of file
+diff --git a/tests/browser/layout.spec.ts b/tests/browser/layout.spec.ts
+new file mode 100644
+index 0000000..9e8a5c7
+--- /dev/null
++++ b/tests/browser/layout.spec.ts
+@@ -0,0 +1,112 @@
++import { expect, test } from '@playwright/test'
++import type { Page } from '@playwright/test'
++import { readFileSync } from 'node:fs'
++import { createHash } from 'node:crypto'
++import { layoutChartFull, parse } from '../../src/core'
++
++const source = readFileSync(new URL('../../fixtures/escuta-meu-clamor-sda-86.cho', import.meta.url), 'utf8')
++const rows = (semitones = 0, capo = 0) => layoutChartFull(parse(source), { semitones, capo }).blocks
++  .flatMap(b => b.kind === 'stanza' || b.kind === 'chorus' ? b.rows : [])
++
++async function checkGeometry(page: Page, semitones = 0, capo = 0) {
++  const expected = rows(semitones, capo)
++  await expect(page.locator('.cpv-chord').first()).toHaveText(expected.flatMap(r => r.segs).find(s => s.chord)!.chord)
++  const actual = await page.locator('.cpv-row').evaluateAll(elements => elements.map(row => {
++    const chords = Array.from(row.querySelectorAll('.cpv-chord'))
++    const failures: string[] = []
++    for (const lane of ['.cpv-chord', '.cpv-shape']) {
++      const boxes = Array.from(row.querySelectorAll(lane))
++      boxes.slice(1).forEach((b, i) => {
++        const a = boxes[i]!, ar = a.getBoundingClientRect(), br = b.getBoundingClientRect()
++        if (Math.abs(ar.y - br.y) < 1 && br.x - ar.right < 3.5)
++          failures.push(`${a.textContent}/${b.textContent}: ${(br.x - ar.right).toFixed(2)}px`)
++      })
++    }
++    for (const chord of chords) {
++      const lyric = chord.closest('.cpv-word')!.querySelector('.cpv-lyric')!
++      if (Math.abs(chord.getBoundingClientRect().x - lyric.getBoundingClientRect().x) > 1)
++        failures.push(`anchor ${chord.textContent}`)
++    }
++    for (const word of row.querySelectorAll('.cpv-reading-word')) {
++      const ys = [...word.querySelectorAll('.cpv-lyric')].map(el => el.getBoundingClientRect().y)
++      if (Math.max(...ys) - Math.min(...ys) > 1) failures.push('word broken at internal chord')
++    }
++    if (row.scrollWidth > row.clientWidth + 1) failures.push('row overflows container')
++    return {
++      failures,
++      lyric: [...row.querySelectorAll('.cpv-lyric')].map(e => e.textContent).join(''),
++      chords: chords.map(e => e.textContent),
++      shapes: [...row.querySelectorAll('.cpv-shape')].map(e => e.textContent),
++    }
++  }))
++  expect(actual.flatMap(r => r.failures)).toEqual([])
++  expect(actual.map(r => r.lyric)).toEqual(expected.map(r => r.plain))
++  expect(actual.map(r => r.chords)).toEqual(expected.map(r => r.segs.filter(s => s.chord).map(s => s.chord)))
++  expect(actual.map(r => r.shapes)).toEqual(expected.map(r => r.segs.filter(s => s.hasShape).map(s => s.shape)))
++}
++
++for (const width of [1280, 375]) {
++  test(`real fixture geometry, fonts, transpose/capo and resize at ${width}px`, async ({ page }, info) => {
++    expect(createHash('sha256').update(source).digest('hex')).toBe('d7d80be43cac373bf4615b8c0413c14b96a62804a57972da1173054ed38b3be2')
++    await page.setViewportSize({ width, height: 900 })
++    await page.goto('/')
++    await page.locator('.cpv-chord').first().waitFor()
++    // No webfont stylesheet exists yet: exercise the standalone fallback.
++    await page.evaluate(() => document.fonts.ready)
++    await checkGeometry(page)
++    for (const [a, b] of [['Bm', 'E'], ['B', 'E'], ['Em7/D', 'A'], ['Fsus4', 'F']]) {
++      const pairs = await page.locator('.cpv-row').evaluateAll(elements => elements.flatMap(row => {
++        const ch = [...row.querySelectorAll('.cpv-chord')]
++        return ch.slice(1).map((el, i) => [ch[i]!.textContent, el.textContent])
++      }))
++      expect(pairs).toContainEqual([a, b])
++    }
++    await page.locator('#load-fonts').click()
++    await expect(page.locator('#fonts-state')).toHaveText('loaded')
++    await checkGeometry(page)
++    // Embed font contract, independent choices for lyric, controls and chords.
++    await page.locator('[data-cpv-root]').evaluate(el => {
++      const style = (el as HTMLElement).style
++      style.setProperty('--cpv-font-lyrics', 'Figtree, sans-serif')
++      // CSS-wide inherit belongs on font-family, not on a custom property.
++      style.fontFamily = 'inherit'
++      style.setProperty('--cpv-font-chords', 'Sora, sans-serif')
++    })
++    expect(await page.locator('.cpv-lyric').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
++    expect(await page.locator('[data-theme-btn]').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Arial')
++    expect(await page.locator('.cpv-chord').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
++    await checkGeometry(page)
++    // Keyboard is the same user control on phone and desktop.
++    await page.locator('#load-fonts').blur()
++    await page.keyboard.press('+')
++    await page.keyboard.press('+')
++    await checkGeometry(page, 2)
++    // The desktop capo control persists its value through the subsequent resize.
++    await page.setViewportSize({ width: 1280, height: 900 })
++    await page.locator('[data-capo]').click()
++    await page.getByRole('button', { name: 'Capo acima', exact: true }).click()
++    await page.getByRole('button', { name: 'Capo acima', exact: true }).click()
++    await page.keyboard.press('Escape')
++    await expect(page.locator('.cpv-shape').first()).toBeVisible()
++    await checkGeometry(page, 2, 2)
++    await page.setViewportSize({ width: 320, height: 900 })
++    await checkGeometry(page, 2, 2)
++    await page.setViewportSize({ width, height: 900 })
++    await checkGeometry(page, 2, 2)
++    await info.attach('reading', { body: await page.screenshot(), contentType: 'image/png' })
++  })
++}
++
++test('controlled auto follows system changes, explicit host theme wins old preference', async ({ page }) => {
++  await page.addInitScript(() => localStorage.setItem('cpv:prefs', JSON.stringify({ theme: 'dark' })))
++  await page.emulateMedia({ colorScheme: 'dark' })
++  await page.goto('/')
++  const root = page.locator('[data-cpv-root]')
++  await expect(root).toHaveAttribute('data-theme', 'light')
++  await page.locator('#host-theme').selectOption('auto')
++  await expect(root).toHaveAttribute('data-theme', 'dark')
++  await page.emulateMedia({ colorScheme: 'light' })
++  await expect(root).toHaveAttribute('data-theme', 'light')
++  await page.locator('#host-control').selectOption('preference')
++  await expect(root).toHaveAttribute('data-theme', 'dark')
++})
+diff --git a/tests/browser/main.ts b/tests/browser/main.ts
+new file mode 100644
+index 0000000..8bce5e7
+--- /dev/null
++++ b/tests/browser/main.ts
+@@ -0,0 +1,3 @@
++import { createApp } from 'vue'
++import Harness from './Harness.vue'
++createApp(Harness).mount('#app')
+diff --git a/tests/vue/theme-control.test.ts b/tests/vue/theme-control.test.ts
+new file mode 100644
+index 0000000..a183373
+--- /dev/null
++++ b/tests/vue/theme-control.test.ts
+@@ -0,0 +1,73 @@
++import { flushPromises, mount } from '@vue/test-utils'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import { ChordproViewer } from '../../src/vue'
++import { memoryStore, STORE_KEYS } from '../../src/core'
++import { JESUS_1, loadFixture } from '../helpers/load-fixture'
++
++const mounted: ReturnType<typeof mount>[] = []
++afterEach(() => { mounted.splice(0).forEach(w => w.unmount()); vi.restoreAllMocks() })
++function viewer(props = {}) {
++  const w = mount(ChordproViewer, { props: { source: loadFixture(JESUS_1), autoHide: false, storage: memoryStore(), ...props }, attachTo: document.body })
++  mounted.push(w)
++  return w
++}
++const appearance = (w: ReturnType<typeof viewer>) => w.get('[data-cpv-root]').attributes('data-theme')
++
++for (const dark of [true, false]) {
++  describe(`system ${dark ? 'dark' : 'light'}`, () => {
++    function system() {
++      vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: dark, addEventListener() {}, removeEventListener() {} } as unknown as MediaQueryList)
++    }
++    it('keeps auto standalone and uses theme as fallback until a preference exists', async () => {
++      system()
++      const w = viewer()
++      expect(appearance(w)).toBe(dark ? 'dark' : 'light')
++      await w.setProps({ theme: 'light' })
++      expect(appearance(w)).toBe('light')
++      await w.get('[data-theme-btn]').trigger('click')
++      expect(appearance(w)).toBe('dark')
++      await w.setProps({ theme: 'light' })
++      expect(appearance(w)).toBe('dark')
++    })
++    it('host prop wins saved preference; requests do not change it or storage', async () => {
++      system()
++      const storage = memoryStore()
++      const saved = JSON.stringify({ theme: 'dark', bias: 1, futurePreference: 'keep' })
++      storage.set(STORE_KEYS.prefs, saved)
++      const w = viewer({ theme: 'light', themeControl: 'host', storage })
++      await flushPromises()
++      expect(appearance(w)).toBe('light')
++      await w.get('[data-theme-btn]').trigger('click')
++      expect(w.emitted('update:theme')).toEqual([['dark']])
++      expect(appearance(w)).toBe('light')
++      await w.setProps({ theme: 'auto' })
++      expect(appearance(w)).toBe(dark ? 'dark' : 'light')
++      await w.setProps({ theme: 'dark' })
++      expect(appearance(w)).toBe('dark')
++      await w.setProps({ theme: 'light', themeControl: 'preference' })
++      expect(appearance(w)).toBe('dark')
++      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', futurePreference: 'keep' })
++    })
++    it('host without prefs returns to current prop fallback and does not persist requests', async () => {
++      system()
++      const storage = memoryStore()
++      const w = viewer({ theme: 'light', themeControl: 'host', storage })
++      await w.get('[data-theme-btn]').trigger('click')
++      expect(storage.get(STORE_KEYS.prefs)).toBeNull()
++      await w.setProps({ theme: 'auto', themeControl: 'preference' })
++      expect(appearance(w)).toBe(dark ? 'dark' : 'light')
++    })
++  })
++}
++
++it('host keyboard request follows the same policy and preserves other preference keys', async () => {
++  const storage = memoryStore()
++  storage.set(STORE_KEYS.prefs, JSON.stringify({ theme: 'stage', futurePreference: 42 }))
++  const w = viewer({ theme: 'light', themeControl: 'host', storage })
++  await w.get('[data-cpv-root]').trigger('keydown', { key: 't' })
++  expect(w.emitted('update:theme')).toEqual([['dark']])
++  expect(appearance(w)).toBe('light')
++  await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
++  await flushPromises()
++  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', futurePreference: 42, fit: true })
++})
+diff --git a/vite.browser.config.ts b/vite.browser.config.ts
+new file mode 100644
+index 0000000..7288c03
+--- /dev/null
++++ b/vite.browser.config.ts
+@@ -0,0 +1,12 @@
++import { defineConfig } from 'vite'
++import vue from '@vitejs/plugin-vue'
++import { fileURLToPath } from 'node:url'
++const root = fileURLToPath(new URL('.', import.meta.url))
++export default defineConfig({
++  root: 'tests/browser', plugins: [vue()], publicDir: false,
++  resolve: { alias: {
++    'titan-chordpro-ui/pdf': `${root}src/pdf/index.ts`,
++    'titan-chordpro-ui': `${root}src/core/index.ts`,
++  } },
++  server: { host: '127.0.0.1', port: 5187, strictPort: true, fs: { allow: [root] } },
++})
