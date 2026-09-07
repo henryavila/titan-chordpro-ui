@@ -54,6 +54,9 @@ Ver `02-fixtures.md` (conteúdo real). Em populated, a pessoa vê no mínimo:
 
 - Meta da música quando existir (título; tom **exibido** se houver key; bpm/tempo se houver).
 - Corpo da cifra: acordes alinhados à letra; comentários de ensaio preservados; tabs se existirem; linhas vazias como respiro.
+
+**Regra de ancoragem e folga do acorde (R):** cada acorde começa na horizontal exata da sílaba a que pertence e reserva a própria largura mais uma folga mínima visível — nunca pinta sobre a letra nem encosta no acorde vizinho, inclusive dentro da mesma palavra; quando a largura do acorde excede a da sílaba, quem cede é o espaçamento das sílabas, nunca a folga. A unidade de quebra de linha é a **palavra**: a linha só quebra em espaço real do texto, e troca de acorde no meio da palavra nunca é ponto de quebra.
+
 - Controles da cifra (não de app): tema; transpose (condicional); bias de tamanho; auto-scroll; **modo ajuste ao espaço**; export.
 
 Texture: fixtures reais têm ~26–93 linhas, comments como `(INTRODUÇÃO…)`, `(BEM SUAVE)`, linhas de 28–94 chars, densidades ~2–5 segmentos/linha.
