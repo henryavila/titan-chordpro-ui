@@ -27,7 +27,7 @@
   --capo:#96A0B4; --capo-soft:rgba(150,160,180,0.12); --capo-edge:rgba(150,160,180,0.30);
   --shadow:0 24px 60px -18px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.07);
 }
-html,body{margin:0;padding:0;height:100%;background:var(--canvas);overflow:hidden;overscroll-behavior:none;}
+html,body{margin:0;padding:0;height:100%;}
 *,*::before,*::after{box-sizing:border-box;}
 a{color:var(--chord);text-decoration:none;} a:hover{opacity:0.75;}
 button{font-family:inherit;}
@@ -37,9 +37,20 @@ button{font-family:inherit;}
 @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}}
 </style>
 </helmet>
-<div ref="{{ rootRef }}" style="position:relative;height:100dvh;min-height:460px;width:100%;overflow:hidden;background:var(--canvas);color:var(--text);font-family:Sora,system-ui,-apple-system,sans-serif;">
+<div ref="{{ rootRef }}" style="position:relative;height:100%;min-height:460px;width:100%;overflow:hidden;background:var(--canvas);color:var(--text);font-family:Sora,system-ui,-apple-system,sans-serif;">
 
   <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 80% at 50% -10%,var(--glow),transparent 60%);"></div>
+
+  <sc-if value="{{ surfaceBad }}" hint-placeholder-val="{{ false }}">
+    <div role="alert" style="position:absolute;left:14px;right:14px;bottom:14px;z-index:2147483000;display:flex;align-items:flex-start;gap:12px;padding:14px 14px 14px 16px;border-radius:13px;background:#2A1411;border:1px solid var(--danger);box-shadow:var(--shadow);">
+      <span aria-hidden="true" style="flex:none;color:var(--danger);font-size:15px;line-height:1.35;">⚠</span>
+      <span style="flex:1;min-width:0;">
+        <strong style="display:block;font-size:13.5px;font-weight:600;color:var(--danger);margin-bottom:4px;">Viewer sem altura resolvível</strong>
+        <span style="display:block;font-size:12.5px;line-height:1.55;color:#F3DAD4;text-wrap:pretty;">O ancestral imediato precisa de uma altura definida. Sem ela o viewer usa o piso de 460px e a barra de controle fica fora da tela. Ver <span style="font-family:'Space Mono',monospace;font-size:11.5px;color:#FFF;">docs/EMBED-SDA.md</span> — detalhes no console.</span>
+      </span>
+      <button onClick="{{ dismissGuard }}" aria-label="Ocultar aviso" title="Ocultar aviso" style="flex:none;width:26px;height:26px;border:0;border-radius:8px;background:transparent;color:#E7BCB3;font-size:15px;line-height:1;cursor:pointer;" style-hover="background:var(--danger-soft);color:#FFF;">×</button>
+    </div>
+  </sc-if>
 
   <sc-if value="{{ isPopulated }}" hint-placeholder-val="{{ true }}">
     <div ref="{{ scrollRef }}" onClick="{{ onSurfaceTap }}" style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;">
@@ -114,7 +125,7 @@ button{font-family:inherit;}
               </sc-if>
               <sc-if value="{{ line.isShownComment }}" hint-placeholder-val="{{ true }}">
                 <div onClick="{{ line.edit }}" style="display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:0 16px;">
-                  <span style="flex:none;width:5px;height:5px;border-radius:50%;background:var(--chord);opacity:0.75;"></span>
+                  <span style="flex:none;width:5px;height:5px;transform:{{ fsRot }};border-radius:50%;background:var(--chord);opacity:0.75;"></span>
                   <span style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;color:var(--muted);line-height:1.4;">{{ line.text }}</span>
                   <span style="flex:1;height:1px;background:var(--line-soft);"></span>
                 </div>
@@ -198,19 +209,26 @@ button{font-family:inherit;}
                   <sc-for list="{{ line.rows }}" as="row" hint-placeholder-count="3">
                     <div style="position:relative;display:flex;flex-wrap:wrap;align-items:flex-start;row-gap:7px;padding:{{ rowPad }} 0;">
                       <sc-if value="{{ row.mine }}" hint-placeholder-val="{{ false }}">
-                        <button onClick="{{ row.revertMine }}" title="Ajuste seu — toque para voltar este trecho ao original" aria-label="Voltar este trecho ao original" style="position:absolute;left:-15px;bottom:8px;width:16px;height:16px;padding:0;border:0;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--chord-soft);" style-focus="outline:2px solid var(--focus);outline-offset:1px;"><span style="width:5px;height:5px;border-radius:50%;background:var(--chord);"></span></button>
+                        <button onClick="{{ row.revertMine }}" title="Ajuste seu — toque para voltar este trecho ao original" aria-label="Voltar este trecho ao original" style="position:absolute;left:-15px;bottom:8px;width:16px;height:16px;padding:0;border:0;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--chord-soft);" style-focus="outline:2px solid var(--focus);outline-offset:1px;"><span style="width:5px;height:5px;transform:{{ fsRot }};border-radius:50%;background:var(--chord);"></span></button>
                       </sc-if>
-                      <sc-for list="{{ row.segs }}" as="s" hint-placeholder-count="4">
-                        <span style="display:flex;flex-direction:column;max-width:100%;">
-                          <span style="display:flex;align-items:flex-end;height:{{ line.chordBox }};">
-                            <sc-if value="{{ s.loose }}" hint-placeholder-val="{{ true }}">
-                              <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;font-family:'Space Mono',monospace;line-height:1;padding-right:0.8em;white-space:nowrap;"><sc-if value="{{ s.hasShape }}" hint-placeholder-val="{{ false }}"><span style="font-weight:700;font-size:{{ shapePx }};letter-spacing:-0.005em;color:var(--capo);">{{ s.shape }}</span></sc-if><span style="font-weight:700;font-size:{{ chordPx }};letter-spacing:-0.005em;color:var(--chord);">{{ s.chord }}</span></span>
-                            </sc-if>
-                            <sc-if value="{{ s.tight }}" hint-placeholder-val="{{ false }}">
-                              <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;font-family:'Space Mono',monospace;line-height:1;width:0;overflow:visible;white-space:nowrap;"><sc-if value="{{ s.hasShape }}" hint-placeholder-val="{{ false }}"><span style="font-weight:700;font-size:{{ shapePx }};letter-spacing:-0.005em;color:var(--capo);">{{ s.shape }}</span></sc-if><span style="font-weight:700;font-size:{{ chordPx }};letter-spacing:-0.005em;color:var(--chord);">{{ s.chord }}</span></span>
-                            </sc-if>
-                          </span>
-                          <span style="font-size:{{ lyricPx }};line-height:1.32;color:inherit;white-space:pre-wrap;overflow-wrap:anywhere;">{{ s.text }}</span>
+                      <sc-for list="{{ row.words }}" as="w" hint-placeholder-count="4">
+                        <span style="display:flex;flex:none;align-items:flex-start;max-width:100%;">
+                          <sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="2">
+                            <span style="display:flex;flex-direction:column;flex:none;">
+                              <span style="display:flex;align-items:flex-end;height:{{ line.chordBox }};">
+                                <sc-if value="{{ c.hasChord }}" hint-placeholder-val="{{ true }}">
+                                  <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;font-family:'Space Mono',monospace;line-height:1;padding-right:0.8em;white-space:pre;"><sc-if value="{{ c.hasShape }}" hint-placeholder-val="{{ false }}"><span style="font-weight:700;font-size:{{ shapePx }};letter-spacing:-0.005em;color:var(--capo);">{{ c.shape }}</span></sc-if><span style="font-weight:700;font-size:{{ chordPx }};letter-spacing:-0.005em;color:var(--chord);">{{ c.chord }}</span></span>
+                                </sc-if>
+                              </span>
+                              <span style="font-size:{{ lyricPx }};line-height:1.32;color:inherit;white-space:pre;">{{ c.text }}</span>
+                            </span>
+                          </sc-for>
+                          <sc-if value="{{ w.hasTail }}" hint-placeholder-val="{{ false }}">
+                            <span style="display:flex;flex-direction:column;flex:none;">
+                              <span style="height:{{ line.chordBox }};"></span>
+                              <span style="font-size:{{ lyricPx }};line-height:1.32;color:inherit;white-space:pre;">{{ w.tail }}</span>
+                            </span>
+                          </sc-if>
                         </span>
                       </sc-for>
                     </div>
@@ -226,7 +244,7 @@ button{font-family:inherit;}
                       <sc-if value="{{ row.isShown }}" hint-placeholder-val="{{ true }}">
                         <div data-row="{{ row.li }}" onClick="{{ row.editText }}" title="Toque para editar a letra" style="position:relative;padding:2px 0 4px;line-height:{{ editLineH }};cursor:text;font-size:{{ lyricPx }};">
                           <sc-if value="{{ row.mine }}" hint-placeholder-val="{{ false }}">
-                            <button onClick="{{ row.revertMine }}" title="Ajuste seu — toque para voltar este trecho ao original" aria-label="Voltar este trecho ao original" style="position:absolute;left:-14px;top:calc({{ pillLane }} + 2px);width:16px;height:16px;padding:0;border:0;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--chord-soft);" style-focus="outline:2px solid var(--focus);outline-offset:1px;"><span style="width:5px;height:5px;border-radius:50%;background:var(--chord);"></span></button>
+                            <button onClick="{{ row.revertMine }}" title="Ajuste seu — toque para voltar este trecho ao original" aria-label="Voltar este trecho ao original" style="position:absolute;left:-14px;top:calc({{ pillLane }} + 2px);width:16px;height:16px;padding:0;border:0;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--chord-soft);" style-focus="outline:2px solid var(--focus);outline-offset:1px;"><span style="width:5px;height:5px;transform:{{ fsRot }};border-radius:50%;background:var(--chord);"></span></button>
                           </sc-if>
                           <sc-for list="{{ row.tokens }}" as="tk" hint-placeholder-count="6">
                             <sc-if value="{{ tk.isWord }}" hint-placeholder-val="{{ true }}">
@@ -257,10 +275,37 @@ button{font-family:inherit;}
   </sc-if>
 
   <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;text-align:center;">
-      <div style="width:46px;height:46px;border-radius:14px;border:1px dashed var(--line);background:var(--veil);"></div>
-      <div style="font-size:15px;font-weight:600;">Nenhuma cifra carregada</div>
-      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O host ainda não entregou uma fonte ChordPro para este viewer.</div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:{{ emptyPad }};text-align:center;">
+      <sc-if value="{{ emptyReadOnly }}" hint-placeholder-val="{{ true }}">
+        <div style="width:46px;height:46px;border-radius:14px;border:1px dashed var(--line);background:var(--veil);"></div>
+        <div style="font-size:15px;font-weight:600;">Nenhuma cifra carregada</div>
+        <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">Esta música ainda não tem cifra. Quem cuida do repertório pode criar a partir daqui.</div>
+      </sc-if>
+      <sc-if value="{{ canStartNew }}" hint-placeholder-val="{{ false }}">
+        <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;text-align:left;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Para todos</span>
+            <span style="font-size:19px;font-weight:700;letter-spacing:-0.02em;line-height:1.25;">{{ emptyTitle }}</span>
+            <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Ainda não existe cifra aqui. O que você criar vira a cifra do sistema — todos os músicos passam a ler assim.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <button onClick="{{ startImport }}" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--chord-edge);border-radius:15px;background:var(--chord-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;" style-hover="background:var(--chord-hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
+              <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;line-height:1;">↓</span>
+              <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+                <span style="font-size:14.5px;font-weight:700;">Importar</span>
+                <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Link do CifraClub, arquivo .cho ou PDF, ou texto colado — inclusive OnSong.</span>
+              </span>
+            </button>
+            <button onClick="{{ startBlank }}" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:15px;background:transparent;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
+              <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--muted);line-height:1;">+</span>
+              <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+                <span style="font-size:14.5px;font-weight:700;">Começar em branco</span>
+                <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Digitar letra e acordes no editor, do zero.</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -278,6 +323,38 @@ button{font-family:inherit;}
     </div>
   </sc-if>
 
+  <sc-if value="{{ songFail }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:11;display:flex;align-items:center;justify-content:center;padding:22px;">
+      <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:18px;background:var(--veil-2);border:1px solid var(--line);box-shadow:var(--shadow);">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Não carregou</span>
+          <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.3;text-wrap:pretty;">{{ songFailTitle }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Esta cifra não chegou. As outras da lista continuam disponíveis.</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button onClick="{{ retrySong }}" style="height:44px;padding:0 16px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">Tentar de novo</button>
+          <button onClick="{{ openList }}" style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">Abrir a lista</button>
+          <span style="flex:1;"></span>
+          <button onClick="{{ goPrev }}" disabled="{{ noPrev }}" aria-label="Música anterior" style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;opacity:{{ prevOp }};">◀</button>
+          <button onClick="{{ goNext }}" disabled="{{ noNext }}" aria-label="Próxima música" style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;opacity:{{ nextOp }};">▶</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ endOffer }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;bottom:{{ offerBottom }};z-index:15;display:flex;justify-content:center;padding:0 12px;pointer-events:none;">
+      <div style="pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:420px;padding:9px 10px 9px 15px;border-radius:16px;background:var(--veil-2);border:1px solid var(--chord-edge);box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);animation:rise .2s ease-out;">
+        <span style="min-width:0;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Fim da música</span>
+          <span style="font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ endNextTitle }}</span>
+        </span>
+        <button onClick="{{ endNext }}" style="flex:none;height:40px;padding:0 15px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">Próxima</button>
+        <button onClick="{{ dismissEnd }}" aria-label="Ficar nesta música" title="Ficar nesta música" style="flex:none;width:34px;height:34px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;" style-hover="background:var(--hover);">×</button>
+      </div>
+    </div>
+  </sc-if>
+
   <div style="position:absolute;top:0;left:0;right:0;height:2px;z-index:14;pointer-events:none;">
     <div style="height:2px;width:{{ progressPct }};background:linear-gradient(90deg,var(--chord-edge),var(--chord));transition:width .1s linear;"></div>
   </div>
@@ -285,10 +362,22 @@ button{font-family:inherit;}
   <sc-if value="{{ viewPhone }}" hint-placeholder-val="{{ false }}">
   <div style="position:absolute;top:0;left:0;right:0;z-index:12;padding:{{ chromePad }};pointer-events:none;opacity:{{ chromeOp }};transition:opacity .35s ease;">
     <div ref="{{ headRef }}" style="pointer-events:{{ chromePE }};display:flex;align-items:center;gap:10px;height:56px;padding:0 6px 0 14px;border-radius:18px;background:var(--veil);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);">
+      <sc-if value="{{ setlistOn }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ openList }}" title="Abrir a lista do ensaio" style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;height:48px;padding:0;border:0;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:3px;border-radius:10px;">
+          <span style="flex:none;display:flex;align-items:center;height:22px;padding:0 7px;border-radius:7px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ titleText }}</span>
+            <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
+          </span>
+          <span style="flex:none;font-size:9px;color:var(--muted);padding-right:2px;">▾</span>
+        </button>
+      </sc-if>
+      <sc-if value="{{ soloHead }}" hint-placeholder-val="{{ true }}">
       <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
         <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ titleText }}</span>
         <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
       </span>
+      </sc-if>
       <sc-if value="{{ hasKey }}" hint-placeholder-val="{{ true }}">
         <button onClick="{{ openTone }}" aria-label="Tom e capotraste" title="Tom e capotraste" style="flex:none;display:flex;align-items:center;gap:7px;height:44px;padding:0 12px;border:1px solid var(--chord-edge);border-radius:14px;background:{{ toneBtnBg }};color:var(--chord);cursor:pointer;font-family:inherit;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
           <span style="font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
@@ -303,12 +392,24 @@ button{font-family:inherit;}
   <sc-if value="{{ viewWide }}" hint-placeholder-val="{{ true }}">
   <div style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;padding:{{ chromePad }};pointer-events:none;opacity:{{ chromeOp }};transition:opacity .35s ease;">
     <div ref="{{ headRef }}" style="pointer-events:{{ chromePE }};width:100%;max-width:{{ headMax }};display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:9px 10px 9px 16px;border-radius:15px;background:var(--veil);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);">
+      <sc-if value="{{ setlistOn }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ openList }}" title="Abrir a lista do ensaio" style="flex:1 1 170px;min-width:150px;display:flex;align-items:center;gap:10px;padding:2px 6px 2px 0;border:0;border-radius:10px;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
+          <span style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ titleText }}</span>
+            <span style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ nextChip }}</span>
+          </span>
+          <span style="flex:none;font-size:9px;color:var(--muted);">▾</span>
+        </button>
+      </sc-if>
+      <sc-if value="{{ soloHead }}" hint-placeholder-val="{{ true }}">
       <div style="flex:1 1 170px;min-width:150px;display:flex;flex-direction:column;gap:2px;">
         <div style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ titleText }}</div>
         <sc-if value="{{ meta.subtitle }}" hint-placeholder-val="{{ false }}">
           <div style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.subtitle }}</div>
         </sc-if>
       </div>
+      </sc-if>
 
       <div style="flex:none;display:{{ metaDisplay }};align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">
         <sc-if value="{{ meta.tempo }}" hint-placeholder-val="{{ true }}"><span>{{ meta.tempo }} BPM</span></sc-if>
@@ -458,7 +559,17 @@ button{font-family:inherit;}
     </sc-if>
 
     <sc-if value="{{ hasContent }}" hint-placeholder-val="{{ true }}">
-      <div style="pointer-events:{{ chromePE }};display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;background:var(--veil);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);">
+      <div style="pointer-events:{{ chromePE }};max-width:{{ barMaxW }};display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;background:var(--veil);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);">
+
+        <sc-if value="{{ setlistOn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ goPrev }}" disabled="{{ noPrev }}" aria-label="Música anterior" title="Música anterior" style="width:{{ btnH }};height:{{ btnH }};border:0;border-radius:12px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;opacity:{{ prevOp }};" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">◀</button>
+          <button onClick="{{ openList }}" title="Abrir a lista do ensaio" style="height:{{ btnH }};padding:0 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
+            <span style="flex:none;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
+            <span style="flex:none;font-size:12px;font-weight:600;color:var(--muted);">Lista</span>
+          </button>
+          <button onClick="{{ goNext }}" disabled="{{ noNext }}" aria-label="Próxima música" title="Próxima música" style="width:{{ btnH }};height:{{ btnH }};border:0;border-radius:12px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;opacity:{{ nextOp }};" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">▶</button>
+          <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;"></span>
+        </sc-if>
 
         <button onClick="{{ toggleScroll }}" title="Auto-rolagem (espaço)" style="height:{{ btnH }};padding:0 14px 0 12px;border-radius:12px;border:1px solid {{ scrollBorder }};background:{{ scrollBg }};color:{{ scrollFg }};font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:9px;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
           <span style="width:10px;height:10px;background:currentColor;border-radius:{{ scrollIconRadius }};clip-path:{{ scrollClip }};"></span>{{ scrollLabel }}
@@ -492,10 +603,11 @@ button{font-family:inherit;}
 
         <button onClick="{{ openSheet }}" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">↓</button>
 
-        <button onClick="{{ toggleFs }}" aria-label="Tela cheia" title="Tela cheia (F)" style="width:36px;height:36px;border:1px solid {{ fsBorder }};border-radius:12px;background:{{ fsBg }};color:{{ fsFg }};font-size:14px;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">{{ fsGlyph }}</button>
+        <button onClick="{{ toggleFs }}" aria-label="Tela cheia" title="Tela cheia (F)" style="width:36px;height:36px;border:1px solid {{ fsBorder }};border-radius:12px;background:{{ fsBg }};color:{{ fsFg }};cursor:pointer;display:flex;align-items:center;justify-content:center;" style-focus="outline:2px solid var(--focus);outline-offset:2px;"><span style="position:relative;display:block;width:15px;height:15px;"><span style="position:absolute;top:0;left:0;width:5px;height:5px;transform:{{ fsRot }};border-top:1.7px solid currentColor;border-left:1.7px solid currentColor;"></span><span style="position:absolute;top:0;right:0;width:5px;height:5px;transform:{{ fsRot }};border-top:1.7px solid currentColor;border-right:1.7px solid currentColor;"></span><span style="position:absolute;bottom:0;left:0;width:5px;height:5px;transform:{{ fsRot }};border-bottom:1.7px solid currentColor;border-left:1.7px solid currentColor;"></span><span style="position:absolute;bottom:0;right:0;width:5px;height:5px;transform:{{ fsRot }};border-bottom:1.7px solid currentColor;border-right:1.7px solid currentColor;"></span></span></button>
         </sc-if>
         <sc-if value="{{ barCompact }}" hint-placeholder-val="{{ false }}">
           <button onClick="{{ openMore }}" title="Mais controles" style="height:{{ btnH }};padding:0 14px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;" style-hover="background:var(--hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">Mais<span style="font-size:9px;opacity:0.7;">▴</span></button>
+          <button onClick="{{ toggleFs }}" aria-label="Tela cheia" title="Tela cheia (F)" style="width:{{ btnH }};height:{{ btnH }};border:1px solid {{ fsBorder }};border-radius:12px;background:{{ fsBg }};color:{{ fsFg }};cursor:pointer;display:flex;align-items:center;justify-content:center;" style-focus="outline:2px solid var(--focus);outline-offset:2px;"><span style="position:relative;display:block;width:15px;height:15px;"><span style="position:absolute;top:0;left:0;width:5px;height:5px;transform:{{ fsRot }};border-top:1.7px solid currentColor;border-left:1.7px solid currentColor;"></span><span style="position:absolute;top:0;right:0;width:5px;height:5px;transform:{{ fsRot }};border-top:1.7px solid currentColor;border-right:1.7px solid currentColor;"></span><span style="position:absolute;bottom:0;left:0;width:5px;height:5px;transform:{{ fsRot }};border-bottom:1.7px solid currentColor;border-left:1.7px solid currentColor;"></span><span style="position:absolute;bottom:0;right:0;width:5px;height:5px;transform:{{ fsRot }};border-bottom:1.7px solid currentColor;border-right:1.7px solid currentColor;"></span></span></button>
         </sc-if>
       </div>
     </sc-if>
@@ -514,6 +626,18 @@ button{font-family:inherit;}
 
       <sc-if value="{{ hasContent }}" hint-placeholder-val="{{ true }}">
       <div style="pointer-events:{{ chromePE }};display:flex;flex-direction:column;border-radius:20px;background:var(--veil);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);overflow:hidden;">
+
+        <sc-if value="{{ setlistOn }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 6px;border-bottom:1px solid var(--line-soft);">
+            <button onClick="{{ goPrev }}" disabled="{{ noPrev }}" aria-label="Música anterior" style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;opacity:{{ prevOp }};">◀</button>
+            <button onClick="{{ openList }}" title="Abrir a lista do ensaio" style="flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:13px;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:9px;">
+              <span style="flex:none;font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
+              <span style="flex:1;min-width:0;font-size:11.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">{{ nextChipShort }}</span>
+              <span style="flex:none;font-size:9px;color:var(--muted);">▴</span>
+            </button>
+            <button onClick="{{ goNext }}" disabled="{{ noNext }}" aria-label="Próxima música" style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;opacity:{{ nextOp }};">▶</button>
+          </div>
+        </sc-if>
 
         <sc-if value="{{ scrolling }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line-soft);">
@@ -540,7 +664,7 @@ button{font-family:inherit;}
             <button onClick="{{ bigger }}" aria-label="Aumentar tipografia" style="width:{{ dockAaW }};height:{{ dockAaH }};border:0;border-radius:12px;background:transparent;color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;">A+</button>
           </span>
 
-          <button onClick="{{ cycleTheme }}" aria-label="Tema" title="Tema claro / escuro / automático" style="flex:none;width:{{ dockIconSize }};height:{{ dockCtrlH }};border:0;border-radius:14px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">{{ themeGlyph }}</button>
+          <button onClick="{{ toggleFs }}" aria-label="Tela cheia" title="Tela cheia" style="flex:none;width:{{ dockIconSize }};height:{{ dockCtrlH }};border:1px solid {{ fsBorder }};border-radius:14px;background:{{ fsBg }};color:{{ fsFg }};line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;" style-focus="outline:2px solid var(--focus);outline-offset:2px;"><span style="position:relative;display:block;width:17px;height:17px;"><span style="position:absolute;top:0;left:0;width:6px;height:6px;transform:{{ fsRot }};border-top:1.8px solid currentColor;border-left:1.8px solid currentColor;"></span><span style="position:absolute;top:0;right:0;width:6px;height:6px;transform:{{ fsRot }};border-top:1.8px solid currentColor;border-right:1.8px solid currentColor;"></span><span style="position:absolute;bottom:0;left:0;width:6px;height:6px;transform:{{ fsRot }};border-bottom:1.8px solid currentColor;border-left:1.8px solid currentColor;"></span><span style="position:absolute;bottom:0;right:0;width:6px;height:6px;transform:{{ fsRot }};border-bottom:1.8px solid currentColor;border-right:1.8px solid currentColor;"></span></span></button>
 
           <sc-if value="{{ canEditNow }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ enterEdit }}" aria-label="Editar esta cifra" title="Editar esta cifra" style="flex:none;width:{{ dockIconSize }};height:{{ dockCtrlH }};border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">✎</button>
@@ -603,6 +727,50 @@ button{font-family:inherit;}
     <button onClick="{{ enterEdit }}" title="Editar esta cifra" style="position:absolute;right:16px;bottom:{{ editBtnBottom }};z-index:14;display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:var(--veil);color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(18px);opacity:{{ chromeOp }};transition:opacity .35s ease;" style-hover="background:var(--surface-hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
       <span style="width:9px;height:9px;border-radius:2px;border:1.5px solid var(--chord);transform:rotate(45deg);"></span>{{ editEntryLabel }}
     </button>
+  </sc-if>
+
+  <sc-if value="{{ listOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:29;display:flex;align-items:{{ modalAlign }};justify-content:center;padding:{{ modalPad }};">
+      <div onClick="{{ closeList }}" style="position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(4px);animation:fade .16s ease;"></div>
+      <div role="dialog" aria-label="Lista do ensaio" style="position:relative;width:100%;max-width:{{ modalMax }};max-height:78%;display:flex;flex-direction:column;border-radius:{{ modalRadius }};background:var(--veil-2);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(26px) saturate(160%);-webkit-backdrop-filter:blur(26px) saturate(160%);overflow:hidden;animation:rise .2s ease-out;">
+        <div style="flex:none;display:flex;align-items:center;gap:10px;padding:14px 10px 12px 16px;border-bottom:1px solid var(--line-soft);">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+            <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Ensaio · {{ listHead }}</span>
+            <span style="font-size:11.5px;color:var(--muted);">{{ listSeenLabel }}</span>
+          </span>
+          <button onClick="{{ closeList }}" aria-label="Fechar" style="flex:none;width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;" style-hover="background:var(--hover);">×</button>
+        </div>
+
+        <sc-if value="{{ listShowSearch }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:none;padding:10px 12px;border-bottom:1px solid var(--line-soft);">
+            <input value="{{ listQ }}" onInput="{{ onListQ }}" placeholder="Buscar na lista" aria-label="Buscar na lista" style="width:100%;height:42px;padding:0 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-family:inherit;font-size:13.5px;" style-focus="outline:2px solid var(--focus);outline-offset:1px;border-color:var(--chord-edge);" />
+          </div>
+        </sc-if>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:5px;padding:10px 12px calc(14px + env(safe-area-inset-bottom));">
+          <sc-for list="{{ listItems }}" as="it" hint-placeholder-count="6">
+            <button onClick="{{ it.go }}" aria-current="{{ it.on }}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 12px;border:1px solid {{ it.border }};border-radius:14px;background:{{ it.bg }};color:var(--text);font-family:inherit;text-align:left;cursor:pointer;opacity:{{ it.op }};" style-hover="background:var(--surface-hover);" style-focus="outline:2px solid var(--focus);outline-offset:1px;">
+              <span style="flex:none;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:{{ it.numFg }};">{{ it.num }}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:13.5px;font-weight:600;line-height:1.3;color:{{ it.titleFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.title }}</span>
+                <sc-if value="{{ it.sub }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.sub }}</span>
+                </sc-if>
+              </span>
+              <sc-if value="{{ it.hasKey }}" hint-placeholder-val="{{ true }}">
+                <span style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;color:var(--chord);">{{ it.keyLabel }}</span>
+              </sc-if>
+              <sc-if value="{{ it.hasMark }}" hint-placeholder-val="{{ false }}">
+                <span style="flex:none;width:20px;text-align:center;font-size:12px;font-weight:700;color:{{ it.markFg }};">{{ it.mark }}</span>
+              </sc-if>
+            </button>
+          </sc-for>
+          <sc-if value="{{ listNoHit }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:22px 4px;text-align:center;font-size:12.5px;color:var(--muted);">Nenhuma música com esse nome.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
   </sc-if>
 
   <sc-if value="{{ morePanel }}" hint-placeholder-val="{{ false }}">
@@ -686,12 +854,12 @@ button{font-family:inherit;}
 
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <button onClick="{{ bpmDown5 }}" aria-label="−5 BPM" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;" style-hover="background:var(--hover);color:var(--text);">−5</button>
-          <button onClick="{{ bpmDown }}" aria-label="−1 BPM" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" style-hover="background:var(--hover);">−</button>
+          <button onClick="{{ novaBpmDown }}" aria-label="−1 BPM" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" style-hover="background:var(--hover);">−</button>
           <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">
             <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;">{{ bpmValue }}</span>
             <span style="font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">BPM</span>
           </span>
-          <button onClick="{{ bpmUp }}" aria-label="+1 BPM" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" style-hover="background:var(--hover);">+</button>
+          <button onClick="{{ novaBpmUp }}" aria-label="+1 BPM" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" style-hover="background:var(--hover);">+</button>
           <button onClick="{{ bpmUp5 }}" aria-label="+5 BPM" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;" style-hover="background:var(--hover);color:var(--text);">+5</button>
         </div>
 
@@ -730,7 +898,7 @@ button{font-family:inherit;}
 
 
         <div style="display:{{ metSourceOn }};align-items:center;gap:7px;font-size:11px;color:var(--muted);">
-          <span style="width:5px;height:5px;border-radius:50%;background:var(--chord);"></span><span>Andamento vindo da cifra ({{ metSheetBpm }}).</span>
+          <span style="width:5px;height:5px;transform:{{ fsRot }};border-radius:50%;background:var(--chord);"></span><span>Andamento vindo da cifra ({{ metSheetBpm }}).</span>
         </div>
         <button onClick="{{ resetBpm }}" style="display:{{ metResetOn }};align-items:center;justify-content:center;height:30px;border:0;border-radius:9px;background:var(--surface);color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" style-hover="background:var(--surface-hover);color:var(--text);">Voltar ao andamento da cifra ({{ metSheetBpm }})</button>
       </div>
@@ -831,7 +999,7 @@ button{font-family:inherit;}
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;"></span>
 
         <sc-if value="{{ fullTools }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ toggleSrc }}" title="Fonte ChordPro assistida" style="height:36px;padding:0 12px;border-radius:12px;border:1px solid {{ srcBorder }};background:{{ srcBg }};color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" style-focus="outline:2px solid var(--focus);outline-offset:2px;"><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--chord);">{ }</span>Fonte<sc-if value="{{ lintBad }}" hint-placeholder-val="{{ false }}"><span title="Diretiva sem par nesta cifra" style="width:6px;height:6px;border-radius:50%;background:var(--danger);"></span></sc-if></button>
+        <button onClick="{{ toggleSrc }}" title="Fonte ChordPro assistida" style="height:36px;padding:0 12px;border-radius:12px;border:1px solid {{ srcBorder }};background:{{ srcBg }};color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" style-focus="outline:2px solid var(--focus);outline-offset:2px;"><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--chord);">{ }</span>Fonte<sc-if value="{{ lintBad }}" hint-placeholder-val="{{ false }}"><span title="Diretiva sem par nesta cifra" style="width:6px;height:6px;transform:{{ fsRot }};border-radius:50%;background:var(--danger);"></span></sc-if></button>
         </sc-if>
 
         <button onClick="{{ smaller }}" aria-label="Diminuir tipografia" style="width:36px;height:36px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;" style-hover="background:var(--hover);">A−</button>
@@ -919,9 +1087,6 @@ button{font-family:inherit;}
     </div>
   </sc-if>
 
-  <sc-if value="{{ chromeHidden }}" hint-placeholder-val="{{ false }}">
-    <div style="position:absolute;bottom:16px;left:0;right:0;margin:0 auto;width:max-content;max-width:calc(100% - 28px);z-index:11;padding:6px 12px;border-radius:10px;background:var(--veil);border:1px solid var(--line-soft);font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;backdrop-filter:blur(14px);animation:fade .4s ease;">{{ chromeHiddenHint }}</div>
-  </sc-if>
 
   <sc-if value="{{ pdfError }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;left:16px;right:16px;top:16px;z-index:30;display:flex;align-items:center;gap:12px;max-width:520px;margin:0 auto;padding:12px 14px;border-radius:13px;background:var(--danger-soft);border:1px solid var(--danger);backdrop-filter:blur(20px);box-shadow:var(--shadow);animation:rise .2s ease-out;">
@@ -969,6 +1134,142 @@ button{font-family:inherit;}
     <button onClick="{{ openQueue }}" title="Sugestões dos músicos" style="position:absolute;left:16px;bottom:{{ editBtnBottom }};z-index:14;display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:var(--veil);color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(18px);opacity:{{ chromeOp }};transition:opacity .35s ease;" style-hover="background:var(--surface-hover);" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
       <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);"></span>{{ queueLabel }}
     </button>
+  </sc-if>
+
+  <sc-if value="{{ novaOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:40;display:flex;align-items:{{ novaAlign }};justify-content:center;padding:{{ novaWrapPad }};">
+      <div onClick="{{ closeNova }}" style="position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);animation:fade .16s ease;"></div>
+      <div role="dialog" aria-modal="true" aria-label="Nova cifra" style="position:relative;width:100%;max-width:{{ novaMax }};max-height:{{ novaMaxH }};overflow-y:auto;overscroll-behavior:contain;padding:{{ novaPad }};border-radius:{{ novaRadius }};background:var(--veil-2);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(26px);display:flex;flex-direction:column;gap:12px;animation:rise .2s ease-out;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ novaLabel }}</span>
+          <button onClick="{{ closeNova }}" aria-label="Fechar" style="width:26px;height:26px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:15px;cursor:pointer;" style-hover="background:var(--hover);">×</button>
+        </div>
+
+        <sc-if value="{{ novaImport }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--surface);border:1px solid var(--line-soft);">
+            <button onClick="{{ tabUrl }}" style="flex:1;height:34px;border:0;border-radius:9px;background:{{ tabUrlBg }};color:{{ tabUrlFg }};font-family:inherit;font-size:12.5px;font-weight:{{ tabUrlW }};cursor:pointer;">Link</button>
+            <button onClick="{{ tabFile }}" style="flex:1;height:34px;border:0;border-radius:9px;background:{{ tabFileBg }};color:{{ tabFileFg }};font-family:inherit;font-size:12.5px;font-weight:{{ tabFileW }};cursor:pointer;">Arquivo</button>
+            <button onClick="{{ novaTabText }}" style="flex:1;height:34px;border:0;border-radius:9px;background:{{ tabTextBg }};color:{{ tabTextFg }};font-family:inherit;font-size:12.5px;font-weight:{{ tabTextW }};cursor:pointer;">Texto</button>
+          </div>
+
+          <sc-if value="{{ isTabUrl }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <input type="url" value="{{ novaUrl }}" onChange="{{ setNovaUrl }}" placeholder="https://www.cifraclub.com.br/artista/musica/" spellcheck="false" style="width:100%;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-family:'Space Mono',monospace;font-size:12px;" style-focus="outline:2px solid var(--focus);outline-offset:1px;" />
+              <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Cola o endereço da página da música. Suportado hoje: cifraclub.com.br.</span>
+              <button onClick="{{ runUrl }}" disabled="{{ urlBusy }}" style="align-self:flex-start;height:42px;padding:0 18px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:9px;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">
+                <sc-if value="{{ urlBusy }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:14px;height:14px;border-radius:50%;border:2px solid var(--chord-ink);border-top-color:transparent;animation:spin .8s linear infinite;"></span>
+                </sc-if>{{ urlBtnLabel }}</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isTabFile }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <div onClick="{{ pickFile }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;padding:18px;border:1px dashed {{ dropEdge }};border-radius:15px;background:{{ dropBg }};cursor:pointer;text-align:center;transition:background .15s ease,border-color .15s ease;">
+                <span style="font-size:13.5px;font-weight:600;">{{ dropTitle }}</span>
+                <span style="font-size:11.5px;line-height:1.5;color:var(--muted);max-width:280px;text-wrap:pretty;">{{ dropHint }}</span>
+                <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+                  <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.cho</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.txt</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.pro</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">PDF com texto</span>
+                </span>
+              </div>
+              <input type="file" ref="{{ fileRef }}" onChange="{{ onFile }}" accept=".cho,.crd,.chopro,.pro,.txt,.onsong,.pdf,text/plain,application/pdf" style="display:none;" />
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isTabText }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <textarea value="{{ novaText }}" onChange="{{ setNovaText }}" spellcheck="false" placeholder="Cole aqui a cifra — ChordPro, OnSong ou acordes sobre a letra." style="width:100%;height:{{ novaTextH }};padding:11px 12px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--text);font-family:'Space Mono',monospace;font-size:11.5px;line-height:1.6;resize:vertical;" style-focus="outline:2px solid var(--focus);outline-offset:1px;"></textarea>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <button onClick="{{ runText }}" style="height:42px;padding:0 18px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">Converter</button>
+                <sc-if value="{{ sniffOn }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);">
+                    <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);"></span>reconhecido: {{ sniffLabel }}
+                  </span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ novaErr }}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="display:flex;flex-direction:column;gap:4px;padding:11px 12px;border:1px solid var(--danger);border-radius:13px;background:var(--danger-soft);">
+              <span style="font-size:12.5px;font-weight:700;color:var(--danger);">{{ novaErr }}</span>
+              <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ novaErrHint }}</span>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--line-soft);margin-top:2px;">
+            <button onClick="{{ startBlank }}" style="min-height:36px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;" style-hover="color:var(--text);">Prefiro começar em branco</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ novaFicha }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ fichaNote }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:13px;background:var(--chord-soft);border:1px solid var(--chord-edge);">
+              <span style="flex:none;width:7px;height:7px;margin-top:5px;border-radius:50%;background:var(--chord);"></span>
+              <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ fichaNote }}</span>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line-soft);">
+            <input value="{{ mTitle }}" onChange="{{ setTitle }}" placeholder="Nome da música" style="width:100%;border:0;background:transparent;color:var(--text);font-family:inherit;font-size:{{ novaTitleSize }};font-weight:700;letter-spacing:-0.02em;padding:4px 0;" style-focus="outline:none;box-shadow:0 1px 0 var(--chord);" />
+            <input value="{{ mArtist }}" onChange="{{ setArtist }}" placeholder="Artista ou ministério" style="width:100%;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;padding:4px 0;" style-focus="outline:none;box-shadow:0 1px 0 var(--chord);color:var(--text);" />
+          </div>
+
+          <div style="display:grid;grid-template-columns:{{ novaCols }};gap:9px;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid {{ keyEdge }};">
+              <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom {{ keyFlag }}</span>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <sc-for list="{{ keyChips }}" as="k" hint-placeholder-count="12">
+                  <button onClick="{{ k.pick }}" style="min-width:34px;height:30px;padding:0 7px;border:1px solid {{ k.edge }};border-radius:9px;background:{{ k.bg }};color:{{ k.fg }};font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;cursor:pointer;">{{ k.label }}</button>
+                </sc-for>
+              </div>
+              <button onClick="{{ toggleMinor }}" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid {{ minorEdge }};border-radius:9px;background:{{ minorBg }};color:{{ minorFg }};font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;">menor (m)</button>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid {{ bpmEdge }};">
+                <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Andamento {{ bpmFlag }}</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button onClick="{{ novaBpmDown }}" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;" style-hover="background:var(--hover);">−</button>
+                  <input value="{{ mTempo }}" onChange="{{ setTempo }}" inputmode="numeric" placeholder="—" style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:'Space Mono',monospace;font-size:16px;font-weight:700;text-align:center;" style-focus="outline:none;box-shadow:0 1px 0 var(--chord);" />
+                  <button onClick="{{ novaBpmUp }}" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;" style-hover="background:var(--hover);">+</button>
+                  <span style="font-size:10.5px;color:var(--muted);">bpm</span>
+                </div>
+                <button onClick="{{ tapTempo }}" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" style-hover="background:var(--hover);color:var(--text);">{{ tapLabel }}</button>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid {{ timeEdge }};">
+                <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Compasso {{ timeFlag }}</span>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                  <sc-for list="{{ timeChips }}" as="t" hint-placeholder-count="4">
+                    <button onClick="{{ t.pick }}" style="height:32px;padding:0 12px;border:1px solid {{ t.edge }};border-radius:10px;background:{{ t.bg }};color:{{ t.fg }};font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;cursor:pointer;">{{ t.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
+            <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
+            <input value="{{ mUrl }}" onChange="{{ setUrl }}" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:'Space Mono',monospace;font-size:11.5px;" style-focus="outline:none;box-shadow:0 1px 0 var(--chord);" />
+          </div>
+
+          <sc-if value="{{ missingOn }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Falta {{ missingList }}. Dá para seguir e preencher depois — vai ser pedido de novo ao salvar.</span>
+          </sc-if>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <button onClick="{{ fichaBack }}" style="min-height:40px;padding:0 12px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" style-hover="background:var(--hover);color:var(--text);">{{ fichaBackLabel }}</button>
+            <button onClick="{{ fichaGo }}" style="height:44px;padding:0 18px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;" style-focus="outline:2px solid var(--focus);outline-offset:2px;">{{ fichaGoLabel }}</button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
   </sc-if>
 
   <sc-if value="{{ modePick }}" hint-placeholder-val="{{ false }}">
@@ -1104,8 +1405,11 @@ button{font-family:inherit;}
 </div>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;modes&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;both&quot;,&quot;options&quot;:[&quot;both&quot;,&quot;local&quot;,&quot;content&quot;,&quot;none&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;suggestions&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;songId&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;version&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;v1&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;view&quot;,&quot;options&quot;:[&quot;view&quot;,&quot;edit&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;canEdit&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;fixture&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;ele-vive-img&quot;,&quot;options&quot;:[&quot;esconderijo&quot;,&quot;jesus-1&quot;,&quot;adoralo&quot;,&quot;ele-vive&quot;,&quot;ele-vive-img&quot;,&quot;tua-vontade&quot;,&quot;ofertinha&quot;,&quot;em-gratidao&quot;,&quot;vazio&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Fixture&quot;},&quot;source&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Fixture&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;teal&quot;,&quot;options&quot;:[&quot;verde&quot;,&quot;teal&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Cor&quot;},&quot;accentStrength&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.1,&quot;min&quot;:0.5,&quot;max&quot;:1.5,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Cor&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;auto&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;autoInvertScores&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;fitDefault&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;autoHide&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;onSave&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(source: string) =&gt; void&quot;,&quot;section&quot;:&quot;Host&quot;},&quot;pdfShouldFail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;forceParseError&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estados&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;modes&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;both&quot;,&quot;options&quot;:[&quot;both&quot;,&quot;local&quot;,&quot;content&quot;,&quot;none&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;suggestions&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;songId&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;version&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;v1&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;view&quot;,&quot;options&quot;:[&quot;view&quot;,&quot;edit&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;canEdit&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Contexto SDA&quot;},&quot;fixture&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;vazio&quot;,&quot;options&quot;:[&quot;esconderijo&quot;,&quot;jesus-1&quot;,&quot;adoralo&quot;,&quot;ele-vive&quot;,&quot;ele-vive-img&quot;,&quot;tua-vontade&quot;,&quot;ofertinha&quot;,&quot;em-gratidao&quot;,&quot;vazio&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Fixture&quot;},&quot;source&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Fixture&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;teal&quot;,&quot;options&quot;:[&quot;verde&quot;,&quot;teal&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Cor&quot;},&quot;accentStrength&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.1,&quot;min&quot;:0.5,&quot;max&quot;:1.5,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Cor&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;auto&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;autoInvertScores&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;fitDefault&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;autoHide&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;onSave&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(source: string) =&amp;gt; void&quot;,&quot;section&quot;:&quot;Host&quot;},&quot;pdfShouldFail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;forceParseError&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estados&quot;},&quot;setlistDemo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;off&quot;,&quot;options&quot;:[&quot;off&quot;,&quot;6 juntas&quot;,&quot;30 sob demanda&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ensaio&quot;},&quot;songs&quot;:{&quot;editor&quot;:null,&quot;default&quot;:null,&quot;tsType&quot;:&quot;Array&lt;{id: string; title: string; subtitle?: string; key?: string; source?: string}&gt;&quot;,&quot;section&quot;:&quot;Ensaio&quot;},&quot;loadSong&quot;:{&quot;editor&quot;:null,&quot;default&quot;:null,&quot;tsType&quot;:&quot;(id: string, song: object) =&gt; Promise&lt;string&gt; | string&quot;,&quot;section&quot;:&quot;Ensaio&quot;}}">
 const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+// Cifra em branco precisa de pelo menos um bloco: um arquivo só de diretivas
+// não é cifra legível, e o editor não teria onde encostar o dedo.
+const BLANK_BODY = "{c:Intro}\n\n{c:Verso 1}\n";
 const FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 const IDX = { C:0,"C#":1,Db:1,D:2,"D#":3,Eb:3,E:4,Fb:4,"E#":5,F:5,"F#":6,Gb:6,G:7,"G#":8,Ab:8,A:9,"A#":10,Bb:10,B:11,Cb:11,"B#":0 };
 
@@ -1198,14 +1502,61 @@ class Component extends DCLogic {
     wMode: null, modePick: false, overlay: null, showOriginal: false, myPanel: false,
     updDlg: null, route: "song", qSong: null, qSug: null, sugTick: 0,
     officialSrc: null, officialV: null, exportOrig: false,
+    si: 0, cache: {}, songSt: {}, seen: {}, songErr: {}, songBusy: {}, listOpen: false, listQ: "", endOffer: false,
     editRow: null, editKind: "lyric", rowText: "", editHintOff: false,
     metaDraft: {}, chordEdit: null, chordText: "", placing: false, insertMenu: false, picker: false,
     srcPane: false, srcH: 280, tabDraft: null, scoreEd: null, scoreView: {}, imgFull: {}, lens: "none", capoMap: true, mapOpen: false, headH: 72, hideComments: false, lensPanel: false,
-    morePanel: false, metPanel: false, met: false, metSound: true, metFollow: true, bpmUser: null, beat: 0, holding: false
+    morePanel: false, metPanel: false, met: false, metSound: true, metFollow: true, bpmUser: null, beat: 0, holding: false,
+    nova: null, novaMeta: null, novaSrc: "", novaUrl: "", novaText: "", novaPending: false, drag: false, sniff: ""
   };
+  fileRef = React.createRef();
+
+  // Guarda de superfície. O viewer só funciona se tiver uma região rolável própria;
+  // quando o host o embute sem altura definida, ele cai no piso de min-height e a barra
+  // de controle vai para fora da tela. Isso falhava em silêncio e parecia bug visual.
+  // Sintoma inequívoco: altura no piso + conteúdo transbordando + página do host rolando.
+  checkSurface = () => {
+    if (this.props.surfaceGuard === false || this._guardOff) return;
+    const r = this.root, sc = this.scroller;
+    if (!r || !sc) return;
+    // Sonda: sem o piso, o root ainda tem altura? Se o ancestral define uma altura,
+    // `height:100%` resolve nela e a medida não muda. Se o ancestral é `auto`, o root
+    // colapsa — o conteúdo é absoluto e nada o sustenta. Um reflow, revertido na hora.
+    const p = r.parentElement;
+    const prevMin = r.style.minHeight;
+    r.style.minHeight = "0px";
+    const probe = p ? p.clientHeight : 0;
+    r.style.minHeight = prevMin;
+    const bad = probe < 40;
+    // Uma medição só não basta: durante o primeiro layout (fontes, vexflow) o frame
+    // aparece colapsado por um instante. Só acusa o que se confirma na segunda passagem.
+    if (!bad) {
+      this._badOnce = false;
+      if (this.state.surfaceBad) this.setState({ surfaceBad: false });
+      return;
+    }
+    if (!this._badOnce) {
+      this._badOnce = true;
+      clearTimeout(this.guardT2);
+      this.guardT2 = setTimeout(this.checkSurface, 1200);
+      return;
+    }
+    if (bad && !this._warned) {
+      this._warned = true;
+      console.warn(
+        "[Titan Chordpro] Viewer sem altura resolvível: caiu no piso de min-height:460px dentro " +
+        "de uma página que rola. Dê ao ancestral imediato uma altura definida (ex.: " +
+        "height:calc(100dvh - 88px)) e não sobrescreva height/overflow/position do root nem do " +
+        "scroller. A posição em fluxo do frame deve igualar o top do sticky. Ver docs/EMBED-SDA.md."
+      );
+    }
+    if (bad !== !!this.state.surfaceBad) this.setState({ surfaceBad: bad });
+  };
+  dismissGuard = () => { this._guardOff = true; this.setState({ surfaceBad: false }); };
 
   componentDidMount() {
-    this.onScoreResize = () => { this._sigs = {}; this.drawScores(); };
+    this.guardT = setTimeout(this.checkSurface, 500);
+    this.onScoreResize = () => { this._sigs = {}; this.drawScores(); this.checkSurface(); };
     window.addEventListener("resize", this.onScoreResize);
     try {
       const p = JSON.parse(localStorage.getItem("cpv:prefs") || "{}");
@@ -1325,6 +1676,7 @@ class Component extends DCLogic {
       else if (k === "c" || k === "C") this.toggleCapo();
       else if (k === "Escape") {
         if (this.state.capoOpen) this.setState({ capoOpen: false });
+        else if (this.state.listOpen) this.closeList();
         else if (this.state.tonePanel) this.closeTone();
         else if (this.state.morePanel) this.setState({ morePanel: false });
         else if (this.state.sheet) this.closeSheet();
@@ -1363,7 +1715,18 @@ class Component extends DCLogic {
     const prev = ps || {};
     this.drawScores();
     this.applyTheme();
+    if (this.setlistOn) this.prefetch();
     this.syncSource();
+    // Um único aviso, e passageiro: o toast do zen já explica como voltar; aqui
+    // só cobrimos a ocultação por inatividade, uma vez por sessão.
+    const gone = this.chromeGone;
+    if (gone !== this._wasGone) {
+      this._wasGone = gone;
+      if (gone && !this.state.zen && !this.idleSeen) {
+        this.idleSeen = true;
+        this.toastMsg("Controles ocultos · mova para mostrar");
+      }
+    }
     // O relógio da dica só começa quando ela está de fato na tela.
     if (this.hintVisible && !this.hintT) this.hintT = setTimeout(() => this.dismissHint(), 9000);
     if (prev.theme !== this.state.theme || prev.bias !== this.state.bias || prev.fit !== this.state.fit) this.savePrefs();
@@ -1424,12 +1787,13 @@ class Component extends DCLogic {
     const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i);
     const capo = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0;
     this.stop();
-    this.u = 0; this.playBars = 0; this.timeline = null;
+    const r = this.restore; this.restore = null;
+    this.u = r ? (r.u || 0) : 0; this.playBars = 0; this.timeline = null;
     // Trocar a cifra descarta o rascunho (regra do spec) — mas a perda tem de
     // ser dita, não silenciosa.
     const lost = !first && this.state.draft != null;
     this.hist = []; this.future = []; this.saved = null; this.confirmDiscard = false;
-    this.setState({ offset: 0, capo, progress: 0, mul: 1, pdf: "idle", sheet: false,
+    this.setState({ offset: r ? r.offset : 0, capo: r ? r.capo : capo, progress: r ? (r.u || 0) : 0, mul: r ? r.mul : 1, pdf: "idle", sheet: false,
       draft: null, sel: null, clip: null, editRow: null, chordEdit: null, tabDraft: null,
       lens: "none", capoMap: true, mapOpen: false, hideComments: false, metaDraft: {}, imgFull: {}, dragBi: null,
       metPanel: false, bpmUser: null });
@@ -1437,11 +1801,18 @@ class Component extends DCLogic {
     // O BPM guardado é da música, não da sessão: recarrega junto com a cifra.
     setTimeout(() => { const v = this.loadBpm(); if (v) this.setState({ bpmUser: v }); }, 0);
     this.loadOverlay(src);
-    if (!first && this.scroller) this.scroller.scrollTop = 0;
-    if (lost) this.toastMsg("Nova cifra recebida — o rascunho anterior foi descartado");
+    // A posição guardada só existe depois que a cifra nova pintou.
+    if (r) {
+      const top = r.top || 0;
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (this.scroller) this.scroller.scrollTop = top; }));
+    } else if (!first && this.scroller) this.scroller.scrollTop = 0;
+    if (lost) this.toastMsg(this.setlistOn
+      ? "Você trocou de música — o rascunho anterior foi descartado"
+      : "Nova cifra recebida — o rascunho anterior foi descartado");
   }
 
   componentWillUnmount() {
+    clearTimeout(this.guardT); clearTimeout(this.guardT2);
     this.stop();
     this.metStop();
     if (this.actx) { try { this.actx.close(); } catch (e) {} this.actx = null; }
@@ -1450,12 +1821,14 @@ class Component extends DCLogic {
     if (this.mq) this.mq.removeEventListener("change", this.onMq);
     if (this.ro) this.ro.disconnect();
     document.removeEventListener("fullscreenchange", this.onFs);
+    clearTimeout(this.flashT);
     window.removeEventListener("wheel", this.onWheel);
     window.removeEventListener("keydown", this.onKey);
     ["pointermove", "pointerdown", "wheel", "touchstart", "keydown"].forEach(ev =>
       window.removeEventListener(ev, this.wake));
   }
 
+  get chromeGone() { return (this.state.zen || (this.state.scrolling && this.state.idle)) && !this.state.sheet; }
   get themeMode() { return this.state.theme ?? this.props.theme ?? "auto"; }
   get effTheme() { const t = this.themeMode; return t === "auto" ? (this.state.sysDark ? "dark" : "light") : t; }
   applyTheme() {
@@ -1470,6 +1843,15 @@ class Component extends DCLogic {
   // Oficial = o que está no BD do consumer. No mock, a fonte do host ou a
   // fixture; um save do modo "para todos" passa a valer daqui em diante.
   officialSource() {
+    if (this.setlistOn) {
+      const cur = this.curSong;
+      if (!cur) return null;
+      if (this.state.officialSrc != null) return this.state.officialSrc;
+      const c = this.state.cache[cur.id];
+      if (typeof c === "string") return c;
+      if (cur.source) return cur.source;
+      return null;
+    }
     if (this.state.officialSrc != null) return this.state.officialSrc;
     const s = this.props.source;
     if (typeof s === "string" && s.trim()) return s;
@@ -1638,6 +2020,139 @@ class Component extends DCLogic {
     }
   }
 
+  // ——— Lista de músicas (modo ensaio) ———————————————————————————————
+  // Contrato: songs = [{id, title, subtitle?, key?, source?}]. Com source, a
+  // música toca offline; sem ele, o viewer pede ao consumer por loadSong(id) e
+  // guarda em cache. Duas ou mais músicas ligam o modo; nenhuma, ou uma só, e o
+  // viewer segue exatamente como antes.
+  get setlist() {
+    const raw = this.props.songs, demo = this.props.setlistDemo || "off";
+    if (this._sl && this._slRaw === raw && this._slDemo === demo && this._slDb === this.state.db) return this._sl;
+    let list = raw;
+    if (typeof list === "string" && list.trim()) { try { list = JSON.parse(list); } catch (e) { list = null; } }
+    if (!Array.isArray(list) || !list.length) list = this.demoList(demo);
+    const out = [], used = {};
+    for (const it of (list || [])) {
+      if (!it) continue;
+      const o = typeof it === "string" ? { id: it } : it;
+      let id = String(o.id != null && o.id !== "" ? o.id : (o.title || "s" + out.length));
+      while (used[id]) id = id + "~" + out.length;
+      used[id] = 1;
+      out.push({
+        id, title: String(o.title || o.id || "Sem título"),
+        subtitle: o.subtitle ? String(o.subtitle) : "",
+        key: o.key ? String(o.key) : "",
+        source: typeof o.source === "string" && o.source.trim() ? o.source : null
+      });
+    }
+    this._slRaw = raw; this._slDemo = demo; this._slDb = this.state.db; this._sl = out;
+    return out;
+  }
+  get setlistOn() { return this.setlist.length > 1; }
+  get si() { const l = this.setlist; return Math.max(0, Math.min(l.length - 1, this.state.si)); }
+  get curSong() { return this.setlist[this.si] || null; }
+  get demoOn() { return (this.props.setlistDemo || "off") !== "off" && !Array.isArray(this.props.songs); }
+
+  // Demonstração do modo no standalone: a lista sai das próprias fixtures.
+  // "6 juntas" chega com todo o conteúdo; "30 sob demanda" só com títulos, para
+  // exercitar a busca sob demanda, o cache e a falha de rede.
+  demoList(mode) {
+    if (mode === "off" || !this.state.db) return [];
+    const db = this.state.db;
+    const ids = ["esconderijo", "jesus-1", "adoralo", "ele-vive", "tua-vontade", "em-gratidao", "ofertinha", "ele-vive-img"].filter(i => db[i]);
+    if (!ids.length) return [];
+    const meta = id => {
+      const s = db[id] || "";
+      const g = k => { const m = s.match(new RegExp("\\{\\s*" + k + "\\s*:\\s*([^}]*)\\}", "i")); return m ? m[1].trim() : ""; };
+      return { title: g("title") || id, subtitle: g("subtitle"), key: g("key") };
+    };
+    if (mode.charAt(0) === "6") return ids.slice(0, 6).map(id => Object.assign({ id, source: db[id] }, meta(id)));
+    const out = [];
+    for (let i = 0; i < 30; i++) {
+      const base = ids[i % ids.length];
+      const m = meta(base);
+      out.push(Object.assign({ id: i === 4 ? "falha-de-rede" : (i < ids.length ? base : base + "@" + i) }, m));
+    }
+    return out;
+  }
+
+  _omit(o, k) { const n = {}; for (const j in o) if (j !== k) n[j] = o[j]; return n; }
+
+  // Busca o ChordPro que falta. A atual e as vizinhas são carregadas em
+  // segundo plano: trocar de música num ensaio não pode esperar a rede.
+  ensureSong(i) {
+    const s = this.setlist[i];
+    if (!s) return;
+    const id = s.id;
+    if (s.source || typeof this.state.cache[id] === "string") return;
+    if (this.state.songErr[id]) return;
+    this._busy = this._busy || {};
+    if (this._busy[id]) return;
+    const fn = this.props.loadSong;
+    const demo = this.demoOn;
+    if (typeof fn !== "function" && !demo) { this.failSong(id); return; }
+    this._busy[id] = true;
+    this.setState(st => ({ songBusy: Object.assign({}, st.songBusy, { [id]: true }) }));
+    const get = demo && typeof fn !== "function"
+      ? new Promise((res, rej) => setTimeout(() => {
+          if (id === "falha-de-rede") rej(new Error("rede"));
+          else res((this.state.db || {})[id.split("@")[0]] || "");
+        }, 420))
+      : Promise.resolve().then(() => fn(id, s));
+    get.then(txt => {
+      delete this._busy[id];
+      if (typeof txt !== "string" || !txt.trim()) throw new Error("vazio");
+      this.setState(st => ({
+        cache: Object.assign({}, st.cache, { [id]: txt }),
+        songBusy: this._omit(st.songBusy, id), songErr: this._omit(st.songErr, id)
+      }));
+    }).catch(() => { delete this._busy[id]; this.failSong(id); });
+  }
+  failSong(id) {
+    if (this._busy) delete this._busy[id];
+    this.setState(st => ({ songBusy: this._omit(st.songBusy, id), songErr: Object.assign({}, st.songErr, { [id]: true }) }));
+  }
+  prefetch() { const i = this.si; this.ensureSong(i); this.ensureSong(i + 1); this.ensureSong(i - 1); }
+  retrySong = () => {
+    const s = this.curSong; if (!s) return;
+    this.setState(st => ({ songErr: this._omit(st.songErr, s.id) }), () => this.prefetch());
+  };
+  get songFailing() { const s = this.curSong; return this.setlistOn && !!s && !!this.state.songErr[s.id] && !s.source && typeof this.state.cache[s.id] !== "string"; }
+
+  // Trocar de música guarda tom, capo, velocidade e posição da que sai, e
+  // devolve os da que entra — voltar a uma música já ensaiada cai onde parou.
+  goSong = i => {
+    const list = this.setlist;
+    if (list.length < 2) return;
+    const n = Math.max(0, Math.min(list.length - 1, i));
+    const cur = list[this.si];
+    if (n === this.si) { this.setState({ listOpen: false, listQ: "" }); return; }
+    const nx = list[n];
+    const keep = {
+      offset: this.state.offset, capo: this.state.capo, mul: this.state.mul,
+      top: this.scroller ? this.scroller.scrollTop : 0, u: this.u || 0
+    };
+    this.stop(); this.metStop();
+    this.restore = this.state.songSt[nx.id] || null;
+    this.setState(st => {
+      const seen = Object.assign({}, st.seen); if (cur) seen[cur.id] = true; seen[nx.id] = true;
+      return {
+        si: n, listOpen: false, listQ: "", endOffer: false,
+        songSt: cur ? Object.assign({}, st.songSt, { [cur.id]: keep }) : st.songSt,
+        seen,
+        cache: (cur && st.officialSrc != null) ? Object.assign({}, st.cache, { [cur.id]: st.officialSrc }) : st.cache,
+        officialSrc: null, officialV: null
+      };
+    }, () => this.prefetch());
+  };
+  goPrev = () => this.goSong(this.si - 1);
+  goNext = () => this.goSong(this.si + 1);
+  openList = () => this.setState({ listOpen: true, listQ: "", idle: false });
+  closeList = () => this.setState({ listOpen: false, listQ: "" });
+  onListQ = e => this.setState({ listQ: e.target.value });
+  dismissEnd = () => this.setState({ endOffer: false });
+  endNext = () => { this.setState({ endOffer: false }); this.goNext(); };
+
   down = () => this.shift(-1);
   up = () => this.shift(1);
   shift(n) {
@@ -1721,7 +2236,7 @@ class Component extends DCLogic {
       Object.assign(el.style, { position: "fixed", inset: "0", height: "100%", zIndex: "2147483000" });
       this.setState({ fs: true });
     } else {
-      Object.assign(el.style, { position: "relative", inset: "auto", height: "100dvh", zIndex: "auto" });
+      Object.assign(el.style, { position: "relative", inset: "auto", height: "100%", zIndex: "auto" });
       this.setState({ fs: false });
     }
   }
@@ -1959,7 +2474,13 @@ class Component extends DCLogic {
         this.tick = sec;
         this.setState({ progress: this.u, holding });
       }
-      if (this.u >= 1) { this.stop(); return; }
+      if (this.u >= 1) {
+        this.stop();
+        // Fim da música num ensaio: para e oferece a próxima, em vez de
+        // empurrar o músico para uma cifra que ele não escolheu.
+        if (this.setlistOn && this.si < this.setlist.length - 1) this.setState({ endOffer: true });
+        return;
+      }
       this.raf = requestAnimationFrame(step);
     };
     this.raf = requestAnimationFrame(step);
@@ -2213,7 +2734,10 @@ class Component extends DCLogic {
     if (m === "local" || m === "content") return [m];
     return ["local", "content"];
   }
-  get songId() { return this.props.songId || this.props.fixture || "song"; }
+  get songId() {
+    const s = this.setlistOn ? this.curSong : null;
+    return s ? s.id : (this.props.songId || this.props.fixture || "song");
+  }
   get officialVersion() { return this.state.officialV || this.props.version || "v1"; }
   ovKey() { return "cpv:my:" + this.songId; }
 
@@ -2589,6 +3113,232 @@ class Component extends DCLogic {
 
   get isEdit() { return (this.state.localMode ?? this.props.mode ?? "view") === "edit"; }
 
+  // ——— cifra nova: em branco ou importada ————————————————————————————
+  // Uma música sem cifra não é um beco: quem pode escrever para todos começa
+  // aqui. Importar é o caminho normal; branco é o caminho de quem já tem tudo
+  // na cabeça. Os dois desembocam na mesma ficha e no mesmo editor.
+  ensureImp() {
+    if (!this._impReq) this._impReq = import(new URL("./importar.js", location.href).href).then(m => { this.IMP = m; return m; });
+    return this._impReq;
+  }
+  emptyMeta() { return { title: "", subtitle: "", key: "", tempo: "", time: "", x_origem: "" }; }
+  setNovaState(patch) { this.setState(s => ({ nova: Object.assign({}, s.nova || {}, patch) })); }
+  novaFail(err, hint) { this.setNovaState({ err, errHint: hint || "", busy: false }); }
+  missText(miss) {
+    const L = (this.IMP && this.IMP.MISSING_LABEL) || {};
+    const w = miss.map(k => L[k] || k);
+    return w.length > 1 ? w.slice(0, -1).join(", ") + " e " + w[w.length - 1] : (w[0] || "");
+  }
+  startImport = () => {
+    this.ensureImp();
+    this.setState({ nova: { step: "import", tab: "url", busy: false, err: "", errHint: "" },
+      novaUrl: "", novaText: "", novaSrc: "", novaMeta: this.emptyMeta(), sniff: "", sheet: false });
+  };
+  startBlank = () => {
+    this.ensureImp();
+    this.setState({ nova: { step: "ficha", from: "blank",
+      note: "Cifra em branco. Identifique a música e o editor abre com Intro e Verso 1 — é só digitar por cima e inserir o resto." },
+      novaSrc: "", novaMeta: this.emptyMeta(), sheet: false });
+  };
+  closeNova = () => this.setState({ nova: null, drag: false });
+  tabUrl = () => this.setNovaState({ tab: "url", err: "" });
+  tabFile = () => this.setNovaState({ tab: "file", err: "" });
+  tabText = () => this.setNovaState({ tab: "text", err: "" });
+  setNovaUrl = e => this.setState({ novaUrl: e.target.value });
+  setNovaText = e => {
+    const v = e.target.value;
+    this.setState({ novaText: v });
+    this.ensureImp().then(m => this.setState({ sniff: v.trim() ? m.detect(v) : "" }));
+  };
+  toFicha(r, from, note, extra) {
+    const meta = Object.assign(this.emptyMeta(), this.IMP.readMeta(r.source), extra || {});
+    this.setState({ novaSrc: r.source, novaMeta: meta, nova: { step: "ficha", from, note } });
+  }
+  // Buscar pela URL é do backend: o navegador não alcança o site de dentro do
+  // viewer. No protótipo a resposta é uma cifra do acervo devolvida como texto
+  // puro — assim o conversor de verdade é exercitado ponta a ponta.
+  runUrl = () => {
+    const url = String(this.state.novaUrl || "").trim();
+    this.ensureImp().then(m => {
+      if (!url) return this.novaFail("Cole o endereço da página", "Exemplo: https://www.cifraclub.com.br/ministerio-jovem/meu-farol/");
+      if (!m.hostOk(url)) return this.novaFail("Endereço não suportado", "Hoje a busca entende páginas de cifraclub.com.br. Para as outras origens, use Arquivo ou Texto.");
+      this.setNovaState({ busy: true, err: "" });
+      clearTimeout(this._urlT);
+      this._urlT = setTimeout(() => {
+        const db = this.state.db || {};
+        const demo = db["ele-vive"] || db[Object.keys(db)[0]] || "";
+        const r = m.convert(m.toPlain(demo));
+        const guess = m.titleFromUrl(url);
+        const meta = Object.assign(this.emptyMeta(), m.readMeta(r.source), { x_origem: url });
+        if (!meta.title) meta.title = guess.title;
+        if (!meta.subtitle) meta.subtitle = guess.subtitle;
+        this.setState({ novaSrc: r.source, novaMeta: meta,
+          nova: { step: "ficha", from: "url", note: "Página lida e convertida de " + r.label + ". No protótipo a busca devolve uma cifra do acervo como exemplo; em produção vem o conteúdo da página." } });
+      }, 1100);
+    });
+  };
+  runText = () => {
+    const t = String(this.state.novaText || "");
+    this.ensureImp().then(m => {
+      if (!t.trim()) return this.novaFail("Nada colado ainda", "Cole a cifra na caixa acima.");
+      const r = m.convert(t);
+      if (!r.source.trim()) return this.novaFail("Não deu para ler esse texto", "Nenhuma linha de letra ou acorde foi reconhecida.");
+      this.toFicha(r, "texto", r.changed ? "Convertido de " + r.label + " para ChordPro." : "Já estava em ChordPro — nada precisou ser convertido.");
+    });
+  };
+  pickFile = () => { const el = this.fileRef.current; if (el) el.click(); };
+  onDragOver = e => { e.preventDefault(); if (!this.state.drag) this.setState({ drag: true }); };
+  onDragLeave = () => this.setState({ drag: false });
+  onDrop = e => {
+    e.preventDefault(); this.setState({ drag: false });
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) this.takeFile(f);
+  };
+  onFile = e => { const f = e.target.files && e.target.files[0]; if (f) this.takeFile(f); e.target.value = ""; };
+  takeFile(f) {
+    this.setNovaState({ busy: true, err: "", errHint: "" });
+    this.ensureImp().then(m => {
+      const isPdf = /\.pdf$/i.test(f.name) || f.type === "application/pdf";
+      return (isPdf ? m.pdfText(f) : f.text()).then(text => {
+        const r = m.convert(text);
+        if (!r.source.trim()) throw new Error("sem-texto");
+        this.toFicha(r, "arquivo", "Lido de " + f.name + (r.changed ? " e convertido de " + r.label + "." : " — já estava em ChordPro."));
+      });
+    }).catch(err => {
+      const scan = String(err && err.message) === "sem-texto";
+      this.novaFail(scan ? "Este PDF não tem texto" : "Não deu para ler o arquivo",
+        scan ? "Parece um PDF digitalizado (imagem). Abra a versão em texto ou cole o conteúdo na aba Texto."
+             : "Tente um .cho, .txt ou um PDF com texto selecionável.");
+    });
+  }
+  setNovaMeta(k, v) { this.setState(s => { const m = Object.assign({}, s.novaMeta || this.emptyMeta()); m[k] = v; return { novaMeta: m }; }); }
+  setTitle = e => this.setNovaMeta("title", e.target.value);
+  setArtist = e => this.setNovaMeta("subtitle", e.target.value);
+  setTempo = e => this.setNovaMeta("tempo", e.target.value.replace(/[^\d]/g, "").slice(0, 3));
+  setUrl = e => this.setNovaMeta("x_origem", e.target.value);
+  bpmStep = d => {
+    const cur = parseInt((this.state.novaMeta || {}).tempo, 10);
+    const n = Math.max(30, Math.min(260, (isNaN(cur) ? 90 : cur) + d));
+    this.setNovaMeta("tempo", String(n));
+  };
+  bpmUp = () => this.bpmStep(1);
+  bpmDown = () => this.bpmStep(-1);
+  // Ninguém sabe o bpm de cabeça; todo mundo sabe bater o pé.
+  tapTempo = () => {
+    const now = Date.now();
+    this.taps = (this.taps || []).filter(t => now - t < 3000).concat([now]);
+    if (this.taps.length < 2) { this.forceUpdate(); return; }
+    const gaps = this.taps.slice(1).map((t, i) => t - this.taps[i]);
+    const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    this.setNovaMeta("tempo", String(Math.round(60000 / avg)));
+  };
+  pickKey = root => {
+    const cur = String((this.state.novaMeta || {}).key || "");
+    this.setNovaMeta("key", root + (/m$/.test(cur) ? "m" : ""));
+  };
+  toggleMinor = () => {
+    const cur = String((this.state.novaMeta || {}).key || "");
+    if (!cur) return;
+    this.setNovaMeta("key", /m$/.test(cur) ? cur.replace(/m$/, "") : cur + "m");
+  };
+  pickTime = t => this.setNovaMeta("time", t);
+  fichaBack = () => {
+    const from = (this.state.nova || {}).from;
+    if (from === "blank" || from === "save") return this.closeNova();
+    this.setState({ nova: { step: "import", tab: from === "url" ? "url" : from === "arquivo" ? "file" : "text", busy: false, err: "" } });
+  };
+  fichaGo = () => {
+    this.ensureImp().then(m => {
+      const meta = this.state.novaMeta || this.emptyMeta();
+      const body = String(this.state.novaSrc || "");
+      const src = m.writeMeta(body.trim() ? body : BLANK_BODY, meta);
+      const fromSave = (this.state.nova || {}).from === "save";
+      if (fromSave) {
+        this.setState({ nova: null, novaPending: false });
+        this.write(src.split("\n"));
+        setTimeout(this.doSave, 0);
+        return;
+      }
+      this.setState({ nova: null, draft: null, novaPending: m.missingOf(meta).length > 0 });
+      this.setOfficial(src, true);
+      this.beginEdit("content");
+    });
+  };
+
+  // ——— valores da cifra nova ———————————————————————————————————
+  novaVals(isEmpty) {
+    const nova = this.state.nova;
+    const nm = this.state.novaMeta || this.emptyMeta();
+    const canNew = (this.props.canEdit ?? true) && this.modes.indexOf("content") >= 0;
+    const tab = nova ? (nova.tab || "url") : "url";
+    const on = b => ({ bg: b ? "var(--chord)" : "transparent", fg: b ? "var(--chord-ink)" : "var(--muted)", w: b ? "700" : "600" });
+    const t1 = on(tab === "url"), t2 = on(tab === "file"), t3 = on(tab === "text");
+    const miss = this.IMP ? this.IMP.missingOf(nm) : [];
+    const strict = !!(nova && nova.from === "save");
+    const flag = k => (miss.indexOf(k) >= 0 ? "· falta" : "");
+    const edge = k => (miss.indexOf(k) >= 0 ? (strict ? "var(--danger)" : "var(--line)") : "var(--chord-edge)");
+    const keyRoot = String(nm.key || "").replace(/m$/, "");
+    const minor = /m$/.test(String(nm.key || ""));
+    const chip = sel => ({ bg: sel ? "var(--chord)" : "transparent", fg: sel ? "var(--chord-ink)" : "var(--text)", edge: sel ? "var(--chord)" : "var(--line)" });
+    const taps = (this.taps || []).filter(t => Date.now() - t < 3000).length;
+    const from = nova ? nova.from : "";
+    const SNIFF = { chordpro: "ChordPro", onsong: "OnSong", plain: "acordes sobre a letra" };
+    return {
+      canStartNew: isEmpty && canNew,
+      emptyReadOnly: isEmpty && !canNew,
+      emptyTitle: (this.curSong && this.curSong.title) || "Cifra nova",
+      startImport: this.startImport, startBlank: this.startBlank,
+
+      novaOpen: !!nova, closeNova: this.closeNova,
+      novaImport: !!nova && nova.step === "import",
+      novaFicha: !!nova && nova.step === "ficha",
+      novaLabel: !nova ? "" : nova.step === "import" ? "Importar cifra" : from === "blank" ? "Cifra em branco" : from === "save" ? "Falta identificar" : "Identificação",
+
+      tabUrl: this.tabUrl, tabFile: this.tabFile, novaTabText: this.tabText,
+      isTabUrl: tab === "url", isTabFile: tab === "file", isTabText: tab === "text",
+      tabUrlBg: t1.bg, tabUrlFg: t1.fg, tabUrlW: t1.w,
+      tabFileBg: t2.bg, tabFileFg: t2.fg, tabFileW: t2.w,
+      tabTextBg: t3.bg, tabTextFg: t3.fg, tabTextW: t3.w,
+
+      novaUrl: this.state.novaUrl, setNovaUrl: this.setNovaUrl, runUrl: this.runUrl,
+      urlBusy: !!(nova && nova.busy),
+      urlBtnLabel: nova && nova.busy ? "Buscando…" : "Buscar cifra",
+
+      fileRef: this.fileRef, pickFile: this.pickFile, onFile: this.onFile,
+      onDragOver: this.onDragOver, onDragLeave: this.onDragLeave, onDrop: this.onDrop,
+      dropEdge: this.state.drag ? "var(--chord)" : "var(--line)",
+      dropBg: this.state.drag ? "var(--chord-soft)" : "transparent",
+      dropTitle: nova && nova.busy ? "Lendo o arquivo…" : this.state.drag ? "Solte aqui" : "Solte o arquivo ou toque para escolher",
+      dropHint: "ChordPro, OnSong, texto com acordes sobre a letra, ou PDF que tenha texto de verdade.",
+
+      novaText: this.state.novaText, setNovaText: this.setNovaText, runText: this.runText,
+      sniffOn: !!this.state.sniff, sniffLabel: SNIFF[this.state.sniff] || "",
+
+      novaErr: (nova && nova.err) || "", novaErrHint: (nova && nova.errHint) || "",
+      fichaNote: (nova && nova.note) || "",
+
+      mTitle: nm.title || "", setTitle: this.setTitle,
+      mArtist: nm.subtitle || "", setArtist: this.setArtist,
+      mTempo: nm.tempo || "", setTempo: this.setTempo,
+      mUrl: nm.x_origem || "", setUrl: this.setUrl,
+      novaBpmUp: this.bpmUp, novaBpmDown: this.bpmDown, tapTempo: this.tapTempo,
+      tapLabel: taps > 1 ? "batendo… " + taps : "bater no ritmo",
+      keyChips: SHARP.map(r => Object.assign({ label: r, pick: () => this.pickKey(r) }, chip(keyRoot === r))),
+      timeChips: ["4/4", "3/4", "6/8", "2/4"].map(t => Object.assign({ label: t, pick: () => this.pickTime(t) }, chip(nm.time === t))),
+      toggleMinor: this.toggleMinor,
+      minorBg: minor ? "var(--chord)" : "transparent",
+      minorFg: minor ? "var(--chord-ink)" : "var(--muted)",
+      minorEdge: minor ? "var(--chord)" : "var(--line)",
+      keyFlag: flag("key"), bpmFlag: flag("tempo"), timeFlag: flag("time"),
+      keyEdge: edge("key"), bpmEdge: edge("tempo"), timeEdge: edge("time"),
+      missingOn: miss.length > 0, missingList: this.missText(miss),
+      fichaBack: this.fichaBack,
+      fichaBackLabel: from === "blank" || from === "save" ? "Cancelar" : "Voltar",
+      fichaGo: this.fichaGo,
+      fichaGoLabel: from === "save" ? "Salvar para todos" : from === "blank" ? "Abrir editor vazio" : "Abrir no editor"
+    };
+  }
+
   // Entrar no edit desliga ajuste e zera transpose global: não se edita uma projeção.
   enterEdit = () => {
     const ms = this.modes;
@@ -2680,6 +3430,18 @@ class Component extends DCLogic {
     if (typeof this.props.onSave === "function") { try { this.props.onSave(cur); } catch (e) {} }
     // "Para todos": salvar É publicar — não há rascunho de servidor.
     if (this.state.wMode === "content") {
+      // Cifra recém-criada com ficha incompleta: pedir uma vez, no momento em
+      // que ela passa a valer para todos. Uma vez só — depois é decisão dela.
+      if (this.state.novaPending && this.IMP) {
+        const meta = this.IMP.readMeta(cur);
+        const miss = this.IMP.missingOf(meta);
+        if (miss.length) {
+          this.setState({ novaSrc: cur, novaMeta: Object.assign(this.emptyMeta(), meta),
+            nova: { step: "ficha", from: "save", note: "Antes de valer para todos: falta " + this.missText(miss) + "." } });
+          return;
+        }
+        this.setState({ novaPending: false });
+      }
       this.setOfficial(cur, true);
       this.forceUpdate();
       this.toastMsg("Salvo — todos os músicos passam a ler assim");
@@ -3681,12 +4443,47 @@ class Component extends DCLogic {
   setLens = (v) => () => this.setState(s => ({ lens: s.lens === v ? "none" : v }));
   toggleComments = () => this.setState(s => ({ hideComments: !s.hideComments }));
 
+
+  // Ancoragem e folga do acorde: a unidade de quebra é a PALAVRA, não o segmento.
+  // Cada palavra é um grupo que não quebra; dentro dela cada sílaba é uma coluna
+  // que reserva a largura do próprio acorde (mais folga), então acorde nunca
+  // encosta no vizinho nem pinta sobre a letra, e "mo|tivos" nunca parte na virada.
+  // Espaço real do texto vira o rabo da palavra: é ali, e só ali, que a linha quebra.
+  groupWords(segs) {
+    const words = [];
+    let cur = null, carry = null;
+    const cell = (text, src) => ({
+      text,
+      chord: src ? src.chord : "",
+      shape: src && src.shape ? src.shape : "",
+      hasShape: !!(src && src.shape),
+      hasChord: !!src
+    });
+    const open = () => { if (!cur) { cur = { cells: [], tail: "", hasTail: false }; words.push(cur); } return cur; };
+    const flush = () => { if (carry) { open().cells.push(cell("", carry)); carry = null; } };
+    for (const s of segs || []) {
+      if (s.chord) { flush(); carry = s; }
+      const parts = (s.text == null ? "" : String(s.text)).match(/\s+|\S+/g) || [];
+      for (const p of parts) {
+        if (/\s/.test(p[0])) {
+          if (cur) { cur.tail += p; cur.hasTail = true; cur = null; }
+          else words.push({ cells: [], tail: p, hasTail: true });
+          continue;
+        }
+        const src = carry; carry = null;
+        open().cells.push(cell(p, src));
+      }
+    }
+    flush();
+    return words;
+  }
+
   renderVals() {
     const src = this.source();
-    const isLoading = src === null;
-    const isEmpty = !isLoading && !src.trim();
+    const isLoading = src === null && !this.songFailing;
+    const isEmpty = !isLoading && src !== null && !src.trim();
     let fatal = null, parsed = { meta: {}, lines: [] };
-    if (!isLoading && !isEmpty) {
+    if (!isLoading && !isEmpty && src !== null) {
       try { parsed = this.parseSafe(src); }
       catch (e) { fatal = e.message || "Formato não reconhecido."; }
     }
@@ -3714,6 +4511,17 @@ class Component extends DCLogic {
     const lens = this.isEdit ? "none" : this.state.lens;
     const keyRoot = (String(meta.key || "").match(/^\s*([A-G](?:#|b)?)/) || [])[1] || "";
     const nash = lens === "nashville" && !!keyRoot;
+    // Camada "só letra": quem canta acompanhando a banda não lê acorde. A cifra
+    // continua inteira no arquivo — a leitura é que tira acorde, tab e partitura
+    // do caminho, e volta com um toque.
+    const lyricsOnly = lens === "letra" && !this.isEdit;
+    // Sem acorde, linha de ritmo (x/// x/// x/) e linha só de acordes não deixam
+    // nada legível para trás: viram espaço morto no meio da letra. Saem juntas.
+    const noLyric = r => {
+      const t = String((r.segs || []).map(x => x.text).join("")).trim();
+      if (!t) return true;
+      return /^[xX\/\\|.%\-\s¨~’']+$/.test(t) && /[xX\/]/.test(t);
+    };
     // Duas cifras em toda a música: o tom real (o que a maior parte do grupo
     // toca) em verde, colado na letra; a forma do capo em cinza, na faixa de
     // cima. Cada grupo lê sempre a mesma altura da linha, sem transpor nada.
@@ -3740,15 +4548,12 @@ class Component extends DCLogic {
       return { name: real, shape: shapeCapo > 0 ? transposeToken(c, n - shapeCapo, flats) : "" };
     };
     // Acorde no meio de palavra não pode abrir espaço na letra ("pala vra"):
-    // nesse caso ele sai do fluxo (largura zero) e fica sobre a sílaba.
+    // nesse caso ele reserva a própria largura na coluna da sílaba (ver groupWords).
     const tp = (l, shapeCapo) => {
-      const segs = l.segs.map(s => { const d = disp(s.chord, shapeCapo); return { text: s.text, chord: d.name, shape: d.shape, hasShape: !!d.shape }; });
-      for (let i = 0; i < segs.length; i++) {
-        const s = segs[i], nx = segs[i + 1];
-        s.tight = !!s.chord && /\S$/.test(s.text || "") && !!nx && /^\S/.test(nx.text || "");
-        s.loose = !!s.chord && !s.tight;
-      }
-      return { ...l, segs, mine: !!(this.mineLines && this.mineLines.get(l.li0)), revertMine: this.revertLine(l.li0) };
+      const segs = lyricsOnly
+        ? l.segs.map(s => ({ text: s.text, chord: "", shape: "", hasShape: false }))
+        : l.segs.map(s => { const d = disp(s.chord, shapeCapo); return { text: s.text, chord: d.name, shape: d.shape, hasShape: !!d.shape }; });
+      return { ...l, segs, words: this.groupWords(segs), mine: !!(this.mineLines && this.mineLines.get(l.li0)), revertMine: this.revertLine(l.li0) };
     };
     const txt = s => n ? String(s).replace(/\[([^\]]*)\]/g, (_, c) => "[" + transposeToken(c, n, flats) + "]") : s;
 
@@ -3833,11 +4638,13 @@ class Component extends DCLogic {
         isView: !editing, isEditBody: editing,
         canPaste: editing && !!clip && clip.bi !== bi,
         paste: () => this.pasteHarmony(bi),
-        chordBox: (chord * (shapeCapoOf(l) > 0 ? 2.55 : 1.4)).toFixed(1) + "px",
+        chordBox: lyricsOnly ? "0px" : (chord * (shapeCapoOf(l) > 0 ? 2.55 : 1.4)).toFixed(1) + "px",
         blockCapo: l.bcapo != null ? l.bcapo : null,
         hasBlockCapo: l.bcapo != null && l.bcapo !== capo,
         blockCapoLabel: "capo " + (l.bcapo || 0) + " neste bloco",
-        rows: editing ? l.rows.map(editRow) : l.rows.map(r => tp(r, shapeCapoOf(l))) };
+        dropForLyrics: lyricsOnly && l.rows.every(noLyric),
+        rows: editing ? l.rows.map(editRow)
+          : (lyricsOnly ? l.rows.filter(r => !noLyric(r)) : l.rows).map(r => tp(r, shapeCapoOf(l))) };
       }
       if (l.isComment) {
         const typing = editing && this.state.editRow === l.li0 && this.state.editKind === "comment";
@@ -3882,7 +4689,8 @@ class Component extends DCLogic {
           toggleFull: () => this.setState(s => ({ imgFull: { ...s.imgFull, [l.li0]: !s.imgFull[l.li0] } })) };
       }
       return { ...l, ...base };
-    }).filter(l => (editing || !l.isHidden) && (showComments || (!l.isComment && !l.isNote)));
+    }).filter(l => (editing || !l.isHidden) && (showComments || (!l.isComment && !l.isNote))
+      && !(lyricsOnly && (l.isTab || l.isScore || l.isImage || l.dropForLyrics)));
     this.viewLines = lines;
 
     const md = this.state.metaDraft || {};
@@ -3905,7 +4713,12 @@ class Component extends DCLogic {
     // identidade fina no topo), tablet e desktop (barra completa). O bp continua
     // governando apenas escala e respiro dentro de cada modelo.
     const phone = W < 640;
-    const compact = phone;
+    // A barra completa e o botão flutuante "Editar" dividem a mesma faixa. O
+    // grupo da lista alarga a barra ~190px, o suficiente para ela invadir o
+    // canto do "Editar" abaixo de ~1120px — nessas larguras a barra usa o
+    // modelo compacto, que é o mecanismo que este layout já tem para falta de
+    // espaço, em vez de empilhar duas fileiras sob a cifra.
+    const compact = phone || (this.setlistOn && W < 1120);
     const narrow = phone;
     // No modo imersivo a cifra ganha a largura e a altura que a moldura ocupava:
     // é o que faz a diferença aparecer mesmo quando a tela cheia nativa é negada.
@@ -3928,15 +4741,18 @@ class Component extends DCLogic {
     const chromePad = fs
       ? { xs:"4px 6px 0", sm:"5px 8px 0", md:"6px 12px 0", lg:"7px 14px 0", xl:"8px 18px 0" }[bp]
       : { xs:"10px 10px 0", sm:"12px 12px 0", md:"14px 16px 0", lg:"18px 20px 0", xl:"20px 26px 0" }[bp];
-    const populated = !isLoading && !isEmpty && !fatal;
+    const populated = !isLoading && !isEmpty && !fatal && src !== null;
     const hintFit = populated && !this.fitSeen && !this.state.hintOff && !editing;
     this.hintVisible = hintFit;
 
     return {
       rootRef: el => { this.root = el; if (el && this.ro) this.ro.observe(el); },
       scrollRef: el => { this.scroller = el; },
+      surfaceBad: !!this.state.surfaceBad,
+      dismissGuard: this.dismissGuard,
       meta, lines,
-      titleText: meta.title || "Sem título",
+      // Enquanto a cifra da lista não chega, o título declarado já dá o nome.
+      titleText: meta.title || (this.setlistOn && this.curSong ? this.curSong.title : "") || "Sem título",
       hasKey: !!meta.key,
       shownKey: transposeToken(meta.key || "", n, flats),
       hasOffset: n !== 0,
@@ -3968,6 +4784,7 @@ class Component extends DCLogic {
       toggleMap: this.toggleMap,
       toggleCapo: this.toggleCapo, capoUp: this.capoUp, capoDown: this.capoDown, capoOff: this.capoOff,
       isLoading, isEmpty, isPopulated: populated,
+      ...this.novaVals(isEmpty),
       hasContent: populated,
       isFatal: !!fatal, fatalMsg: fatal || "",
       metaDisplay: narrow ? "none" : "flex",
@@ -3989,6 +4806,18 @@ class Component extends DCLogic {
       mWidth: compact ? "auto" : "min(300px,calc(100% - 32px))",
       modalAlign: compact ? "flex-end" : "center",
       modalPad: compact ? "0" : "20px",
+      // Nova cifra / ficha: no telefone é folha de fundo (canto inferior reto,
+      // respiro de área segura); no tablet e desktop é caixa centrada.
+      novaAlign: phone ? "flex-end" : "center",
+      novaWrapPad: phone ? "0" : "20px",
+      novaMax: phone ? "100%" : "520px",
+      novaRadius: phone ? "20px 20px 0 0" : "18px",
+      novaPad: phone ? (bp === "xs" ? "14px 13px calc(14px + env(safe-area-inset-bottom))" : "16px 15px calc(18px + env(safe-area-inset-bottom))") : "18px",
+      novaMaxH: phone ? "92%" : "min(660px,88%)",
+      novaTitleSize: bp === "xs" ? "18px" : "21px",
+      novaCols: bp === "xs" ? "1fr" : "repeat(auto-fit,minmax(150px,1fr))",
+      novaTextH: phone ? "150px" : "190px",
+      emptyPad: bp === "xs" ? "22px 18px" : phone ? "30px 24px" : "40px",
       modalMax: compact ? "100%" : "400px",
       modalRadius: compact ? "20px 20px 0 0" : "18px",
       chordModalMax: compact ? "100%" : "330px",
@@ -4008,7 +4837,7 @@ class Component extends DCLogic {
         { label: "Ajuste ao espaço", hint: fit ? "Ligado" : "Desligado", go: () => { this.setState({ morePanel: false }); this.toggleFit(); } },
         { label: "Lentes de leitura", hint: "Nomes, graus ou só letra", go: () => { this.setState({ morePanel: false }); this.toggleLensPanel(); } },
         { label: "Metrônomo", hint: this.state.met ? "Tocando" : "Parado", go: () => { this.setState({ morePanel: false }); this.toggleMetPanel(); } },
-        { label: "Tela cheia", hint: fs ? "Sair" : "Entrar", go: () => { this.setState({ morePanel: false }); this.toggleFs(); } },
+        { label: "Tema", hint: t === "auto" ? "Automático" : t === "light" ? "Claro" : "Escuro", go: () => { this.cycleTheme(); } },
         { label: "Exportar", hint: "ChordPro ou PDF", go: () => { this.setState({ morePanel: false }); this.openSheet(); } }
       ].concat(
         !editing && populated && this.hasOverlay
@@ -4037,10 +4866,6 @@ class Component extends DCLogic {
       blockGap: Math.round(lyric * (fit ? 2.1 : 2.6)) + "px",
       chromeOp: hidden ? "0" : "1",
       chromePE: hidden ? "none" : "auto",
-      chromeHidden: hidden,
-      // A dica tem de falar do gesto que realmente devolve a moldura: zen sai
-      // no toque, a ocultação por inatividade sai em qualquer movimento.
-      chromeHiddenHint: this.state.zen ? "Toque na cifra para mostrar os controles" : "Mova para mostrar os controles",
       themeGlyph: t === "auto" ? "◐" : t === "light" ? "○" : "●",
       themeLabel: t === "auto" ? "Auto" : t === "light" ? "Claro" : "Escuro",
       fitMark: fit ? "✓" : "",
@@ -4055,6 +4880,7 @@ class Component extends DCLogic {
       scrollIconRadius: scrolling ? "2px" : "1px",
       scrollClip: scrolling ? "none" : "polygon(0 0, 100% 50%, 0 100%)",
       fsGlyph: fs ? "⤡" : "⤢",
+      fsRot: fs ? "rotate(180deg)" : "none",
       fsBg: fs ? "var(--sel)" : "transparent",
       fsBorder: fs ? "var(--sel-line)" : "transparent",
       fsFg: "var(--text)",
@@ -4076,6 +4902,84 @@ class Component extends DCLogic {
       toast: this.state.toast,
       liveError: fatal || (this.state.pdf === "error" ? "A exportação em PDF falhou." : ""),
       exportKeyNote: meta.key ? "em " + transposeToken(meta.key, n, flats) + (capo ? " · capo " + capo : "") : "",
+      setlistOn: this.setlistOn,
+      soloHead: !this.setlistOn,
+      // Rede de segurança: a barra centralizada nunca passa por baixo dos chips
+      // flutuantes ("Editar" à direita, sugestões à esquerda).
+      barMaxW: (() => {
+        if (phone) return "100%";
+        const canEdit = !editing && populated && (this.props.canEdit ?? true) && this.modes.length > 0;
+        const hasQueue = !editing && populated && this.modes.indexOf("content") >= 0 && this.pendingCount > 0;
+        const r = canEdit ? 112 : 0, l = hasQueue ? 176 : 0;
+        const res = 2 * Math.max(r, l);
+        return res ? "calc(100% - " + res + "px)" : "100%";
+      })(),
+      offerBottom: phone
+        ? "calc(env(safe-area-inset-bottom) + " + (scrolling ? 186 : 130) + "px)"
+        : (scrolling ? 148 : 90) + "px",
+      posLabel: (this.si + 1) + "/" + this.setlist.length,
+      noPrev: this.si <= 0,
+      noNext: this.si >= this.setlist.length - 1,
+      prevOp: this.si <= 0 ? "0.32" : "1",
+      nextOp: this.si >= this.setlist.length - 1 ? "0.32" : "1",
+      nextChip: (() => {
+        const nx = this.setlist[this.si + 1];
+        return nx ? "Próxima · " + nx.title : "Última da lista";
+      })(),
+      nextChipShort: (() => {
+        const nx = this.setlist[this.si + 1];
+        return nx ? "Próx. " + nx.title : "Última";
+      })(),
+      goPrev: this.goPrev, goNext: this.goNext,
+      openList: this.openList, closeList: this.closeList,
+      listOpen: this.setlistOn && this.state.listOpen,
+      listHead: this.setlist.length + " músicas",
+      listSeenLabel: (() => {
+        const c = this.setlist.filter(s => this.state.seen[s.id]).length;
+        return c ? c + " já passamos" : "nenhuma ainda";
+      })(),
+      listShowSearch: this.setlist.length > 10,
+      listQ: this.state.listQ,
+      onListQ: this.onListQ,
+      listItems: (() => {
+        const q = (this.state.listQ || "").trim().toLowerCase();
+        const cur = this.si;
+        return this.setlist.map((s, i) => ({ s, i }))
+          .filter(({ s }) => !q || s.title.toLowerCase().indexOf(q) >= 0 || (s.subtitle || "").toLowerCase().indexOf(q) >= 0)
+          .map(({ s, i }) => {
+            const on = i === cur;
+            const err = !!this.state.songErr[s.id] && !s.source && typeof this.state.cache[s.id] !== "string";
+            const busy = !!this.state.songBusy[s.id];
+            const seen = !!this.state.seen[s.id] && !on;
+            return {
+              num: String(i + 1).padStart(2, "0"),
+              title: s.title,
+              sub: s.subtitle || "",
+              keyLabel: s.key ? s.key : "",
+              hasKey: !!s.key,
+              mark: err ? "!" : busy ? "…" : seen ? "✓" : "",
+              hasMark: !!(err || busy || seen),
+              markFg: err ? "var(--danger)" : "var(--muted)",
+              on, go: () => this.goSong(i),
+              bg: on ? "var(--chord-soft)" : "var(--surface)",
+              border: on ? "var(--chord-edge)" : "var(--line-soft)",
+              numFg: on ? "var(--chord)" : "var(--muted)",
+              titleFg: on ? "var(--chord)" : "var(--text)",
+              op: err ? "0.72" : "1"
+            };
+          });
+      })(),
+      listNoHit: (() => {
+        const q = (this.state.listQ || "").trim().toLowerCase();
+        if (!q) return false;
+        return !this.setlist.some(s => s.title.toLowerCase().indexOf(q) >= 0 || (s.subtitle || "").toLowerCase().indexOf(q) >= 0);
+      })(),
+      endOffer: this.setlistOn && this.state.endOffer && !editing,
+      endNextTitle: (() => { const nx = this.setlist[this.si + 1]; return nx ? nx.title : ""; })(),
+      endNext: this.endNext, dismissEnd: this.dismissEnd,
+      songFail: this.songFailing,
+      songFailTitle: this.curSong ? this.curSong.title : "",
+      retrySong: this.retrySong,
       down: this.down, up: this.up, reset: this.reset,
       smaller: this.smaller, bigger: this.bigger,
       cycleTheme: this.cycleTheme, toggleFit: this.toggleFit, toggleFs: this.toggleFs,
@@ -4279,6 +5183,7 @@ class Component extends DCLogic {
       toggleLensPanel: this.toggleLensPanel, closeLens: this.closeLens,
       lensOptions: [
         { key: "none", label: "Sem lente", hint: "Nomes de acorde como estão na cifra." },
+        { key: "letra", label: "Só letra", hint: "Sem acordes, tab ou partitura — para quem está cantando com a banda." },
         { key: "nashville", label: "Nashville (graus)", hint: !meta.key ? "Precisa de {key:} na cifra." : twin ? "Graus valem para os dois grupos \u2014 substitui o modo dual." : "1 4 5 6m em vez de G C D Em." }
       ].map(o => {
         const on = lens === o.key || (o.key === "none" && lens === "none");
@@ -4351,7 +5256,7 @@ class Component extends DCLogic {
           weight: acc ? "700" : "500"
         };
       }),
-      lensChipLabel: lens === "nashville" ? "Graus" : "Lentes",
+      lensChipLabel: lens === "nashville" ? "Graus" : lens === "letra" ? "Só letra" : "Lentes",
       lensChipBg: lens === "none" ? "transparent" : "var(--chord-fill)",
       lensChipFg: lens === "none" ? "var(--text)" : "var(--chord)",
       lensChipBorder: lens === "none" ? "var(--line)" : "var(--chord-edge)",
