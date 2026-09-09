@@ -304,3 +304,54 @@ test('the chart moves continuously, never a pixel at a time', async ({ page }) =
     .poll(() => page.locator('.cpv-page').evaluate((el) => (el as HTMLElement).style.transform))
     .toBe('')
 })
+
+/**
+ * The phone dock is a fixed row of touch targets with no room to spare: adding
+ * Tela cheia to it squashed the two neighbours that could shrink down to 33px
+ * on a 390px phone, and pushed the last button off the edge at 320px. Neither
+ * shows up in a screenshot of the common width.
+ */
+test('every dock control stays reachable across phone widths', async ({ page }) => {
+  for (const width of [320, 360, 375, 390, 412, 430, 470]) {
+    await page.setViewportSize({ width, height: 860 })
+    await page.goto('/')
+    await page.locator('.cpv-chord').first().waitFor()
+
+    const dock = await page.evaluate(() => {
+      const row = document.querySelector('[data-scroll]')!.parentElement as HTMLElement
+      const boxes = [...row.querySelectorAll('button')].map((b) => {
+        const r = b.getBoundingClientRect()
+        return { label: b.getAttribute('aria-label') ?? b.textContent ?? '', w: r.width, h: r.height, right: r.right, left: r.left }
+      })
+      return { overflow: row.scrollWidth - row.clientWidth, boxes, frame: window.innerWidth }
+    })
+
+    expect(dock.overflow, `${width}px overflows its frame`).toBeLessThanOrEqual(0)
+    for (const b of dock.boxes) {
+      expect(b.left, `${width}px: "${b.label}" off the left edge`).toBeGreaterThanOrEqual(0)
+      expect(b.right, `${width}px: "${b.label}" off the right edge`).toBeLessThanOrEqual(dock.frame)
+      // The paired A−/A+ share one target and are allowed to be narrower; every
+      // control that stands alone keeps a thumb-sized box.
+      if (!/tipografia/i.test(b.label)) {
+        expect(b.h, `${width}px: "${b.label}" is ${b.h}px tall`).toBeGreaterThanOrEqual(40)
+        expect(b.w, `${width}px: "${b.label}" is ${b.w}px wide`).toBeGreaterThanOrEqual(40)
+      }
+    }
+  }
+})
+
+test('Tela cheia is on the dock itself, and not also buried in Mais', async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 860 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  const fsBtn = page.locator('[data-fs]')
+  await expect(fsBtn).toBeVisible()
+  await expect(fsBtn).toHaveText('⤢')
+
+  // The same control in two places on one screen is clutter, not redundancy.
+  // Scoped to the sheet's own rows: the dock button carries the same label.
+  await page.getByRole('button', { name: 'Mais controles' }).click()
+  await expect(page.locator('.cpv-more-item').first()).toBeVisible()
+  await expect(page.locator('.cpv-more-item', { hasText: 'Tela cheia' })).toHaveCount(0)
+})

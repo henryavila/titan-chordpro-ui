@@ -308,9 +308,24 @@ const scrollOff = computed(() => !canScroll.value && !scrolling.value)
 const scrollTitle = computed(() =>
   scrollOff.value ? 'A cifra inteira cabe na tela — não há o que rolar' : 'Auto-rolagem (espaço)',
 )
-const dockCtrlH = computed(() => (bp.value === 'xs' ? '44px' : '48px'))
-const dockIconSize = computed(() => (bp.value === 'xs' ? '44px' : '48px'))
-const dockPlayLabel = computed(() => (width.value < 380 ? '' : scrolling.value ? 'Parar' : 'Rolar'))
+/**
+ * Three tiers, not two. At 320px — the narrowest phone still in use — six
+ * controls at 44px plus the type pair overflow the frame by 34px, and what
+ * falls off the end is the button furthest right, unreachable rather than
+ * merely tight. 40px is under the 44px a thumb wants, and it is the smaller
+ * concession.
+ */
+const dockCtrlH = computed(() => (width.value < 360 ? '40px' : bp.value === 'xs' ? '44px' : '48px'))
+const dockIconSize = computed(() => dockCtrlH.value)
+const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs' ? '38px' : '42px'))
+/**
+ * The scroll button wears its word only where the row can afford it. Below
+ * that, six controls at a 44px touch target plus the type pair leave no room,
+ * and the alternative is squashing the controls next to it — measured, theme
+ * and "Mais" fell to 33px on a 390px phone, which is not a target any thumb
+ * hits. The green pill with a play triangle needs the word least.
+ */
+const dockPlayLabel = computed(() => (width.value < 470 ? '' : scrolling.value ? 'Parar' : 'Rolar'))
 const toastBottom = computed(() => {
   const base = compact.value ? 124 : 78
   // Almost every block action raises a toast, and the selection bar sits right
@@ -2314,25 +2329,34 @@ defineExpose({
             <span style="font-size:10px;letter-spacing:0.08em;color:var(--muted);font-weight:700;">{{ Math.round(progress * 100) }}%</span>
           </span>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;padding:6px;">
+        <div :style="{ gap: width < 360 ? '3px' : '4px' }" style="display:flex;align-items:center;padding:6px;">
           <button
             data-scroll
             :title="scrollTitle"
             :disabled="scrollOff"
-            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 380 ? '0' : '0 20px', gap: width < 380 ? '0' : '9px', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 470 ? '0' : '0 20px', gap: width < 470 ? '0' : '9px', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
             style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
             @click="toggleScroll"
           >
             <span :class="scrolling ? 'cpv-icon-stop' : 'cpv-icon-play'" style="flex:none;width:11px;height:11px;" aria-hidden="true" />{{ dockPlayLabel }}
           </button>
-          <span style="flex:1;min-width:2px;" />
+          <span style="flex:1;min-width:0;" />
           <span :style="{ height: dockCtrlH }" style="flex:none;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:14px;background:var(--surface);">
-            <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: bp === 'xs' ? '38px' : '42px', height: bp === 'xs' ? '40px' : '44px' }" style="font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
-            <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: bp === 'xs' ? '38px' : '42px', height: bp === 'xs' ? '40px' : '44px' }" style="font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
+            <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
+            <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
-          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+          <button
+            data-fs
+            class="cpv-glyph"
+            aria-label="Tela cheia"
+            :title="fs ? 'Sair da tela cheia' : 'Tela cheia'"
+            :style="{ width: dockIconSize, height: dockCtrlH, background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
+            style="flex:none;border-radius:14px;color:var(--text);font-size:15px;line-height:1;cursor:pointer;"
+            @click="toggleFs"
+          >{{ fs ? '⤡' : '⤢' }}</button>
           <button v-if="canEditNow" data-edit aria-label="Editar esta cifra" title="Editar esta cifra" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="enterEdit">✎</button>
-          <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
+          <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
         </div>
       </div>
     </div>
@@ -2655,7 +2679,6 @@ defineExpose({
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFit()">Ajuste ao espaço<span>{{ fitOn ? 'Ligado' : 'Desligado' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()">Lentes de leitura<span>Nomes ou graus</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()">Metrônomo<span>{{ met.running.value ? 'Tocando' : 'Parado' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFs()">Tela cheia<span>{{ fs ? 'Sair' : 'Entrar' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true">Exportar<span>ChordPro ou PDF</span></button>
         <template v-if="showMine">
           <button class="cpv-surface-btn cpv-more-item" data-more-original @click="moreOpen = false; toggleOriginal(!ov.showOriginal.value)">
