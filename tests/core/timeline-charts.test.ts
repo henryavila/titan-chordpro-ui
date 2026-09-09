@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  anchorPx,
   buildTimeline,
   clockOf,
   layoutChart,
   parse,
+  pxAtBars,
+  pxAtScroll,
   runSec,
+  scrollAtPx,
   typeScale,
 } from '../../src/core/index'
 import type { ChartBlock, TimelineBlock } from '../../src/core/index'
@@ -157,5 +161,116 @@ describe('the clock on real charts', () => {
       const slowest = Math.min(...speeds)
       expect(fastest / slowest).toBeLessThan(4)
     }
+  })
+})
+
+/**
+ * Where the page IS, in seconds, on real charts.
+ *
+ * The clock above says how long each stretch of paper lasts. This says what
+ * the reader actually sees, which is a different question and the one that was
+ * wrong: with the whole clock correct to the second, the page stood dead still
+ * for 25 to 96 seconds at the start of every chart in the corpus — a third of
+ * `entrega-2` and half of `088-minha-ofertinha`, a chart with 29px of scroll
+ * in it. The anchor asked for half a viewport of paper before it would move,
+ * and half a viewport is the intro plus most of the first verse.
+ */
+describe('where the page is', () => {
+  const PHONE = 860
+
+  /** Scroll offset at a given second, the way the RAF loop computes it. */
+  function pageAt(rel: string, viewport = PHONE) {
+    const { blocks, clock, t, run } = timelineOf(rel)
+    let doc = 0
+    for (const b of blocks) doc += heightOf(b) + GAP
+    const anchor = anchorPx(viewport, doc)
+    const max = Math.max(0, doc - viewport)
+    return {
+      run,
+      max,
+      anchor,
+      at: (sec: number) =>
+        Math.min(max, scrollAtPx(pxAtBars(t, (sec / run) * t.bars), anchor)),
+    }
+  }
+
+  const CORPUS = [
+    'entrega-1.cho',
+    'entrega-2.cho',
+    'escuta-meu-clamor-sda-86.cho',
+    'jesus-tu-es-a-minha-vida-1.cho',
+    'ministerio-tons/002-em-gratidao.cho',
+    'ministerio-tons/010-adoralo.cho',
+    'ministerio-tons/013-ele-vive-em-mim.cho',
+    'ministerio-tons/060-deixai-vir-pequeninos-h588.cho',
+    'ministerio-tons/088-minha-ofertinha.cho',
+    'ministerio-tons/094-maranata-ja-2024.cho',
+  ]
+
+  it('never freezes the chart at the start — every chart is moving inside a second', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      // A chart shorter than the frame has nothing to scroll, and saying so is
+      // the honest answer; every other chart must be visibly alive at once.
+      if (p.max < 1) continue
+      expect(p.at(1), rel).toBeGreaterThan(0)
+    }
+  })
+
+  it('has covered a readable distance by the time the intro is over', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      if (p.max < 1) continue
+      // 30s in — past the intro of every chart in the corpus — the page has
+      // moved a line of chart, or all the paper the chart has, whichever comes
+      // first: `088-minha-ofertinha` is 29px taller than the frame in total.
+      expect(p.at(30), rel).toBeGreaterThanOrEqual(Math.min(40, p.max))
+    }
+  })
+
+  it('never asks a chart for more room than it has', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      expect(p.anchor, rel).toBeLessThanOrEqual(p.max)
+    }
+  })
+
+  it('reaches the end of the paper by the end of the song', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      expect(p.at(p.run), rel).toBeCloseTo(p.max, 0)
+    }
+  })
+
+  it('never runs the page backwards', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      let prev = -1
+      for (let s = 0; s <= p.run; s += p.run / 200) {
+        const now = p.at(s)
+        expect(now, `${rel} at ${s.toFixed(1)}s`).toBeGreaterThanOrEqual(prev)
+        prev = now
+      }
+    }
+  })
+
+  /**
+   * A drag has to land the playhead where the reader put it, or the chart
+   * jumps back the moment the loop takes over again.
+   */
+  it('reads a dragged position back to the music that is showing', () => {
+    for (const anchor of [0, 40, 292]) {
+      for (const px of [0, 10, 120, 400, 2000]) {
+        expect(pxAtScroll(scrollAtPx(px, anchor), anchor)).toBeCloseTo(px, 6)
+      }
+    }
+  })
+
+  it('rests the music a third down the frame once there is room for it', () => {
+    // Tall chart, deep into the song: the anchor is fully built.
+    const anchor = anchorPx(PHONE, 4000)
+    expect(anchor).toBe(292)
+    const px = 2000
+    expect(px - scrollAtPx(px, anchor)).toBe(anchor)
   })
 })

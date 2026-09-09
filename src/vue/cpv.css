@@ -117,12 +117,14 @@
   width: 100%;
   margin: 0 auto;
 }
+/* While the scroll runs this is the one element that is visibly alive on a
+   chart that barely moves, so it earns a pixel and the full accent. */
 .cpv-progress {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   z-index: 14;
   pointer-events: none;
 }
@@ -130,7 +132,11 @@
   display: block;
   height: 2px;
   background: linear-gradient(90deg, var(--chord-edge), var(--chord));
-  transition: width 0.1s linear;
+  transition: width 0.1s linear, height 0.2s ease, box-shadow 0.2s ease;
+}
+.cpv-progress.is-live > span {
+  height: 3px;
+  box-shadow: 0 0 10px -1px var(--chord);
 }
 .cpv-veil {
   background: var(--veil);
@@ -710,29 +716,6 @@
   font-size: 11.5px;
 }
 
-/* Reading line: the chart waits until the playhead reaches it. */
-.cpv-guide {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 9;
-  height: 1px;
-  background: var(--chord);
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-.cpv-guide-label {
-  position: absolute;
-  left: 16px;
-  z-index: 10;
-  transform: translateY(-140%);
-  pointer-events: none;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--chord);
-}
 .cpv-sheet.is-compact {
   align-items: flex-end;
   padding: 0;

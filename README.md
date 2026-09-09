@@ -310,20 +310,45 @@ Uma marca no fim de uma linha cantada é cauda **somada** àquela linha, nunca o
 tempo inteiro dela: um `[Am]x///` fechando a estrofe não faz a estrofe durar
 quatro pulsos.
 
-Um *playhead* percorre a cifra nesse relógio e a página só anda quando ele passa
-da **linha de leitura** (meio da tela): introdução e final ficam parados na tela,
-e o percurso inteiro gasta a duração declarada. `Timeline.bars` é o total do
-percurso e `runSec()` devolve exatamente ele — se os dois divergirem, **todo**
-segmento toca na razão entre eles, inclusive os compassos contados. Matemática
-em `src/core/timeline.ts` (framework-free); o RAF e a medição do DOM ficam no
-binding Vue.
+Um *playhead* percorre a cifra nesse relógio e o percurso inteiro gasta a
+duração declarada. `Timeline.bars` é o total do percurso e `runSec()` devolve
+exatamente ele — se os dois divergirem, **todo** segmento toca na razão entre
+eles, inclusive os compassos contados. Matemática em `src/core/timeline.ts`
+(framework-free); o RAF e a medição do DOM ficam no binding Vue.
 
-A linha de leitura é **mecanismo, não chrome**. Ela só é desenhada enquanto a
-cifra espera no topo — onde explica por que nada se move — e por 1,5 s depois de
-um arrasto, que é quando o músico acabou de perguntar onde a música está.
-Desenhada o tempo todo ela competia com o texto e afirmava uma precisão que a
-estimativa não tem: o olho lê adiantado, então uma régua dizendo "a música está
-aqui" aponta para um lugar que ele já deixou.
+#### Onde a página fica: âncora com rampa, nunca congelada
+
+Na primeira nota a música está obrigatoriamente no topo do papel — não há nada
+acima dela para rolar. A âncora define onde a música **descansa** na tela
+(`ANCHOR_RATIO`, um terço: dois terços da tela ficam para o que vem, que é para
+onde o olho do músico já está indo).
+
+A dívida entre as duas coisas era paga **parando a página** até a música ter
+percorrido uma âncora inteira de papel. Medido no corpus de `fixtures/`, isso
+era de **25 a 96 segundos** de página morta em toda cifra — um terço de
+`entrega-2`, metade de `088-minha-ofertinha`, que tem 29px de rolagem no total.
+Meia tela de papel não é a introdução: é a introdução mais quase toda a primeira
+estrofe.
+
+Duas correções:
+
+1. `anchorPx(viewport, doc)` é limitado pela rolagem que a cifra **tem** para
+   dar (`min(viewport, doc − viewport)`). Uma cifra que mal passa da moldura não
+   consegue segurar a música um terço abaixo, e pedir isso congelava a página
+   quase a música inteira por causa de algumas dezenas de pixels.
+2. `scrollAtPx()` paga a dívida em rampa: a página anda a `1 − ANCHOR_RAMP` do
+   passo da música enquanto a música desce até o lugar de descanso, e no passo
+   da música dali em diante. Nada congela — no corpus, toda cifra está andando
+   em **0,1 a 0,5 s**.
+
+`pxAtScroll()` é a inversa, e é ela que lê de volta a posição quando o músico
+arrasta a cifra com o dedo.
+
+Não há régua desenhada sobre a cifra. Uma linha de leitura permanente competia
+com o texto e afirmava uma precisão que a estimativa não tem — o olho lê
+adiantado da mão, então "a música está aqui" aponta para um lugar que ele já
+deixou. Quem diz que a rolagem está viva é a própria página andando, e a barra
+de progresso no topo (`.cpv-progress.is-live`) para as cifras que andam pouco.
 
 ### Metrônomo: um controle, não dois
 

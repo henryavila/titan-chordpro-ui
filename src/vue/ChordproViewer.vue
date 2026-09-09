@@ -2,6 +2,8 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   anchorPx,
+  pxAtScroll,
+  scrollAtPx,
   barsAtPx,
   blockSpan,
   buildTimeline,
@@ -118,21 +120,9 @@ const sysDark = ref(
 const bias = ref(0)
 const fit = ref<boolean | null>(null)
 const scrolling = ref(false)
-const holding = ref(false)
-/**
- * The reading line is an answer, not chrome. It is the visible form of the
- * scroll's anchor, and drawn all the way through it competes with the chart
- * and claims a precision the estimate does not have — a musician reads ahead
- * of where they play, so a rule saying "the music is here" points at a place
- * the eye has already left. It shows while the chart waits at the top, where
- * it explains why nothing is moving, and for a moment after a drag, which is
- * the one time "where is it?" is a question just asked.
- */
-const guideShown = ref(false)
 const mul = ref(1)
 const progress = ref(0)
 const etaLabel = ref('—')
-const anchorTop = ref(0)
 const sheet = ref(false)
 const pdf = ref<'idle' | 'busy' | 'error'>('idle')
 const toast = ref<string | null>(null)
@@ -210,7 +200,6 @@ let playhead = 0
 let timeline: Timeline | null = null
 let etaTick = -1
 let idleT = 0
-let guideT = 0
 let toastT = 0
 let hintT = 0
 let discardT = 0
@@ -685,9 +674,13 @@ function timelineFor(): Timeline | null {
   return timeline
 }
 
+/**
+  * The anchor is read from the live frame, not cached: the reader changes type
+  * size and turns fit on mid-song, and both move how much paper there is.
+  */
 function anchor(): number {
   const el = scroller.value
-  return anchorPx(el ? el.clientHeight : 0)
+  return el ? anchorPx(el.clientHeight, el.scrollHeight) : 0
 }
 
 function totalBars(): number {
@@ -695,24 +688,14 @@ function totalBars(): number {
   return t ? t.bars : 0
 }
 
-/** Answers the drag that just happened, then gets out of the way again. */
-function showGuide() {
-  guideShown.value = true
-  window.clearTimeout(guideT)
-  guideT = window.setTimeout(() => (guideShown.value = false), 1500)
-}
-
 function stopScroll() {
   if (raf) cancelAnimationFrame(raf)
   raf = 0
   window.clearTimeout(idleT)
-  window.clearTimeout(guideT)
   if (scroller.value && userScroll) scroller.value.removeEventListener('scroll', userScroll)
   userScroll = null
   scrolling.value = false
   idle.value = false
-  holding.value = false
-  guideShown.value = false
   // Every way out of the scroll passes through here — the end of the song, a
   // transpose, a song change — and with the two linked, none of them may leave
   // a click ticking over a chart that has stopped. `met.stop()` is a no-op when
@@ -727,12 +710,11 @@ function startScroll() {
   window.clearTimeout(idleT)
   if (props.autoHide) idleT = window.setTimeout(() => (idle.value = true), 2600)
   rebuildTimeline()
-  anchorTop.value = anchor()
   // From the top the playhead starts at 0 and the page stays put until it
   // reaches the reading line — the whole intro stays on screen. Resuming
   // mid-song, the playhead adopts the current reading line.
   const total = totalBars() || 1
-  playhead = el.scrollTop <= 1 ? 0 : Math.min(1, barsAtPx(timelineFor(), el.scrollTop + anchor()) / total)
+  playhead = el.scrollTop <= 1 ? 0 : Math.min(1, barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / total)
   written = el.scrollTop
   etaTick = -1
   let prev = performance.now()
@@ -743,8 +725,7 @@ function startScroll() {
     if (!scrolling.value) return
     if (Math.abs(el.scrollTop - written) > 1.5) {
       const t = totalBars() || 1
-      playhead = Math.min(1, Math.max(0, barsAtPx(timelineFor(), el.scrollTop + anchor()) / t))
-      showGuide()
+      playhead = Math.min(1, Math.max(0, barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / t))
     }
   }
   el.addEventListener('scroll', userScroll, { passive: true })
@@ -763,17 +744,15 @@ function startScroll() {
     const run = runSec(t, dur)
     if (run > 0 && dt > 0) playhead = Math.min(1, playhead + (dt / run) * mul.value)
     const max = el.scrollHeight - el.clientHeight
-    const target = Math.max(0, Math.min(max, pxAtBars(t, playhead * (t ? t.bars : 0)) - anchor()))
+    const target = Math.max(0, Math.min(max, scrollAtPx(pxAtBars(t, playhead * (t ? t.bars : 0)), anchor())))
     el.scrollTop = target
     written = el.scrollTop
-    const held = target <= 0.5
     // One update per clock second, not per frame: re-rendering the whole sheet
     // 60 times a second ate the frames of the scroll itself.
     const sec = Math.round(etaSec(t, dur, playhead, mul.value))
-    if (sec !== etaTick || holding.value !== held) {
+    if (sec !== etaTick) {
       etaTick = sec
       progress.value = playhead
-      holding.value = held
       etaLabel.value = formatEta(sec)
     }
     if (playhead >= 1) {
@@ -1563,11 +1542,10 @@ onMounted(() => {
     void nextTick(() => {
       const el = scroller.value
       timeline = null
-      anchorTop.value = anchor()
       if (!el || !scrolling.value) return
       rebuildTimeline()
       const max = el.scrollHeight - el.clientHeight
-      const px = pxAtBars(timelineFor(), playhead * totalBars()) - anchor()
+      const px = scrollAtPx(pxAtBars(timelineFor(), playhead * totalBars()), anchor())
       el.scrollTop = Math.max(0, Math.min(max, px))
       written = el.scrollTop
     })
@@ -1586,7 +1564,6 @@ onMounted(() => {
   )
   setlist.prefetch()
   syncHostSource()
-  anchorTop.value = anchor()
   guard.start()
 })
 
@@ -1803,20 +1780,7 @@ defineExpose({
       <div style="font-size:13px;color:var(--muted);">Preparando a cifra…</div>
     </div>
 
-    <div class="cpv-progress"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
-
-    <!-- Reading line: shown while the chart waits at the top, and for a moment
-         after a drag. The rest of the time the chart is left to be read. -->
-    <template v-if="scrolling && !isEdit && (holding || guideShown)">
-      <div
-        aria-hidden="true"
-        class="cpv-guide"
-        :style="{ top: `${anchorTop}px`, opacity: holding ? '0.85' : '0.4' }"
-      />
-      <div v-if="holding" class="cpv-guide-label" :style="{ top: `${anchorTop}px` }">
-        Linha de leitura · a cifra espera até aqui
-      </div>
-    </template>
+    <div class="cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
     <!-- Phone identity bar -->
     <div

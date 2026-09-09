@@ -30,8 +30,27 @@ import type { BlockMusic, ChordProView } from './types'
  * binding owns the DOM measurements and the RAF loop.
  */
 
-/** Fraction of the viewport where the reading line sits. */
-export const ANCHOR_RATIO = 0.5
+/**
+ * Fraction of the viewport where the music comes to rest, once the scroll has
+ * room to place it there. A third leaves two thirds of the screen for what is
+ * coming, which is where a musician's eye already is — half the screen spent
+ * on what has been played is half a screen not read.
+ */
+export const ANCHOR_RATIO = 0.34
+
+/**
+ * Share of the early scroll given over to building the anchor up.
+ *
+ * At the first note the music is necessarily at the top of the page: there is
+ * nothing above it to scroll away. The old scroll paid that debt by standing
+ * completely still until the music had covered a whole anchor of paper, which
+ * on real charts was 25 to 96 seconds — a third of the song on `entrega-2`,
+ * and half of `088-minha-ofertinha`, a chart with 29px of scrolling in it. The
+ * page pays it gradually instead: it runs at `1 - ANCHOR_RAMP` of the music's
+ * pace while the music drifts down to its resting place, and at the music's
+ * pace from there. Nothing is ever frozen.
+ */
+export const ANCHOR_RAMP = 0.5
 
 /**
  * One sung row is worth about eight beats when nothing else is written — two
@@ -372,9 +391,32 @@ export function formatEta(seconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-/** Reading-line offset inside the scroller. */
-export function anchorPx(viewportHeight: number): number {
-  return Math.round(viewportHeight * ANCHOR_RATIO)
+/**
+ * Where the music rests on screen, in px from the top of the viewport.
+ *
+ * Bounded by the scrolling the chart actually has to give: a chart barely
+ * taller than the frame cannot hold the music a third of the way down, and
+ * asking it to used to freeze the page for most of the song over a scroll of
+ * a few dozen pixels.
+ */
+export function anchorPx(viewportHeight: number, docHeight = Infinity): number {
+  const room = Math.max(0, docHeight - viewportHeight)
+  return Math.round(ANCHOR_RATIO * Math.min(viewportHeight, room))
+}
+
+/** Where the page sits when the music has reached `px` of the document. */
+export function scrollAtPx(px: number, anchor: number): number {
+  if (px <= 0) return 0
+  return px - Math.min(anchor, px * ANCHOR_RAMP)
+}
+
+/** The music shown at a given scroll offset — the inverse of {@link scrollAtPx}. */
+export function pxAtScroll(scroll: number, anchor: number): number {
+  const s = Math.max(0, scroll)
+  // Below the knee the anchor is still growing, so the page has covered only
+  // `1 - ANCHOR_RAMP` of the music's paper.
+  const knee = (anchor * (1 - ANCHOR_RAMP)) / ANCHOR_RAMP
+  return s < knee ? s / (1 - ANCHOR_RAMP) : s + anchor
 }
 
 /** Clock inputs a chart provides; `bpmOverride` is the reader's own tempo. */

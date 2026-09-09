@@ -40,8 +40,11 @@ export { buildChoFilename, buildPdfFilename } from './filenames'
 export { exportCho, patchMeta } from './export-cho'
 export { calcScrollSpeed, adjustScrollSpeed, viewerMulStep } from './scroll'
 export {
+  ANCHOR_RAMP,
   ANCHOR_RATIO,
   anchorPx,
+  pxAtScroll,
+  scrollAtPx,
   barsAtPx,
   beatsPerBar,
   buildTimeline,

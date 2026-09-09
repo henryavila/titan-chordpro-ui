@@ -177,39 +177,31 @@ test('personal marker stays clickable outside horizontal flow and reverts the re
 })
 
 /**
- * Two things jsdom cannot answer, because it gives every element zero height:
- * whether the reading line stays out of the way once the chart is moving, and
- * where the beat badge actually lands on a wide screen.
+ * Things jsdom cannot answer, because it gives every element zero height:
+ * whether the page actually starts moving, and where the beat badge lands on
+ * a wide screen.
  */
-test('the reading line answers and withdraws, and the beat badge hangs off the column', async ({ page }) => {
+test('the page starts moving at once, and the beat badge hangs off the column', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
   await page.locator('.cpv-chord').first().waitFor()
-  const guide = page.locator('.cpv-guide')
   const scroll = page.locator('.cpv-scroll')
 
-  // At the top the chart stands still while the playhead walks to the line.
-  // That is the one moment the line has something to say, and it says it.
+  // The old scroll stood dead still until the music had covered a whole
+  // anchor of paper — 25 to 96 seconds on the fixture corpus. It now eases
+  // into the anchor instead, so the page is alive from the first second.
   await page.locator('.cpv-chord').first().click()
   await page.keyboard.press(' ')
-  await expect(guide).toBeVisible()
-  await expect(page.locator('.cpv-guide-label')).toContainText('espera até aqui')
-
-  // Reading further in, the chart is moving and the line has no business
-  // across the words: it used to be drawn through the whole song.
+  await expect.poll(() => scroll.evaluate((el) => el.scrollTop), { timeout: 4000 }).toBeGreaterThan(0)
+  // Nothing is drawn across the chart while it is being read.
+  await expect(page.locator('.cpv-guide')).toHaveCount(0)
+  // The bar at the top is what says the scroll is running.
+  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/)
   await page.keyboard.press(' ')
-  await scroll.evaluate((el) => (el.scrollTop = 600))
-  await page.keyboard.press(' ')
-  await expect(guide).toBeHidden()
-
-  // Dragging is the musician asking where the music is. It answers, briefly.
-  await scroll.evaluate((el) => (el.scrollTop = 900))
-  await expect(guide).toBeVisible()
-  await expect(guide).toBeHidden({ timeout: 4000 })
-  await page.keyboard.press(' ')
+  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
 
   // The badge belongs to the chart, not to the window: at 1280 the column is
-  // 880 wide, so the far corner of the glass is 200px of empty background away.
+  // 980 wide, so the far corner of the glass is 150px of empty background away.
   await page.keyboard.press('m')
   const badge = page.locator('[data-met-pulse]')
   await expect(badge).toBeVisible()
