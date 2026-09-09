@@ -31,6 +31,12 @@ async function checkGeometry(page: Page, semitones = 0, capo = 0) {
       const ys = [...word.querySelectorAll('.cpv-lyric')].map(el => el.getBoundingClientRect().y)
       if (Math.max(...ys) - Math.min(...ys) > 1) failures.push('word broken at internal chord')
     }
+    // The clearance a chord reserves cannot depend on where it landed: a chord
+    // inside a word used to get a thinner one, which is what made two chords in
+    // "cura" collide in the first place.
+    const reserves = new Set([...row.querySelectorAll('.cpv-chord-stack')]
+      .map(el => getComputedStyle(el).paddingRight))
+    if (reserves.size > 1) failures.push(`uneven chord reserve: ${[...reserves].join(' / ')}`)
     const flow = row.querySelector('.cpv-reading-flow')!
     if (flow.scrollWidth > flow.clientWidth + 1) failures.push('reading flow overflows container')
     return {

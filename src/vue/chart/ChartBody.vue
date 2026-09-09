@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 import type { ChartBlock } from 'titan-chordpro-ui'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import ScoreFigure from './ScoreFigure.vue'
-import { readingWords } from './readingWords'
+import { readingWords, type ReadingWord } from './readingWords'
 
 const props = withDefaults(
   defineProps<{
@@ -71,6 +71,21 @@ const editRows = computed(() => {
 })
 const emptyRow: EditRow = { li: -1, tokens: [], chords: [], plain: '' }
 const rowOf = (li: number): EditRow => editRows.value.get(li) ?? emptyRow
+
+/**
+ * Every sung line grouped into words, built once per source change — the
+ * template used to regroup on every render, for every row.
+ */
+const readingRows = computed(() => {
+  const m = new Map<number, ReadingWord[]>()
+  for (const b of props.blocks) {
+    if (b.kind !== 'stanza' && b.kind !== 'chorus') continue
+    for (const r of b.rows) m.set(r.li, readingWords(r.segs))
+  }
+  return m
+})
+const noWords: ReadingWord[] = []
+const wordsOf = (li: number): ReadingWord[] => readingRows.value.get(li) ?? noWords
 
 const bgCache = new Map<string, number | null>()
 
@@ -416,24 +431,29 @@ watch(
                   @click.stop="emit('revertLine', row.li)"
                 ><span /></button>
                 <span class="cpv-reading-flow">
-                  <span v-for="(word, wi) in readingWords(row.segs)" :key="wi" class="cpv-reading-word">
-                    <span v-for="(s, si) in word" :key="si" class="cpv-word">
+                  <span v-for="(word, wi) in wordsOf(row.li)" :key="wi" class="cpv-reading-word">
+                    <span v-for="(c, ci) in word.cells" :key="ci" class="cpv-word">
                       <span
                         class="cpv-chord-box"
                         :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
                       >
-                        <span
-                          v-if="s.loose || s.tight"
-                          class="cpv-chord-stack"
-                          :class="{ 'cpv-chord-stack--tight': s.tight }"
-                        >
+                        <span v-if="c.hasChord" class="cpv-chord-stack">
                           <!-- Capo shape on top, in the quiet grey; the chord that
                                actually sounds stays green, glued to the lyric. -->
-                          <span v-if="s.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ s.shape }}</span>
-                          <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ s.chord }}</span>
+                          <span v-if="c.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
+                          <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
                         </span>
                       </span>
-                      <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ s.text }}</span>
+                      <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ c.text }}</span>
+                    </span>
+                    <!-- The space that followed the word, carried as its own
+                         column so the chord lane keeps its height across it. -->
+                    <span v-if="word.hasTail" class="cpv-word">
+                      <span
+                        class="cpv-chord-box"
+                        :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
+                      />
+                      <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ word.tail }}</span>
                     </span>
                   </span>
                 </span>

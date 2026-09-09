@@ -1,4 +1,7 @@
 import type { AccentProp, ChartStore, ThemeId } from 'titan-chordpro-ui'
+import type { LoadSong, SetlistSong } from './use/useSetlist'
+
+export type { LoadSong, SetlistSong }
 
 /** A score the host already has on file, offered when inserting `{image:}`. */
 export type ImageChoice = { file: string; label?: string }
@@ -36,6 +39,19 @@ export type ChordproViewerProps = {
   suggestions?: boolean
   /** Identity of the chart, so a personal version follows the right song. */
   songId?: string
+  /**
+   * The rehearsal list. Two or more turn the mode on: the reader gets the
+   * list, prev/next and a place kept per song. With one, or none, nothing of
+   * it appears and `source` remains the chart on screen.
+   * A song that ships its `source` plays offline; the rest are asked for.
+   */
+  songs?: SetlistSong[]
+  /**
+   * Asked for a song's ChordPro when the list did not carry it. The viewer
+   * keeps what comes back, and prefetches the neighbours so changing song in a
+   * rehearsal never waits on the network.
+   */
+  loadSong?: LoadSong
   /** Version of the official chart: a bump asks the reader what to keep. */
   version?: string
   /** Scores the host can serve, offered when a `{image:}` block is inserted. */
@@ -49,11 +65,30 @@ export type ChordproViewerProps = {
   /** 0.5–1.5 over the derived fills, edges and glow. The hue does not move. */
   accentStrength?: number
   /**
+   * Warn — in the console and on screen — when the host embeds the viewer
+   * without giving its parent a height, so the frame collapses to the
+   * `min-height` floor and the control bar falls below the fold.
+   * Off only for a host that knowingly composes the frame some other way.
+   */
+  surfaceGuard?: boolean
+  /**
    * Where what the viewer remembers is kept. Default is this device's
    * `localStorage`; a host that keeps them on the account passes its own.
    */
   storage?: ChartStore
   capabilities?: ViewerCapabilities
+  /**
+   * Fetches the page behind a link, for "new chart · import". The browser
+   * cannot reach another site from inside the viewer, so this is the host's
+   * backend. Without it the Link tab says so rather than pretending.
+   */
+  fetchChart?: (url: string) => Promise<string>
+  /**
+   * Reads a PDF that has text. `pdfText` from `titan-chordpro-ui/pdf` does it;
+   * it is a prop so the optional `pdfjs-dist` only loads for a host that wants
+   * PDF import. Without it, PDFs are refused up front.
+   */
+  readPdf?: (file: File) => Promise<string>
 }
 
 export type ChordproViewerEmits = {

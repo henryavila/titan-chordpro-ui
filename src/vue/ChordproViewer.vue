@@ -31,12 +31,14 @@ import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } f
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import LensSheet from './sheets/LensSheet.vue'
+import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
 import SourcePane from './edit/SourcePane.vue'
 import ChordDialog from './edit/ChordDialog.vue'
 import ImagePicker from './edit/ImagePicker.vue'
 import ScoreEditor from './edit/ScoreEditor.vue'
+import NewChartDialog from './edit/NewChartDialog.vue'
 import SelectionBar from './edit/SelectionBar.vue'
 import ModePickDialog from './overlay/ModePickDialog.vue'
 import MyVersionPanel from './overlay/MyVersionPanel.vue'
@@ -45,6 +47,8 @@ import UpdateDialog from './overlay/UpdateDialog.vue'
 import { useBlockEdit } from './use/useBlockEdit'
 import { useMetronome } from './use/useMetronome'
 import { useOverlay } from './use/useOverlay'
+import { useSetlist, type SongSpot } from './use/useSetlist'
+import { useSurfaceGuard } from './use/useSurfaceGuard'
 import type { ChordproViewerEmits, ChordproViewerProps, WriteMode } from './public'
 import { applyThemeVars, cycleTheme, themeGlyph, themeLabel } from './use/useTheme'
 import './cpv.css'
@@ -69,9 +73,14 @@ const props = withDefaults(
     resolveImage: (src: string) => src,
     accent: 'verde',
     accentStrength: 1,
+    surfaceGuard: true,
     modes: 'local',
     suggestions: true,
     songId: '',
+    songs: undefined,
+    loadSong: undefined,
+    fetchChart: undefined,
+    readPdf: undefined,
     version: 'v1',
     images: () => [],
     forceParseError: false,
@@ -298,12 +307,56 @@ const modes = computed<WriteMode[]>(() => {
   if (m === 'local' || m === 'content') return [m]
   return ['local', 'content']
 })
+const guard = useSurfaceGuard({
+  root,
+  immersive: fs,
+  enabled: computed(() => props.surfaceGuard !== false),
+})
+
+const setlist = useSetlist({
+  songs: computed(() => props.songs),
+  loadSong: computed(() => props.loadSong),
+})
+
+/**
+ * What the viewer is reading. In a rehearsal the list decides; otherwise the
+ * host's `source` is the chart, exactly as before. A song still on its way
+ * reads as empty — `songFail` and the busy marks say why.
+ */
+const hostSource = computed(() =>
+  setlist.on.value ? (setlist.currentSource.value ?? '') : (props.source ?? ''),
+)
+
+/** A song of the list still on its way: empty, but not "no chart loaded". */
+const songLoading = computed(
+  () => setlist.on.value && setlist.currentSource.value === null && !setlist.failing.value,
+)
+/**
+ * The host is driving content through `songs` and handed over none — still
+ * fetching the rehearsal, or a rehearsal with no repertoire yet. Either way
+ * nothing is selected, which is not the same as a song that lacks a chart.
+ */
+const listEmpty = computed(() => Array.isArray(props.songs) && props.songs.length === 0)
+
+/** The offer sits above the dock, and the dock grows while the chart scrolls. */
+const offerBottom = computed(() =>
+  compact.value
+    ? `calc(env(safe-area-inset-bottom) + ${scrolling.value ? 186 : 130}px)`
+    : `${scrolling.value ? 148 : 90}px`,
+)
+
 const ov = useOverlay({
-  songId: computed(() => props.songId || meta.value.title || 'song'),
+  // In a rehearsal the identity is the song's, so a personal version follows
+  // the right one through the list.
+  songId: computed(() =>
+    setlist.on.value
+      ? (setlist.current.value?.id ?? 'song')
+      : props.songId || meta.value.title || 'song',
+  ),
   version: computed(() => props.version || 'v1'),
   // Line indices are what an adjustment anchors on: the overlay lives in the
   // same normalised text the parser numbers.
-  hostSource: computed(() => normalizeSource(props.source ?? '')),
+  hostSource: computed(() => normalizeSource(hostSource.value)),
   title: computed(() => meta.value.title ?? ''),
   suggestions: computed(() => props.suggestions !== false),
   store,
@@ -681,6 +734,9 @@ function startScroll() {
     if (playhead >= 1) {
       progress.value = 1
       stopScroll()
+      // End of the song in a rehearsal: stop and offer the next, rather than
+      // pushing the musician into a chart they did not choose.
+      setlist.offerNext()
       return
     }
     raf = requestAnimationFrame(step)
@@ -824,6 +880,35 @@ function fakeFs(on: boolean) {
  * the chart every musician reads. With both allowed, the choice is asked for
  * before anything is typed — never after.
  */
+/**
+ * A song with no chart, for whoever may write for everyone: importing is the
+ * normal way in, blank is for whoever already has it in their head. What comes
+ * out of the dialog becomes the chart of the system, and the editor opens on it.
+ */
+const novaOpen = ref(false)
+const novaStart = ref<'import' | 'blank'>('import')
+function startNew(kind: 'import' | 'blank') {
+  novaStart.value = kind
+  novaOpen.value = true
+}
+const canStartNew = computed(
+  () =>
+    isEmpty.value &&
+    // A chart on its way, or one that failed, is not a chart that needs writing
+    // — and an empty list means nothing is selected at all.
+    !songLoading.value &&
+    !setlist.failing.value &&
+    !listEmpty.value &&
+    (props.canEdit ?? true) &&
+    modes.value.includes('content'),
+)
+function commitNewChart(src: string) {
+  novaOpen.value = false
+  ov.setOfficial(src)
+  forceBase()
+  beginEdit('content')
+}
+
 function enterEdit() {
   if (!canEditNow.value) return
   const ms = modes.value
@@ -1200,6 +1285,7 @@ function onKey(e: KeyboardEvent) {
     else if (ov.myPanel.value) ov.closeMy()
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
+    else if (setlist.listOpen.value) setlist.close()
     else if (lensOpen.value) lensOpen.value = false
     else if (metOpen.value) metOpen.value = false
     else if (toneOpen.value) toneOpen.value = false
@@ -1247,8 +1333,10 @@ function onMq() {
  * adopts the `{capo:}` declared in the file, when there is one.
  */
 function syncHostSource() {
-  const raw = props.source ?? ''
+  const raw = hostSource.value
   if (raw === lastSrc) return
+  // Where the song being opened was left, when it has been read before.
+  const spot: SongSpot | null = setlist.takeRestore()
   const first = lastSrc === null
   const lost = !first && session.dirty()
   lastSrc = raw
@@ -1263,14 +1351,21 @@ function syncHostSource() {
   stopScroll()
   offset.value = 0
   mul.value = 1
+  // Coming back to a song already rehearsed: tone, capo and speed are picked
+  // back up. A tone the reader pinned still wins, just below.
+  if (spot) {
+    offset.value = spot.offset
+    capo.value = spot.capo
+    mul.value = spot.mul
+  }
   lens.value = 'none'
   capoMap.value = true
   hideComments.value = false
   metOpen.value = false
   met.stop()
-  playhead = 0
+  playhead = spot ? spot.u || 0 : 0
   timeline = null
-  progress.value = 0
+  progress.value = spot ? spot.u || 0 : 0
   etaLabel.value = '—'
   pdf.value = 'idle'
   sheet.value = false
@@ -1286,9 +1381,43 @@ function syncHostSource() {
   forceBase()
   // The stored BPM belongs to the song: it reloads with the chart.
   met.loadBpm()
-  if (!first && scroller.value) scroller.value.scrollTop = 0
+  if (spot) {
+    // The saved place only exists once the new chart has painted.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (scroller.value) scroller.value.scrollTop = spot.top
+      }),
+    )
+  } else if (!first && scroller.value) scroller.value.scrollTop = 0
   // Swapping the chart drops the draft — but the loss has to be said, not silent.
-  if (lost) toastMsg('Nova cifra recebida — o rascunho anterior foi descartado')
+  if (lost) {
+    toastMsg(
+      setlist.on.value
+        ? 'Você trocou de música — o rascunho anterior foi descartado'
+        : 'Nova cifra recebida — o rascunho anterior foi descartado',
+    )
+  }
+}
+
+/**
+ * Change song, putting down where this one was left. The chart itself swaps
+ * through the same path a host `source` change takes, so the personal version,
+ * the metronome and the timeline all reload exactly as they always did.
+ */
+function goSong(i: number) {
+  setlist.go(i, {
+    offset: offset.value,
+    capo: capo.value,
+    mul: mul.value,
+    top: scroller.value?.scrollTop ?? 0,
+    u: playhead,
+  })
+}
+const goPrev = () => goSong(setlist.si.value - 1)
+const goNext = () => goSong(setlist.si.value + 1)
+const endNext = () => {
+  setlist.dismissEnd()
+  goNext()
 }
 
 function bindHead(el: unknown) {
@@ -1309,7 +1438,7 @@ function syncHeadH() {
   if (h && Math.abs(h - headH.value) > 1) headH.value = h
 }
 
-watch(() => props.source, syncHostSource)
+watch(hostSource, syncHostSource)
 watch([theme, bias, fit, met.sound, met.follow], persistPrefs)
 watch([effTheme, () => props.accent, () => props.accentStrength], () => {
   if (root.value) applyThemeVars(root.value, effTheme.value, props.accent, props.accentStrength)
@@ -1376,6 +1505,9 @@ onMounted(() => {
   sysDark.value = mq.matches
   mq.addEventListener('change', onMq)
   ro = new ResizeObserver((entries) => {
+    // Before the width bail-out: a host that flattens the frame changes our
+    // height, not our width, and that is exactly what the guard looks for.
+    guard.check()
     const w = entries[0]?.contentRect.width ?? 900
     if (Math.abs(w - width.value) <= 4) return
     width.value = w
@@ -1403,14 +1535,17 @@ onMounted(() => {
   ;(['pointermove', 'pointerdown', 'wheel', 'touchstart', 'keydown'] as const).forEach((ev) =>
     window.addEventListener(ev, wake, { passive: true }),
   )
+  setlist.prefetch()
   syncHostSource()
   anchorTop.value = anchor()
+  guard.start()
 })
 
 onUnmounted(() => {
   stopScroll()
   met.dispose()
   ov.dispose()
+  guard.dispose()
   window.clearTimeout(idleT)
   window.clearTimeout(toastT)
   window.clearTimeout(hintT)
@@ -1483,10 +1618,129 @@ defineExpose({
       </div>
     </div>
 
-    <div v-else-if="isEmpty" class="cpv-center">
+    <!-- A song of the list that never arrived. The rehearsal is not over: the
+         others are still there, and this one can be asked for again. -->
+    <div
+      v-else-if="setlist.failing.value"
+      class="cpv-center"
+      role="alert"
+      data-song-fail
+    >
+      <div class="cpv-veil-2" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);">
+        <div style="display:flex;flex-direction:column;gap:6px;text-align:left;">
+          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Não carregou</span>
+          <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.3;text-wrap:pretty;">{{ setlist.current.value?.title }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Esta cifra não chegou. As outras da lista continuam disponíveis.</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+          <button
+            data-song-retry
+            style="height:44px;padding:0 16px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
+            @click="setlist.retry()"
+          >Tentar de novo</button>
+          <button
+            style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;"
+            @click="setlist.open()"
+          >Abrir a lista</button>
+          <span style="flex:1;" />
+          <button
+            aria-label="Música anterior"
+            :disabled="setlist.noPrev.value"
+            :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
+            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            @click="goPrev"
+          >◀</button>
+          <button
+            aria-label="Próxima música"
+            :disabled="setlist.noNext.value"
+            :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
+            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            @click="goNext"
+          >▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waiting on a chart is exactly when a musician wants to skip ahead, so
+         the rehearsal stays navigable. The chart's own controls do not appear:
+         there is nothing yet for them to act on. -->
+    <div v-else-if="songLoading" class="cpv-center" data-song-loading>
+      <div class="cpv-spin" />
+      <div style="font-size:13px;color:var(--muted);">Buscando {{ setlist.current.value?.title }}…</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+        <button
+          data-song-prev
+          aria-label="Música anterior"
+          :disabled="setlist.noPrev.value"
+          :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
+          style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+          @click="goPrev"
+        >◀</button>
+        <button
+          data-setlist-open
+          style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:9px;"
+          @click="setlist.open()"
+        >
+          <span style="font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
+          <span style="font-size:12.5px;font-weight:600;color:var(--muted);">Lista</span>
+        </button>
+        <button
+          data-song-next
+          aria-label="Próxima música"
+          :disabled="setlist.noNext.value"
+          :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
+          style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+          @click="goNext"
+        >▶</button>
+      </div>
+    </div>
+
+    <!-- The host handed over a list and it is empty: nothing is selected, so
+         this is not an invitation to author a chart that may already exist. -->
+    <div v-else-if="listEmpty" class="cpv-center" data-empty-setlist>
       <div class="cpv-ph" />
-      <div style="font-size:15px;font-weight:600;">Nenhuma cifra carregada</div>
-      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O host ainda não entregou uma fonte ChordPro para este viewer.</div>
+      <div style="font-size:15px;font-weight:600;">Nenhuma música na lista</div>
+      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O ensaio ainda não tem repertório.</div>
+    </div>
+
+    <div v-else-if="isEmpty" class="cpv-center">
+      <!-- Whoever may write for everyone starts the chart from here. -->
+      <div v-if="canStartNew" style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;text-align:left;">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Para todos</span>
+          <span style="font-size:19px;font-weight:700;letter-spacing:-0.02em;line-height:1.25;">{{ setlist.current.value?.title || meta.title || 'Cifra nova' }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Ainda não existe cifra aqui. O que você criar vira a cifra do sistema — todos os músicos passam a ler assim.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <button
+            data-start-import
+            style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--chord-edge);border-radius:15px;background:var(--chord-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
+            @click="startNew('import')"
+          >
+            <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;line-height:1;">↓</span>
+            <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+              <span style="font-size:14.5px;font-weight:700;">Importar</span>
+              <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Link do CifraClub, arquivo .cho ou PDF, ou texto colado — inclusive OnSong.</span>
+            </span>
+          </button>
+          <button
+            data-start-blank
+            style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:15px;background:transparent;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
+            @click="startNew('blank')"
+          >
+            <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--muted);line-height:1;">+</span>
+            <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+              <span style="font-size:14.5px;font-weight:700;">Começar em branco</span>
+              <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Digitar letra e acordes no editor, do zero.</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <template v-else>
+        <div class="cpv-ph" />
+        <div style="font-size:15px;font-weight:600;">Nenhuma cifra carregada</div>
+        <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O host ainda não entregou uma fonte ChordPro para este viewer.</div>
+      </template>
     </div>
 
     <div v-else-if="fatal" class="cpv-center" role="alert">
@@ -1523,7 +1777,22 @@ defineExpose({
       :style="{ padding: chromePad }"
     >
       <div :ref="bindHead" class="cpv-hit cpv-veil" style="display:flex;align-items:center;gap:10px;height:56px;padding:0 6px 0 14px;border-radius:18px;">
-        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+        <!-- In a rehearsal the title is the way into the list. -->
+        <button
+          v-if="setlist.on.value"
+          data-setlist-open
+          title="Abrir a lista do ensaio"
+          style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;height:48px;padding:0;border:0;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;"
+          @click="setlist.open()"
+        >
+          <span style="flex:none;display:flex;align-items:center;height:22px;padding:0 7px;border-radius:7px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
+            <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
+          </span>
+          <span aria-hidden="true" style="flex:none;font-size:9px;color:var(--muted);padding-right:2px;">▾</span>
+        </button>
+        <span v-else style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
           <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
           <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
         </span>
@@ -1552,7 +1821,21 @@ defineExpose({
       :style="{ padding: chromePad }"
     >
       <div :ref="bindHead" class="cpv-hit cpv-veil" style="width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:9px 10px 9px 16px;border-radius:15px;" :style="{ maxWidth: pageMax }">
-        <div style="flex:1 1 170px;min-width:150px;display:flex;flex-direction:column;gap:2px;">
+        <button
+          v-if="setlist.on.value"
+          data-setlist-open
+          title="Abrir a lista do ensaio"
+          style="flex:1 1 170px;min-width:150px;display:flex;align-items:center;gap:10px;padding:2px 6px 2px 0;border:0;border-radius:10px;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;"
+          @click="setlist.open()"
+        >
+          <span style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
+            <span style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ setlist.nextChip.value }}</span>
+          </span>
+          <span aria-hidden="true" style="flex:none;font-size:9px;color:var(--muted);">▾</span>
+        </button>
+        <div v-else style="flex:1 1 170px;min-width:150px;display:flex;flex-direction:column;gap:2px;">
           <div style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</div>
           <div v-if="meta.subtitle" style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.subtitle }}</div>
         </div>
@@ -1808,6 +2091,36 @@ defineExpose({
       </div>
 
       <div class="cpv-hit cpv-veil" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
+        <template v-if="setlist.on.value">
+          <button
+            data-song-prev
+            aria-label="Música anterior"
+            title="Música anterior"
+            :disabled="setlist.noPrev.value"
+            :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
+            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            @click="goPrev"
+          >◀</button>
+          <button
+            data-setlist-open
+            title="Abrir a lista do ensaio"
+            style="height:38px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;"
+            @click="setlist.open()"
+          >
+            <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
+            <span style="flex:none;font-size:12px;font-weight:600;color:var(--muted);">Lista</span>
+          </button>
+          <button
+            data-song-next
+            aria-label="Próxima música"
+            title="Próxima música"
+            :disabled="setlist.noNext.value"
+            :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
+            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            @click="goNext"
+          >▶</button>
+          <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
+        </template>
         <button
           data-scroll
           title="Auto-rolagem (espaço)"
@@ -1880,6 +2193,35 @@ defineExpose({
       </div>
 
       <div class="cpv-hit cpv-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
+        <!-- The list gets its own row: the dock below is already full. -->
+        <div v-if="setlist.on.value" style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--line-soft);">
+          <button
+            data-song-prev
+            aria-label="Música anterior"
+            :disabled="setlist.noPrev.value"
+            :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
+            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            @click="goPrev"
+          >◀</button>
+          <button
+            data-setlist-open
+            title="Abrir a lista do ensaio"
+            style="flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:13px;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:9px;"
+            @click="setlist.open()"
+          >
+            <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
+            <span style="flex:1;min-width:0;font-size:11.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">{{ setlist.nextChipShort.value }}</span>
+            <span aria-hidden="true" style="flex:none;font-size:9px;color:var(--muted);">▴</span>
+          </button>
+          <button
+            data-song-next
+            aria-label="Próxima música"
+            :disabled="setlist.noNext.value"
+            :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
+            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            @click="goNext"
+          >▶</button>
+        </div>
         <div v-if="scrolling" style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line-soft);">
           <button aria-label="Mais devagar" style="flex:none;width:40px;height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="mul = viewerMulStep(mul, 'down')">−</button>
           <span style="flex:none;min-width:58px;text-align:center;font-family:'Space Mono',monospace;font-size:13.5px;font-weight:700;color:var(--text);">{{ mul.toFixed(2) }}×</span>
@@ -2061,6 +2403,51 @@ defineExpose({
 
     <div v-if="toast" class="cpv-toast cpv-veil-2" :style="{ bottom: toastBottom }">{{ toast }}</div>
 
+    <!-- The song ended. Offer the next one; never take the decision. -->
+    <div
+      v-if="setlist.endOffer.value && !isEdit"
+      :style="{ bottom: offerBottom }"
+      style="position:absolute;left:0;right:0;z-index:15;display:flex;justify-content:center;padding:0 12px;pointer-events:none;"
+    >
+      <div
+        class="cpv-veil-2"
+        data-end-offer
+        style="pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:420px;padding:9px 10px 9px 15px;border-radius:16px;border:1px solid var(--chord-edge);box-shadow:var(--shadow);animation:cpv-rise .2s ease-out;"
+      >
+        <span style="min-width:0;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Fim da música</span>
+          <span style="font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ setlist.nextTitle.value }}</span>
+        </span>
+        <button
+          data-end-next
+          style="flex:none;height:40px;padding:0 15px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+          @click="endNext"
+        >Próxima</button>
+        <button
+          class="cpv-ghost"
+          aria-label="Ficar nesta música"
+          title="Ficar nesta música"
+          style="flex:none;width:34px;height:34px;color:var(--muted);font-size:16px;"
+          @click="setlist.dismissEnd()"
+        >×</button>
+      </div>
+    </div>
+
+    <div v-if="guard.bad.value" class="cpv-surface-warn" role="alert">
+      <span aria-hidden="true" style="flex:none;color:var(--danger);font-size:15px;line-height:1.35;">⚠</span>
+      <span style="flex:1;min-width:0;">
+        <span class="cpv-surface-warn-title">Viewer sem altura resolvível</span>
+        <span class="cpv-surface-warn-body">O ancestral imediato precisa de uma altura definida. Sem ela o viewer usa o piso de 460px e a barra de controle fica fora da tela. Ver <code>docs/EMBED-SDA.md</code> — detalhes no console.</span>
+      </span>
+      <button
+        class="cpv-ghost"
+        aria-label="Ocultar aviso"
+        title="Ocultar aviso"
+        style="flex:none;width:26px;height:26px;color:var(--muted);font-size:15px;"
+        @click="guard.dismiss()"
+      >×</button>
+    </div>
+
     <ExportSheet
       v-if="sheet"
       :export-key-note="exportKeyNote"
@@ -2122,6 +2509,30 @@ defineExpose({
       @close="lensOpen = false"
       @pick="pickLens"
       @toggle-comments="hideComments = !hideComments"
+    />
+
+    <NewChartDialog
+      v-if="novaOpen"
+      :compact="compact"
+      :start="novaStart"
+      :fetch-chart="fetchChart"
+      :read-pdf="readPdf"
+      @close="novaOpen = false"
+      @commit="commitNewChart"
+    />
+
+    <SetlistSheet
+      v-if="setlist.on.value && setlist.listOpen.value"
+      :compact="compact"
+      :head-label="setlist.headLabel.value"
+      :seen-label="setlist.seenLabel.value"
+      :show-search="setlist.showSearch.value"
+      :query="setlist.query.value"
+      :items="setlist.items.value"
+      :no-hit="setlist.noHit.value"
+      @close="setlist.close()"
+      @pick="goSong"
+      @update:query="setlist.query.value = $event"
     />
 
     <ToneSheet

@@ -404,10 +404,6 @@
   padding-right: 0.8em;
   white-space: nowrap;
 }
-.cpv-chord-stack--tight {
-  /* Reserve the larger of chord/shape and lyric, plus a visible chord gap. */
-  padding-right: 4px;
-}
 .cpv-chord,
 .cpv-shape {
   letter-spacing: -0.005em;
@@ -675,6 +671,45 @@
   box-shadow: var(--shadow);
   animation: cpv-rise 0.2s ease-out;
 }
+/* The host gave the frame no height: say it in place, and only once sure. */
+.cpv-surface-warn {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  /* Above every sheet: a collapsed frame has already pushed the bars off. */
+  z-index: 45;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 14px 14px 14px 16px;
+  border-radius: 13px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+  animation: cpv-rise 0.2s ease-out;
+}
+.cpv-surface-warn-title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--danger);
+}
+.cpv-surface-warn-body {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.cpv-surface-warn-body code {
+  font-family: 'Space Mono', monospace;
+  font-size: 11.5px;
+}
+
 /* Reading line: the chart waits until the playhead reaches it. */
 .cpv-guide {
   position: absolute;
