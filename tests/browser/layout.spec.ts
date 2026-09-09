@@ -253,3 +253,54 @@ test('Rolar goes dead when the chart fits the frame, and comes back when it does
   })
   await expect(roll).toBeEnabled()
 })
+
+/**
+ * A scroll offset is snapped to whole pixels. At the speed a chart really
+ * moves — 5 px/s and under — that meant the page stood dead still for eleven
+ * frames and then teleported a pixel, six times a second: calm to look at in a
+ * screenshot, and a discrete movement to the vestibular system every time.
+ * The whole pixels go to `scrollTop`; the remainder rides a composited
+ * transform, which is not snapped.
+ */
+test('the chart moves continuously, never a pixel at a time', async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 860 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.cpv-chord').first().click()
+  await page.keyboard.press(' ')
+
+  const seen = await page.evaluate(
+    () =>
+      new Promise<number[]>((res) => {
+        const el = document.querySelector('.cpv-scroll') as HTMLElement
+        const col = document.querySelector('.cpv-page') as HTMLElement
+        const out: number[] = []
+        const t0 = performance.now()
+        const tick = () => {
+          // Where the paper actually is: the snapped half plus the carried half.
+          const m = new DOMMatrixReadOnly(getComputedStyle(col).transform)
+          out.push(Number((el.scrollTop - m.m42).toFixed(4)))
+          if (performance.now() - t0 < 2500) requestAnimationFrame(tick)
+          else res(out)
+        }
+        requestAnimationFrame(tick)
+      }),
+  )
+
+  expect(seen.length).toBeGreaterThan(60)
+  const steps = seen.slice(1).map((y, i) => y - seen[i]!)
+  const moved = steps.filter((d) => d > 0).length
+  // Quantised, fewer than one frame in ten moved at all. It is now every frame.
+  expect(moved / steps.length).toBeGreaterThan(0.8)
+  // And no frame carries a whole-pixel jump, which is the thing being felt.
+  expect(Math.max(...steps)).toBeLessThan(0.9)
+  // Monotone: the carrier must never hand back a pixel it already gave.
+  expect(Math.min(...steps)).toBeGreaterThanOrEqual(0)
+
+  // Stopping puts the paper back on the scroller alone, so ordinary reading
+  // and the scrollbar are never left riding a transform.
+  await page.keyboard.press(' ')
+  await expect
+    .poll(() => page.locator('.cpv-page').evaluate((el) => (el as HTMLElement).style.transform))
+    .toBe('')
+})

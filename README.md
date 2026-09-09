@@ -344,6 +344,22 @@ Duas correções:
 `pxAtScroll()` é a inversa, e é ela que lê de volta a posição quando o músico
 arrasta a cifra com o dedo.
 
+#### Movimento contínuo: o meio pixel vai no compositor
+
+Um offset de rolagem é **encaixado em pixels inteiros** — medido, `scrollTop`
+volta inteiro em todo frame, escreva-se o que escrever. Na velocidade em que uma
+cifra realmente anda (5 px/s e menos), isso são onze frames imóveis e então um
+teleporte de 1px, seis vezes por segundo. Parece calmo num screenshot e é
+sofrível de olhar: salto discreto é o que o sistema vestibular lê como
+movimento, e para quem tem labirintite isso é sintoma.
+
+Os pixels inteiros vão para o `scrollTop`, que mantém a barra de rolagem, o
+arrasto e todas as medições honestos; o resto anda num `translate3d` na coluna
+da cifra, que o compositor **não** encaixa. Medido no mesmo trecho: de 34
+posições distintas em 361 frames para **361 em 361**, passo de 0,091px, 60fps
+nos dois casos. `measureBlocks()` zera o transform antes de medir — senão todo
+retângulo voltaria deslocado pelo carregador.
+
 Cifra que **cabe na moldura** não tem o que rolar, e o botão Rolar fica
 desativado dizendo isso — antes ele ficava vivo, ligava a rolagem e nada se
 movia até a música "acabar". O espaço é medido no DOM (`ResizeObserver` na

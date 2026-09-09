@@ -106,6 +106,7 @@ const store: ChartStore = {
 
 const root = ref<HTMLElement | null>(null)
 const scroller = ref<HTMLElement | null>(null)
+const page = ref<HTMLElement | null>(null)
 const head = ref<HTMLElement | null>(null)
 const capoBox = ref<HTMLElement | null>(null)
 const width = ref(900)
@@ -643,6 +644,10 @@ function toastMsg(msg: string) {
 function measureBlocks(): TimelineBlock[] {
   const el = scroller.value
   if (!el) return []
+  // The sub-pixel carrier is a transform on the column, and every rect below
+  // would come back shifted by it. Measure the paper, not where it is riding.
+  const carrier = page.value?.style.transform ?? ''
+  if (carrier && page.value) page.value.style.transform = ''
   const base = el.getBoundingClientRect().top - el.scrollTop
   const nodes = el.querySelectorAll('[data-block]')
   const list = blocks.value
@@ -653,6 +658,7 @@ function measureBlocks(): TimelineBlock[] {
     const r = (nodes[i] as HTMLElement).getBoundingClientRect()
     out.push({ top: r.top - base, h: Math.max(1, r.height), music: b.music, kind: b.kind })
   }
+  if (carrier && page.value) page.value.style.transform = carrier
   return out
 }
 
@@ -711,6 +717,25 @@ function totalBars(): number {
   return t ? t.bars : 0
 }
 
+/**
+ * The fraction of a pixel `scrollTop` will not carry.
+ *
+ * A scroll offset is snapped to whole pixels — measured, `scrollTop` reads back
+ * as an integer on every frame, whatever we write. At the speeds a chart really
+ * moves (5 px/s and under), that means eleven frames dead still and then a 1px
+ * teleport, six times a second. A discrete jump is what a vestibular system
+ * reads as motion, so the page looked calm and felt awful.
+ *
+ * So the whole pixels go to `scrollTop`, which keeps the scrollbar, the drag
+ * and every measurement honest, and the remainder rides on a composited
+ * transform, which is not snapped. Together they move continuously.
+ */
+function setSubPixel(dy: number) {
+  const el = page.value
+  if (!el) return
+  el.style.transform = dy > 0.001 ? `translate3d(0,${-dy}px,0)` : ''
+}
+
 function stopScroll() {
   if (raf) cancelAnimationFrame(raf)
   raf = 0
@@ -719,6 +744,7 @@ function stopScroll() {
   userScroll = null
   scrolling.value = false
   idle.value = false
+  setSubPixel(0)
   // Every way out of the scroll passes through here — the end of the song, a
   // transpose, a song change — and with the two linked, none of them may leave
   // a click ticking over a chart that has stopped. `met.stop()` is a no-op when
@@ -768,7 +794,11 @@ function startScroll() {
     if (run > 0 && dt > 0) playhead = Math.min(1, playhead + (dt / run) * mul.value)
     const max = el.scrollHeight - el.clientHeight
     const target = Math.max(0, Math.min(max, scrollAtPx(pxAtBars(t, playhead * (t ? t.bars : 0)), anchor())))
-    el.scrollTop = target
+    // Floor, never round: rounding would put the page half a pixel ahead of
+    // the transform and hand back the jump this is here to remove.
+    const whole = Math.floor(target)
+    el.scrollTop = whole
+    setSubPixel(target - whole)
     written = el.scrollTop
     // One update per clock second, not per frame: re-rendering the whole sheet
     // 60 times a second ate the frames of the scroll itself.
@@ -1473,6 +1503,7 @@ function bindPage(el: unknown) {
   const node = el as HTMLElement | null
   pageRo?.disconnect()
   pageRo = null
+  page.value = node
   if (!node) return
   pageRo = new ResizeObserver(() => syncScrollRoom())
   pageRo.observe(node)
