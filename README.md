@@ -49,7 +49,7 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 | `mode` | `'view'` | `view` \| `edit`; a UI também alterna sozinha (`update:mode`) |
 | `theme` | `'auto'` | `auto` \| `light` \| `dark`; o leitor pode trocar |
 | `canEdit` | `true` | `false` remove toda entrada para o editor |
-| `fitDefault` / `autoHide` | `false` / `true` | Ajuste ao espaço inicial · esconder moldura na rolagem |
+| `fitDefault` / `autoHide` | `true` / `true` | Ajuste ao espaço inicial · esconder moldura na rolagem |
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |

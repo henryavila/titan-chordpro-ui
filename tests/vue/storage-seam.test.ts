@@ -160,7 +160,8 @@ it('keeps the overlay and free theme preference while the host controls appearan
   await w.setProps({ theme: 'auto' })
   await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
-  expect(JSON.parse(store.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: true })
+  // `a` toggles the fit away from its default, which is on.
+  expect(JSON.parse(store.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: false })
   expect(store.get(key)).toBe(overlay)
   await w.setProps({ theme: 'light', themeControl: 'preference' })
   expect(w.get('[data-cpv-root]').attributes('data-theme')).toBe('dark')

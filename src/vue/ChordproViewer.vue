@@ -67,7 +67,7 @@ const props = withDefaults(
     themeControl: 'preference',
     loading: false,
     autoHide: true,
-    fitDefault: false,
+    fitDefault: true,
     canEdit: true,
     autoInvertScores: true,
     resolveImage: (src: string) => src,
@@ -932,10 +932,12 @@ function beginEdit(kind: WriteMode) {
   // The adjustment was made against what was on screen: the reading context
   // travels with it, so it can be read back for what it was.
   enterCtx = { transpose: offset.value, capo: capo.value, dual: !!(capo.value && capoMap.value) }
-  // You do not edit a projection: transpose and fit go back to neutral.
+  // You do not edit a projection: transpose goes back to neutral, and `fitOn`
+  // already answers false while editing. Writing `fit` here instead would turn
+  // "the reader never chose" into "the reader chose off" — and, once persisted,
+  // hold the fit off for good after a single visit to the editor.
   offset.value = 0
   capo.value = 0
-  fit.value = false
   zen.value = false
   lens.value = 'none'
   hideComments.value = false
@@ -2193,7 +2195,7 @@ defineExpose({
            version lives in "Mais" — one row to read the original, one to
            revert. -->
       <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:cpv-rise .25s ease-out;">
-        <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — está em “Mais”.</span>
+        <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — desligue em “Mais”.</span>
         <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);font-size:15px;" @click="dismissHint(true)">×</button>
       </div>
 

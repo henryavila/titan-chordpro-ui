@@ -71,7 +71,7 @@ O host pode consertar o achatamento **hoje**. O que o design agent precisa respo
 | Zen | toque no vazio da cifra esconde/mostra chrome; toast na primeira vez | `toggleZen` / `onSurfaceTap` |
 | Auto-scroll | RAF no **elemento** `.cpv-scroll`; playhead, linha de leitura, ETA | `startScroll` + `src/core/scroll.ts` |
 | Wheel | listener no `window`, `{ passive: false }`; roda em cima do chrome ainda rola a cifra; `preventDefault` no overscroll | `onWheel` |
-| Fit | reflow + leve auto-size **no container**; opt-in, nunca default | `fitDefault: false` |
+| Fit | reflow + leve auto-size **no container** | `fitDefault: false` — **revertido em 2026-09-09 para `true`**: o ajuste passou a valer por padrão, e o consumer desliga passando `false`. O resto da linha continua valendo. |
 | Fullscreen / imersivo | estado do app imediatamente; Fullscreen API em paralelo; `position: fixed; inset: 0` no root | `toggleFs` / `fakeFs` |
 | Demo Titan | `html, body, #app { height: 100%; overflow: hidden }` + wrapper `height: 100%` | `demo/index.html`, `demo/App.vue` |
 

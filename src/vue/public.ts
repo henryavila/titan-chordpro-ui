@@ -24,6 +24,11 @@ export type ChordproViewerProps = {
   themeControl?: 'preference' | 'host'
   loading?: boolean
   autoHide?: boolean
+  /**
+   * Whether the chart is fitted to the space it has before the musician says
+   * anything. On by default; a host that wants the chart at its written size
+   * passes `false`. Either way the reader's own toggle wins from then on.
+   */
   fitDefault?: boolean
   canEdit?: boolean
   autoInvertScores?: boolean
