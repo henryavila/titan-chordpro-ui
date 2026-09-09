@@ -175,3 +175,51 @@ test('personal marker stays clickable outside horizontal flow and reverts the re
     [...row.querySelectorAll('.cpv-lyric')].map(el => el.textContent).join(''),
   ))).toContain(original)
 })
+
+/**
+ * Two things jsdom cannot answer, because it gives every element zero height:
+ * whether the reading line stays out of the way once the chart is moving, and
+ * where the beat badge actually lands on a wide screen.
+ */
+test('the reading line answers and withdraws, and the beat badge hangs off the column', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+  const guide = page.locator('.cpv-guide')
+  const scroll = page.locator('.cpv-scroll')
+
+  // At the top the chart stands still while the playhead walks to the line.
+  // That is the one moment the line has something to say, and it says it.
+  await page.locator('.cpv-chord').first().click()
+  await page.keyboard.press(' ')
+  await expect(guide).toBeVisible()
+  await expect(page.locator('.cpv-guide-label')).toContainText('espera até aqui')
+
+  // Reading further in, the chart is moving and the line has no business
+  // across the words: it used to be drawn through the whole song.
+  await page.keyboard.press(' ')
+  await scroll.evaluate((el) => (el.scrollTop = 600))
+  await page.keyboard.press(' ')
+  await expect(guide).toBeHidden()
+
+  // Dragging is the musician asking where the music is. It answers, briefly.
+  await scroll.evaluate((el) => (el.scrollTop = 900))
+  await expect(guide).toBeVisible()
+  await expect(guide).toBeHidden({ timeout: 4000 })
+  await page.keyboard.press(' ')
+
+  // The badge belongs to the chart, not to the window: at 1280 the column is
+  // 880 wide, so the far corner of the glass is 200px of empty background away.
+  await page.keyboard.press('m')
+  const badge = page.locator('[data-met-pulse]')
+  await expect(badge).toBeVisible()
+  const box = await badge.evaluate((el) => {
+    const col = document.querySelector('.cpv-page')!.getBoundingClientRect()
+    const b = el.getBoundingClientRect()
+    return { fromColumn: Math.abs(b.right - col.right), fromGlass: window.innerWidth - b.right }
+  })
+  // The few px left over are the badge's own scale on beat one, which grows it
+  // about its centre. At the window's edge this gap would be 16px.
+  expect(box.fromColumn).toBeLessThan(12)
+  expect(box.fromGlass).toBeGreaterThan(120)
+})

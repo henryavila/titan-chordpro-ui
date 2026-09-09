@@ -861,10 +861,33 @@
 .cpv-met-switch:hover {
   background: var(--surface-hover);
 }
-/* Beat readout that stays on screen while the panel is closed. */
+/* Tap tempo: a wide, forgiving target — it is hit repeatedly and in a hurry. */
+.cpv-met-tap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
+}
+.cpv-met-tap:hover {
+  background: var(--surface-hover);
+}
+.cpv-met-tap:active {
+  background: var(--chord-soft);
+}
+/* Beat readout that stays on screen while the panel is closed. `right` is set
+   from the viewer: it hangs off the reading column, which moves with the
+   breakpoint, not off the window. */
 .cpv-met-pulse {
   position: absolute;
-  right: 16px;
   z-index: 15;
   display: flex;
   align-items: center;

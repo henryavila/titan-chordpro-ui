@@ -318,6 +318,37 @@ segmento toca na razão entre eles, inclusive os compassos contados. Matemática
 em `src/core/timeline.ts` (framework-free); o RAF e a medição do DOM ficam no
 binding Vue.
 
+A linha de leitura é **mecanismo, não chrome**. Ela só é desenhada enquanto a
+cifra espera no topo — onde explica por que nada se move — e por 1,5 s depois de
+um arrasto, que é quando o músico acabou de perguntar onde a música está.
+Desenhada o tempo todo ela competia com o texto e afirmava uma precisão que a
+estimativa não tem: o olho lê adiantado, então uma régua dizendo "a música está
+aqui" aponta para um lugar que ele já deixou.
+
+### Metrônomo: um controle, não dois
+
+Com **rolagem vinculada** (padrão), o click e a auto-rolagem são um só controle:
+iniciar o click põe a cifra para andar, e parar **qualquer um dos dois** para os
+dois — um click sobre cifra parada não serve para nada, e cifra andando sob um
+click que foi silenciado, menos ainda. Todo caminho de saída da rolagem passa
+por `stopScroll()`, então o fim da música, um transporte e uma troca de cifra
+levam o click junto. `Rolagem independente` desliga o par.
+
+Iniciar **fecha o painel**: ele cobre a cifra que acabou de pôr em movimento. O
+que fica é a badge do pulso, ancorada na borda da **coluna de leitura** e não na
+borda da janela — num monitor de 1600px a quina do vidro está a 300px de
+qualquer coisa que o músico esteja olhando.
+
+**Contagem de entrada** (padrão, só com a rolagem vinculada): um compasso de
+click antes de a cifra andar, entrando no tempo forte junto com o acento. Conta
+o compasso escrito na cifra, não quatro fixos.
+
+**Tap tempo** resolve a cifra sem `{tempo:}`, que cai num 100 arbitrário. Média
+móvel das últimas 5 batidas; um toque a menos de 200 ms do anterior é mão que
+escorregou e é descartado **antes** da média — depois dela um toque duplo já
+está dentro de qualquer faixa tocável e puxaria o andamento sem deixar rastro.
+Pausa acima de 2,4 s começa medição nova.
+
 ## Mental model
 
 ```

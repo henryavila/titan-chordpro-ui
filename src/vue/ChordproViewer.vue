@@ -119,6 +119,16 @@ const bias = ref(0)
 const fit = ref<boolean | null>(null)
 const scrolling = ref(false)
 const holding = ref(false)
+/**
+ * The reading line is an answer, not chrome. It is the visible form of the
+ * scroll's anchor, and drawn all the way through it competes with the chart
+ * and claims a precision the estimate does not have — a musician reads ahead
+ * of where they play, so a rule saying "the music is here" points at a place
+ * the eye has already left. It shows while the chart waits at the top, where
+ * it explains why nothing is moving, and for a moment after a drag, which is
+ * the one time "where is it?" is a question just asked.
+ */
+const guideShown = ref(false)
 const mul = ref(1)
 const progress = ref(0)
 const etaLabel = ref('—')
@@ -200,6 +210,7 @@ let playhead = 0
 let timeline: Timeline | null = null
 let etaTick = -1
 let idleT = 0
+let guideT = 0
 let toastT = 0
 let hintT = 0
 let discardT = 0
@@ -285,6 +296,15 @@ const pagePad = computed(() => {
   const top = Math.round(chromeTop.value + Math.max(56, headH.value || 72) + extra)
   return `${top}px ${padX.value} ${padBottom.value}`
 })
+/**
+ * Right edge of the reading column. Chrome that belongs to the chart hangs
+ * here rather than off the window: on a phone the two are the same place, but
+ * at 1600px the column is centred and the corner of the glass is 300px of
+ * empty background away from anything the musician is looking at.
+ */
+const colEdge = computed(() =>
+  pageMax.value === '100%' ? '16px' : `max(16px, calc((100% - ${pageMax.value}) / 2))`,
+)
 const dockCtrlH = computed(() => (bp.value === 'xs' ? '44px' : '48px'))
 const dockIconSize = computed(() => (bp.value === 'xs' ? '44px' : '48px'))
 const dockPlayLabel = computed(() => (width.value < 380 ? '' : scrolling.value ? 'Parar' : 'Rolar'))
@@ -557,10 +577,14 @@ const met = useMetronome({
   time: computed(() => meta.value.time),
   store,
   scrolling,
-  compact,
   onFollowStart: () => startScroll(),
+  onFollowStop: () => stopScroll(),
   onPanelClose: () => (metOpen.value = false),
 })
+
+const metPulseTitle = computed(() =>
+  met.follow.value && scrolling.value ? 'Parar o metrônomo e a rolagem (M)' : 'Parar o metrônomo (M)',
+)
 
 function toggleMetPanel() {
   metOpen.value = !metOpen.value
@@ -577,12 +601,13 @@ function persistPrefs() {
     const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
     // Preserve the free theme preference (including older values) while the
     // host controls appearance; other controls must not rewrite that policy.
-    for (const key of ['bias', 'fit', 'metSound', 'metFollow']) delete p[key]
+    for (const key of ['bias', 'fit', 'metSound', 'metFollow', 'metCountIn']) delete p[key]
     if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
     if (met.sound.value === false) p.metSound = false
     if (met.follow.value === false) p.metFollow = false
+    if (met.countInOn.value === false) p.metCountIn = false
     if (Object.keys(p).length) store.set(STORE_KEYS.prefs, JSON.stringify(p))
     else store.remove(STORE_KEYS.prefs)
   } catch {
@@ -670,15 +695,29 @@ function totalBars(): number {
   return t ? t.bars : 0
 }
 
+/** Answers the drag that just happened, then gets out of the way again. */
+function showGuide() {
+  guideShown.value = true
+  window.clearTimeout(guideT)
+  guideT = window.setTimeout(() => (guideShown.value = false), 1500)
+}
+
 function stopScroll() {
   if (raf) cancelAnimationFrame(raf)
   raf = 0
   window.clearTimeout(idleT)
+  window.clearTimeout(guideT)
   if (scroller.value && userScroll) scroller.value.removeEventListener('scroll', userScroll)
   userScroll = null
   scrolling.value = false
   idle.value = false
   holding.value = false
+  guideShown.value = false
+  // Every way out of the scroll passes through here — the end of the song, a
+  // transpose, a song change — and with the two linked, none of them may leave
+  // a click ticking over a chart that has stopped. `met.stop()` is a no-op when
+  // the click is already down, which is what ends the call back into here.
+  if (met.follow.value) met.stop()
 }
 
 function startScroll() {
@@ -705,6 +744,7 @@ function startScroll() {
     if (Math.abs(el.scrollTop - written) > 1.5) {
       const t = totalBars() || 1
       playhead = Math.min(1, Math.max(0, barsAtPx(timelineFor(), el.scrollTop + anchor()) / t))
+      showGuide()
     }
   }
   el.addEventListener('scroll', userScroll, { passive: true })
@@ -751,14 +791,11 @@ function startScroll() {
 
 /**
  * The scroll is used on its own most of the time, so starting it does not
- * start the click. Stopping does: a click with the chart standing still is of
- * no use to anyone.
+ * start the click. Stopping does — `stopScroll` carries that for every exit.
  */
 function toggleScroll() {
-  if (scrolling.value) {
-    stopScroll()
-    if (met.follow.value) met.stop()
-  } else startScroll()
+  if (scrolling.value) stopScroll()
+  else startScroll()
 }
 
 // -------------------------------------------------------------------- controls
@@ -929,6 +966,9 @@ function enterEdit() {
 
 function beginEdit(kind: WriteMode) {
   stopScroll()
+  // The badge and the panel are both hidden in edit: a click left running here
+  // would be audible with nothing on screen able to stop it.
+  met.stop()
   // The adjustment was made against what was on screen: the reading context
   // travels with it, so it can be read back for what it was.
   enterCtx = { transpose: offset.value, capo: capo.value, dual: !!(capo.value && capoMap.value) }
@@ -1446,7 +1486,7 @@ function syncHeadH() {
 }
 
 watch(hostSource, syncHostSource)
-watch([theme, bias, fit, met.sound, met.follow], persistPrefs)
+watch([theme, bias, fit, met.sound, met.follow, met.countInOn], persistPrefs)
 watch([effTheme, () => props.accent, () => props.accentStrength], () => {
   if (root.value) applyThemeVars(root.value, effTheme.value, props.accent, props.accentStrength)
 })
@@ -1496,12 +1536,14 @@ onMounted(() => {
       fit?: boolean
       metSound?: boolean
       metFollow?: boolean
+      metCountIn?: boolean
     }
     if (p.theme) theme.value = p.theme
     if (typeof p.bias === 'number') bias.value = p.bias
     if (typeof p.fit === 'boolean') fit.value = p.fit
     if (typeof p.metSound === 'boolean') met.sound.value = p.metSound
     if (typeof p.metFollow === 'boolean') met.follow.value = p.metFollow
+    if (typeof p.metCountIn === 'boolean') met.countInOn.value = p.metCountIn
     fitSeen.value = store.get(STORE_KEYS.fitSeen) === '1'
     editSeen.value = store.get(STORE_KEYS.editSeen) === '1'
   } catch {
@@ -1763,8 +1805,9 @@ defineExpose({
 
     <div class="cpv-progress"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
-    <!-- Reading line: the chart waits until the playhead reaches it. -->
-    <template v-if="scrolling && !isEdit">
+    <!-- Reading line: shown while the chart waits at the top, and for a moment
+         after a drag. The rest of the time the chart is left to be read. -->
+    <template v-if="scrolling && !isEdit && (holding || guideShown)">
       <div
         aria-hidden="true"
         class="cpv-guide"
@@ -2468,20 +2511,23 @@ defineExpose({
       @pick="(orig) => { ov.exportOrig.value = orig; toggleOriginal(orig) }"
     />
 
-    <!-- The beat stays readable with the panel closed. -->
+    <!-- The panel steps aside on start, so this is the whole readout while the
+         click runs. It hangs off the reading column, not the window: on a wide
+         screen the corner of the glass is nowhere near the chart being read. -->
     <button
       v-if="met.running.value && !isEdit"
       data-met-pulse
       class="cpv-met-pulse"
-      title="Parar o metrônomo (M)"
-      :style="{ top: `${headH + 22}px`, transform: met.beat.value === 0 ? 'scale(1.12)' : 'scale(1)' }"
+      :title="metPulseTitle"
+      :style="{ top: `${headH + 22}px`, right: colEdge, transform: met.beat.value === 0 ? 'scale(1.12)' : 'scale(1)' }"
       @click="met.toggle()"
     >
       <span>{{ met.bpm.value }}</span>
+      <span v-if="met.countIn.value" data-met-countin style="font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;">entrada</span>
       <span
         class="cpv-met-pulse-box"
-        :style="{ background: met.beat.value === 0 ? 'var(--chord)' : 'transparent', color: met.beat.value === 0 ? 'var(--chord-ink)' : 'var(--chord)' }"
-      >{{ met.beat.value + 1 }}</span>
+        :style="{ background: met.countIn.value || met.beat.value === 0 ? 'var(--chord)' : 'transparent', color: met.countIn.value || met.beat.value === 0 ? 'var(--chord-ink)' : 'var(--chord)' }"
+      >{{ met.countIn.value || met.beat.value + 1 }}</span>
     </button>
 
     <MetronomeSheet
@@ -2495,14 +2541,18 @@ defineExpose({
       :overridden="met.userBpm.value !== null"
       :sound="met.sound.value"
       :follow="met.follow.value"
+      :count-in-on="met.countInOn.value"
       :scrolling="scrolling"
+      :tap-count="met.tapCount.value"
       :time="meta.time"
       @close="metOpen = false"
       @toggle="met.toggle()"
       @bpm="met.nudgeBpm($event)"
       @reset-bpm="met.resetBpm()"
+      @tap="met.tap()"
       @toggle-sound="met.toggleSound()"
       @toggle-follow="met.follow.value = !met.follow.value"
+      @toggle-count-in="met.toggleCountIn()"
     />
 
     <LensSheet
