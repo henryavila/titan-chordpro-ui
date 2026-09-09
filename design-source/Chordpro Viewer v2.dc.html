@@ -97,17 +97,24 @@ button{font-family:inherit;}
               <div style="margin:0 0 {{ blockGap }};padding:12px 16px 14px;border-radius:14px;background:var(--block);border:1px solid var(--block-line);">
                 <sc-for list="{{ line.rows }}" as="row" hint-placeholder-count="2">
                   <div style="display:flex;flex-wrap:wrap;align-items:flex-start;row-gap:7px;padding:{{ rowPad }} 0;">
-                    <sc-for list="{{ row.segs }}" as="s" hint-placeholder-count="4">
-                      <span style="display:flex;flex-direction:column;max-width:100%;">
-                        <span style="display:flex;align-items:flex-end;height:{{ chordBox }};">
-                          <sc-if value="{{ s.loose }}" hint-placeholder-val="{{ true }}">
-                            <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:{{ chordPx }};line-height:1;letter-spacing:-0.005em;color:var(--chord);padding-right:0.8em;white-space:nowrap;">{{ s.chord }}</span>
-                          </sc-if>
-                          <sc-if value="{{ s.tight }}" hint-placeholder-val="{{ false }}">
-                            <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:{{ chordPx }};line-height:1;letter-spacing:-0.005em;color:var(--chord);width:0;overflow:visible;white-space:nowrap;">{{ s.chord }}</span>
-                          </sc-if>
-                        </span>
-                        <span style="font-size:{{ lyricPx }};line-height:1.32;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;">{{ s.text }}</span>
+                    <sc-for list="{{ row.words }}" as="w" hint-placeholder-count="4">
+                      <span style="display:flex;flex:none;align-items:flex-start;max-width:100%;">
+                        <sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="2">
+                          <span style="display:flex;flex-direction:column;flex:none;">
+                            <span style="display:flex;align-items:flex-end;height:{{ chordBox }};">
+                              <sc-if value="{{ c.hasChord }}" hint-placeholder-val="{{ true }}">
+                                <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:{{ chordPx }};line-height:1;letter-spacing:-0.005em;color:var(--chord);padding-right:0.8em;white-space:pre;">{{ c.chord }}</span>
+                              </sc-if>
+                            </span>
+                            <span style="font-size:{{ lyricPx }};line-height:1.32;color:var(--text);white-space:pre;">{{ c.text }}</span>
+                          </span>
+                        </sc-for>
+                        <sc-if value="{{ w.hasTail }}" hint-placeholder-val="{{ false }}">
+                          <span style="display:flex;flex-direction:column;flex:none;">
+                            <span style="height:{{ chordBox }};"></span>
+                            <span style="font-size:{{ lyricPx }};line-height:1.32;color:var(--text);white-space:pre;">{{ w.tail }}</span>
+                          </span>
+                        </sc-if>
                       </span>
                     </sc-for>
                   </div>
@@ -119,17 +126,24 @@ button{font-family:inherit;}
               <div style="margin:0 0 {{ blockGap }};padding:0 16px;">
                 <sc-for list="{{ line.rows }}" as="row" hint-placeholder-count="4">
                   <div style="display:flex;flex-wrap:wrap;align-items:flex-start;row-gap:7px;padding:{{ rowPad }} 0;">
-                    <sc-for list="{{ row.segs }}" as="s" hint-placeholder-count="4">
-                      <span style="display:flex;flex-direction:column;max-width:100%;">
-                        <span style="display:flex;align-items:flex-end;height:{{ chordBox }};">
-                          <sc-if value="{{ s.loose }}" hint-placeholder-val="{{ true }}">
-                            <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:{{ chordPx }};line-height:1;letter-spacing:-0.005em;color:var(--chord);padding-right:0.8em;white-space:nowrap;">{{ s.chord }}</span>
-                          </sc-if>
-                          <sc-if value="{{ s.tight }}" hint-placeholder-val="{{ false }}">
-                            <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:{{ chordPx }};line-height:1;letter-spacing:-0.005em;color:var(--chord);width:0;overflow:visible;white-space:nowrap;">{{ s.chord }}</span>
-                          </sc-if>
-                        </span>
-                        <span style="font-size:{{ lyricPx }};line-height:1.32;color:var(--lyric);white-space:pre-wrap;overflow-wrap:anywhere;">{{ s.text }}</span>
+                    <sc-for list="{{ row.words }}" as="w" hint-placeholder-count="4">
+                      <span style="display:flex;flex:none;align-items:flex-start;max-width:100%;">
+                        <sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="2">
+                          <span style="display:flex;flex-direction:column;flex:none;">
+                            <span style="display:flex;align-items:flex-end;height:{{ chordBox }};">
+                              <sc-if value="{{ c.hasChord }}" hint-placeholder-val="{{ true }}">
+                                <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:{{ chordPx }};line-height:1;letter-spacing:-0.005em;color:var(--chord);padding-right:0.8em;white-space:pre;">{{ c.chord }}</span>
+                              </sc-if>
+                            </span>
+                            <span style="font-size:{{ lyricPx }};line-height:1.32;color:var(--lyric);white-space:pre;">{{ c.text }}</span>
+                          </span>
+                        </sc-for>
+                        <sc-if value="{{ w.hasTail }}" hint-placeholder-val="{{ false }}">
+                          <span style="display:flex;flex-direction:column;flex:none;">
+                            <span style="height:{{ chordBox }};"></span>
+                            <span style="font-size:{{ lyricPx }};line-height:1.32;color:var(--lyric);white-space:pre;">{{ w.tail }}</span>
+                          </span>
+                        </sc-if>
                       </span>
                     </sc-for>
                   </div>
@@ -971,6 +985,41 @@ class Component extends DCLogic {
     return staves.length ? { staves, extras } : { staves: [], extras: raw.filter(r => r.trim()).map(r => ({ text: r })) };
   }
 
+
+  // Ancoragem e folga do acorde: a unidade de quebra é a PALAVRA, não o segmento.
+  // Cada palavra é um grupo que não quebra; dentro dela cada sílaba é uma coluna
+  // que reserva a largura do próprio acorde (mais folga), então acorde nunca
+  // encosta no vizinho nem pinta sobre a letra, e "mo|tivos" nunca parte na virada.
+  // Espaço real do texto vira o rabo da palavra: é ali, e só ali, que a linha quebra.
+  groupWords(segs) {
+    const words = [];
+    let cur = null, carry = null;
+    const cell = (text, src) => ({
+      text,
+      chord: src ? src.chord : "",
+      shape: src && src.shape ? src.shape : "",
+      hasShape: !!(src && src.shape),
+      hasChord: !!src
+    });
+    const open = () => { if (!cur) { cur = { cells: [], tail: "", hasTail: false }; words.push(cur); } return cur; };
+    const flush = () => { if (carry) { open().cells.push(cell("", carry)); carry = null; } };
+    for (const s of segs || []) {
+      if (s.chord) { flush(); carry = s; }
+      const parts = (s.text == null ? "" : String(s.text)).match(/\s+|\S+/g) || [];
+      for (const p of parts) {
+        if (/\s/.test(p[0])) {
+          if (cur) { cur.tail += p; cur.hasTail = true; cur = null; }
+          else words.push({ cells: [], tail: p, hasTail: true });
+          continue;
+        }
+        const src = carry; carry = null;
+        open().cells.push(cell(p, src));
+      }
+    }
+    flush();
+    return words;
+  }
+
   renderVals() {
     const src = this.source();
     const isLoading = src === null;
@@ -1002,16 +1051,11 @@ class Component extends DCLogic {
 
     const capo = this.state.capo;
     const shape = n - capo;
-    // Acorde no meio de palavra não pode abrir espaço na letra ("pala vra"):
-    // nesse caso ele sai do fluxo (largura zero) e fica sobre a sílaba.
+    // Acorde no meio de palavra reserva a própria largura na coluna da sílaba;
+    // a palavra inteira viaja como um grupo que não quebra (ver groupWords).
     const tp = l => {
       const segs = l.segs.map(s => ({ text: s.text, chord: shape ? transposeToken(s.chord, shape, flats) : s.chord }));
-      for (let i = 0; i < segs.length; i++) {
-        const s = segs[i], nx = segs[i + 1];
-        s.tight = !!s.chord && /\S$/.test(s.text || "") && !!nx && /^\S/.test(nx.text || "");
-        s.loose = !!s.chord && !s.tight;
-      }
-      return { ...l, segs };
+      return { ...l, segs, words: this.groupWords(segs) };
     };
     const txt = s => shape ? String(s).replace(/\[([^\]]*)\]/g, (_, c) => "[" + transposeToken(c, shape, flats) + "]") : s;
     const tabPx = Math.max(9.5, Math.min(14, lyric * 0.62));

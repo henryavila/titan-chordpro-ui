@@ -132,17 +132,25 @@ export type TabStave = {
 
 /**
  * Musical weight of a block, mined from the source — the auto-scroll clock
- * runs on this, never on pixels. `beats` counted from `x///` strumming marks
- * is exact; everything else is an estimate the timeline calibrates.
+ * runs on this, never on pixels. `beats`, `tail` and `bars` are time the chart
+ * states and the timeline never calibrates; `rows` is the estimate it does.
  */
 export type BlockMusic = {
-  /** Beats written as `x///` on the block's lines (0 = none written). */
+  /**
+   * Beats written as `x///` on lines that are played and not sung — an intro,
+   * an interlude, an ending. Exact time at the chart's BPM (0 = none written).
+   */
   beats: number
+  /**
+   * Beats written as `x///` at the end of a SUNG line: a held tail, exact time
+   * added on top of that row's estimate rather than replacing it.
+   */
+  tail: number
   /** Bars readable from a tab/score block (0 = none). */
   bars: number
-  /** Chord tokens in the block — the fallback "one bar per chord" estimate. */
+  /** Chord tokens in the block — informational; the clock does not use it. */
   chords: number
-  /** Sung rows in the block. */
+  /** Sung rows in the block — rows that carry a lyric of their own. */
   rows: number
 }
 

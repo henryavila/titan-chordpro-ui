@@ -69,7 +69,9 @@ it('host keyboard request follows the same policy and preserves other preference
   expect(appearance(w)).toBe('light')
   await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
-  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', futurePreference: 42, fit: true })
+  // The fit is on out of the box, so the musician's first press turns it off —
+  // what matters here is that the write kept `futurePreference` company.
+  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', futurePreference: 42, fit: false })
 })
 
 
@@ -80,5 +82,5 @@ it('repairs malformed preferences when the musician makes a new choice', async (
   await w.get('[data-theme-btn]').trigger('click')
   await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
-  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: true })
+  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: false })
 })

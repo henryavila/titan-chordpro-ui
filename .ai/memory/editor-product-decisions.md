@@ -18,6 +18,11 @@
 - TAB **prático** (não suite Guitar Pro).
 - **Section-only transpose**.
 - Meta / dirty / undo; Source-SoT; fit off + transpose reset ao entrar em edit.
+  - **2026-09-09:** o fit continua desligado dentro do editor, mas por `fitOn`
+    (que devolve `false` quando `isEdit`), não escrevendo `fit.value = false`.
+    Escrever ali convertia "o leitor não escolheu" em "o leitor escolheu
+    desligado", e isso é persistido — uma visita ao editor desligaria o ajuste
+    para sempre naquele aparelho. Ver [fit-default-2026-09-09.md](./fit-default-2026-09-09.md).
 
 ## UI secundária (sempre disponível, não acesso rápido)
 - **Nashville** (graus) e **filtro show/hide comments** — mesma prioridade.

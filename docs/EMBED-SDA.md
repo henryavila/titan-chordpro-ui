@@ -4,6 +4,70 @@ Contrato entregue pelo Titan UI. A integração real A6 (frontend local, Nova
 content, snapshot instalado e bundles do SDA) está **fora do escopo e não foi
 executada** nesta mudança. Nenhum arquivo do SDA foi modificado; builds e validação do host não foram executados.
 
+## O frame: altura é responsabilidade do host
+
+O viewer é uma **superfície com região rolável própria**. A raiz é
+`position:relative; height:100%; min-height:460px; overflow:hidden`; a área de
+leitura é `position:absolute; inset:0; overflow-y:auto`; e **toda** barra, folha
+e diálogo é `position:absolute` contra essa mesma caixa.
+
+Disso decorre uma regra única:
+
+> **Dê ao ancestral imediato uma altura definida.** Sem ela, `height:100%` não
+> resolve, o viewer cai no piso de `min-height:460px`, a cifra cresce além dele,
+> a página do host passa a rolar — e `bottom:0` deixa de significar "base do
+> frame" para significar "fim da música". A barra de controle vai para baixo da
+> dobra e o músico não alcança tom nem rolagem enquanto lê o começo.
+
+| Não faça | Por quê |
+| --- | --- |
+| Sobrescrever `height`, `overflow` ou `position` de `.cpv-root` | Desmonta o containing block de todo o chrome |
+| Sobrescrever `.cpv-scroll` para `overflow: visible` | Remove a única região rolável; o auto-scroll, a linha de leitura e o ETA passam a medir o documento errado |
+| `position: fixed` em qualquer UI para "resolver" o embed | Vaza para fora do frame — o design system proíbe |
+| Tratar a barra no fim da cifra como bug de contraste | É geometria de containing block, não estilo |
+
+### Embed em página que rola (ficha com letra, arquivos, histórico)
+
+O viewer **não** tem modo "artigo", e não vai ter: auto-scroll, linha de leitura,
+zen, ajuste e imersivo só fazem sentido com um viewport próprio. Quando a cifra
+mora dentro de uma ficha longa, a composição é do host — o frame inteiro
+acompanha a rolagem, e as barras continuam absolutas **dentro** dele:
+
+```css
+.sda-ficha {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+@media (max-width: 899px) {
+  .sda-ficha { grid-template-columns: minmax(0, 1fr); }
+}
+.sda-cifra-frame {
+  position: sticky;
+  top: 72px;                      /* = altura do cabeçalho fixo do host */
+  height: calc(100dvh - 88px);    /* top + respiro inferior */
+  min-height: 460px;
+  overflow: hidden;
+  border-radius: 16px;
+}
+```
+
+A posição do frame em fluxo deve **igualar** o `top` do sticky; se ela começar
+mais abaixo, o retângulo nasce parcialmente fora da tela e a barra inferior fica
+sob a dobra mesmo com o contrato respeitado.
+
+### A guarda
+
+Quando o ancestral não tem altura, o viewer **avisa em vez de falhar calado**:
+`console.warn` com o remédio, mais um alerta na tela. Ele só acusa o que se
+confirma numa segunda medição ~1,2 s depois — o primeiro layout (fontes,
+VexFlow) colapsa o frame por um instante e daria falso positivo. Não acusa em
+modo imersivo (a raiz vira `position:fixed`, nenhum pai manda) nem quando o
+componente não foi renderizado (`display:none`, aba fechada, DOM sem layout).
+
+`surfaceGuard={false}` desliga, para o host que compõe o frame de outro jeito
+sabendo o que faz. Desligar não muda comportamento nenhum — só cala o aviso.
+
 ## Tema controlado pelo host
 
 ```vue

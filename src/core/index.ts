@@ -48,7 +48,9 @@ export {
   clockOf,
   etaSec,
   formatEta,
+  isPlayedLine,
   lineBeats,
+  marksPerBeat,
   pxAtBars,
   runSec,
   sheetBpm,
@@ -160,3 +162,20 @@ export { lintSource } from './lint'
 export type { LintResult } from './lint'
 export { transposeToken, usesFlats, keyRootOf, nashvilleToken, semitoneDelta, transposeTextChords } from './transpose'
 export { looksLikeOnSong, normalizeOnSong } from './onsong'
+export {
+  convert,
+  detect,
+  fromOnSong,
+  fromPlain,
+  hostOk,
+  isChordLine,
+  META_KEYS,
+  MISSING_LABEL,
+  missingOf,
+  readMeta,
+  SUPPORTED_HOSTS,
+  titleFromUrl,
+  toPlain,
+  writeMeta,
+} from './import-chordpro'
+export type { ChartMeta, ImportFormat, ImportResult, MetaKey } from './import-chordpro'

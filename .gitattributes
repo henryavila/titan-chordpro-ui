@@ -1,2 +1,8 @@
 # Preserve the exact HTTP-captured fixture bytes, including physical CRLF.
 fixtures/escuta-meu-clamor-sda-86.cho -text
+
+# `design-source/` mirrors the Claude Design project and is the visual source of
+# truth: it is compared byte for byte against the server, so line endings must
+# survive a checkout exactly as they were captured.
+design-source/uploads/*.cho -text
+design-source/uploads/*.chopro -text

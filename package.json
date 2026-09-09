@@ -51,13 +51,17 @@
   },
   "peerDependencies": {
     "vexflow": "^4.2.3",
-    "vue": "^3.5.0"
+    "vue": "^3.5.0",
+    "pdfjs-dist": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "vue": {
       "optional": true
     },
     "vexflow": {
+      "optional": true
+    },
+    "pdfjs-dist": {
       "optional": true
     }
   },

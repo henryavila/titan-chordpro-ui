@@ -1,0 +1,133 @@
+{
+  "provenance": [
+    {
+      "source": "sda-v2/design-handoff/fixtures/songs.json",
+      "tenant": "IASD Ermelinda",
+      "files": "jesus-* / entrega-*"
+    },
+    {
+      "source": "Ministério Tons / Chordpro (OneDrive)",
+      "path": "/Users/henry/Library/CloudStorage/OneDrive-Pessoal/Música/Ministério Tons/Cifras Ministério Tons/Chordpro",
+      "selection": "Set A (10) — diversity analysis 2026-08-28",
+      "files": "ministerio-tons/*"
+    }
+  ],
+  "files": [
+    {
+      "id": "jesus-tu-es-a-minha-vida-1",
+      "path": "jesus-tu-es-a-minha-vida-1.cho",
+      "title": "Jesus Tu És a Minha Vida",
+      "role": "primary",
+      "key": "G"
+    },
+    {
+      "id": "jesus-tu-es-a-minha-vida-2",
+      "path": "jesus-tu-es-a-minha-vida-2.cho",
+      "title": "Jesus Tu És a Minha Vida",
+      "role": "multi-same-song",
+      "key": "G"
+    },
+    {
+      "id": "entrega-1",
+      "path": "entrega-1.cho",
+      "title": "Entrega",
+      "role": "multi",
+      "key": null
+    },
+    {
+      "id": "entrega-2",
+      "path": "entrega-2.cho",
+      "title": "Entrega",
+      "role": "multi-short",
+      "key": null
+    },
+    {
+      "id": "entrega-3",
+      "path": "entrega-3.cho",
+      "title": "Entrega",
+      "role": "multi",
+      "key": null
+    },
+    {
+      "id": "tons-010-adoralo",
+      "path": "ministerio-tons/010-adoralo.cho",
+      "title": "010 - Adorá-lo",
+      "role": "dense+comments",
+      "key": "F",
+      "tempo": 70
+    },
+    {
+      "id": "tons-015-esconderijo",
+      "path": "ministerio-tons/015-esconderijo.cho",
+      "title": "015 - Esconderijo",
+      "role": "sparse-lines",
+      "key": "A",
+      "tempo": 65
+    },
+    {
+      "id": "tons-013-ele-vive",
+      "path": "ministerio-tons/013-ele-vive-em-mim.cho",
+      "title": "013 - Ele Vive em Mim",
+      "role": "tab+dense",
+      "key": "G",
+      "tempo": 72
+    },
+    {
+      "id": "tons-088-ofertinha",
+      "path": "ministerio-tons/088-minha-ofertinha.cho",
+      "title": "088 - Minha ofertinha",
+      "role": "short-fast",
+      "key": "C",
+      "tempo": 136
+    },
+    {
+      "id": "tons-094-maranata",
+      "path": "ministerio-tons/094-maranata-ja-2024.cho",
+      "title": "094 - Maranata (JA 2024)",
+      "role": "long-jovem",
+      "key": "G",
+      "tempo": 91
+    },
+    {
+      "id": "tons-002-em-gratidao",
+      "path": "ministerio-tons/002-em-gratidao.cho",
+      "title": "002 - Em Gratidão",
+      "role": "no-key-edge",
+      "key": null,
+      "tempo": 70
+    },
+    {
+      "id": "tons-014-em-ti",
+      "path": "ministerio-tons/014-em-ti.cho",
+      "title": "014 - Em Ti",
+      "role": "many-rehearsal-comments",
+      "key": "A",
+      "tempo": 72
+    },
+    {
+      "id": "tons-052-fidelidade",
+      "path": "ministerio-tons/052-fidelidade-e-missao.cho",
+      "title": "052 - Fidelidade é Missão",
+      "role": "flat-key",
+      "key": "Bb",
+      "tempo": 65
+    },
+    {
+      "id": "tons-060-pequeninos",
+      "path": "ministerio-tons/060-deixai-vir-pequeninos-h588.cho",
+      "title": "060 - Deixai vir a mim os Pequeninos (H588)",
+      "role": "hinario-3/4-sharp",
+      "key": "D#",
+      "tempo": 82,
+      "time": "3/4"
+    },
+    {
+      "id": "tons-im003-imagine",
+      "path": "ministerio-tons/im003-imagine-o-ceu.cho",
+      "title": "IM003 - Feche os olhos e Imagine o Céu",
+      "role": "infantil",
+      "key": "G",
+      "tempo": 103
+    }
+  ]
+}

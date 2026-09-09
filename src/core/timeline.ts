@@ -10,6 +10,22 @@ import type { BlockMusic, ChordProView } from './types'
  * crossed in the time of that weight. The page only moves once the playhead
  * passes the reading line, so intro and ending stay still on screen.
  *
+ * The weight is built in two layers, and the difference between them is the
+ * whole point:
+ *
+ *  1. What the chart STATES, read at the chart's BPM. `x///` written on a line
+ *     that is played and not sung — an intro, an interlude, an ending — is a
+ *     bar count, and it becomes the scroll time of that stretch directly. So
+ *     is a bar drawn in a tab or a score, and so is the held tail at the end of
+ *     a sung line. This layer is never calibrated: it is already the answer.
+ *  2. What the chart LEAVES OUT. A sung row with no marks is worth
+ *     {@link BARS_PER_ROW} bars, and only this layer is stretched or squeezed
+ *     to close on a declared `{duration:}`.
+ *
+ * A mark on a sung line belongs to layer 1 as a tail ADDED to that row, never
+ * as the row's whole time — one `[Am]x///` at the end of a verse does not make
+ * the verse four beats long.
+ *
  * This module is the framework-free half: pure math over measured blocks. The
  * binding owns the DOM measurements and the RAF loop.
  */
@@ -17,8 +33,16 @@ import type { BlockMusic, ChordProView } from './types'
 /** Fraction of the viewport where the reading line sits. */
 export const ANCHOR_RATIO = 0.5
 
-/** One sung row is worth about two bars when nothing else is written. */
-export const BARS_PER_ROW = 2
+/**
+ * One sung row is worth about eight beats when nothing else is written — two
+ * bars of 4/4, and the same musical length in any other meter.
+ *
+ * Counted in bars instead, the estimate moved with the meter for no musical
+ * reason: a 6/8 bar is half a 4/4 bar, so a sung line came out half as long,
+ * and a 3/4 line three quarters. A phrase takes the time it takes; how the
+ * chart bars it up is a different question.
+ */
+export const BEATS_PER_ROW = 8
 
 /**
  * Beats written on the line in the `x///` convention — `x` is beat one of the
@@ -46,6 +70,20 @@ export function lineBeats(src: string): number {
 }
 
 /**
+ * True when the line is played, not sung: chords and `x///` marks, no lyric of
+ * its own. Intros, interludes and endings are written this way, and they are
+ * the one place a chart states its time exactly — the beats on such a line ARE
+ * the scroll time of that stretch, at the chart's BPM.
+ *
+ * The same marks at the end of a SUNG line are a held tail, not the line's
+ * whole duration, which is why the two cases have to be told apart.
+ */
+export function isPlayedLine(src: string): boolean {
+  const bare = String(src ?? '').replace(/\[[^\]]*\]/g, '')
+  return !/[^x/\s]/.test(bare)
+}
+
+/**
  * Song duration declared in the chart: accepts `m:ss`, `mm:ss`, `h:mm:ss` or
  * plain seconds, and tolerates a space after the directive colon.
  */
@@ -59,11 +97,49 @@ export function songDurationSec(duration: string | number | null | undefined): n
   return sec && sec >= 20 && sec <= 3 * 3600 ? sec : null
 }
 
-/** Beats per bar from `{time:}` (4 when absent or unusable). */
-export function beatsPerBar(time: string | null | undefined): number {
+/** `{time:}` as a numerator and a denominator, 4/4 when absent or unusable. */
+function meter(time: string | null | undefined): { n: number; d: number } {
   const m = String(time ?? '').match(/^\s*(\d+)\s*\/\s*(\d+)/)
   const n = m ? Number(m[1]) : 4
-  return n >= 1 && n <= 12 ? n : 4
+  const d = m ? Number(m[2]) : 4
+  const ok = n >= 1 && n <= 12 && (d === 2 || d === 4 || d === 8 || d === 16)
+  return ok ? { n, d } : { n: 4, d: 4 }
+}
+
+/**
+ * A compound meter — 6/8, 9/8, 12/8 — is counted in the denominator's unit but
+ * FELT in dotted groups of three, and that felt pulse is what a `{tempo:}`
+ * names. 3/8 is left out: it is felt in three, like any simple meter.
+ */
+function compound(n: number, d: number): boolean {
+  return d === 8 && n > 3 && n % 3 === 0
+}
+
+/**
+ * Beats per bar, counted in the unit `{tempo:}` names — the felt pulse, not the
+ * denominator. 4/4 is four, 3/4 is three, and 6/8 is TWO: a 6/8 bar is two
+ * dotted quarters, not six of whatever a quarter is worth. Reading the
+ * numerator alone made a 6/8 bar three times its real length, and every bar the
+ * clock derives from it — tabs, scores, the sung estimate — went with it.
+ */
+export function beatsPerBar(time: string | null | undefined): number {
+  const { n, d } = meter(time)
+  return compound(n, d) ? n / 3 : n
+}
+
+/**
+ * How many `x///` marks fit in one of those beats. A mark is one unit of the
+ * denominator — a quarter in x/4, an eighth in x/8 — so a simple meter has one
+ * mark per beat and a compound one has three.
+ *
+ * `[E]x//  [F#m7]x//  [D9]x//  [D9]x//` in 6/8 is how a musician writes half a
+ * bar per chord, four chords, two bars. Read at one mark per beat it became
+ * one and a half bars per chord: chords changing off the barline, which nobody
+ * writes.
+ */
+export function marksPerBeat(time: string | null | undefined): number {
+  const { n, d } = meter(time)
+  return compound(n, d) ? 3 : 1
 }
 
 /** `{tempo:}` when it is a usable BPM. */
@@ -84,8 +160,14 @@ export type TimelineBlock = {
 export type TimelineOpts = {
   /** BPM used for the clock (chart tempo, or the reader's own). */
   bpm: number
-  /** Beats per bar, from `{time:}`. */
+  /** Beats per bar, from `{time:}` — see {@link beatsPerBar}. */
   beatsPerBar: number
+  /**
+   * `x///` marks per beat, from `{time:}` — see {@link marksPerBeat}. Absent is
+   * read as 1, the simple-meter answer, so a host built against the earlier
+   * shape keeps the behaviour it had.
+   */
+  marksPerBeat?: number
   /** Declared song duration in seconds, when the chart states one. */
   durationSec: number | null
   /** Average pixel height of a bar — pace of last resort. */
@@ -107,15 +189,22 @@ export type TimelineSeg = {
 
 export type Timeline = {
   segs: TimelineSeg[]
-  /** Total seconds of music in the chart. */
+  /**
+   * Total seconds of music in the chart, and the length of the run: the segment
+   * times add up to exactly this, and {@link runSec} returns it.
+   */
   bars: number
   doc: number
   viewport: number
-  /** Seconds the chart counts exactly (`x///`, tabs, scores). */
+  /** Layer 1: seconds the chart states (`x///` played, tails, tabs, scores). */
   exact: number
-  /** Seconds estimated, after calibration. */
+  /** Layer 2: seconds estimated from sung rows, after calibration. */
   est: number
-  /** Calibration factor applied to the estimated blocks. */
+  /**
+   * Calibration aimed at layer 2 before the speed ceiling and the closing pass
+   * — a report of how far the chart's estimate sat from the declared duration,
+   * not the factor the segments ended up carrying.
+   */
   k: number
   /** True when the counted time already exceeds the declared duration. */
   over: boolean
@@ -124,73 +213,97 @@ export type Timeline = {
 
 export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Timeline {
   const bpb = Math.max(1, opts.beatsPerBar)
+  // One beat is one pulse of the `{tempo:}`; one `x///` mark is one unit of the
+  // meter's denominator, which in a compound meter is a third of that pulse.
   const secBeat = 60 / Math.max(30, opts.bpm)
+  const secMark = secBeat / Math.max(1, opts.marksPerBeat || 1)
   const secBar = secBeat * bpb
   const barPx = Math.max(18, opts.barPx)
 
-  const raw: Array<{ top: number; h: number; t: number; fixed: boolean }> = []
+  // `fx` is layer 1 — time the chart states, never calibrated. `es` is layer 2
+  // — time it leaves out. A block usually carries both: a verse whose last line
+  // ends on `[Am]x///` is four beats of tail on top of its sung rows, and the
+  // one thing it is NOT is four beats long.
+  const raw: Array<{ top: number; h: number; fx: number; es: number }> = []
   let exact = 0
   let est = 0
 
   for (const b of blocks) {
-    const h = Math.max(1, b.h)
-    let t = 0
-    let fixed = false
-    if (b.music.beats > 0) {
-      // Counted in the chart: real time, never touched again.
-      t = b.music.beats * secBeat
-      fixed = true
-    } else if (b.kind === 'score') {
-      t = Math.max(2, b.music.bars || 2) * secBar
-      fixed = true
-    } else if (b.kind === 'tab') {
-      t = Math.max(2, b.music.bars) * secBar
-      fixed = true
-    } else if (b.music.rows > 0) {
-      // No marks: one bar per chord on the line, the usual guess in these
-      // charts. It overestimates, and the calibration below corrects it.
-      t = Math.max(b.music.rows, b.music.chords) * secBar
+    let fx = 0
+    let es = 0
+    if (b.kind === 'score') fx = Math.max(2, b.music.bars || 2) * secBar
+    else if (b.kind === 'tab') fx = Math.max(2, b.music.bars) * secBar
+    else {
+      // Intro, interlude, ending: the bars written there are the scroll time.
+      // `tail` joined `BlockMusic` after it shipped, so a host that builds one
+      // by hand is read as a chart with no held tails rather than as NaN.
+      fx = (b.music.beats + (b.music.tail || 0)) * secMark
+      es = b.music.rows * BEATS_PER_ROW * secBeat
     }
-    if (t > 0 && fixed) exact += t
-    else if (t > 0) est += t
-    raw.push({ top: b.top, h, t, fixed })
+    exact += fx
+    est += es
+    raw.push({ top: b.top, h: Math.max(1, b.h), fx, es })
   }
 
-  // Blocks with no music of their own (label, note, loose score) cross at the
+  // The gap between two blocks belongs to the block above it. Left out of every
+  // segment, it is pixels the mapping does not own, and the playhead teleported
+  // across one at every block boundary.
+  if (raw[0]) {
+    raw[0].h += raw[0].top
+    raw[0].top = 0
+    for (let i = 0; i < raw.length - 1; i++) {
+      const s = raw[i]
+      const nx = raw[i + 1]
+      if (s && nx) s.h = Math.max(1, nx.top - s.top)
+    }
+  }
+
+  // Blocks with no music of their own (label, note, loose image) cross at the
   // page's average pace, so they neither steal time from what is sung nor jump.
-  const music = exact + est
-  const musicalPx = raw.reduce((a, s) => a + (s.t > 0 ? s.h : 0), 0) || 1
-  const pxSec = music > 0 ? musicalPx / music : barPx / secBar
+  const musicalPx = raw.reduce((a, s) => a + (s.fx + s.es > 0 ? s.h : 0), 0) || 1
+  const pxSec = exact + est > 0 ? musicalPx / (exact + est) : barPx / secBar
   for (const s of raw) {
-    if (s.t !== 0) continue
-    s.t = Math.max(0.2, s.h / Math.max(1, pxSec))
-    est += s.t
+    if (s.fx + s.es > 0) continue
+    s.es = Math.max(0.2, s.h / Math.max(1, pxSec))
+    est += s.es
   }
 
-  // Calibration: what the chart counts precisely is left alone; the rest is
-  // stretched or squeezed so the whole closes on the target. The target is the
-  // declared duration when there is one and, when there is not, the chart's own
-  // musical time — otherwise the height of tall scores inflates the run.
+  // Calibration: layer 1 is left alone — it is what the chart says. Layer 2 is
+  // stretched or squeezed so the whole closes on the target, which is the
+  // declared duration when there is one. Without one the chart's own musical
+  // time IS the target, so `k` is 1 and nothing is invented.
   const dur = opts.durationSec
+  const music = exact + est
   const target = dur || music
-  let k = 1
-  if (target > 0 && est > 0) k = Math.max(0.25, Math.min(4, (target - exact) / est))
   const over = !!(dur && exact > dur * 0.98)
-  if (over) k = 1
+  let k = 1
+  if (!over && est > 0 && target > exact) k = Math.max(0.1, Math.min(10, (target - exact) / est))
 
-  // Speed ceiling: an estimated block never goes faster than 2.2× the page's
+  // Speed ceiling: an estimated stretch never goes faster than 2.2× the page's
   // average pace. A counted bar may be as slow as it likes, but nothing is
   // crossed at a run — tall scores included, which is where this used to hurt.
-  const tot = raw.reduce((a, s) => a + (s.fixed ? s.t : s.t * k), 0) || 1
+  const tot = raw.reduce((a, s) => a + s.fx + s.es * k, 0) || 1
   const totH = raw.reduce((a, s) => a + s.h, 0) || 1
   const vAvg = totH / tot
+  const time = raw.map((s) => ({
+    ...s,
+    es: s.es > 0 ? Math.max(s.es * k, s.h / (vAvg * 2.2) - s.fx, 0) : 0,
+  }))
+
+  // `runSec` divides the clock by `bars`, so `bars` has to BE the run. Whatever
+  // the ceiling above added comes back out of layer 2 — otherwise the total no
+  // longer matches the duration and every counted bar plays at the ratio
+  // between the two, which is how an exact intro ended up 1.9× slow.
+  const estNow = time.reduce((a, s) => a + s.es, 0)
+  if (!over && estNow > 0 && target > exact) {
+    const f = (target - exact) / estNow
+    for (const s of time) s.es *= f
+  }
 
   const segs: TimelineSeg[] = []
   let bars = 0
-  for (const s of raw) {
-    let b = s.fixed ? s.t : s.t * k
-    if (!s.fixed) b = Math.max(b, s.h / (vAvg * 2.2))
-    b = Math.max(0.05, b)
+  for (const s of time) {
+    const b = Math.max(0.05, s.fx + s.es)
     segs.push({ top: s.top, h: s.h, bars: b, at: bars })
     bars += b
   }
@@ -206,7 +319,7 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
     doc: opts.doc,
     viewport: opts.viewport,
     exact,
-    est: est * k,
+    est: Math.max(0, bars - exact),
     k,
     over,
     counted: exact > 0,
@@ -231,13 +344,17 @@ export function barsAtPx(t: Timeline | null, px: number): number {
 }
 
 /**
- * Seconds the whole run takes at 1×: the declared duration when the chart has
- * one — that is what the scroll must spend on the clock — otherwise the time
- * the estimated bars take at the chart's BPM.
+ * Seconds the whole run takes at 1×.
+ *
+ * It is the timeline's own total, always — `buildTimeline` has already closed
+ * that total on the declared duration when the chart states one. Returning the
+ * duration here instead used to disagree with the total the segments add up
+ * to, and the loop, which walks a fraction of `bars` in `runSec` seconds, then
+ * played EVERY segment at the ratio between the two — counted bars included.
+ * `durationSec` is only the answer before there is a timeline to measure.
  */
 export function runSec(t: Timeline | null, durationSec: number | null): number {
   const sum = t ? t.bars : 0
-  if (durationSec && !(t && t.over)) return durationSec
   return sum > 0 ? sum : durationSec || 0
 }
 
@@ -265,6 +382,7 @@ export function clockOf(view: ChordProView, bpmOverride?: number | null) {
   return {
     bpm: bpmOverride || sheetBpm(view.meta.tempo) || 100,
     beatsPerBar: beatsPerBar(view.meta.time),
+    marksPerBeat: marksPerBeat(view.meta.time),
     durationSec: songDurationSec(view.meta.duration),
   }
 }

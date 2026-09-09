@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;}
+body{background:#F4F2ED;}
+a{color:#1F5C4A;text-decoration:none;} a:hover{color:#123528;}
+</style>
+</helmet>
+<div style="min-height:100%;background:#F4F2ED;color:#1A1A18;font-family:Archivo,system-ui,sans-serif;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 24px;height:56px;background:#FFFFFF;border-bottom:1px solid #E2DED4;position:sticky;top:0;z-index:30;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="width:22px;height:22px;border-radius:6px;background:#1F5C4A;"></span>
+      <span style="font-weight:700;font-size:15px;letter-spacing:-0.01em;">Louvor · SDA</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;font-size:13.5px;color:#6B6A63;">
+      <span>Repertório</span>
+      <span>Escalas</span>
+      <span style="color:#1A1A18;font-weight:600;">Músicas</span>
+      <span style="width:26px;height:26px;border-radius:50%;background:#DFDAD0;"></span>
+    </div>
+  </div>
+
+  <div style="max-width:1440px;margin:0 auto;padding:16px 24px 64px;display:grid;grid-template-columns:{{ cols }};gap:24px;">
+
+    <div style="min-width:0;">
+      <div style="position:sticky;top:72px;height:calc(100dvh - 88px);min-height:460px;border-radius:16px;overflow:hidden;outline:1px solid #DDD8CD;outline-offset:-1px;box-shadow:0 18px 40px -24px rgba(26,26,24,0.35);background:#0B0D12;">
+        <dc-import name="Titan Chordpro UI v2" style="height:100%;width:100%;" hint-size="100%,100%"></dc-import>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+      <div>
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <h1 style="margin:0;font-family:Newsreader,Georgia,serif;font-weight:500;font-size:clamp(24px,2.6vw,34px);letter-spacing:-0.015em;">Grande é o Senhor</h1>
+          <span style="font-size:13px;color:#6B6A63;">Ministério de Louvor · atualizada há 3 dias</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:12px;padding:4px 10px;border-radius:999px;background:#E7E3D9;color:#4A4842;">Adoração</span>
+          <span style="font-size:12px;padding:4px 10px;border-radius:999px;background:#E7E3D9;color:#4A4842;">Tom G</span>
+          <span style="font-size:12px;padding:4px 10px;border-radius:999px;background:#E7E3D9;color:#4A4842;">72 BPM</span>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E2DED4;border-radius:14px;padding:20px 22px;">
+        <h2 style="margin:0 0 12px;font-family:Newsreader,Georgia,serif;font-weight:500;font-size:19px;">Letra</h2>
+        <p style="margin:0 0 14px;font-family:Newsreader,Georgia,serif;font-size:16.5px;line-height:1.68;color:#39372F;text-wrap:pretty;">Grande é o Senhor e muito digno de louvor<br />Na cidade do nosso Deus, seu santo monte</p>
+        <p style="margin:0 0 14px;font-family:Newsreader,Georgia,serif;font-size:16.5px;line-height:1.68;color:#39372F;text-wrap:pretty;">Formoso de sítio e alegria de toda a terra<br />É o monte Sião, do lado norte, a cidade do grande Rei</p>
+        <p style="margin:0;font-family:Newsreader,Georgia,serif;font-size:16.5px;line-height:1.68;color:#39372F;text-wrap:pretty;">Deus é conhecido nos seus palácios<br />Como refúgio, como refúgio</p>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E2DED4;border-radius:14px;padding:20px 22px;">
+        <h2 style="margin:0 0 14px;font-family:Newsreader,Georgia,serif;font-weight:500;font-size:19px;">Arquivos</h2>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <sc-for list="{{ files }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EFEBE2;">
+              <span style="flex:none;width:34px;height:34px;border-radius:9px;background:#EFEBE2;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#6B6A63;letter-spacing:0.03em;">{{ f.ext }}</span>
+              <span style="flex:1;min-width:0;font-size:14px;">{{ f.name }}</span>
+              <span style="flex:none;font-size:12px;color:#8A8880;">{{ f.size }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E2DED4;border-radius:14px;padding:20px 22px;">
+        <h2 style="margin:0 0 14px;font-family:Newsreader,Georgia,serif;font-weight:500;font-size:19px;">Histórico</h2>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+            <div style="display:flex;gap:12px;align-items:baseline;">
+              <span style="flex:none;width:74px;font-family:ui-monospace,monospace;font-size:12px;color:#8A8880;">{{ h.date }}</span>
+              <span style="flex:1;min-width:0;font-size:14px;line-height:1.5;color:#39372F;">{{ h.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E2DED4;border-radius:14px;padding:20px 22px;">
+        <h2 style="margin:0 0 12px;font-family:Newsreader,Georgia,serif;font-weight:500;font-size:19px;">Observações do ensaio</h2>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#39372F;text-wrap:pretty;">Entrada suave no teclado, sem bateria até o primeiro refrão. A ponte repete duas vezes quando o coral entra. Última estrofe a capela.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1440px;margin:0 auto;padding:0 24px 80px;">
+    <div style="border-top:1px solid #E2DED4;padding-top:20px;font-size:13px;color:#8A8880;">Role a página: a coluna da direita passa, a cifra permanece na tela com a barra de controle acessível.</div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { w: typeof window !== "undefined" ? window.innerWidth : 1280 };
+  componentDidMount() {
+    this.onR = () => this.setState({ w: window.innerWidth });
+    window.addEventListener("resize", this.onR);
+  }
+  componentWillUnmount() { window.removeEventListener("resize", this.onR); }
+  renderVals() {
+    return {
+      cols: this.state.w < 900 ? "minmax(0,1fr)" : "minmax(0,1.15fr) minmax(0,1fr)",
+      files: [
+        { ext: "PDF", name: "Cifra simplificada.pdf", size: "180 KB" },
+        { ext: "MP3", name: "Referência - ensaio 08/2026.mp3", size: "4,2 MB" },
+        { ext: "PDF", name: "Partitura teclado.pdf", size: "612 KB" },
+        { ext: "TXT", name: "Sequência do culto.txt", size: "2 KB" }
+      ],
+      history: [
+        { date: "31/08/26", text: "Culto da manhã — tom G, capo 2 no violão de aço." },
+        { date: "17/08/26", text: "Ensaio geral. Ajustada a ponte para duas repetições." },
+        { date: "03/08/26", text: "Culto da noite — versão a capela na última estrofe." },
+        { date: "20/07/26", text: "Primeira execução com a banda completa." }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
