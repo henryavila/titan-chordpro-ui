@@ -284,13 +284,39 @@ responsável (cifras → pedidos → ajustes), aceita item por item.
 
 ### Auto-rolagem: tempo musical, não px/s
 
-A rolagem não é velocidade em pixels. Cada bloco recebe um **peso musical** — os
-pulsos `x///` escritos na linha são exatos, tab e partitura contam compassos, o
-resto é estimado por acorde e calibrado contra `{duration:}`. Um *playhead*
-percorre a cifra nesse relógio e a página só anda quando ele passa da **linha de
-leitura** (meio da tela): introdução e final ficam parados na tela, e o percurso
-inteiro gasta a duração declarada. Matemática em `src/core/timeline.ts`
-(framework-free); o RAF e a medição do DOM ficam no binding Vue.
+A rolagem não é velocidade em pixels. Cada bloco recebe um **peso musical**, e
+ele é montado em duas camadas — a distinção entre elas é o ponto:
+
+1. **O que a cifra declara**, lido no BPM dela. `x///` escrito numa linha que é
+   *tocada e não cantada* — introdução, interlúdio, final — é contagem de
+   compasso, e vira o tempo de rolagem daquele trecho diretamente. O mesmo vale
+   para os compassos de uma tab ou partitura, e para a **cauda** segurada no fim
+   de uma linha cantada. Esta camada nunca é calibrada: ela já é a resposta.
+2. **O que ela deixa de fora.** Uma linha cantada sem marca vale
+   `BEATS_PER_ROW` pulsos, e só esta camada é esticada ou comprimida para
+   fechar em `{duration:}`.
+
+`{time:}` é lido inteiro, numerador **e** denominador. O `{tempo:}` nomeia o
+*pulso sentido* e uma marca `x///` é uma unidade do denominador — em compasso
+simples são a mesma coisa, em composto (6/8, 9/8, 12/8) o pulso é a semínima
+pontuada e cabem **três** marcas nele. Por isso `beatsPerBar('6/8')` é `2`, não
+`6`: um compasso de 6/8 são duas semínimas pontuadas. `marksPerBeat()` devolve a
+outra metade da conta. Ler só o numerador dava a um compasso de 6/8 o triplo da
+duração real, e tudo que o relógio deriva de compasso ia junto — tab, partitura
+e a estimativa cantada. O metrônomo usa o mesmo `beatsPerBar()`, então o acento
+cai uma vez por compasso em qualquer fórmula.
+
+Uma marca no fim de uma linha cantada é cauda **somada** àquela linha, nunca o
+tempo inteiro dela: um `[Am]x///` fechando a estrofe não faz a estrofe durar
+quatro pulsos.
+
+Um *playhead* percorre a cifra nesse relógio e a página só anda quando ele passa
+da **linha de leitura** (meio da tela): introdução e final ficam parados na tela,
+e o percurso inteiro gasta a duração declarada. `Timeline.bars` é o total do
+percurso e `runSec()` devolve exatamente ele — se os dois divergirem, **todo**
+segmento toca na razão entre eles, inclusive os compassos contados. Matemática
+em `src/core/timeline.ts` (framework-free); o RAF e a medição do DOM ficam no
+binding Vue.
 
 ## Mental model
 

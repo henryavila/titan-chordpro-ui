@@ -638,6 +638,7 @@ function rebuildTimeline(): Timeline | null {
   timeline = buildTimeline(measureBlocks(), {
     bpm: clock.bpm,
     beatsPerBar: clock.beatsPerBar,
+    marksPerBeat: clock.marksPerBeat,
     durationSec: clock.durationSec,
     barPx: scale.value.barPx,
     doc: el.scrollHeight,
@@ -711,20 +712,24 @@ function startScroll() {
   const dur = clockOf(parsed.value).durationSec
   const step = (now: number) => {
     if (!scrolling.value) return
-    const dt = (now - prev) / 1000
+    // One timeline per frame: each call may re-measure every block in the DOM,
+    // and asking four times over lands four full layouts in the same frame.
+    const t = timelineFor()
+    // Coming back from a background tab must not teleport the chart — but a
+    // dropped frame is time the music really spent, so the interval is capped
+    // rather than thrown away, which used to lose it for good.
+    const dt = Math.min(Math.max((now - prev) / 1000, 0), 0.25)
     prev = now
-    const run = runSec(timelineFor(), dur)
-    // Coming back from a background tab must not teleport the chart: an absurd
-    // interval is dropped instead of added.
-    if (run > 0 && dt > 0 && dt < 0.5) playhead = Math.min(1, playhead + (dt / run) * mul.value)
+    const run = runSec(t, dur)
+    if (run > 0 && dt > 0) playhead = Math.min(1, playhead + (dt / run) * mul.value)
     const max = el.scrollHeight - el.clientHeight
-    const target = Math.max(0, Math.min(max, pxAtBars(timelineFor(), playhead * totalBars()) - anchor()))
+    const target = Math.max(0, Math.min(max, pxAtBars(t, playhead * (t ? t.bars : 0)) - anchor()))
     el.scrollTop = target
     written = el.scrollTop
     const held = target <= 0.5
     // One update per clock second, not per frame: re-rendering the whole sheet
     // 60 times a second ate the frames of the scroll itself.
-    const sec = Math.round(etaSec(timelineFor(), dur, playhead, mul.value))
+    const sec = Math.round(etaSec(t, dur, playhead, mul.value))
     if (sec !== etaTick || holding.value !== held) {
       etaTick = sec
       progress.value = playhead
