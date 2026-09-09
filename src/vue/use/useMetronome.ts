@@ -24,6 +24,8 @@ export type MetronomeOpts = {
   onFollowStop: () => void
   /** True while the chart is already auto-scrolling. */
   scrolling: Ref<boolean>
+  /** False when the chart fits the frame: there is no scroll to link to. */
+  scrollable: Ref<boolean>
   /** The panel covers the chart, so it steps aside on start. */
   onPanelClose: () => void
 }
@@ -152,7 +154,8 @@ export function useMetronome(opts: MetronomeOpts) {
     beat.value = 0
     // Only a chart standing still can be counted in: joining one already
     // rolling means playing along from here, and there is nothing to wait for.
-    const willFollow = follow.value && !opts.scrolling.value
+    // A chart that fits the frame has no scroll to lead into either.
+    const willFollow = follow.value && opts.scrollable.value && !opts.scrolling.value
     followAt = willFollow && countInOn.value ? bar.value : -1
     countIn.value = followAt > 0 ? followAt : 0
     if (willFollow && followAt < 0) opts.onFollowStart()

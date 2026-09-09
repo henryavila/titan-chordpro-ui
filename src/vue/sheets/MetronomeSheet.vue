@@ -16,6 +16,8 @@ const props = defineProps<{
   /** One bar of click before the chart starts moving. */
   countInOn: boolean
   scrolling: boolean
+  /** False when the chart fits the frame and has no scroll to offer. */
+  scrollable: boolean
   /** Taps registered in the current tempo measurement. */
   tapCount: number
   time: string | undefined
@@ -50,7 +52,11 @@ const beats = computed(() =>
 // The panel's main action cannot be an empty outline: stopped it is solid and
 // inviting; running it becomes the pill that stops it.
 const runLabel = computed(() =>
-  props.running ? 'Parar' : props.follow && !props.scrolling ? 'Iniciar com a rolagem' : 'Iniciar',
+  props.running
+    ? 'Parar'
+    : props.follow && props.scrollable && !props.scrolling
+      ? 'Iniciar com a rolagem'
+      : 'Iniciar',
 )
 
 /**
@@ -75,9 +81,11 @@ const tapLabel = computed(() =>
 
 /** With the scroll independent there is nothing for the count-in to lead into. */
 const countInNote = computed(() =>
-  props.follow
-    ? 'Um compasso de click antes da cifra começar a andar.'
-    : 'Sem efeito enquanto a rolagem estiver independente.',
+  !props.scrollable
+    ? 'Sem efeito: a cifra inteira cabe na tela, não há rolagem para entrar.'
+    : props.follow
+      ? 'Um compasso de click antes da cifra começar a andar.'
+      : 'Sem efeito enquanto a rolagem estiver independente.',
 )
 
 const geom = computed(() =>

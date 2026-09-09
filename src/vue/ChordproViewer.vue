@@ -120,6 +120,8 @@ const sysDark = ref(
 const bias = ref(0)
 const fit = ref<boolean | null>(null)
 const scrolling = ref(false)
+/** Paper the chart has left to give, in px. Zero when it fits the frame. */
+const scrollRoom = ref(0)
 const mul = ref(1)
 const progress = ref(0)
 const etaLabel = ref('—')
@@ -210,6 +212,7 @@ let userScroll: (() => void) | null = null
 let mq: MediaQueryList | null = null
 let ro: ResizeObserver | null = null
 let headRo: ResizeObserver | null = null
+let pageRo: ResizeObserver | null = null
 let zenSeen = false
 
 const mode = computed(() => localMode.value ?? props.mode)
@@ -293,6 +296,16 @@ const pagePad = computed(() => {
  */
 const colEdge = computed(() =>
   pageMax.value === '100%' ? '16px' : `max(16px, calc((100% - ${pageMax.value}) / 2))`,
+)
+/**
+ * A chart shorter than the frame has nowhere to go, and a Rolar button that
+ * cannot move anything is a button that does nothing. It stays live while the
+ * scroll runs, though: that is the only way to stop it.
+ */
+const canScroll = computed(() => scrollRoom.value > 1)
+const scrollOff = computed(() => !canScroll.value && !scrolling.value)
+const scrollTitle = computed(() =>
+  scrollOff.value ? 'A cifra inteira cabe na tela — não há o que rolar' : 'Auto-rolagem (espaço)',
 )
 const dockCtrlH = computed(() => (bp.value === 'xs' ? '44px' : '48px'))
 const dockIconSize = computed(() => (bp.value === 'xs' ? '44px' : '48px'))
@@ -566,6 +579,7 @@ const met = useMetronome({
   time: computed(() => meta.value.time),
   store,
   scrolling,
+  scrollable: canScroll,
   onFollowStart: () => startScroll(),
   onFollowStop: () => stopScroll(),
   onPanelClose: () => (metOpen.value = false),
@@ -683,6 +697,15 @@ function anchor(): number {
   return el ? anchorPx(el.clientHeight, el.scrollHeight) : 0
 }
 
+/**
+ * Measured, never derived: the chart's height moves with type size, fit, the
+ * key it was transposed to and the width it wraps at, and only the DOM knows.
+ */
+function syncScrollRoom() {
+  const el = scroller.value
+  scrollRoom.value = el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0
+}
+
 function totalBars(): number {
   const t = timelineFor()
   return t ? t.bars : 0
@@ -774,7 +797,7 @@ function startScroll() {
  */
 function toggleScroll() {
   if (scrolling.value) stopScroll()
-  else startScroll()
+  else if (canScroll.value) startScroll()
 }
 
 // -------------------------------------------------------------------- controls
@@ -1446,6 +1469,16 @@ const endNext = () => {
   goNext()
 }
 
+function bindPage(el: unknown) {
+  const node = el as HTMLElement | null
+  pageRo?.disconnect()
+  pageRo = null
+  if (!node) return
+  pageRo = new ResizeObserver(() => syncScrollRoom())
+  pageRo.observe(node)
+  syncScrollRoom()
+}
+
 function bindHead(el: unknown) {
   const node = (el as HTMLElement | null) ?? null
   head.value = node
@@ -1534,8 +1567,10 @@ onMounted(() => {
   mq.addEventListener('change', onMq)
   ro = new ResizeObserver((entries) => {
     // Before the width bail-out: a host that flattens the frame changes our
-    // height, not our width, and that is exactly what the guard looks for.
+    // height, not our width, and that is exactly what the guard looks for —
+    // and the same height change is what leaves the chart with no room.
     guard.check()
+    syncScrollRoom()
     const w = entries[0]?.contentRect.width ?? 900
     if (Math.abs(w - width.value) <= 4) return
     width.value = w
@@ -1586,6 +1621,7 @@ onUnmounted(() => {
   mq?.removeEventListener('change', onMq)
   ro?.disconnect()
   headRo?.disconnect()
+  pageRo?.disconnect()
 })
 
 defineExpose({
@@ -1604,7 +1640,7 @@ defineExpose({
     <div class="cpv-glow" />
 
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
-      <div class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
+      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
         <!-- The capo map, said once: "see G, play E". -->
         <div v-if="legend" class="cpv-legend" data-legend>
           <span class="cpv-legend-half">
@@ -2137,10 +2173,11 @@ defineExpose({
         </template>
         <button
           data-scroll
-          title="Auto-rolagem (espaço)"
-          :style="{ background: scrolling ? 'var(--pill)' : 'transparent', color: scrolling ? 'var(--pill-ink)' : 'var(--text)', border: `1px solid ${scrolling ? 'var(--pill)' : 'var(--line)'}` }"
+          :title="scrollTitle"
+          :disabled="scrollOff"
+          :style="{ background: scrolling ? 'var(--pill)' : 'transparent', color: scrolling ? 'var(--pill-ink)' : 'var(--text)', border: `1px solid ${scrolling ? 'var(--pill)' : 'var(--line)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
           class="cpv-bar-btn"
-          style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:9px;"
+          style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:9px;"
           @click="toggleScroll"
         >
           <span :class="scrolling ? 'cpv-icon-stop' : 'cpv-icon-play'" aria-hidden="true" />{{ scrolling ? 'Parar' : 'Rolar' }}
@@ -2249,9 +2286,10 @@ defineExpose({
         <div style="display:flex;align-items:center;gap:4px;padding:6px;">
           <button
             data-scroll
-            title="Auto-rolagem"
-            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 380 ? '0' : '0 20px', gap: width < 380 ? '0' : '9px' }"
-            style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
+            :title="scrollTitle"
+            :disabled="scrollOff"
+            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 380 ? '0' : '0 20px', gap: width < 380 ? '0' : '9px', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+            style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
             @click="toggleScroll"
           >
             <span :class="scrolling ? 'cpv-icon-stop' : 'cpv-icon-play'" style="flex:none;width:11px;height:11px;" aria-hidden="true" />{{ dockPlayLabel }}
@@ -2507,6 +2545,7 @@ defineExpose({
       :follow="met.follow.value"
       :count-in-on="met.countInOn.value"
       :scrolling="scrolling"
+      :scrollable="canScroll"
       :tap-count="met.tapCount.value"
       :time="meta.time"
       @close="metOpen = false"

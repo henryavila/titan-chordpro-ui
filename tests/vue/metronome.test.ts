@@ -14,6 +14,7 @@ type Calls = { start: number; stop: number; close: number }
 
 function met(over: Partial<MetronomeOpts> = {}) {
   const scrolling = ref(false)
+  const scrollable = ref(true)
   const calls: Calls = { start: 0, stop: 0, close: 0 }
   const m = useMetronome({
     songKey: computed(() => 'uma-cancao'),
@@ -21,6 +22,7 @@ function met(over: Partial<MetronomeOpts> = {}) {
     time: computed(() => '4/4'),
     store: memoryStore(),
     scrolling,
+    scrollable,
     onFollowStart: () => {
       calls.start++
       scrolling.value = true
@@ -34,7 +36,7 @@ function met(over: Partial<MetronomeOpts> = {}) {
     },
     ...over,
   })
-  return { m, scrolling, calls }
+  return { m, scrolling, scrollable, calls }
 }
 
 /** Walks the beat clock forward. The loop runs on rAF, which the timers fake. */
@@ -106,6 +108,7 @@ describe('the click and the scroll are one control', () => {
       time: computed(() => '4/4'),
       store: memoryStore(),
       scrolling,
+      scrollable: ref(true),
       onFollowStart: () => (scrolling.value = true),
       onFollowStop: () => {
         stops++
@@ -188,6 +191,16 @@ describe('a bar of count-in before the chart moves', () => {
     expect(m.countIn.value).toBe(0)
     beats(5)
     expect(calls.start).toBe(0)
+  })
+
+  it('never counts into a chart that fits the frame — there is no scroll to lead', () => {
+    const { m, scrollable, calls } = met()
+    scrollable.value = false
+    m.start()
+    expect(m.countIn.value).toBe(0)
+    beats(5)
+    expect(calls.start).toBe(0)
+    expect(m.running.value).toBe(true)
   })
 
   it('starts the chart at once when the reader turned the count-in off', () => {
@@ -350,9 +363,12 @@ describe('the beat readout hangs off the chart, not the window', () => {
     expect(w.get('[data-met-pulse]').attributes('style')).toContain('right: 16px')
   })
 
-  it('counts the entry in from the badge, since the panel has stepped aside', async () => {
+  // jsdom lays nothing out, so `scrollHeight` is 0 and the viewer correctly
+  // reads the chart as fitting the frame — no scroll to count into. The
+  // count-in on a real chart is asserted in tests/browser/layout.spec.ts.
+  it('reads the tempo back with the panel closed', async () => {
     const w = await viewerAt(1600)
-    expect(w.find('[data-met-countin]').exists()).toBe(true)
-    expect(w.get('[data-met-pulse]').text()).toContain('entrada')
+    expect(w.find('[data-met-countin]').exists()).toBe(false)
+    expect(w.get('[data-met-pulse]').text()).toContain('60')
   })
 })

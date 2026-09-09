@@ -344,6 +344,15 @@ Duas correções:
 `pxAtScroll()` é a inversa, e é ela que lê de volta a posição quando o músico
 arrasta a cifra com o dedo.
 
+Cifra que **cabe na moldura** não tem o que rolar, e o botão Rolar fica
+desativado dizendo isso — antes ele ficava vivo, ligava a rolagem e nada se
+movia até a música "acabar". O espaço é medido no DOM (`ResizeObserver` na
+coluna da cifra, mais a moldura), porque ele muda com tipografia, ajuste ao
+espaço e o tom em que a cifra foi transposta. O mesmo estado desliga o vínculo
+do metrônomo: sem rolagem, não há contagem de entrada nem "Iniciar com a
+rolagem". O botão continua vivo enquanto a rolagem corre — é a única forma de
+pará-la.
+
 Não há régua desenhada sobre a cifra. Uma linha de leitura permanente competia
 com o texto e afirmava uma precisão que a estimativa não tem — o olho lê
 adiantado da mão, então "a música está aqui" aponta para um lugar que ele já

@@ -215,3 +215,41 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
   expect(box.fromColumn).toBeLessThan(12)
   expect(box.fromGlass).toBeGreaterThan(120)
 })
+
+/**
+ * A chart that fits the frame has nowhere to go, and the control has to say
+ * so: pressing Rolar and watching nothing happen, forever, is the worst answer
+ * the viewer can give.
+ */
+test('Rolar goes dead when the chart fits the frame, and comes back when it does not', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+  const roll = page.locator('[data-scroll]')
+
+  // The fixture is far taller than the frame: the control is live, and the
+  // click offers to carry the scroll with it.
+  await expect(roll).toBeEnabled()
+  await page.locator('[data-met-btn]').click()
+  await expect(page.locator('[data-met-run]')).toContainText('Iniciar com a rolagem')
+  // One bar of count-in before the chart moves, on a chart that has a scroll.
+  await page.locator('[data-met-run]').click()
+  await expect(page.locator('[data-met-countin]')).toBeVisible()
+  await page.keyboard.press('m')
+
+  // Shrink the chart until it fits: the control goes dead and says why.
+  await page.locator('[data-cpv-root]').evaluate((el) => {
+    ;(el as HTMLElement).style.height = '4000px'
+  })
+  await expect(roll).toBeDisabled()
+  await expect(roll).toHaveAttribute('title', /cabe na tela/)
+  // Nothing starts, by button or by keyboard.
+  await roll.click({ force: true })
+  await page.keyboard.press(' ')
+  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+
+  await page.locator('[data-cpv-root]').evaluate((el) => {
+    ;(el as HTMLElement).style.height = ''
+  })
+  await expect(roll).toBeEnabled()
+})
