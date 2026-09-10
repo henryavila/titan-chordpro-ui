@@ -1,23 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ChordproViewer } from 'titan-chordpro-ui/vue'
 import { readMeta, toPlain } from 'titan-chordpro-ui'
 import { pdfText } from 'titan-chordpro-ui/pdf'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
-import jesus1 from '../fixtures/jesus-tu-es-a-minha-vida-1.cho?raw'
-import adoralo from '../fixtures/ministerio-tons/010-adoralo.cho?raw'
-import eleVive from '../fixtures/ministerio-tons/013-ele-vive-em-mim.cho?raw'
-import eleVivePartitura from '../fixtures/ministerio-tons/013-ele-vive-em-mim-partitura.cho?raw'
-import emGratidao from '../fixtures/ministerio-tons/002-em-gratidao.cho?raw'
-import ofertinha from '../fixtures/ministerio-tons/088-minha-ofertinha.cho?raw'
-
+const bundledRaw = import.meta.glob('../fixtures/**/*.{cho,chordpro,onsong}', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>
+function idFromPath(path: string): string {
+  const base = path.split('/').pop() ?? path
+  return base.replace(/\.(cho|chordpro|onsong)$/i, '')
+}
 const bundled: Record<string, string> = {
-  'jesus-1': jesus1,
-  adoralo,
-  'ele-vive': eleVive,
-  'ele-vive-img': eleVivePartitura,
-  'em-gratidao': emGratidao,
-  ofertinha,
+  ...Object.fromEntries(Object.entries(bundledRaw).map(([path, src]) => [idFromPath(path), src])),
   vazio: '',
 }
 const fixtures = ref<Record<string, string>>({ ...bundled })
@@ -49,7 +46,10 @@ const images = [...byName.keys()].map((file) => ({
  */
 const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search)
 
-const id = ref('jesus-1')
+const DEFAULT_ID = bundled['escuta-meu-clamor-sda-86']
+  ? 'escuta-meu-clamor-sda-86'
+  : Object.keys(bundled).find((k) => k !== 'vazio') ?? 'vazio'
+const id = ref(DEFAULT_ID)
 const source = ref(fixtures.value[id.value] ?? '')
 
 function pick(next: string) {
@@ -59,7 +59,24 @@ function pick(next: string) {
 
 // ------------------------------------------------------- rehearsal (setlist)
 
-const setlist = params.get('ensaio') === 'juntas' ? 'juntas' : params.get('ensaio') === 'demanda' ? 'demanda' : 'off'
+/**
+ * `?ficha=1` is composition A: the Vue component inside a host page that has
+ * its own chrome. Default (no query) is composition B: a standalone 100dvh
+ * page. Same `<ChordproViewer>`, no iframe.
+ *
+ * A ficha de ensaio liga a lista sozinha (`juntas`); `?ensaio=off` desliga,
+ * `?ensaio=demanda` testa cifra que chega depois.
+ */
+const ficha = params.get('ficha') === '1'
+const ensaioParam = params.get('ensaio')
+const setlist =
+  ensaioParam === 'demanda'
+    ? 'demanda'
+    : ensaioParam === 'off'
+      ? 'off'
+      : ensaioParam === 'juntas' || (ficha && !ensaioParam)
+        ? 'juntas'
+        : 'off'
 const FAIL_ID = 'falha-de-rede'
 
 const songs = computed(() => {
@@ -101,121 +118,54 @@ const loadSong = (songId: string) =>
 const fetchChart = (url: string) =>
   new Promise<string>((resolve) => {
     void url
-    setTimeout(() => resolve(toPlain(fixtures.value['ele-vive'] ?? '')), 900)
+    const any = Object.entries(fixtures.value).find(([k, v]) => k !== 'vazio' && v.trim())?.[1] ?? ''
+    setTimeout(() => resolve(toPlain(any)), 900)
   })
 
 /** Flattens the frame the way a host embedding into a scrolling page would. */
 const breakFrame = params.get('quebrar') === '1'
 
 /**
- * `?embed=1` puts the viewer inside a real iframe with the fullscreen permission;
- * `?embed=bloqueado` inside one where it is explicitly denied. It is the only
- * way to check that half of the embed contract from the device itself:
- * everything else about the two frames is identical, so whatever changes is the
- * permission and nothing else.
- *
- * The denial is spelled `allow="fullscreen 'none'"` rather than by leaving the
- * attribute out, and that is not a shortcut — measured in Chromium and WebKit,
- * a *same-origin* frame inherits the permission by default (the Permissions
- * Policy allowlist for `fullscreen` is `self`), so no attribute at all still
- * grants it. Only a cross-origin embed is refused by omission, and `'none'` is
- * how that state is reproduced from one origin. `sandbox` does not work here:
- * it makes the origin opaque, and the dev server then refuses the app's own
- * modules by CORS.
- */
-const embed = params.get('embed')
-/**
  * The SDA ficha is a light page, and a chart embedded in it has to be one too:
  * `?tema=claro|escuro` pins the viewer, which is what the host embedding it
  * would do through the `theme` prop.
  */
 const tema = params.get('tema')
-const hostTheme = tema === 'claro' ? 'light' : tema === 'escuro' ? 'dark' : 'auto'
+const hostTheme = tema === 'claro' ? 'light' : tema === 'escuro' ? 'dark' : ficha ? 'light' : 'auto'
 
-const embedSrc = computed(() => {
+const liveHref = computed(() => {
   const q = new URLSearchParams(params)
-  q.delete('embed')
-  // The ficha is light, so the chart inside it is too — the host's decision,
-  // carried here by the query string instead of a prop because the viewer is
-  // behind an iframe.
-  if (!q.has('tema')) q.set('tema', 'claro')
-  return `?${q.toString()}`
+  q.delete('ficha')
+  if (setlist !== 'off' && !q.has('ensaio')) q.set('ensaio', setlist)
+  const s = q.toString()
+  return s ? `?${s}` : '?'
 })
 
-/** What the host page knows about the song without parsing a chart itself. */
 const fichaMeta = computed(() => readMeta(source.value))
-
-/**
- * The host half of the frame-expansion contract, and the only way to try it
- * from a phone.
- *
- * An iframe cannot paint outside its own box, and iPhone Safari has no
- * Fullscreen API for elements — so in an embed there the viewer has no road to
- * the screen of its own. This is the road: the viewer asks, and the page that
- * owns the `<iframe>` puts that element over the viewport. Ten lines on the
- * host side, and the chart gets the whole phone.
- *
- * `?embed=bloqueado` deliberately declares nothing, so that route keeps showing
- * what a host that has not implemented this looks like: no button at all,
- * rather than one that lights up and moves nothing.
- */
-const frame = ref<HTMLIFrameElement | null>(null)
-const frameFull = ref(false)
-const hostExpands = embed !== null && embed !== 'bloqueado'
-
-function tellViewer(msg: Record<string, unknown>) {
-  frame.value?.contentWindow?.postMessage({ source: 'titan-chordpro-host', ...msg }, '*')
-}
-
-function onViewerMessage(e: MessageEvent) {
-  if (!frame.value || e.source !== frame.value.contentWindow) return
-  const m = e.data as { source?: string; type?: string; on?: boolean } | null
-  if (!m || typeof m !== 'object' || m.source !== 'titan-chordpro') return
-  if (m.type === 'hello') {
-    tellViewer({ type: 'capabilities', expandFrame: hostExpands })
-    return
-  }
-  if (m.type === 'expand') {
-    frameFull.value = m.on === true
-    // Confirm, always: it is what lets the viewer follow a frame the host
-    // collapses on its own.
-    tellViewer({ type: 'expanded', on: frameFull.value })
-  }
-}
-
-onMounted(() => {
-  if (embed === null) return
-  window.addEventListener('message', onViewerMessage)
-  // A viewer that finished loading before this listener existed already sent
-  // its `hello` into the void, so say it unprompted too.
-  tellViewer({ type: 'capabilities', expandFrame: hostExpands })
-})
-onUnmounted(() => window.removeEventListener('message', onViewerMessage))
 
 onMounted(async () => {
   const wanted = params.get('song')
   if (wanted && wanted in fixtures.value) pick(wanted)
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
-  fixtures.value = catalogToFixtures(catalog)
-  const keys = Object.keys(fixtures.value)
-  const next = wanted && wanted in fixtures.value ? wanted : keys[0]
-  if (next) pick(next)
+  // Keep the repo fixtures. Preview dir *adds* charts; it must not wipe the
+  // setlist down to a single generated file.
+  fixtures.value = { ...fixtures.value, ...catalogToFixtures(catalog) }
+  if (wanted && wanted in fixtures.value) pick(wanted)
 })
 </script>
 
 <template>
-  <!-- A stand-in SDA ficha, not a frame on a blank page: the chart is one
-       block inside a page that has its own sections above and below it, its own
-       controls beside it, and its own light theme. That is the only shape in
-       which "tela cheia" means anything — against a frame that already fills
-       the screen there is nothing to win, and the demo would prove nothing.
-       The frame's CSS is the recipe from docs/EMBED-SDA.md. -->
-  <div v-if="embed" class="sda">
+  <!-- Composition A: a real ficha — blocks above and below the chart.
+       The frame is 100dvh in the page flow. Scroll parks it on the
+       viewport (snap), dock included. `?ficha=1`. -->
+  <div v-if="ficha" class="sda">
     <div class="sda-band">
       <p class="sda-label">Tempo ritmico</p>
       <p class="sda-value">4/4</p>
-      <span class="sda-flag">demo · {{ embed === 'bloqueado' ? 'host NÃO expande' : 'host expande' }}</span>
+      <p class="sda-title">{{ fichaMeta.title || 'Cifra' }}</p>
+      <p v-if="fichaMeta.subtitle" class="sda-value">{{ fichaMeta.subtitle }}</p>
+      <span class="sda-flag">demo · ficha{{ setlist !== 'off' ? ' · ensaio' : '' }}</span>
     </div>
 
     <div class="sda-row">
@@ -227,19 +177,38 @@ onMounted(async () => {
       <div class="sda-tools">
         <span class="sda-tone">
           Tom da música <em>beta</em>
-          <select><option>C</option><option>D</option><option>E</option></select>
-          <select><option></option><option>capo 1</option></select>
+          <select>
+            <option>{{ fichaMeta.key || 'C' }}</option>
+            <option>C</option>
+            <option>D</option>
+            <option>E</option>
+          </select>
+          <select>
+            <option></option>
+            <option>capo 1</option>
+          </select>
         </span>
-        <span class="sda-chips"><button>PDF</button><button>Chordpro</button></span>
+        <span class="sda-chips">
+          <a class="sda-live" :href="liveHref">Tocar ao vivo</a>
+          <button>PDF</button>
+          <button>Chordpro</button>
+        </span>
       </div>
 
-      <!-- The whole host side of it: one element, moved. -->
-      <div class="sda-frame" :class="{ 'is-full': frameFull }">
-        <iframe
-          ref="frame"
-          :src="embedSrc"
-          :allow="embed === 'bloqueado' ? `fullscreen 'none'` : 'fullscreen'"
-          title="Cifra"
+      <div class="sda-frame">
+        <ChordproViewer
+          :source="source"
+          :theme="hostTheme"
+          theme-control="host"
+          :song-id="id"
+          :songs="songs"
+          :load-song="loadSong"
+          :fetch-chart="fetchChart"
+          :read-pdf="(file: File) => pdfText(file)"
+          modes="both"
+          :resolve-image="resolveImage"
+          :images="images"
+          @update:source="source = $event"
         />
       </div>
     </div>
@@ -281,32 +250,30 @@ onMounted(async () => {
 
 <style scoped>
 /**
- * The SDA ficha as it really looks: a light page of labelled bands, an accent
- * that is red, and the chart as one block among others. Nothing here is the
- * viewer's design — the point is that it is somebody else's.
+ * A real ficha: bands above and below, chart 100dvh in the flow.
+ * Snap parks the frame on the viewport so the dock sits on the fold.
  */
 .sda {
   height: 100%;
   overflow-y: auto;
+  scroll-snap-type: y proximity;
   background: #FFFFFF;
   color: #20242B;
   font-family: Sora, system-ui, -apple-system, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
-/**
- * Every real site caps its content column, and that cap is what the embed
- * actually gets — a viewer that only ever saw a flexible host would never meet
- * the width it will live in.
- */
 .sda-band > *,
 .sda-row > * { max-width: 1040px; margin-left: auto; margin-right: auto; }
 .sda-band,
 .sda-row {
   padding: 22px 26px;
   border-bottom: 1px solid #E5E8EC;
-  position: relative;
 }
 .sda-band { background: #F4F6F8; }
+.sda-band,
+.sda-row {
+  position: relative;
+}
 .sda-label {
   margin: 0 0 8px;
   font-size: 13px;
@@ -315,7 +282,13 @@ onMounted(async () => {
   text-transform: uppercase;
   color: #20242B;
 }
-.sda-value { margin: 0 0 4px; font-size: 14px; color: #6B7280; }
+.sda-title {
+  margin: 8px 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.sda-value { margin: 0 0 4px; font-size: 14px; color: #6B7280; line-height: 1.5; }
 .sda-link {
   display: block;
   margin-bottom: 4px;
@@ -324,7 +297,6 @@ onMounted(async () => {
   text-decoration: none;
   word-break: break-all;
 }
-/* Not part of the SDA: which of the two hosts is being simulated. */
 .sda-flag {
   position: absolute;
   top: 18px;
@@ -365,8 +337,9 @@ onMounted(async () => {
   padding: 6px 8px;
   min-width: 62px;
 }
-.sda-chips { display: flex; gap: 8px; }
-.sda-chips button {
+.sda-chips { display: flex; gap: 8px; align-items: center; }
+.sda-chips button,
+.sda-live {
   font: inherit;
   font-size: 12.5px;
   color: #2C3340;
@@ -375,40 +348,18 @@ onMounted(async () => {
   border-radius: 7px;
   padding: 7px 12px;
   cursor: pointer;
+  text-decoration: none;
 }
-/**
- * The contract: a defined height on the frame's immediate ancestor. It is a
- * block the page scrolls past — the chart is part of the ficha, not the ficha —
- * which is exactly what makes a full screen worth asking for.
- *
- * The floor is not the 460px of `.cpv-root`: that is where the viewer stands,
- * not where it works. Measured on a 390px phone, the metronome sheet alone is
- * 552px tall, so a frame under that clips a control the reader came for.
- *
- * So the frame takes the whole screen height. The chart is still one block of
- * the ficha — the page scrolls past it, there are sections above and below —
- * but while it is on screen it gets every pixel of height there is, which is
- * the most any host can honestly give an embed.
- */
+.sda-live { background: #E8462F; color: #fff; font-weight: 600; }
 .sda-frame {
   height: 100dvh;
   min-height: 560px;
   overflow: hidden;
+  scroll-snap-align: start;
+  scroll-margin-top: 0;
   border-radius: 12px;
   border: 1px solid #E5E8EC;
 }
-.sda-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
-/* And this is the whole expansion: one element, over the viewport. */
-.sda-frame.is-full {
-  position: fixed;
-  inset: 0;
-  height: 100%;
-  min-height: 0;
-  z-index: 2147483000;
-  border: 0;
-  border-radius: 0;
-}
-
 @media (max-width: 640px) {
   .sda-band,
   .sda-row { padding: 18px 16px; }

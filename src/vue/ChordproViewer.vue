@@ -47,8 +47,8 @@ import MyVersionPanel from './overlay/MyVersionPanel.vue'
 import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
 import { useBlockEdit } from './use/useBlockEdit'
-import { useFrameHost } from './use/useFrameHost'
 import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
+import { pinWouldFillViewport } from './use/viewportPin'
 import { useMetronome } from './use/useMetronome'
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
@@ -985,20 +985,19 @@ function dismissHint(explicit = false) {
  * Zen: the chrome gets out of the way because the musician asked, not only
  * when auto-scroll decides they stopped moving.
  *
- * On a phone this *is* immersive mode — the frame is the only screen there is
- * to win — so the two are one state there and one gesture undoes both. The
- * native fullscreen is not asked for from here: a tap on the chart taking over
- * the whole browser would be a surprise, and the button is where that is asked.
+ * A tap never pins or unpins. On a ficha, pinning covers the host; undoing
+ * that mid-chorus dumps the musician onto a scrolled page with the dock under
+ * the fold. The Tela cheia button is the only way in or out of that screen.
+ * Native fullscreen is not asked for from here either: a tap taking over the
+ * browser would be a surprise.
  */
 function toggleZen() {
-  if (phone.value) {
-    void setImmersive(!fs.value, { native: false })
-    return
-  }
   const on = !zen.value
   setChromeGone(on)
   // The gesture is invisible: the first time has to say how to come back.
-  if (on && !zenSeen) {
+  // On a phone the standing hint already says it — a toast over it is the
+  // same sentence twice.
+  if (on && !zenSeen && !phone.value) {
     zenSeen = true
     toastMsg('Moldura escondida · toque na cifra para trazer de volta')
   }
@@ -1045,8 +1044,7 @@ function onSurfaceTap(e: MouseEvent) {
  * undone by `wake` on the same gesture; what is left is the deliberate kind.
  */
 function showChrome() {
-  if (fs.value) void setImmersive(false)
-  else if (zen.value) setChromeGone(false)
+  if (zen.value) setChromeGone(false)
 }
 
 /**
@@ -1055,13 +1053,13 @@ function showChrome() {
  * platform allows that too.
  *
  * The order matters because on a phone the second half is usually impossible:
- * iPhone Safari has no element fullscreen, and a cross-origin embed only gets
- * it if the host wrote `allow="fullscreen"`. Measured on a 390×844 phone, the
+ * iPhone Safari has no element fullscreen. Measured on a 390×844 phone, the
  * viewer's own header and dock reserve 82px above and 134px below — 26% of the
- * screen —
- * against ~110px of Safari chrome that no web API can touch. So the frame is
- * given away first and unconditionally, and the browser is asked for the rest
- * in parallel. That is the difference between a button that does something
+ * screen — against ~110px of Safari chrome that no web API can touch. So the
+ * frame is given away first and unconditionally, and the browser is asked for
+ * the rest in parallel. Pinning is what covers the *host* page (nav, tabs)
+ * when the chart is a box in a ficha; on a standalone 100dvh route it is a
+ * no-op. That is the difference between a button that does something
  * everywhere and one that did something in Chrome and nothing on the phone the
  * chart is actually read on.
  */
@@ -1070,8 +1068,8 @@ function setImmersive(on: boolean, opts: { native?: boolean } = {}): Promise<boo
   const before = pageSpot()
   fs.value = on
   pinToViewport(on)
-  // On a phone the viewer's own chrome is the screen being won back, so the
-  // two states are one there.
+  // Entering fullscreen on a phone hides the Titan chrome so the chart gets
+  // that band. Showing it again is a tap, and that tap must not unpin.
   if (phone.value) {
     zen.value = on
     capoOpen.value = false
@@ -1081,14 +1079,10 @@ function setImmersive(on: boolean, opts: { native?: boolean } = {}): Promise<boo
   // Leaving always releases the screen, however immersive was entered.
   if (!on) {
     void nativeFs.exit()
-    frameHost.expand(false)
+    measurePinGain()
     return Promise.resolve(false)
   }
   if (opts.native === false) return Promise.resolve(false)
-  // Two ways to the same screen, and they do not compete: in an embed the
-  // browser has no fullscreen to give and the host does, on a top-level page
-  // it is the other way round. Both are no-ops where they do not apply.
-  frameHost.expand(true)
   return nativeFs.request(root.value)
 }
 
@@ -1113,11 +1107,9 @@ async function toggleFs() {
 }
 
 /**
- * `position:fixed` is worth keeping even where it wins nothing: in a host page
- * that scrolls it does lift the viewer to the viewport, and it is what the
- * granted fullscreen element then fills. What it cannot do is escape an iframe
- * — inside a frame only the real API gets out, which is why the fullscreen
- * permission is part of the embed contract in docs/EMBED-SDA.md.
+ * `position:fixed` covers the host page in the same document — nav, tabs, the
+ * rest of a ficha. It is what the granted fullscreen element then fills. It is
+ * a no-op on a standalone route that already is the viewport.
  */
 function pinToViewport(on: boolean) {
   const el = root.value
@@ -1142,33 +1134,31 @@ const nativeFs = useFullscreen({
   },
 })
 /**
- * The other road to a full screen, and the only one an iPhone in an embed has:
- * the page that owns the frame puts the frame itself over the viewport. It is
- * offered only after a host says it can — see useFrameHost.
- */
-const frameHost = useFrameHost({
-  // The host may collapse the frame by its own hand, and immersive has to
-  // follow — same rule as the browser leaving fullscreen.
-  onExpanded: (on) => {
-    if (!on && fs.value) void setImmersive(false)
-  },
-})
-/**
  * Fixed once the root exists: whether this document may go fullscreen is a
- * property of the frame it was loaded in, not of the moment.
+ * property of the page it was loaded in, not of the moment.
  */
 const canNativeFs = ref(false)
+/**
+ * True when pinning the root would cover host chrome (ficha / in-page). False
+ * on a standalone page that already fills the visual viewport. Frozen while
+ * immersive, or the pinned box would report no gain and hide the exit control.
+ */
+const canPinFill = ref(false)
+function measurePinGain() {
+  if (fs.value) return
+  canPinFill.value = pinWouldFillViewport(root.value)
+}
 /**
  * Whether the button wins something the gesture cannot. That is the only thing
  * that ever decides whether it is drawn — never "is this a phone". A tap on the
  * chart puts the viewer's own chrome away everywhere; the button exists where
- * there is also a browser chrome or a host frame to take.
+ * there is also a browser chrome or a host page to cover.
  */
-const canWinScreen = computed(() => canNativeFs.value || frameHost.canExpand.value)
+const canWinScreen = computed(() => canNativeFs.value || canPinFill.value)
 /**
  * A control may not name something it cannot do. Where fullscreen is off the
- * table — iPhone Safari, an embed with no permission — the button says what it
- * will actually do, which is put the frame away.
+ * table — iPhone Safari on a page that already fills the screen — the button
+ * says what it will actually do, which is put the frame away.
  */
 const fsTitle = computed(() => {
   if (canWinScreen.value) return fs.value ? 'Sair da tela cheia' : 'Tela cheia'
@@ -1600,10 +1590,8 @@ function onKey(e: KeyboardEvent) {
     else if (toneOpen.value) toneOpen.value = false
     else if (moreOpen.value) moreOpen.value = false
     else if (sheet.value) sheet.value = false
-    // Immersive first: on a phone it carries zen with it, so one Escape puts
-    // the whole frame back rather than half of it.
-    else if (fs.value) void setImmersive(false)
     else if (zen.value) setChromeGone(false)
+    else if (fs.value) void setImmersive(false)
   }
 }
 
@@ -1844,6 +1832,7 @@ onMounted(() => {
     // height, not our width, and that is exactly what the guard looks for —
     // and the same height change is what leaves the chart with no room.
     guard.check()
+    measurePinGain()
     syncScrollRoom()
     const w = entries[0]?.contentRect.width ?? 900
     if (Math.abs(w - width.value) <= 4) return
@@ -1862,7 +1851,9 @@ onMounted(() => {
   nativeFs.start()
   canNativeFs.value = nativeFs.available(root.value)
   warnIfHostBlocksFullscreen(root.value)
-  frameHost.start()
+  measurePinGain()
+  window.visualViewport?.addEventListener('resize', measurePinGain)
+  document.addEventListener('scroll', measurePinGain, true)
   window.addEventListener('keydown', onKey)
   window.addEventListener('pointerdown', onDocDown, true)
   window.addEventListener('wheel', onWheel, { passive: false })
@@ -1890,7 +1881,8 @@ onUnmounted(() => {
     window.removeEventListener(ev, wake),
   )
   nativeFs.dispose()
-  frameHost.dispose()
+  window.visualViewport?.removeEventListener('resize', measurePinGain)
+  document.removeEventListener('scroll', measurePinGain, true)
   mq?.removeEventListener('change', onMq)
   ro?.disconnect()
   headRo?.disconnect()
@@ -2132,6 +2124,18 @@ defineExpose({
           <span style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;line-height:1;">{{ shownKey }}{{ hasCapo ? ` · capo ${capo}` : '' }}</span>
           <span style="font-size:9px;opacity:0.7;">▾</span>
         </button>
+        <!-- Reachable when the ficha only shows the top of the chart — the
+             dock is still under the fold until the frame is parked. Standalone
+             already has the dock on screen, so this stays off there. -->
+        <button
+          v-if="canPinFill"
+          data-fs
+          :aria-label="fsTitle"
+          :title="fsTitle"
+          :style="{ width: '44px', height: '44px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
+          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
+          @click="toggleFs"
+        ><span class="cpv-icon-full" aria-hidden="true" /></button>
       </div>
     </div>
 
@@ -2573,14 +2577,12 @@ defineExpose({
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
           <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
-          <!-- Only where it does something a tap on the chart does not. With
-               nothing to take — iPhone Safari on a page of its own, an embed
-               whose host cannot expand the frame — the button and the gesture
-               put the same chrome away, and a duplicate control is one more
-               thing crowding a row that was already full. Where there is a
-               browser chrome or a host frame to win, it earns its place. -->
+          <!-- Only where it does something a tap on the chart does not. The
+               tap hides Titan chrome; this button covers the host page or the
+               browser chrome. On a standalone iPhone there is nothing extra to
+               win, so the button stays off. -->
           <button
-            v-if="canWinScreen"
+            v-if="canWinScreen && !canPinFill"
             data-fs
             :aria-label="fsTitle"
             :title="fsTitle"
@@ -2777,7 +2779,7 @@ defineExpose({
       <span aria-hidden="true" style="flex:none;color:var(--danger);font-size:15px;line-height:1.35;">⚠</span>
       <span style="flex:1;min-width:0;">
         <span class="cpv-surface-warn-title">Viewer sem altura resolvível</span>
-        <span class="cpv-surface-warn-body">O ancestral imediato precisa de uma altura definida. Sem ela o viewer usa o piso de 460px e a barra de controle fica fora da tela. Ver <code>docs/EMBED-SDA.md</code> — detalhes no console.</span>
+        <span class="cpv-surface-warn-body">O ancestral imediato precisa de uma altura definida. Sem ela o viewer usa o piso de 460px e a barra de controle fica fora da tela. Ver <code>docs/CONSUMER.md</code> — detalhes no console.</span>
       </span>
       <button
         class="cpv-ghost"

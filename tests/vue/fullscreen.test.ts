@@ -104,7 +104,7 @@ describe('what the platform actually allows', () => {
     warnIfHostBlocksFullscreen(blocked.el)
     warnIfHostBlocksFullscreen(blocked.el)
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0]?.[0]).toContain('allow="fullscreen"')
+    expect(warn.mock.calls[0]?.[0]).toContain('Iframe não é caminho de integração')
   })
 })
 

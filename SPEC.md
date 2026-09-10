@@ -38,7 +38,7 @@ Ship:
 
 1. **Core** — parse → ViewModel → HTML themes → PDF + controller (no Vue).  
    **Input formats (engine):** **ChordPro** and **OnSong** (incl. mixed / chords-over-lyrics). Normalize to the same `ChordProView`. UI does **not** select format. See `docs/research-onsong-format.md`.
-2. **Vue UI** — complete 1-cifra surface (standalone demo + embeddable in sda-v2).
+2. **Vue UI** — complete 1-cifra surface (`ChordproViewer` SFC). Host Vue/Nuxt mounts it in-page (sized frame) and/or as a `100dvh` route. **Not** an iframe.
 3. SDA becomes thin host (shell + multi-cifra). Titan can preview via core/CLI or a minimal Vue demo without the full SDA shell.
 
 ---

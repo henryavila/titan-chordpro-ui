@@ -386,11 +386,12 @@ test('Tela cheia is on the dock itself, and not also buried in Mais', async ({ p
 
 /**
  * The bug this guards: on a phone the fullscreen button lit up, raised a toast
- * and moved nothing. Native fullscreen is unreachable on iPhone Safari and in
- * an embed with no permission, and the fallback was `position:fixed` on a root
- * that already filled the page plus 6px of padding — measured, a 20px gain on
- * an 844px screen. What is actually winnable is the band the viewer's own
- * chrome reserves: 82px above and 134px below, a quarter of the screen.
+ * and moved nothing. Native fullscreen is unreachable on iPhone Safari, and
+ * the fallback was `position:fixed` on a root that already filled the page
+ * plus 6px of padding — measured, a 20px gain on an 844px screen. What is
+ * actually winnable is the band the viewer's own chrome reserves: 82px above
+ * and 134px below, a quarter of the screen. On a standalone page that already
+ * fills the viewport, the button stays away; the gesture still wins that band.
  */
 /**
  * A real finger: `pointerdown` and then `click`. The two are not interchangeable
@@ -424,8 +425,8 @@ const immersiveSpot = (page: Page) => page.evaluate(() => {
 for (const native of [true, false]) {
   test(`immersive hands the chrome's band back to the chart ${native ? 'with' : 'without'} native fullscreen`, async ({ page }) => {
     if (!native) {
-      // iPhone Safari, and any embed with no `allow="fullscreen"`: the request
-      // is not merely refused, the method is not there to call.
+      // iPhone Safari: the request is not merely refused, the method is not
+      // there to call.
       await page.addInitScript(() => {
         Reflect.deleteProperty(Element.prototype, 'requestFullscreen')
         Reflect.deleteProperty(Element.prototype, 'webkitRequestFullscreen')
@@ -444,8 +445,8 @@ for (const native of [true, false]) {
     // control for the same act is clutter in a row that was already full.
     expect(before.label).toBe(native ? 'Tela cheia' : null)
 
-    // So the way in is the button where there is one, and the gesture where
-    // that is all there is.
+    // So the way in is the button where there is a screen to win, and the
+    // gesture where that is all there is (hide the Titan chrome).
     if (native) await page.locator('[data-fs]').click()
     else await tapChart(page)
     await page.waitForTimeout(600)
@@ -468,9 +469,18 @@ for (const native of [true, false]) {
     // Which the chart actually takes: the first line climbs by most of it.
     expect(before.firstRowY - after.firstRowY).toBeGreaterThan(60)
 
-    // A tap on the chart is the way back, and it lands exactly where it left.
+    // A tap brings the controls back. It does not leave the screen the button
+    // won — a musician holding an instrument cannot afford that.
     await tapChart(page)
     await page.waitForTimeout(600)
+    const shown = await immersiveSpot(page)
+    expect(shown.dockGone).toBe(false)
+    expect(shown.padTop).toBeGreaterThan(60)
+    if (native) {
+      expect(shown.label).toBe('Sair da tela cheia')
+      await page.locator('[data-fs]').click()
+      await page.waitForTimeout(600)
+    }
     expect(await immersiveSpot(page)).toEqual(before)
   })
 }
@@ -489,6 +499,8 @@ test('immersive mid-song holds the line the reader was on, and the top stays the
   await tapChart(page)
   await page.waitForTimeout(500)
   expect((await immersiveSpot(page)).scrollTop).toBe(0)
+  await page.locator('[data-fs]').click()
+  await page.waitForTimeout(500)
 
   // Mid-song the pixel under their eye is what has to survive.
   await page.evaluate(() => { (document.querySelector('.cpv-scroll') as HTMLElement).scrollTop = 800 })
@@ -505,59 +517,18 @@ test('immersive mid-song holds the line the reader was on, and the top stays the
   await page.waitForTimeout(600)
   expect(await line()).toBe(was)
   await tapChart(page)
+  await page.waitForTimeout(400)
+  await page.locator('[data-fs]').click()
   await page.waitForTimeout(600)
   expect((await immersiveSpot(page)).scrollTop).toBe(800)
 })
 
-test('a cross-origin embed with no fullscreen permission is told so, and still gets its frame back', async ({ page }) => {
-  const warnings: string[] = []
-  page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()) })
-  await page.setViewportSize({ width: 390, height: 900 })
-  await page.goto('/')
-  // Measured in both engines: the default Permissions Policy allowlist for
-  // `fullscreen` is `self`, so a same-origin frame inherits it and needs no
-  // attribute. Only a cross-origin one is refused — `localhost` and
-  // `127.0.0.1` are the same server and different origins, which is the whole
-  // trick here.
-  await page.evaluate(() => {
-    const f = document.createElement('iframe')
-    f.src = 'http://localhost:5187/'
-    f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:9999'
-    document.body.appendChild(f)
-  })
-  const inner = page.frameLocator('iframe')
-  await inner.locator('.cpv-chord').first().waitFor()
-  const frame = page.frames().find((f) => f.url().startsWith('http://localhost:5187'))!
-
-  // The shape the whole diagnosis rests on: every method present, permission not.
-  expect(await frame.evaluate(() => ({
-    hasMethod: !!(Element.prototype.requestFullscreen ?? (Element.prototype as unknown as Record<string, unknown>).webkitRequestFullscreen),
-    enabled: document.fullscreenEnabled ?? (document as unknown as { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled,
-  }))).toEqual({ hasMethod: true, enabled: false })
-  // Said out loud, because it fails in silence and reads as a bug in the viewer.
-  expect(warnings.join('\n')).toContain('allow="fullscreen"')
-
-  // `position:fixed` cannot escape a frame, so the browser chrome is out of
-  // reach here — and a button that could only repeat the gesture is not shown.
-  await expect(inner.locator('[data-fs]')).toHaveCount(0)
-  // The viewer's own band is still winnable, and the gesture still wins it.
-  const pad = () => inner.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))
-  expect(await pad()).toBeGreaterThan(60)
-  await tapChart(inner)
-  await page.waitForTimeout(600)
-  expect(await pad()).toBeLessThan(40)
-  await expect(inner.locator('.cpv-chrome-hint')).toHaveText('Toque na cifra para mostrar os controles')
-
-})
-
 /**
- * The iPhone-in-an-embed case, which has no road of its own: an iframe never
- * paints outside its box, and iPhone Safari has no element fullscreen to ask
- * for. The page that owns the frame is the only one that can give the screen,
- * so the viewer asks — and offers the button only after a host has said it
- * knows how.
+ * Composition A: the Vue component on a host page. No iframe. On iPhone there
+ * is no Fullscreen API, but pinning the root covers the host nav — that is a
+ * screen the tap-on-chart gesture cannot take, so the button earns its place.
  */
-test('in an embed with no fullscreen API, the host gives the screen and the viewer asks for it', async ({ page }) => {
+test('in a host page without native fullscreen, the button pins the viewer over the host chrome', async ({ page }) => {
   await page.addInitScript(() => {
     Reflect.deleteProperty(Element.prototype, 'requestFullscreen')
     Reflect.deleteProperty(Element.prototype, 'webkitRequestFullscreen')
@@ -565,75 +536,69 @@ test('in an embed with no fullscreen API, the host gives the screen and the view
     Object.defineProperty(document, 'webkitFullscreenEnabled', { get: () => false })
   })
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/?ficha=1')
+  await page.locator('.cpv-chord').first().waitFor()
 
-  // A host implementing the contract: answer `hello`, move the one element it
-  // owns, confirm. That is the whole of it.
-  await page.evaluate(() => {
-    const f = document.createElement('iframe')
-    f.src = '/'
-    f.style.cssText = 'position:absolute;left:0;top:100px;width:390px;height:600px;border:0'
-    const tell = (msg: Record<string, unknown>) =>
-      f.contentWindow?.postMessage({ source: 'titan-chordpro-host', ...msg }, '*')
-    window.addEventListener('message', (e) => {
-      if (e.source !== f.contentWindow) return
-      const m = e.data as { source?: string; type?: string; on?: boolean }
-      if (m?.source !== 'titan-chordpro') return
-      if (m.type === 'hello') return tell({ type: 'capabilities', expandFrame: true })
-      if (m.type === 'expand') {
-        f.style.cssText = m.on
-          ? 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483000'
-          : 'position:absolute;left:0;top:100px;width:390px;height:600px;border:0'
-        tell({ type: 'expanded', on: m.on === true })
-      }
-    })
-    document.body.appendChild(f)
+  const rootBox = () => page.locator('.cpv-root').evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    return { pos: getComputedStyle(el).position, y: Math.round(r.y), h: Math.round(r.height) }
+  })
+  const dockBox = () => page.locator('[data-scroll]').evaluate((el) => {
+    const r = el.closest('.cpv-chrome')!.getBoundingClientRect()
+    return { top: r.top, bottom: r.bottom }
   })
 
-  const inner = page.frameLocator('iframe')
-  await inner.locator('.cpv-chord').first().waitFor()
-  const frameBox = () => page.locator('iframe').evaluate((f) => {
-    const r = f.getBoundingClientRect()
-    return { pos: getComputedStyle(f).position, y: Math.round(r.y), h: Math.round(r.height) }
-  })
+  // A real ficha has article above and below. The chart is not the first
+  // screen — its dock starts under the fold. Tela cheia lives in the chart
+  // header, which is what peeks in.
+  expect(await page.locator('#host-above').evaluate((el) => el.getBoundingClientRect().height)).toBeGreaterThan(120)
+  expect(await page.locator('#host-below').evaluate((el) => el.getBoundingClientRect().height)).toBeGreaterThan(120)
+  const atLoad = await rootBox()
+  expect(atLoad.pos).toBe('relative')
+  expect(atLoad.y).toBeGreaterThan(40)
+  expect((await dockBox()).bottom).toBeGreaterThan(844)
 
-  // The button is back — not because this is a phone, but because there is now
-  // something for it to win that a tap on the chart cannot.
-  await expect(inner.locator('[data-fs]')).toHaveAttribute('aria-label', 'Tela cheia')
-  expect(await frameBox()).toEqual({ pos: 'absolute', y: 100, h: 600 })
+  await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Tela cheia')
+  const before = await rootBox()
 
-  await inner.locator('[data-fs]').click()
+  await page.locator('[data-fs]').click()
   await page.waitForTimeout(700)
-  // The host moved its own element; the viewer never touched it.
-  expect(await frameBox()).toEqual({ pos: 'fixed', y: 0, h: 844 })
-  // And the viewer's own chrome went with it, so the chart has the whole phone.
-  expect(await inner.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeLessThan(40)
-  await expect(inner.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
-
-  // The way out is the gesture, not the button: on a phone the dock went with
-  // the rest of the chrome, and the standing hint is what says so. One tap
-  // gives the host its frame back too.
-  expect(await inner.locator('[data-fs]').evaluate((el) => ({
+  const pinned = await rootBox()
+  expect(pinned.pos).toBe('fixed')
+  expect(pinned.y).toBe(0)
+  expect(pinned.h).toBeGreaterThanOrEqual(840)
+  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeLessThan(40)
+  await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
+  expect(await page.locator('[data-fs]').evaluate((el) => ({
     opacity: getComputedStyle(el.closest('.cpv-chrome')!).opacity,
     pointer: getComputedStyle(el).pointerEvents,
   }))).toEqual({ opacity: '0', pointer: 'none' })
-  await tapChart(inner)
-  await page.waitForTimeout(700)
-  expect(await frameBox()).toEqual({ pos: 'absolute', y: 100, h: 600 })
 
-  // A host that collapses the frame on its own — a back gesture, a close
-  // button of its own — has to take immersive down with it.
-  await inner.locator('[data-fs]').click()
+  // Tap is "show the controls". It must not dump the musician back onto the
+  // ficha — that is the gesture they will hit mid-chorus.
+  await tapChart(page)
   await page.waitForTimeout(700)
-  expect((await frameBox()).pos).toBe('fixed')
-  await page.evaluate(() => {
-    const f = document.querySelector('iframe') as HTMLIFrameElement
-    f.style.cssText = 'position:absolute;left:0;top:100px;width:390px;height:600px;border:0'
-    f.contentWindow?.postMessage({ source: 'titan-chordpro-host', type: 'expanded', on: false }, '*')
-  })
+  const shown = await rootBox()
+  expect(shown.pos).toBe('fixed')
+  expect(shown.y).toBe(0)
+  await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
+  expect(await page.locator('[data-fs]').evaluate((el) =>
+    getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('1')
+  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(60)
+
+  await page.locator('[data-fs]').click()
   await page.waitForTimeout(700)
-  await expect(inner.locator('[data-fs]')).toHaveAttribute('aria-label', 'Tela cheia')
-  expect(await inner.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(60)
+  const after = await rootBox()
+  expect(after.pos).toBe('relative')
+  expect(after.y).toBeGreaterThan(40)
+  await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Tela cheia')
+
+  // Parking the 100dvh frame puts the dock on the fold. On iPhone that is
+  // already the whole site screen — pinning would win nothing.
+  await page.locator('#host-frame').evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await page.waitForTimeout(300)
+  expect((await rootBox()).y).toBeLessThan(8)
+  expect((await dockBox()).bottom).toBeLessThanOrEqual(844 + 2)
 })
 
 /**
