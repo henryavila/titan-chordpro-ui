@@ -925,11 +925,12 @@
   color: inherit;
   overflow: visible;
 }
-/* In the count column flow (below the title strip, above 1–2–3) — not
-   absolute bottom:100%, which climbed into the head. */
+/* In the count column flow (below the title strip, above 1–2–3).
+   flex-start — not center: a ~51px word centered on a 20px column at
+   left:12px hangs off the root and loses the leading E. */
 .cpv-met-entrada {
   flex: none;
-  align-self: center;
+  align-self: flex-start;
   width: max-content;
   max-width: none;
   white-space: nowrap;

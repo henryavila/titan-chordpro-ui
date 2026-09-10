@@ -593,6 +593,22 @@ describe('count-in label sits below the title strip', () => {
     expect(top).toBeGreaterThanOrEqual(100)
   })
 
+  /**
+   * "entrada" is ~51px wide; the beat column is 20px and sits 12px from the
+   * left on a phone. Centering the word hangs ~15px off-screen and the root
+   * clips the E. Grow toward the chart instead.
+   */
+  it('aligns "entrada" to the start of the beat column, not centered on it', async () => {
+    const w = await viewerWithRoom()
+    observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 844 } }]))
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+
+    const style = getComputedStyle(w.get('[data-met-countin]').element)
+    expect(style.alignSelf, 'centered label overhangs the left edge on a phone').toBe('flex-start')
+  })
+
   it('drops the label when the count-in is cancelled, with the rest of the pulse', async () => {
     const w = await viewerWithRoom()
     await w.get('[data-scroll]').trigger('click')
