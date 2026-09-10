@@ -187,16 +187,18 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
   await page.locator('.cpv-chord').first().waitFor()
   const scroll = page.locator('.cpv-scroll')
 
-  // The old scroll stood dead still until the music had covered a whole
-  // anchor of paper — 25 to 96 seconds on the fixture corpus. It now eases
-  // into the anchor instead, so the page is alive from the first second.
+  // Rolar starts a silent count-in; the chart joins on the downbeat. The old
+  // scroll then stood dead still until the music had covered a whole anchor
+  // of paper — 25 to 96 seconds on the fixture corpus. It now eases into the
+  // anchor instead, so the page is alive from the first beat of the song.
   await page.locator('.cpv-chord').first().click()
   await page.keyboard.press(' ')
+  await expect(page.locator('[data-met-countin]')).toBeVisible()
+  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/, { timeout: 6000 })
   await expect.poll(() => scroll.evaluate((el) => el.scrollTop), { timeout: 4000 }).toBeGreaterThan(0)
   // Nothing is drawn across the chart while it is being read.
   await expect(page.locator('.cpv-guide')).toHaveCount(0)
-  // The bar at the top is what says the scroll is running.
-  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/)
   await page.keyboard.press(' ')
   await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
 
@@ -217,6 +219,30 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
 })
 
 /**
+ * The bug this guards: Rolar started the chart at once and left the metronome
+ * sitting there. They are one rehearsal: count-in, then the page, pulse on,
+ * oscillator off until the panel arms it.
+ */
+test('Rolar starts a silent count-in before the chart moves', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  await page.locator('[data-scroll]').click()
+  await expect(page.locator('[data-met-pulse]')).toBeVisible()
+  await expect(page.locator('[data-met-countin]')).toBeVisible()
+  await expect(page.locator('[data-scroll]')).toContainText('Parar')
+  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+
+  await page.locator('[data-met-btn]').click()
+  await expect(page.locator('[data-met-sound]')).toContainText('Só pulso visual')
+  await page.locator('[aria-label="Fechar"]').click()
+
+  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/, { timeout: 6000 })
+  await expect(page.locator('[data-met-countin]')).toHaveCount(0)
+})
+
+/**
  * A chart that fits the frame has nowhere to go, and the control has to say
  * so: pressing Rolar and watching nothing happen, forever, is the worst answer
  * the viewer can give.
@@ -232,6 +258,7 @@ test('Rolar goes dead when the chart fits the frame, and comes back when it does
   await expect(roll).toBeEnabled()
   await page.locator('[data-met-btn]').click()
   await expect(page.locator('[data-met-run]')).toContainText('Iniciar com a rolagem')
+  await expect(page.locator('[data-met-sound]')).toContainText('Só pulso visual')
   // One bar of count-in before the chart moves, on a chart that has a scroll.
   await page.locator('[data-met-run]').click()
   await expect(page.locator('[data-met-countin]')).toBeVisible()
@@ -268,6 +295,9 @@ test('the chart moves continuously, never a pixel at a time', async ({ page }) =
   await page.locator('.cpv-chord').first().waitFor()
   await page.locator('.cpv-chord').first().click()
   await page.keyboard.press(' ')
+  // Count-in holds the paper still for a bar; the continuity under test is
+  // the motion after the song has started, not the wait before it.
+  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/, { timeout: 6000 })
 
   const seen = await page.evaluate(
     () =>

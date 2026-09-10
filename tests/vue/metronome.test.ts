@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { computed, ref, type Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
-import { memoryStore } from '../../src/core'
+import { memoryStore, STORE_KEYS } from '../../src/core'
 import { useMetronome, type MetronomeOpts } from '../../src/vue/use/useMetronome'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -130,6 +130,51 @@ describe('the click and the scroll are one control', () => {
     const { m, calls } = met()
     m.stop()
     expect(calls.stop).toBe(0)
+  })
+})
+
+// ------------------------------------------------------- silent until asked
+
+describe('the click is a visual pulse until the panel turns the sound on', () => {
+  it('starts silent — the panel is what arms the oscillator', () => {
+    const AC = vi.fn()
+    vi.stubGlobal('AudioContext', AC)
+    try {
+      const { m } = met()
+      expect(m.sound.value).toBe(false)
+      m.start()
+      expect(AC, 'AudioContext was created before the click was armed').not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('builds the oscillator only after the click is turned on', () => {
+    const AC = vi.fn(function AudioContext() {
+      return {
+        state: 'running',
+        currentTime: 0,
+        resume: () => {},
+        close: () => {},
+        createOscillator: () => {
+          throw new Error('no oscillator in this test')
+        },
+        createGain: () => ({
+          gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+          connect() {},
+        }),
+      }
+    })
+    vi.stubGlobal('AudioContext', AC)
+    try {
+      const { m } = met()
+      m.toggleSound()
+      expect(m.sound.value).toBe(true)
+      m.start()
+      expect(AC).toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 
@@ -370,5 +415,93 @@ describe('the beat readout hangs off the chart, not the window', () => {
     const w = await viewerAt(1600)
     expect(w.find('[data-met-countin]').exists()).toBe(false)
     expect(w.get('[data-met-pulse]').text()).toContain('60')
+  })
+})
+
+/**
+ * jsdom reports every element as zero height, so the viewer thinks the chart
+ * fits and greys Rolar out. Giving the scroller a body is what makes Rolar a
+ * real control, which is the whole point of these cases.
+ */
+async function viewerWithRoom(props: Record<string, unknown> = {}) {
+  const w = mount(ChordproViewer, {
+    props: { source: CHART, autoHide: false, storage: memoryStore(), ...props },
+    attachTo: document.body,
+  })
+  mounted.push(w)
+  await flushPromises()
+  const el = w.get('[data-cpv-scroll]').element as HTMLElement
+  Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+  Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+  observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
+  await flushPromises()
+  return w
+}
+
+describe('Rolar starts the metronome with the chart', () => {
+  it('counts in silently, and does not move the chart until the bar is done', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+
+    expect(w.find('[data-met-pulse]').exists(), 'Rolar did not start the metronome').toBe(true)
+    expect(w.find('[data-met-countin]').exists(), 'Rolar skipped the count-in').toBe(true)
+    expect(w.get('[data-scroll]').text()).toMatch(/Parar/)
+    expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    expect(w.text()).toContain('Só pulso visual')
+  })
+
+  it('a second tap on Rolar during the count-in cancels, instead of skipping it', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-countin]').exists()).toBe(true)
+
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+    expect(w.get('[data-scroll]').text()).toMatch(/Rolar/)
+    expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+  })
+
+  it('leaves the metronome alone when the chart fits the frame', async () => {
+    const w = mount(ChordproViewer, {
+      props: { source: CHART, autoHide: false, storage: memoryStore() },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+  })
+
+  it('does not start the click when the reader unlinked the two', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    const follow = w.findAll('.cpv-met-switch')[1]!
+    await follow.trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+    expect(w.get('.cpv-progress').classes()).toContain('is-live')
+  })
+
+  it('keeps a click the musician turned on, so the next song has sound', async () => {
+    const storage = memoryStore()
+    const w = await viewerWithRoom({ storage })
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.get('[data-met-sound]').trigger('click')
+    await flushPromises()
+    expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ metSound: true })
   })
 })

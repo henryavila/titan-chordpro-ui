@@ -181,7 +181,7 @@ const geom = computed(() =>
         </span>
       </div>
 
-      <button class="cpv-met-switch" @click="emit('toggleSound')">
+      <button class="cpv-met-switch" data-met-sound @click="emit('toggleSound')">
         <span :style="{ background: sound ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
           <span :style="{ left: sound ? '14px' : '2px', background: sound ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
         </span>

@@ -43,7 +43,8 @@ export type MetronomeOpts = {
 export function useMetronome(opts: MetronomeOpts) {
   const running = ref(false)
   const beat = ref(0)
-  const sound = ref(true)
+  /** Off until the panel arms it. Rolar still starts the pulse and the count-in. */
+  const sound = ref(false)
   /** Starting the click also starts the scroll, and stopping one stops both. */
   const follow = ref(true)
   /** One bar of click before the chart starts moving, so the musician enters with it. */

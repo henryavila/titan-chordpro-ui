@@ -350,8 +350,6 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
  * triangle that then reads as "tocar a música".
  */
 const dockPlayLabeled = computed(() => width.value >= 360)
-const dockPlayLabel = computed(() => (dockPlayLabeled.value ? (scrolling.value ? 'Parar' : 'Rolar') : ''))
-const dockPlayName = computed(() => (scrolling.value ? 'Parar' : 'Rolar'))
 const toastBottom = computed(() => {
   const base = compact.value ? 124 : 78
   // Almost every block action raises a toast, and the selection bar sits right
@@ -630,8 +628,18 @@ const met = useMetronome({
   onPanelClose: () => (metOpen.value = false),
 })
 
+/**
+ * Count-in is already a start: the chart has not moved yet, but Rolar has
+ * been asked and has to read as Parar — a second tap cancels, it does not
+ * skip the bar.
+ */
+const rollLive = computed(
+  () => scrolling.value || (met.follow.value && met.running.value && canScroll.value),
+)
+const dockPlayLabel = computed(() => (dockPlayLabeled.value ? (rollLive.value ? 'Parar' : 'Rolar') : ''))
+const dockPlayName = computed(() => (rollLive.value ? 'Parar' : 'Rolar'))
 const metPulseTitle = computed(() =>
-  met.follow.value && scrolling.value ? 'Parar o metrônomo e a rolagem (M)' : 'Parar o metrônomo (M)',
+  met.follow.value && rollLive.value ? 'Parar o metrônomo e a rolagem (M)' : 'Parar o metrônomo (M)',
 )
 
 function toggleMetPanel() {
@@ -653,7 +661,7 @@ function persistPrefs() {
     if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
-    if (met.sound.value === false) p.metSound = false
+    if (met.sound.value) p.metSound = true
     if (met.follow.value === false) p.metFollow = false
     if (met.countInOn.value === false) p.metCountIn = false
     if (Object.keys(p).length) store.set(STORE_KEYS.prefs, JSON.stringify(p))
@@ -927,12 +935,18 @@ function startScroll() {
 }
 
 /**
- * The scroll is used on its own most of the time, so starting it does not
- * start the click. Stopping does — `stopScroll` carries that for every exit.
+ * Linked (the default): Rolar is the same start as the click — count-in, then
+ * the chart. Independent: the two stay two controls, and Rolar only rolls.
+ * Stopping still goes through `stopScroll`, which silences a linked click.
  */
 function toggleScroll() {
-  if (scrolling.value) stopScroll()
-  else if (canScroll.value) startScroll()
+  if (scrolling.value || (met.follow.value && met.running.value)) {
+    stopScroll()
+    return
+  }
+  if (!canScroll.value) return
+  if (met.follow.value) met.start()
+  else startScroll()
 }
 
 // -------------------------------------------------------------------- controls
@@ -2459,12 +2473,12 @@ defineExpose({
           data-scroll
           :title="scrollTitle"
           :disabled="scrollOff"
-          :style="{ background: scrolling ? 'var(--pill)' : 'transparent', color: scrolling ? 'var(--pill-ink)' : 'var(--text)', border: `1px solid ${scrolling ? 'var(--pill)' : 'var(--line)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+          :style="{ background: rollLive ? 'var(--pill)' : 'transparent', color: rollLive ? 'var(--pill-ink)' : 'var(--text)', border: `1px solid ${rollLive ? 'var(--pill)' : 'var(--line)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
           class="cpv-bar-btn"
           style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:9px;"
           @click="toggleScroll"
         >
-          <span :class="scrolling ? 'cpv-icon-stop' : 'cpv-icon-play'" aria-hidden="true" />{{ scrolling ? 'Parar' : 'Rolar' }}
+          <span :class="rollLive ? 'cpv-icon-stop' : 'cpv-icon-play'" aria-hidden="true" />{{ rollLive ? 'Parar' : 'Rolar' }}
         </button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
         <button class="cpv-ghost" aria-label="Diminuir tipografia" title="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
@@ -2586,11 +2600,11 @@ defineExpose({
             :aria-label="dockPlayName"
             :title="scrollTitle"
             :disabled="scrollOff"
-            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: dockPlayLabeled ? '0 20px' : '0', gap: dockPlayLabeled ? '9px' : '0', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+            :style="{ background: rollLive ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: dockPlayLabeled ? '0 20px' : '0', gap: dockPlayLabeled ? '9px' : '0', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
             style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
             @click="toggleScroll"
           >
-            <span :class="scrolling ? 'cpv-icon-stop' : 'cpv-icon-play'" style="flex:none;width:11px;height:11px;" aria-hidden="true" />{{ dockPlayLabel }}
+            <span :class="rollLive ? 'cpv-icon-stop' : 'cpv-icon-play'" style="flex:none;width:11px;height:11px;" aria-hidden="true" />{{ dockPlayLabel }}
           </button>
           <span :style="{ height: dockCtrlH }" style="flex:none;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:14px;background:var(--surface);">
             <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
