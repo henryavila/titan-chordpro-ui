@@ -47,6 +47,8 @@ import MyVersionPanel from './overlay/MyVersionPanel.vue'
 import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
 import { useBlockEdit } from './use/useBlockEdit'
+import { useFrameHost } from './use/useFrameHost'
+import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
 import { useMetronome } from './use/useMetronome'
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
@@ -283,7 +285,30 @@ const padBottom = computed(() => {
   // The dock grows when auto-scroll starts: the last line must not hide under it.
   return `${base + (phone.value ? (scrolling.value ? 54 : 10) : 0)}px`
 })
+/**
+ * The chrome is gone because the reader asked for it — not because auto-scroll
+ * noticed them go still. Only the deliberate kind gives its band back: taking
+ * the reserve away under the idle auto-hide would slide the chart out from
+ * under someone mid-song, which is the one thing a chart may never do.
+ */
+const chromeGone = computed(() => zen.value && !sheet.value && !isEdit.value)
+/**
+ * With the header and the dock away, the reserve they stood in is dead space:
+ * ~82px above and ~134px below on a 390px phone, a quarter of the screen held
+ * for controls that are not there.
+ *
+ * What stays is an edge for the eye, the phone's own safe area — a notch does
+ * not go away when the chrome does — and, at the bottom, the one thing still
+ * drawn there: the hint saying how to bring the chrome back, measured at 42px
+ * from the base. The same rule as the dock's own reserve, for the same reason:
+ * the last line of the song may not end up underneath it.
+ */
+const zenPad = computed(() => ({
+  top: 'calc(12px + env(safe-area-inset-top))',
+  bottom: 'calc(44px + env(safe-area-inset-bottom))',
+}))
 const pagePad = computed(() => {
+  if (chromeGone.value) return `${zenPad.value.top} ${padX.value} ${zenPad.value.bottom}`
   // The header changes height (subtitle, key on its own row): measure, do not guess.
   const extra = fs.value ? 8 : compact.value ? 16 : 22
   const top = Math.round(chromeTop.value + Math.max(56, headH.value || 72) + extra)
@@ -730,6 +755,59 @@ function syncScrollRoom() {
   scrollRoom.value = el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0
 }
 
+/** Put a running scroll back on its musical position after a relayout. */
+function reseatScroll() {
+  const el = scroller.value
+  if (!el) return
+  rebuildTimeline()
+  const max = el.scrollHeight - el.clientHeight
+  const px = scrollAtPx(pxAtBars(timelineFor(), playhead * totalBars()), anchor())
+  el.scrollTop = Math.max(0, Math.min(max, px))
+  written = el.scrollTop
+}
+
+/** Where the reader was, taken before anything is allowed to move. */
+type PageSpot = { padTop: number; scroll: number; max: number }
+
+function pageSpot(): PageSpot {
+  const el = scroller.value
+  return {
+    padTop: pageTopPad(),
+    scroll: el?.scrollTop ?? 0,
+    max: el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0,
+  }
+}
+
+/**
+ * The reserved chrome band changes height without the frame changing size, so
+ * no ResizeObserver fires and nothing puts the chart back under the reader's
+ * eye. Mid-song the musical position is the truth — the playhead survives any
+ * relayout; standing still, the pixel they were reading is.
+ */
+function reflowPage(before: PageSpot) {
+  void nextTick(() => {
+    const el = scroller.value
+    timeline = null
+    if (!el) return
+    syncScrollRoom()
+    if (scrolling.value) {
+      reseatScroll()
+      return
+    }
+    const max = Math.max(0, el.scrollHeight - el.clientHeight)
+    // The two ends are places, not offsets. Somebody parked at the top is at
+    // the *start of the song*, and giving the reserve back must not shove them
+    // into the first verse; the same holds for the last line.
+    if (before.scroll <= 1) el.scrollTop = 0
+    else if (before.scroll >= before.max - 1) el.scrollTop = max
+    else {
+      const shift = (pageTopPad() || before.padTop) - before.padTop
+      el.scrollTop = Math.max(0, Math.min(max, before.scroll + shift))
+    }
+    written = el.scrollTop
+  })
+}
+
 function totalBars(): number {
   const t = timelineFor()
   return t ? t.bars : 0
@@ -906,17 +984,37 @@ function dismissHint(explicit = false) {
 /**
  * Zen: the chrome gets out of the way because the musician asked, not only
  * when auto-scroll decides they stopped moving.
+ *
+ * On a phone this *is* immersive mode — the frame is the only screen there is
+ * to win — so the two are one state there and one gesture undoes both. The
+ * native fullscreen is not asked for from here: a tap on the chart taking over
+ * the whole browser would be a surprise, and the button is where that is asked.
  */
 function toggleZen() {
+  if (phone.value) {
+    void setImmersive(!fs.value, { native: false })
+    return
+  }
   const on = !zen.value
-  zen.value = on
-  capoOpen.value = false
-  toneOpen.value = false
+  setChromeGone(on)
   // The gesture is invisible: the first time has to say how to come back.
   if (on && !zenSeen) {
     zenSeen = true
     toastMsg('Moldura escondida · toque na cifra para trazer de volta')
   }
+}
+
+/**
+ * Hiding the chrome moves the chart: the band it stood in stops being
+ * reserved. That is the whole point, and it is also why the reader's place has
+ * to be carried across the relayout by hand.
+ */
+function setChromeGone(on: boolean) {
+  const before = pageSpot()
+  zen.value = on
+  capoOpen.value = false
+  toneOpen.value = false
+  reflowPage(before)
 }
 
 /**
@@ -932,38 +1030,152 @@ function onSurfaceTap(e: MouseEvent) {
   } catch {
     /* selection unavailable */
   }
+  // A tap while the chrome is away is a request to see it — whatever put it
+  // away, the reader's own gesture or auto-scroll deciding they had gone
+  // still. Only a tap while it is up can mean "put it away".
+  if (chromeHiddenAtTouch) {
+    showChrome()
+    return
+  }
   toggleZen()
 }
 
 /**
- * The fullscreen API fails silently inside a webview/iframe without
- * permission, so immersive mode is app state — it turns on right away — and
- * native fullscreen is only asked for in parallel when the browser allows it.
+ * Bring the chrome back, whichever thing hid it. The idle auto-hide is already
+ * undone by `wake` on the same gesture; what is left is the deliberate kind.
  */
-function toggleFs() {
-  const el = root.value
-  const want = !fs.value
-  try {
-    if (want) el?.requestFullscreen?.().catch(() => {})
-    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
-  } catch {
-    /* fullscreen denied — immersive mode still applies */
-  }
-  fakeFs(want)
-  toastMsg(want ? 'Modo imersivo · F ou Esc para sair' : 'Modo imersivo desligado')
+function showChrome() {
+  if (fs.value) void setImmersive(false)
+  else if (zen.value) setChromeGone(false)
 }
 
-function fakeFs(on: boolean) {
+/**
+ * Immersive is not the Fullscreen API with a fallback bolted on — it is the
+ * screen the viewer already owns, plus the browser's own chrome when the
+ * platform allows that too.
+ *
+ * The order matters because on a phone the second half is usually impossible:
+ * iPhone Safari has no element fullscreen, and a cross-origin embed only gets
+ * it if the host wrote `allow="fullscreen"`. Measured on a 390×844 phone, the
+ * viewer's own header and dock reserve 82px above and 134px below — 26% of the
+ * screen —
+ * against ~110px of Safari chrome that no web API can touch. So the frame is
+ * given away first and unconditionally, and the browser is asked for the rest
+ * in parallel. That is the difference between a button that does something
+ * everywhere and one that did something in Chrome and nothing on the phone the
+ * chart is actually read on.
+ */
+function setImmersive(on: boolean, opts: { native?: boolean } = {}): Promise<boolean> {
+  if (fs.value === on) return Promise.resolve(nativeFs.active.value)
+  const before = pageSpot()
+  fs.value = on
+  pinToViewport(on)
+  // On a phone the viewer's own chrome is the screen being won back, so the
+  // two states are one there.
+  if (phone.value) {
+    zen.value = on
+    capoOpen.value = false
+    toneOpen.value = false
+  }
+  reflowPage(before)
+  // Leaving always releases the screen, however immersive was entered.
+  if (!on) {
+    void nativeFs.exit()
+    frameHost.expand(false)
+    return Promise.resolve(false)
+  }
+  if (opts.native === false) return Promise.resolve(false)
+  // Two ways to the same screen, and they do not compete: in an embed the
+  // browser has no fullscreen to give and the host does, on a top-level page
+  // it is the other way round. Both are no-ops where they do not apply.
+  frameHost.expand(true)
+  return nativeFs.request(root.value)
+}
+
+/** The reserve the chart is standing on right now, before anything moves it. */
+function pageTopPad(): number {
+  const pg = page.value
+  return pg ? parseFloat(getComputedStyle(pg).paddingTop) || 0 : 0
+}
+
+async function toggleFs() {
+  const want = !fs.value
+  // The word for what happened, never the word for what was asked: the request
+  // is async, and on most phones it comes back refused.
+  const native = await setImmersive(want)
+  // On a phone the chrome is simply gone, and the standing hint on screen
+  // already says how to bring it back: a toast over it is the same sentence
+  // twice. What changed is the screen, which is feedback enough.
+  if (phone.value) return
+  if (!want) toastMsg('Modo imersivo desligado')
+  else if (native) toastMsg('Tela cheia · Esc ou F para sair')
+  else toastMsg('Moldura reduzida · o navegador não dá tela cheia aqui · F para sair')
+}
+
+/**
+ * `position:fixed` is worth keeping even where it wins nothing: in a host page
+ * that scrolls it does lift the viewer to the viewport, and it is what the
+ * granted fullscreen element then fills. What it cannot do is escape an iframe
+ * — inside a frame only the real API gets out, which is why the fullscreen
+ * permission is part of the embed contract in docs/EMBED-SDA.md.
+ */
+function pinToViewport(on: boolean) {
   const el = root.value
   if (!el) return
-  if (on) {
-    Object.assign(el.style, { position: 'fixed', inset: '0', height: '100%', zIndex: '2147483000' })
-    fs.value = true
-  } else {
-    Object.assign(el.style, { position: 'relative', inset: 'auto', height: '100%', zIndex: 'auto' })
-    fs.value = false
-  }
+  Object.assign(
+    el.style,
+    on
+      ? { position: 'fixed', inset: '0', height: '100%', zIndex: '2147483000' }
+      : { position: 'relative', inset: 'auto', height: '100%', zIndex: 'auto' },
+  )
 }
+
+/**
+ * Native fullscreen with both spellings, and an honest answer about whether it
+ * exists here at all — the button's own label depends on it.
+ */
+const nativeFs = useFullscreen({
+  // Leaving through the browser's own Esc, or the Android system gesture, has
+  // to turn immersive mode off too.
+  onChange: (active) => {
+    if (!active && fs.value) setImmersive(false)
+  },
+})
+/**
+ * The other road to a full screen, and the only one an iPhone in an embed has:
+ * the page that owns the frame puts the frame itself over the viewport. It is
+ * offered only after a host says it can — see useFrameHost.
+ */
+const frameHost = useFrameHost({
+  // The host may collapse the frame by its own hand, and immersive has to
+  // follow — same rule as the browser leaving fullscreen.
+  onExpanded: (on) => {
+    if (!on && fs.value) void setImmersive(false)
+  },
+})
+/**
+ * Fixed once the root exists: whether this document may go fullscreen is a
+ * property of the frame it was loaded in, not of the moment.
+ */
+const canNativeFs = ref(false)
+/**
+ * Whether the button wins something the gesture cannot. That is the only thing
+ * that ever decides whether it is drawn — never "is this a phone". A tap on the
+ * chart puts the viewer's own chrome away everywhere; the button exists where
+ * there is also a browser chrome or a host frame to take.
+ */
+const canWinScreen = computed(() => canNativeFs.value || frameHost.canExpand.value)
+/**
+ * A control may not name something it cannot do. Where fullscreen is off the
+ * table — iPhone Safari, an embed with no permission — the button says what it
+ * will actually do, which is put the frame away.
+ */
+const fsTitle = computed(() => {
+  if (canWinScreen.value) return fs.value ? 'Sair da tela cheia' : 'Tela cheia'
+  // What is left is the wide bar with nothing to take: there the chrome stays
+  // and only the reading column tightens, so that is what it says.
+  return fs.value ? 'Sair do modo imersivo' : 'Modo imersivo'
+})
 
 // ------------------------------------------------------------------ edit (E0)
 
@@ -1388,12 +1600,30 @@ function onKey(e: KeyboardEvent) {
     else if (toneOpen.value) toneOpen.value = false
     else if (moreOpen.value) moreOpen.value = false
     else if (sheet.value) sheet.value = false
-    else if (zen.value) zen.value = false
-    else if (fs.value && !document.fullscreenElement) toggleFs()
+    // Immersive first: on a phone it carries zen with it, so one Escape puts
+    // the whole frame back rather than half of it.
+    else if (fs.value) void setImmersive(false)
+    else if (zen.value) setChromeGone(false)
   }
 }
 
+/**
+ * What the chrome was doing at the instant the finger landed.
+ *
+ * A tap arrives as `pointerdown` and then `click`, and `wake` answers the
+ * `pointerdown` by clearing the idle auto-hide. So by the time the click ran,
+ * the chrome was already on its way back and the tap read "the controls are up,
+ * put them away" — hiding the very controls the reader was reaching for, and
+ * doing it during auto-scroll, when the auto-hide would take them again 2.6s
+ * later whatever happened. That is why they never came back.
+ *
+ * This listener is on the capture phase, so it reads the state before `wake`
+ * gets to change it.
+ */
+let chromeHiddenAtTouch = false
+
 function onDocDown(e: PointerEvent) {
+  chromeHiddenAtTouch = chromeHidden.value
   if (!capoOpen.value) return
   const box = capoBox.value
   if (box && !box.contains(e.target as Node)) capoOpen.value = false
@@ -1414,11 +1644,6 @@ function onWheel(e: WheelEvent) {
   const max = el.scrollHeight - el.clientHeight
   const stuck = (e.deltaY < 0 && el.scrollTop <= 0) || (e.deltaY > 0 && el.scrollTop >= max - 1)
   if (stuck) e.preventDefault()
-}
-
-function onFsChange() {
-  // Leaving through the browser's own Esc has to turn immersive mode off too.
-  if (!document.fullscreenElement && fs.value) fakeFs(false)
 }
 
 function onMq() {
@@ -1624,14 +1849,9 @@ onMounted(() => {
     if (Math.abs(w - width.value) <= 4) return
     width.value = w
     void nextTick(() => {
-      const el = scroller.value
       timeline = null
-      if (!el || !scrolling.value) return
-      rebuildTimeline()
-      const max = el.scrollHeight - el.clientHeight
-      const px = scrollAtPx(pxAtBars(timelineFor(), playhead * totalBars()), anchor())
-      el.scrollTop = Math.max(0, Math.min(max, px))
-      written = el.scrollTop
+      if (!scroller.value || !scrolling.value) return
+      reseatScroll()
     })
   })
   if (root.value) {
@@ -1639,7 +1859,10 @@ onMounted(() => {
     width.value = root.value.getBoundingClientRect().width || width.value
     applyThemeVars(root.value, effTheme.value, props.accent, props.accentStrength)
   }
-  document.addEventListener('fullscreenchange', onFsChange)
+  nativeFs.start()
+  canNativeFs.value = nativeFs.available(root.value)
+  warnIfHostBlocksFullscreen(root.value)
+  frameHost.start()
   window.addEventListener('keydown', onKey)
   window.addEventListener('pointerdown', onDocDown, true)
   window.addEventListener('wheel', onWheel, { passive: false })
@@ -1666,7 +1889,8 @@ onUnmounted(() => {
   ;(['pointermove', 'pointerdown', 'wheel', 'touchstart', 'keydown'] as const).forEach((ev) =>
     window.removeEventListener(ev, wake),
   )
-  document.removeEventListener('fullscreenchange', onFsChange)
+  nativeFs.dispose()
+  frameHost.dispose()
   mq?.removeEventListener('change', onMq)
   ro?.disconnect()
   headRo?.disconnect()
@@ -2273,7 +2497,7 @@ defineExpose({
           <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
         </button>
         <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
-        <button class="cpv-bar-btn" :style="{ background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }" aria-label="Tela cheia" title="Tela cheia (F)" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:12px;cursor:pointer;" @click="toggleFs"><span class="cpv-icon-full" aria-hidden="true" /></button>
+        <button class="cpv-bar-btn" :style="{ background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }" :aria-label="fsTitle" :title="`${fsTitle} (F)`" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:12px;cursor:pointer;" @click="toggleFs"><span class="cpv-icon-full" aria-hidden="true" /></button>
       </div>
     </div>
 
@@ -2349,10 +2573,17 @@ defineExpose({
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
           <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+          <!-- Only where it does something a tap on the chart does not. With
+               nothing to take — iPhone Safari on a page of its own, an embed
+               whose host cannot expand the frame — the button and the gesture
+               put the same chrome away, and a duplicate control is one more
+               thing crowding a row that was already full. Where there is a
+               browser chrome or a host frame to win, it earns its place. -->
           <button
+            v-if="canWinScreen"
             data-fs
-            aria-label="Tela cheia"
-            :title="fs ? 'Sair da tela cheia' : 'Tela cheia'"
+            :aria-label="fsTitle"
+            :title="fsTitle"
             :style="{ width: dockIconSize, height: dockCtrlH, background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
             style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
             @click="toggleFs"

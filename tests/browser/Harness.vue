@@ -9,6 +9,11 @@ async function loadFonts() {
   await Promise.all([document.fonts.load('18px Figtree'), document.fonts.load('18px Sora'), document.fonts.load('700 22px "Space Mono"')])
   fonts.value = 'loaded'
 }
+/**
+ * Off by default so no test has to fight a chrome that vanishes under it; the
+ * one test that is about the auto-hide asks for it with `?autoHide=1`.
+ */
+const autoHide = new URLSearchParams(location.search).get('autoHide') === '1'
 const theme = ref<'auto' | 'light' | 'dark'>('light')
 const themeControl = ref<'host' | 'preference'>('host')
 </script>
@@ -19,6 +24,6 @@ const themeControl = ref<'host' | 'preference'>('host')
     <select id="host-modes" v-model="modes"><option>content</option><option>local</option></select>
     <select id="host-theme" v-model="theme"><option>light</option><option>dark</option><option>auto</option></select>
     <select id="host-control" v-model="themeControl"><option>host</option><option>preference</option></select>
-    <ChordproViewer :source="source" :theme="theme" :theme-control="themeControl" :auto-hide="false" :modes="modes" song-id="sda-86" />
+    <ChordproViewer :source="source" :theme="theme" :theme-control="themeControl" :auto-hide="autoHide" :modes="modes" song-id="sda-86" />
   </div>
 </template>
