@@ -325,6 +325,13 @@ const countLeft = computed(() =>
   pageMax.value === '100%' ? '12px' : `max(12px, calc((100% - ${pageMax.value}) / 2 - 28px))`,
 )
 /**
+ * Below the padded title strip (chromeTop + head), not `headH` alone — that
+ * ignored the chrome pad and parked "entrada" against the title.
+ */
+const countTop = computed(
+  () => `${chromeTop.value + Math.max(56, headH.value || 72) + 8}px`,
+)
+/**
  * A chart shorter than the frame has nowhere to go, and a Rolar button that
  * cannot move anything is a button that does nothing. It stays live while the
  * scroll runs, though: that is the only way to stop it.
@@ -2885,7 +2892,7 @@ defineExpose({
       type="button"
       class="cpv-met-count"
       :title="metPulseTitle"
-      :style="{ top: `${headH + 22}px`, left: countLeft }"
+      :style="{ top: countTop, left: countLeft }"
       @click="met.toggle()"
     >
       <span v-if="met.countIn.value" data-met-countin class="cpv-met-entrada">entrada</span>

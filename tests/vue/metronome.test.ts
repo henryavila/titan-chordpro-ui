@@ -550,3 +550,58 @@ describe('Rolar starts the metronome with the chart', () => {
     expect(getComputedStyle(box.element).height).toBe('20px')
   })
 })
+
+/**
+ * "entrada" labels the count-in bar. Absolute `bottom: 100%` pulled it up into
+ * the title strip; it must sit in the count column flow — below the strip,
+ * above 1–2–3.
+ */
+describe('count-in label sits below the title strip', () => {
+  it('keeps "entrada" in normal flow above the beat numbers', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+
+    const label = w.get('[data-met-countin]').element
+    const firstBeat = w.get('.cpv-met-beat').element
+    expect(label.compareDocumentPosition(firstBeat) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    const style = getComputedStyle(label)
+    expect(style.position, 'absolute bottom:100% pulls the label into the title strip').not.toBe('absolute')
+  })
+
+  it('does not pin the label with bottom:100%', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    const style = getComputedStyle(w.get('[data-met-countin]').element)
+    // jsdom keeps the specified percentage when layout cannot resolve it.
+    expect(style.bottom === '100%' || style.bottom === '100').toBe(false)
+  })
+
+  it('clears the chrome pad when placing the count column', async () => {
+    const w = await viewerWithRoom()
+    observers.forEach((cb) => cb([{ contentRect: { width: 1600, height: 800 } }]))
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    const top = Number.parseFloat(
+      (w.get('[data-met-count]').attributes('style') ?? '').match(/top:\s*([\d.]+)px/)?.[1] ?? 'NaN',
+    )
+    // xl chromeTop=20 + headH(72) + 8 = 100. The old `headH+22` landed at 94 and
+    // parked "entrada" against the title strip.
+    expect(top).toBeGreaterThanOrEqual(100)
+  })
+
+  it('drops the label when the count-in is cancelled, with the rest of the pulse', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-countin]').exists()).toBe(true)
+
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-countin]').exists()).toBe(false)
+    expect(w.find('[data-met-count]').exists()).toBe(false)
+  })
+})
