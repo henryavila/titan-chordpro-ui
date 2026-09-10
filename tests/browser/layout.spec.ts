@@ -337,6 +337,40 @@ test('every dock control stays reachable across phone widths', async ({ page }) 
         expect(b.w, `${width}px: "${b.label}" is ${b.w}px wide`).toBeGreaterThanOrEqual(40)
       }
     }
+
+    const labeled = await page.locator('[data-scroll]').textContent()
+    if (width >= 360) {
+      expect(labeled, `${width}px hid Rolar and left a hole`).toMatch(/Rolar|Parar/)
+    } else {
+      expect((labeled ?? '').trim(), `${width}px should drop the word`).toBe('')
+    }
+  }
+})
+
+/**
+ * Hiding "Rolar" used to park ~50px in a flex spacer after a 44px play
+ * triangle. If the word cannot fit, leftover must be shared — not one canyon
+ * between the primary control and the rest of the dock.
+ */
+test('dock leftover is not a hole after Rolar', async ({ page }) => {
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 860 })
+    await page.goto('/')
+    await page.locator('.cpv-chord').first().waitFor()
+
+    const gaps = await page.evaluate(() => {
+      const row = document.querySelector('[data-scroll]')!.parentElement as HTMLElement
+      const items = [...row.children].filter(
+        (el) => el instanceof HTMLElement && (el.tagName === 'BUTTON' || el.querySelector('button')),
+      ) as HTMLElement[]
+      const boxes = items.map((el) => el.getBoundingClientRect())
+      return boxes.slice(1).map((b, i) => Math.round(b.left - boxes[i]!.right))
+    })
+
+    expect(gaps.length, `${width}px: dock row collapsed`).toBeGreaterThanOrEqual(3)
+    const max = Math.max(...gaps)
+    const min = Math.min(...gaps)
+    expect(max - min, `${width}px: gaps ${gaps.join(', ')} left a canyon after Rolar`).toBeLessThanOrEqual(16)
   }
 })
 

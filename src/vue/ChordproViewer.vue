@@ -344,16 +344,14 @@ const dockCtrlH = computed(() => (width.value < 360 ? '40px' : bp.value === 'xs'
 const dockIconSize = computed(() => dockCtrlH.value)
 const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs' ? '38px' : '42px'))
 /**
- * The scroll button wears its word wherever the row can hold it at full size.
- * Below that, six controls at a 48px touch target plus the type pair leave no
- * room, and the alternative is squashing the controls next to it — measured,
- * theme and "Mais" fell to 33px on a 390px phone, which is not a target any
- * thumb hits. The green pill with a play triangle needs the word least.
- *
- * The threshold is where the row fits with the word: dropping it lower does
- * not help anybody, it just hands the 47px to the gap after the button.
+ * The word stays on from 360px up — Tela cheia left the dock, so 390px has
+ * room again. Below that the row cannot hold it; leftover is shared across
+ * the fileira (`space-between`), not parked in a flex hole after a play
+ * triangle that then reads as "tocar a música".
  */
-const dockPlayLabel = computed(() => (width.value < 415 ? '' : scrolling.value ? 'Parar' : 'Rolar'))
+const dockPlayLabeled = computed(() => width.value >= 360)
+const dockPlayLabel = computed(() => (dockPlayLabeled.value ? (scrolling.value ? 'Parar' : 'Rolar') : ''))
+const dockPlayName = computed(() => (scrolling.value ? 'Parar' : 'Rolar'))
 const toastBottom = computed(() => {
   const base = compact.value ? 124 : 78
   // Almost every block action raises a toast, and the selection bar sits right
@@ -2557,18 +2555,21 @@ defineExpose({
             <span style="font-size:10px;letter-spacing:0.08em;color:var(--muted);font-weight:700;">{{ Math.round(progress * 100) }}%</span>
           </span>
         </div>
-        <div :style="{ gap: width < 360 ? '3px' : '4px' }" style="display:flex;align-items:center;padding:6px;">
+        <div
+          :style="{ gap: width < 360 ? '3px' : '4px' }"
+          style="display:flex;align-items:center;justify-content:space-between;padding:6px;"
+        >
           <button
             data-scroll
+            :aria-label="dockPlayName"
             :title="scrollTitle"
             :disabled="scrollOff"
-            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 415 ? '0' : '0 20px', gap: width < 415 ? '0' : '9px', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: dockPlayLabeled ? '0 20px' : '0', gap: dockPlayLabeled ? '9px' : '0', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
             style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
             @click="toggleScroll"
           >
             <span :class="scrolling ? 'cpv-icon-stop' : 'cpv-icon-play'" style="flex:none;width:11px;height:11px;" aria-hidden="true" />{{ dockPlayLabel }}
           </button>
-          <span style="flex:1;min-width:0;" />
           <span :style="{ height: dockCtrlH }" style="flex:none;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:14px;background:var(--surface);">
             <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
