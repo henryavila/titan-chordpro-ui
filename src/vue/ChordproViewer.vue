@@ -680,9 +680,6 @@ const rootHitClass = computed(() => {
   if (!metHit.value) return ''
   return metHit.value === '1' ? 'cpv-met-hit-1' : 'cpv-met-hit-n'
 })
-const pagePadLive = computed(() =>
-  met.running.value && phone.value ? `${pagePad.value} 44px` : pagePad.value,
-)
 const dockPlayLabel = computed(() => (dockPlayLabeled.value ? (rollLive.value ? 'Parar' : 'Rolar') : ''))
 const dockPlayName = computed(() => (rollLive.value ? 'Parar' : 'Rolar'))
 const metPulseTitle = computed(() =>
@@ -1985,7 +1982,7 @@ defineExpose({
     <div class="cpv-glow" />
 
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
-      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePadLive }">
+      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
         <!-- The capo map, said once: "see G, play E". -->
         <div v-if="legend" class="cpv-legend" data-legend>
           <span class="cpv-legend-half">

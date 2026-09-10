@@ -217,6 +217,41 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
 })
 
 /**
+ * On a phone the beat column is an overlay on padX. Growing left padding to
+ * 44px while the click ran shoved the chart right and left a dead gutter.
+ */
+test('phone beat count overlays the margin — page left pad does not jump to 44px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  const before = await page.locator('.cpv-page').evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return { left: parseFloat(cs.paddingLeft), right: parseFloat(cs.paddingRight) }
+  })
+  expect(before.left).toBeLessThan(30)
+  expect(before.left).toBe(before.right)
+
+  await page.locator('[data-scroll]').click()
+  await expect(page.locator('[data-met-count]')).toBeVisible()
+
+  const after = await page.locator('.cpv-page').evaluate((el) => {
+    const cs = getComputedStyle(el)
+    const count = document.querySelector('[data-met-count]')!.getBoundingClientRect()
+    const page = el.getBoundingClientRect()
+    return {
+      left: parseFloat(cs.paddingLeft),
+      right: parseFloat(cs.paddingRight),
+      countLeft: count.left - page.left,
+    }
+  })
+  expect(after.left, 'reserved 44px gutter would push the chart').toBe(before.left)
+  expect(after.right).toBe(before.right)
+  expect(after.countLeft).toBeGreaterThanOrEqual(8)
+  expect(after.countLeft).toBeLessThan(28)
+})
+
+/**
  * The bug this guards: Rolar started the chart at once and left the metronome
  * sitting there. They are one rehearsal: count-in, then the page, pulse on,
  * oscillator off until the panel arms it.

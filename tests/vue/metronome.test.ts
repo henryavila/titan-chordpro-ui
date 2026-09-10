@@ -621,3 +621,72 @@ describe('count-in label sits below the title strip', () => {
     expect(w.find('[data-met-count]').exists()).toBe(false)
   })
 })
+
+/**
+ * The beat column is position:absolute over the existing padX. Growing the
+ * page's left padding to 44px while the click runs shoved the chart right and
+ * left a dead gutter — the count does not need layout reservation.
+ */
+describe('beat count overlays the chart margin — no reserved gutter', () => {
+  function pagePadding(w: ReturnType<typeof mount>): string {
+    return (w.get('.cpv-page').attributes('style') ?? '').match(/padding:\s*([^;]+)/)?.[1]?.trim() ?? ''
+  }
+
+  it('does not force 44px left padding on a phone while the click runs', async () => {
+    const w = await viewerAt(390)
+    expect(w.find('[data-met-count]').exists()).toBe(true)
+    const pad = pagePadding(w)
+    // 3-value shorthand (top X bottom) keeps left = right = padX. A trailing
+    // 44px is the 4-value form that reserved the dead gutter.
+    expect(pad, `page padding while running: ${pad}`).not.toMatch(/\s44px\s*$/)
+  })
+
+  it('still shows the beat column on a phone while the click runs', async () => {
+    const w = await viewerAt(390)
+    expect(w.get('[data-met-count]').text()).toMatch(/1/)
+    expect(w.get('[data-met-count]').attributes('style') ?? '').toMatch(/left:\s*12px/)
+  })
+
+  it('keeps the same page padding when the click starts and stops on a phone', async () => {
+    vi.useRealTimers()
+    const w = mount(ChordproViewer, {
+      props: { source: CHART, autoHide: false, storage: memoryStore() },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    await flushPromises()
+    observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
+    await flushPromises()
+
+    const before = pagePadding(w)
+    expect(before).not.toMatch(/\s44px\s*$/)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm' }))
+    await flushPromises()
+    expect(w.find('[data-met-count]').exists()).toBe(true)
+    expect(pagePadding(w), 'starting the click must not widen the left gutter').toBe(before)
+
+    await w.get('[data-met-count]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-met-count]').exists()).toBe(false)
+    expect(pagePadding(w), 'stopping the click must not change horizontal pad').toBe(before)
+  })
+
+  it('does not add a 44px left pad on desktop while the click runs', async () => {
+    const w = await viewerAt(900)
+    expect(w.find('[data-met-count]').exists()).toBe(true)
+    expect(pagePadding(w)).not.toMatch(/\s44px\s*$/)
+  })
+
+  it('keeps the count outside chrome so zen cannot take it (phone)', async () => {
+    const w = await viewerAt(390)
+    expect(w.get('[data-met-count]').element.closest('.cpv-chrome')).toBeNull()
+  })
+
+  it('keeps count left:12px on xs phone — overlay, not a wider page', async () => {
+    const w = await viewerAt(390)
+    const style = w.get('[data-met-count]').attributes('style') ?? ''
+    expect(style).toMatch(/left:\s*12px/)
+    expect(pagePadding(w)).not.toMatch(/\s44px\s*$/)
+  })
+})
