@@ -21,7 +21,7 @@ phases:
           - path: src/vue/ChordproViewer.vue
           - path: tests
           - path: README.md
-          - path: docs/EMBED-SDA.md
+          - path: docs/CONSUMER.md
         scopeBoundary:
           - Somente titan-chordpro-ui; não ler nem alterar SDA nesta execução
           - Não modificar conteúdo de fixtures; core sem Vue; sem VisualAdapter
