@@ -612,6 +612,43 @@
 .cpv-icon-stop {
   border-radius: 2px;
 }
+/*
+ * Fullscreen, drawn rather than typed. The `⤢` glyph renders 6.5px of ink
+ * where every neighbour in the dock draws 12.4 — half the size, in a row whose
+ * icons have to read as one set — and how much ink a symbol character puts on
+ * screen is the font's decision, not ours, so it cannot be tuned by font-size.
+ */
+.cpv-icon-full {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 13px;
+  height: 13px;
+  box-sizing: border-box;
+}
+.cpv-icon-full::before,
+.cpv-icon-full::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  border: 1.75px solid currentColor;
+}
+.cpv-icon-full::before {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 2px;
+}
+.cpv-icon-full::after {
+  right: 0;
+  bottom: 0;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 2px;
+}
 .cpv-glyph {
   font-family: system-ui, -apple-system, 'Segoe UI Symbol', sans-serif;
 }

@@ -319,13 +319,16 @@ const dockCtrlH = computed(() => (width.value < 360 ? '40px' : bp.value === 'xs'
 const dockIconSize = computed(() => dockCtrlH.value)
 const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs' ? '38px' : '42px'))
 /**
- * The scroll button wears its word only where the row can afford it. Below
- * that, six controls at a 44px touch target plus the type pair leave no room,
- * and the alternative is squashing the controls next to it — measured, theme
- * and "Mais" fell to 33px on a 390px phone, which is not a target any thumb
- * hits. The green pill with a play triangle needs the word least.
+ * The scroll button wears its word wherever the row can hold it at full size.
+ * Below that, six controls at a 48px touch target plus the type pair leave no
+ * room, and the alternative is squashing the controls next to it — measured,
+ * theme and "Mais" fell to 33px on a 390px phone, which is not a target any
+ * thumb hits. The green pill with a play triangle needs the word least.
+ *
+ * The threshold is where the row fits with the word: dropping it lower does
+ * not help anybody, it just hands the 47px to the gap after the button.
  */
-const dockPlayLabel = computed(() => (width.value < 470 ? '' : scrolling.value ? 'Parar' : 'Rolar'))
+const dockPlayLabel = computed(() => (width.value < 415 ? '' : scrolling.value ? 'Parar' : 'Rolar'))
 const toastBottom = computed(() => {
   const base = compact.value ? 124 : 78
   // Almost every block action raises a toast, and the selection bar sits right
@@ -2270,7 +2273,7 @@ defineExpose({
           <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
         </button>
         <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
-        <button class="cpv-glyph cpv-bar-btn" :style="{ background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }" aria-label="Tela cheia" title="Tela cheia (F)" style="width:36px;height:36px;border-radius:12px;font-size:14px;cursor:pointer;" @click="toggleFs">{{ fs ? '⤡' : '⤢' }}</button>
+        <button class="cpv-bar-btn" :style="{ background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }" aria-label="Tela cheia" title="Tela cheia (F)" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:12px;cursor:pointer;" @click="toggleFs"><span class="cpv-icon-full" aria-hidden="true" /></button>
       </div>
     </div>
 
@@ -2334,7 +2337,7 @@ defineExpose({
             data-scroll
             :title="scrollTitle"
             :disabled="scrollOff"
-            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 470 ? '0' : '0 20px', gap: width < 470 ? '0' : '9px', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+            :style="{ background: scrolling ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: width < 415 ? '0' : '0 20px', gap: width < 415 ? '0' : '9px', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
             style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
             @click="toggleScroll"
           >
@@ -2348,13 +2351,12 @@ defineExpose({
           <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
           <button
             data-fs
-            class="cpv-glyph"
             aria-label="Tela cheia"
             :title="fs ? 'Sair da tela cheia' : 'Tela cheia'"
             :style="{ width: dockIconSize, height: dockCtrlH, background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
-            style="flex:none;border-radius:14px;color:var(--text);font-size:15px;line-height:1;cursor:pointer;"
+            style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
             @click="toggleFs"
-          >{{ fs ? '⤡' : '⤢' }}</button>
+          ><span class="cpv-icon-full" aria-hidden="true" /></button>
           <button v-if="canEditNow" data-edit aria-label="Editar esta cifra" title="Editar esta cifra" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="enterEdit">✎</button>
           <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
         </div>

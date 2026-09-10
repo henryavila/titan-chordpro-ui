@@ -347,7 +347,32 @@ test('Tela cheia is on the dock itself, and not also buried in Mais', async ({ p
 
   const fsBtn = page.locator('[data-fs]')
   await expect(fsBtn).toBeVisible()
-  await expect(fsBtn).toHaveText('⤢')
+
+  // Drawn, not typed. `⤢` put 6.5px of ink on screen next to neighbours
+  // drawing 12.4 — half the size — and how much ink a symbol character paints
+  // is the font's decision, so no font-size could have fixed it.
+  const ink = await page.evaluate(() => {
+    const box = (sel: string) => {
+      const r = document.querySelector(sel)!.getBoundingClientRect()
+      return Math.max(r.width, r.height)
+    }
+    const c = document.createElement('canvas').getContext('2d')!
+    const glyph = (sel: string) => {
+      const el = document.querySelector(sel) as HTMLElement
+      const cs = getComputedStyle(el)
+      c.font = `${cs.fontSize} ${cs.fontFamily}`
+      const m = c.measureText((el.textContent ?? '').trim())
+      return Math.max(
+        m.actualBoundingBoxRight + m.actualBoundingBoxLeft,
+        m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+      )
+    }
+    return { full: box('[data-fs] .cpv-icon-full'), theme: glyph('[data-theme-btn]') }
+  })
+
+  // Within a quarter of the theme glyph: the dock's icons have to read as one
+  // set, and half-size is what the eye catches first.
+  expect(Math.abs(ink.full - ink.theme) / ink.theme).toBeLessThan(0.25)
 
   // The same control in two places on one screen is clutter, not redundancy.
   // Scoped to the sheet's own rows: the dock button carries the same label.
