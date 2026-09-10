@@ -169,7 +169,7 @@ describe('edit chrome (E0)', () => {
     await flushPromises()
     // Reading shows the draft, and the entry point says a draft is waiting.
     expect(w.text()).toContain('Rascunho vivo')
-    expect(w.get('.cpv-edit-chip').text()).toContain('rascunho')
+    expect(w.get('[data-edit]').text()).toContain('rascunho')
 
     await enterContentEdit(w)
     expect(w.get('input[aria-label="Título"]').element).toHaveProperty('value', 'Rascunho vivo')

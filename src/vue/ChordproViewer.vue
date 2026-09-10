@@ -2507,6 +2507,17 @@ defineExpose({
         <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="requestTheme">
           <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
         </button>
+        <button
+          v-if="canEditNow"
+          data-edit
+          class="cpv-ghost"
+          aria-label="Editar esta cifra"
+          :title="dirty ? 'Editar esta cifra · rascunho' : 'Editar esta cifra'"
+          style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
+          @click="enterEdit"
+        >
+          <span class="cpv-icon-edit" aria-hidden="true" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
+        </button>
         <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
       </div>
     </div>
@@ -2611,17 +2622,6 @@ defineExpose({
       @click="ov.openQueue"
     >
       <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />Sugestões · {{ ov.pendingCount.value }}
-    </button>
-
-    <button
-      v-if="canEditNow && !phone"
-      data-edit
-      title="Editar esta cifra"
-      class="cpv-edit-chip"
-      :class="{ 'is-hidden': chromeHidden }"
-      @click="enterEdit"
-    >
-      <span class="cpv-edit-diamond" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
     </button>
 
     <!-- Edit bottom bar: what is selected, what is on the clipboard, the dock -->

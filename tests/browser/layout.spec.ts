@@ -446,6 +446,48 @@ const fsPlace = (page: Page) => page.evaluate(() => {
  * glyph — the short axis is what the eye reads as "the icon is smaller".
  * Same class as `⤢`: a symbol character's ink is the font's decision.
  */
+/**
+ * The bug this guards: on desktop Editar was a floating chip at
+ * `right:16px; bottom:22px` of the glass. Narrow desktop made it look glued
+ * to the bar; a wide notebook parked it in the empty corner. Phone already
+ * kept it in the dock. Geometry, not just the DOM: the button's box has to
+ * sit inside the same chrome that holds Rolar.
+ */
+test('Editar sits inside the bottom bar on desktop, not floating beside it', async ({ page }) => {
+  for (const width of [640, 768, 1024, 1280, 1600]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/')
+    await page.locator('.cpv-chord').first().waitFor()
+
+    const place = await page.evaluate(() => {
+      const edit = document.querySelector('[data-edit]') as HTMLElement | null
+      const bar = document.querySelector('[data-scroll]')?.closest('.cpv-chrome') as HTMLElement | null
+      if (!edit || !bar) return { missing: true, chip: !!document.querySelector('.cpv-edit-chip') }
+      const er = edit.getBoundingClientRect()
+      const br = bar.getBoundingClientRect()
+      return {
+        missing: false,
+        chip: !!document.querySelector('.cpv-edit-chip'),
+        count: document.querySelectorAll('[data-edit]').length,
+        inBar: bar.contains(edit),
+        position: getComputedStyle(edit).position,
+        inside:
+          er.top >= br.top - 1 &&
+          er.bottom <= br.bottom + 1 &&
+          er.left >= br.left - 1 &&
+          er.right <= br.right + 1,
+      }
+    })
+
+    expect(place.missing, `${width}px: Editar is gone`).toBe(false)
+    expect(place.chip, `${width}px still paints the floating chip`).toBe(false)
+    expect(place.count, `${width}px: more than one Editar`).toBe(1)
+    expect(place.inBar, `${width}px: Editar is not in the Rolar bar`).toBe(true)
+    expect(place.position, `${width}px: Editar is still absolutely positioned`).not.toBe('absolute')
+    expect(place.inside, `${width}px: Editar floats outside the bar`).toBe(true)
+  }
+})
+
 test('Edit on the dock is a sibling of the other icons, not a highlight', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 860 })
   await page.goto('/')
