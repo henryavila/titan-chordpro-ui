@@ -292,16 +292,21 @@ const padBottom = computed(() => {
  * noticed them go still. Only the deliberate kind gives its band back: taking
  * the reserve away under the idle auto-hide would slide the chart out from
  * under someone mid-song, which is the one thing a chart may never do.
- */
-const chromeGone = computed(() => zen.value && !sheet.value && !isEdit.value)
-/**
- * With the header and the dock away, the reserve they stood in is dead space:
- * ~82px above and ~134px below on a 390px phone, a quarter of the screen held
- * for controls that are not there.
  *
- * What stays is an edge for the eye and the phone's own safe area — a notch
- * does not go away when the chrome does. How to bring the chrome back is a
- * toast that leaves, not a band that stays on the chart.
+ * Desktop keeps the reserve even in zen: fading the controls without
+ * reflowing the page. At the top of a song there is no negative scrollTop to
+ * absorb a pad shrink, and a presentation must not jump the chart. A phone
+ * still reclaims the band — a quarter of a small screen.
+ */
+const chromeGone = computed(
+  () => zen.value && compact.value && !sheet.value && !isEdit.value,
+)
+/**
+ * With the header and the dock away on a phone, the reserve they stood in is
+ * dead space: ~82px above and ~134px below on a 390px frame. What stays is an
+ * edge for the eye and the phone's own safe area — a notch does not go away
+ * when the chrome does. How to bring the chrome back is a toast that leaves,
+ * not a band that stays on the chart.
  */
 const zenPad = computed(() => ({
   top: 'calc(12px + env(safe-area-inset-top))',
@@ -1070,9 +1075,10 @@ function toggleZen() {
 }
 
 /**
- * Hiding the chrome moves the chart: the band it stood in stops being
- * reserved. That is the whole point, and it is also why the reader's place has
- * to be carried across the relayout by hand.
+ * On a phone, hiding the chrome moves the chart: the band it stood in stops
+ * being reserved. That is why the reader's place has to be carried across the
+ * relayout by hand. On desktop the pad does not move — only opacity — so the
+ * spot is unchanged.
  */
 function setChromeGone(on: boolean) {
   const before = pageSpot()
