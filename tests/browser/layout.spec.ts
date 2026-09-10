@@ -581,7 +581,8 @@ test('Tela cheia wins the screen and a tap still hides the chrome without leavin
   const zen = await immersiveSpot(page)
   expect(zen.dockGone).toBe(true)
   expect(zen.label).toBe('Sair da tela cheia')
-  await expect(page.locator('.cpv-chrome-hint')).toHaveText('Toque na cifra para mostrar os controles')
+  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
+  await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
   expect(zen.padTop).toBeLessThan(40)
   expect(zen.padBottom).toBeLessThan(60)
 
@@ -619,8 +620,8 @@ test('a tap still hands the chrome band back when there is no screen to win', as
 
   expect(after.dockGone).toBe(true)
   expect(after.label).toBe(null)
-  await expect(page.locator('.cpv-chrome-hint')).toHaveText('Toque na cifra para mostrar os controles')
-  await expect(page.locator('.cpv-toast')).toHaveCount(0)
+  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
+  await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
   expect(after.padTop).toBeLessThan(40)
   expect(after.padBottom).toBeLessThan(60)
   const won = before.padTop + before.padBottom - (after.padTop + after.padBottom)

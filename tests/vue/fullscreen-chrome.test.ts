@@ -197,7 +197,8 @@ describe('Tela cheia on a phone keeps the live controls', () => {
     await flushPromises()
     expect(chromeHidden(w).every(Boolean)).toBe(true)
     expect(w.get('[data-fs]').attributes('aria-label')).toBe('Sair da tela cheia')
-    expect(w.text()).toContain('Toque na cifra para mostrar os controles')
+    expect(w.find('.cpv-chrome-hint').exists()).toBe(false)
+    expect(w.get('.cpv-toast').text()).toBe('Toque na tela para mostrar os controles')
 
     await w.get('[data-cpv-scroll]').trigger('click')
     await flushPromises()

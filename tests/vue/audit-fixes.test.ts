@@ -335,7 +335,7 @@ describe('B4 · the score editor owns the keyboard', () => {
 describe('M1 · the editor introduces itself once', () => {
   /** The hint yields to the toast that entering the editor raises. */
   async function afterToast(w: ReturnType<typeof mountViewer>) {
-    vi.advanceTimersByTime(2300)
+    vi.advanceTimersByTime(3000)
     await flushPromises()
     return w
   }

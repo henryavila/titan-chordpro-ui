@@ -131,6 +131,7 @@ const etaLabel = ref('—')
 const sheet = ref(false)
 const pdf = ref<'idle' | 'busy' | 'error'>('idle')
 const toast = ref<string | null>(null)
+const toastOut = ref(false)
 const fs = ref(false)
 const idle = ref(false)
 const zen = ref(false)
@@ -217,6 +218,7 @@ let ro: ResizeObserver | null = null
 let headRo: ResizeObserver | null = null
 let pageRo: ResizeObserver | null = null
 let zenSeen = false
+let idleSeen = false
 
 const mode = computed(() => localMode.value ?? props.mode)
 const isEdit = computed(() => mode.value === 'edit')
@@ -297,15 +299,13 @@ const chromeGone = computed(() => zen.value && !sheet.value && !isEdit.value)
  * ~82px above and ~134px below on a 390px phone, a quarter of the screen held
  * for controls that are not there.
  *
- * What stays is an edge for the eye, the phone's own safe area — a notch does
- * not go away when the chrome does — and, at the bottom, the one thing still
- * drawn there: the hint saying how to bring the chrome back, measured at 42px
- * from the base. The same rule as the dock's own reserve, for the same reason:
- * the last line of the song may not end up underneath it.
+ * What stays is an edge for the eye and the phone's own safe area — a notch
+ * does not go away when the chrome does. How to bring the chrome back is a
+ * toast that leaves, not a band that stays on the chart.
  */
 const zenPad = computed(() => ({
   top: 'calc(12px + env(safe-area-inset-top))',
-  bottom: 'calc(44px + env(safe-area-inset-bottom))',
+  bottom: 'calc(12px + env(safe-area-inset-bottom))',
 }))
 const pagePad = computed(() => {
   if (chromeGone.value) return `${zenPad.value.top} ${padX.value} ${zenPad.value.bottom}`
@@ -523,9 +523,12 @@ const chartScale = computed(() => {
 const chromeHidden = computed(
   () => (zen.value || (scrolling.value && idle.value)) && !sheet.value && !isEdit.value,
 )
-const chromeHiddenHint = computed(() =>
-  zen.value ? 'Toque na cifra para mostrar os controles' : 'Mova para mostrar os controles',
-)
+watch(chromeHidden, (gone) => {
+  if (gone && !zen.value && !idleSeen) {
+    idleSeen = true
+    toastMsg('Mova para mostrar')
+  }
+})
 const hintFit = computed(
   () => isPopulated.value && !isEdit.value && !fitSeen.value && !hintOff.value,
 )
@@ -670,12 +673,20 @@ function markEditSeen() {
   }
 }
 
+const TOAST_HOLD_MS = 2400
+const TOAST_FADE_MS = 420
+
 function toastMsg(msg: string) {
   toast.value = msg
+  toastOut.value = false
   window.clearTimeout(toastT)
   toastT = window.setTimeout(() => {
-    toast.value = null
-  }, 2200)
+    toastOut.value = true
+    toastT = window.setTimeout(() => {
+      toast.value = null
+      toastOut.value = false
+    }, TOAST_FADE_MS)
+  }, TOAST_HOLD_MS)
 }
 
 // ---------------------------------------------------------------- auto-scroll
@@ -993,11 +1004,11 @@ function toggleZen() {
   const on = !zen.value
   setChromeGone(on)
   // The gesture is invisible: the first time has to say how to come back.
-  // On a phone the standing hint already says it — a toast over it is the
-  // same sentence twice.
-  if (on && !zenSeen && !phone.value) {
+  // One toast, then gone — a standing band under the chart is the same
+  // sentence twice, on a phone and on a desktop.
+  if (on && !zenSeen) {
     zenSeen = true
-    toastMsg('Moldura escondida · toque na cifra para trazer de volta')
+    toastMsg('Toque na tela para mostrar os controles')
   }
 }
 
@@ -2728,8 +2739,6 @@ defineExpose({
       />
     </div>
 
-    <div v-if="chromeHidden" class="cpv-chrome-hint cpv-veil">{{ chromeHiddenHint }}</div>
-
     <div v-if="pdf === 'error'" class="cpv-error-banner">
       <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--danger);color:var(--danger);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1;">!</span>
       <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em PDF falhou.</span>
@@ -2737,7 +2746,12 @@ defineExpose({
       <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);font-size:15px;" @click="pdf = 'idle'">×</button>
     </div>
 
-    <div v-if="toast" class="cpv-toast cpv-veil-2" :style="{ bottom: toastBottom }">{{ toast }}</div>
+    <div
+      v-if="toast"
+      class="cpv-toast cpv-veil-2"
+      :class="{ 'is-out': toastOut }"
+      :style="{ bottom: toastBottom }"
+    >{{ toast }}</div>
 
     <!-- The song ended. Offer the next one; never take the decision. -->
     <div
