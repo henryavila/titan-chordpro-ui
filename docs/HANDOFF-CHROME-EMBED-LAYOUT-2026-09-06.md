@@ -1,6 +1,8 @@
 # Handoff — chrome de leitura no embed “artigo”
 
-Data: 2026-09-06. Estado: diagnóstico do host fechado; **decisão de produto no Titan em aberto**.
+Data: 2026-09-06. Estado: diagnóstico do host fechado.
+
+**Decisão 2026-09-10:** A **e** C — o host pode incluir o componente num frame com altura **e** pode promover a cifra a rota `100dvh`. **B recusado** (cifra não cresce com o artigo). **Iframe cancelado.** Guia: [`docs/CONSUMER.md`](./CONSUMER.md).
 Destinatário: **agent de design do Titan UI** (não o implementador SDA).
 Base do viewer ao criar este documento: pacote instalado no SDA `titan-chordpro-ui@0.1.0` (`src/vue/ChordproViewer.vue`, `src/vue/cpv.css`).
 Host que disparou: `/Volumes/External/code/sda`, página de música com cifra longa.

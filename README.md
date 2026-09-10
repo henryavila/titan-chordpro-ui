@@ -7,7 +7,7 @@ Repo / pacote npm: **`titan-chordpro-ui`**. Decisão: [`docs/NAMING.md`](docs/NA
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
 - **Generator (sibling, repo separado):** **`titan-chordpro-gen`** — audio → `.chordpro`
 - **App Titan:** nenhum por agora (`titan-chordpro` = host futuro)
-- **Consumer:** sda-v2 Nuxt — consome **só** a UI
+- **Consumer:** qualquer host Vue 3 / Nuxt — consome **só** a UI. Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md)
 
 ## Status
 
@@ -23,13 +23,38 @@ pnpm build
 
 ## Core vs Vue vs host
 
-| Core | Vue package | Host (sda-v2) |
+| Core | Vue package | Host |
 |---|---|---|
 | parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX, view↔edit E0, zen | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`** |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
 ## Consumer
+
+O Titan é um **componente Vue**. Duas composições, o mesmo SFC — **sem iframe**.
+Exemplos completos (Nuxt/Vue, ficha real, palco, ensaio, gestos):
+[`docs/CONSUMER.md`](docs/CONSUMER.md).
+
+```vue
+<!-- Standalone: rota só da cifra -->
+<div class="h-dvh overflow-hidden">
+  <ChordproViewer :source="cho" :song-id="id" />
+</div>
+
+<!-- Na página: bloco 100dvh no fluxo (conteúdo acima e abaixo) -->
+<div class="ficha">
+  <!-- letra, vídeo… -->
+  <div class="cifra-frame">
+    <ChordproViewer :source="cho" :song-id="id" />
+  </div>
+  <!-- arquivos, histórico… -->
+</div>
+```
+
+```css
+.ficha { height: 100dvh; overflow-y: auto; scroll-snap-type: y proximity; }
+.cifra-frame { height: 100dvh; min-height: 560px; overflow: hidden; scroll-snap-align: start; }
+```
 
 ```ts
 import { parse, memoryStore } from 'titan-chordpro-ui'
@@ -40,6 +65,8 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 ```
 
 `titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
+
+Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` (standalone) e `/?ficha=1` (componente na ficha, ensaio).
 
 ### `<ChordproViewer>` props
 
@@ -151,10 +178,10 @@ todas as barras e folhas absolutas contra essa caixa.
 `height:100%` não resolve, o viewer cai no piso, a página do host passa a rolar
 e a barra de controle acaba no fim da música, fora da dobra.
 
-Numa página que rola (ficha com letra, arquivos, histórico), quem acompanha a
-rolagem é o **frame inteiro** (`position:sticky`), não a barra — o viewer não
-tem modo "artigo". Receita completa e o que a guarda faz:
-[docs/EMBED-SDA.md](docs/EMBED-SDA.md).
+Numa página que rola (ficha com letra, arquivos, histórico), o frame é um
+bloco `100dvh` no fluxo: o músico rola até ele e o snap estaciona o dock na
+dobra. Não há modo "artigo". Receita e o que a guarda faz:
+[docs/CONSUMER.md](docs/CONSUMER.md).
 
 ### O acento é a cor que o host escolhe
 
@@ -416,7 +443,7 @@ OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` 
 
 Real ChordPro (IASD Ermelinda via SDA design-handoff): `fixtures/`.
 
-### Tema e tipografia no embed
+### Tema e tipografia
 
 `<ChordproViewer :theme="hostTheme" theme-control="host" />` torna a prop
 imediatamente autoritativa, mesmo com preferência antiga. O default
@@ -425,19 +452,18 @@ imediatamente autoritativa, mesmo com preferência antiga. O default
 aceita atualizando a prop. Retornar ao modo livre retoma a preferência anterior.
 
 ```css
-.sda-cifra {
+.host-cifra {
   --cpv-font-lyrics: Figtree, system-ui, sans-serif;
   --cpv-font-controls: Figtree, system-ui, sans-serif;
   --cpv-font-chords: 'Space Mono', monospace;
 }
 ```
 
-Use `class="sda-cifra"` no componente; carregue as fontes no host. Para herdar
-só a fonte dos controles, `font-family: inherit` na mesma classe é uma
-alternativa ao token explícito. Source/TAB mantêm monospace. Defaults:
-Sora para letra/controles e Space Mono para acordes, com fallback de sistema.
+Use uma classe no componente; carregue as fontes no host. Para herdar só a
+fonte dos controles, `font-family: inherit` na mesma classe é uma alternativa
+ao token explícito. Source/TAB mantêm monospace. Defaults: Sora para
+letra/controles e Space Mono para acordes, com fallback de sistema.
 
-[Contrato completo, precedência, fontes e distribuição ao SDA](docs/EMBED-SDA.md).
-A integração real SDA/Nova (A6) não foi executada nesta alteração.
-[Testes de navegador e evidência da regressão](docs/SDA-VIEWER-VALIDATION.md):
+[Guia do consumer: composições, tema, fontes](docs/CONSUMER.md).
+[Testes de navegador](docs/SDA-VIEWER-VALIDATION.md):
 `pnpm exec playwright install chromium webkit` e `pnpm test:browser`.

@@ -14,7 +14,7 @@
 | **In-scope** | Camada **autossuficiente** de **1 cifra**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; standalone demo ou **embutida** (`sda-v2` primeiro). Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
 | **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`); diagramas de braço (ainda later). |
 | **Done-when (esta fase)** | Visão + naming + design do editor alinhados; implementação segue SPEC + gates E0–E4. |
-| **Stakes (caros de reverter)** | (1) Embed / binding Vue-first. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
+| **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<ChordproViewer>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
 | **Fontes** | Esta visão; `docs/NAMING.md`; design do editor; `fixtures/`; researches OnSong / auto-ajuste; `SPEC.md` como catálogo técnico. |
 
 ---
@@ -133,16 +133,17 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 | Peça | Papel |
 |---|---|
 | **titan-chordpro-gen** | Gera ChordPro a partir de áudio — **fora**. Pode consumir a UI para preview. |
-| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Embute a UI (view+edit). |
+| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Importa `<ChordproViewer>` na ficha e/ou numa rota `100dvh`. Sem iframe. |
 | **titan-chordpro** (futuro) | App standalone Titan (shell + extras) — **repo separado**; consome a mesma UI. |
-| **Este repo → `titan-chordpro-ui`** | UI 1-cifra view+edit + embed. |
+| **Este repo → `titan-chordpro-ui`** | UI 1-cifra view+edit como componente Vue. |
 
 ---
 
 ## 9. Open questions
 
-1. Sintaxe da diretiva de imagem + default capabilities no embed SDA (ver design do editor).
+1. Sintaxe da diretiva de imagem + default capabilities no host SDA (ver design do editor).
 2. Controles da cifra: barra no miolo vs chrome mínimo fixo (ainda “não-shell”).
+   ~~Host: iframe vs página.~~ **Locked 2026-09-10:** componente Vue na ficha **e/ou** rota `100dvh`; iframe cancelado (`docs/CONSUMER.md`).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
 4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
 5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING).
