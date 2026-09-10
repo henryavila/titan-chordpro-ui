@@ -319,3 +319,73 @@ describe('the viewer in a rehearsal', () => {
     expect(w.text()).not.toContain('Nenhuma cifra carregada')
   })
 })
+
+/**
+ * The window wheel handler used to steal every gesture outside `.cpv-scroll`
+ * and feed it to the chart — including when the rehearsal list was open on
+ * top. The list has its own scrollbar; the chart underneath must stay put.
+ */
+describe('wheel over the open rehearsal list stays on the list', () => {
+  function wheel(target: Element, deltaY: number) {
+    const ev = new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true })
+    target.dispatchEvent(ev)
+    return ev
+  }
+
+  it('does not scroll the chart when the wheel is over a list item', async () => {
+    const w = viewer({ source: '', songs: songs(12) })
+    await flushPromises()
+    const scroll = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(scroll, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 500 })
+    scroll.scrollTop = 120
+
+    await w.get('[data-setlist-open]').trigger('click')
+    await nextTick()
+    const item = w.get('[data-setlist-item]').element
+    wheel(item, 80)
+
+    expect(scroll.scrollTop).toBe(120)
+  })
+
+  it('does not scroll the chart when the wheel is over the scrim', async () => {
+    const w = viewer({ source: '', songs: songs(12) })
+    await flushPromises()
+    const scroll = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(scroll, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 500 })
+    scroll.scrollTop = 90
+
+    await w.get('[data-setlist-open]').trigger('click')
+    await nextTick()
+    const scrim = w.get('.cpv-scrim').element
+    const ev = wheel(scrim, 60)
+
+    expect(scroll.scrollTop).toBe(90)
+    expect(ev.defaultPrevented, 'scrim must not leak the wheel to the page').toBe(true)
+  })
+
+  it('still scrolls the chart from chrome when the list is closed', async () => {
+    const w = viewer({ source: '', songs: songs(3) })
+    await flushPromises()
+    const scroll = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(scroll, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 500 })
+    scroll.scrollTop = 40
+
+    const chrome = w.get('[data-setlist-open]').element
+    wheel(chrome, 50)
+
+    expect(scroll.scrollTop).toBe(90)
+  })
+
+  it('does not preventDefault on a wheel over the dialog body', async () => {
+    const w = viewer({ source: '', songs: songs(12) })
+    await flushPromises()
+    await w.get('[data-setlist-open]').trigger('click')
+    await nextTick()
+    const item = w.get('[data-setlist-item]').element
+    const ev = wheel(item, 40)
+    expect(ev.defaultPrevented).toBe(false)
+  })
+})

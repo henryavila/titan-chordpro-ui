@@ -1674,6 +1674,14 @@ function onWheel(e: WheelEvent) {
   if (!el || !r || !r.contains(e.target as Node)) return
   // A horizontal gesture belongs to whatever is under it (tab, wide toolbar).
   if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+  const hit = e.target as Element | null
+  // Open sheets own the wheel — the setlist list scrolls itself; do not drag
+  // the chart under the dialog. The scrim blocks the page without moving it.
+  if (hit?.closest?.('[role="dialog"]')) return
+  if (hit?.closest?.('.cpv-scrim')) {
+    e.preventDefault()
+    return
+  }
   if (!el.contains(e.target as Node)) {
     el.scrollTop += e.deltaY
     e.preventDefault()
