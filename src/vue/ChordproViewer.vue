@@ -2069,34 +2069,55 @@ defineExpose({
     </div>
 
     <!-- Waiting on a chart is exactly when a musician wants to skip ahead, so
-         the rehearsal stays navigable. The chart's own controls do not appear:
-         there is nothing yet for them to act on. -->
-    <div v-else-if="songLoading" class="cpv-center" data-song-loading>
-      <div class="cpv-spin" />
-      <div style="font-size:13px;color:var(--muted);">Buscando {{ setlist.current.value?.title }}…</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+         the rehearsal stays navigable. Skeleton stands in for the paper; the
+         list and prev/next stay live. -->
+    <div
+      v-else-if="songLoading"
+      class="cpv-song-skel"
+      data-song-loading
+      role="status"
+      :aria-label="`Buscando ${setlist.current.value?.title || 'cifra'}`"
+    >
+      <div class="cpv-song-skel-head cpv-veil">
+        <button
+          data-setlist-open
+          title="Abrir a lista do ensaio"
+          class="cpv-song-skel-title"
+          @click="setlist.open()"
+        >
+          <span class="cpv-song-skel-pos">{{ setlist.posLabel.value }}</span>
+          <span class="cpv-song-skel-name">
+            <span>{{ setlist.current.value?.title || '…' }}</span>
+            <span>Buscando cifra…</span>
+          </span>
+          <span aria-hidden="true" class="cpv-song-skel-chev">▾</span>
+        </button>
+      </div>
+      <div class="cpv-song-skel-page" aria-hidden="true">
+        <div v-for="n in 6" :key="n" class="cpv-song-skel-row" :style="{ '--i': n }">
+          <span class="cpv-song-skel-bar cpv-song-skel-chords" />
+          <span class="cpv-song-skel-bar cpv-song-skel-lyric" />
+        </div>
+      </div>
+      <div class="cpv-song-skel-dock cpv-veil">
         <button
           data-song-prev
           aria-label="Música anterior"
           :disabled="setlist.noPrev.value"
           :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-          style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+          class="cpv-song-skel-nav"
           @click="goPrev"
         >◀</button>
-        <button
-          data-setlist-open
-          style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:9px;"
-          @click="setlist.open()"
-        >
-          <span style="font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
-          <span style="font-size:12.5px;font-weight:600;color:var(--muted);">Lista</span>
+        <button data-setlist-open class="cpv-song-skel-list" @click="setlist.open()">
+          <span>{{ setlist.posLabel.value }}</span>
+          <span>Lista</span>
         </button>
         <button
           data-song-next
           aria-label="Próxima música"
           :disabled="setlist.noNext.value"
           :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-          style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+          class="cpv-song-skel-nav"
           @click="goNext"
         >▶</button>
       </div>

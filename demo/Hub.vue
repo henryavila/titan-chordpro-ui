@@ -28,9 +28,9 @@ import { DEMOS, LAB } from './host/recipe'
       <p>
         O contrato do pacote tem dois eixos: a cifra <em>é</em> a página, ou
         mora <em>dentro</em> de uma ficha; e o host passa uma cifra, ou um
-        repertório. Tema, edição, import e carga preguiçosa são props nas
-        mesmas páginas — não uma grade 16×. Guia:
-        <code>docs/CONSUMER.md</code>.
+        repertório (com <code>source</code> inline). Tema, edição e import
+        são props nas mesmas páginas; <code>loadSong</code> lento fica no
+        laboratório. Guia: <code>docs/CONSUMER.md</code>.
       </p>
     </section>
 

@@ -40,11 +40,9 @@ export const DEMOS: readonly DemoPage[] = [
     kicker: 'Standalone',
     title: 'Com lista',
     useWhen:
-      'O mesmo palco. A lista é prop do host — o Titan não busca repertório sozinho.',
-    snippet: `<ChordproViewer
-  :songs="repertorio"
-  :load-song="buscarCifra"
-/>`,
+      'O mesmo palco. A lista é prop do host — o Titan não busca repertório sozinho. Cada entrada já traz `source`.',
+    snippet: `<ChordproViewer :songs="repertorio" />
+<!-- repertorio[i].source = ChordPro -->`,
   },
   {
     id: 'site',
@@ -70,9 +68,9 @@ export const DEMOS: readonly DemoPage[] = [
     kicker: 'Dentro de um site',
     title: 'Com lista',
     useWhen:
-      'A ficha passa o repertório. Trocar de música é do Titan; qual ensaio existe é do host.',
+      'A ficha passa o repertório com `source` em cada música. Trocar de música é do Titan.',
     snippet: `<div class="cifra-frame">
-  <ChordproViewer :songs="repertorio" :load-song="buscarCifra" />
+  <ChordproViewer :songs="repertorio" />
 </div>`,
   },
 ]
@@ -85,8 +83,9 @@ export const LAB = [
   },
   {
     href: '/standalone-lista.html?ensaio=demanda',
-    title: 'Lista sob demanda',
-    note: 'songs só com metadados; loadSong traz a cifra (e uma que não chega).',
+    title: 'Lista + loadSong (API lenta)',
+    note:
+      'Metadados na lista; loadSong simula API externa (~2–3,5 s). Skeleton + prev/next/lista reativos; uma cifra falha de propósito.',
   },
 ] as const
 

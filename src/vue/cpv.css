@@ -167,6 +167,172 @@
   padding: 40px;
   text-align: center;
 }
+/* Chart placeholder while loadSong is in flight — title + nav stay live. */
+.cpv-song-skel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+  gap: 14px;
+  pointer-events: none;
+}
+.cpv-song-skel-head,
+.cpv-song-skel-dock,
+.cpv-song-skel-title,
+.cpv-song-skel-nav,
+.cpv-song-skel-list {
+  pointer-events: auto;
+}
+.cpv-song-skel-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 8px 0 14px;
+  border-radius: 16px;
+}
+.cpv-song-skel-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cpv-song-skel-pos {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 7px;
+  background: var(--chord-soft);
+  border: 1px solid var(--chord-edge);
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.cpv-song-skel-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cpv-song-skel-name > span:first-child {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cpv-song-skel-name > span:last-child {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.cpv-song-skel-chev {
+  flex: none;
+  font-size: 9px;
+  color: var(--muted);
+  padding-right: 4px;
+}
+.cpv-song-skel-page {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 720px);
+  margin: 8px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 4px 24px;
+}
+.cpv-song-skel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cpv-song-skel-bar {
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+  animation: cpv-skel-pulse 1.25s ease-in-out infinite;
+  animation-delay: calc(var(--i, 1) * 70ms);
+}
+.cpv-song-skel-chords {
+  width: 42%;
+  height: 12px;
+  background: color-mix(in srgb, var(--chord) 18%, transparent);
+}
+.cpv-song-skel-lyric {
+  width: 78%;
+  height: 16px;
+}
+.cpv-song-skel-row:nth-child(2n) .cpv-song-skel-chords { width: 28%; }
+.cpv-song-skel-row:nth-child(2n) .cpv-song-skel-lyric { width: 64%; }
+.cpv-song-skel-row:nth-child(3n) .cpv-song-skel-chords { width: 55%; }
+.cpv-song-skel-row:nth-child(3n) .cpv-song-skel-lyric { width: 88%; }
+.cpv-song-skel-dock {
+  flex: none;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 16px;
+}
+.cpv-song-skel-nav {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.cpv-song-skel-list {
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.cpv-song-skel-list > span:first-child {
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.cpv-song-skel-list > span:last-child {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+@keyframes cpv-skel-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
 .cpv-ph {
   width: 46px;
   height: 46px;

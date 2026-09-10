@@ -35,6 +35,8 @@ const listaMode = computed(() => {
   if (!props.lista) return 'off' as const
   return lab.carga
 })
+/** Only the lab `?ensaio=demanda` path asks for charts after open. */
+const lazyLista = computed(() => listaMode.value === 'demanda')
 const songs = computed(() => songsFor(fixtures.value, listaMode.value))
 const theme = computed(() => hostTheme(props.surface, lab.tema))
 const liveHref = computed(() =>
@@ -42,12 +44,17 @@ const liveHref = computed(() =>
 )
 const meta = computed(() => readMeta(source.value))
 
+/**
+ * Pretends an external API: a few seconds of wait so the skeleton and the
+ * live prev/next/list can be felt. Juntas demos never call this.
+ */
 const loadSong = (songId: string) =>
   new Promise<string>((resolve, reject) => {
+    const ms = 2200 + Math.floor(Math.random() * 1400)
     setTimeout(() => {
       if (songId === FAIL_ID) reject(new Error('rede'))
       else resolve(fixtures.value[songId] ?? '')
-    }, 900)
+    }, ms)
   })
 
 const fetchChart = (url: string) =>
@@ -81,7 +88,7 @@ onMounted(async () => {
       theme-control="host"
       :song-id="id"
       :songs="songs"
-      :load-song="loadSong"
+      :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :read-pdf="(file: File) => pdfText(file)"
       modes="both"
@@ -95,6 +102,7 @@ onMounted(async () => {
     v-else
     :data-surface="surface"
     :data-lista="lista ? '1' : '0'"
+    :data-carga="listaMode"
     :style="lab.quebrar ? 'height:auto;' : 'height:100%;'"
   >
     <ChordproViewer
@@ -102,7 +110,7 @@ onMounted(async () => {
       :theme="theme"
       :song-id="id"
       :songs="songs"
-      :load-song="loadSong"
+      :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :read-pdf="(file: File) => pdfText(file)"
       modes="both"

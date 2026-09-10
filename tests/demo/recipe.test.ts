@@ -46,6 +46,12 @@ describe('the four consumer recipes', () => {
     expect(DEMOS.filter((d) => d.lista).every((d) => d.snippet.includes(':songs'))).toBe(true)
     expect(DEMOS.filter((d) => !d.lista).every((d) => !d.snippet.includes(':songs'))).toBe(true)
   })
+
+  it('keeps loadSong off the four recipes — lazy fetch is a lab case', () => {
+    const snippets = DEMOS.map((d) => d.snippet).join('\n')
+    expect(snippets).not.toMatch(/load-song|loadSong|buscarCifra/)
+    expect(LAB.some((item) => item.href.includes('ensaio=demanda'))).toBe(true)
+  })
 })
 
 describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
@@ -169,6 +175,29 @@ describe('CifraDemo', () => {
     expect(songs.length).toBeGreaterThanOrEqual(2)
   })
 
+  it('wires loadSong only for the demanda lab, not the juntas recipe', () => {
+    const juntas = mount(CifraDemo, {
+      props: { surface: 'standalone', lista: true },
+      global: { stubs: stub },
+    })
+    expect(juntas.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBeUndefined()
+
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?ensaio=demanda')
+    try {
+      const demanda = mount(CifraDemo, {
+        props: { surface: 'standalone', lista: true },
+        global: { stubs: stub },
+      })
+      expect(typeof demanda.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBe(
+        'function',
+      )
+      demanda.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+    juntas.unmount()
+  })
 
   it('wraps the viewer in host chrome only inside another site', () => {
     const site = mount(CifraDemo, {

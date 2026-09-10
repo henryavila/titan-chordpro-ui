@@ -259,6 +259,7 @@ describe('the viewer in a rehearsal', () => {
     await flushPromises()
     await nextTick()
     expect(w.find('[data-song-loading]').exists()).toBe(true)
+    expect(w.find('.cpv-song-skel-page').exists(), 'skeleton stands in for the chart').toBe(true)
     expect(w.text()).toContain('Buscando')
     expect(w.find('[data-setlist-open]').exists()).toBe(true)
     expect(w.find('[data-song-next]').exists()).toBe(true)
