@@ -128,6 +128,25 @@ describe('Hub', () => {
     for (const demo of DEMOS) expect(hrefs).toContain(demo.href)
     for (const lab of LAB) expect(hrefs).toContain(lab.href)
   })
+
+  /**
+   * Phone widths used to grow past the viewport: grid items default to
+   * min-width:auto and the snippet <pre> forced ~537px into a 390px frame.
+   */
+  it('lets recipe cards shrink so the page does not scroll sideways', () => {
+    const w = mount(Hub, { attachTo: document.body })
+    try {
+      const hub = w.get('[data-demo-hub]').element
+      const card = w.get('.card').element
+      const pre = w.get('.card pre').element
+      expect(getComputedStyle(hub).overflowX).toMatch(/clip|hidden/)
+      expect(parseFloat(getComputedStyle(card).minWidth)).toBe(0)
+      expect(getComputedStyle(pre).overflowX).toMatch(/auto|scroll/)
+      expect(getComputedStyle(pre).maxWidth).toBe('100%')
+    } finally {
+      w.unmount()
+    }
+  })
 })
 
 describe('CifraDemo', () => {
@@ -149,6 +168,7 @@ describe('CifraDemo', () => {
     const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
   })
+
 
   it('wraps the viewer in host chrome only inside another site', () => {
     const site = mount(CifraDemo, {
