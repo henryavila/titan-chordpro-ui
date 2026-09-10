@@ -320,8 +320,9 @@ const pagePad = computed(() => {
  * at 1600px the column is centred and the corner of the glass is 300px of
  * empty background away from anything the musician is looking at.
  */
-const colEdge = computed(() =>
-  pageMax.value === '100%' ? '16px' : `max(16px, calc((100% - ${pageMax.value}) / 2))`,
+/** Left gutter of the reading column — the beat count lives here, not in the title. */
+const countLeft = computed(() =>
+  pageMax.value === '100%' ? '12px' : `max(12px, calc((100% - ${pageMax.value}) / 2 - 28px))`,
 )
 /**
  * A chart shorter than the frame has nowhere to go, and a Rolar button that
@@ -350,12 +351,6 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
  * triangle that then reads as "tocar a música".
  */
 const dockPlayLabeled = computed(() => width.value >= 360)
-const toastBottom = computed(() => {
-  const base = compact.value ? 124 : 78
-  // Almost every block action raises a toast, and the selection bar sits right
-  // where the toast lands: the message would cover the controls that caused it.
-  return `${base + (isEdit.value && bedit.sel.value !== null ? 56 : 0)}px`
-})
 const meta = computed(() => parsed.value.meta)
 
 /**
@@ -518,15 +513,6 @@ const chartScale = computed(() => {
   const { barPx: _barPx, ...rest } = scale.value
   return rest
 })
-const chromeHidden = computed(
-  () => (zen.value || (scrolling.value && idle.value)) && !sheet.value && !isEdit.value,
-)
-watch(chromeHidden, (gone) => {
-  if (gone && !zen.value && !idleSeen) {
-    idleSeen = true
-    toastMsg('Mova para mostrar')
-  }
-})
 const hintFit = computed(
   () => isPopulated.value && !isEdit.value && !fitSeen.value && !hintOff.value,
 )
@@ -636,6 +622,55 @@ const met = useMetronome({
 const rollLive = computed(
   () => scrolling.value || (met.follow.value && met.running.value && canScroll.value),
 )
+const chromeHidden = computed(
+  () => (zen.value || (rollLive.value && idle.value)) && !sheet.value && !isEdit.value,
+)
+watch(chromeHidden, (gone) => {
+  if (gone && !zen.value && !idleSeen) {
+    idleSeen = true
+    toastMsg('Mova para mostrar')
+  }
+})
+watch(rollLive, (on) => {
+  if (on && props.autoHide) {
+    window.clearTimeout(idleT)
+    idle.value = true
+  }
+})
+const toastBottom = computed(() => {
+  if (chromeHidden.value) {
+    return compact.value ? 'calc(16px + env(safe-area-inset-bottom))' : '22px'
+  }
+  const base = compact.value ? 124 : 78
+  return `${base + (isEdit.value && bedit.sel.value !== null ? 56 : 0)}px`
+})
+/** The title strip is the beat when the panel asked for it — it cannot go away. */
+const headHidden = computed(
+  () => chromeHidden.value && !(met.pulseHead.value && met.running.value),
+)
+/** Retriggered every beat so 2→3 still plays the hit, not only 1→n. */
+const metHit = ref<'' | '1' | 'n'>('')
+watch(
+  () => (met.running.value ? met.beat.value : -1),
+  async (b) => {
+    metHit.value = ''
+    if (b < 0) return
+    await nextTick()
+    metHit.value = b === 0 ? '1' : 'n'
+  },
+)
+const metHitMs = computed(() => `${Math.round(30000 / Math.max(30, met.bpm.value))}ms`)
+const headHitClass = computed(() => {
+  if (!met.pulseHead.value || !metHit.value) return ''
+  return metHit.value === '1' ? 'cpv-head-hit-1' : 'cpv-head-hit-n'
+})
+const rootHitClass = computed(() => {
+  if (!metHit.value) return ''
+  return metHit.value === '1' ? 'cpv-met-hit-1' : 'cpv-met-hit-n'
+})
+const pagePadLive = computed(() =>
+  met.running.value && phone.value ? `${pagePad.value} 44px` : pagePad.value,
+)
 const dockPlayLabel = computed(() => (dockPlayLabeled.value ? (rollLive.value ? 'Parar' : 'Rolar') : ''))
 const dockPlayName = computed(() => (rollLive.value ? 'Parar' : 'Rolar'))
 const metPulseTitle = computed(() =>
@@ -657,11 +692,12 @@ function persistPrefs() {
     const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
     // Preserve the free theme preference (including older values) while the
     // host controls appearance; other controls must not rewrite that policy.
-    for (const key of ['bias', 'fit', 'metSound', 'metFollow', 'metCountIn']) delete p[key]
+    for (const key of ['bias', 'fit', 'metSound', 'metFollow', 'metCountIn', 'metPulseHead']) delete p[key]
     if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
     if (met.sound.value) p.metSound = true
+    if (met.pulseHead.value) p.metPulseHead = true
     if (met.follow.value === false) p.metFollow = false
     if (met.countInOn.value === false) p.metCountIn = false
     if (Object.keys(p).length) store.set(STORE_KEYS.prefs, JSON.stringify(p))
@@ -870,7 +906,7 @@ function startScroll() {
   if (!el) return
   scrolling.value = true
   window.clearTimeout(idleT)
-  if (props.autoHide) idleT = window.setTimeout(() => (idle.value = true), 2600)
+  if (props.autoHide) idle.value = true
   rebuildTimeline()
   // From the top the playhead starts at 0 and the page stays put until it
   // reaches the reading line — the whole intro stays on screen. Resuming
@@ -1774,7 +1810,7 @@ function syncHeadH() {
 }
 
 watch(hostSource, syncHostSource)
-watch([theme, bias, fit, met.sound, met.follow, met.countInOn], persistPrefs)
+watch([theme, bias, fit, met.sound, met.pulseHead, met.follow, met.countInOn], persistPrefs)
 watch([effTheme, () => props.accent, () => props.accentStrength], () => {
   if (root.value) applyThemeVars(root.value, effTheme.value, props.accent, props.accentStrength)
 })
@@ -1823,6 +1859,7 @@ onMounted(() => {
       bias?: number
       fit?: boolean
       metSound?: boolean
+      metPulseHead?: boolean
       metFollow?: boolean
       metCountIn?: boolean
     }
@@ -1830,6 +1867,7 @@ onMounted(() => {
     if (typeof p.bias === 'number') bias.value = p.bias
     if (typeof p.fit === 'boolean') fit.value = p.fit
     if (typeof p.metSound === 'boolean') met.sound.value = p.metSound
+    if (typeof p.metPulseHead === 'boolean') met.pulseHead.value = p.metPulseHead
     if (typeof p.metFollow === 'boolean') met.follow.value = p.metFollow
     if (typeof p.metCountIn === 'boolean') met.countInOn.value = p.metCountIn
     fitSeen.value = store.get(STORE_KEYS.fitSeen) === '1'
@@ -1915,11 +1953,18 @@ defineExpose({
 </script>
 
 <template>
-  <div ref="root" class="cpv-root" data-cpv-root :data-theme="effTheme">
+  <div
+    ref="root"
+    class="cpv-root"
+    data-cpv-root
+    :data-theme="effTheme"
+    :class="rootHitClass"
+    :style="{ '--cpv-met-hit': metHitMs }"
+  >
     <div class="cpv-glow" />
 
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
-      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
+      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePadLive }">
         <!-- The capo map, said once: "see G, play E". -->
         <div v-if="legend" class="cpv-legend" data-legend>
           <span class="cpv-legend-half">
@@ -2101,11 +2146,11 @@ defineExpose({
     <div
       v-if="!isEdit && phone && isPopulated"
       class="cpv-chrome"
-      :class="{ 'is-hidden': chromeHidden }"
+      :class="{ 'is-hidden': headHidden }"
       style="position:absolute;top:0;left:0;right:0;z-index:12;"
       :style="{ padding: chromePad }"
     >
-      <div :ref="bindHead" class="cpv-hit cpv-veil" style="display:flex;align-items:center;gap:10px;height:56px;padding:0 6px 0 14px;border-radius:18px;">
+      <div :ref="bindHead" class="cpv-hit cpv-veil" :class="headHitClass" style="display:flex;align-items:center;gap:10px;height:56px;padding:0 6px 0 14px;border-radius:18px;">
         <!-- In a rehearsal the title is the way into the list. -->
         <button
           v-if="setlist.on.value"
@@ -2155,11 +2200,11 @@ defineExpose({
     <div
       v-if="!isEdit && !phone && isPopulated"
       class="cpv-chrome"
-      :class="{ 'is-hidden': chromeHidden }"
+      :class="{ 'is-hidden': headHidden }"
       style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;"
       :style="{ padding: chromePad }"
     >
-      <div :ref="bindHead" class="cpv-hit cpv-veil" style="width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:9px 10px 9px 16px;border-radius:15px;" :style="{ maxWidth: pageMax }">
+      <div :ref="bindHead" class="cpv-hit cpv-veil" :class="headHitClass" style="width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:9px 10px 9px 16px;border-radius:15px;" :style="{ maxWidth: pageMax }">
         <button
           v-if="setlist.on.value"
           data-setlist-open
@@ -2825,23 +2870,23 @@ defineExpose({
       @pick="(orig) => { ov.exportOrig.value = orig; toggleOriginal(orig) }"
     />
 
-    <!-- The panel steps aside on start, so this is the whole readout while the
-         click runs. It hangs off the reading column, not the window: on a wide
-         screen the corner of the glass is nowhere near the chart being read. -->
+    <!-- Beat count: left of the column, sticky, outside chrome so zen cannot take it. -->
     <button
       v-if="met.running.value && !isEdit"
-      data-met-pulse
-      class="cpv-met-pulse"
+      data-met-count
+      type="button"
+      class="cpv-met-count"
       :title="metPulseTitle"
-      :style="{ top: `${headH + 22}px`, right: colEdge, transform: met.beat.value === 0 ? 'scale(1.12)' : 'scale(1)' }"
+      :style="{ top: `${headH + 22}px`, left: countLeft }"
       @click="met.toggle()"
     >
-      <span>{{ met.bpm.value }}</span>
-      <span v-if="met.countIn.value" data-met-countin style="font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;">entrada</span>
+      <span v-if="met.countIn.value" data-met-countin class="cpv-met-entrada">entrada</span>
       <span
-        class="cpv-met-pulse-box"
-        :style="{ background: met.countIn.value || met.beat.value === 0 ? 'var(--chord)' : 'transparent', color: met.countIn.value || met.beat.value === 0 ? 'var(--chord-ink)' : 'var(--chord)' }"
-      >{{ met.countIn.value || met.beat.value + 1 }}</span>
+        v-for="n in met.bar.value"
+        :key="n"
+        class="cpv-met-beat"
+        :class="{ 'is-now': met.beat.value === n - 1 }"
+      >{{ n }}</span>
     </button>
 
     <MetronomeSheet
@@ -2854,6 +2899,7 @@ defineExpose({
       :chart-bpm="met.chartBpm.value"
       :overridden="met.userBpm.value !== null"
       :sound="met.sound.value"
+      :pulse-head="met.pulseHead.value"
       :follow="met.follow.value"
       :count-in-on="met.countInOn.value"
       :scrolling="scrolling"
@@ -2866,6 +2912,7 @@ defineExpose({
       @reset-bpm="met.resetBpm()"
       @tap="met.tap()"
       @toggle-sound="met.toggleSound()"
+      @toggle-pulse-head="met.togglePulseHead()"
       @toggle-follow="met.follow.value = !met.follow.value"
       @toggle-count-in="met.toggleCountIn()"
     />

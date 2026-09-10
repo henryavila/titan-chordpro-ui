@@ -12,6 +12,8 @@ const props = defineProps<{
   /** True while the reader is overriding the chart tempo. */
   overridden: boolean
   sound: boolean
+  /** Title strip paints the beat — off until this panel turns it on. */
+  pulseHead: boolean
   follow: boolean
   /** One bar of click before the chart starts moving. */
   countInOn: boolean
@@ -29,6 +31,7 @@ const emit = defineEmits<{
   resetBpm: []
   tap: []
   toggleSound: []
+  togglePulseHead: []
   toggleFollow: []
   toggleCountIn: []
 }>()
@@ -198,6 +201,16 @@ const geom = computed(() =>
         <span style="display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:13px;font-weight:600;">{{ follow ? 'Rolagem vinculada' : 'Rolagem independente' }}</span>
           <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">{{ follow ? 'Iniciar aqui começa a auto-rolagem; parar qualquer um dos dois para os dois.' : 'O click roda sozinho, sem mexer na rolagem.' }}</span>
+        </span>
+      </button>
+
+      <button class="cpv-met-switch" data-met-head @click="emit('togglePulseHead')">
+        <span :style="{ background: pulseHead ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
+          <span :style="{ left: pulseHead ? '14px' : '2px', background: pulseHead ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
+        </span>
+        <span style="display:flex;flex-direction:column;gap:3px;">
+          <span style="font-size:13px;font-weight:600;">{{ pulseHead ? 'Faixa do título' : 'Faixa quieta' }}</span>
+          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">No 1 a faixa vira tinta e o título inverte. Nos outros, a cor do tema. Rolar não liga isto.</span>
         </span>
       </button>
 

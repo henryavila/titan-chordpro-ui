@@ -34,6 +34,8 @@
   --capo-soft: rgba(110, 118, 134, 0.10);
   --capo-edge: rgba(110, 118, 134, 0.22);
   --shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --downbeat: #EAECF2;
+  --downbeat-ink: #0B0D12;
 }
 .cpv-root[data-theme='light'] {
   color-scheme: light;
@@ -69,6 +71,8 @@
   --capo-soft: rgba(141, 148, 160, 0.08);
   --capo-edge: rgba(141, 148, 160, 0.20);
   --shadow: 0 20px 44px -20px rgba(18, 23, 30, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --downbeat: #13161D;
+  --downbeat-ink: #F5F6F8;
 }
 
 .cpv-root {
@@ -905,39 +909,93 @@
 .cpv-met-tap:active {
   background: var(--chord-soft);
 }
-/* Beat readout that stays on screen while the panel is closed. `right` is set
-   from the viewer: it hangs off the reading column, which moves with the
-   breakpoint, not off the window. */
-.cpv-met-pulse {
+/* Beat count: original 20px cell, stacked left of the column, outside chrome. */
+.cpv-met-count {
   position: absolute;
   z-index: 15;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 6px 0 10px;
-  border-radius: 11px;
-  border: 1px solid var(--chord-edge);
-  background: var(--veil-2);
-  color: var(--chord);
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
+  gap: 5px;
+  width: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  transition: transform 0.07s ease-out;
+  color: inherit;
 }
-.cpv-met-pulse-box {
+.cpv-met-entrada {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chord);
+  font-weight: 700;
+}
+.cpv-met-beat {
   width: 20px;
   height: 20px;
-  border-radius: 7px;
-  border: 1.5px solid var(--chord-edge);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-family: 'Space Mono', monospace;
   font-size: 10.5px;
-  transition: background 0.07s linear, color 0.07s linear;
+  font-weight: 500;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  opacity: 0.38;
+}
+.cpv-met-beat.is-now {
+  opacity: 1;
+  font-weight: 700;
+}
+.cpv-met-hit-1 .cpv-met-beat.is-now {
+  background: var(--downbeat);
+  color: var(--downbeat-ink);
+}
+.cpv-met-hit-n .cpv-met-beat.is-now {
+  background: transparent;
+  color: var(--chord);
+}
+
+.cpv-head-hit-1 {
+  --veil: var(--downbeat);
+  --line: var(--downbeat);
+  --text: var(--downbeat-ink);
+  --muted: color-mix(in srgb, var(--downbeat-ink) 72%, transparent);
+  --chord: var(--downbeat);
+  --chord-soft: var(--downbeat-ink);
+  --chord-edge: var(--downbeat-ink);
+  --chord-ink: var(--downbeat);
+  color: var(--downbeat-ink);
+}
+.cpv-head-hit-n {
+  animation: cpv-head-n var(--cpv-met-hit, 420ms) ease-out;
+}
+@keyframes cpv-head-n {
+  0% { background: var(--chord-fill); border-color: var(--chord-edge); }
+  100% { background: var(--veil); border-color: var(--line); }
+}
+
+.cpv-met-hit-1 .cpv-chord {
+  animation: cpv-chord-1 var(--cpv-met-hit, 420ms) ease-out;
+}
+.cpv-met-hit-n .cpv-chord {
+  animation: cpv-chord-n var(--cpv-met-hit, 420ms) ease-out;
+}
+@keyframes cpv-chord-1 {
+  0%, 40% { color: var(--downbeat); }
+  100% { color: var(--chord); }
+}
+@keyframes cpv-chord-n {
+  0% { filter: brightness(1.18); }
+  100% { filter: brightness(1); }
 }
 .cpv-more-item {
   display: flex;

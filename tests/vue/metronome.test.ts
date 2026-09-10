@@ -392,29 +392,26 @@ async function viewerAt(px: number) {
 }
 
 describe('the beat readout hangs off the chart, not the window', () => {
-  it('lands at the edge of the reading column on a wide screen', async () => {
+  it('sits to the left of the reading column on a wide screen', async () => {
     const w = await viewerAt(1600)
-    // A 1600px frame holds a 980px column: the chart ends where the leftover
-    // has been halved, and 300px further out is background nobody is reading.
-    // jsdom rewrites `max()`/`calc()` into its own shape, so this asks the
-    // thing that matters — the offset is derived from the column width.
-    const style = w.get('[data-met-pulse]').attributes('style') ?? ''
+    // A 1600px frame holds a 980px column: leftover is halved on each side.
+    const style = w.get('[data-met-count]').attributes('style') ?? ''
     expect(style).toContain('980px')
-    expect(style).toContain('max(16px')
+    expect(style).toMatch(/left:/)
+    expect(style).not.toMatch(/right:\s*16px/)
   })
 
-  it('leaves the phone where it was — there the column is the whole screen', async () => {
+  it('stays on the left on a phone — the column is the whole screen', async () => {
     const w = await viewerAt(390)
-    expect(w.get('[data-met-pulse]').attributes('style')).toContain('right: 16px')
+    const style = w.get('[data-met-count]').attributes('style') ?? ''
+    expect(style).toMatch(/left:\s*12px/)
   })
 
-  // jsdom lays nothing out, so `scrollHeight` is 0 and the viewer correctly
-  // reads the chart as fitting the frame — no scroll to count into. The
-  // count-in on a real chart is asserted in tests/browser/layout.spec.ts.
-  it('reads the tempo back with the panel closed', async () => {
+  it('keeps the count while the panel is closed', async () => {
     const w = await viewerAt(1600)
     expect(w.find('[data-met-countin]').exists()).toBe(false)
-    expect(w.get('[data-met-pulse]').text()).toContain('60')
+    expect(w.get('[data-met-count]').text()).toMatch(/1/)
+    expect(w.find('[data-met-pulse]').exists()).toBe(false)
   })
 })
 
@@ -444,14 +441,36 @@ describe('Rolar starts the metronome with the chart', () => {
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
 
-    expect(w.find('[data-met-pulse]').exists(), 'Rolar did not start the metronome').toBe(true)
+    expect(w.find('[data-met-count]').exists(), 'Rolar did not start the metronome').toBe(true)
+    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+    expect(w.get('[data-cpv-root]').classes().join(' ')).not.toMatch(/cpv-head-hit/)
+    const chord = w.get('.cpv-chord')
+    expect(getComputedStyle(chord.element).transform).not.toMatch(/translate/i)
     expect(w.find('[data-met-countin]').exists(), 'Rolar skipped the count-in').toBe(true)
     expect(w.get('[data-scroll]').text()).toMatch(/Parar/)
     expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+    expect(
+      w.get('[data-scroll]').element.closest('.cpv-chrome')!.classList.contains('is-hidden'),
+      'autoHide is off, so the dock should still be up',
+    ).toBe(false)
 
     await w.get('[data-met-btn]').trigger('click')
     await flushPromises()
     expect(w.text()).toContain('Só pulso visual')
+  })
+
+  it('tucks the dock away as soon as Rolar is pressed, and the toast sits where the bar was', async () => {
+    const w = await viewerWithRoom({ autoHide: true })
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+
+    const dock = w.get('[data-scroll]').element.closest('.cpv-chrome') as HTMLElement
+    expect(dock.classList.contains('is-hidden'), 'the dock waited for idle').toBe(true)
+    const toast = w.get('.cpv-toast')
+    expect(toast.text()).toMatch(/mostrar/)
+    const bottom = toast.attributes('style') ?? ''
+    expect(bottom, 'toast still sits above the (now gone) bar').not.toMatch(/124px|78px/)
+    expect(bottom).toMatch(/22px|18px|safe-area/)
   })
 
   it('a second tap on Rolar during the count-in cancels, instead of skipping it', async () => {
@@ -462,7 +481,7 @@ describe('Rolar starts the metronome with the chart', () => {
 
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
-    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+    expect(w.find('[data-met-count]').exists()).toBe(false)
     expect(w.get('[data-scroll]').text()).toMatch(/Rolar/)
     expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
   })
@@ -476,7 +495,7 @@ describe('Rolar starts the metronome with the chart', () => {
     await flushPromises()
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
-    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+    expect(w.find('[data-met-count]').exists()).toBe(false)
   })
 
   it('does not start the click when the reader unlinked the two', async () => {
@@ -491,7 +510,7 @@ describe('Rolar starts the metronome with the chart', () => {
 
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
-    expect(w.find('[data-met-pulse]').exists()).toBe(false)
+    expect(w.find('[data-met-count]').exists()).toBe(false)
     expect(w.get('.cpv-progress').classes()).toContain('is-live')
   })
 
@@ -503,5 +522,31 @@ describe('Rolar starts the metronome with the chart', () => {
     await w.get('[data-met-sound]').trigger('click')
     await flushPromises()
     expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ metSound: true })
+  })
+
+  it('paints the title strip only after the panel asks for it', async () => {
+    const storage = memoryStore()
+    const w = await viewerWithRoom({ storage })
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('.cpv-head-hit-1, .cpv-head-hit-n').exists()).toBe(false)
+
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.get('[data-met-head]').trigger('click')
+    await flushPromises()
+    expect(w.find('.cpv-head-hit-1, .cpv-head-hit-n').exists()).toBe(true)
+    expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ metPulseHead: true })
+  })
+
+  it('keeps the count outside the chrome so a hidden dock does not take it', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    const count = w.get('[data-met-count]').element
+    expect(count.closest('.cpv-chrome')).toBeNull()
+    const box = w.get('[data-met-count] .cpv-met-beat')
+    expect(getComputedStyle(box.element).width).toBe('20px')
+    expect(getComputedStyle(box.element).height).toBe('20px')
   })
 })

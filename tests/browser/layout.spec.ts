@@ -202,20 +202,18 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
   await page.keyboard.press(' ')
   await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
 
-  // The badge belongs to the chart, not to the window: at 1280 the column is
-  // 980 wide, so the far corner of the glass is 150px of empty background away.
+  // The count belongs to the chart, on the left of the column — not the
+  // far corner of the glass, which at 1280 is 150px of empty background.
   await page.keyboard.press('m')
-  const badge = page.locator('[data-met-pulse]')
-  await expect(badge).toBeVisible()
-  const box = await badge.evaluate((el) => {
+  const count = page.locator('[data-met-count]')
+  await expect(count).toBeVisible()
+  const box = await count.evaluate((el) => {
     const col = document.querySelector('.cpv-page')!.getBoundingClientRect()
     const b = el.getBoundingClientRect()
-    return { fromColumn: Math.abs(b.right - col.right), fromGlass: window.innerWidth - b.right }
+    return { leftOfColumn: col.left - b.right, fromGlass: b.left }
   })
-  // The few px left over are the badge's own scale on beat one, which grows it
-  // about its centre. At the window's edge this gap would be 16px.
-  expect(box.fromColumn).toBeLessThan(12)
-  expect(box.fromGlass).toBeGreaterThan(120)
+  expect(box.leftOfColumn).toBeGreaterThan(-8)
+  expect(box.fromGlass).toBeLessThan(200)
 })
 
 /**
@@ -229,8 +227,9 @@ test('Rolar starts a silent count-in before the chart moves', async ({ page }) =
   await page.locator('.cpv-chord').first().waitFor()
 
   await page.locator('[data-scroll]').click()
-  await expect(page.locator('[data-met-pulse]')).toBeVisible()
+  await expect(page.locator('[data-met-count]')).toBeVisible()
   await expect(page.locator('[data-met-countin]')).toBeVisible()
+  await expect(page.locator('.cpv-head-hit-1, .cpv-head-hit-n')).toHaveCount(0)
   await expect(page.locator('[data-scroll]')).toContainText('Parar')
   await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
 

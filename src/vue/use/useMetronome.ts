@@ -45,6 +45,11 @@ export function useMetronome(opts: MetronomeOpts) {
   const beat = ref(0)
   /** Off until the panel arms it. Rolar still starts the pulse and the count-in. */
   const sound = ref(false)
+  /**
+   * The title strip paints the beat. Off until the metronome panel turns it
+   * on — Rolar only brings the left count and the chord pulse.
+   */
+  const pulseHead = ref(false)
   /** Starting the click also starts the scroll, and stopping one stops both. */
   const follow = ref(true)
   /** One bar of click before the chart starts moving, so the musician enters with it. */
@@ -238,6 +243,10 @@ export function useMetronome(opts: MetronomeOpts) {
     countInOn.value = !countInOn.value
   }
 
+  function togglePulseHead() {
+    pulseHead.value = !pulseHead.value
+  }
+
   function dispose() {
     stop()
     if (actx) {
@@ -254,6 +263,7 @@ export function useMetronome(opts: MetronomeOpts) {
     running,
     beat,
     sound,
+    pulseHead,
     follow,
     countInOn,
     countIn,
@@ -270,6 +280,7 @@ export function useMetronome(opts: MetronomeOpts) {
     resetBpm,
     tap,
     toggleSound,
+    togglePulseHead,
     toggleCountIn,
     dispose,
   }
