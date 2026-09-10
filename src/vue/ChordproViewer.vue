@@ -2115,11 +2115,9 @@ defineExpose({
           <span style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;line-height:1;">{{ shownKey }}{{ hasCapo ? ` · capo ${capo}` : '' }}</span>
           <span style="font-size:9px;opacity:0.7;">▾</span>
         </button>
-        <!-- Reachable when the ficha only shows the top of the chart — the
-             dock is still under the fold until the frame is parked. Standalone
-             already has the dock on screen, so this stays off there. -->
+        <!-- Header, not dock: parking the ficha or a landscape width must not move this. -->
         <button
-          v-if="canPinFill"
+          v-if="canWinScreen"
           data-fs
           :aria-label="fsTitle"
           :title="fsTitle"
@@ -2209,6 +2207,15 @@ defineExpose({
             </template>
           </div>
         </div>
+        <button
+          v-if="canWinScreen"
+          data-fs
+          :aria-label="fsTitle"
+          :title="`${fsTitle} (F)`"
+          :style="{ width: '36px', height: '36px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
+          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:12px;color:var(--text);cursor:pointer;"
+          @click="toggleFs"
+        ><span class="cpv-icon-full" aria-hidden="true" /></button>
       </div>
     </div>
 
@@ -2492,7 +2499,6 @@ defineExpose({
           <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
         </button>
         <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
-        <button class="cpv-bar-btn" :style="{ background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }" :aria-label="fsTitle" :title="`${fsTitle} (F)`" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:12px;cursor:pointer;" @click="toggleFs"><span class="cpv-icon-full" aria-hidden="true" /></button>
       </div>
     </div>
 
@@ -2568,19 +2574,6 @@ defineExpose({
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
           <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
-          <!-- Only where it does something a tap on the chart does not. The
-               tap hides Titan chrome; this button covers the host page or the
-               browser chrome. On a standalone iPhone there is nothing extra to
-               win, so the button stays off. -->
-          <button
-            v-if="canWinScreen && !canPinFill"
-            data-fs
-            :aria-label="fsTitle"
-            :title="fsTitle"
-            :style="{ width: dockIconSize, height: dockCtrlH, background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
-            style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
-            @click="toggleFs"
-          ><span class="cpv-icon-full" aria-hidden="true" /></button>
           <button
             v-if="canEditNow"
             data-edit

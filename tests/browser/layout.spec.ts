@@ -340,16 +340,20 @@ test('every dock control stays reachable across phone widths', async ({ page }) 
   }
 })
 
-test('Tela cheia is on the dock itself, and not also buried in Mais', async ({ page }) => {
+test('Tela cheia is on the header, and not also buried in Mais', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 860 })
   await page.goto('/')
   await page.locator('.cpv-chord').first().waitFor()
 
   // Where native fullscreen exists — which is the case in both engines here —
-  // the button is on the dock and nowhere else. Where it does not, it is on
+  // the button is on the header and nowhere else. Where it does not, it is on
   // neither: see the immersive tests below.
   const fsBtn = page.locator('[data-fs]')
   await expect(fsBtn).toBeVisible()
+  const place = await fsPlace(page)
+  expect(place.count).toBe(1)
+  expect(place.fromTop, 'Tela cheia left the header').toBeLessThan(80)
+  expect(place.fromBottom, 'Tela cheia sat on the dock').toBeGreaterThan(120)
 
   // Drawn, not typed. `⤢` put 6.5px of ink on screen next to neighbours
   // drawing 12.4 — half the size — and how much ink a symbol character paints
@@ -378,10 +382,27 @@ test('Tela cheia is on the dock itself, and not also buried in Mais', async ({ p
   expect(Math.abs(ink.full - ink.theme) / ink.theme).toBeLessThan(0.25)
 
   // The same control in two places on one screen is clutter, not redundancy.
-  // Scoped to the sheet's own rows: the dock button carries the same label.
   await page.getByRole('button', { name: 'Mais controles' }).click()
   await expect(page.locator('.cpv-more-item').first()).toBeVisible()
   await expect(page.locator('.cpv-more-item', { hasText: 'Tela cheia' })).toHaveCount(0)
+})
+
+/** Offset of Tela cheia from the viewer root — header is near the top. */
+const fsPlace = (page: Page) => page.evaluate(() => {
+  const labels = new Set(['Tela cheia', 'Sair da tela cheia', 'Modo imersivo', 'Sair do modo imersivo'])
+  const btns = [...document.querySelectorAll('button')].filter(
+    (el) => el.hasAttribute('data-fs') || labels.has(el.getAttribute('aria-label') ?? ''),
+  )
+  const btn = btns[0]
+  const root = document.querySelector('[data-cpv-root]') as HTMLElement
+  if (!btn) return { count: 0, fromTop: Infinity, fromBottom: Infinity }
+  const br = btn.getBoundingClientRect()
+  const rr = root.getBoundingClientRect()
+  return {
+    count: btns.length,
+    fromTop: Math.round(br.top - rr.top),
+    fromBottom: Math.round(rr.bottom - br.bottom),
+  }
 })
 
 /**
@@ -696,6 +717,52 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   await page.waitForTimeout(300)
   expect((await rootBox()).y).toBeLessThan(8)
   expect((await dockBox()).bottom).toBeLessThanOrEqual(844 + 2)
+})
+
+test('parking a ficha with native fullscreen keeps Tela cheia in the header', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?ficha=1')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  const atLoad = await fsPlace(page)
+  expect(atLoad.count).toBe(1)
+  expect(atLoad.fromTop).toBeLessThan(80)
+  expect(atLoad.fromBottom).toBeGreaterThan(120)
+
+  await page.locator('#host-frame').evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await page.waitForTimeout(300)
+
+  const parked = await fsPlace(page)
+  expect(parked.count).toBe(1)
+  expect(parked.fromTop, 'parking sent Tela cheia to the dock').toBeLessThan(80)
+  expect(parked.fromBottom).toBeGreaterThan(120)
+})
+
+test('on a desktop the fullscreen control is in the top bar', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  const place = await fsPlace(page)
+  expect(place.count).toBe(1)
+  expect(place.fromTop, 'desktop Tela cheia sat in the bottom bar').toBeLessThan(80)
+  expect(place.fromBottom).toBeGreaterThan(120)
+})
+
+test('rotating a parked ficha to landscape keeps Tela cheia at the top', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?ficha=1')
+  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('#host-frame').evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await page.waitForTimeout(300)
+
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.waitForTimeout(400)
+
+  const place = await fsPlace(page)
+  expect(place.count).toBe(1)
+  expect(place.fromTop, 'landscape sent Tela cheia to the bottom bar').toBeLessThan(90)
+  expect(place.fromBottom).toBeGreaterThan(80)
 })
 
 /**

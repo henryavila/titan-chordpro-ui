@@ -216,11 +216,12 @@ O botão só existe onde há tela para ganhar:
 - API nativa (Android, desktop, iPad) **ou**
 - o box atual deixa ≥ 48px de viewport descobertos (ficha não estacionada)
 
+E vive **sempre no cabeçalho** da cifra — celular, desktop, ficha estacionada
+ou não. O dock é para tocar (Rolar, tipografia, metrônomo). Estacionar a
+ficha em `100dvh`, ou girar para paisagem, não manda o botão para baixo.
+
 Numa rota standalone, ou numa ficha já estacionada em `100dvh`, no iPhone o
 botão some: o toque na cifra é o que esconde a moldura.
-
-Na ficha, enquanto só o **topo** da cifra está visível, o botão vive no
-cabeçalho do viewer (o dock ainda está sob a dobra).
 
 Safari no iPhone **não tem** Fullscreen API para elemento (só `<video>`; flag
 experimental na 17.2, desligada). Os ~110px de chrome do Safari não são de
