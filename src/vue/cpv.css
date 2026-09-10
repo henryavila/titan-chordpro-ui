@@ -649,6 +649,25 @@
   border-top: 0;
   border-bottom-right-radius: 2px;
 }
+/*
+ * Edit, drawn rather than typed. `✎` paints 12.2 × 8.9 next to a 12.7 × 12.7
+ * theme glyph — the short axis is what reads as smaller — and how much ink a
+ * symbol character puts on screen is the font's decision, not ours. 13×13 is
+ * the same box as `.cpv-icon-full`. The chord-green pill that used to wrap it
+ * is gone: the button is a ghost, like Tema and Mais.
+ */
+.cpv-icon-edit {
+  --cpv-icon-edit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1 1 22 22' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15.385 4.221 4.394 4.394'/%3E%3C/svg%3E");
+  display: block;
+  flex: none;
+  width: 13px;
+  height: 13px;
+  box-sizing: border-box;
+  color: inherit;
+  background-color: currentColor;
+  -webkit-mask: var(--cpv-icon-edit) center / contain no-repeat;
+  mask: var(--cpv-icon-edit) center / contain no-repeat;
+}
 .cpv-glyph {
   font-family: system-ui, -apple-system, 'Segoe UI Symbol', sans-serif;
 }

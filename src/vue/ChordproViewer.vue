@@ -1048,30 +1048,22 @@ function showChrome() {
 }
 
 /**
- * Immersive is not the Fullscreen API with a fallback bolted on — it is the
- * screen the viewer already owns, plus the browser's own chrome when the
- * platform allows that too.
+ * Immersive wins the *host* or *browser* chrome — never the Titan controls.
+ * A musician in tela cheia still needs Rolar, tom, metrônomo. Hiding those
+ * used to give the chart a band they cannot play from.
  *
- * The order matters because on a phone the second half is usually impossible:
- * iPhone Safari has no element fullscreen. Measured on a 390×844 phone, the
- * viewer's own header and dock reserve 82px above and 134px below — 26% of the
- * screen — against ~110px of Safari chrome that no web API can touch. So the
- * frame is given away first and unconditionally, and the browser is asked for
- * the rest in parallel. Pinning is what covers the *host* page (nav, tabs)
- * when the chart is a box in a ficha; on a standalone 100dvh route it is a
- * no-op. That is the difference between a button that does something
- * everywhere and one that did something in Chrome and nothing on the phone the
- * chart is actually read on.
+ * Pinning covers the host page (nav, tabs) when the chart is a box in a ficha;
+ * on a standalone 100dvh route it is a no-op. Native fullscreen is asked for
+ * in parallel, and refused in silence on iPhone Safari. The tap-on-chart
+ * gesture (zen) still puts our chrome away on demand, and that tap must not
+ * unpin.
  */
 function setImmersive(on: boolean, opts: { native?: boolean } = {}): Promise<boolean> {
   if (fs.value === on) return Promise.resolve(nativeFs.active.value)
   const before = pageSpot()
   fs.value = on
   pinToViewport(on)
-  // Entering fullscreen on a phone hides the Titan chrome so the chart gets
-  // that band. Showing it again is a tap, and that tap must not unpin.
-  if (phone.value) {
-    zen.value = on
+  if (on) {
     capoOpen.value = false
     toneOpen.value = false
   }
@@ -1097,9 +1089,8 @@ async function toggleFs() {
   // The word for what happened, never the word for what was asked: the request
   // is async, and on most phones it comes back refused.
   const native = await setImmersive(want)
-  // On a phone the chrome is simply gone, and the standing hint on screen
-  // already says how to bring it back: a toast over it is the same sentence
-  // twice. What changed is the screen, which is feedback enough.
+  // The standing hint is only for zen. Tela cheia keeps the controls, so a
+  // toast on the phone would be the only word for what changed.
   if (phone.value) return
   if (!want) toastMsg('Modo imersivo desligado')
   else if (native) toastMsg('Tela cheia · Esc ou F para sair')
@@ -2590,7 +2581,16 @@ defineExpose({
             style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
             @click="toggleFs"
           ><span class="cpv-icon-full" aria-hidden="true" /></button>
-          <button v-if="canEditNow" data-edit aria-label="Editar esta cifra" title="Editar esta cifra" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border:1px solid var(--chord-edge);border-radius:14px;background:var(--chord-soft);color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="enterEdit">✎</button>
+          <button
+            v-if="canEditNow"
+            data-edit
+            class="cpv-ghost"
+            aria-label="Editar esta cifra"
+            title="Editar esta cifra"
+            :style="{ width: dockIconSize, height: dockCtrlH }"
+            style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
+            @click="enterEdit"
+          ><span class="cpv-icon-edit" aria-hidden="true" /></button>
           <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
         </div>
       </div>

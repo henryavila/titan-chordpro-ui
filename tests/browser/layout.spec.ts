@@ -385,6 +385,88 @@ test('Tela cheia is on the dock itself, and not also buried in Mais', async ({ p
 })
 
 /**
+ * The bug this guards: Editar sat in a green pill (`--chord-soft` fill,
+ * `--chord-edge` stroke, `--chord` ink) next to Tema / Tela cheia / Mais,
+ * which are ghosts. And `✎` painted 12.2 × 8.9 next to a 12.7 × 12.7 theme
+ * glyph — the short axis is what the eye reads as "the icon is smaller".
+ * Same class as `⤢`: a symbol character's ink is the font's decision.
+ */
+test('Edit on the dock is a sibling of the other icons, not a highlight', async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 860 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  const look = await page.evaluate(() => {
+    const paint = (sel: string) => {
+      const s = getComputedStyle(document.querySelector(sel)!)
+      return { bg: s.backgroundColor, color: s.color }
+    }
+    const c = document.createElement('canvas').getContext('2d')!
+    const glyph = (sel: string) => {
+      const el = document.querySelector(sel) as HTMLElement
+      const cs = getComputedStyle(el)
+      c.font = `${cs.fontSize} ${cs.fontFamily}`
+      const m = c.measureText((el.textContent ?? '').trim())
+      return {
+        w: m.actualBoundingBoxRight + m.actualBoundingBoxLeft,
+        h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+      }
+    }
+    const icon = document.querySelector('[data-edit] .cpv-icon-edit')
+    const editInk = icon
+      ? { w: icon.getBoundingClientRect().width, h: icon.getBoundingClientRect().height }
+      : glyph('[data-edit]')
+    const theme = glyph('[data-theme-btn]')
+    const themeSize = Math.max(theme.w, theme.h)
+    return {
+      edit: paint('[data-edit]'),
+      theme: paint('[data-theme-btn]'),
+      more: paint('[aria-label="Mais controles"]'),
+      editInk,
+      themeSize,
+    }
+  })
+
+  expect(look.edit, 'edit must not wear the chord highlight').toEqual(look.theme)
+  expect(look.edit).toEqual(look.more)
+
+  // Both axes, not just the longer one: ✎ already matched on width and failed
+  // on height, which is the thing that made the pencil look smaller.
+  expect(Math.abs(look.editInk.w - look.themeSize) / look.themeSize).toBeLessThan(0.25)
+  expect(Math.abs(look.editInk.h - look.themeSize) / look.themeSize).toBeLessThan(0.25)
+})
+
+/**
+ * Tela cheia used to flip zen on a phone, hiding Rolar / Tom / Mais the
+ * moment a musician asked for the screen. The button wins the *browser* (or
+ * host) chrome; the Titan controls stay, because a live set cannot be played
+ * from a blank chart.
+ */
+test('Tela cheia on a phone keeps the live controls', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  await page.locator('[data-fs]').click()
+  await page.waitForTimeout(600)
+
+  const after = await immersiveSpot(page)
+  expect(after.dockGone, 'tela cheia hid the dock').toBe(false)
+  expect(after.label).toBe('Sair da tela cheia')
+  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
+
+  const roll = page.locator('[data-scroll]')
+  await expect(roll).toBeVisible()
+  expect(await roll.evaluate((el) => getComputedStyle(el).pointerEvents)).not.toBe('none')
+  await expect(page.getByRole('button', { name: 'Mais controles' })).toBeVisible()
+  await expect(page.locator('[data-tone]')).toBeVisible()
+
+  // Usable, not merely painted: Mais still opens on top of the chart.
+  await page.getByRole('button', { name: 'Mais controles' }).click()
+  await expect(page.locator('.cpv-more-item').first()).toBeVisible()
+})
+
+/**
  * The bug this guards: on a phone the fullscreen button lit up, raised a toast
  * and moved nothing. Native fullscreen is unreachable on iPhone Safari, and
  * the fallback was `position:fixed` on a root that already filled the page
@@ -422,81 +504,87 @@ const immersiveSpot = (page: Page) => page.evaluate(() => {
   }
 })
 
-for (const native of [true, false]) {
-  test(`immersive hands the chrome's band back to the chart ${native ? 'with' : 'without'} native fullscreen`, async ({ page }) => {
-    if (!native) {
-      // iPhone Safari: the request is not merely refused, the method is not
-      // there to call.
-      await page.addInitScript(() => {
-        Reflect.deleteProperty(Element.prototype, 'requestFullscreen')
-        Reflect.deleteProperty(Element.prototype, 'webkitRequestFullscreen')
-        Object.defineProperty(document, 'fullscreenEnabled', { get: () => false })
-      })
-    }
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/')
-    await page.locator('.cpv-chord').first().waitFor()
+test('Tela cheia wins the screen and a tap still hides the chrome without leaving', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
 
-    const before = await immersiveSpot(page)
-    expect(before.padTop + before.padBottom).toBeGreaterThan(180)
-    expect(before.dockGone).toBe(false)
-    // The button exists only where it does something the gesture does not.
-    // Without native fullscreen the two put the same frame away, and a second
-    // control for the same act is clutter in a row that was already full.
-    expect(before.label).toBe(native ? 'Tela cheia' : null)
+  const before = await immersiveSpot(page)
+  expect(before.dockGone).toBe(false)
+  expect(before.label).toBe('Tela cheia')
 
-    // So the way in is the button where there is a screen to win, and the
-    // gesture where that is all there is (hide the Titan chrome).
-    if (native) await page.locator('[data-fs]').click()
-    else await tapChart(page)
-    await page.waitForTimeout(600)
-    const after = await immersiveSpot(page)
+  await page.locator('[data-fs]').click()
+  await page.waitForTimeout(600)
+  const inFs = await immersiveSpot(page)
+  expect(inFs.dockGone).toBe(false)
+  expect(inFs.label).toBe('Sair da tela cheia')
+  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
 
-    expect(after.dockGone).toBe(true)
-    expect(after.label).toBe(native ? 'Sair da tela cheia' : null)
-    // The way back has to be on screen — the gesture is invisible otherwise —
-    // and said once, not twice: the standing hint, and no toast over it.
-    await expect(page.locator('.cpv-chrome-hint')).toHaveText('Toque na cifra para mostrar os controles')
-    await expect(page.locator('.cpv-toast')).toHaveCount(0)
-    // The reserve is gone, not merely trimmed — and what is left is the edge
-    // the eye needs plus the phone's safe area.
-    expect(after.padTop).toBeLessThan(40)
-    // The bottom keeps only the band the exit hint is drawn in — 42px measured
-    // — so the last line of the song never ends up under it.
-    expect(after.padBottom).toBeLessThan(60)
-    const won = before.padTop + before.padBottom - (after.padTop + after.padBottom)
-    expect(won).toBeGreaterThan(150)
-    // Which the chart actually takes: the first line climbs by most of it.
-    expect(before.firstRowY - after.firstRowY).toBeGreaterThan(60)
+  // Zen is a separate gesture: hide our chrome, keep the screen the button won.
+  await tapChart(page)
+  await page.waitForTimeout(600)
+  const zen = await immersiveSpot(page)
+  expect(zen.dockGone).toBe(true)
+  expect(zen.label).toBe('Sair da tela cheia')
+  await expect(page.locator('.cpv-chrome-hint')).toHaveText('Toque na cifra para mostrar os controles')
+  expect(zen.padTop).toBeLessThan(40)
+  expect(zen.padBottom).toBeLessThan(60)
 
-    // A tap brings the controls back. It does not leave the screen the button
-    // won — a musician holding an instrument cannot afford that.
-    await tapChart(page)
-    await page.waitForTimeout(600)
-    const shown = await immersiveSpot(page)
-    expect(shown.dockGone).toBe(false)
-    expect(shown.padTop).toBeGreaterThan(60)
-    if (native) {
-      expect(shown.label).toBe('Sair da tela cheia')
-      await page.locator('[data-fs]').click()
-      await page.waitForTimeout(600)
-    }
-    expect(await immersiveSpot(page)).toEqual(before)
+  await tapChart(page)
+  await page.waitForTimeout(600)
+  const shown = await immersiveSpot(page)
+  expect(shown.dockGone).toBe(false)
+  expect(shown.label).toBe('Sair da tela cheia')
+
+  await page.locator('[data-fs]').click()
+  await page.waitForTimeout(600)
+  expect(await immersiveSpot(page)).toEqual(before)
+})
+
+test('a tap still hands the chrome band back when there is no screen to win', async ({ page }) => {
+  // iPhone Safari: the request is not merely refused, the method is not
+  // there to call. The button stays off; the gesture is what hides the frame.
+  await page.addInitScript(() => {
+    Reflect.deleteProperty(Element.prototype, 'requestFullscreen')
+    Reflect.deleteProperty(Element.prototype, 'webkitRequestFullscreen')
+    Object.defineProperty(document, 'fullscreenEnabled', { get: () => false })
   })
-}
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+
+  const before = await immersiveSpot(page)
+  expect(before.padTop + before.padBottom).toBeGreaterThan(180)
+  expect(before.dockGone).toBe(false)
+  expect(before.label).toBe(null)
+
+  await tapChart(page)
+  await page.waitForTimeout(600)
+  const after = await immersiveSpot(page)
+
+  expect(after.dockGone).toBe(true)
+  expect(after.label).toBe(null)
+  await expect(page.locator('.cpv-chrome-hint')).toHaveText('Toque na cifra para mostrar os controles')
+  await expect(page.locator('.cpv-toast')).toHaveCount(0)
+  expect(after.padTop).toBeLessThan(40)
+  expect(after.padBottom).toBeLessThan(60)
+  const won = before.padTop + before.padBottom - (after.padTop + after.padBottom)
+  expect(won).toBeGreaterThan(150)
+  expect(before.firstRowY - after.firstRowY).toBeGreaterThan(60)
+
+  await tapChart(page)
+  await page.waitForTimeout(600)
+  expect(await immersiveSpot(page)).toEqual(before)
+})
 
 test('immersive mid-song holds the line the reader was on, and the top stays the top', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await page.locator('.cpv-chord').first().waitFor()
 
-  // Collapsing the reserve moves every pixel of the chart. Standing at the top
-  // of the song is a place, not an offset: giving the band back must not shove
-  // the reader into the first verse.
+  // Entering tela cheia still moves padding a little (the fs chrome is
+  // tighter). Standing at the top of the song is a place, not an offset.
   await page.locator('[data-fs]').click()
-  await page.waitForTimeout(500)
-  expect((await immersiveSpot(page)).scrollTop).toBe(0)
-  await tapChart(page)
   await page.waitForTimeout(500)
   expect((await immersiveSpot(page)).scrollTop).toBe(0)
   await page.locator('[data-fs]').click()
@@ -516,8 +604,6 @@ test('immersive mid-song holds the line the reader was on, and the top stays the
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(600)
   expect(await line()).toBe(was)
-  await tapChart(page)
-  await page.waitForTimeout(400)
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(600)
   expect((await immersiveSpot(page)).scrollTop).toBe(800)
@@ -567,21 +653,32 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(pinned.pos).toBe('fixed')
   expect(pinned.y).toBe(0)
   expect(pinned.h).toBeGreaterThanOrEqual(840)
-  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeLessThan(40)
+  // The host chrome is gone. Ours stays: a live set needs Rolar and Tom.
+  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(60)
   await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) => ({
     opacity: getComputedStyle(el.closest('.cpv-chrome')!).opacity,
     pointer: getComputedStyle(el).pointerEvents,
-  }))).toEqual({ opacity: '0', pointer: 'none' })
+  }))).toEqual({ opacity: '1', pointer: 'auto' })
+  await expect(page.locator('[data-scroll]')).toBeVisible()
+  expect(await page.locator('[data-scroll]').evaluate((el) => getComputedStyle(el).pointerEvents)).not.toBe('none')
 
-  // Tap is "show the controls". It must not dump the musician back onto the
-  // ficha — that is the gesture they will hit mid-chorus.
+  // Tap hides our chrome. It must not dump the musician back onto the ficha
+  // — that is the gesture they will hit mid-chorus.
+  await tapChart(page)
+  await page.waitForTimeout(700)
+  const zen = await rootBox()
+  expect(zen.pos).toBe('fixed')
+  expect(zen.y).toBe(0)
+  await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
+  expect(await page.locator('[data-fs]').evaluate((el) =>
+    getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('0')
+
   await tapChart(page)
   await page.waitForTimeout(700)
   const shown = await rootBox()
   expect(shown.pos).toBe('fixed')
   expect(shown.y).toBe(0)
-  await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) =>
     getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('1')
   expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(60)
