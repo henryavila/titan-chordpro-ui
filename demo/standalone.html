@@ -3,19 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Demos · titan-chordpro-ui</title>
+    <title>Standalone · uma cifra · titan-chordpro-ui</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Palco: a cifra é a página. Ancestral 100%, overflow hidden. Sem iframe. -->
     <style>
-      html, body, #app { margin: 0; min-height: 100%; background: #0B0D12; }
+      html, body, #app { margin: 0; height: 100%; background: #0B0D12; overflow: hidden; }
     </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="./hub.ts"></script>
+    <div id="app" data-surface="standalone" data-lista="0"></div>
+    <script type="module" src="./cifra.ts"></script>
   </body>
 </html>

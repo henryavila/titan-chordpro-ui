@@ -4,12 +4,20 @@ Como um app Vue 3 ou Nuxt **incorpora** a UI de 1 cifra. Este pacote não é um
 iframe, não é um site, e **não amarra um consumer específico**. Quem consome
 escolhe a composição; o Titan entrega o mesmo componente.
 
-Demo neste repo (`pnpm dev`):
+Demo neste repo (`pnpm dev`): índice em `/` com as quatro receitas. O mesmo
+`<ChordproViewer>`; a lista é prop do host; **não** há iframe.
 
 | URL | O que é |
 |---|---|
-| `/` | Página só da cifra (standalone) |
-| `/?ficha=1` | Componente no meio de uma página com conteúdo acima e abaixo; modo ensaio ligado |
+| `/` | Índice das receitas |
+| `/standalone.html` | Palco: página só da cifra |
+| `/standalone-lista.html` | Palco com repertório (`songs`) |
+| `/site.html` | Componente no meio de um site (ficha, conteúdo acima e abaixo) |
+| `/site-lista.html` | Ficha com repertório |
+| `/standalone.html?quebrar=1` | Laboratório: ancestral sem altura (`surfaceGuard`) |
+| `/standalone-lista.html?ensaio=demanda` | Laboratório: lista só com metadados + cifra que não chega |
+
+Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
 ---
 

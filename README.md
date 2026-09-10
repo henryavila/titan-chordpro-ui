@@ -17,7 +17,7 @@ Leitura, overlay pessoal, edição por bloco (E1/E2) e editor de partitura (VexF
 ```bash
 pnpm install
 pnpm test
-pnpm dev      # demo em :5173
+pnpm dev      # índice das 4 receitas em :5173
 pnpm build
 ```
 
@@ -66,7 +66,9 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 
 `titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
 
-Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` (standalone) e `/?ficha=1` (componente na ficha, ensaio).
+Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice;
+`/standalone.html` palco; `/site.html` cifra dentro de um site; `*-lista.html`
+com repertório.
 
 ### `<ChordproViewer>` props
 
