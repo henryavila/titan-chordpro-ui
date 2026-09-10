@@ -7,7 +7,7 @@
 | Sincronização com o template de design (2026-09-09) | [design-sync-2026-09-09.md](./design-sync-2026-09-09.md) |
 | Relógio da auto-rolagem: camadas, invariante, pontas soltas (2026-09-09) | [autoscroll-clock-2026-09-09.md](./autoscroll-clock-2026-09-09.md) |
 | `fitDefault` virou `true` (2026-09-09) | [fit-default-2026-09-09.md](./fit-default-2026-09-09.md) |
-| Composições do consumer: standalone + na página; iframe cancelado (2026-09-10) | [consumer-compositions-2026-09-10.md](./consumer-compositions-2026-09-10.md) |
+| Composições do consumer: palco × ficha, com/sem lista; iframe cancelado (2026-09-10) | [consumer-compositions-2026-09-10.md](./consumer-compositions-2026-09-10.md) |
 
 Consult before changing editor scope or handoff.
 Antes de mexer em integração (componente na página / standalone): leia
