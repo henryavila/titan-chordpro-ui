@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-11
+
+### Added
+- Máscara **MM:SS** no campo de duração da Nova cifra (igual ao diálogo de metadados).
+
+### Fixed
+- **Auto-rolagem:** o padding do título e a legenda do capo não comem tempo da intro. A primeira estrofe de `009 - Verdadeira alegria` permanece na tela o tempo do `{duration:}` (não os 14 s da estimativa de linha). Testes de relógio usam só dados da cifra (`{duration:}`, `{tempo:}`, `x///`); gate contra `BEATS_PER_ROW` como duração de verso.
+- **Chrome de edição:** header em card flutuante como o de leitura; Metadados no cluster de ações, sem faixa full-bleed.
+- **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
+- **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
+
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.1
+
 ## [0.1.0] - 2026-09-11
 
 ### Added
@@ -22,5 +36,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-1.0 (`0.x`): minor bumps may include breaking API changes. Pin with `~0.1.0` if you want patch-only updates.
 - Peers: `vue` (required for UI), optional `vexflow` (`{sos}`/`{sot}`), optional `pdfjs-dist` (PDF text import).
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.0
