@@ -276,6 +276,23 @@ describe('buildTimeline', () => {
    * into the one above, and the playhead jumped the whole gap in a single frame
    * at every block boundary.
    */
+  /**
+   * Bottom padding (chrome reserve, safe area) is still paper. Saturating
+   * barsAtPx at the last measured box made a resume mid-page look like 100%.
+   */
+  it('owns the trailing pad under the last block, so mid-page is not the end', () => {
+    const short: TimelineBlock[] = [
+      { top: 40, h: 100, kind: 'stanza', music: music({ beats: 16 }) },
+      { top: 180, h: 120, kind: 'stanza', music: music({ rows: 4 }) },
+    ]
+    const t = buildTimeline(short, { ...opts, doc: 800 })
+    const last = t.segs[t.segs.length - 1]!
+    expect(last.top + last.h).toBeCloseTo(800, 0)
+    expect(pxAtBars(t, t.bars)).toBeCloseTo(800, 0)
+    expect(barsAtPx(t, 400) / t.bars).toBeLessThan(0.9)
+    expect(barsAtPx(t, 799) / t.bars).toBeGreaterThan(0.9)
+  })
+
   it('crosses the gap between blocks instead of teleporting over it', () => {
     const spaced: TimelineBlock[] = [
       { top: 60, h: 100, kind: 'stanza', music: music({ beats: 40 }) },

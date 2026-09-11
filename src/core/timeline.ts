@@ -266,7 +266,10 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
 
   // The gap between two blocks belongs to the block above it. Left out of every
   // segment, it is pixels the mapping does not own, and the playhead teleported
-  // across one at every block boundary.
+  // across one at every block boundary. The same is true of the trailing pad
+  // under the last block: without it, barsAtPx saturates at t.bars as soon as
+  // the reading line passes the last measured box, and a resume mid-page
+  // looks like the end of the song.
   if (raw[0]) {
     raw[0].h += raw[0].top
     raw[0].top = 0
@@ -275,6 +278,8 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
       const nx = raw[i + 1]
       if (s && nx) s.h = Math.max(1, nx.top - s.top)
     }
+    const last = raw[raw.length - 1]
+    if (last) last.h = Math.max(last.h, Math.max(1, opts.doc - last.top))
   }
 
   // Blocks with no music of their own (label, note, loose image) cross at the
