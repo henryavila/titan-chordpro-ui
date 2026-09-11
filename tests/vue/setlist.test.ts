@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref } from 'vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { useSetlist, type SetlistSong, type SongSpot } from '../../src/vue/use/useSetlist'
@@ -58,6 +58,38 @@ describe('a rehearsal is a list, but only when there is one', () => {
     ])
     const ids = s.list.value.map((x) => x.id)
     expect(new Set(ids).size).toBe(2)
+  })
+})
+
+describe('the list shows the tempo without a new column', () => {
+  it('reads {tempo:} off the chart the host already has', () => {
+    const s = setlistOf(songs(2))
+    expect(s.items.value[0]?.bpmLabel).toBe('60')
+    expect(s.items.value[1]?.bpmLabel).toBe('63')
+  })
+
+  it('uses the host tempo when the ChordPro is not on hand yet', () => {
+    const s = setlistOf([
+      { id: 'a', title: 'Uma', tempo: 80 },
+      { id: 'b', title: 'Outra', tempo: '92' },
+    ])
+    expect(s.items.value.map((x) => x.bpmLabel)).toEqual(['80', '92'])
+  })
+
+  it('prefers the host tempo over a number in the source', () => {
+    const s = setlistOf([
+      { id: 'a', title: 'Uma', tempo: 100, source: '{tempo:60}\n[C]oi' },
+      { id: 'b', title: 'Outra', source: CHART },
+    ])
+    expect(s.items.value[0]?.bpmLabel).toBe('100')
+  })
+
+  it('says nothing when there is no usable tempo', () => {
+    const s = setlistOf([
+      { id: 'a', title: 'Uma', source: '{title: Uma}\n[C]oi' },
+      { id: 'b', title: 'Outra' },
+    ])
+    expect(s.items.value.every((x) => x.bpmLabel === '')).toBe(true)
   })
 })
 
@@ -226,6 +258,15 @@ describe('the viewer in a rehearsal', () => {
     expect(w.text()).toContain('Jesus')
   })
 
+  it('prints the BPM on the row, next to the key, not as a heading', async () => {
+    const w = viewer({ source: '', songs: songs(2) })
+    await flushPromises()
+    await w.get('[data-setlist-open]').trigger('click')
+    const bpm = w.get('[data-setlist-item] [data-setlist-bpm]')
+    expect(bpm.text()).toBe('60')
+    expect(bpm.attributes('title')).toBe('60 BPM')
+  })
+
   it('opens the list and changes song from it', async () => {
     const w = viewer({ source: '', songs: songs(2) })
     await flushPromises()
@@ -388,5 +429,148 @@ describe('wheel over the open rehearsal list stays on the list', () => {
     const item = w.get('[data-setlist-item]').element
     const ev = wheel(item, 40)
     expect(ev.defaultPrevented).toBe(false)
+  })
+})
+
+/**
+ * "Fim da música / Próxima" is the end of the paper, not a clock that can
+ * fire because the musician paused, dragged the chart and hit Rolar again.
+ */
+describe('the end-of-song offer does not fire mid-chart', () => {
+  const observers: ((entries: unknown[]) => void)[] = []
+  class TestRO {
+    constructor(cb: (entries: unknown[]) => void) {
+      observers.push(cb)
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  let realRO: typeof ResizeObserver
+
+  beforeEach(() => {
+    observers.length = 0
+    realRO = globalThis.ResizeObserver
+    globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
+    vi.useFakeTimers({
+      toFake: ['performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout'],
+    })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    globalThis.ResizeObserver = realRO
+  })
+
+  const TINY = '{title: Tiny}\n{key: C}\n[C]Oi\n'
+  function tinySongs(n: number): SetlistSong[] {
+    return Array.from({ length: n }, (_, i) => ({
+      id: `t${i}`,
+      title: `Música ${i + 1}`,
+      source: TINY,
+    }))
+  }
+
+  async function rehearsalWithRoom(list: SetlistSong[] = songs(2)) {
+    const w = viewer({ source: '', songs: list, autoHide: false })
+    await flushPromises()
+    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+    observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
+    await flushPromises()
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.findAll('.cpv-met-switch')[1]!.trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+    return { w, el }
+  }
+
+  async function frames(n: number) {
+    for (let i = 0; i < n; i++) {
+      await vi.advanceTimersByTimeAsync(16)
+      await flushPromises()
+    }
+  }
+
+  async function waitOffer(w: ReturnType<typeof viewer>, on: boolean, budget = 250) {
+    for (let i = 0; i < budget; i++) {
+      if (w.find('[data-end-offer]').exists() === on) return
+      // 250ms is the loop's dt cap, so each frame burns a quarter-second of music.
+      await vi.advanceTimersByTimeAsync(250)
+      await flushPromises()
+    }
+    expect(w.find('[data-end-offer]').exists()).toBe(on)
+  }
+
+  it('does not offer the next song after pause, drag, and Rolar again', async () => {
+    const { w, el } = await rehearsalWithRoom()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await frames(4)
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+
+    el.scrollTop = 1800
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await frames(8)
+
+    expect(w.find('[data-end-offer]').exists(), 'offered next while the page was still mid-chart').toBe(false)
+    expect((w.get('[data-scroll]').text() + (w.get('[data-scroll]').attributes('aria-label') ?? ''))).toMatch(/Parar/)
+  })
+
+  it('clears a leftover offer when the musician hits Rolar again', async () => {
+    const { w, el } = await rehearsalWithRoom(tinySongs(2))
+    el.scrollTop = 3499
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await waitOffer(w, true)
+
+    el.scrollTop = 900
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-end-offer]').exists(), 'Rolar must dismiss the leftover fim-da-música badge').toBe(false)
+  })
+
+  it('offers the next song only when the paper is actually at the end', async () => {
+    const { w, el } = await rehearsalWithRoom(tinySongs(2))
+    el.scrollTop = 3499
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await waitOffer(w, true)
+    expect(w.find('[data-end-next]').exists()).toBe(true)
+  })
+
+  it('does not offer next on the last song even at the paper end', async () => {
+    const w = viewer({ source: '', songs: tinySongs(2), autoHide: false })
+    await flushPromises()
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+    observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
+    await flushPromises()
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.findAll('.cpv-met-switch')[1]!.trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+    el.scrollTop = 3499
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await waitOffer(w, false, 80)
+  })
+
+  it('does not offer next when Rolar starts from the top', async () => {
+    const { w, el } = await rehearsalWithRoom()
+    el.scrollTop = 0
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await frames(6)
+    expect(w.find('[data-end-offer]').exists()).toBe(false)
   })
 })
