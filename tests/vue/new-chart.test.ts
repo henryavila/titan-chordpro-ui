@@ -86,12 +86,32 @@ describe('bringing a chart in', () => {
     expect(w.find('[data-nova-title]').exists()).toBe(false)
   })
 
+  it('asks for a Cifra Club address, not a generic page', () => {
+    const w = dialog()
+    expect(w.text()).toContain('Cifra Club')
+    expect(w.text()).toContain('Só Cifra Club')
+    expect((w.get('[data-nova-url]').element as HTMLInputElement).placeholder).toContain(
+      'cifraclub.com.br',
+    )
+  })
+
+  it('refuses a URL that is not Cifra Club before asking the host', async () => {
+    const fetchChart = vi.fn(() => Promise.resolve(PLAIN))
+    const w = dialog({ fetchChart })
+    await w.get('[data-nova-url]').setValue('https://www.letras.mus.br/uma/cifra/')
+    await w.get('[data-nova-url-go]').trigger('click')
+    await flushPromises()
+    expect(fetchChart).not.toHaveBeenCalled()
+    expect(w.text()).toContain('Só o Cifra Club')
+    expect(w.find('[data-nova-title]').exists()).toBe(false)
+  })
+
   it('says so plainly when the host offers no way to fetch a link', async () => {
     const w = dialog()
     await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/a/b/')
     await w.get('[data-nova-url-go]').trigger('click')
     await flushPromises()
-    expect(w.text()).toContain('Buscar por link não está disponível')
+    expect(w.text()).toContain('Buscar no Cifra Club não está disponível')
   })
 
   it('uses the host fetcher and keeps the link as the reference', async () => {
@@ -109,7 +129,7 @@ describe('bringing a chart in', () => {
     await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/a/b/')
     await w.get('[data-nova-url-go]').trigger('click')
     await flushPromises()
-    expect(w.text()).toContain('Não deu para ler essa página')
+    expect(w.text()).toContain('Não deu para ler essa cifra no Cifra Club')
   })
 
   it('does not offer PDF when the host cannot read one', async () => {
@@ -195,5 +215,20 @@ describe('what the flow hands back', () => {
     expect(w.find('[data-new-chart]').exists()).toBe(false)
     expect(w.emitted('save-content')?.[0]?.[0]).toContain('{title:Minha música}')
     expect(w.emitted('update:mode')?.at(-1)?.[0]).toBe('edit')
+  })
+
+  it('stays in the editor when the host writes the new chart back as source', async () => {
+    const w = viewer({ modes: 'content' })
+    await w.get('[data-start-blank]').trigger('click')
+    await w.get('[data-nova-title]').setValue('Minha música')
+    await w.get('[data-nova-go]').trigger('click')
+    await flushPromises()
+    const src = String(w.emitted('save-content')?.[0]?.[0])
+    await w.setProps({ source: src })
+    await flushPromises()
+    await nextTick()
+    expect(w.emitted('update:mode')?.at(-1)?.[0]).toBe('edit')
+    expect(w.text()).toMatch(/Para todos/)
+    expect(w.find('[data-start-import]').exists()).toBe(false)
   })
 })

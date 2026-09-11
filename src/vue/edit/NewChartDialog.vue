@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import {
-  convert, detect, missingOf, MISSING_LABEL, readMeta, titleFromUrl, writeMeta,
+  convert, detect, hostOk, missingOf, MISSING_LABEL, readMeta, titleFromUrl, writeMeta,
   type ChartMeta, type MetaKey,
 } from 'titan-chordpro-ui'
 
@@ -67,6 +67,7 @@ const SNIFF_LABEL: Record<string, string> = {
   chordpro: 'ChordPro',
   onsong: 'OnSong',
   plain: 'acordes sobre a letra',
+  cifraclub: 'Cifra Club',
 }
 
 const missing = computed(() => missingOf(meta.value))
@@ -117,9 +118,18 @@ function startBlank() {
 
 async function runUrl() {
   const u = url.value.trim()
-  if (!u) return fail('Cole o endereço da página', 'Exemplo: https://www.cifraclub.com.br/ministerio-jovem/meu-farol/')
+  if (!u)
+    return fail(
+      'Cole o endereço do Cifra Club',
+      'Exemplo: https://www.cifraclub.com.br/ministerio-jovem/meu-farol/',
+    )
+  if (!hostOk(u))
+    return fail(
+      'Só o Cifra Club',
+      'Cole um endereço de cifraclub.com.br. Arquivo ou Texto aceitam cifra de outro lugar.',
+    )
   if (!props.fetchChart)
-    return fail('Buscar por link não está disponível', 'A página precisa ser buscada pelo servidor do site. Use Arquivo ou Texto.')
+    return fail('Buscar no Cifra Club não está disponível', 'A página precisa ser buscada pelo servidor do site. Use Arquivo ou Texto.')
   busy.value = true
   err.value = ''
   try {
@@ -137,7 +147,7 @@ async function runUrl() {
     busy.value = false
     step.value = 'ficha'
   } catch {
-    fail('Não deu para ler essa página', 'Confira o endereço, ou use Arquivo ou Texto.')
+    fail('Não deu para ler essa cifra no Cifra Club', 'Confira o endereço, ou use Arquivo ou Texto.')
   }
 }
 
@@ -274,15 +284,23 @@ const tabStyle = (on: boolean) => ({
       <template v-if="step === 'import'">
         <div style="display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--surface);border:1px solid var(--line-soft);">
           <button v-for="t in (['url', 'file', 'text'] as const)" :key="t" :data-tab="t" :style="tabStyle(tab === t)" style="flex:1;height:34px;border:0;border-radius:9px;font-family:inherit;font-size:12.5px;cursor:pointer;" @click="tab = t; err = ''">
-            {{ t === 'url' ? 'Link' : t === 'file' ? 'Arquivo' : 'Texto' }}
+            {{ t === 'url' ? 'Cifra Club' : t === 'file' ? 'Arquivo' : 'Texto' }}
           </button>
         </div>
 
         <div v-if="tab === 'url'" style="display:flex;flex-direction:column;gap:9px;">
-          <input v-model="url" type="url" placeholder="https://www.cifraclub.com.br/artista/musica/" spellcheck="false" data-nova-url style="width:100%;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;" />
-          <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Cola o endereço da página da música. Suportado hoje: cifraclub.com.br.</span>
+          <input
+            v-model="url"
+            type="url"
+            placeholder="https://www.cifraclub.com.br/artista/musica/"
+            aria-label="Endereço no Cifra Club"
+            spellcheck="false"
+            data-nova-url
+            style="width:100%;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;"
+          />
+          <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Só Cifra Club. Cole o endereço da página da cifra — nada de outro site.</span>
           <button :disabled="busy" data-nova-url-go style="align-self:flex-start;height:42px;padding:0 18px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:9px;" @click="runUrl">
-            <span v-if="busy" class="cpv-spin" style="width:14px;height:14px;" />{{ busy ? 'Buscando…' : 'Buscar cifra' }}
+            <span v-if="busy" class="cpv-spin" style="width:14px;height:14px;" />{{ busy ? 'Buscando…' : 'Buscar no Cifra Club' }}
           </button>
         </div>
 

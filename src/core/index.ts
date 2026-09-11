@@ -168,10 +168,13 @@ export { looksLikeOnSong, normalizeOnSong } from './onsong'
 export {
   convert,
   detect,
+  fromCifraClubHtml,
   fromOnSong,
   fromPlain,
   hostOk,
+  isChord,
   isChordLine,
+  looksLikeCifraClubHtml,
   META_KEYS,
   MISSING_LABEL,
   missingOf,
@@ -181,4 +184,4 @@ export {
   toPlain,
   writeMeta,
 } from './import-chordpro'
-export type { ChartMeta, ImportFormat, ImportResult, MetaKey } from './import-chordpro'
+export type { ChartMeta, CifraClubPage, ImportFormat, ImportResult, MetaKey } from './import-chordpro'

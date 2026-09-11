@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { catalogToFixtures, fetchPreviewCatalog } from '../../demo/preview-catalog'
-import { handlePreviewRequest, listPreviewFiles } from '../../demo/preview-plugin'
+import { handleCifraFetch, handlePreviewRequest, listPreviewFiles } from '../../demo/preview-plugin'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -98,5 +98,19 @@ describe('preview plugin', () => {
       },
     )
     expect(res.statusCode).toBe(204)
+  })
+
+  it('refuses a fetch that is not Cifra Club', () => {
+    const res = { statusCode: 0, end() {} }
+    let next = false
+    handleCifraFetch(
+      { url: '/__cifra_fetch?url=https://example.com/x' } as IncomingMessage,
+      res as unknown as ServerResponse,
+      () => {
+        next = true
+      },
+    )
+    expect(next).toBe(false)
+    expect(res.statusCode).toBe(400)
   })
 })

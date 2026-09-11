@@ -1272,6 +1272,9 @@ const canStartNew = computed(
 )
 function commitNewChart(src: string) {
   novaOpen.value = false
+  // A host that persists `save-content` into `source` must not look like a
+  // different song: that watcher would drop the editor we are about to open.
+  lastSrc = src
   ov.setOfficial(src)
   forceBase()
   beginEdit('content')

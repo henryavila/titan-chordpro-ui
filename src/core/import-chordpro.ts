@@ -12,20 +12,33 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
-const CHORD =
-  /^\(?[A-H](?:#|b)?(?:m|min|maj|M|dim|aug|sus|add|º|°|\+)?(?:\d{1,2})?(?:(?:sus|add|maj|min|dim|aug|no)\d{0,2}|[#b+-]\d{1,2}|\/[A-H](?:#|b)?)*\)?$/
 const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
 const CHORUS = /^(refr(?:ã|a)o|chorus)/i
 
-const isChord = (t: string) => CHORD.test(t) && /[A-H]/.test(t[0] ?? '')
+/** Only a parenthesis around the whole token — not the `(4)` in `D7(4)`. */
+function unwrapChord(token: string): string {
+  return /^\(.+\)$/.test(token) ? token.slice(1, -1) : token
+}
+
+/**
+ * Brazilian / Cifra Club names: C7M, D7(4), Em7(11), D7(9/11), C9/E, Eb°.
+ */
+
+export function isChord(token: string): boolean {
+  const t = unwrapChord(token)
+  if (!t || !/^[A-H]/.test(t)) return false
+  return /^[A-H](?:#|b)?(?:m(?![aj])|M(?!aj)|maj|min|dim|aug|sus|add|º|°|\+)?(?:\d{1,2})?(?:M|maj)?(?:\([^)]+\))?(?:(?:add|sus|maj|min|dim|aug|no)\d{0,2})?(?:[#b+-]\d{1,2})?(?:\/[A-H](?:#|b)?)?$/.test(
+    t,
+  )
+}
 
 /** A line that is only chord names — an intro, a passing bar, a turnaround. */
 export function isChordLine(line: string): boolean {
   const t = line.trim()
-  if (!t || t.length > 90) return false
+  if (!t || t.length > 200) return false
   const toks = t.split(/\s+/)
-  if (toks.length > 14) return false
+  if (toks.length > 24) return false
   return toks.every(isChord)
 }
 
@@ -53,7 +66,7 @@ function merge(chordLine: string, lyric: string): string {
   let cur = 0
   for (const c of marks) {
     const col = Math.max(cur, Math.min(c.col, lyric.length))
-    out += lyric.slice(cur, col) + '[' + c.name.replace(/^\(|\)$/g, '') + ']'
+    out += lyric.slice(cur, col) + '[' + unwrapChord(c.name) + ']'
     cur = col
   }
   return out + lyric.slice(cur)
@@ -63,7 +76,7 @@ const chordsOnly = (l: string) =>
   l
     .trim()
     .split(/\s+/)
-    .map((c) => '[' + c.replace(/^\(|\)$/g, '') + ']')
+    .map((c) => '[' + unwrapChord(c) + ']')
     .join(' ')
 
 function sectionDirective(label: string, open: boolean): string {
@@ -95,7 +108,26 @@ export function fromPlain(text: string): string {
     }
     const bare = raw.trim()
     if (!bare) {
+      // A blank ends the refrain: Cifra Club (and plain cifras) mark the next
+      // verse that way, with no [Verso] tag. Leaving {soc} open painted every
+      // following line as its own chorus box in the editor.
+      closeChorus()
       out.push('')
+      continue
+    }
+    const tagged = bare.match(/^\[([^\]]+)\]\s*(.*)$/)
+    if (tagged && !isChord(tagged[1] ?? '')) {
+      closeChorus()
+      const d = sectionDirective(tagged[1] ?? '', true)
+      if (d === '{soc}') {
+        chorus = true
+        out.push('{soc}')
+      } else out.push(d)
+      const rest = (tagged[2] ?? '').trim()
+      if (rest) {
+        if (isChordLine(rest)) out.push(chordsOnly(rest))
+        else out.push(rest)
+      }
       continue
     }
     const asSection = bare.replace(/^\[(.+)\]$/, '$1')
@@ -183,6 +215,7 @@ function bodyWithSections(lines: string[]): string {
   for (const raw of lines) {
     const bare = raw.trim()
     if (!bare) {
+      closeChorus()
       out.push('')
       continue
     }
@@ -202,11 +235,12 @@ function bodyWithSections(lines: string[]): string {
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
-export type ImportFormat = 'vazio' | 'chordpro' | 'onsong' | 'plain'
+export type ImportFormat = 'vazio' | 'chordpro' | 'onsong' | 'plain' | 'cifraclub'
 
 export function detect(text: string): ImportFormat {
   const t = clean(text)
   if (!t.trim()) return 'vazio'
+  if (looksLikeCifraClubHtml(t)) return 'cifraclub'
   if (/\{\s*(title|t|subtitle|st|artist|key|soc|start_of_chorus|c|comment|sot|start_of_tab)\s*:?/i.test(t))
     return 'chordpro'
   if (/^\s*(title|artist|key|tempo|time|flow|ccli|capo)\s*:/im.test(t)) return 'onsong'
@@ -220,6 +254,7 @@ const FORMAT_LABEL: Record<string, string> = {
   chordpro: 'ChordPro',
   onsong: 'OnSong',
   plain: 'acordes sobre a letra',
+  cifraclub: 'Cifra Club',
 }
 
 export type ImportResult = {
@@ -233,6 +268,23 @@ export type ImportResult = {
 export function convert(text: string): ImportResult {
   const fmt = detect(text)
   if (fmt === 'vazio') return { source: '', format: fmt, label: '', changed: false }
+  if (fmt === 'cifraclub') {
+    const page = fromCifraClubHtml(text)
+    if (!page.body.trim()) return { source: '', format: 'vazio', label: '', changed: false }
+    const converted = stripLyricDots(fromPlain(page.body))
+    const meta = {
+      ...readMeta(converted),
+      ...(page.title ? { title: page.title } : {}),
+      ...(page.subtitle ? { subtitle: page.subtitle } : {}),
+      ...(page.key ? { key: page.key } : {}),
+    }
+    return {
+      source: writeMeta(converted, meta),
+      format: fmt,
+      label: FORMAT_LABEL[fmt] ?? fmt,
+      changed: true,
+    }
+  }
   const source =
     fmt === 'chordpro' ? clean(text).trim() : fmt === 'onsong' ? fromOnSong(text) : fromPlain(text)
   return { source, format: fmt, label: FORMAT_LABEL[fmt] ?? fmt, changed: fmt !== 'chordpro' }
@@ -314,6 +366,95 @@ export function hostOk(url: string): boolean {
   } catch {
     return false
   }
+}
+
+/** The page Cifra Club serves: a <pre data-chord-content> with <b data-chord-name>. */
+export function looksLikeCifraClubHtml(text: string): boolean {
+  return /data-chord-content|data-chord-name\s*=/.test(text)
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+}
+
+/**
+ * Cifra Club plants `.` in the lyric at the attack of the chord (`f.az`,
+ * `uni.ao`). Merge first (columns still match), then drop the dots from the
+ * words — never from `[G9]` / `{c:…}`.
+ */
+function stripLyricDots(source: string): string {
+  return source
+    .split('\n')
+    .map((line) => {
+      if (/^\s*\{/.test(line)) return line
+      return line.replace(/\[([^\]]*)\]|\./g, (m, chord: string | undefined) =>
+        chord !== undefined ? '[' + chord + ']' : '',
+      )
+    })
+    .join('\n')
+}
+
+export type CifraClubPage = { body: string; title: string; subtitle: string; key: string }
+
+export function fromCifraClubHtml(html: string): CifraClubPage {
+  const title =
+    (html.match(/"@type":"MusicComposition","name":"([^"]+)"/) || [])[1]?.trim() ||
+    (html.match(/<h1[^>]*>([^<]+)<\/h1>/i) || [])[1]?.trim() ||
+    ''
+  const subtitle =
+    (html.match(/"byArtist"\s*:\s*\{[^}]*"name"\s*:\s*"([^"]+)"/) || [])[1]?.trim() ||
+    (html.match(/<a href="\/[^"/]+\/"[^>]*>\s*<h2[^>]*>([^<]+)<\/h2>/i) || [])[1]?.trim() ||
+    (html.match(/<a href="\/[^"/]+\/">([^<]+)<\/a>/i) || [])[1]?.trim() ||
+    ''
+  const key =
+    (html.match(/data-anchor="--chord-tone"[^>]*>([A-G][#b]?m?)</i) || [])[1] ||
+    (html.match(/>\s*Tom:\s*<\/span>\s*<button[^>]*>([A-G][#b]?m?)</i) || [])[1] ||
+    ''
+  const pre = (html.match(/<pre[^>]*data-chord-content[^>]*>([\s\S]*?)<\/pre>/i) || [])[1] ?? ''
+  const body = cifraPreToPlain(pre)
+  return { body, title, subtitle, key }
+}
+
+function htmlChunkToText(chunk: string): string {
+  const inner = chunk
+    .replace(/<b\b[^>]*data-chord-original-text="([^"]*)"[^>]*>[\s\S]*?<\/b>/gi, '$1')
+    .replace(/<b\b[^>]*data-chord-name="([^"]*)"[^>]*>[\s\S]*?<\/b>/gi, '$1')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+  return decodeEntities(inner).replace(/\r/g, '').replace(/[ \t]+$/gm, '')
+}
+
+/**
+ * Each Cifra Club pair is a `.kvMV`. Dumping the whole <pre> turned the
+ * newline after every </div> into a ChordPro blank, so the editor opened one
+ * chorus/stanza box per line. Keep pairs adjacent; a trailing blank in the
+ * pair is a real paragraph (intro → verse, verse → refrão).
+ */
+function cifraPreToPlain(pre: string): string {
+  const parts = [...pre.matchAll(/<div class="kvMV">([\s\S]*?)<\/div>/gi)].map((m) => m[1] ?? '')
+  const chunks: string[] = []
+  if (parts.length) {
+    for (const p of parts) {
+      const raw = htmlChunkToText(p)
+      const text = raw.replace(/^\n+/, '').replace(/\n+$/, '')
+      if (!text) continue
+      chunks.push(text)
+      const last = text.split('\n').at(-1) ?? ''
+      // A trailing blank after [Refrão] would close {soc} before the first
+      // refrain line. Keep it only when this pair is a real paragraph.
+      if (/\n\s*\n\s*$/.test(raw) && !/^\[[^\]]+\]\s*$/.test(last)) chunks.push('')
+    }
+  } else {
+    chunks.push(htmlChunkToText(pre).replace(/^\n+/, '').replace(/\n+$/, ''))
+  }
+  return chunks.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
 /**

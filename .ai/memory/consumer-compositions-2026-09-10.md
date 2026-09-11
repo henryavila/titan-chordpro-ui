@@ -24,12 +24,9 @@ Não existe cifra-como-artigo (`overflow: visible` no scroller).
 
 ## Demo
 
-O eixo do consumer é 2×2, não uma sopa de query string e não um iframe:
+As **páginas** continuam 2×2 (palco/ficha × com/sem lista). O **índice** não é
+essa grade + um laboratório: agrupa por o que se faz (tocar, escrever, host).
 
-- composição: palco `100dvh` **ou** bloco `100dvh` no fluxo de um site
-- lista: o host passa uma cifra **ou** `songs` (repertório)
-
-`pnpm dev` → `/` índice. Páginas: `/standalone.html`, `/standalone-lista.html`,
-`/site.html`, `/site-lista.html`. Laboratório: `?quebrar=1`, `?ensaio=demanda`.
-Bookmarks `/?ficha=1` / `/?ensaio=juntas` redirecionam. A ficha do demo é um
-site falso (chrome próprio), não um clone do SDA.
+`pnpm dev` → `/`. Páginas: `/standalone.html`, `/standalone-lista.html`,
+`/site.html`, `/site-lista.html`. Query: `?criar=1`, `?modes=`, `?ensaio=demanda`,
+`?song=`, `?quebrar=1`. Bookmarks `/?ficha=1` / `/?ensaio=juntas` redirecionam.

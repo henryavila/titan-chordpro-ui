@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { readMeta, toPlain } from 'titan-chordpro-ui'
+import { readMeta } from 'titan-chordpro-ui'
 import { pdfText } from 'titan-chordpro-ui/pdf'
 import { ChordproViewer } from 'titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
@@ -13,7 +13,7 @@ import {
   songsFor,
 } from './host/charts'
 import HostSite from './host/HostSite.vue'
-import { hostTheme, labQuery, palcoHref, type Surface } from './host/recipe'
+import { hostTheme, labQuery, palcoHref, writeModes, type Surface } from './host/recipe'
 
 const props = defineProps<{ surface: Surface; lista: boolean }>()
 
@@ -22,9 +22,13 @@ const { images, resolveImage } = bundledImages()
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
 
 const id = ref(
-  lab.song && lab.song in fixtures.value ? lab.song : defaultSongId(fixtures.value),
+  lab.criar
+    ? 'vazio'
+    : lab.song && lab.song in fixtures.value
+      ? lab.song
+      : defaultSongId(fixtures.value),
 )
-const source = ref(fixtures.value[id.value] ?? '')
+const source = ref(lab.criar ? '' : (fixtures.value[id.value] ?? ''))
 
 function pick(next: string) {
   id.value = next
@@ -32,9 +36,11 @@ function pick(next: string) {
 }
 
 const listaMode = computed(() => {
-  if (!props.lista) return 'off' as const
+  // Authoring a missing chart is one song, not a rehearsal.
+  if (lab.criar || !props.lista) return 'off' as const
   return lab.carga
 })
+const modes = writeModes(lab)
 /** Only the lab `?ensaio=demanda` path asks for charts after open. */
 const lazyLista = computed(() => listaMode.value === 'demanda')
 const songs = computed(() => songsFor(fixtures.value, listaMode.value))
@@ -57,18 +63,20 @@ const loadSong = (songId: string) =>
     }, ms)
   })
 
-const fetchChart = (url: string) =>
-  new Promise<string>((resolve) => {
-    void url
-    const any =
-      Object.entries(fixtures.value).find(([k, v]) => k !== 'vazio' && v.trim())?.[1] ?? ''
-    setTimeout(() => resolve(toPlain(any)), 900)
-  })
+const fetchChart = async (url: string) => {
+  const r = await fetch('/__cifra_fetch?' + new URLSearchParams({ url }))
+  if (!r.ok) throw new Error('rede')
+  return r.text()
+}
 
 onMounted(async () => {
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
   fixtures.value = mergeCatalog(fixtures.value, catalogToFixtures(catalog))
+  if (lab.criar) {
+    pick('vazio')
+    return
+  }
   if (lab.song && lab.song in fixtures.value) pick(lab.song)
 })
 </script>
@@ -91,10 +99,11 @@ onMounted(async () => {
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :read-pdf="(file: File) => pdfText(file)"
-      modes="both"
+      :modes="modes"
       :resolve-image="resolveImage"
       :images="images"
       @update:source="source = $event"
+      @save-content="source = $event"
     />
   </HostSite>
 
@@ -113,10 +122,11 @@ onMounted(async () => {
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :read-pdf="(file: File) => pdfText(file)"
-      modes="both"
+      :modes="modes"
       :resolve-image="resolveImage"
       :images="images"
       @update:source="source = $event"
+      @save-content="source = $event"
     />
   </div>
 </template>

@@ -3,7 +3,17 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { DEMOS, LAB, hubRedirect, hostTheme, labQuery, palcoHref } from '../../demo/host/recipe'
+import {
+  DEMOS,
+  GROUPS,
+  PAGES,
+  demosOf,
+  hubRedirect,
+  hostTheme,
+  labQuery,
+  palcoHref,
+  writeModes,
+} from '../../demo/host/recipe'
 import { defaultSongId, songsFor } from '../../demo/host/charts'
 import Hub from '../../demo/Hub.vue'
 import CifraDemo from '../../demo/CifraDemo.vue'
@@ -16,41 +26,60 @@ const fixtures = {
   vazio: '',
 }
 
-describe('the four consumer recipes', () => {
-  it('are exactly standalone/site × with/without list', () => {
-    expect(DEMOS.map((d) => d.id)).toEqual([
+describe('the four HTML mounts', () => {
+  it('are standalone/site × with/without list — not a fifth page', () => {
+    expect(PAGES.map((d) => d.id)).toEqual([
       'standalone',
       'standalone-lista',
       'site',
       'site-lista',
     ])
-    expect(new Set(DEMOS.map((d) => d.href)).size).toBe(4)
-    expect(DEMOS.filter((d) => d.surface === 'standalone' && !d.lista)).toHaveLength(1)
-    expect(DEMOS.filter((d) => d.surface === 'standalone' && d.lista)).toHaveLength(1)
-    expect(DEMOS.filter((d) => d.surface === 'site' && !d.lista)).toHaveLength(1)
-    expect(DEMOS.filter((d) => d.surface === 'site' && d.lista)).toHaveLength(1)
+    expect(new Set(PAGES.map((d) => d.href)).size).toBe(4)
+    expect(PAGES.filter((d) => d.surface === 'standalone' && !d.lista)).toHaveLength(1)
+    expect(PAGES.filter((d) => d.surface === 'standalone' && d.lista)).toHaveLength(1)
+    expect(PAGES.filter((d) => d.surface === 'site' && !d.lista)).toHaveLength(1)
+    expect(PAGES.filter((d) => d.surface === 'site' && d.lista)).toHaveLength(1)
   })
 
   it('points at real HTML files a consumer can open', () => {
-    for (const demo of DEMOS) {
-      const file = join(root, 'demo', demo.href.replace(/^\//, ''))
+    for (const page of PAGES) {
+      const file = join(root, 'demo', page.href.replace(/^\//, ''))
       expect(existsSync(file), file).toBe(true)
     }
   })
+})
 
-  it('does not sell an iframe, a fifth composition, or query-string soup', () => {
-    const snippets = DEMOS.map((d) => d.snippet).join('\n')
-    expect(snippets.toLowerCase()).not.toMatch(/<iframe/)
-    expect(DEMOS.some((d) => /não é iframe/.test(d.useWhen.toLowerCase()))).toBe(true)
-    expect(DEMOS.every((d) => d.snippet.includes('ChordproViewer'))).toBe(true)
-    expect(DEMOS.filter((d) => d.lista).every((d) => d.snippet.includes(':songs'))).toBe(true)
-    expect(DEMOS.filter((d) => !d.lista).every((d) => !d.snippet.includes(':songs'))).toBe(true)
+describe('the catalog', () => {
+  it('is grouped by what you do, not four recipes plus a lab', () => {
+    expect(GROUPS.map((g) => g.id)).toEqual(['tocar', 'escrever', 'host'])
+    expect(DEMOS.every((d) => GROUPS.some((g) => g.id === d.group))).toBe(true)
+    expect(DEMOS.map((d) => d.id).length).toBe(new Set(DEMOS.map((d) => d.id)).size)
   })
 
-  it('keeps loadSong off the four recipes — lazy fetch is a lab case', () => {
-    const snippets = DEMOS.map((d) => d.snippet).join('\n')
-    expect(snippets).not.toMatch(/load-song|loadSong|buscarCifra/)
-    expect(LAB.some((item) => item.href.includes('ensaio=demanda'))).toBe(true)
+  it('puts create, edit modes, score and slow list on the same shelf as palco', () => {
+    const hrefs = DEMOS.map((d) => d.href)
+    expect(hrefs).toContain('/standalone.html')
+    expect(hrefs).toContain('/standalone.html?criar=1')
+    expect(hrefs).toContain('/site.html?criar=1')
+    expect(hrefs).toContain('/standalone.html?modes=local')
+    expect(hrefs).toContain('/standalone.html?modes=content')
+    expect(hrefs).toContain('/standalone.html?modes=none')
+    expect(hrefs).toContain('/standalone.html?song=013-ele-vive-em-mim-partitura')
+    expect(hrefs).toContain('/standalone-lista.html?ensaio=demanda')
+    expect(hrefs).toContain('/standalone.html?quebrar=1')
+  })
+
+  it('only links the four mounts, with query flags', () => {
+    const pages = new Set(PAGES.map((p) => p.href))
+    for (const demo of DEMOS) {
+      expect(pages.has(demo.href.split('?')[0] ?? ''), demo.href).toBe(true)
+    }
+  })
+
+  it('keeps each group non-empty', () => {
+    for (const group of GROUPS) {
+      expect(demosOf(group.id).length, group.id).toBeGreaterThan(0)
+    }
   })
 })
 
@@ -70,6 +99,9 @@ describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
     ['?quebrar=1', '/standalone.html?quebrar=1'],
     ['?tema=claro', '/standalone.html?tema=claro'],
     ['?ficha=1&song=x&tema=claro', '/site-lista.html?song=x&tema=claro'],
+    ['?criar=1', '/standalone.html?criar=1'],
+    ['?ficha=1&criar=1', '/site.html?criar=1'],
+    ['?modes=local', '/standalone.html?modes=local'],
   ])('%s → %s', (search, href) => {
     expect(hubRedirect(search)).toBe(href)
   })
@@ -82,13 +114,42 @@ describe('labQuery', () => {
       tema: null,
       quebrar: false,
       carga: 'juntas',
+      criar: false,
+      modes: null,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
       tema: 'escuro',
       quebrar: true,
       carga: 'demanda',
+      criar: false,
+      modes: null,
     })
+  })
+
+  it('reads the empty-chart authoring flag', () => {
+    expect(labQuery('?criar=1')).toMatchObject({ criar: true, song: null })
+    expect(labQuery('?criar=1&ensaio=demanda')).toMatchObject({
+      criar: true,
+      carga: 'demanda',
+    })
+  })
+
+  it('reads write modes from the query', () => {
+    expect(labQuery('?modes=local').modes).toBe('local')
+    expect(labQuery('?modes=content').modes).toBe('content')
+    expect(labQuery('?modes=none').modes).toBe('none')
+    expect(labQuery('?modes=both').modes).toBe('both')
+    expect(labQuery('?modes=nope').modes).toBeNull()
+  })
+})
+
+describe('writeModes', () => {
+  it('defaults to both, and creating a chart is always for everyone', () => {
+    expect(writeModes(labQuery(''))).toBe('both')
+    expect(writeModes(labQuery('?modes=local'))).toBe('local')
+    expect(writeModes(labQuery('?criar=1'))).toBe('content')
+    expect(writeModes(labQuery('?criar=1&modes=local'))).toBe('content')
   })
 })
 
@@ -128,27 +189,27 @@ describe('hostTheme / palcoHref', () => {
 })
 
 describe('Hub', () => {
-  it('links every recipe plus the lab pages', () => {
+  it('links every catalog entry, grouped', () => {
     const w = mount(Hub)
     const hrefs = w.findAll('a').map((a) => a.attributes('href'))
     for (const demo of DEMOS) expect(hrefs).toContain(demo.href)
-    for (const lab of LAB) expect(hrefs).toContain(lab.href)
+    for (const group of GROUPS) expect(w.find(`[data-group="${group.id}"]`).exists()).toBe(true)
+    expect(w.text()).not.toMatch(/Laboratório/)
+    expect(w.text()).not.toMatch(/quatro receitas/i)
   })
 
   /**
    * Phone widths used to grow past the viewport: grid items default to
-   * min-width:auto and the snippet <pre> forced ~537px into a 390px frame.
+   * min-width:auto and a snippet <pre> forced ~537px into a 390px frame.
    */
-  it('lets recipe cards shrink so the page does not scroll sideways', () => {
+  it('lets cards shrink so the page does not scroll sideways', () => {
     const w = mount(Hub, { attachTo: document.body })
     try {
       const hub = w.get('[data-demo-hub]').element
       const card = w.get('.card').element
-      const pre = w.get('.card pre').element
       expect(getComputedStyle(hub).overflowX).toMatch(/clip|hidden/)
       expect(parseFloat(getComputedStyle(card).minWidth)).toBe(0)
-      expect(getComputedStyle(pre).overflowX).toMatch(/auto|scroll/)
-      expect(getComputedStyle(pre).maxWidth).toBe('100%')
+      expect(w.find('.card pre').exists()).toBe(false)
     } finally {
       w.unmount()
     }
@@ -210,6 +271,59 @@ describe('CifraDemo', () => {
       global: { stubs: stub },
     })
     expect(palco.find('[data-host-site]').exists()).toBe(false)
+  })
+
+  it('opens the empty-chart flow when criar is on', () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?criar=1')
+    try {
+      const w = mount(CifraDemo, {
+        props: { surface: 'standalone', lista: true },
+        global: { stubs: stub },
+      })
+      const viewer = w.getComponent({ name: 'ChordproViewer' })
+      expect(viewer.props('source')).toBe('')
+      expect(viewer.props('modes')).toBe('content')
+      expect(viewer.props('songs')).toBeUndefined()
+      expect(viewer.props('songId')).toBe('vazio')
+      expect(typeof viewer.props('fetchChart')).toBe('function')
+      expect(typeof viewer.props('readPdf')).toBe('function')
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+  })
+
+  it('honours ?modes= on an ordinary chart', () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?modes=local')
+    try {
+      const w = mount(CifraDemo, {
+        props: { surface: 'standalone', lista: false },
+        global: { stubs: stub },
+      })
+      expect(w.getComponent({ name: 'ChordproViewer' }).props('modes')).toBe('local')
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+  })
+
+  it('keeps a real chart and both write modes on the ordinary recipes', () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '/')
+    try {
+      const w = mount(CifraDemo, {
+        props: { surface: 'standalone', lista: false },
+        global: { stubs: stub },
+      })
+      const viewer = w.getComponent({ name: 'ChordproViewer' })
+      expect(String(viewer.props('source'))).toMatch(/\{/)
+      expect(viewer.props('modes')).toBe('both')
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
   })
 })
 

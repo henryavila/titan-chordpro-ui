@@ -1,95 +1,167 @@
 import type { ThemeId } from 'titan-chordpro-ui'
+import type { ModesProp } from 'titan-chordpro-ui/vue'
 
 export type Surface = 'standalone' | 'site'
 export type ListaMode = 'off' | 'juntas' | 'demanda'
+export type DemoGroupId = 'tocar' | 'escrever' | 'host'
 
 export type DemoPage = {
   id: 'standalone' | 'standalone-lista' | 'site' | 'site-lista'
   href: string
   surface: Surface
   lista: boolean
+}
+
+export type DemoEntry = {
+  id: string
+  href: string
+  group: DemoGroupId
   kicker: string
   title: string
-  useWhen: string
-  snippet: string
+  blurb: string
+  warn?: boolean
+}
+
+export type DemoGroup = {
+  id: DemoGroupId
+  title: string
+  lead: string
 }
 
 /**
- * The four mounts a consumer actually chooses. Other knobs (theme, edit,
- * lazy load, broken frame) stay as lab flags on these pages — not more pages.
+ * The four HTML files. Everything else is a query on one of these — not a
+ * fifth composition, and not a second-class "lab" list.
  */
-export const DEMOS: readonly DemoPage[] = [
+export const PAGES: readonly DemoPage[] = [
+  { id: 'standalone', href: '/standalone.html', surface: 'standalone', lista: false },
+  { id: 'standalone-lista', href: '/standalone-lista.html', surface: 'standalone', lista: true },
+  { id: 'site', href: '/site.html', surface: 'site', lista: false },
+  { id: 'site-lista', href: '/site-lista.html', surface: 'site', lista: true },
+]
+
+export const GROUPS: readonly DemoGroup[] = [
   {
-    id: 'standalone',
-    href: '/standalone.html',
-    surface: 'standalone',
-    lista: false,
-    kicker: 'Standalone',
-    title: 'Uma cifra',
-    useWhen:
-      'A cifra é a tela: palco, ensaio de pé, rota 100dvh. O host não põe shell em volta.',
-    snippet: `<div class="cifra-live">
-  <ChordproViewer :source="cho" :song-id="id" />
-</div>`,
+    id: 'tocar',
+    title: 'Tocar',
+    lead: 'A cifra é a página, ou mora numa ficha. Lista é prop, não outra montagem.',
   },
   {
-    id: 'standalone-lista',
-    href: '/standalone-lista.html',
-    surface: 'standalone',
-    lista: true,
-    kicker: 'Standalone',
-    title: 'Com lista',
-    useWhen:
-      'O mesmo palco. A lista é prop do host — o Titan não busca repertório sozinho. Cada entrada já traz `source`.',
-    snippet: `<ChordproViewer :songs="repertorio" />
-<!-- repertorio[i].source = ChordPro -->`,
+    id: 'escrever',
+    title: 'Escrever',
+    lead: 'Quem grava para todos cria e importa. Quem só toca personaliza no celular, ou só lê.',
   },
   {
-    id: 'site',
-    href: '/site.html',
-    surface: 'site',
-    lista: false,
-    kicker: 'Dentro de um site',
-    title: 'Uma cifra',
-    useWhen:
-      'Ficha do site com conteúdo acima e abaixo. O viewer é um bloco 100dvh no fluxo, com snap. Não é iframe.',
-    snippet: `<div class="ficha">
-  <!-- letra, vídeo, arquivos… -->
-  <div class="cifra-frame">
-    <ChordproViewer :source="cho" :song-id="id" />
-  </div>
-</div>`,
-  },
-  {
-    id: 'site-lista',
-    href: '/site-lista.html',
-    surface: 'site',
-    lista: true,
-    kicker: 'Dentro de um site',
-    title: 'Com lista',
-    useWhen:
-      'A ficha passa o repertório com `source` em cada música. Trocar de música é do Titan.',
-    snippet: `<div class="cifra-frame">
-  <ChordproViewer :songs="repertorio" />
-</div>`,
+    id: 'host',
+    title: 'Host',
+    lead: 'O que a guarda faz quando o ancestral não tem altura. Não copie.',
   },
 ]
 
-export const LAB = [
+export const DEMOS: readonly DemoEntry[] = [
   {
-    href: '/standalone.html?quebrar=1',
-    title: 'Frame sem altura',
-    note: 'O ancestral não tem height — surfaceGuard avisa. Não copie isto.',
+    id: 'palco',
+    href: '/standalone.html',
+    group: 'tocar',
+    kicker: 'Palco',
+    title: 'Uma cifra',
+    blurb: 'A cifra é a tela: palco, ensaio de pé, rota 100dvh.',
   },
   {
+    id: 'palco-lista',
+    href: '/standalone-lista.html',
+    group: 'tocar',
+    kicker: 'Palco',
+    title: 'Ensaio',
+    blurb: 'Lista, anterior e próxima. Cada música já traz o ChordPro.',
+  },
+  {
+    id: 'ficha',
+    href: '/site.html',
+    group: 'tocar',
+    kicker: 'Ficha',
+    title: 'Uma cifra',
+    blurb: 'Bloco 100dvh no meio da página, com conteúdo acima e abaixo. Não é iframe.',
+  },
+  {
+    id: 'ficha-lista',
+    href: '/site-lista.html',
+    group: 'tocar',
+    kicker: 'Ficha',
+    title: 'Ensaio',
+    blurb: 'A ficha passa o repertório. Trocar de música é do Titan.',
+  },
+  {
+    id: 'partitura',
+    href: '/standalone.html?song=013-ele-vive-em-mim-partitura',
+    group: 'tocar',
+    kicker: 'Palco',
+    title: 'Partitura e TAB',
+    blurb: 'Imagens, {sos} e {sot} na mesma cifra — o editor de partitura abre daqui.',
+  },
+  {
+    id: 'demanda',
     href: '/standalone-lista.html?ensaio=demanda',
-    title: 'Lista + loadSong (API lenta)',
-    note:
-      'Metadados na lista; loadSong simula API externa (~2–3,5 s). Skeleton + prev/next/lista reativos; uma cifra falha de propósito.',
+    group: 'tocar',
+    kicker: 'Palco',
+    title: 'Lista que chega depois',
+    blurb: 'Só metadados na abertura. loadSong lento, skeleton vivo, uma cifra falha de propósito.',
   },
-] as const
+  {
+    id: 'nova',
+    href: '/standalone.html?criar=1',
+    group: 'escrever',
+    kicker: 'Palco',
+    title: 'Cifra nova',
+    blurb: 'Importar (link, arquivo, texto, PDF) ou começar em branco. Vira a cifra do sistema.',
+  },
+  {
+    id: 'nova-ficha',
+    href: '/site.html?criar=1',
+    group: 'escrever',
+    kicker: 'Ficha',
+    title: 'Cifra nova',
+    blurb: 'O mesmo fluxo, dentro do chrome do site.',
+  },
+  {
+    id: 'local',
+    href: '/standalone.html?modes=local',
+    group: 'escrever',
+    kicker: 'Palco',
+    title: 'Só para mim',
+    blurb: 'Overlay neste celular. Sem “para todos”.',
+  },
+  {
+    id: 'todos',
+    href: '/standalone.html?modes=content',
+    group: 'escrever',
+    kicker: 'Palco',
+    title: 'Para todos',
+    blurb: 'Editar a cifra oficial. Salvar já publica.',
+  },
+  {
+    id: 'leitura',
+    href: '/standalone.html?modes=none',
+    group: 'escrever',
+    kicker: 'Palco',
+    title: 'Só leitura',
+    blurb: 'Sem chip de editar. O que um site público entrega.',
+  },
+  {
+    id: 'quebrar',
+    href: '/standalone.html?quebrar=1',
+    group: 'host',
+    kicker: 'Não copie',
+    title: 'Frame sem altura',
+    blurb: 'O ancestral não tem height. A guarda avisa, o dock cai abaixo da dobra.',
+    warn: true,
+  },
+]
 
-const INTENT = new Set(['ficha', 'ensaio', 'song', 'quebrar', 'tema'])
+export function demosOf(group: DemoGroupId): DemoEntry[] {
+  return DEMOS.filter((d) => d.group === group)
+}
+
+const INTENT = new Set(['ficha', 'ensaio', 'song', 'quebrar', 'tema', 'criar', 'modes'])
 
 /** Old `/` + query bookmarks land on the matching named page. */
 export function hubRedirect(search: string): string | null {
@@ -97,8 +169,12 @@ export function hubRedirect(search: string): string | null {
   if (![...p.keys()].some((key) => INTENT.has(key))) return null
   const ficha = p.get('ficha') === '1'
   const ensaio = p.get('ensaio')
-  const lista =
-    ensaio === 'off' ? false : ensaio === 'juntas' || ensaio === 'demanda' || (ficha && !ensaio)
+  const criar = p.get('criar') === '1'
+  const lista = criar
+    ? false
+    : ensaio === 'off'
+      ? false
+      : ensaio === 'juntas' || ensaio === 'demanda' || (ficha && !ensaio)
   const page = ficha
     ? lista
       ? '/site-lista.html'
@@ -117,17 +193,32 @@ export type LabQuery = {
   tema: 'claro' | 'escuro' | null
   quebrar: boolean
   carga: 'juntas' | 'demanda'
+  /** Empty song + content mode: Importar / Começar em branco. */
+  criar: boolean
+  modes: ModesProp | null
 }
 
 export function labQuery(search: string): LabQuery {
   const p = new URLSearchParams(search)
   const tema = p.get('tema')
+  const modes = p.get('modes')
   return {
     song: p.get('song'),
     tema: tema === 'claro' || tema === 'escuro' ? tema : null,
     quebrar: p.get('quebrar') === '1',
     carga: p.get('ensaio') === 'demanda' ? 'demanda' : 'juntas',
+    criar: p.get('criar') === '1',
+    modes:
+      modes === 'none' || modes === 'local' || modes === 'content' || modes === 'both'
+        ? modes
+        : null,
   }
+}
+
+/** Creating a chart is always "for everyone". Otherwise the query, or both. */
+export function writeModes(lab: LabQuery): ModesProp {
+  if (lab.criar) return 'content'
+  return lab.modes ?? 'both'
 }
 
 export function hostTheme(surface: Surface, tema: LabQuery['tema']): ThemeId {

@@ -17,7 +17,7 @@ Leitura, overlay pessoal, edição por bloco (E1/E2) e editor de partitura (VexF
 ```bash
 pnpm install
 pnpm test
-pnpm dev      # índice das 4 receitas em :5173
+pnpm dev      # índice das demos em :5173
 pnpm build
 ```
 
@@ -66,9 +66,8 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 
 `titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
 
-Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice;
-`/standalone.html` palco; `/site.html` cifra dentro de um site; `*-lista.html`
-com repertório.
+Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
+(tocar, escrever, host); `/standalone.html` palco; `/site.html` ficha.
 
 ### `<ChordproViewer>` props
 
@@ -101,7 +100,8 @@ Emite `update:source`, `update:mode`, `save`, `save-content`, `dirty`, `state`.
 ### Cifra nova: importar ou começar em branco
 
 Música sem cifra não é beco. Com `modes="content"` (e `canEdit`), o estado vazio
-oferece **Importar** e **Começar em branco**. O importador reconhece sozinho o
+oferece **Importar** e **Começar em branco**. Na demo: índice → Escrever →
+Cifra nova (`/standalone.html?criar=1`). O importador reconhece sozinho o
 que recebe — ChordPro, OnSong ou acordes sobre a letra — e diz de qual formato
 converteu. Depois vem a ficha (nome, artista, tom, andamento com **tap-tempo**,
 compasso, referência); o que falta é dito, mas não bloqueia — é cobrado de novo
