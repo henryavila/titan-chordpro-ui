@@ -253,7 +253,7 @@ describe('identifying the song', () => {
     expect(src).toContain('{title:Minha música}')
     expect(src).toContain('{time:4/4}')
     expect(src).toContain('{duration:04:26}')
-    expect(src).toContain('{c:Intro}')
+    expect(src).toContain('{c:INTRODUÇÃO}')
   })
 
   it('writes the header once, in canonical order', async () => {

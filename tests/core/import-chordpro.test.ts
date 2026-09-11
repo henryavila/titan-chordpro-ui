@@ -21,10 +21,9 @@ import { looksLikeOnSong } from '../../src/core/onsong'
 import { layoutChart, parse } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
-const UNIDOS = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), '../helpers/cifraclub-unidos.html'),
-  'utf8',
-)
+const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
+const UNIDOS = readFileSync(join(helpers, 'cifraclub-unidos.html'), 'utf8')
+const TU_ES_TABS = readFileSync(join(helpers, 'cifraclub-tu-es-tabs.html'), 'utf8')
 
 describe('recognising what was handed over', () => {
   it('knows nothing from something', () => {
@@ -89,7 +88,13 @@ describe('chords above the lyric become chords in the lyric', () => {
   })
 
   it('names other sections as comments', () => {
-    expect(fromPlain('Intro:\nG  C')).toContain('{c:Intro}')
+    expect(fromPlain('Verso 1:\nG  C')).toContain('{c:Verso 1}')
+  })
+
+  it('turns Intro into INTRODUÇÃO — the Titan label', () => {
+    expect(fromPlain('Intro:\nG  C')).toContain('{c:INTRODUÇÃO}')
+    expect(fromPlain('[Intro] G  C')).toContain('{c:INTRODUÇÃO}')
+    expect(fromPlain('Introdução:\nG  C')).toContain('{c:INTRODUÇÃO}')
   })
 
   it('keeps a tab as a tab', () => {
@@ -249,7 +254,7 @@ describe('Cifra Club chords and HTML', () => {
 
   it('a [Intro] sitting on the same line as the chords is a section, not lyrics', () => {
     const out = fromPlain('[Intro] G/D  D7(4)  G  C/E  D/F#')
-    expect(out).toContain('{c:Intro}')
+    expect(out).toContain('{c:INTRODUÇÃO}')
     expect(out).toContain('[G/D]')
     expect(out).toContain('[D7(4)]')
     expect(out).not.toContain('[Intro]')
@@ -273,7 +278,7 @@ describe('Cifra Club chords and HTML', () => {
     expect(r.label).toBe('Cifra Club')
     expect(r.source).toContain('{title:Unidos Em Cristo}')
     expect(r.source).toContain('{key:G}')
-    expect(r.source).toContain('{c:Intro}')
+    expect(r.source).toContain('{c:INTRODUÇÃO}')
     expect(r.source).toContain('[G/D]')
     expect(r.source).toContain('[D7(4)]')
     expect(r.source).toContain('[G9]Uma andorinha nco [D/G]faz verao')
@@ -291,5 +296,29 @@ describe('Cifra Club chords and HTML', () => {
     expect(choruses[0]?.rows.length).toBeGreaterThan(1)
     const verse = blocks.find((b) => b.kind === 'stanza' && b.rows.some((row) => /andorinha/.test(row.plain)))
     expect(verse?.rows.length).toBeGreaterThan(1)
+  })
+
+  it('drops Cifra Club tablature blocks and keeps the rehearsal chart once', () => {
+    const page = fromCifraClubHtml(TU_ES_TABS)
+    expect(page.body).toContain('[Intro] Bm7')
+    expect(page.body).toContain('[Primeira Parte]')
+    expect(page.body).toContain('[Pré-Refrão]')
+    expect(page.body).toContain('[Refrão]')
+    expect(page.body).not.toMatch(/\[TAB\b/i)
+    expect(page.body).not.toMatch(/E\|-+/)
+    expect(page.body).not.toMatch(/Parte \d+ de \d+/)
+
+    const r = convert(TU_ES_TABS)
+    expect(r.format).toBe('cifraclub')
+    expect(r.source).toContain('{c:INTRODUÇÃO}')
+    expect(r.source).toContain('[Bm7] [A/C#] [G2]')
+    expect(r.source).toContain('{c:Primeira Parte}')
+    expect(r.source).toContain('{c:Pré-Refrão}')
+    expect(r.source).toContain('{soc}')
+    expect(r.source).not.toContain('{sot}')
+    expect(r.source).not.toMatch(/\{c:TAB/i)
+    // Intro chords appear once — not again as a TAB caption.
+    expect(r.source.match(/\[Bm7\] \[A\/C#\] \[G2\]/g)).toHaveLength(1)
+    expect(r.source).toContain('Junto ao poço')
   })
 })

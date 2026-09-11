@@ -17,6 +17,8 @@ import { hasSongDuration } from './timeline'
 const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
 const CHORUS = /^(refr(?:ã|a)o|chorus)/i
+/** Cifra Club (and plain paste) say Intro; Titan charts say INTRODUÇÃO. */
+const INTRO_LABEL = /^(intro|introdu(?:ç|c)(?:ã|a)o)\s*$/i
 
 /** Only a parenthesis around the whole token — not the `(4)` in `D7(4)`. */
 function unwrapChord(token: string): string {
@@ -81,8 +83,13 @@ const chordsOnly = (l: string) =>
     .map((c) => '[' + unwrapChord(c) + ']')
     .join(' ')
 
-function sectionDirective(label: string, open: boolean): string {
+function sectionName(label: string): string {
   const name = label.replace(/[:\]]\s*$/, '').replace(/^\[/, '').trim()
+  return INTRO_LABEL.test(name) ? 'INTRODUÇÃO' : name
+}
+
+function sectionDirective(label: string, open: boolean): string {
+  const name = sectionName(label)
   return CHORUS.test(name) ? (open ? '{soc}' : '{eoc}') : '{c:' + name + '}'
 }
 
@@ -438,13 +445,63 @@ function htmlChunkToText(chunk: string): string {
 }
 
 /**
- * Each Cifra Club pair is a `.kvMV`. Dumping the whole <pre> turned the
- * newline after every </div> into a ChordPro blank, so the editor opened one
- * chorus/stanza box per line. Keep pairs adjacent; a trailing blank in the
- * pair is a real paragraph (intro → verse, verse → refrão).
+ * Cifra Club wraps tablature in `.tabs` / `.tab`. Those blocks repeat the
+ * same chords as the rehearsal chart and have no usable bar marks — drop the
+ * whole thing (caption, position chords, ASCII strings, "Parte N de M").
+ */
+function stripCifraClubTabs(pre: string): string {
+  return stripDivsByClass(pre, 'tabs')
+}
+
+/** Remove every `<div class="… name …">…</div>`, honouring nested divs. */
+function stripDivsByClass(html: string, className: string): string {
+  const openRe = new RegExp(`<div\\b[^>]*\\bclass=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>`, 'gi')
+  let out = ''
+  let cursor = 0
+  let m: RegExpExecArray | null
+  while ((m = openRe.exec(html))) {
+    out += html.slice(cursor, m.index)
+    const innerStart = m.index + m[0].length
+    const end = findMatchingCloseDiv(html, innerStart)
+    if (end < 0) {
+      out += m[0]
+      cursor = innerStart
+      break
+    }
+    cursor = end + '</div>'.length
+    openRe.lastIndex = cursor
+  }
+  return out + html.slice(cursor)
+}
+
+function findMatchingCloseDiv(html: string, from: number): number {
+  let depth = 1
+  let i = from
+  while (i < html.length && depth > 0) {
+    const nextOpen = html.toLowerCase().indexOf('<div', i)
+    const nextClose = html.toLowerCase().indexOf('</div>', i)
+    if (nextClose < 0) return -1
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth++
+      i = nextOpen + 4
+      continue
+    }
+    depth--
+    if (depth === 0) return nextClose
+    i = nextClose + 6
+  }
+  return -1
+}
+
+/**
+ * Each Cifra Club pair is a `.kvMV`. A naive non-greedy `</div>` stops at the
+ * inner `.tabs` close and drops the section label that follows (`[Primeira
+ * Parte]`, `[Refrão]`). Walk nested divs. Keep pairs adjacent; a trailing
+ * blank in the pair is a real paragraph (intro → verse, verse → refrão).
  */
 function cifraPreToPlain(pre: string): string {
-  const parts = [...pre.matchAll(/<div class="kvMV">([\s\S]*?)<\/div>/gi)].map((m) => m[1] ?? '')
+  const cleaned = stripCifraClubTabs(pre)
+  const parts = extractDivInnersByClass(cleaned, 'kvMV')
   const chunks: string[] = []
   if (parts.length) {
     for (const p of parts) {
@@ -458,9 +515,23 @@ function cifraPreToPlain(pre: string): string {
       if (/\n\s*\n\s*$/.test(raw) && !/^\[[^\]]+\]\s*$/.test(last)) chunks.push('')
     }
   } else {
-    chunks.push(htmlChunkToText(pre).replace(/^\n+/, '').replace(/\n+$/, ''))
+    chunks.push(htmlChunkToText(cleaned).replace(/^\n+/, '').replace(/\n+$/, ''))
   }
   return chunks.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function extractDivInnersByClass(html: string, className: string): string[] {
+  const openRe = new RegExp(`<div\\b[^>]*\\bclass=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>`, 'gi')
+  const parts: string[] = []
+  let m: RegExpExecArray | null
+  while ((m = openRe.exec(html))) {
+    const innerStart = m.index + m[0].length
+    const end = findMatchingCloseDiv(html, innerStart)
+    if (end < 0) break
+    parts.push(html.slice(innerStart, end))
+    openRe.lastIndex = end + '</div>'.length
+  }
+  return parts
 }
 
 /**

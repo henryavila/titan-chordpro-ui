@@ -26,6 +26,12 @@ fixture — a URL do Unidos em Cristo virava Escuta Meu Clamor.
   refrão — não emitir esse branco.
 - Os `.` na letra (`f.az`, `uni.ao`) são o **ataque do acorde**. Merge nas
   colunas originais, depois tira o ponto. Apagar antes desloca o acorde.
+- Tablatura do CC vem em `<div class="tabs"><span class="tab">…`. Repete a
+  cifra de ensaio sem compasso. **Descartar** o bloco inteiro no HTML.
+- Regex não-guloso em `.kvMV` fechava no `</div>` de `.tabs` e comia
+  `[Primeira Parte]` / `[Refrão]` que vinham depois no mesmo par — parse
+  aninhado.
+- `[Intro]` / `Intro:` no import → `{c:INTRODUÇÃO}` (rótulo Titan).
 
 ## Demo
 

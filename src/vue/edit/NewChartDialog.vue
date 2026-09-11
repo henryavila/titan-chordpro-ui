@@ -39,10 +39,10 @@ const emit = defineEmits<{ close: []; commit: [source: string] }>()
 
 const SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const TIMES = ['4/4', '3/4', '6/8', '2/4']
-const BLANK_BODY = '{c:Intro}\n[G] [C] [D]\n\n{c:Verso 1}\n[G]Primeira linha da letra'
+const BLANK_BODY = '{c:INTRODUÇÃO}\n[G] [C] [D]\n\n{c:Verso 1}\n[G]Primeira linha da letra'
 
 const BLANK_NOTE =
-  'Cifra em branco. Identifique a música e o editor abre com Intro e Verso 1 — é só digitar por cima e inserir o resto.'
+  'Cifra em branco. Identifique a música e o editor abre com INTRODUÇÃO e Verso 1 — é só digitar por cima e inserir o resto.'
 
 type Origin = 'url' | 'file' | 'text'
 const ORIGINS: Array<{ id: Origin; title: string; hint: string; icon: CpvIconName }> = [
