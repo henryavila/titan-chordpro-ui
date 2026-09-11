@@ -54,7 +54,9 @@ import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import type { ChordproViewerEmits, ChordproViewerProps, WriteMode } from './public'
-import { applyThemeVars, cycleTheme, themeGlyph, themeLabel } from './use/useTheme'
+import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
+import CpvIcon from './icon/CpvIcon.vue'
+import type { CpvIconName } from './icon/paths'
 import './cpv.css'
 
 const props = withDefaults(
@@ -325,9 +327,9 @@ const pagePad = computed(() => {
  * at 1600px the column is centred and the corner of the glass is 300px of
  * empty background away from anything the musician is looking at.
  */
-/** Left gutter of the reading column — the beat count lives here, not in the title. */
+/** Flush-left overlay on a full-width frame (2px, not 12 — 20px cells at 12px sat on the lyric). */
 const countLeft = computed(() =>
-  pageMax.value === '100%' ? '12px' : `max(12px, calc((100% - ${pageMax.value}) / 2 - 28px))`,
+  pageMax.value === '100%' ? '2px' : `max(12px, calc((100% - ${pageMax.value}) / 2 - 28px))`,
 )
 /**
  * Below the padded title strip (chromeTop + head), not `headH` alone — that
@@ -504,17 +506,18 @@ const chordVocab = computed(() =>
   ).slice(0, 12),
 )
 const insertItems = computed(() => {
-  const out: Array<{ icon: string; label: string; go: () => void }> = [
-    { icon: '\u266A', label: 'Partitura ou solo', go: () => newScore() },
+  const out: Array<{ icon?: CpvIconName; glyph?: string; label: string; go: () => void }> = [
+    { icon: 'music2', label: 'Partitura ou solo', go: () => newScore() },
   ]
   // Without a catalogue from the host there is nothing to pick from, and an
   // entry that opens an empty dialog is worse than no entry.
   if (props.images.length)
-    out.push({ icon: '\u25A4', label: 'Imagem de partitura', go: () => bedit.openPicker('insert') })
+    out.push({ icon: 'image', label: 'Imagem de partitura', go: () => bedit.openPicker('insert') })
   out.push(
-    { icon: '\u275D', label: 'Coment\u00e1rio de ensaio', go: () => bedit.insertBlock('comment') },
-    { icon: '\u00B6', label: 'Nova estrofe', go: () => bedit.insertBlock('lyrics') },
-    { icon: '\u276F', label: 'Refr\u00e3o', go: () => bedit.insertBlock('chorus') },
+    { icon: 'msgQuote', label: 'Coment\u00e1rio de ensaio', go: () => bedit.insertBlock('comment') },
+    { icon: 'alignLeft', label: 'Nova estrofe', go: () => bedit.insertBlock('lyrics') },
+    // Chorus mark is still open: none of the catalog options were accepted.
+    { glyph: '\u276F', label: 'Refr\u00e3o', go: () => bedit.insertBlock('chorus') },
   )
   return out
 })
@@ -913,6 +916,8 @@ function stopScroll() {
 function startScroll() {
   const el = scroller.value
   if (!el) return
+  // Hitting Rolar again is continuing the song, not confirming the end.
+  setlist.dismissEnd()
   scrolling.value = true
   window.clearTimeout(idleT)
   if (props.autoHide) idle.value = true
@@ -921,7 +926,10 @@ function startScroll() {
   // reaches the reading line — the whole intro stays on screen. Resuming
   // mid-song, the playhead adopts the current reading line.
   const total = totalBars() || 1
-  playhead = el.scrollTop <= 1 ? 0 : Math.min(1, barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / total)
+  const max0 = Math.max(0, el.scrollHeight - el.clientHeight)
+  const mapped = barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / total
+  const atPaperEnd = max0 <= 1 || el.scrollTop >= max0 - 2
+  playhead = el.scrollTop <= 1 ? 0 : Math.min(atPaperEnd ? 1 : 0.999, Math.max(0, mapped))
   written = el.scrollTop
   etaTick = -1
   let prev = performance.now()
@@ -932,7 +940,10 @@ function startScroll() {
     if (!scrolling.value) return
     if (Math.abs(el.scrollTop - written) > 1.5) {
       const t = totalBars() || 1
-      playhead = Math.min(1, Math.max(0, barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / t))
+      const maxS = Math.max(0, el.scrollHeight - el.clientHeight)
+      const atEnd = maxS <= 1 || el.scrollTop >= maxS - 2
+      const u = barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / t
+      playhead = Math.min(atEnd ? 1 : 0.999, Math.max(0, u))
     }
   }
   el.addEventListener('scroll', userScroll, { passive: true })
@@ -967,12 +978,16 @@ function startScroll() {
       etaLabel.value = formatEta(sec)
     }
     if (playhead >= 1) {
-      progress.value = 1
-      stopScroll()
-      // End of the song in a rehearsal: stop and offer the next, rather than
-      // pushing the musician into a chart they did not choose.
-      setlist.offerNext()
-      return
+      // The clock can claim "done" while the paper still has room — resume
+      // after a drag used to fire "Fim da música" in the middle of the chart.
+      // The offer is the end of the paper, not the end of the fraction.
+      if (max <= 1 || el.scrollTop >= max - 2) {
+        progress.value = 1
+        stopScroll()
+        setlist.offerNext()
+        return
+      }
+      playhead = 0.999
     }
     raf = requestAnimationFrame(step)
   }
@@ -2002,7 +2017,7 @@ defineExpose({
             title="Sair do modo dual"
             style="flex:none;width:24px;height:24px;border-radius:8px;color:var(--muted);font-size:14px;line-height:1;"
             @click="toggleMap"
-          >×</button>
+          ><CpvIcon name="x" :size="14" /></button>
         </div>
         <ChartBody
           v-bind="chartScale"
@@ -2051,16 +2066,16 @@ defineExpose({
             aria-label="Música anterior"
             :disabled="setlist.noPrev.value"
             :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="goPrev"
-          >◀</button>
+          ><CpvIcon name="chevronLeft" :size="16" /></button>
           <button
             aria-label="Próxima música"
             :disabled="setlist.noNext.value"
             :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="goNext"
-          >▶</button>
+          ><CpvIcon name="chevronRight" :size="16" /></button>
         </div>
       </div>
     </div>
@@ -2087,7 +2102,7 @@ defineExpose({
             <span>{{ setlist.current.value?.title || '…' }}</span>
             <span>Buscando cifra…</span>
           </span>
-          <span aria-hidden="true" class="cpv-song-skel-chev">▾</span>
+          <CpvIcon name="listMusic" :size="16" class="cpv-song-skel-chev" />
         </button>
       </div>
       <div class="cpv-song-skel-page" aria-hidden="true">
@@ -2104,7 +2119,7 @@ defineExpose({
           :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
           class="cpv-song-skel-nav"
           @click="goPrev"
-        >◀</button>
+        ><CpvIcon name="chevronLeft" :size="16" /></button>
         <button data-setlist-open class="cpv-song-skel-list" @click="setlist.open()">
           <span>{{ setlist.posLabel.value }}</span>
           <span>Lista</span>
@@ -2116,7 +2131,7 @@ defineExpose({
           :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
           class="cpv-song-skel-nav"
           @click="goNext"
-        >▶</button>
+        ><CpvIcon name="chevronRight" :size="16" /></button>
       </div>
     </div>
 
@@ -2142,7 +2157,7 @@ defineExpose({
             style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--chord-edge);border-radius:15px;background:var(--chord-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
             @click="startNew('import')"
           >
-            <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;line-height:1;">↓</span>
+            <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;"><CpvIcon name="fileInput" :size="16" /></span>
             <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
               <span style="font-size:14.5px;font-weight:700;">Importar</span>
               <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Link do CifraClub, arquivo .cho ou PDF, ou texto colado — inclusive OnSong.</span>
@@ -2153,7 +2168,7 @@ defineExpose({
             style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:15px;background:transparent;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
             @click="startNew('blank')"
           >
-            <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--muted);line-height:1;">+</span>
+            <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);"><CpvIcon name="filePlus" :size="16" /></span>
             <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
               <span style="font-size:14.5px;font-weight:700;">Começar em branco</span>
               <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Digitar letra e acordes no editor, do zero.</span>
@@ -2169,7 +2184,7 @@ defineExpose({
     </div>
 
     <div v-else-if="fatal" class="cpv-center" role="alert">
-      <div class="cpv-fatal-mark">!</div>
+      <div class="cpv-fatal-mark"><CpvIcon name="alertTri" :size="22" /></div>
       <div style="font-size:15px;font-weight:600;">Não foi possível ler esta cifra</div>
       <div style="font-size:13px;color:var(--muted);max-width:340px;line-height:1.55;text-wrap:pretty;">{{ fatal }}</div>
     </div>
@@ -2203,7 +2218,7 @@ defineExpose({
             <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
             <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
           </span>
-          <span aria-hidden="true" style="flex:none;font-size:9px;color:var(--muted);padding-right:2px;">▾</span>
+          <CpvIcon name="listMusic" :size="16" />
         </button>
         <span v-else style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
           <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
@@ -2220,7 +2235,7 @@ defineExpose({
         >
           <span style="font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
           <span style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;line-height:1;">{{ shownKey }}{{ hasCapo ? ` · capo ${capo}` : '' }}</span>
-          <span style="font-size:9px;opacity:0.7;">▾</span>
+          <CpvIcon name="chevronDown" :size="12" />
         </button>
         <!-- Header, not dock: parking the ficha or a landscape width must not move this. -->
         <button
@@ -2231,7 +2246,7 @@ defineExpose({
           :style="{ width: '44px', height: '44px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
           style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
           @click="toggleFs"
-        ><span class="cpv-icon-full" aria-hidden="true" /></button>
+        ><CpvIcon name="maximize2" :size="16" /></button>
       </div>
     </div>
 
@@ -2256,7 +2271,7 @@ defineExpose({
             <span style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
             <span style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ setlist.nextChip.value }}</span>
           </span>
-          <span aria-hidden="true" style="flex:none;font-size:9px;color:var(--muted);">▾</span>
+          <CpvIcon name="listMusic" :size="16" />
         </button>
         <div v-else style="flex:1 1 170px;min-width:150px;display:flex;flex-direction:column;gap:2px;">
           <div style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</div>
@@ -2278,14 +2293,14 @@ defineExpose({
             <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:40px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--chord);font-size:17px;line-height:1;cursor:pointer;" @click="shift(1)">+</button>
             <span style="width:1px;height:24px;background:var(--chord-edge);margin:0 3px;" />
             <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:5px;height:32px;padding:0 9px;border:0;border-radius:9px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
-              {{ capoBtnLabel }}<span :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)' }" style="font-size:9px;opacity:0.75;transition:transform .18s ease;">▾</span>
+              {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="12" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
             </button>
             <button v-if="hasReset" title="Voltar ao tom original, sem capo" style="height:32px;padding:0 9px;margin-left:2px;border:0;border-radius:9px;background:var(--chord-fill);color:var(--chord);font-size:11.5px;font-weight:600;cursor:pointer;" @click="resetTone">Original</button>
           </div>
           <div v-if="capoOpen" class="cpv-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:cpv-rise .18s ease-out;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Capotraste</span>
-              <button class="cpv-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);font-size:14px;" @click="capoOpen = false">×</button>
+              <button class="cpv-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);" @click="capoOpen = false"><CpvIcon name="x" :size="14" /></button>
             </div>
             <div style="display:flex;align-items:center;gap:7px;">
               <button aria-label="Capo abaixo" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="setCapo(capo - 1)">−</button>
@@ -2322,7 +2337,7 @@ defineExpose({
           :style="{ width: '36px', height: '36px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
           style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:12px;color:var(--text);cursor:pointer;"
           @click="toggleFs"
-        ><span class="cpv-icon-full" aria-hidden="true" /></button>
+        ><CpvIcon name="maximize2" :size="16" /></button>
       </div>
     </div>
 
@@ -2421,23 +2436,21 @@ defineExpose({
           ><span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />não salvo</span>
           <button
             data-undo
-            class="cpv-glyph"
             title="Desfazer (Ctrl+Z)"
             aria-label="Desfazer"
             :disabled="!canUndo"
             :style="{ opacity: canUndo ? '1' : '0.4' }"
-            style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:14px;cursor:pointer;"
+            style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="undo"
-          >↺</button>
+          ><CpvIcon name="undo2" :size="16" /></button>
           <button
             v-if="canRedo"
             data-redo
-            class="cpv-glyph"
             title="Refazer (Ctrl+Shift+Z)"
             aria-label="Refazer"
-            style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:14px;cursor:pointer;"
+            style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="redo"
-          >↻</button>
+          ><CpvIcon name="redo2" :size="16" /></button>
           <span
             v-if="wMode === 'local'"
             style="display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:9px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-size:11px;font-weight:600;color:var(--chord);"
@@ -2502,12 +2515,12 @@ defineExpose({
           title="Ver e reverter meus ajustes"
           style="width:30px;height:30px;border-radius:10px;color:var(--muted);font-size:15px;line-height:1;"
           @click="ov.myPanel.value = true"
-        >⋯</button>
+        ><CpvIcon name="ellipsis" :size="16" /></button>
       </div>
 
       <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;max-width:360px;padding:7px 8px 7px 13px;border-radius:13px;animation:cpv-rise .25s ease-out;">
         <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
-        <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:26px;height:26px;color:var(--muted);font-size:14px;" @click="dismissHint(true)">×</button>
+        <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:26px;height:26px;color:var(--muted);" @click="dismissHint(true)"><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <div v-if="scrolling" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:10px;padding:7px 8px 7px 14px;border-radius:14px;animation:cpv-rise .2s ease-out;">
@@ -2530,9 +2543,9 @@ defineExpose({
             title="Música anterior"
             :disabled="setlist.noPrev.value"
             :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="goPrev"
-          >◀</button>
+          ><CpvIcon name="chevronLeft" :size="16" /></button>
           <button
             data-setlist-open
             title="Abrir a lista do ensaio"
@@ -2541,6 +2554,7 @@ defineExpose({
           >
             <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
             <span style="flex:none;font-size:12px;font-weight:600;color:var(--muted);">Lista</span>
+            <CpvIcon name="listMusic" :size="14" />
           </button>
           <button
             data-song-next
@@ -2548,9 +2562,9 @@ defineExpose({
             title="Próxima música"
             :disabled="setlist.noNext.value"
             :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="goNext"
-          >▶</button>
+          ><CpvIcon name="chevronRight" :size="16" /></button>
           <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
         </template>
         <button
@@ -2562,7 +2576,7 @@ defineExpose({
           style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:9px;"
           @click="toggleScroll"
         >
-          <span :class="rollLive ? 'cpv-icon-stop' : 'cpv-icon-play'" aria-hidden="true" />{{ rollLive ? 'Parar' : 'Rolar' }}
+          <CpvIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ rollLive ? 'Parar' : 'Rolar' }}
         </button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
         <button class="cpv-ghost" aria-label="Diminuir tipografia" title="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
@@ -2575,7 +2589,7 @@ defineExpose({
           style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
           @click="toggleFit"
         >
-          <span style="width:14px;height:14px;border-radius:4px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;">{{ fitOn ? '✓' : '' }}</span>Ajuste
+          <CpvIcon name="scan" :size="16" />Ajuste
         </button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
         <button
@@ -2586,7 +2600,7 @@ defineExpose({
           style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
           @click="toggleLens"
         >
-          <span style="width:12px;height:12px;border-radius:50%;border:1.5px solid currentColor;background:linear-gradient(90deg,currentColor 50%,transparent 50%);" />{{ lensChipLabel }}
+          <CpvIcon name="glasses" :size="16" />{{ lensChipLabel }}
         </button>
         <button
           data-met-btn
@@ -2596,14 +2610,11 @@ defineExpose({
           style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;"
           @click="toggleMetPanel"
         >
-          <span
-            :style="{ background: met.running.value && met.beat.value === 0 ? 'var(--chord)' : 'transparent', transform: met.running.value && met.beat.value === 0 ? 'scale(1.35)' : 'scale(1)' }"
-            style="width:11px;height:11px;border-radius:50%;border:1.5px solid currentColor;transition:transform .07s ease-out,background .07s linear;"
-          />{{ met.running.value ? `${met.bpm.value} BPM` : 'Metrônomo' }}
+          <CpvIcon name="metronome" :size="16" />{{ met.running.value ? `${met.bpm.value} BPM` : 'Metrônomo' }}
         </button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
         <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="requestTheme">
-          <span class="cpv-glyph" style="font-size:13px;line-height:1;">{{ themeGlyph(themeMode) }}</span>{{ themeLabel(themeMode) }}
+          <CpvIcon :name="themeIcon(themeMode)" :size="16" />{{ themeLabel(themeMode) }}
         </button>
         <button
           v-if="canEditNow"
@@ -2614,9 +2625,9 @@ defineExpose({
           style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
           @click="enterEdit"
         >
-          <span class="cpv-icon-edit" aria-hidden="true" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
+          <CpvIcon name="pencil" :size="16" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
         </button>
-        <button class="cpv-ghost cpv-glyph" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;font-size:15px;" @click="sheet = true">↓</button>
+        <button class="cpv-ghost" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;" @click="sheet = true"><CpvIcon name="download" :size="16" /></button>
       </div>
     </div>
 
@@ -2632,7 +2643,7 @@ defineExpose({
            revert. -->
       <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:cpv-rise .25s ease-out;">
         <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — desligue em “Mais”.</span>
-        <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);font-size:15px;" @click="dismissHint(true)">×</button>
+        <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);" @click="dismissHint(true)"><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <div class="cpv-hit cpv-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
@@ -2643,9 +2654,9 @@ defineExpose({
             aria-label="Música anterior"
             :disabled="setlist.noPrev.value"
             :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="goPrev"
-          >◀</button>
+          ><CpvIcon name="chevronLeft" :size="16" /></button>
           <button
             data-setlist-open
             title="Abrir a lista do ensaio"
@@ -2654,16 +2665,16 @@ defineExpose({
           >
             <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
             <span style="flex:1;min-width:0;font-size:11.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">{{ setlist.nextChipShort.value }}</span>
-            <span aria-hidden="true" style="flex:none;font-size:9px;color:var(--muted);">▴</span>
+            <CpvIcon name="listMusic" :size="14" />
           </button>
           <button
             data-song-next
             aria-label="Próxima música"
             :disabled="setlist.noNext.value"
             :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;"
+            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="goNext"
-          >▶</button>
+          ><CpvIcon name="chevronRight" :size="16" /></button>
         </div>
         <div v-if="scrolling" style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line-soft);">
           <button aria-label="Mais devagar" style="flex:none;width:40px;height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="mul = viewerMulStep(mul, 'down')">−</button>
@@ -2688,13 +2699,13 @@ defineExpose({
             style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
             @click="toggleScroll"
           >
-            <span :class="rollLive ? 'cpv-icon-stop' : 'cpv-icon-play'" style="flex:none;width:11px;height:11px;" aria-hidden="true" />{{ dockPlayLabel }}
+            <CpvIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ dockPlayLabel }}
           </button>
           <span :style="{ height: dockCtrlH }" style="flex:none;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:14px;background:var(--surface);">
             <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
-          <button data-theme-btn class="cpv-ghost cpv-glyph" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:16px;line-height:1;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+          <button data-theme-btn class="cpv-ghost" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="16" /></button>
           <button
             v-if="canEditNow"
             data-edit
@@ -2704,8 +2715,8 @@ defineExpose({
             :style="{ width: dockIconSize, height: dockCtrlH }"
             style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
             @click="enterEdit"
-          ><span class="cpv-icon-edit" aria-hidden="true" /></button>
-          <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;font-size:17px;line-height:1;" @click="moreOpen = true">⋯</button>
+          ><CpvIcon name="pencil" :size="16" /></button>
+          <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;" @click="moreOpen = true"><CpvIcon name="ellipsis" :size="16" /></button>
         </div>
       </div>
     </div>
@@ -2730,14 +2741,14 @@ defineExpose({
       <div v-if="editHint" class="cpv-clip-bar cpv-veil-2" data-edit-hint style="border-style:solid;">
         <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
           Toque na linha para editar a letra · segure o acorde e arraste até a sílaba ·
-          <span style="font-family:'Space Mono',monospace;color:var(--text);">⋮⋮</span> seleciona e reordena o bloco.
+          <CpvIcon name="gripV" :size="14" /> seleciona e reordena o bloco.
         </span>
         <button
           class="cpv-ghost"
           aria-label="Entendi"
           style="flex:none;width:26px;height:26px;color:var(--muted);font-size:14px;line-height:1;"
           @click="markEditSeen()"
-        >×</button>
+        ><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <div v-if="bedit.clip.value" class="cpv-clip-bar cpv-veil-2">
@@ -2767,7 +2778,7 @@ defineExpose({
             class="cpv-insert-item"
             type="button"
             @click="it.go()"
-          ><span>{{ it.icon }}</span>{{ it.label }}</button>
+          ><span><CpvIcon v-if="it.icon" :name="it.icon" :size="16" /><template v-else>{{ it.glyph }}</template></span>{{ it.label }}</button>
         </div>
 
         <button
@@ -2779,7 +2790,7 @@ defineExpose({
           }"
           style="height:36px;padding:0 13px;border-radius:12px;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
           @click="bedit.toggleInsertMenu()"
-        ><span style="font-size:15px;line-height:1;color:var(--chord);">+</span>Inserir</button>
+        ><CpvIcon name="plus" :size="16" style="color:var(--chord)" />Inserir</button>
 
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
 
@@ -2790,12 +2801,12 @@ defineExpose({
           style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
           @click="srcOpen = true"
         >
-          <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--chord);">{ }</span>Fonte
+          <CpvIcon name="braces" :size="16" />Fonte
           <span v-if="!lint.ok" title="Diretiva sem par nesta cifra" style="width:6px;height:6px;border-radius:50%;background:var(--danger);" />
         </button>
         <button class="cpv-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
         <button class="cpv-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
-        <button data-theme-btn class="cpv-ghost cpv-glyph" :title="themeTitle" style="width:36px;height:36px;font-size:13px;" @click="requestTheme">{{ themeGlyph(themeMode) }}</button>
+        <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="width:36px;height:36px;" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="16" /></button>
       </div>
     </div>
 
@@ -2838,10 +2849,10 @@ defineExpose({
     </div>
 
     <div v-if="pdf === 'error'" class="cpv-error-banner">
-      <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--danger);color:var(--danger);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1;">!</span>
+      <CpvIcon name="alertTri" :size="18" style="color:var(--danger)" />
       <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em PDF falhou.</span>
       <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="pdf = 'idle'; doExportPdf()">Tentar de novo</button>
-      <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);font-size:15px;" @click="pdf = 'idle'">×</button>
+      <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="pdf = 'idle'"><CpvIcon name="x" :size="14" /></button>
     </div>
 
     <div
@@ -2877,12 +2888,12 @@ defineExpose({
           title="Ficar nesta música"
           style="flex:none;width:34px;height:34px;color:var(--muted);font-size:16px;"
           @click="setlist.dismissEnd()"
-        >×</button>
+        ><CpvIcon name="x" :size="16" /></button>
       </div>
     </div>
 
     <div v-if="guard.bad.value" class="cpv-surface-warn" role="alert">
-      <span aria-hidden="true" style="flex:none;color:var(--danger);font-size:15px;line-height:1.35;">⚠</span>
+      <CpvIcon name="alertTri" :size="16" style="color:var(--danger)" />
       <span style="flex:1;min-width:0;">
         <span class="cpv-surface-warn-title">Viewer sem altura resolvível</span>
         <span class="cpv-surface-warn-body">O ancestral imediato precisa de uma altura definida. Sem ela o viewer usa o piso de 460px e a barra de controle fica fora da tela. Ver <code>docs/CONSUMER.md</code> — detalhes no console.</span>
@@ -2893,7 +2904,7 @@ defineExpose({
         title="Ocultar aviso"
         style="flex:none;width:26px;height:26px;color:var(--muted);font-size:15px;"
         @click="guard.dismiss()"
-      >×</button>
+      ><CpvIcon name="x" :size="14" /></button>
     </div>
 
     <ExportSheet
@@ -2920,6 +2931,7 @@ defineExpose({
       @click="met.toggle()"
     >
       <span v-if="met.countIn.value" data-met-countin class="cpv-met-entrada">entrada</span>
+      <span data-met-bpm class="cpv-met-bpm">{{ met.bpm.value }}</span>
       <span
         v-for="n in met.bar.value"
         :key="n"
@@ -3017,24 +3029,24 @@ defineExpose({
       <div class="cpv-bottom-sheet cpv-veil-2" role="dialog" aria-label="Mais controles" style="gap:6px;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
           <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Mais controles</span>
-          <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);font-size:16px;" @click="moreOpen = false">×</button>
+          <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="moreOpen = false"><CpvIcon name="x" :size="16" /></button>
         </div>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFit()">Ajuste ao espaço<span>{{ fitOn ? 'Ligado' : 'Desligado' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()">Lentes de leitura<span>Nomes ou graus</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()">Metrônomo<span>{{ met.running.value ? 'Tocando' : 'Parado' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true">Exportar<span>ChordPro ou PDF</span></button>
+        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFit()"><CpvIcon name="scan" :size="18" /><span class="cpv-more-copy">Ajuste ao espaço</span><span>{{ fitOn ? 'Ligado' : 'Desligado' }}</span></button>
+        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes ou graus</span></button>
+        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
+        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro ou PDF</span></button>
         <template v-if="showMine">
           <button class="cpv-surface-btn cpv-more-item" data-more-original @click="moreOpen = false; toggleOriginal(!ov.showOriginal.value)">
-            {{ ov.showOriginal.value ? 'Ler minha versão' : 'Ler o original' }}<span>{{ ov.mineCount.value }} {{ ov.mineCount.value === 1 ? 'ajuste seu' : 'ajustes seus' }}</span>
+            <CpvIcon name="layers" :size="18" /><span class="cpv-more-copy">{{ ov.showOriginal.value ? 'Ler minha versão' : 'Ler o original' }}</span><span>{{ ov.mineCount.value }} {{ ov.mineCount.value === 1 ? 'ajuste seu' : 'ajustes seus' }}</span>
           </button>
-          <button class="cpv-surface-btn cpv-more-item" data-more-my @click="moreOpen = false; ov.myPanel.value = true">Meus ajustes<span>Ver e reverter</span></button>
+          <button class="cpv-surface-btn cpv-more-item" data-more-my @click="moreOpen = false; ov.myPanel.value = true"><CpvIcon name="list" :size="18" /><span class="cpv-more-copy">Meus ajustes</span><span>Ver e reverter</span></button>
         </template>
         <button
           v-if="modes.includes('content') && ov.pendingCount.value > 0"
           class="cpv-surface-btn cpv-more-item"
           data-more-queue
           @click="moreOpen = false; ov.openQueue()"
-        >Sugestões dos músicos<span>{{ ov.pendingCount.value }} {{ ov.pendingCount.value === 1 ? 'pendente' : 'pendentes' }}</span></button>
+        ><CpvIcon name="msgQuote" :size="18" /><span class="cpv-more-copy">Sugestões dos músicos</span><span>{{ ov.pendingCount.value }} {{ ov.pendingCount.value === 1 ? 'pendente' : 'pendentes' }}</span></button>
       </div>
     </div>
 

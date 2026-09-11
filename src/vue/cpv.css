@@ -302,7 +302,9 @@
   border-radius: 13px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 .cpv-song-skel-list {
@@ -349,9 +351,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 21px;
-  font-weight: 700;
-  line-height: 1;
 }
 .cpv-spin {
   width: 22px;
@@ -768,78 +767,11 @@
 .cpv-hit {
   pointer-events: auto;
 }
-.cpv-icon-play,
-.cpv-icon-stop {
+.cpv-ico {
   flex: none;
-  width: 10px;
-  height: 10px;
-  color: inherit;
-  background-color: currentColor;
-}
-.cpv-icon-play {
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-}
-.cpv-icon-stop {
-  border-radius: 2px;
-}
-/*
- * Fullscreen, drawn rather than typed. The `⤢` glyph renders 6.5px of ink
- * where every neighbour in the dock draws 12.4 — half the size, in a row whose
- * icons have to read as one set — and how much ink a symbol character puts on
- * screen is the font's decision, not ours, so it cannot be tuned by font-size.
- */
-.cpv-icon-full {
-  position: relative;
   display: block;
-  flex: none;
-  width: 13px;
-  height: 13px;
-  box-sizing: border-box;
-}
-.cpv-icon-full::before,
-.cpv-icon-full::after {
-  content: '';
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  box-sizing: border-box;
-  border: 1.75px solid currentColor;
-}
-.cpv-icon-full::before {
-  top: 0;
-  left: 0;
-  border-right: 0;
-  border-bottom: 0;
-  border-top-left-radius: 2px;
-}
-.cpv-icon-full::after {
-  right: 0;
-  bottom: 0;
-  border-left: 0;
-  border-top: 0;
-  border-bottom-right-radius: 2px;
-}
-/*
- * Edit, drawn rather than typed. `✎` paints 12.2 × 8.9 next to a 12.7 × 12.7
- * theme glyph — the short axis is what reads as smaller — and how much ink a
- * symbol character puts on screen is the font's decision, not ours. 13×13 is
- * the same box as `.cpv-icon-full`. The chord-green pill that used to wrap it
- * is gone: the button is a ghost, like Tema and Mais.
- */
-.cpv-icon-edit {
-  --cpv-icon-edit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1 1 22 22' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15.385 4.221 4.394 4.394'/%3E%3C/svg%3E");
-  display: block;
-  flex: none;
-  width: 13px;
-  height: 13px;
-  box-sizing: border-box;
   color: inherit;
-  background-color: currentColor;
-  -webkit-mask: var(--cpv-icon-edit) center / contain no-repeat;
-  mask: var(--cpv-icon-edit) center / contain no-repeat;
-}
-.cpv-glyph {
-  font-family: system-ui, -apple-system, 'Segoe UI Symbol', sans-serif;
+  pointer-events: none;
 }
 .cpv-scrim {
   position: absolute;
@@ -995,6 +927,9 @@
   background: var(--chord-hover);
 }
 .cpv-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: transparent;
   color: var(--text);
@@ -1093,7 +1028,8 @@
 }
 /* In the count column flow (below the title strip, above 1–2–3).
    flex-start — not center: a ~51px word centered on a 20px column at
-   left:12px hangs off the root and loses the leading E. */
+   left:2px hangs off the root and loses the leading E. Badge fill so
+   the word stays readable on the lyric for the one bar of count-in. */
 .cpv-met-entrada {
   flex: none;
   align-self: flex-start;
@@ -1106,6 +1042,30 @@
   color: var(--chord);
   font-weight: 700;
   line-height: 1;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--canvas);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--chord-edge);
+}
+.cpv-met-bpm {
+  flex: none;
+  align-self: flex-start;
+  width: max-content;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: var(--canvas);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--line);
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
 .cpv-met-beat {
   width: 20px;
@@ -1116,22 +1076,25 @@
   font-family: 'Space Mono', monospace;
   font-size: 10.5px;
   font-weight: 500;
-  border: 0;
   color: var(--muted);
-  background: transparent;
-  opacity: 0.38;
+  background: var(--canvas);
+  opacity: 1;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--line);
 }
 .cpv-met-beat.is-now {
-  opacity: 1;
   font-weight: 700;
 }
 .cpv-met-hit-1 .cpv-met-beat.is-now {
   background: var(--downbeat);
   color: var(--downbeat-ink);
+  border-color: var(--downbeat);
 }
 .cpv-met-hit-n .cpv-met-beat.is-now {
-  background: transparent;
+  background: var(--canvas);
   color: var(--chord);
+  border-color: var(--chord-edge);
 }
 
 .cpv-head-hit-1 {
@@ -1170,12 +1133,16 @@
 .cpv-more-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   width: 100%;
   text-align: left;
 }
-.cpv-more-item > span {
+.cpv-more-copy {
+  flex: 1;
+  min-width: 0;
+}
+.cpv-more-item > span:last-child {
+  flex: none;
   font-size: 11.5px;
   font-weight: 500;
   color: var(--muted);
@@ -1699,6 +1666,9 @@
 }
 .cpv-selbar-icon {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 34px;
   height: 34px;
   border: 1px solid var(--line);
@@ -1794,7 +1764,9 @@
 .cpv-insert-item > span {
   flex: none;
   width: 22px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--chord);
   font-size: 14px;
 }

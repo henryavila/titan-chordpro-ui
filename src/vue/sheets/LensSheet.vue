@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Lens } from 'titan-chordpro-ui'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -73,7 +74,7 @@ const geom = computed(() =>
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Lentes de leitura</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <div role="radiogroup" style="display:flex;flex-direction:column;gap:6px;">

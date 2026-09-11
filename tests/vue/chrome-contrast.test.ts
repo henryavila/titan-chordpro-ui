@@ -12,9 +12,8 @@ describe('chrome contrast vs template', () => {
     expect(css).toMatch(/appearance:\s*none/)
   })
 
-  it('play/stop icons inherit color instead of initial currentColor black', () => {
-    expect(css).toMatch(/\.cpv-icon-play[\s\S]*?color:\s*inherit/)
-    expect(css).toMatch(/background-color:\s*currentColor/)
+  it('icons inherit color instead of initial currentColor black', () => {
+    expect(css).toMatch(/\.cpv-ico[\s\S]*?color:\s*inherit/)
   })
 
   it('toast arrives and leaves by fade and blur, not a jump', () => {

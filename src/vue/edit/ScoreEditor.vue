@@ -17,6 +17,7 @@ import {
 } from 'titan-chordpro-ui'
 import type { Dur, ScoreMeta, ScoreNote } from 'titan-chordpro-ui'
 import { drawScore, loadVex } from './score-draw'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -515,7 +516,7 @@ const emptyHint = computed(() =>
           title="Alterna só a forma de digitar — o que fica salvo é o mesmo"
           @click="inst = guitar ? 'piano' : 'guitar'"
         >
-          <span class="edp-kicker">Entrada</span>{{ guitar ? 'Violão' : 'Piano' }}<span style="color:var(--muted);">⇄</span>
+          <span class="edp-kicker">Entrada</span>{{ guitar ? 'Violão' : 'Piano' }}<CpvIcon name="arrowLR" :size="14" style="color:var(--muted)" />
         </button>
 
         <div class="edp-seg">
@@ -555,7 +556,7 @@ const emptyHint = computed(() =>
           }"
           @click="togglePlay"
         >
-          <span :style="{ clipPath: playing ? 'none' : 'polygon(0 0, 100% 50%, 0 100%)' }" style="width:10px;height:10px;background:currentColor;" />
+          <CpvIcon :name="playing ? 'square' : 'play'" :size="12" />
           {{ playing ? 'Parar' : 'Tocar' }}
         </button>
       </div>

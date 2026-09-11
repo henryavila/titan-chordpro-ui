@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import CpvIcon from '../icon/CpvIcon.vue'
 import {
   convert, detect, missingOf, MISSING_LABEL, readMeta, titleFromUrl, writeMeta,
   type ChartMeta, type MetaKey,
@@ -266,7 +267,7 @@ const tabStyle = (on: boolean) => ({
     >
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ label }}</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <!-- Step one: where the chart comes from. -->

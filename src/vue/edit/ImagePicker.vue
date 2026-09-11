@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ImageChoice } from '../use/useBlockEdit'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 defineProps<{
   items: ImageChoice[]
@@ -22,7 +23,7 @@ const emit = defineEmits<{ pick: [file: string]; close: [] }>()
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span class="cpv-modal-kicker">{{ replacing ? 'Trocar partitura' : 'Partitura ou solo' }}</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
       <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">
         O arquivo vem do app — aqui entra a referência no source, no ponto do bloco selecionado.

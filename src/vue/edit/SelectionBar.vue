@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { BlockEditApi } from '../use/useBlockEdit'
 import type { WriteMode } from '../use/useOverlay'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
   edit: BlockEditApi
@@ -17,7 +18,6 @@ const e = computed(() => props.edit)
  * says so — the block stays in the file for everyone else.
  */
 const hideLabel = computed(() => (props.wMode === 'local' ? 'Remover daqui' : 'Ocultar'))
-const hideGlyph = computed(() => (props.wMode === 'local' ? '⌫' : '◌'))
 const hideTitle = computed(() =>
   props.wMode === 'local'
     ? 'Remover este bloco da sua leitura — reversível pelo botão Reexibir'
@@ -42,7 +42,7 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
     }"
   >
     <span class="cpv-selbar-name">
-      <span style="font-size:13px;">⋮⋮</span>
+      <CpvIcon name="gripV" :size="14" />
       <span :style="{ display: capShow }" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ e.selLabel.value }}</span>
     </span>
 
@@ -59,9 +59,9 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
           data-sec-reset
           title="Voltar este bloco ao tom da música"
           aria-label="Voltar este bloco ao tom da música"
-          style="font-size:13px;"
+          style="display:flex;align-items:center;"
           @click="e.secReset()"
-        >↺</button>
+        ><CpvIcon name="rotateCcw" :size="14" /></button>
       </div>
 
       <div class="cpv-selbar-group cpv-selbar-group--capo">
@@ -83,7 +83,7 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
             }"
             @click="e.toggleBlockDual()"
           >{{ e.selDualOn.value ? 'dual on' : 'dual off' }}</button>
-          <button title="Seguir o capo da música" aria-label="Seguir o capo da música" style="font-size:13px;color:var(--muted);" @click="e.setBlockCapo(0, true)">↺</button>
+          <button title="Seguir o capo da música" aria-label="Seguir o capo da música" style="color:var(--muted);display:flex;align-items:center;" @click="e.setBlockCapo(0, true)"><CpvIcon name="rotateCcw" :size="14" /></button>
         </template>
       </div>
 
@@ -103,8 +103,8 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
     <button v-if="e.selIsImage.value" class="cpv-selbar-btn" data-swap-image @click="e.openPicker('replace')">Trocar imagem</button>
 
     <div style="flex:none;display:flex;align-items:center;gap:2px;">
-      <button class="cpv-selbar-icon" data-nudge-up title="Mover bloco para cima (Alt+↑)" aria-label="Mover bloco para cima" style="border-radius:10px 4px 4px 10px;" @click="e.nudgeBlock(-1)">↑</button>
-      <button class="cpv-selbar-icon" data-nudge-down title="Mover bloco para baixo (Alt+↓)" aria-label="Mover bloco para baixo" style="border-radius:4px 10px 10px 4px;" @click="e.nudgeBlock(1)">↓</button>
+      <button class="cpv-selbar-icon" data-nudge-up title="Mover bloco para cima (Alt+↑)" aria-label="Mover bloco para cima" style="border-radius:10px 4px 4px 10px;" @click="e.nudgeBlock(-1)"><CpvIcon name="chevronUp" :size="16" /></button>
+      <button class="cpv-selbar-icon" data-nudge-down title="Mover bloco para baixo (Alt+↓)" aria-label="Mover bloco para baixo" style="border-radius:4px 10px 10px 4px;" @click="e.nudgeBlock(1)"><CpvIcon name="chevronDown" :size="16" /></button>
     </div>
 
     <button
@@ -122,9 +122,9 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
       :style="{ color: wMode === 'local' ? 'var(--danger)' : 'var(--text)' }"
       style="display:flex;align-items:center;gap:6px;"
       @click="e.hideBlock()"
-    ><span style="font-size:13px;line-height:1;">{{ hideGlyph }}</span>{{ hideLabel }}</button>
+    ><CpvIcon name="eyeOff" :size="14" />{{ hideLabel }}</button>
 
-    <button class="cpv-selbar-icon" data-duplicate title="Duplicar bloco" aria-label="Duplicar bloco" @click="e.duplicateBlock()">⧉</button>
+    <button class="cpv-selbar-icon" data-duplicate title="Duplicar bloco" aria-label="Duplicar bloco" @click="e.duplicateBlock()"><CpvIcon name="copy" :size="16" /></button>
     <button
       v-if="canDelete"
       class="cpv-selbar-icon cpv-selbar-icon--danger"
@@ -132,7 +132,7 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
       title="Excluir bloco"
       aria-label="Excluir bloco"
       @click="e.deleteBlock()"
-    >⌫</button>
-    <button class="cpv-selbar-icon cpv-selbar-icon--ghost" data-close-sel aria-label="Fechar seleção" @click="e.clearSel()">×</button>
+    ><CpvIcon name="trash2" :size="16" /></button>
+    <button class="cpv-selbar-icon cpv-selbar-icon--ghost" data-close-sel aria-label="Fechar seleção" @click="e.clearSel()"><CpvIcon name="x" :size="16" /></button>
   </div>
 </template>

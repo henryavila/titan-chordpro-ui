@@ -15,10 +15,11 @@ export function applyThemeVars(
   el.style.background = vars['--cpv-canvas']
 }
 
-export function themeGlyph(theme: ThemeId | string): string {
-  if (theme === 'auto') return '◐'
-  if (theme === 'light') return '○'
-  return '●'
+/** Lucide names that replaced the typed ◐ ○ ● glyphs. */
+export function themeIcon(theme: ThemeId | string): 'sunMoon' | 'sun' | 'moon' {
+  if (theme === 'auto') return 'sunMoon'
+  if (theme === 'light') return 'sun'
+  return 'moon'
 }
 
 export function themeLabel(theme: ThemeId | string): string {

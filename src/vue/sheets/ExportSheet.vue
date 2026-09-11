@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CpvIcon from '../icon/CpvIcon.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
@@ -32,7 +33,7 @@ const emit = defineEmits<{
         <span style="font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">
           Exportar {{ exportKeyNote }}
         </span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
       <div v-if="hasOverlay" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;">
         <button

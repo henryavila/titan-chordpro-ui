@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import type { LintResult } from 'titan-chordpro-ui'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
   source: string
@@ -127,7 +128,7 @@ function onResize(e: PointerEvent) {
         style="height:30px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;"
         @click="jumpToSel"
       >Ir para {{ sel.label }}</button>
-      <button class="cpv-ghost" aria-label="Fechar painel de source" style="width:30px;height:30px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+      <button class="cpv-ghost" aria-label="Fechar painel de source" style="width:30px;height:30px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
     </div>
     <textarea
       ref="ta"

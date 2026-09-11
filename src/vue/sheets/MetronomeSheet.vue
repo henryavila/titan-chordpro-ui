@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -126,7 +127,7 @@ const geom = computed(() =>
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Metrônomo</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
@@ -171,12 +172,7 @@ const geom = computed(() =>
           style="flex:1;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:12px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
           @click="emit('toggle')"
         >
-          <span
-            :class="running ? 'cpv-icon-stop' : 'cpv-icon-play'"
-            :style="{ width: running ? '13px' : '12px', height: '13px', marginLeft: running ? '0' : '2px' }"
-            style="flex:none;"
-            aria-hidden="true"
-          />{{ runLabel }}
+          <CpvIcon :name="running ? 'square' : 'play'" :size="14" />{{ runLabel }}
         </button>
         <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:74px;">
           <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">{{ time || `${bar}/4` }}</span>

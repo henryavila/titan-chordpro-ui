@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OpCard } from '../use/useOverlay'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 defineProps<{
   compact: boolean
@@ -34,7 +35,7 @@ const emit = defineEmits<{
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ mineLabel }}</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;border-radius:8px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;border-radius:8px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
 
       <div

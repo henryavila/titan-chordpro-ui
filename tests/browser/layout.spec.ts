@@ -247,8 +247,57 @@ test('phone beat count overlays the margin — page left pad does not jump to 44
   })
   expect(after.left, 'reserved 44px gutter would push the chart').toBe(before.left)
   expect(after.right).toBe(before.right)
-  expect(after.countLeft).toBeGreaterThanOrEqual(8)
-  expect(after.countLeft).toBeLessThan(28)
+  expect(after.countLeft).toBeGreaterThanOrEqual(0)
+  expect(after.countLeft, '12px left parked the 20px cells on the lyric').toBeLessThan(8)
+
+  const entrada = page.locator('[data-met-countin]')
+  await expect(entrada).toBeVisible()
+  const fill = await entrada.evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(fill === 'transparent' || fill === 'rgba(0, 0, 0, 0)', 'entrada sat on the lyric with no fill').toBe(false)
+
+  const beats = await page.locator('.cpv-met-beat').evaluateAll((els) =>
+    els.map((el) => {
+      const bg = getComputedStyle(el).backgroundColor
+      return { bg, now: el.classList.contains('is-now') }
+    }),
+  )
+  expect(beats.length).toBeGreaterThan(1)
+  for (const b of beats) {
+    expect(
+      b.bg === 'transparent' || b.bg === 'rgba(0, 0, 0, 0)',
+      `${b.now ? 'current' : 'idle'} beat sat on the lyric with no fill (${b.bg})`,
+    ).toBe(false)
+  }
+})
+
+test('tela cheia: beat column stays flush left, entrada is a filled badge', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('[data-fs]').click()
+  await page.waitForTimeout(400)
+
+  const padBefore = await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft))
+  await page.locator('[data-scroll]').click()
+  await expect(page.locator('[data-met-count]')).toBeVisible()
+
+  const spot = await page.evaluate(() => {
+    const pageEl = document.querySelector('.cpv-page')!
+    const count = document.querySelector('[data-met-count]')!
+    const entrada = document.querySelector('[data-met-countin]')
+    const pr = pageEl.getBoundingClientRect()
+    const cr = count.getBoundingClientRect()
+    const cs = getComputedStyle(pageEl)
+    return {
+      padLeft: parseFloat(cs.paddingLeft),
+      countLeft: cr.left - pr.left,
+      entradaBg: entrada ? getComputedStyle(entrada).backgroundColor : '',
+    }
+  })
+  expect(spot.padLeft, 'tela cheia must not grow a left gutter for the click').toBe(padBefore)
+  expect(spot.countLeft).toBeGreaterThanOrEqual(0)
+  expect(spot.countLeft, '12px left on 8px padX puts the cells on the lyric').toBeLessThan(8)
+  expect(spot.entradaBg === 'transparent' || spot.entradaBg === 'rgba(0, 0, 0, 0)').toBe(false)
 })
 
 /**
@@ -458,21 +507,12 @@ test('Tela cheia is on the header, and not also buried in Mais', async ({ page }
   // is the font's decision, so no font-size could have fixed it.
   const ink = await page.evaluate(() => {
     const box = (sel: string) => {
-      const r = document.querySelector(sel)!.getBoundingClientRect()
+      const el = document.querySelector(sel)
+      const ico = el?.querySelector('.cpv-ico') ?? el
+      const r = ico!.getBoundingClientRect()
       return Math.max(r.width, r.height)
     }
-    const c = document.createElement('canvas').getContext('2d')!
-    const glyph = (sel: string) => {
-      const el = document.querySelector(sel) as HTMLElement
-      const cs = getComputedStyle(el)
-      c.font = `${cs.fontSize} ${cs.fontFamily}`
-      const m = c.measureText((el.textContent ?? '').trim())
-      return Math.max(
-        m.actualBoundingBoxRight + m.actualBoundingBoxLeft,
-        m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
-      )
-    }
-    return { full: box('[data-fs] .cpv-icon-full'), theme: glyph('[data-theme-btn]') }
+    return { full: box('[data-fs]'), theme: box('[data-theme-btn]') }
   })
 
   // Within a quarter of the theme glyph: the dock's icons have to read as one
@@ -562,22 +602,14 @@ test('Edit on the dock is a sibling of the other icons, not a highlight', async 
       const s = getComputedStyle(document.querySelector(sel)!)
       return { bg: s.backgroundColor, color: s.color }
     }
-    const c = document.createElement('canvas').getContext('2d')!
-    const glyph = (sel: string) => {
-      const el = document.querySelector(sel) as HTMLElement
-      const cs = getComputedStyle(el)
-      c.font = `${cs.fontSize} ${cs.fontFamily}`
-      const m = c.measureText((el.textContent ?? '').trim())
-      return {
-        w: m.actualBoundingBoxRight + m.actualBoundingBoxLeft,
-        h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
-      }
+    const box = (sel: string) => {
+      const el = document.querySelector(sel)
+      const ico = el?.querySelector('.cpv-ico') ?? el
+      const r = ico!.getBoundingClientRect()
+      return { w: r.width, h: r.height }
     }
-    const icon = document.querySelector('[data-edit] .cpv-icon-edit')
-    const editInk = icon
-      ? { w: icon.getBoundingClientRect().width, h: icon.getBoundingClientRect().height }
-      : glyph('[data-edit]')
-    const theme = glyph('[data-theme-btn]')
+    const editInk = box('[data-edit]')
+    const theme = box('[data-theme-btn]')
     const themeSize = Math.max(theme.w, theme.h)
     return {
       edit: paint('[data-edit]'),
