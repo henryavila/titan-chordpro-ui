@@ -151,12 +151,42 @@ describe('the chart\'s own details', () => {
   })
 
   it('lists what is still missing before it can stand for everyone', () => {
-    expect(missingOf({ title: 'Uma' })).toEqual(['key', 'tempo', 'time'])
-    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4' })).toEqual([])
+    expect(missingOf({ title: 'Uma' })).toEqual(['key', 'tempo', 'time', 'duration'])
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4' })).toEqual(['duration'])
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4', duration: '04:26' })).toEqual([])
+  })
+
+  it('a duration too short to roll is still missing', () => {
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4', duration: '5' })).toEqual(['duration'])
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4', duration: 'abc' })).toEqual(['duration'])
+  })
+
+  it('reads and rewrites duration with the other header details', () => {
+    expect(readMeta('{duration:04:26}\n[G]Letra')).toMatchObject({ duration: '04:26' })
+    const out = writeMeta('[G]Letra', {
+      title: 'Uma',
+      key: 'G',
+      tempo: '80',
+      time: '4/4',
+      duration: '04:26',
+    })
+    expect(out.split('\n').slice(0, 5)).toEqual([
+      '{title:Uma}',
+      '{key:G}',
+      '{tempo:80}',
+      '{time:4/4}',
+      '{duration:04:26}',
+    ])
   })
 
   it('survives a round trip', () => {
-    const src = writeMeta('[G]Letra', { title: 'Uma', key: 'G', tempo: '80', time: '4/4' })
+    const src = writeMeta('[G]Letra', {
+      title: 'Uma',
+      key: 'G',
+      tempo: '80',
+      time: '4/4',
+      duration: '04:26',
+    })
     expect(missingOf(readMeta(src))).toEqual([])
   })
 })

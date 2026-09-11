@@ -288,7 +288,7 @@ export type LayoutOpts = {
   capo?: number
   /** Show the capo shape above the real chord, for the whole song. */
   dual?: boolean
-  /** Reading lens applied to chord names. */
+  /** Reading lens: chord spelling, or lyrics-only. */
   lens?: Lens
   /** Editing: no capo shapes and no lens — you do not edit a projection. */
   editing?: boolean
@@ -308,14 +308,82 @@ export type ChartLayout = {
 }
 
 /**
- * A capo never rewrites the chart: most of the group plays in the real key,
- * and whoever put the capo on needs a map — "see G, play E" — once, not on
- * every line. So chord names stay real and the shape rides above them.
+ * A row with nothing to sing: empty, chords only, or rhythm marks (`x///`).
+ * Under the lyrics-only lens those rows become dead space in the middle of
+ * the lyric and drop out of the reading — the file is unchanged.
  */
+function noLyricRow(row: ChartRow): boolean {
+  const t = row.segs.map((s) => s.text).join('').trim()
+  if (!t) return true
+  return /^[xX/\\|.%\-\s¨~'’]+$/.test(t) && /[xX/]/.test(t)
+}
+
+/**
+ * The x/// convention, after the anchoring chord is gone: `x` is the head of
+ * the time; `/` is a beat that is not. Same neighbourhood as {@link lineBeats} — a mark
+ * only counts next to space, another mark, or the start of the leftover text
+ * (the `]` that used to hold it has already been stripped). A slash inside a
+ * word (`cami/nhar`) and a hyphen (`pala-vra`) stay.
+ */
+function isBeatMarkAt(s: string, i: number): boolean {
+  const c = s[i]
+  if (c !== 'x' && c !== 'X' && c !== '/') return false
+  const prev = i > 0 ? (s[i - 1] as string) : ' '
+  const next = i + 1 < s.length ? (s[i + 1] as string) : ''
+  const nextOk = next === '' || next === '/' || /\s/.test(next)
+  if (!nextOk) return false
+  if (c === 'x' || c === 'X') return /\s/.test(prev)
+  return prev === 'x' || prev === 'X' || prev === '/' || /\s/.test(prev)
+}
+
+function stripBeatMarks(text: string): string {
+  const s = String(text ?? '')
+  let out = ''
+  for (let i = 0; i < s.length; i++) {
+    if (isBeatMarkAt(s, i)) continue
+    out += s[i]
+  }
+  return out.replace(/[ \t]{2,}/g, ' ').replace(/^ +| +$/g, '')
+}
+
+function stripChords(row: ChartRow): ChartRow {
+  const plain = stripBeatMarks(row.segs.map((s) => s.text).join(''))
+  const segs: ChartSeg[] = plain
+    ? [{ chord: '', shape: '', hasShape: false, text: plain, tight: false, loose: false }]
+    : []
+  return { ...row, segs, plain }
+}
+
+/**
+ * Lyrics-only reading: chords, tab, score and images leave the surface.
+ * Rhythm-only / chord-only rows go with them, and beat marks (`x///`, `/`, a
+ * lone `x`) are stripped from the lines that remain. Comments stay — hiding
+ * those is a separate switch.
+ */
+function lyricsOnlyBlocks(blocks: ChartBlock[]): ChartBlock[] {
+  const out: ChartBlock[] = []
+  for (const b of blocks) {
+    if (b.kind === 'tab' || b.kind === 'score' || b.kind === 'image') continue
+    if (b.kind !== 'stanza' && b.kind !== 'chorus') {
+      out.push(b)
+      continue
+    }
+    const rows = b.rows.filter((r) => !noLyricRow(r)).map(stripChords).filter((r) => r.plain.length > 0)
+    if (!rows.length) continue
+    out.push({ ...b, rows, shapeCapo: 0 })
+  }
+  return out
+}
+
 export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlock[] {
   return layoutChartFull(view, opts).blocks
 }
 
+/**
+ * A capo never rewrites the chart: most of the group plays in the real key,
+ * and whoever put the capo on needs a map — "see G, play E" — once, not on
+ * every line. So chord names stay real and the shape rides above them.
+ */
 export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): ChartLayout {
   const semis = opts.semitones ?? view.transposeSemitones
   const capo = Math.max(0, opts.capo ?? 0)
@@ -399,7 +467,13 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
   }
 
   // Out of the reading, present to the editor: that is the whole point of `#~`.
-  const blocks = editing ? all : all.filter((b) => b.kind !== 'hidden')
+  const lyricsOnly = !editing && opts.lens === 'letra'
+  if (lyricsOnly) {
+    twin = false
+    legend = null
+  }
+  const visible = editing ? all : all.filter((b) => b.kind !== 'hidden')
+  const blocks = lyricsOnly ? lyricsOnlyBlocks(visible) : visible
   return { blocks, twin, legend, anyBlockCapo }
 }
 

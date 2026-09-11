@@ -12,6 +12,8 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
+import { hasSongDuration } from './timeline'
+
 const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
 const CHORUS = /^(refr(?:ã|a)o|chorus)/i
@@ -292,7 +294,7 @@ export function convert(text: string): ImportResult {
 
 // ----------------------------------------------------------------- metadata
 
-export const META_KEYS = ['title', 'subtitle', 'key', 'tempo', 'time', 'x_origem'] as const
+export const META_KEYS = ['title', 'subtitle', 'key', 'tempo', 'time', 'duration', 'x_origem'] as const
 export type MetaKey = (typeof META_KEYS)[number]
 export type ChartMeta = Partial<Record<MetaKey | 'capo', string>>
 
@@ -337,11 +339,15 @@ export const MISSING_LABEL: Record<string, string> = {
   key: 'tom',
   tempo: 'andamento',
   time: 'compasso',
+  duration: 'duração',
 }
 
-/** What a chart still needs before it can stand for everyone. */
+/** What a chart still needs before it can stand for everyone. Duration is a
+ * usable `{duration:}` (m:ss, ≥ 20 s) — the same gate auto-scroll uses. */
 export function missingOf(meta: ChartMeta): string[] {
-  return ['title', 'key', 'tempo', 'time'].filter((k) => !String(meta[k as MetaKey] ?? '').trim())
+  return (['title', 'key', 'tempo', 'time', 'duration'] as const).filter((k) =>
+    k === 'duration' ? !hasSongDuration(meta.duration) : !String(meta[k] ?? '').trim(),
+  )
 }
 
 // ------------------------------------------------------------------ origins

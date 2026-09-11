@@ -26,6 +26,12 @@ const options = computed(() => [
     off: false,
   },
   {
+    key: 'letra' as Lens,
+    label: 'Só letra',
+    hint: 'Sem acordes, tab ou partitura — para quem está cantando com a banda.',
+    off: false,
+  },
+  {
     key: 'nashville' as Lens,
     label: 'Nashville (graus)',
     hint: !props.hasKey

@@ -51,6 +51,7 @@ export {
   clockOf,
   etaSec,
   formatEta,
+  hasSongDuration,
   isPlayedLine,
   lineBeats,
   marksPerBeat,

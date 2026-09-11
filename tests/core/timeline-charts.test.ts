@@ -94,7 +94,8 @@ describe('the clock on real charts', () => {
     expect(span(intro)).toBeCloseTo(32 * (60 / 72), 2)
     const inter = blocks.findIndex((b, i) => i > intro && b.music.beats === 16)
     expect(inter).toBeGreaterThan(0)
-    expect(span(inter)).toBeCloseTo(16 * (60 / 72), 2)
+    expect(blocks[inter - 1]?.kind).toBe('comment')
+    expect(span(inter, inter - 1)).toBeCloseTo(16 * (60 / 72), 2)
   })
 
   /**

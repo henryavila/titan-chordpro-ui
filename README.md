@@ -321,9 +321,10 @@ ele é montado em duas camadas — a distinção entre elas é o ponto:
    compasso, e vira o tempo de rolagem daquele trecho diretamente. O mesmo vale
    para os compassos de uma tab ou partitura, e para a **cauda** segurada no fim
    de uma linha cantada. Esta camada nunca é calibrada: ela já é a resposta.
-2. **O que ela deixa de fora.** Uma linha cantada sem marca vale
-   `BEATS_PER_ROW` pulsos, e só esta camada é esticada ou comprimida para
-   fechar em `{duration:}`.
+2. **O que ela deixa de fora.** Uma linha cantada sem marca é um espaço
+   (`BEATS_PER_ROW` pulsos) que só esta camada estica ou comprime para fechar
+   em `{duration:}`. Acorde sem `x///` / `//` **não é duração**: `[G] [A] [B]
+   [C]` pode ser quatro compassos ou quatro tempos, e a engine não adivinha.
 
 `{time:}` é lido inteiro, numerador **e** denominador. O `{tempo:}` nomeia o
 *pulso sentido* e uma marca `x///` é uma unidade do denominador — em compasso
@@ -338,6 +339,19 @@ cai uma vez por compasso em qualquer fórmula.
 Uma marca no fim de uma linha cantada é cauda **somada** àquela linha, nunca o
 tempo inteiro dela: um `[Am]x///` fechando a estrofe não faz a estrofe durar
 quatro pulsos.
+
+Notas de ensaio (`BEM SUAVE`), rótulos de seção (`INTRODUÇÃO`) e imagens soltas
+não têm relógio próprio: o papel delas anda com o próximo bloco musical (ou com
+o último, se vierem no fim). Dar-lhes o passo médio da página — e o padding do
+chrome absorvido no primeiro bloco — gastava 25 a 100 s antes da intro em
+cifras reais, e um verso no celular ainda estava fora da tela quando o músico
+chegava lá.
+
+**Hard gate:** Rolar só parte se a cifra declara `{duration:}` (m:ss, ≥ 20 s).
+Sem duração, o botão fica morto — BPM e acordes sem `x///` não substituem.
+
+Gramática da convenção, o que a engine **não** adivinha, lente Só letra, lint e
+regras para agente: [`docs/MARCAS-X.md`](docs/MARCAS-X.md).
 
 Um *playhead* percorre a cifra nesse relógio e o percurso inteiro gasta a
 duração declarada. `Timeline.bars` é o total do percurso e `runSec()` devolve

@@ -4,9 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import { memoryStore, STORE_KEYS } from '../../src/core'
 import { useMetronome, type MetronomeOpts } from '../../src/vue/use/useMetronome'
-import { JESUS_1, loadFixture } from '../helpers/load-fixture'
+import { JESUS_1, loadFixture, withDuration, withoutDuration } from '../helpers/load-fixture'
 
-const CHART = loadFixture(JESUS_1)
+const CHART = withoutDuration(loadFixture(JESUS_1))
+const ROLLING = withDuration(CHART)
 /** 120 BPM in 4/4: one beat is half a second, one bar two seconds. */
 const BEAT = 500
 
@@ -429,7 +430,7 @@ describe('the beat readout hangs off the chart, not the window', () => {
  */
 async function viewerWithRoom(props: Record<string, unknown> = {}) {
   const w = mount(ChordproViewer, {
-    props: { source: CHART, autoHide: false, storage: memoryStore(), ...props },
+    props: { source: ROLLING, autoHide: false, storage: memoryStore(), ...props },
     attachTo: document.body,
   })
   mounted.push(w)
@@ -441,6 +442,25 @@ async function viewerWithRoom(props: Record<string, unknown> = {}) {
   await flushPromises()
   return w
 }
+
+describe('Rolar is gated on {duration:}', () => {
+  it('stays dead without a duration, even when there is paper to move', async () => {
+    const w = await viewerWithRoom({ source: CHART })
+    const btn = w.get('[data-scroll]')
+    expect(btn.attributes('disabled')).toBeDefined()
+    expect(btn.attributes('title') ?? '').toMatch(/duração/i)
+    await btn.trigger('click')
+    await flushPromises()
+    expect(btn.text()).toMatch(/Rolar/)
+    expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+    expect(w.find('[data-met-countin]').exists()).toBe(false)
+  })
+
+  it('runs when the chart declares a duration', async () => {
+    const w = await viewerWithRoom()
+    expect(w.get('[data-scroll]').attributes('disabled')).toBeUndefined()
+  })
+})
 
 describe('Rolar starts the metronome with the chart', () => {
   it('counts in silently, and does not move the chart until the bar is done', async () => {

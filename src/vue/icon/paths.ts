@@ -187,6 +187,10 @@ export const ICONS = {
     { tag: 'path', attrs: { d: 'M18 6 6 18' } },
     { tag: 'path', attrs: { d: 'm6 6 12 12' } },
   ],
+  link: [
+    { tag: 'path', attrs: { d: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71' } },
+    { tag: 'path', attrs: { d: 'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' } },
+  ],
   fileInput: [
     { tag: 'path', attrs: { d: 'M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4' } },
     { tag: 'path', attrs: { d: 'M14 2v4a2 2 0 0 0 2 2h4' } },

@@ -277,7 +277,30 @@ sozinho.
 
 ---
 
-## 7. Tema, fonte, acento
+## 7. Tempo da cifra (`x///`)
+
+Intro, interlúdio, solo e final **não têm letra**. O Titan não adivinha o
+compasso por uma fileira `[G] [C] [D]`. Quem gera ou grava ChordPro para este
+pacote escreve o tempo com a convenção `x///`:
+
+```
+{c:(INTRODUÇÃO)}
+[A]x///    [E]x///    [F#m]x///    [D]x///
+```
+
+`x` é **sempre** a cabeça do tempo. `/` é um tempo que não é cabeça — pode
+existir sozinho: `[Cm]//` em 4/4 são 2 tempos, inclusive no fim da frase.
+Em 4/4, `[G]x///` é um compasso inteiro. No fim de uma linha **cantada**, as
+marcas são cauda somada — não a duração da estrofe.
+
+Rolar só parte com `{duration:}` na cifra. BPM sozinho não abre o gate.
+
+SoT, gramática, 6/8, lente Só letra, lint e o que a IA **não** pode apagar:
+[`docs/MARCAS-X.md`](./MARCAS-X.md).
+
+---
+
+## 8. Tema, fonte, acento
 
 ```vue
 <ChordproViewer
@@ -309,7 +332,7 @@ O pacote não baixa fontes. O host carrega as faces. Defaults: Sora + Space Mono
 
 ---
 
-## 8. Edição e persistência
+## 9. Edição e persistência
 
 | `modes` | O que existe |
 |---|---|
@@ -327,7 +350,7 @@ antigos sob outro id **não** migram.
 
 ---
 
-## 9. Checklist rápido
+## 10. Checklist rápido
 
 - [ ] Vue 3 único no bundle; CSS do pacote no app
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
@@ -337,5 +360,6 @@ antigos sob outro id **não** migram.
 - [ ] Ficha real: conteúdo acima **e** abaixo; snap no frame
 - [ ] Palco: rota própria + “Tocar ao vivo”
 - [ ] Toque na cifra ≠ tela cheia
+- [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
 
 Props, emits e o resto da API: [README](../README.md).

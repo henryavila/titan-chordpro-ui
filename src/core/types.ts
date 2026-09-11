@@ -37,8 +37,12 @@ export type ChordProSection = {
 /** Source line span (0-based indices into `source.split('\n')`). */
 export type LineSpan = { li0: number; li1: number }
 
-/** Reading lens: how chord names are spelled on the surface. */
-export type Lens = 'none' | 'nashville'
+/**
+ * Reading lens: a projection of the same chart.
+ * `nashville` respells chord names as degrees; `letra` hides chords, tab and
+ * score so a singer can read the lyric with the band.
+ */
+export type Lens = 'none' | 'nashville' | 'letra'
 
 /**
  * Marks a block carries in the file, written by the editor and invisible while

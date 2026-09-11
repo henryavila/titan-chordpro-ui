@@ -15,6 +15,7 @@ import {
   etaSec,
   exportCho,
   formatEta,
+  hasSongDuration,
   isParseFatal,
   layoutChartFull,
   maxPlainChars,
@@ -339,15 +340,18 @@ const countTop = computed(
   () => `${chromeTop.value + Math.max(56, headH.value || 72) + 8}px`,
 )
 /**
- * A chart shorter than the frame has nowhere to go, and a Rolar button that
- * cannot move anything is a button that does nothing. It stays live while the
- * scroll runs, though: that is the only way to stop it.
+ * Hard gate: no `{duration:}`, no auto-scroll. A BPM and unmarked chords are
+ * not a duration. A chart that fits the frame also has nowhere to go. The
+ * button stays live while the scroll runs — that is the only way to stop it.
  */
-const canScroll = computed(() => scrollRoom.value > 1)
+const hasDuration = computed(() => hasSongDuration(parsed.value.meta.duration))
+const canScroll = computed(() => hasDuration.value && scrollRoom.value > 1)
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
-const scrollTitle = computed(() =>
-  scrollOff.value ? 'A cifra inteira cabe na tela — não há o que rolar' : 'Auto-rolagem (espaço)',
-)
+const scrollTitle = computed(() => {
+  if (!scrollOff.value) return 'Auto-rolagem (espaço)'
+  if (!hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
+  return 'A cifra inteira cabe na tela — não há o que rolar'
+})
 /**
  * Three tiers, not two. At 320px — the narrowest phone still in use — six
  * controls at 44px plus the type pair overflow the frame by 34px, and what
@@ -520,9 +524,12 @@ const insertItems = computed(() => {
   )
   return out
 })
-const scale = computed(() =>
-  typeScale(bias.value, fitOn.value, width.value, maxPlainChars(blocks.value), twin.value),
-)
+const scale = computed(() => {
+  const s = typeScale(bias.value, fitOn.value, width.value, maxPlainChars(blocks.value), twin.value)
+  if (activeLens.value !== 'letra') return s
+  // No chord lane: the lyric sits where the chord used to, and wrap is tighter.
+  return { ...s, chordBox: '0px', chordBoxPlain: '0px' }
+})
 const chartScale = computed(() => {
   const { barPx: _barPx, ...rest } = scale.value
   return rest
@@ -580,7 +587,9 @@ const editHint = computed(
 )
 
 const mapOn = computed(() => capoMap.value && capo.value > 0)
-const lensChipLabel = computed(() => (activeLens.value === 'nashville' ? 'Graus' : 'Lentes'))
+const lensChipLabel = computed(() =>
+  activeLens.value === 'nashville' ? 'Graus' : activeLens.value === 'letra' ? 'Só letra' : 'Lentes',
+)
 /**
  * Only the "for everyone" edit owns the chart's identity. Meta, the source
  * pane and deleting a block write things an anchored overlay cannot carry —
@@ -915,6 +924,7 @@ function stopScroll() {
 function startScroll() {
   const el = scroller.value
   if (!el) return
+  if (!hasSongDuration(parsed.value.meta.duration)) return
   // Hitting Rolar again is continuing the song, not confirming the end.
   setlist.dismissEnd()
   scrolling.value = true
@@ -3034,7 +3044,7 @@ defineExpose({
           <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="moreOpen = false"><CpvIcon name="x" :size="16" /></button>
         </div>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFit()"><CpvIcon name="scan" :size="18" /><span class="cpv-more-copy">Ajuste ao espaço</span><span>{{ fitOn ? 'Ligado' : 'Desligado' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes ou graus</span></button>
+        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes, graus ou só letra</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro ou PDF</span></button>
         <template v-if="showMine">

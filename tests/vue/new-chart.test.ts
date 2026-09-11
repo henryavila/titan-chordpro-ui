@@ -69,6 +69,9 @@ describe('bringing a chart in', () => {
     await w.get('[data-nova-text-go]').trigger('click')
     expect(w.find('[data-nova-title]').exists()).toBe(true)
     expect(w.text()).toContain('acordes sobre a letra')
+    expect(w.find('[data-nova-duration]').exists()).toBe(true)
+    await w.get('[data-nova-go]').trigger('click')
+    expect(w.emitted('commit')).toBeUndefined()
   })
 
   it('says what it recognised while it is still being pasted', async () => {
@@ -90,9 +93,28 @@ describe('bringing a chart in', () => {
     const w = dialog()
     expect(w.text()).toContain('Cifra Club')
     expect(w.text()).toContain('Só Cifra Club')
+    expect(w.text()).toContain('Trazer do Cifra Club')
     expect((w.get('[data-nova-url]').element as HTMLInputElement).placeholder).toContain(
       'cifraclub.com.br',
     )
+  })
+
+  it('names the song from a Cifra Club address before fetching', async () => {
+    const w = dialog({ fetchChart: () => Promise.resolve(PLAIN) })
+    await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/ministerio-jovem/meu-farol/')
+    expect(w.text()).toContain('Meu Farol')
+    expect(w.text()).toContain('Ministerio Jovem')
+  })
+
+  it('starts the fetch when a Cifra Club address is pasted', async () => {
+    const fetchChart = vi.fn(() => Promise.resolve(PLAIN))
+    const w = dialog({ fetchChart })
+    await w.get('[data-nova-url]').trigger('paste', {
+      clipboardData: { getData: () => 'https://www.cifraclub.com.br/ministerio-jovem/meu-farol/' },
+    })
+    await flushPromises()
+    expect(fetchChart).toHaveBeenCalledWith('https://www.cifraclub.com.br/ministerio-jovem/meu-farol/')
+    expect(w.find('[data-nova-title]').exists()).toBe(true)
   })
 
   it('refuses a URL that is not Cifra Club before asking the host', async () => {
@@ -108,6 +130,7 @@ describe('bringing a chart in', () => {
 
   it('says so plainly when the host offers no way to fetch a link', async () => {
     const w = dialog()
+    expect(w.text()).toContain('Buscar no Cifra Club não está disponível')
     await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/a/b/')
     await w.get('[data-nova-url-go]').trigger('click')
     await flushPromises()
@@ -122,6 +145,21 @@ describe('bringing a chart in', () => {
     expect(w.find('[data-nova-title]').exists()).toBe(true)
     // The title is guessed from the address when the page carried none.
     expect((w.get('[data-nova-title]').element as HTMLInputElement).value).toBe('Meu Farol')
+  })
+
+  it('asks for duration after a Cifra Club page, not only tom, compasso and bpm', async () => {
+    const w = dialog({ fetchChart: () => Promise.resolve(PLAIN) })
+    await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/ministerio-jovem/meu-farol/')
+    await w.get('[data-nova-url-go]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-nova-duration]').exists()).toBe(true)
+    expect(w.text()).toMatch(/duração/i)
+    expect(w.text()).toContain('não rola')
+    await w.get('[data-nova-go]').trigger('click')
+    expect(w.emitted('commit')).toBeUndefined()
+    await w.get('[data-nova-duration]').setValue('4:26')
+    await w.get('[data-nova-go]').trigger('click')
+    expect(String(w.emitted('commit')?.[0]?.[0])).toContain('{duration:4:26}')
   })
 
   it('reports a fetch that failed rather than opening an empty editor', async () => {
@@ -162,14 +200,36 @@ describe('identifying the song', () => {
     const w = dialog({ start: 'blank' })
     return w
   }
+  async function setDuration(w: ReturnType<typeof dialog>, value = '4:26') {
+    await w.get('[data-nova-duration]').setValue(value)
+  }
 
-  it('says what is still missing, without blocking', () => {
+  it('says what is still missing — duration is required, the rest can wait', () => {
     const w = atFicha()
     expect(w.text()).toContain('Falta título, tom, andamento e compasso')
+    expect(w.text()).toMatch(/duração/i)
+    expect(w.text()).toContain('não rola')
+    expect(w.find('[data-nova-duration]').exists()).toBe(true)
+  })
+
+  it('will not open a new chart without a duration', async () => {
+    const w = atFicha()
+    await w.get('[data-nova-title]').setValue('Minha música')
+    await w.get('[data-nova-go]').trigger('click')
+    expect(w.emitted('commit')).toBeUndefined()
+  })
+
+  it('refuses a duration too short to roll', async () => {
+    const w = atFicha()
+    await setDuration(w, '5')
+    expect(w.text()).toContain('pelo menos 20s')
+    await w.get('[data-nova-go]').trigger('click')
+    expect(w.emitted('commit')).toBeUndefined()
   })
 
   it('picks a key, and minor toggles on the root already chosen', async () => {
     const w = atFicha()
+    await setDuration(w)
     await w.get('[data-key-chip="G"]').trigger('click')
     await w.findAll('button').find((b) => b.text() === 'menor (m)')!.trigger('click')
     await w.get('[data-nova-go]').trigger('click')
@@ -187,20 +247,36 @@ describe('identifying the song', () => {
     const w = atFicha()
     await w.get('[data-nova-title]').setValue('Minha música')
     await w.get('[data-time-chip="4/4"]').trigger('click')
+    await setDuration(w)
     await w.get('[data-nova-go]').trigger('click')
     const src = String(w.emitted('commit')?.[0]?.[0])
     expect(src).toContain('{title:Minha música}')
     expect(src).toContain('{time:4/4}')
+    expect(src).toContain('{duration:4:26}')
     expect(src).toContain('{c:Intro}')
   })
 
   it('writes the header once, in canonical order', async () => {
     const w = dialog({ start: 'ficha', initialSource: '{key:C}\n[G]Letra' })
     await w.get('[data-nova-title]').setValue('Uma')
+    await setDuration(w)
     await w.get('[data-nova-go]').trigger('click')
     const src = String(w.emitted('commit')?.[0]?.[0])
     expect(src.match(/\{key:/g)).toHaveLength(1)
     expect(src.split('\n')[0]).toBe('{title:Uma}')
+    expect(src).toContain('{duration:4:26}')
+  })
+
+  it('keeps a duration that was already in the chart', async () => {
+    const w = dialog({
+      start: 'ficha',
+      initialSource: '{title:Uma}\n{duration:03:12}\n[G]Letra',
+    })
+    expect((w.get('[data-nova-duration]').element as HTMLInputElement).value).toBe('03:12')
+    await w.get('[data-nova-go]').trigger('click')
+    const src = String(w.emitted('commit')?.[0]?.[0])
+    expect(src.match(/\{duration:/g)).toHaveLength(1)
+    expect(src).toContain('{duration:03:12}')
   })
 })
 
@@ -209,11 +285,13 @@ describe('what the flow hands back', () => {
     const w = viewer({ modes: 'content' })
     await w.get('[data-start-blank]').trigger('click')
     await w.get('[data-nova-title]').setValue('Minha música')
+    await w.get('[data-nova-duration]').setValue('4:26')
     await w.get('[data-nova-go]').trigger('click')
     await flushPromises()
     await nextTick()
     expect(w.find('[data-new-chart]').exists()).toBe(false)
     expect(w.emitted('save-content')?.[0]?.[0]).toContain('{title:Minha música}')
+    expect(w.emitted('save-content')?.[0]?.[0]).toContain('{duration:4:26}')
     expect(w.emitted('update:mode')?.at(-1)?.[0]).toBe('edit')
   })
 
@@ -221,6 +299,7 @@ describe('what the flow hands back', () => {
     const w = viewer({ modes: 'content' })
     await w.get('[data-start-blank]').trigger('click')
     await w.get('[data-nova-title]').setValue('Minha música')
+    await w.get('[data-nova-duration]').setValue('4:26')
     await w.get('[data-nova-go]').trigger('click')
     await flushPromises()
     const src = String(w.emitted('save-content')?.[0]?.[0])

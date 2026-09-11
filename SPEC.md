@@ -188,6 +188,17 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
 `adjustScrollSpeed`: ±15% factor, min `5`, 1 decimal place.
 
+### 4.7 Voiceless time (`x///`)
+
+The chart’s only **exact** duration on a line is the `x///` convention: `x` is always the **head** of the time (downbeat); `/` is a beat that is not the head. `[Cm]//` with no `x` is valid — two beats in 4/4, including at the end of a phrase. Anchored after a chord `]`. **SoT:** [`docs/MARCAS-X.md`](docs/MARCAS-X.md).
+
+- Played line (no lyric): marks **are** that stretch’s time at BPM. The engine does **not** infer bars from `[G] [C] [D]`.
+- Sung line: trailing marks are a **tail added** to the row estimate, never the verse’s whole duration.
+- Auto-scroll still requires `{duration:}` (hard gate). BPM + unmarked chords do not open it.
+- Compound meters use `beatsPerBar` + `marksPerBeat` (6/8 → 2 pulses, 3 marks per pulse).
+- `lintSource` warns on a voiceless chord line with `lineBeats === 0`.
+- Agents must not delete `x///` from source to clean lyrics. Só letra is a reading lens.
+
 ---
 
 ## 5. Transpose rules

@@ -6,6 +6,7 @@ import {
   buildTimeline,
   etaSec,
   formatEta,
+  hasSongDuration,
   isPlayedLine,
   lineBeats,
   marksPerBeat,
@@ -30,6 +31,14 @@ describe('lineBeats', () => {
     expect(lineBeats('[G]x///')).toBe(4)
     expect(lineBeats('[Dsus]x/ [D]//')).toBe(4)
     expect(lineBeats('[Gsus]x [G]/ [G9]/ [G]/      [G]x///')).toBe(8)
+  })
+
+  it('counts // without x — two beats, not the downbeat', () => {
+    // 4/4 leftover of a phrase: no cabeça, still two beats there.
+    expect(lineBeats('[Cm]//')).toBe(2)
+    expect(lineBeats('[G]//')).toBe(2)
+    expect(lineBeats('[D]/  [G]/')).toBe(2)
+    expect(lineBeats('Je[G7]sus, Tu És o meu can[A7]tar.  [Cm]//')).toBe(2)
   })
 
   it('ignores slashes that are part of a chord or a word', () => {
@@ -73,6 +82,14 @@ describe('song clock helpers', () => {
     expect(songDurationSec('abc')).toBeNull()
     expect(songDurationSec('5')).toBeNull()
     expect(songDurationSec(null)).toBeNull()
+  })
+
+  it('opens the scroll gate only for a real duration', () => {
+    expect(hasSongDuration('04:26')).toBe(true)
+    expect(hasSongDuration('200')).toBe(true)
+    expect(hasSongDuration(undefined)).toBe(false)
+    expect(hasSongDuration('')).toBe(false)
+    expect(hasSongDuration('5')).toBe(false)
   })
 
   it('reads the time signature and the tempo', () => {
@@ -225,6 +242,32 @@ describe('buildTimeline', () => {
    * different question. Estimating in bars made a 6/8 line half as long as a
    * 4/4 one for no musical reason.
    */
+  it('does not invent duration from unmarked chords', () => {
+    const at = (chords: number) =>
+      buildTimeline(
+        [{ top: 0, h: 300, kind: 'stanza', music: music({ rows: 4, chords }) }],
+        opts,
+      ).bars
+    // [G] [A] [B] [C] may be four bars or four beats. Same four sung rows,
+    // same clock — only x/// and {duration:} may change it.
+    expect(at(4)).toBeCloseTo(at(16), 5)
+    expect(at(4)).toBeCloseTo(4 * BEATS_PER_ROW, 5)
+  })
+
+  it('reads 4/4 as four beats a bar, never as 2/4', () => {
+    expect(beatsPerBar('4/4')).toBe(4)
+    expect(marksPerBeat('4/4')).toBe(1)
+    expect(beatsPerBar('2/4')).toBe(2)
+    const intro: TimelineBlock[] = [
+      { top: 0, h: 80, kind: 'stanza', music: music({ beats: 16 }) },
+    ]
+    const t = buildTimeline(intro, { ...opts, bpm: 136, beatsPerBar: 4, marksPerBeat: 1 })
+    // 16 x/// marks in 4/4: four bars of quarter notes, 7.06 s at 136.
+    expect(t.bars).toBeCloseTo(16 * (60 / 136), 3)
+    expect(16 / beatsPerBar('4/4')).toBe(4)
+    expect(16 / beatsPerBar('2/4')).toBe(8)
+  })
+
   it('estimates a sung row at the same musical length in any meter', () => {
     const verse: TimelineBlock[] = [
       { top: 0, h: 300, kind: 'stanza', music: music({ rows: 4 }) },
@@ -249,6 +292,57 @@ describe('buildTimeline', () => {
     const t = buildTimeline(blocks, opts)
     expect(t.bars).toBeGreaterThan(0)
     expect(runSec(t, null)).toBeCloseTo(t.bars, 5)
+  })
+
+  /**
+   * Rehearsal notes and section labels are paper, not music. Giving them the
+   * page's average pace — and worse, the chrome pad absorbed into the first
+   * block — spent 25 to 100 seconds on "BEM SUAVE" before the intro of real
+   * charts, so a later verse was still off a phone screen when the musician
+   * got there. Their pixels ride with the next musical block (the last one,
+   * when they trail), and the run is only the music.
+   */
+  it('does not spend clock time on a rehearsal note or a section label', () => {
+    const labeled: TimelineBlock[] = [
+      { top: 80, h: 70, kind: 'note', music: music() },
+      { top: 190, h: 40, kind: 'comment', music: music() },
+      { top: 270, h: 80, kind: 'stanza', music: music({ beats: 16 }) },
+      { top: 400, h: 300, kind: 'stanza', music: music({ rows: 4 }) },
+    ]
+    const t = buildTimeline(labeled, opts)
+    // 16 counted beats + four sung rows at 8 beats, at 60 BPM: 48 s. Not 48 +
+    // half a minute of "Execução" and "INTRODUÇÃO".
+    expect(t.bars).toBeCloseTo(16 + 4 * BEATS_PER_ROW, 5)
+    expect(t.exact).toBeCloseTo(16, 5)
+    // The intro's 16 s cover the pad, the notes and the label above it: the
+    // first verse starts when those 16 s are done, not after the notes.
+    expect(barsAtPx(t, 400)).toBeCloseTo(16, 5)
+  })
+
+  it('attaches a trailing label to the music above it, not a new slice of clock', () => {
+    const t = buildTimeline(blocks, opts)
+    expect(t.bars).toBeCloseTo(8 + 4 * BEATS_PER_ROW, 5)
+    expect(pxAtBars(t, t.bars)).toBeCloseTo(opts.doc, 0)
+  })
+
+  it('does not spend clock time on a loose image', () => {
+    const withImg: TimelineBlock[] = [
+      { top: 0, h: 200, kind: 'image', music: music() },
+      { top: 250, h: 80, kind: 'stanza', music: music({ beats: 8 }) },
+    ]
+    const t = buildTimeline(withImg, opts)
+    expect(t.bars).toBeCloseTo(8, 5)
+    expect(barsAtPx(t, 250)).toBeLessThan(8)
+  })
+
+  it('still has a clock when the chart is only notes', () => {
+    const notes: TimelineBlock[] = [
+      { top: 0, h: 80, kind: 'note', music: music() },
+      { top: 120, h: 40, kind: 'comment', music: music() },
+    ]
+    const t = buildTimeline(notes, opts)
+    expect(t.bars).toBeGreaterThan(0)
+    expect(pxAtBars(t, t.bars)).toBeGreaterThan(0)
   })
 
   it('stops stretching when the counted time already exceeds the duration', () => {

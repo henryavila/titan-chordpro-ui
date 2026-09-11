@@ -86,7 +86,7 @@ const tapLabel = computed(() =>
 /** With the scroll independent there is nothing for the count-in to lead into. */
 const countInNote = computed(() =>
   !props.scrollable
-    ? 'Sem efeito: a cifra inteira cabe na tela, não há rolagem para entrar.'
+    ? 'Sem efeito: a cifra precisa de {duration:} e de papel para rolar.'
     : props.follow
       ? 'Um compasso de click antes da cifra começar a andar.'
       : 'Sem efeito enquanto a rolagem estiver independente.',
