@@ -724,8 +724,8 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
  */
 /**
  * The 1–2–3–4 column is numbers. A box on every cell fought the lyric
- * underneath; only the pulse fills, and it fills with the same primary as
- * the chords — beat 1 is not a different colour from 2–3–4.
+ * underneath; only the pulse fills. Beat 1 wears the theme colour; 2–3–4
+ * pulse as a white chip (`--beat-rest`).
  */
 describe('beat numbers are bare; only the pulse fills', () => {
   function transparent(bg: string) {
@@ -753,6 +753,16 @@ describe('beat numbers are bare; only the pulse fills', () => {
     const now = w.findAll('.cpv-met-beat').filter((b) => b.classes().includes('is-now'))
     expect(now).toHaveLength(1)
     expect(getComputedStyle(now[0]!.element).fontWeight).toMatch(/700|bold/)
+  })
+
+  it('keeps is-one on beat 1 so only the downbeat can wear the theme', async () => {
+    const w = await viewerAt(390)
+    const cells = w.findAll('.cpv-met-beat')
+    expect(cells.length).toBeGreaterThan(1)
+    expect(cells[0]!.classes()).toContain('is-one')
+    for (const cell of cells.slice(1)) {
+      expect(cell.classes()).not.toContain('is-one')
+    }
   })
 })
 

@@ -2957,7 +2957,7 @@ defineExpose({
         v-for="n in met.bar.value"
         :key="n"
         class="cpv-met-beat"
-        :class="{ 'is-now': met.beat.value === n - 1 }"
+        :class="{ 'is-now': met.beat.value === n - 1, 'is-one': n === 1 }"
       >{{ n }}</span>
     </button>
 
