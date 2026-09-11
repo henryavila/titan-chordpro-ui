@@ -228,13 +228,12 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
 ## 7. Fixtures (required in repo)
 
-Copy / pin from SDA `design-handoff/fixtures/songs.json` (verbatim ChordPro `content`):
+Production corpus (tenant dump): `fixtures/sda/*.cho`. Demo lists **only** that set.
 
 | Id | File | Role |
 |---|---|---|
-| jesus-1 | `fixtures/jesus-tu-es-a-minha-vida-1.cho` | primary + PDF |
-| jesus-2 | `fixtures/jesus-tu-es-a-minha-vida-2.cho` | second chart same song |
-| entrega-1..3 | `fixtures/entrega-*.cho` | multi-source stress (host) |
+| sda | `fixtures/sda/*.cho` | 148 cifras vivas — SoT do demo e do aceite |
+| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{sos}` (fora da lista do demo) |
 | empty | empty string / missing | parse → empty sections, no throw |
 
 Agent **must not** invent chord charts for snapshots.

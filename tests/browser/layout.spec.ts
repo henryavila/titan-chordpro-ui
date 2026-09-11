@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { layoutChartFull, parse } from '../../src/core'
 
-const source = readFileSync(new URL('../../fixtures/escuta-meu-clamor-sda-86.cho', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../../fixtures/sda/084-escuta-meu-clamor.cho', import.meta.url), 'utf8')
 const rows = (semitones = 0, capo = 0) => layoutChartFull(parse(source), { semitones, capo }).blocks
   .flatMap(b => b.kind === 'stanza' || b.kind === 'chorus' ? b.rows : [])
 

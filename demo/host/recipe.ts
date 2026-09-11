@@ -92,11 +92,11 @@ export const DEMOS: readonly DemoEntry[] = [
   },
   {
     id: 'partitura',
-    href: '/standalone.html?song=013-ele-vive-em-mim-partitura',
+    href: '/standalone.html?song=013-ele-vive-em-mim',
     group: 'tocar',
     kicker: 'Palco',
     title: 'Partitura e TAB',
-    blurb: 'Imagens, {sos} e {sot} na mesma cifra — o editor de partitura abre daqui.',
+    blurb: '{sot} na 013 de produção — o editor de partitura abre daqui.',
   },
   {
     id: 'demanda',

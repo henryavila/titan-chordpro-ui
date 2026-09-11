@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ChordproViewer } from '../../src/vue'
-import source from '../../fixtures/escuta-meu-clamor-sda-86.cho?raw'
+import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
+/** Scroll is gated on `{duration:}`. The fixture has none; the harness adds one so layout tests can still roll. */
+const source = `{duration: 04:26}\n${raw}`
 const modes = ref<'local' | 'content'>('content')
 const fonts = ref('fallback')
 async function loadFonts() {

@@ -4,10 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { useSetlist, type SetlistSong, type SongSpot } from '../../src/vue/use/useSetlist'
-import { JESUS_1, loadFixture } from '../helpers/load-fixture'
+import { JESUS_1, loadFixture, withDuration } from '../helpers/load-fixture'
 
-const CHART = loadFixture(JESUS_1)
-const OTHER = loadFixture('escuta-meu-clamor-sda-86.cho')
+const CHART = withDuration(loadFixture(JESUS_1))
+const OTHER = loadFixture('sda/084-escuta-meu-clamor.cho')
 
 function songs(n: number, withSource = true): SetlistSong[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -461,7 +461,7 @@ describe('the end-of-song offer does not fire mid-chart', () => {
     globalThis.ResizeObserver = realRO
   })
 
-  const TINY = '{title: Tiny}\n{key: C}\n[C]Oi\n'
+  const TINY = '{title: Tiny}\n{key: C}\n{duration: 20}\n[C]Oi\n'
   function tinySongs(n: number): SetlistSong[] {
     return Array.from({ length: n }, (_, i) => ({
       id: `t${i}`,

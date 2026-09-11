@@ -4,7 +4,7 @@ import type { ListaMode } from './recipe'
 
 type DemoSong = NonNullable<ChordproViewerProps['songs']>[number]
 
-const bundledRaw = import.meta.glob('../../fixtures/**/*.{cho,chordpro,onsong}', {
+const bundledRaw = import.meta.glob('../../fixtures/sda/*.{cho,chordpro,onsong}', {
   eager: true,
   query: '?raw',
   import: 'default',
@@ -22,6 +22,9 @@ function idFromPath(path: string): string {
 }
 
 export const FAIL_ID = 'falha-de-rede'
+
+/** First chart in the production corpus — what a cold demo opens on. */
+export const DEFAULT_SONG_ID = '001-tudo-que-ha-de-bom-em-mim'
 
 export function bundledFixtures(): Record<string, string> {
   return {
@@ -49,7 +52,7 @@ export function bundledImages(): {
 }
 
 export function defaultSongId(fixtures: Record<string, string>): string {
-  if (fixtures['escuta-meu-clamor-sda-86']) return 'escuta-meu-clamor-sda-86'
+  if (fixtures[DEFAULT_SONG_ID]) return DEFAULT_SONG_ID
   return Object.keys(fixtures).find((k) => k !== 'vazio') ?? 'vazio'
 }
 

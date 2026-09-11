@@ -21,8 +21,8 @@ import CifraDemo from '../../demo/CifraDemo.vue'
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const fixtures = {
-  'escuta-meu-clamor-sda-86': '{title: Escuta}\n{key: Gm}\n[Gm]a\n',
-  'entrega-1': '{title: Entrega}\n{subtitle: Hinário}\n{key: C}\n[C]b\n',
+  '001-tudo-que-ha-de-bom-em-mim': '{title: Tudo}\n{key: C}\n[C]a\n',
+  '078-entrega-h310': '{title: Entrega}\n{subtitle: Hinário}\n{key: C}\n[C]b\n',
   vazio: '',
 }
 
@@ -64,7 +64,7 @@ describe('the catalog', () => {
     expect(hrefs).toContain('/standalone.html?modes=local')
     expect(hrefs).toContain('/standalone.html?modes=content')
     expect(hrefs).toContain('/standalone.html?modes=none')
-    expect(hrefs).toContain('/standalone.html?song=013-ele-vive-em-mim-partitura')
+    expect(hrefs).toContain('/standalone.html?song=013-ele-vive-em-mim')
     expect(hrefs).toContain('/standalone-lista.html?ensaio=demanda')
     expect(hrefs).toContain('/standalone.html?quebrar=1')
   })
@@ -95,7 +95,7 @@ describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
     ['?ficha=1&ensaio=demanda', '/site-lista.html?ensaio=demanda'],
     ['?ensaio=juntas', '/standalone-lista.html'],
     ['?ensaio=demanda', '/standalone-lista.html?ensaio=demanda'],
-    ['?song=entrega-1', '/standalone.html?song=entrega-1'],
+    ['?song=001-tudo-que-ha-de-bom-em-mim', '/standalone.html?song=001-tudo-que-ha-de-bom-em-mim'],
     ['?quebrar=1', '/standalone.html?quebrar=1'],
     ['?tema=claro', '/standalone.html?tema=claro'],
     ['?ficha=1&song=x&tema=claro', '/site-lista.html?song=x&tema=claro'],
@@ -330,7 +330,7 @@ describe('CifraDemo', () => {
 describe('bundled fixtures', () => {
   it('default song is a real chart', () => {
     const id = defaultSongId(fixtures)
-    expect(id).toBe('escuta-meu-clamor-sda-86')
+    expect(id).toBe('001-tudo-que-ha-de-bom-em-mim')
     expect(defaultSongId({ vazio: '', sozinha: '{title:X}\n' })).toBe('sozinha')
   })
 })

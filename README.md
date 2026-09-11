@@ -443,7 +443,7 @@ OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` 
 
 ## Fixtures
 
-Real ChordPro (IASD Ermelinda via SDA design-handoff): `fixtures/`.
+Real ChordPro de produção: `fixtures/sda/` (lista do demo). Extra de partitura/imagem: `fixtures/013-ele-vive-em-mim-partitura.cho`.
 
 ### Tema e tipografia
 

@@ -3,10 +3,10 @@ import { parse } from '../../src/core'
 import { layoutChartFull } from '../../src/core/layout'
 import { readingWords, type ReadingWord } from '../../src/vue/chart/readingWords'
 import type { ChartRow } from '../../src/core/types'
-import { loadFixture } from '../helpers/load-fixture'
+import { ESCUTA, loadFixture } from '../helpers/load-fixture'
 
 /** The chart the musician reported the collision on, in a real rehearsal. */
-const SDA = 'escuta-meu-clamor-sda-86.cho'
+const SDA = ESCUTA
 
 function rows(src: string): ChartRow[] {
   const out: ChartRow[] = []
