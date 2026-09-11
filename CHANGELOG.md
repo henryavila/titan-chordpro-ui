@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-11
+
+### Added
+- **Import Cifra Club — meta rica:** `{tempo:}`, `{time:}`, `{capo:}` (acordes do CC são formas; o arquivo grava o que soa), `{x_youtube:}`, `{x_strum:}`.
+- **Duração via YouTube:** host busca a watch page; preenche `{duration:}` na ficha (clipe, não a videoaula).
+- **Batida visual:** setas cheia/vazia com 4 essências (normal / acento / mute / abafada); botão mostrar/ocultar; pulso fino alinhado ao metrônomo; faixa fixa que sobe no zen/tela cheia.
+
+### Notes
+- Host novo: passar `fetchYoutubeDuration` além de `fetchChart` (demo: `/__youtube_duration`).
+- Contrato da batida: `.ai/memory/plano-import-cifraclub-2026-09-11.md`.
+
 ## [0.1.1] - 2026-09-11
 
 ### Added
@@ -18,7 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.2
 [0.1.1]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.1
 
 ## [0.1.0] - 2026-09-11
