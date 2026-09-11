@@ -1,4 +1,6 @@
 # titan-chordpro-ui
+<img width="1168" height="784" alt="EHoH3" src="https://github.com/user-attachments/assets/4738da56-2e3e-4f26-9160-05f4296741eb" />
+
 
 Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF + slides LouvorJA.  
 Repo: **`titan-chordpro-ui`** · npm: **[`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)**.  
