@@ -404,7 +404,14 @@ describe('the beat readout hangs off the chart, not the window', () => {
   it('stays on the left on a phone — the column is the whole screen', async () => {
     const w = await viewerAt(390)
     const style = w.get('[data-met-count]').attributes('style') ?? ''
-    expect(style).toMatch(/left:\s*12px/)
+    expect(style).toMatch(/left:\s*2px/)
+  })
+
+  it('keeps the BPM in the beat column while the click runs', async () => {
+    const w = await viewerAt(390)
+    const bpm = w.get('[data-met-bpm]')
+    expect(bpm.text()).toMatch(/^\d+$/)
+    expect(Number(bpm.text())).toBeGreaterThanOrEqual(30)
   })
 
   it('keeps the count while the panel is closed', async () => {
@@ -594,9 +601,9 @@ describe('count-in label sits below the title strip', () => {
   })
 
   /**
-   * "entrada" is ~51px wide; the beat column is 20px and sits 12px from the
-   * left on a phone. Centering the word hangs ~15px off-screen and the root
-   * clips the E. Grow toward the chart instead.
+   * "entrada" is ~51px wide; the beat column is 20px and sits 2px from the
+   * left on a phone. Centering the word hangs off-screen and the root clips
+   * the E. Grow toward the chart instead.
    */
   it('aligns "entrada" to the start of the beat column, not centered on it', async () => {
     const w = await viewerWithRoom()
@@ -644,7 +651,7 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
   it('still shows the beat column on a phone while the click runs', async () => {
     const w = await viewerAt(390)
     expect(w.get('[data-met-count]').text()).toMatch(/1/)
-    expect(w.get('[data-met-count]').attributes('style') ?? '').toMatch(/left:\s*12px/)
+    expect(w.get('[data-met-count]').attributes('style') ?? '').toMatch(/left:\s*2px/)
   })
 
   it('keeps the same page padding when the click starts and stops on a phone', async () => {
@@ -683,10 +690,55 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
     expect(w.get('[data-met-count]').element.closest('.cpv-chrome')).toBeNull()
   })
 
-  it('keeps count left:12px on xs phone — overlay, not a wider page', async () => {
+  it('parks the beat column at 2px on xs phone — overlay, not a wider page', async () => {
     const w = await viewerAt(390)
     const style = w.get('[data-met-count]').attributes('style') ?? ''
-    expect(style).toMatch(/left:\s*12px/)
+    expect(style).toMatch(/left:\s*2px/)
     expect(pagePadding(w)).not.toMatch(/\s44px\s*$/)
   })
 })
+
+/**
+ * Count-in is a short overlay before the song moves. A badge (opaque fill)
+ * keeps "entrada" readable even when it sits on the first letters.
+ */
+/**
+ * The column sits on the lyric. Beat 1 already fills; 2–3–4 used opacity
+ * 0.38 and a transparent box, so they vanished on the words. Every cell is
+ * a badge; the downbeat stays the louder one.
+ */
+describe('every beat cell is a readable badge', () => {
+  it('does not fade idle beats with opacity — that would fade the fill too', async () => {
+    const w = await viewerAt(390)
+    const idle = w.findAll('.cpv-met-beat').filter((b) => !b.classes().includes('is-now'))
+    expect(idle.length).toBeGreaterThan(0)
+    const style = getComputedStyle(idle[0]!.element)
+    expect(Number.parseFloat(style.opacity), 'opacity 0.38 made 2–3–4 disappear on the lyric').toBeGreaterThan(0.9)
+  })
+
+  it('gives idle beats a solid box, not a naked number', async () => {
+    const w = await viewerAt(390)
+    const idle = w.findAll('.cpv-met-beat').filter((b) => !b.classes().includes('is-now'))
+    const style = getComputedStyle(idle[0]!.element)
+    expect(style.borderTopStyle, 'transparent cells have no edge').toBe('solid')
+    expect(parseFloat(style.borderTopWidth)).toBeGreaterThan(0)
+    expect(parseFloat(style.borderRadius)).toBeGreaterThan(0)
+  })
+})
+
+describe('count-in label is a badge', () => {
+  it('paints a badge box around the word — padding, radius, edge', async () => {
+    const w = await viewerWithRoom()
+    observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 844 } }]))
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+
+    const style = getComputedStyle(w.get('[data-met-countin]').element)
+    expect(parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)).toBeGreaterThan(0)
+    expect(parseFloat(style.borderRadius)).toBeGreaterThan(0)
+    expect(style.borderTopStyle, 'naked text has no edge').toBe('solid')
+    expect(parseFloat(style.borderTopWidth)).toBeGreaterThan(0)
+  })
+})
+
