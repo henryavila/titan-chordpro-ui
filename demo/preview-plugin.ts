@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { extname, join } from 'node:path'
 import type { Plugin } from 'vite'
+import { hostOk } from '../src/core/import-chordpro'
 import type { PreviewFile } from './preview-catalog'
 
 export const PREVIEW_EXTS = new Set([
@@ -49,6 +50,43 @@ export function handlePreviewRequest(dir: string | undefined) {
   }
 }
 
+/**
+ * The browser cannot read cifraclub.com.br from the demo page. This is the
+ * host backend the viewer asks for: fetch the HTML, hand it to convert().
+ */
+export function handleCifraFetch(
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: () => void,
+): void {
+  const raw = req.url ?? ''
+  const path = raw.split('?')[0]
+  if (path !== '/__cifra_fetch') {
+    next()
+    return
+  }
+  const target = new URL(raw, 'http://local').searchParams.get('url') ?? ''
+  if (!hostOk(target)) {
+    res.statusCode = 400
+    res.end()
+    return
+  }
+  void (async () => {
+    try {
+      const r = await fetch(target, {
+        headers: { 'user-agent': 'Mozilla/5.0 (compatible; titan-chordpro-ui)' },
+      })
+      const html = await r.text()
+      res.statusCode = r.ok ? 200 : 502
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.end(html)
+    } catch {
+      res.statusCode = 502
+      res.end()
+    }
+  })()
+}
+
 export function previewDirPlugin(dir = process.env.TITAN_PREVIEW_DIR): Plugin {
   return {
     name: 'titan-preview-dir',
@@ -61,6 +99,7 @@ export function previewDirPlugin(dir = process.env.TITAN_PREVIEW_DIR): Plugin {
     },
     configureServer(server) {
       server.middlewares.use(handlePreviewRequest(dir))
+      server.middlewares.use(handleCifraFetch)
     },
   }
 }

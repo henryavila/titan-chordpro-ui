@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dentro de um site · uma cifra · titan-chordpro-ui</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <!--
+      Ficha do consumer: a página rola; o Titan é um bloco 100dvh no fluxo.
+      Não é iframe. O overflow hidden fica no frame, não na cifra.
+    -->
+    <style>
+      html, body, #app { margin: 0; height: 100%; background: #F7F1E8; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="app" data-surface="site" data-lista="0"></div>
+    <script type="module" src="./cifra.ts"></script>
+  </body>
+</html>

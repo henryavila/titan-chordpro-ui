@@ -8,7 +8,7 @@
 |---|---|
 | Product / repo | **`titan-chordpro-ui`** (view **+** edit, one package) — formerly seed `chordpro-viewer` |
 | Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
-| Packages (npm) | **`titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./vue"` |
+| Packages (npm) | **`@henryavila/titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
 | Repo path | `/Volumes/External/code/titan-chordpro-ui` |
 | Sibling generator | **`titan-chordpro-gen`** — audio → ChordPro — **out of scope** |
 | Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
@@ -38,7 +38,7 @@ Ship:
 
 1. **Core** — parse → ViewModel → HTML themes → PDF + controller (no Vue).  
    **Input formats (engine):** **ChordPro** and **OnSong** (incl. mixed / chords-over-lyrics). Normalize to the same `ChordProView`. UI does **not** select format. See `docs/research-onsong-format.md`.
-2. **Vue UI** — complete 1-cifra surface (standalone demo + embeddable in sda-v2).
+2. **Vue UI** — complete 1-cifra surface (`ChordproViewer` SFC). Host Vue/Nuxt mounts it in-page (sized frame) and/or as a `100dvh` route. **Not** an iframe.
 3. SDA becomes thin host (shell + multi-cifra). Titan can preview via core/CLI or a minimal Vue demo without the full SDA shell.
 
 ---
@@ -81,7 +81,7 @@ Ship:
 ## 4. Public API (must exist)
 
 ```ts
-// titan-chordpro-ui (core — export ".")
+// @henryavila/titan-chordpro-ui (core — export ".")
 export function parse(source: string): ChordProView
 // parse() accepts ChordPro, OnSong, or mixed text; detection/normalization is internal.
 export function transpose(view: ChordProView, semitones: number): ChordProView
@@ -90,16 +90,29 @@ export function renderHtml(view: ChordProView, opts?: { theme?: string }): strin
 export function listThemes(): string[]
 export function buildChoFilename(title: string, key: string | null): string
 export function buildPdfFilename(title: string, key: string | null): string
+export function buildSljaFilename(title: string): string
+export function lyricsForSlides(view: ChordProView): SlideSourceLine[]
+export function lyricsText(view: ChordProView): string
+export function exportLyrics(source: string): ChartLyrics
+// ChartLyrics = { title, artist, lyrics }. Host cadastra letra sem Vue.
+// Lyrics drop chords, x///, comments, tab, images. Empty string if none.
 export function exportCho(source: string, opts?: { key?: string | null }): string
 export function calcScrollSpeed(contentHeight: number, durationSeconds: number | null, bpm: number | null): number
 export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): number
 export function createViewerController(opts: { source: string }): ViewerController
 // ViewerController: getState / subscribe / dispatch / optional attachScroll(el)
 
-// titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
+// @henryavila/titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
 export function renderPdf(view: ChordProView, opts: PdfOptions): Promise<Uint8Array>
 
-// titan-chordpro-ui/vue
+// @henryavila/titan-chordpro-ui/slides  (separate entry — ZIP / CP1252 stay out of core)
+export function renderSlja(view: ChordProView, opts?: SljaOptions): Promise<Uint8Array>
+export function exportSlja(source: string, opts?: SljaOptions): Promise<SljaFile>
+// SljaFile = { bytes, filename, title }. Host download button: no Vue tree.
+// SljaOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
+// Chart line breaks are the phrasing. Do not reflow like louvorja-slides ASR.
+
+// @henryavila/titan-chordpro-ui/vue
 export { ChordproViewer } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
 ```
 
@@ -171,6 +184,8 @@ export type ChordProLine =
 | `buildPdfFilename('Amazing Grace', 'Am')` | `cifra-amazing-grace-tom-am.pdf` |
 | `buildPdfFilename('Amazing Grace', null)` | `cifra-amazing-grace.pdf` |
 | `buildPdfFilename('Lindo És', 'C#')` | `cifra-lindo-es-tom-c#.pdf` |
+| `buildSljaFilename('Fala Comigo')` | `slides-fala-comigo.slja` |
+| `buildSljaFilename('Lindo És')` | `slides-lindo-es.slja` |
 
 Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
@@ -187,6 +202,17 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 | `(0, 30, null)` | `30` |
 
 `adjustScrollSpeed`: ±15% factor, min `5`, 1 decimal place.
+
+### 4.7 Voiceless time (`x///`)
+
+The chart’s only **exact** duration on a line is the `x///` convention: `x` is always the **head** of the time (downbeat); `/` is a beat that is not the head. `[Cm]//` with no `x` is valid — two beats in 4/4, including at the end of a phrase. Anchored after a chord `]`. **SoT:** [`docs/MARCAS-X.md`](docs/MARCAS-X.md).
+
+- Played line (no lyric): marks **are** that stretch’s time at BPM. The engine does **not** infer bars from `[G] [C] [D]`.
+- Sung line: trailing marks are a **tail added** to the row estimate, never the verse’s whole duration.
+- Auto-scroll still requires `{duration:}` (hard gate). BPM + unmarked chords do not open it.
+- Compound meters use `beatsPerBar` + `marksPerBeat` (6/8 → 2 pulses, 3 marks per pulse).
+- `lintSource` warns on a voiceless chord line with `lineBeats === 0`.
+- Agents must not delete `x///` from source to clean lyrics. Só letra is a reading lens.
 
 ---
 
@@ -228,13 +254,12 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
 ## 7. Fixtures (required in repo)
 
-Copy / pin from SDA `design-handoff/fixtures/songs.json` (verbatim ChordPro `content`):
+Production corpus (tenant dump): `fixtures/sda/*.cho`. Demo lists **only** that set.
 
 | Id | File | Role |
 |---|---|---|
-| jesus-1 | `fixtures/jesus-tu-es-a-minha-vida-1.cho` | primary + PDF |
-| jesus-2 | `fixtures/jesus-tu-es-a-minha-vida-2.cho` | second chart same song |
-| entrega-1..3 | `fixtures/entrega-*.cho` | multi-source stress (host) |
+| sda | `fixtures/sda/*.cho` | 148 cifras vivas — SoT do demo e do aceite |
+| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{sos}` (fora da lista do demo) |
 | empty | empty string / missing | parse → empty sections, no throw |
 
 Agent **must not** invent chord charts for snapshots.
@@ -264,7 +289,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 
 | # | Criterion | How verified |
 |---|---|---|
-| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.` and `./pdf` | `pnpm build` |
+| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.`, `./pdf`, `./slides` and `./vue` | `pnpm build` |
 | A2 | Filename helpers match §4.5 exactly | unit tests ported from SDA |
 | A3 | Scroll helpers match §4.6 exactly | unit tests ported from SDA |
 | A2b | CLI accepts `.cho`, `.chordpro`, and `.onsong` (auto-detect) for `html`/`pdf`/`parse` | integration |
@@ -307,7 +332,7 @@ Do not start sda-v2 cutover until A1–A12 + A15–A17 green (or A1–A15 if UI 
 
 ## 11. SDA integration (after v0.1 tag)
 
-1. Depend on local path or published version (`titan-chordpro-ui` + `/vue`).
+1. Depend on local path or published version (`@henryavila/titan-chordpro-ui` + `/vue`).
 2. sda-v2 keeps **shell / multi-cifra / sanitize / i18n / player**.
 3. Replace inline parser + HTML/PDF/toolbar-of-cifra with `<ChordproViewer :source="activeCho" />` (or equivalent).
 4. Map host tokens to `--cpv-*` if needed.
@@ -319,7 +344,7 @@ Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SP
 
 ## 12. Open questions (block only if agent hits them)
 
-1. ~~Package scope name under npm~~ — **locked:** unscoped `titan-chordpro-ui` with exports `"."` / `"./pdf"` / `"./vue"` (see `docs/REBRAND-HANDOFF.md`).
+1. ~~Package scope name under npm~~ — **locked:** `@henryavila/titan-chordpro-ui` with exports `"."` / `"./pdf"` / `"./vue"` (publish via GitHub Release → OIDC, same pattern as `@henryavila/mdprobe`; see `docs/REBRAND-HANDOFF.md`).
 2. Whether `setKey` is required in v0.1 or only semitone `transpose` (SDA today = semitone offset).
 3. PDF engine long-term (jsPDF vs print-CSS + headless) — **v0.1 = jsPDF** for parity with SDA.
 4. Exact `ViewerController` action union (document in types when implementing).

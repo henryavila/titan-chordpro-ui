@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
-import type { ChartBlock } from 'titan-chordpro-ui'
+import type { ChartBlock } from '@henryavila/titan-chordpro-ui'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import ScoreFigure from './ScoreFigure.vue'
 import { readingWords, type ReadingWord } from './readingWords'
@@ -69,7 +69,7 @@ const editRows = computed(() => {
   }
   return m
 })
-const emptyRow: EditRow = { li: -1, tokens: [], chords: [], plain: '' }
+const emptyRow: EditRow = { li: -1, tokens: [], chords: [], plain: '', played: false, columns: [] }
 const rowOf = (li: number): EditRow => editRows.value.get(li) ?? emptyRow
 
 /**
@@ -475,6 +475,55 @@ watch(
                   @keydown="edit.onRowKey"
                   @blur="edit.commitRow"
                 >
+                <div
+                  v-else-if="rowOf(row.li).played"
+                  :data-row="row.li"
+                  data-played
+                  class="cpv-editrow"
+                  title="Toque para editar a letra"
+                  :style="{ fontSize: lyricPx }"
+                  @click="edit.rowClick($event, row.li, rowOf(row.li).plain)"
+                >
+                  <button
+                    v-if="mineLines && mineLines.get(row.li)"
+                    class="cpv-mine-dot cpv-mine-dot--edit"
+                    data-mine-dot
+                    title="Ajuste seu — toque para voltar este trecho ao original"
+                    aria-label="Voltar este trecho ao original"
+                    @click.stop="emit('revertLine', row.li)"
+                  ><span /></button>
+                  <span class="cpv-reading-flow">
+                    <span
+                      v-for="col in rowOf(row.li).columns"
+                      :key="col.idx"
+                      class="cpv-reading-word"
+                    >
+                      <span class="cpv-word">
+                        <span class="cpv-chord-box" :style="{ minHeight: pillH }">
+                          <span
+                            :data-pill="col.off"
+                            class="cpv-pill cpv-pill--flow"
+                            role="button"
+                            tabindex="0"
+                            title="Arraste para mover · toque para editar · ←/→ ajusta a sílaba"
+                            :style="{ height: pillH, fontSize: chordEditPx }"
+                            @pointerdown="edit.chordDown($event, row.li, col.idx, col.name)"
+                            @keydown="edit.chordKey($event, row.li, col.idx, col.name)"
+                          >{{ col.name }}</span>
+                        </span>
+                        <span class="cpv-lyric">
+                          <span v-for="c in col.marks" :key="c.i" :data-i="c.i">{{ c.ch }}</span>
+                        </span>
+                      </span>
+                      <span v-if="col.tail.length" class="cpv-word">
+                        <span class="cpv-chord-box" :style="{ minHeight: pillH }" />
+                        <span class="cpv-lyric">
+                          <span v-for="c in col.tail" :key="c.i" :data-i="c.i">{{ c.ch }}</span>
+                        </span>
+                      </span>
+                    </span>
+                  </span>
+                </div>
                 <div
                   v-else
                   :data-row="row.li"

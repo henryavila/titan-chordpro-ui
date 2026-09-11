@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Catálogo · ícones titan-chordpro-ui</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #07090D;
+    --panel: #11141A;
+    --canvas: #0B0D12;
+    --text: #EAECF2;
+    --muted: #888F9E;
+    --lyric: #C4C9D4;
+    --chord: #84DFA6;
+    --chord-ink: #10131A;
+    --chord-soft: rgba(132,223,166,.10);
+    --chord-edge: rgba(132,223,166,.30);
+    --chord-fill: rgba(132,223,166,.17);
+    --line: rgba(255,255,255,.10);
+    --line-soft: rgba(255,255,255,.06);
+    --hover: rgba(255,255,255,.08);
+    --surface: rgba(255,255,255,.04);
+    --sel: rgba(255,255,255,.10);
+    --sel-line: rgba(255,255,255,.22);
+    --pill: #E8EAF0;
+    --pill-ink: #13161D;
+    --danger: #FF8574;
+    --focus: #9EB8FF;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Sora, system-ui, sans-serif; }
+  body { padding: 28px 28px 140px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
+  .lede { color: var(--muted); font-size: 13.5px; line-height: 1.55; max-width: 820px; margin: 0 0 18px; }
+  .lede strong { color: var(--text); font-weight: 600; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 0 0 22px; }
+  .note { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; color: var(--lyric); }
+  .note strong { color: var(--text); }
+  .note code { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--chord); }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 22px; position: sticky; top: 0; z-index: 8; padding: 10px 0; background: linear-gradient(var(--bg) 70%, transparent); }
+  .bar button {
+    height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: #15181F; color: var(--text); font: 600 12px Sora, system-ui; cursor: pointer;
+  }
+  .bar button.is-on { background: var(--chord); color: var(--chord-ink); border-color: var(--chord); }
+  .bar .sep { width: 1px; height: 18px; background: var(--line); }
+  .bar a { color: var(--muted); font-size: 12px; text-decoration: none; }
+  .bar a:hover { color: var(--text); }
+
+  h2 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 32px 0 6px; }
+  h2 .n { font-family: 'Space Mono', monospace; color: var(--chord); font-size: 12px; margin-right: 8px; }
+  .sec-lede { color: var(--muted); font-size: 12.5px; line-height: 1.5; max-width: 780px; margin: 0 0 14px; }
+
+  .mock {
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 16px;
+    margin: 0 0 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mock-label { font-family: 'Space Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .dock, .wide {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(20,23,31,.86);
+    border: 1px solid var(--line);
+    border-radius: 17px;
+    padding: 6px;
+    width: max-content;
+    max-width: 100%;
+  }
+  .hit {
+    width: 48px; height: 48px; border: 0; border-radius: 14px; background: transparent;
+    color: var(--text); display: flex; align-items: center; justify-content: center; cursor: default;
+  }
+  .hit svg, .hit .glyph { width: 16px; height: 16px; }
+  .hit.play { background: var(--chord); color: var(--chord-ink); width: auto; min-width: 48px; padding: 0 16px; gap: 8px; font: 700 13px Sora, system-ui; }
+  .hit.play svg { width: 12px; height: 12px; }
+  .type { display: flex; background: var(--surface); border-radius: 14px; }
+  .type .hit { width: 44px; height: 44px; font: 600 13px Sora, system-ui; }
+  .type .hit.big { font-size: 17px; }
+  .wide { flex-wrap: wrap; }
+  .chip {
+    height: 36px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line);
+    background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;
+    font: 600 12.5px Sora, system-ui;
+  }
+  .chip svg { width: 14px; height: 14px; }
+  .div { width: 1px; height: 22px; background: var(--line-soft); margin: 0 3px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    margin: 0 0 12px;
+  }
+  .card.head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-bottom: 12px; padding: 0; border: 0; background: none; }
+  .card h3 { margin: 0; font-size: 14.5px; font-weight: 600; }
+  .where { font-size: 11.5px; color: var(--muted); }
+  .why { font-size: 12.5px; color: var(--lyric); line-height: 1.5; margin: 0 0 12px; max-width: 760px; }
+  .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
+  .opt {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 14px 10px 12px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text); cursor: pointer; text-align: center;
+  }
+  .opt:hover { background: var(--hover); }
+  .opt.is-on { border-color: var(--chord-edge); background: var(--chord-soft); }
+  .opt .preview {
+    width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--canvas); color: var(--text);
+  }
+  .opt.is-on .preview { border-color: var(--chord-edge); color: var(--chord); }
+  .opt .preview svg { width: 22px; height: 22px; }
+  .opt .preview .glyph { font-size: 18px; line-height: 1; }
+  .opt .name { font-size: 12px; font-weight: 600; }
+  .opt .hint { font-size: 11px; color: var(--muted); line-height: 1.35; }
+  .opt .tag {
+    font-family: 'Space Mono', monospace; font-size: 9.5px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--chord);
+  }
+  .opt.keep .tag { color: var(--muted); }
+
+  /* current CSS recreations */
+  .now-play { width: 12px; height: 12px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  .now-stop { width: 12px; height: 12px; background: currentColor; border-radius: 2px; }
+  .now-full { position: relative; width: 16px; height: 16px; }
+  .now-full::before, .now-full::after { content: ''; position: absolute; width: 7px; height: 7px; border: 1.75px solid currentColor; }
+  .now-full::before { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 2px; }
+  .now-full::after { right: 0; bottom: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 2px; }
+  .now-edit {
+    width: 16px; height: 16px; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1 1 22 22' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15.385 4.221 4.394 4.394'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1 1 22 22' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15.385 4.221 4.394 4.394'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .now-lens { width: 14px; height: 14px; border-radius: 50%; border: 1.6px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+  .now-met { width: 13px; height: 13px; border-radius: 50%; border: 1.6px solid currentColor; }
+  .now-fit { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .now-aa { font: 600 15px Sora, system-ui; letter-spacing: -.02em; }
+
+  .keep-box {
+    border: 1px dashed var(--line); border-radius: 14px; padding: 14px 16px; margin: 0 0 12px;
+    font-size: 12.5px; color: var(--lyric); line-height: 1.5;
+  }
+  .keep-box strong { color: var(--text); }
+  .keep-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .keep-chip {
+    display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
+    border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px;
+  }
+  .keep-chip .g { width: 22px; text-align: center; font-size: 15px; color: var(--chord); }
+
+  .foot {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 12;
+    background: rgba(11,13,18,.92); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); padding: 12px 28px 16px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  }
+  .foot pre {
+    flex: 1; min-width: 220px; max-height: 72px; overflow: auto; margin: 0;
+    font: 11px/1.4 'Space Mono', monospace; color: var(--muted);
+    background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  }
+  .foot button {
+    height: 36px; padding: 0 14px; border-radius: 10px; border: 0;
+    background: var(--chord); color: var(--chord-ink); font: 700 12.5px Sora, system-ui; cursor: pointer;
+  }
+  .foot button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 600; }
+  .ok { color: var(--chord); font-size: 12px; }
+
+  @media (max-width: 640px) {
+    body { padding: 18px 14px 160px; }
+    .foot { padding: 10px 14px 14px; }
+  }
+</style>
+</head>
+<body>
+  <h1>Ícones da cifra — catálogo para validar</h1>
+  <p class="lede">
+    Hoje o chrome mistura <strong>glifo Unicode</strong> (◐ ○ ● ↓ ◀ ▶ ⋯),
+    <strong>formas CSS</strong> (play/stop/tela cheia) e <strong>um único SVG Lucide</strong> (lápis de Editar).
+    Unicode pinta peso diferente em cada fonte — por isso o lápis já saiu de ✎.
+    A proposta: <strong>um set Lucide stroke</strong> (24×24, ponta redonda),
+    o mesmo desenho do Editar, sem biblioteca npm — só os paths que usarmos.
+    Clique numa opção por papel. O mock no topo atualiza. Rodapé copia o JSON.
+  </p>
+
+  <div class="notes">
+    <div class="note"><strong>O que está genérico.</strong> Play/stop falam player de mídia, não “a cifra anda”. ↓ é download. ◐○● são círculos. O metrônomo é um ponto. A lente é um disco pela metade.</div>
+    <div class="note"><strong>O que eu manteria tipografia.</strong> <code>+ −</code> de tom/capo/BPM, <code>A− A+</code>, <code>×</code> de fechar, <code>✓</code> de estado. São operadores, não pictogramas. Vão no grupo 7.</div>
+    <div class="note"><strong>Como validar.</strong> Rec = pré-selecionado. Se discordar, clique outra. “Manter” deixa o atual. Quando fechar o conjunto, manda o JSON ou diz “aprovado como está”.</div>
+  </div>
+
+  <div class="bar">
+    <button type="button" id="btn-rec" class="is-on">Pré-selecionar recomendados</button>
+    <button type="button" id="btn-keep">Tudo “manter”</button>
+    <span class="sep"></span>
+    <a href="#g1">Dock</a>
+    <a href="#g2">Lista</a>
+    <a href="#g3">Editor</a>
+    <a href="#g4">Inserir</a>
+    <a href="#g5">Seleção</a>
+    <a href="#g6">Estados</a>
+    <a href="#g7">Manter</a>
+  </div>
+
+  <div class="mock" aria-label="Prévia do set escolhido">
+    <div class="mock-label">Dock do telefone · set escolhido</div>
+    <div class="dock" id="mock-dock"></div>
+    <div class="mock-label">Barra larga · set escolhido</div>
+    <div class="wide" id="mock-wide"></div>
+  </div>
+
+  <h2 id="chorus"><span class="n">00</span>Refrão — lado musical (aberto)</h2>
+  <p class="sec-lede">Nenhuma das opções do catálogo (Repeat / Repeat 2 / chevron) foi aceita. Repeat de Lucide é “recarregar a página”, não música. Três signos de partitura — escolhe um, ou diz outro.</p>
+  <div class="card">
+    <div class="opts">
+      <div class="opt">
+        <span class="preview">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="7" y="4" width="1.4" height="16" rx="0.4"/><rect x="10" y="4" width="2.4" height="16" rx="0.4"/><circle cx="15.2" cy="9" r="1.5"/><circle cx="15.2" cy="15" r="1.5"/></svg>
+        </span>
+        <span class="tag">A</span>
+        <span class="name">Barra de repetição</span>
+        <span class="hint">|: dois pontos e a barra grossa. É o signo de “esta secção volta”.</span>
+      </div>
+      <div class="opt">
+        <span class="preview">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 16V8h3.2a2.4 2.4 0 0 1 0 4.8H10"/><path d="M13.2 12.8 16 16"/></svg>
+        </span>
+        <span class="tag">B</span>
+        <span class="name">Letra de ensaio [R]</span>
+        <span class="hint">Como as letras A, B, C no score: o refrão marcado, não “repetir”.</span>
+      </div>
+      <div class="opt">
+        <span class="preview">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V6h14"/><path d="M8 10h.01"/><path d="M8 14h4"/></svg>
+        </span>
+        <span class="tag">C</span>
+        <span class="name">Colchete de volta</span>
+        <span class="hint">O 1. / 2. da partitura — “volta desta casa”.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="catalog"></div>
+
+  <div class="foot">
+    <pre id="json"></pre>
+    <button type="button" id="copy">Copiar JSON</button>
+    <button type="button" class="ghost" id="reset">Resetar rec</button>
+    <span class="ok" id="copied" hidden>Copiado</span>
+  </div>
+
+<script>
+const svg = (inner, extra = '') =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${inner}</svg>`
+
+const I = {
+  playFill: svg(`<polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/>`),
+  play: svg(`<polygon points="6 3 20 12 6 21 6 3"/>`),
+  square: svg(`<rect width="18" height="18" x="3" y="3" rx="2"/>`),
+  pause: svg(`<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>`),
+  circleStop: svg(`<circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/>`),
+  chevronsDown: svg(`<path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/>`),
+  chevronDown: svg(`<path d="m6 9 6 6 6-6"/>`),
+  chevronUp: svg(`<path d="m18 15-6-6-6 6"/>`),
+  chevronLeft: svg(`<path d="m15 18-6-6 6-6"/>`),
+  chevronRight: svg(`<path d="m9 18 6-6-6-6"/>`),
+  skipBack: svg(`<polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/>`),
+  skipFwd: svg(`<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>`),
+  maximize: svg(`<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>`),
+  maximize2: svg(`<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>`),
+  expand: svg(`<path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/><path d="M3 16.2V21m0 0h4.8M3 21l6-6"/><path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/><path d="M3 7.8V3m0 0h4.8M3 3l6 6"/>`),
+  minimize2: svg(`<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/>`),
+  scan: svg(`<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>`),
+  scaling: svg(`<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M14 15H9v-5"/><path d="M16 3h5v5"/><path d="M21 3 9 15"/>`),
+  pencil: svg(`<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15.385 4.221 4.394 4.394"/>`),
+  penLine: svg(`<path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>`),
+  squarePen: svg(`<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/>`),
+  sun: svg(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>`),
+  moon: svg(`<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`),
+  sunMoon: svg(`<path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>`),
+  contrast: svg(`<circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/>`),
+  monitor: svg(`<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>`),
+  download: svg(`<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>`),
+  fileDown: svg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>`),
+  share: svg(`<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>`),
+  ellipsis: svg(`<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>`),
+  ellipsisV: svg(`<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>`),
+  menu: svg(`<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>`),
+  glasses: svg(`<circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/>`),
+  eye: svg(`<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>`),
+  scanEye: svg(`<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="1"/><path d="M18.944 12.33a5 5 0 1 0-9.888 0"/>`),
+  timer: svg(`<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>`),
+  gauge: svg(`<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>`),
+  music2: svg(`<circle cx="8" cy="18" r="4"/><path d="M12 18V2l7 4"/>`),
+  metronome: svg(`<path d="M8.2 21h7.6L14.4 4.4a1.2 1.2 0 0 0-1.18-1.02h-2.44A1.2 1.2 0 0 0 9.6 4.4Z"/><path d="M12 7.2 17.2 3.4"/><circle cx="18.2" cy="2.7" r="1.5"/><path d="M10.2 13h3.6"/>`),
+  listMusic: svg(`<path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/>`),
+  list: svg(`<path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/>`),
+  undo2: svg(`<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>`),
+  redo2: svg(`<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/>`),
+  rotateCcw: svg(`<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>`),
+  plus: svg(`<path d="M5 12h14"/><path d="M12 5v14"/>`),
+  plusCircle: svg(`<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>`),
+  squarePlus: svg(`<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>`),
+  braces: svg(`<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>`),
+  code: svg(`<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>`),
+  fileCode: svg(`<path d="M10 12.5 8 15l2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/>`),
+  image: svg(`<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>`),
+  fileImage: svg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><circle cx="10" cy="12" r="2"/><path d="m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22"/>`),
+  quote: svg(`<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 1-1-1V8"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 1-1-1V8"/>`),
+  msgQuote: svg(`<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/>`),
+  sticky: svg(`<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>`),
+  alignLeft: svg(`<path d="M15 12H3"/><path d="M17 18H3"/><path d="M21 6H3"/>`),
+  text: svg(`<path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/>`),
+  repeat: svg(`<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>`),
+  repeat2: svg(`<path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6"/><path d="m22 15-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/>`),
+  cornerDown: svg(`<polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/>`),
+  gripV: svg(`<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>`),
+  gripH: svg(`<circle cx="12" cy="9" r="1"/><circle cx="19" cy="9" r="1"/><circle cx="5" cy="9" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="19" cy="15" r="1"/><circle cx="5" cy="15" r="1"/>`),
+  copy: svg(`<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`),
+  copyPlus: svg(`<line x1="15" x2="15" y1="12" y2="18"/><line x1="12" x2="18" y1="15" y2="15"/><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`),
+  layers: svg(`<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>`),
+  trash2: svg(`<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>`),
+  x: svg(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`),
+  eyeOff: svg(`<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>`),
+  filePlus: svg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>`),
+  fileInput: svg(`<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/>`),
+  alertTri: svg(`<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>`),
+  alertCircle: svg(`<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>`),
+  check: svg(`<path d="M20 6 9 17l-5-5"/>`),
+  checkCircle: svg(`<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>`),
+  arrowLR: svg(`<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>`),
+  type: svg(`<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>`),
+  aSize: svg(`<path d="m3 16 4.5-9 4.5 9"/><path d="M4.5 13h6"/><path d="M16 14h5"/><path d="M19 16v-3.5a2.5 2.5 0 0 0-5 0V16"/>`),
+}
+
+function now(html) { return { kind: 'html', html } }
+function glyph(ch) { return { kind: 'html', html: `<span class="glyph">${ch}</span>` } }
+function icon(key) { return { kind: 'icon', key } }
+
+const SECTIONS = [
+  {
+    id: 'g1',
+    n: '01',
+    title: 'Dock e chrome de leitura',
+    lede: 'O que o músico vê em pé, no ensaio. Aqui a genericidade dói: play de player, ↓ de download, círculos de tema, ponto de metrônomo.',
+    items: [
+      {
+        id: 'play',
+        name: 'Rolar / iniciar',
+        where: 'Dock · barra larga · metrônomo · editor de partitura',
+        why: 'Hoje é um triângulo CSS — o play de player. A cifra não toca áudio: ela anda a página. Por isso a rec é setas para baixo (a cifra desce), não play.',
+        current: now('<span class="now-play"></span>'),
+        rec: 'chevronsDown',
+        opts: [
+          { id: 'chevronsDown', icon: I.chevronsDown, name: 'Chevrons down', hint: 'A página anda para baixo. Rec.' },
+          { id: 'playFill', icon: I.playFill, name: 'Play preenchido', hint: 'Mantém a metáfora atual, em SVG.' },
+          { id: 'play', icon: I.play, name: 'Play stroke', hint: 'Mesma língua, peso Lucide.' },
+        ],
+      },
+      {
+        id: 'stop',
+        name: 'Parar',
+        where: 'Mesmos botões, estado ligado',
+        why: 'Quadrado CSS. Combina com play de player. Se o iniciar virar setas, o parar pode ser um quadrado (stop clássico) ou pause.',
+        current: now('<span class="now-stop"></span>'),
+        rec: 'square',
+        opts: [
+          { id: 'square', icon: I.square, name: 'Stop (quadrado)', hint: 'Para o movimento. Rec.' },
+          { id: 'pause', icon: I.pause, name: 'Pause', hint: 'Sugere retomar no mesmo ponto.' },
+          { id: 'circleStop', icon: I.circleStop, name: 'Stop em círculo', hint: 'Mais “botão de mídia”.' },
+        ],
+      },
+      {
+        id: 'fullscreen',
+        name: 'Tela cheia / imersivo',
+        where: 'Header telefone e desktop',
+        why: 'Já é CSS (dois cantos). Funciona, mas o peso não casa com o lápis SVG. Lucide Maximize é o primo desenhado.',
+        current: now('<span class="now-full"></span>'),
+        rec: 'maximize',
+        opts: [
+          { id: 'maximize', icon: I.maximize, name: 'Cantos (Maximize)', hint: 'O atual, em Lucide. Rec.' },
+          { id: 'maximize2', icon: I.maximize2, name: 'Setas para fora', hint: 'Mais “expandir”.' },
+          { id: 'expand', icon: I.expand, name: 'Expand', hint: 'Quatro cantos com seta.' },
+        ],
+      },
+      {
+        id: 'edit',
+        name: 'Editar',
+        where: 'Dock · barra larga',
+        why: 'Único ícone já Lucide (Pencil). Peso certo. Só confirmar se fica este, linha+lápis, ou lápis no quadro.',
+        current: now('<span class="now-edit"></span>'),
+        rec: 'pencil',
+        opts: [
+          { id: 'pencil', icon: I.pencil, name: 'Pencil', hint: 'O de hoje. Rec — já está certo.' },
+          { id: 'penLine', icon: I.penLine, name: 'Pen line', hint: 'Lápis + linha: “escrever na cifra”.' },
+          { id: 'squarePen', icon: I.squarePen, name: 'Square pen', hint: 'Editar um bloco/quadro.' },
+        ],
+      },
+      {
+        id: 'theme-auto',
+        name: 'Tema · Auto',
+        where: 'Dock (só glifo) · barra larga (glifo + “Auto”)',
+        why: '◐ é um círculo genérico. Sun-moon diz “segue o sistema” sem parecer eclipse.',
+        current: glyph('◐'),
+        rec: 'sunMoon',
+        opts: [
+          { id: 'sunMoon', icon: I.sunMoon, name: 'Sol + lua', hint: 'Claro e escuro no mesmo signo. Rec.' },
+          { id: 'contrast', icon: I.contrast, name: 'Contraste', hint: 'Meia-lua preenchida, primo do ◐.' },
+          { id: 'monitor', icon: I.monitor, name: 'Monitor', hint: 'Segue o aparelho.' },
+        ],
+      },
+      {
+        id: 'theme-light',
+        name: 'Tema · Claro',
+        where: 'Mesmo botão, estado claro',
+        why: '○ é um anel vazio. Sol é o signo universal de tema claro.',
+        current: glyph('○'),
+        rec: 'sun',
+        opts: [
+          { id: 'sun', icon: I.sun, name: 'Sol', hint: 'Rec.' },
+          { id: 'contrast', icon: I.contrast, name: 'Contraste', hint: 'Família única para os 3 estados.' },
+          { id: 'keep', html: '<span class="glyph">○</span>', name: 'Anel', hint: 'Manter o atual.' },
+        ],
+      },
+      {
+        id: 'theme-dark',
+        name: 'Tema · Escuro',
+        where: 'Mesmo botão, estado escuro',
+        why: '● é um disco. Lua é palco / baixa luz — casa com a visão do produto.',
+        current: glyph('●'),
+        rec: 'moon',
+        opts: [
+          { id: 'moon', icon: I.moon, name: 'Lua', hint: 'Rec.' },
+          { id: 'contrast', icon: I.contrast, name: 'Contraste', hint: 'Se o auto também for contraste.' },
+          { id: 'keep', html: '<span class="glyph">●</span>', name: 'Disco', hint: 'Manter o atual.' },
+        ],
+      },
+      {
+        id: 'export',
+        name: 'Exportar CHO / PDF',
+        where: 'Barra larga · folha “Mais”',
+        why: '↓ é “baixar qualquer coisa”. File-down diz arquivo; download é o meio-termo conhecido.',
+        current: glyph('↓'),
+        rec: 'fileDown',
+        opts: [
+          { id: 'fileDown', icon: I.fileDown, name: 'Arquivo para baixo', hint: 'É um ficheiro que sai. Rec.' },
+          { id: 'download', icon: I.download, name: 'Download', hint: 'Mais genérico, mais reconhecível.' },
+          { id: 'share', icon: I.share, name: 'Partilhar', hint: 'Confunde com share do SO.' },
+        ],
+      },
+      {
+        id: 'more',
+        name: 'Mais controles',
+        where: 'Dock do telefone',
+        why: '⋯ já é o signo certo. Só passar para SVG de peso igual aos vizinhos.',
+        current: glyph('⋯'),
+        rec: 'ellipsis',
+        opts: [
+          { id: 'ellipsis', icon: I.ellipsis, name: 'Reticências', hint: 'O atual, em Lucide. Rec.' },
+          { id: 'ellipsisV', icon: I.ellipsisV, name: 'Verticais', hint: 'Mais “menu de item”.' },
+          { id: 'menu', icon: I.menu, name: 'Hamburger', hint: 'Demasiado “app shell” — a visão pede o contrário.' },
+        ],
+      },
+      {
+        id: 'fit',
+        name: 'Ajuste ao espaço',
+        where: 'Barra larga (chip) · folha “Mais”',
+        why: 'Caixa com ✓ é um checkbox. Ajuste encaixa a cifra no frame — Scan / Minimize dizem isso.',
+        current: now('<span class="now-fit">✓</span>'),
+        rec: 'scan',
+        opts: [
+          { id: 'scan', icon: I.scan, name: 'Scan (encaixe)', hint: 'Cantos do frame. Rec.' },
+          { id: 'minimize2', icon: I.minimize2, name: 'Encolher para dentro', hint: 'O inverso de tela cheia.' },
+          { id: 'scaling', icon: I.scaling, name: 'Scaling', hint: 'Redimensionar o conteúdo.' },
+        ],
+      },
+      {
+        id: 'lens',
+        name: 'Lentes de leitura',
+        where: 'Barra larga · folha “Mais”',
+        why: 'Disco pela metade não é lente. Óculos = ler a cifra de outro jeito (Nashville / graus).',
+        current: now('<span class="now-lens"></span>'),
+        rec: 'glasses',
+        opts: [
+          { id: 'glasses', icon: I.glasses, name: 'Óculos', hint: 'Lente de leitura. Rec.' },
+          { id: 'scanEye', icon: I.scanEye, name: 'Olho em scan', hint: '“Ver de outro modo”.' },
+          { id: 'eye', icon: I.eye, name: 'Olho', hint: 'Mais genérico (mostrar/ocultar).' },
+        ],
+      },
+      {
+        id: 'metronome',
+        name: 'Metrônomo',
+        where: 'Barra larga · folha do metrônomo (o ponto também pulsa)',
+        why: 'Lucide não tem metrônomo. Timer/gauge são relógio. Rec: pirâmide com pêndulo, desenhada no mesmo stroke.',
+        current: now('<span class="now-met"></span>'),
+        rec: 'metronome',
+        opts: [
+          { id: 'metronome', icon: I.metronome, name: 'Metrônomo', hint: 'O objeto. Rec. Path nosso, peso Lucide.' },
+          { id: 'timer', icon: I.timer, name: 'Timer', hint: 'Andamento, mas é cronómetro.' },
+          { id: 'gauge', icon: I.gauge, name: 'Gauge', hint: 'BPM como velocímetro.' },
+        ],
+      },
+      {
+        id: 'type',
+        name: 'Tipografia A− / A+',
+        where: 'Dock · barra larga · editor',
+        why: 'A− A+ é o menos genérico da barra: músico em pé lê na hora. Trocar por ícone Type perde o “maior/menor”.',
+        current: now('<span class="now-aa">A−</span>'),
+        rec: 'keep',
+        opts: [
+          { id: 'keep', html: '<span class="now-aa">A−</span>', name: 'A− / A+', hint: 'Manter tipografia. Rec.' },
+          { id: 'aSize', icon: I.aSize, name: 'A a', hint: 'Um só botão — perderíamos o par.' },
+          { id: 'type', icon: I.type, name: 'Type', hint: 'Genérico demais.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'g2',
+    n: '02',
+    title: 'Navegação da lista',
+    lede: '◀ ▶ ▾ ▴ ‹ — setas geométricas Unicode, peso irregular. Chevrons Lucide são o mesmo gesto, alinhados ao lápis.',
+    items: [
+      {
+        id: 'prev',
+        name: 'Música anterior',
+        where: 'Barra · dock · skeleton · falha de carga',
+        why: '◀ preenchido parece “rewind de player”. Chevron é avançar na lista, não no áudio.',
+        current: glyph('◀'),
+        rec: 'chevronLeft',
+        opts: [
+          { id: 'chevronLeft', icon: I.chevronLeft, name: 'Chevron', hint: 'Lista, não player. Rec.' },
+          { id: 'skipBack', icon: I.skipBack, name: 'Skip back', hint: 'Mais “faixa anterior”.' },
+          { id: 'keep', html: '<span class="glyph">◀</span>', name: '◀', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'next',
+        name: 'Próxima música',
+        where: 'Par do anterior',
+        why: 'Mesma lógica.',
+        current: glyph('▶'),
+        rec: 'chevronRight',
+        opts: [
+          { id: 'chevronRight', icon: I.chevronRight, name: 'Chevron', hint: 'Rec.' },
+          { id: 'skipFwd', icon: I.skipFwd, name: 'Skip forward', hint: 'Player.' },
+          { id: 'keep', html: '<span class="glyph">▶</span>', name: '▶', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'setlist',
+        name: 'Abrir a lista do ensaio',
+        where: 'Título no header · chip “Lista” · skeleton ▾ · dock ▴',
+        why: 'Hoje é um chevron Unicode minúsculo (9px). List-music diz “repertório” sem parecer menu de app.',
+        current: glyph('▾'),
+        rec: 'listMusic',
+        opts: [
+          { id: 'listMusic', icon: I.listMusic, name: 'Lista + nota', hint: 'Ensaio / repertório. Rec.' },
+          { id: 'list', icon: I.list, name: 'Lista', hint: 'Mais neutro.' },
+          { id: 'chevronDown', icon: I.chevronDown, name: 'Chevron', hint: 'Só “isto abre”.' },
+        ],
+      },
+      {
+        id: 'back',
+        name: 'Voltar (fila de sugestões)',
+        where: 'SuggestionQueue',
+        why: '‹ solto. Chevron Lucide, mesmo peso do resto.',
+        current: glyph('‹'),
+        rec: 'chevronLeft',
+        opts: [
+          { id: 'chevronLeft', icon: I.chevronLeft, name: 'Chevron', hint: 'Rec.' },
+          { id: 'keep', html: '<span class="glyph">‹</span>', name: '‹', hint: 'Manter.' },
+          { id: 'x', icon: I.x, name: 'X', hint: 'Não: aqui é voltar um nível, não fechar.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'g3',
+    n: '03',
+    title: 'Editor — chrome',
+    lede: 'Desfazer/refazer são setas de relógio. Fonte é `{ }` (já representativo). Inserir é um +.',
+    items: [
+      {
+        id: 'undo',
+        name: 'Desfazer',
+        where: 'Barra de edição',
+        why: '↺ é “voltar o relógio”. Undo2 é o signo de editor.',
+        current: glyph('↺'),
+        rec: 'undo2',
+        opts: [
+          { id: 'undo2', icon: I.undo2, name: 'Undo', hint: 'Rec.' },
+          { id: 'rotateCcw', icon: I.rotateCcw, name: 'Rotate', hint: 'Primo do ↺.' },
+          { id: 'keep', html: '<span class="glyph">↺</span>', name: '↺', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'redo',
+        name: 'Refazer',
+        where: 'Barra de edição, só quando há redo',
+        why: 'Par do desfazer.',
+        current: glyph('↻'),
+        rec: 'redo2',
+        opts: [
+          { id: 'redo2', icon: I.redo2, name: 'Redo', hint: 'Rec.' },
+          { id: 'keep', html: '<span class="glyph">↻</span>', name: '↻', hint: 'Manter.' },
+          { id: 'rotateCcw', icon: I.rotateCcw, name: 'Rotate', hint: 'Não distingue redo.' },
+        ],
+      },
+      {
+        id: 'insert',
+        name: 'Inserir bloco',
+        where: 'Dock de edição',
+        why: 'O + já é o verbo. Plus Lucide alinha o peso; círculo/quadrado são mais botão.',
+        current: glyph('+'),
+        rec: 'plus',
+        opts: [
+          { id: 'plus', icon: I.plus, name: 'Plus', hint: 'Rec.' },
+          { id: 'plusCircle', icon: I.plusCircle, name: 'Plus circle', hint: 'Mais “add” de app.' },
+          { id: 'squarePlus', icon: I.squarePlus, name: 'Plus no quadro', hint: 'Inserir um bloco.' },
+        ],
+      },
+      {
+        id: 'source',
+        name: 'Fonte ChordPro',
+        where: 'Dock de edição',
+        why: '`{ }` já é ChordPro. Braces Lucide é o mesmo signo, peso certo.',
+        current: glyph('{ }'),
+        rec: 'braces',
+        opts: [
+          { id: 'braces', icon: I.braces, name: 'Chaves', hint: 'O atual, desenhado. Rec.' },
+          { id: 'code', icon: I.code, name: 'Code', hint: 'Genérico demais.' },
+          { id: 'fileCode', icon: I.fileCode, name: 'Ficheiro código', hint: 'Parece IDE.' },
+        ],
+      },
+      {
+        id: 'swap',
+        name: 'Trocar entrada piano / violão',
+        where: 'Editor de partitura',
+        why: '⇄ Unicode. Arrow left-right é o mesmo gesto.',
+        current: glyph('⇄'),
+        rec: 'arrowLR',
+        opts: [
+          { id: 'arrowLR', icon: I.arrowLR, name: 'Setas L/R', hint: 'Rec.' },
+          { id: 'keep', html: '<span class="glyph">⇄</span>', name: '⇄', hint: 'Manter.' },
+          { id: 'repeat', icon: I.repeat, name: 'Repeat', hint: 'Confunde com refrão.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'g4',
+    n: '04',
+    title: 'Inserir bloco — menu',
+    lede: '♪ ▤ ❝ ¶ ❯ — cinco Unicode de famílias diferentes. Aqui dá para ser específico: nota, imagem, citação, estrofe, volta.',
+    items: [
+      {
+        id: 'ins-score',
+        name: 'Partitura ou solo',
+        where: 'Menu Inserir',
+        why: '♪ é uma colcheia. Music2 (nota com haste) é o signo de pauta.',
+        current: glyph('♪'),
+        rec: 'music2',
+        opts: [
+          { id: 'music2', icon: I.music2, name: 'Nota', hint: 'Rec.' },
+          { id: 'listMusic', icon: I.listMusic, name: 'Lista + nota', hint: 'Mais “repertório” que pauta.' },
+          { id: 'keep', html: '<span class="glyph">♪</span>', name: '♪', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'ins-image',
+        name: 'Imagem de partitura',
+        where: 'Menu Inserir (só com catálogo do host)',
+        why: '▤ é um retângulo hachurado. Image é uma foto/figura.',
+        current: glyph('▤'),
+        rec: 'image',
+        opts: [
+          { id: 'image', icon: I.image, name: 'Imagem', hint: 'Rec.' },
+          { id: 'fileImage', icon: I.fileImage, name: 'Ficheiro imagem', hint: 'Mais “arquivo”.' },
+          { id: 'keep', html: '<span class="glyph">▤</span>', name: '▤', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'ins-comment',
+        name: 'Comentário de ensaio',
+        where: 'Menu Inserir',
+        why: '❝ é aspas. Comentário de ensaio é uma nota para o músico, não uma citação literária.',
+        current: glyph('❝'),
+        rec: 'msgQuote',
+        opts: [
+          { id: 'msgQuote', icon: I.msgQuote, name: 'Balão', hint: 'Fala de ensaio. Rec.' },
+          { id: 'quote', icon: I.quote, name: 'Aspas', hint: 'Primo do atual.' },
+          { id: 'sticky', icon: I.sticky, name: 'Nota adesiva', hint: 'Mais “post-it”.' },
+        ],
+      },
+      {
+        id: 'ins-verse',
+        name: 'Nova estrofe',
+        where: 'Menu Inserir',
+        why: '¶ é pilcrow de processador de texto. Align-left é um bloco de letra.',
+        current: glyph('¶'),
+        rec: 'alignLeft',
+        opts: [
+          { id: 'alignLeft', icon: I.alignLeft, name: 'Bloco de texto', hint: 'Estrofe. Rec.' },
+          { id: 'text', icon: I.text, name: 'Linhas', hint: 'Mais genérico.' },
+          { id: 'keep', html: '<span class="glyph">¶</span>', name: '¶', hint: 'Manter — só quem conhece editor.' },
+        ],
+      },
+      {
+        id: 'ins-chorus',
+        name: 'Refrão',
+        where: 'Menu Inserir',
+        why: '❯ é um chevron. Refrão = o que volta. Repeat é o verbo certo.',
+        current: glyph('❯'),
+        rec: 'repeat',
+        opts: [
+          { id: 'repeat', icon: I.repeat, name: 'Repeat', hint: 'Volta. Rec.' },
+          { id: 'repeat2', icon: I.repeat2, name: 'Repeat 2', hint: 'Mesma ideia, outro desenho.' },
+          { id: 'cornerDown', icon: I.cornerDown, name: 'Entrar no bloco', hint: 'Menos “volta”.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'g5',
+    n: '05',
+    title: 'Barra de seleção do bloco',
+    lede: '⋮⋮ ↑ ↓ ⧉ ⌫ ◌ ↺ × — alça, ordem, duplicar, apagar, ocultar, reset. Vários Unicode de teclado, não de cifra.',
+    items: [
+      {
+        id: 'grip',
+        name: 'Alça do bloco',
+        where: 'SelectionBar · dica de edição',
+        why: '⋮⋮. Grip vertical é o signo de “arrasta para reordenar”.',
+        current: glyph('⋮⋮'),
+        rec: 'gripV',
+        opts: [
+          { id: 'gripV', icon: I.gripV, name: 'Grip vertical', hint: 'Rec.' },
+          { id: 'gripH', icon: I.gripH, name: 'Grip horizontal', hint: 'Mais “mover no eixo X”.' },
+          { id: 'keep', html: '<span class="glyph">⋮⋮</span>', name: '⋮⋮', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'nudge-up',
+        name: 'Mover bloco para cima',
+        where: 'SelectionBar',
+        why: '↑ Unicode. Chevron casa com prev/next.',
+        current: glyph('↑'),
+        rec: 'chevronUp',
+        opts: [
+          { id: 'chevronUp', icon: I.chevronUp, name: 'Chevron up', hint: 'Rec.' },
+          { id: 'keep', html: '<span class="glyph">↑</span>', name: '↑', hint: 'Manter.' },
+          { id: 'chevronsDown', icon: I.chevronsDown, name: 'Chevrons', hint: 'Não: é um passo, não um salto.' },
+        ],
+      },
+      {
+        id: 'nudge-down',
+        name: 'Mover bloco para baixo',
+        where: 'SelectionBar',
+        why: 'Par do de cima. Hoje ↓ também é o ícone de Exportar — colisão.',
+        current: glyph('↓'),
+        rec: 'chevronDown',
+        opts: [
+          { id: 'chevronDown', icon: I.chevronDown, name: 'Chevron down', hint: 'Rec. Acaba a colisão com exportar.' },
+          { id: 'keep', html: '<span class="glyph">↓</span>', name: '↓', hint: 'Manter — continua colidindo com exportar.' },
+          { id: 'chevronsDown', icon: I.chevronsDown, name: 'Chevrons', hint: 'Reservado para Rolar.' },
+        ],
+      },
+      {
+        id: 'duplicate',
+        name: 'Duplicar bloco',
+        where: 'SelectionBar',
+        why: '⧉ é “duas janelas”. Copy é duplicar.',
+        current: glyph('⧉'),
+        rec: 'copy',
+        opts: [
+          { id: 'copy', icon: I.copy, name: 'Copy', hint: 'Rec.' },
+          { id: 'copyPlus', icon: I.copyPlus, name: 'Copy plus', hint: 'Duplicar + criar.' },
+          { id: 'layers', icon: I.layers, name: 'Camadas', hint: 'Mais “overlay”.' },
+        ],
+      },
+      {
+        id: 'delete',
+        name: 'Excluir bloco',
+        where: 'SelectionBar (modo conteúdo)',
+        why: '⌫ é backspace de teclado, não lixo. Trash é o verbo.',
+        current: glyph('⌫'),
+        rec: 'trash2',
+        opts: [
+          { id: 'trash2', icon: I.trash2, name: 'Lixo', hint: 'Rec.' },
+          { id: 'x', icon: I.x, name: 'X', hint: 'Confunde com fechar.' },
+          { id: 'keep', html: '<span class="glyph">⌫</span>', name: '⌫', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'hide',
+        name: 'Ocultar / remover daqui',
+        where: 'SelectionBar (◌ no conteúdo, ⌫ no local)',
+        why: 'Dois glifos para o mesmo verbo. Eye-off cobre os dois modos; o rótulo já distingue “Ocultar” vs “Remover daqui”.',
+        current: glyph('◌'),
+        rec: 'eyeOff',
+        opts: [
+          { id: 'eyeOff', icon: I.eyeOff, name: 'Olho riscado', hint: 'Rec para os dois modos.' },
+          { id: 'keep', html: '<span class="glyph">◌</span>', name: '◌ / ⌫', hint: 'Manter os dois Unicode.' },
+          { id: 'x', icon: I.x, name: 'X', hint: 'Parece excluir de verdade.' },
+        ],
+      },
+      {
+        id: 'reset',
+        name: 'Reset (tom do bloco / capo do bloco)',
+        where: 'SelectionBar, ao lado de transpor e capo',
+        why: '↺ no bloco. Undo2 já é desfazer da sessão — aqui o verbo é “voltar a seguir a música”.',
+        current: glyph('↺'),
+        rec: 'rotateCcw',
+        opts: [
+          { id: 'rotateCcw', icon: I.rotateCcw, name: 'Rotate', hint: 'Reset ao original. Rec — distinto do undo.' },
+          { id: 'undo2', icon: I.undo2, name: 'Undo', hint: 'Colide com Desfazer da barra.' },
+          { id: 'keep', html: '<span class="glyph">↺</span>', name: '↺', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'close',
+        name: 'Fechar (seleção, folhas, dicas)',
+        where: 'Dezenas de sítios: ×',
+        why: '× Unicode varia de peso. X Lucide alinha. Continua sendo um X — não um pictograma novo.',
+        current: glyph('×'),
+        rec: 'x',
+        opts: [
+          { id: 'x', icon: I.x, name: 'X Lucide', hint: 'Mesmo signo, peso do set. Rec.' },
+          { id: 'keep', html: '<span class="glyph">×</span>', name: '×', hint: 'Manter Unicode.' },
+          { id: 'chevronDown', icon: I.chevronDown, name: 'Chevron', hint: 'Não: fechar não é “abrir”.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'g6',
+    n: '06',
+    title: 'Empty, erro, lista',
+    lede: 'Empty de cifra nova usa ↓ e +. Fatal usa !. Lista marca visto com ✓ e falha com !.',
+    items: [
+      {
+        id: 'import',
+        name: 'Importar cifra',
+        where: 'Empty state (responsável)',
+        why: 'Mesmo ↓ do exportar. File-input inverte o sentido: arquivo entra.',
+        current: glyph('↓'),
+        rec: 'fileInput',
+        opts: [
+          { id: 'fileInput', icon: I.fileInput, name: 'Arquivo entra', hint: 'Oposto de exportar. Rec.' },
+          { id: 'download', icon: I.download, name: 'Download', hint: 'Continua colidindo com exportar.' },
+          { id: 'keep', html: '<span class="glyph">↓</span>', name: '↓', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'blank',
+        name: 'Começar em branco',
+        where: 'Empty state',
+        why: '+ genérico. File-plus é “cifra nova”.',
+        current: glyph('+'),
+        rec: 'filePlus',
+        opts: [
+          { id: 'filePlus', icon: I.filePlus, name: 'Ficheiro +', hint: 'Rec.' },
+          { id: 'plus', icon: I.plus, name: 'Plus', hint: 'Igual ao Inserir.' },
+          { id: 'squarePlus', icon: I.squarePlus, name: 'Quadro +', hint: 'Mais “bloco” que “cifra”.' },
+        ],
+      },
+      {
+        id: 'error',
+        name: 'Não foi possível ler / não carregou',
+        where: 'Fatal · item da lista falhou',
+        why: '! numa caixa. Triângulo de alerta é o signo, e deixa o ! da lista como o mesmo desenho.',
+        current: glyph('!'),
+        rec: 'alertTri',
+        opts: [
+          { id: 'alertTri', icon: I.alertTri, name: 'Triângulo', hint: 'Rec.' },
+          { id: 'alertCircle', icon: I.alertCircle, name: 'Círculo', hint: 'Mais suave.' },
+          { id: 'keep', html: '<span class="glyph">!</span>', name: '!', hint: 'Manter.' },
+        ],
+      },
+      {
+        id: 'seen',
+        name: 'Já ensaiada (lista)',
+        where: 'SetlistSheet, à direita do item',
+        why: '✓ Unicode. Check Lucide, ou check em círculo se quiser mais presença.',
+        current: glyph('✓'),
+        rec: 'check',
+        opts: [
+          { id: 'check', icon: I.check, name: 'Check', hint: 'Rec — discreto na linha.' },
+          { id: 'checkCircle', icon: I.checkCircle, name: 'Check circle', hint: 'Mais badge.' },
+          { id: 'keep', html: '<span class="glyph">✓</span>', name: '✓', hint: 'Manter.' },
+        ],
+      },
+    ],
+  },
+]
+
+const KEEP = [
+  { g: '− +', n: 'Tom, capo, BPM, velocidade, oitava', w: 'Operador sobre um valor. Ícone não ajuda em pé.' },
+  { g: 'A− A+', n: 'Tipografia (se confirmares no grupo 1)', w: 'Par explícito maior/menor.' },
+  { g: '×  1.25×', n: 'Multiplicador de rolagem', w: 'É um número, não um ícone.' },
+  { g: 'radio / switch', n: 'Lentes, dual, click, comentários', w: 'Controlo, não pictograma.' },
+  { g: 'notas da pauta', n: 'Figuras no editor de partitura', w: 'Notação musical real — fora deste set.' },
+]
+
+const picks = {}
+function recPicks() {
+  for (const s of SECTIONS) for (const it of s.items) picks[it.id] = it.rec
+}
+function keepPicks() {
+  for (const s of SECTIONS) for (const it of s.items) {
+    const has = it.opts.some((o) => o.id === 'keep')
+    picks[it.id] = has ? 'keep' : it.rec
+  }
+}
+recPicks()
+
+function previewHTML(it, optId) {
+  if (optId === 'keep' || optId === 'current') {
+    if (it.current.kind === 'html') return it.current.html
+    return I[it.current.key]
+  }
+  const opt = it.opts.find((o) => o.id === optId) || it.opts[0]
+  if (opt.html) return opt.html
+  if (opt.icon) return opt.icon
+  return I[opt.id] || ''
+}
+
+function findItem(id) {
+  for (const s of SECTIONS) {
+    const it = s.items.find((x) => x.id === id)
+    if (it) return it
+  }
+  return null
+}
+
+function iconFor(id) {
+  const it = findItem(id)
+  if (!it) return ''
+  return previewHTML(it, picks[id])
+}
+
+function renderMock() {
+  const play = iconFor('play')
+  const theme = iconFor('theme-dark')
+  const edit = iconFor('edit')
+  const more = iconFor('more')
+  const fit = iconFor('fit')
+  const lens = iconFor('lens')
+  const met = iconFor('metronome')
+  const exp = iconFor('export')
+  const typeKeep = picks.type === 'keep'
+  document.getElementById('mock-dock').innerHTML = `
+    <span class="hit play">${play}Rolar</span>
+    <span class="type"><span class="hit">${typeKeep ? 'A−' : iconFor('type')}</span><span class="hit big">${typeKeep ? 'A+' : ''}</span></span>
+    <span class="hit">${edit}</span>
+    <span class="hit">${fit}</span>
+    <span class="hit">${more}</span>
+  `
+  document.getElementById('mock-wide').innerHTML = `
+    <span class="chip">${play}Rolar</span>
+    <span class="div"></span>
+    <span class="hit" style="width:36px;height:36px;font:600 12px Sora">${typeKeep ? 'A−' : iconFor('type')}</span>
+    <span class="hit" style="width:36px;height:36px;font:600 16px Sora">${typeKeep ? 'A+' : ''}</span>
+    <span class="chip">${fit}Ajuste</span>
+    <span class="div"></span>
+    <span class="chip">${lens}Lentes</span>
+    <span class="chip">${met}Metrônomo</span>
+    <span class="div"></span>
+    <span class="chip">${theme}Escuro</span>
+    <span class="chip">${edit}Editar</span>
+    <span class="hit" style="width:36px;height:36px">${exp}</span>
+  `
+}
+
+function renderCatalog() {
+  const root = document.getElementById('catalog')
+  root.innerHTML = SECTIONS.map((s) => `
+    <h2 id="${s.id}"><span class="n">${s.n}</span>${s.title}</h2>
+    <p class="sec-lede">${s.lede}</p>
+    ${s.items.map((it) => {
+      const cur = picks[it.id]
+      return `<article class="card" data-item="${it.id}">
+        <div class="card head">
+          <h3>${it.name}</h3>
+          <span class="where">${it.where}</span>
+        </div>
+        <p class="why">${it.why}</p>
+        <div class="opts">
+          <button type="button" class="opt keep ${cur === 'keep' && !it.opts.some(o=>o.id==='keep' && o === it.opts[0]) ? '' : ''}" disabled style="cursor:default;opacity:.85">
+            <span class="preview">${it.current.kind === 'html' ? it.current.html : I[it.current.key]}</span>
+            <span class="tag">hoje</span>
+            <span class="name">Atual</span>
+            <span class="hint">Não é uma escolha — só o antes.</span>
+          </button>
+          ${it.opts.map((o) => `
+            <button type="button" class="opt ${cur === o.id ? 'is-on' : ''} ${o.id === 'keep' ? 'keep' : ''}" data-pick="${it.id}:${o.id}">
+              <span class="preview">${o.icon || o.html || ''}</span>
+              ${o.id === it.rec ? '<span class="tag">rec</span>' : '<span class="tag">&nbsp;</span>'}
+              <span class="name">${o.name}</span>
+              <span class="hint">${o.hint}</span>
+            </button>
+          `).join('')}
+        </div>
+      </article>`
+    }).join('')}
+  `).join('') + `
+    <h2 id="g7"><span class="n">07</span>Manter como tipografia / controlo</h2>
+    <p class="sec-lede">Não são pictogramas. Recomendação: não desenhar ícone. Diz se queres forçar algum.</p>
+    <div class="keep-box">
+      <strong>Ficam letra, número ou switch.</strong>
+      <div class="keep-row">
+        ${KEEP.map((k) => `<span class="keep-chip"><span class="g">${k.g}</span>${k.n}</span>`).join('')}
+      </div>
+    </div>
+  `
+}
+
+function dump() {
+  const out = {}
+  for (const s of SECTIONS) for (const it of s.items) {
+    const id = picks[it.id]
+    const opt = it.opts.find((o) => o.id === id)
+    out[it.id] = { pick: id, name: opt ? opt.name : id, rec: it.rec, changed: id !== it.rec }
+  }
+  document.getElementById('json').textContent = JSON.stringify(
+    { family: 'lucide-stroke-2', picks: Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.pick])) },
+    null, 0,
+  )
+}
+
+function paintSelected() {
+  document.querySelectorAll('[data-pick]').forEach((btn) => {
+    const [item, id] = btn.getAttribute('data-pick').split(':')
+    btn.classList.toggle('is-on', picks[item] === id)
+  })
+}
+
+document.getElementById('catalog').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pick]')
+  if (!btn) return
+  const [item, id] = btn.getAttribute('data-pick').split(':')
+  picks[item] = id
+  paintSelected()
+  renderMock()
+  dump()
+})
+
+document.getElementById('btn-rec').addEventListener('click', () => {
+  recPicks(); paintSelected(); renderMock(); dump()
+  document.getElementById('btn-rec').classList.add('is-on')
+  document.getElementById('btn-keep').classList.remove('is-on')
+})
+document.getElementById('btn-keep').addEventListener('click', () => {
+  keepPicks(); paintSelected(); renderMock(); dump()
+  document.getElementById('btn-keep').classList.add('is-on')
+  document.getElementById('btn-rec').classList.remove('is-on')
+})
+document.getElementById('reset').addEventListener('click', () => {
+  recPicks(); paintSelected(); renderMock(); dump()
+})
+document.getElementById('copy').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(document.getElementById('json').textContent)
+  const el = document.getElementById('copied')
+  el.hidden = false
+  setTimeout(() => { el.hidden = true }, 1600)
+})
+
+renderCatalog()
+renderMock()
+dump()
+</script>
+</body>
+</html>

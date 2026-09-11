@@ -25,7 +25,7 @@ export type {
   ViewerCapabilities,
   WriteMode,
 } from './public'
-export type { AccentId, AccentProp, ChartStore, ThemeId } from 'titan-chordpro-ui'
+export type { AccentId, AccentProp, ChartStore, ThemeId } from '@henryavila/titan-chordpro-ui'
 
 declare const ChordproViewer: DefineComponent<ChordproViewerProps>
 export { ChordproViewer }

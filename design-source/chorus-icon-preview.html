@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prévia · ícone de refrão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #0B0D12;
+    --text: #EAECF2;
+    --muted: #888F9E;
+    --chord: #84DFA6;
+    --chord-ink: #10131A;
+    --line: rgba(255,255,255,.10);
+    --line-soft: rgba(255,255,255,.06);
+    --surface: rgba(255,255,255,.04);
+    --surface-hover: rgba(255,255,255,.09);
+    --veil-2: rgba(14, 17, 23, 0.86);
+    --shadow: 0 24px 60px -18px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  [data-theme="light"] {
+    --canvas: #F5F6F8;
+    --text: #13161D;
+    --muted: #5B6270;
+    --chord: #17713C;
+    --chord-ink: #fff;
+    --line: rgba(19,22,29,.12);
+    --line-soft: rgba(19,22,29,.07);
+    --surface: rgba(19,22,29,.035);
+    --surface-hover: rgba(19,22,29,.075);
+    --veil-2: rgba(255,255,255,.92);
+    --shadow: 0 20px 44px -20px rgba(18,23,30,.26), inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #07090D; color: #EAECF2; font-family: Sora, system-ui, sans-serif; }
+  body { padding: 28px 28px 64px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
+  .lede { color: #888F9E; font-size: 13.5px; line-height: 1.55; max-width: 720px; margin: 0 0 18px; }
+  .lede strong { color: #EAECF2; font-weight: 600; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 22px; }
+  .bar button {
+    height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12);
+    background: #15181F; color: #EAECF2; font: 600 12px Sora, system-ui; cursor: pointer;
+  }
+  .bar button.is-on { background: #84DFA6; color: #10131A; border-color: #84DFA6; }
+  h2 { font-size: 13px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em; }
+  .kicker { font-family: 'Space Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #888F9E; margin: 0 0 6px; }
+  .hint { font-size: 12px; color: #888F9E; line-height: 1.45; margin: 8px 0 0; max-width: 260px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+  .col { min-width: 0; }
+  .stage {
+    background: var(--canvas);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 18px;
+    padding: 28px 20px 24px;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+  }
+  .menu {
+    width: 250px;
+    padding: 7px;
+    border-radius: 15px;
+    background: var(--veil-2);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .where {
+    padding: 5px 10px;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 10px;
+    border-radius: 11px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .item.is-chorus { background: var(--surface-hover); }
+  .item .ico {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--chord);
+  }
+  .item .ico svg { width: 16px; height: 16px; display: block; }
+  .zoom {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--chord);
+  }
+  .zoom svg { width: 40px; height: 40px; }
+  .zoom span { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .hoje { font-size: 22px; line-height: 1; color: var(--chord); font-weight: 500; }
+  .dock {
+    display: flex; align-items: center; gap: 8px;
+    height: 36px; padding: 0 13px; border-radius: 12px;
+    border: 1px solid var(--line); color: var(--text);
+    font-size: 12.5px; font-weight: 600; background: transparent;
+  }
+  .dock svg { width: 16px; height: 16px; color: var(--chord); }
+</style>
+</head>
+<body>
+  <h1>Refrão — como ficaria no menu Inserir</h1>
+  <p class="lede">
+    Tamanho real: <strong>16px em verde de acorde</strong>, na mesma linha das outras entradas.
+    Em baixo, o mesmo signo a 40px. Hoje ainda é o chevron <strong>❯</strong>.
+    Escolhe A, B ou C — ou diz outro.
+  </p>
+  <div class="bar">
+    <button type="button" id="dark" class="is-on">Escuro</button>
+    <button type="button" id="light">Claro</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+<script>
+const ico = {
+  music: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="18" r="4"/><path d="M12 18V2l7 4"/></svg>`,
+  quote: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>`,
+  verse: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12H3"/><path d="M17 18H3"/><path d="M21 6H3"/></svg>`,
+  hoje: `<span class="hoje">❯</span>`,
+  A: `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="4" width="1.4" height="16" rx="0.4"/><rect x="10" y="4" width="2.4" height="16" rx="0.4"/><circle cx="15.2" cy="9" r="1.5"/><circle cx="15.2" cy="15" r="1.5"/></svg>`,
+  B: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 16V8h3.2a2.4 2.4 0 0 1 0 4.8H10"/><path d="M13.2 12.8 16 16"/></svg>`,
+  C: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V6h14"/><path d="M8 10h.01"/><path d="M8 14h4"/></svg>`,
+}
+
+const opts = [
+  { id: 'hoje', tag: 'hoje', name: 'Atual · ❯', hint: 'O chevron que está no menu. Genérico: “entra aqui”, não “refrão”.' },
+  { id: 'A', tag: 'A', name: 'Barra de repetição', hint: 'O |: da partitura. Dois pontos e a barra grossa: esta secção volta.' },
+  { id: 'B', tag: 'B', name: 'Letra de ensaio [R]', hint: 'Como as letras A, B, C no score. Marca o refrão; não diz “repetir”.' },
+  { id: 'C', tag: 'C', name: 'Colchete de volta', hint: 'O 1. / 2. da partitura — “volta desta casa”.' },
+]
+
+function menu(chorus) {
+  const row = (svg, label, on) =>
+    `<div class="item${on ? ' is-chorus' : ''}"><span class="ico">${svg}</span>${label}</div>`
+  return `<div class="menu">
+    <div class="where">Depois do bloco atual</div>
+    ${row(ico.music, 'Partitura ou solo', false)}
+    ${row(ico.quote, 'Comentário de ensaio', false)}
+    ${row(ico.verse, 'Nova estrofe', false)}
+    ${row(chorus, 'Refrão', true)}
+  </div>`
+}
+
+function render() {
+  document.getElementById('grid').innerHTML = opts.map((o) => `
+    <article class="col">
+      <p class="kicker">${o.tag}</p>
+      <h2>${o.name}</h2>
+      <div class="stage" data-theme="dark">
+        ${menu(ico[o.id])}
+        <div class="zoom">${ico[o.id]}<span>40px</span></div>
+        <span class="dock">${ico[o.id]}Inserir</span>
+      </div>
+      <p class="hint">${o.hint}</p>
+    </article>
+  `).join('')
+}
+
+render()
+
+const dark = document.getElementById('dark')
+const light = document.getElementById('light')
+dark.onclick = () => {
+  document.querySelectorAll('.stage').forEach((el) => el.setAttribute('data-theme', 'dark'))
+  dark.classList.add('is-on'); light.classList.remove('is-on')
+}
+light.onclick = () => {
+  document.querySelectorAll('.stage').forEach((el) => el.setAttribute('data-theme', 'light'))
+  light.classList.add('is-on'); dark.classList.remove('is-on')
+}
+</script>
+</body>
+</html>

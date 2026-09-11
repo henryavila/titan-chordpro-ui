@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import SourcePane from '../../src/vue/edit/SourcePane.vue'
 import { lintSource } from '../../src/core/index'
@@ -47,12 +47,66 @@ describe('zen', () => {
     await w.get('[data-cpv-scroll]').trigger('click')
     await flushPromises()
     expect(chrome().classes()).toContain('is-hidden')
-    expect(w.text()).toContain('Toque na cifra para mostrar os controles')
+    expect(w.find('.cpv-chrome-hint').exists(), 'standing hint stayed after the toast').toBe(false)
+    expect(w.get('.cpv-toast').text()).toBe('Toque na tela para mostrar os controles')
 
     await w.get('[data-cpv-scroll]').trigger('click')
     await flushPromises()
     expect(chrome().classes()).not.toContain('is-hidden')
     w.unmount()
+  })
+
+  it('the first hide on a phone is the same toast, not a standing band', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const observers: ((entries: unknown[]) => void)[] = []
+    class RO {
+      constructor(cb: (entries: unknown[]) => void) {
+        observers.push(cb)
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    const realRO = globalThis.ResizeObserver
+    globalThis.ResizeObserver = RO as unknown as typeof ResizeObserver
+    try {
+      const w = mountViewer()
+      await flushPromises()
+      observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
+      await flushPromises()
+
+      await w.get('[data-cpv-scroll]').trigger('click')
+      await flushPromises()
+      expect(w.find('.cpv-chrome-hint').exists()).toBe(false)
+      expect(w.get('.cpv-toast').text()).toBe('Toque na tela para mostrar os controles')
+      w.unmount()
+    } finally {
+      globalThis.ResizeObserver = realRO
+    }
+  })
+
+  it('fades the toast out instead of dropping it', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = mountViewer()
+    try {
+      await flushPromises()
+      vi.useFakeTimers()
+      await w.get('[data-cpv-scroll]').trigger('click')
+      await flushPromises()
+      expect(w.get('.cpv-toast').classes()).not.toContain('is-out')
+
+      await vi.advanceTimersByTimeAsync(2400)
+      await flushPromises()
+      expect(w.get('.cpv-toast').classes()).toContain('is-out')
+      expect(w.find('.cpv-toast').exists()).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(450)
+      await flushPromises()
+      expect(w.find('.cpv-toast').exists()).toBe(false)
+    } finally {
+      w.unmount()
+      vi.useRealTimers()
+    }
   })
 
   it('ignores a tap that lands on a control', async () => {
@@ -63,6 +117,51 @@ describe('zen', () => {
     await flushPromises()
     expect(w.get('.cpv-chrome').classes()).not.toContain('is-hidden')
     w.unmount()
+  })
+
+  /**
+   * Hiding the chrome must not reflow the chart — phone or desktop. Opacity
+   * only: reclaiming the band shoved the line under the eye.
+   */
+  it.each([
+    [1280, 'desktop'],
+    [390, 'phone'],
+  ] as const)('on %s, zen hides the chrome without shrinking the page pad', async (width) => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const observers: ((entries: unknown[]) => void)[] = []
+    class RO {
+      constructor(cb: (entries: unknown[]) => void) {
+        observers.push(cb)
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    const realRO = globalThis.ResizeObserver
+    globalThis.ResizeObserver = RO as unknown as typeof ResizeObserver
+    try {
+      const w = mountViewer()
+      await flushPromises()
+      observers.forEach((cb) => cb([{ contentRect: { width, height: 900 } }]))
+      await flushPromises()
+
+      const pad = () => (w.get('.cpv-page').attributes('style') ?? '')
+      const before = pad()
+      expect(before).toMatch(/padding:/)
+
+      await w.get('[data-cpv-scroll]').trigger('click')
+      await flushPromises()
+      expect(w.get('.cpv-chrome').classes()).toContain('is-hidden')
+      expect(pad(), 'zen reclaimed the chrome band and jumped the chart').toBe(before)
+
+      await w.get('[data-cpv-scroll]').trigger('click')
+      await flushPromises()
+      expect(w.get('.cpv-chrome').classes()).not.toContain('is-hidden')
+      expect(pad()).toBe(before)
+      w.unmount()
+    } finally {
+      globalThis.ResizeObserver = realRO
+    }
   })
 })
 
@@ -115,7 +214,7 @@ describe('edit chrome (E0)', () => {
     await flushPromises()
     // Reading shows the draft, and the entry point says a draft is waiting.
     expect(w.text()).toContain('Rascunho vivo')
-    expect(w.get('.cpv-edit-chip').text()).toContain('rascunho')
+    expect(w.get('[data-edit]').text()).toContain('rascunho')
 
     await enterContentEdit(w)
     expect(w.get('input[aria-label="Título"]').element).toHaveProperty('value', 'Rascunho vivo')

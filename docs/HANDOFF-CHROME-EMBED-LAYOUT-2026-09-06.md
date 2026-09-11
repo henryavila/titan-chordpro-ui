@@ -1,6 +1,8 @@
 # Handoff — chrome de leitura no embed “artigo”
 
-Data: 2026-09-06. Estado: diagnóstico do host fechado; **decisão de produto no Titan em aberto**.
+Data: 2026-09-06. Estado: diagnóstico do host fechado.
+
+**Decisão 2026-09-10:** A **e** C — o host pode incluir o componente num frame com altura **e** pode promover a cifra a rota `100dvh`. **B recusado** (cifra não cresce com o artigo). **Iframe cancelado.** Guia: [`docs/CONSUMER.md`](./CONSUMER.md).
 Destinatário: **agent de design do Titan UI** (não o implementador SDA).
 Base do viewer ao criar este documento: pacote instalado no SDA `titan-chordpro-ui@0.1.0` (`src/vue/ChordproViewer.vue`, `src/vue/cpv.css`).
 Host que disparou: `/Volumes/External/code/sda`, página de música com cifra longa.
@@ -213,7 +215,7 @@ Fixture da mesma música no Titan: `fixtures/escuta-meu-clamor-sda-86.cho`.
 Um parecer curto (não um DS novo, a menos que escolham B/C):
 
 1. **Saída A, B ou C** e por quê, contra VISAO §3 e §9 Q2.
-2. Se A: texto de contrato de embed para `docs/EMBED-SDA.md` + README (o host precisa de altura; `.cpv-scroll` é sagrado; artigo = composição do host). Opcional: ajuste **dentro do frame** da Q2 (chrome mínimo vs dois docks) — só se quiserem gastar a rodada nisso.
+2. Se A: texto de contrato para `docs/CONSUMER.md` + README (o host precisa de altura; `.cpv-scroll` é sagrado; artigo = composição do host). Opcional: ajuste **dentro do frame** da Q2 (chrome mínimo vs dois docks) — só se quiserem gastar a rodada nisso.
 3. Se B: **novo** brief da tela de leitura em artigo (interaction model completo: quem rola, o que some, o que acontece com auto-scroll/fit/zen/folhas/imersivo). Fixtures reais, não mocks. Sem `fixed` na viewport do host.
 4. Se C: a superfície de ensaio (1-cifra) vs a ficha (metadados/letra) — quem contém quem.
 5. O que **não** muda: parse, source como SoT, tema host já entregue, tokens de fonte, sem VisualAdapter, sem Vue no core.
@@ -257,7 +259,7 @@ L1–L6 são aceite de **produto**. Teste jsdom não prova geometria.
 | `src/vue/ChordproViewer.vue` chrome + `onWheel` + `startScroll` | Chrome absoluto, wheel, RAF |
 | `src/core/scroll.ts` | Math assume altura de conteúdo vs duração/BPM |
 | `demo/index.html` | Embed canônico 100% |
-| `docs/EMBED-SDA.md` | Contrato atual (tema/fonte); **omite** altura/scroller |
+| `docs/CONSUMER.md` | Guia do consumer (tema/fonte + geometria) |
 | `docs/HANDOFF-SDA-VIEWER-2026-09-06.md` | Handoff anterior; já notava rolagem aninhada como revisão separada |
 | SDA `resources/css/inertia.css` `.sda-cpv-host` | Achatamento (causa) e tentativas de frame |
 | SDA `resources/js/Pages/Songs/Detail.vue` | Ficha: letra depois cifra |

@@ -1,13 +1,17 @@
 # titan-chordpro-ui
 
-Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF.  
-Repo / pacote npm: **`titan-chordpro-ui`**. Decisão: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md).
+Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF + slides LouvorJA.  
+Repo: **`titan-chordpro-ui`** · npm: **[`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)**.  
+Decisão: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md).
+
+[![npm](https://img.shields.io/npm/v/@henryavila/titan-chordpro-ui)](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)
+[![license](https://img.shields.io/npm/l/@henryavila/titan-chordpro-ui)](LICENSE)
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
 - **Generator (sibling, repo separado):** **`titan-chordpro-gen`** — audio → `.chordpro`
 - **App Titan:** nenhum por agora (`titan-chordpro` = host futuro)
-- **Consumer:** sda-v2 Nuxt — consome **só** a UI
+- **Consumer:** qualquer host Vue 3 / Nuxt — consome **só** a UI. Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md)
 
 ## Status
 
@@ -17,29 +21,58 @@ Leitura, overlay pessoal, edição por bloco (E1/E2) e editor de partitura (VexF
 ```bash
 pnpm install
 pnpm test
-pnpm dev      # demo em :5173
+pnpm dev      # índice das demos em :5173
 pnpm build
 ```
 
 ## Core vs Vue vs host
 
-| Core | Vue package | Host (sda-v2) |
+| Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX, view↔edit E0, zen | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`** |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
 ## Consumer
 
-```ts
-import { parse, memoryStore } from 'titan-chordpro-ui'
-import type { ChartStore } from 'titan-chordpro-ui'
-import { renderPdf } from 'titan-chordpro-ui/pdf'
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
-import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
+O Titan é um **componente Vue**. Duas composições, o mesmo SFC — **sem iframe**.
+Exemplos completos (Nuxt/Vue, ficha real, palco, ensaio, gestos):
+[`docs/CONSUMER.md`](docs/CONSUMER.md).
+
+```vue
+<!-- Standalone: rota só da cifra -->
+<div class="h-dvh overflow-hidden">
+  <ChordproViewer :source="cho" :song-id="id" />
+</div>
+
+<!-- Na página: bloco 100dvh no fluxo (conteúdo acima e abaixo) -->
+<div class="ficha">
+  <!-- letra, vídeo… -->
+  <div class="cifra-frame">
+    <ChordproViewer :source="cho" :song-id="id" />
+  </div>
+  <!-- arquivos, histórico… -->
+</div>
 ```
 
-`titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
+```css
+.ficha { height: 100dvh; overflow-y: auto; scroll-snap-type: y proximity; }
+.cifra-frame { height: 100dvh; min-height: 560px; overflow: hidden; scroll-snap-align: start; }
+```
+
+```ts
+import { parse, memoryStore } from '@henryavila/titan-chordpro-ui'
+import type { ChartStore } from '@henryavila/titan-chordpro-ui'
+import { renderPdf } from '@henryavila/titan-chordpro-ui/pdf'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
+import type { ChordproViewerProps } from '@henryavila/titan-chordpro-ui/vue'
+```
+
+`@henryavila/titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
+
+Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
+(standalone × shell, uma cifra × apresentação); `/standalone.html` a cifra
+é a página; `/site.html` o Vue no shell do consumer.
 
 ### `<ChordproViewer>` props
 
@@ -59,7 +92,8 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
-| `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `titan-chordpro-ui/pdf` |
+| `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
+| `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `@henryavila/titan-chordpro-ui/slides` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o host serve — o que “Inserir · Imagem” oferece |
 | `accent` | `'verde'` | `verde` \| `teal` \| `#hex` \| `rgb()`: a cor dos acordes e tudo que deriva dela |
@@ -72,7 +106,8 @@ Emite `update:source`, `update:mode`, `save`, `save-content`, `dirty`, `state`.
 ### Cifra nova: importar ou começar em branco
 
 Música sem cifra não é beco. Com `modes="content"` (e `canEdit`), o estado vazio
-oferece **Importar** e **Começar em branco**. O importador reconhece sozinho o
+oferece **Importar** e **Começar em branco**. Na demo: índice → Escrever →
+Cifra nova (`/standalone.html?criar=1`). O importador reconhece sozinho o
 que recebe — ChordPro, OnSong ou acordes sobre a letra — e diz de qual formato
 converteu. Depois vem a ficha (nome, artista, tom, andamento com **tap-tempo**,
 compasso, referência); o que falta é dito, mas não bloqueia — é cobrado de novo
@@ -91,7 +126,7 @@ As duas que dependem do mundo externo são props, não mágica do pacote:
 
 `fetchChart` é o **backend do host**: o navegador não alcança outro site de
 dentro do viewer. Sem ela, a aba Link diz isso em vez de fingir. `readPdf` vem
-de `titan-chordpro-ui/pdf`; é prop para que o `pdfjs-dist` (peer opcional) só
+de `@henryavila/titan-chordpro-ui/pdf`; é prop para que o `pdfjs-dist` (peer opcional) só
 carregue em host que queira importar PDF. Sem ela, PDF é recusado na entrada —
 e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.
 
@@ -151,10 +186,10 @@ todas as barras e folhas absolutas contra essa caixa.
 `height:100%` não resolve, o viewer cai no piso, a página do host passa a rolar
 e a barra de controle acaba no fim da música, fora da dobra.
 
-Numa página que rola (ficha com letra, arquivos, histórico), quem acompanha a
-rolagem é o **frame inteiro** (`position:sticky`), não a barra — o viewer não
-tem modo "artigo". Receita completa e o que a guarda faz:
-[docs/EMBED-SDA.md](docs/EMBED-SDA.md).
+Numa página que rola (ficha com letra, arquivos, histórico), o frame é um
+bloco `100dvh` no fluxo: o músico rola até ele e o snap estaciona o dock na
+dobra. Não há modo "artigo". Receita e o que a guarda faz:
+[docs/CONSUMER.md](docs/CONSUMER.md).
 
 ### O acento é a cor que o host escolhe
 
@@ -184,8 +219,8 @@ O default é o `localStorage` deste aparelho, então quem não passa nada
 continua funcionando. Para assumir o controle, entregue um `ChartStore`:
 
 ```ts
-import type { ChartStore } from 'titan-chordpro-ui'
-import { STORE_KEYS, overlayKey } from 'titan-chordpro-ui'
+import type { ChartStore } from '@henryavila/titan-chordpro-ui'
+import { STORE_KEYS, overlayKey } from '@henryavila/titan-chordpro-ui'
 
 const storage: ChartStore = {
   get: (key) => cache.get(key) ?? null,
@@ -292,9 +327,10 @@ ele é montado em duas camadas — a distinção entre elas é o ponto:
    compasso, e vira o tempo de rolagem daquele trecho diretamente. O mesmo vale
    para os compassos de uma tab ou partitura, e para a **cauda** segurada no fim
    de uma linha cantada. Esta camada nunca é calibrada: ela já é a resposta.
-2. **O que ela deixa de fora.** Uma linha cantada sem marca vale
-   `BEATS_PER_ROW` pulsos, e só esta camada é esticada ou comprimida para
-   fechar em `{duration:}`.
+2. **O que ela deixa de fora.** Uma linha cantada sem marca é um espaço
+   (`BEATS_PER_ROW` pulsos) que só esta camada estica ou comprime para fechar
+   em `{duration:}`. Acorde sem `x///` / `//` **não é duração**: `[G] [A] [B]
+   [C]` pode ser quatro compassos ou quatro tempos, e a engine não adivinha.
 
 `{time:}` é lido inteiro, numerador **e** denominador. O `{tempo:}` nomeia o
 *pulso sentido* e uma marca `x///` é uma unidade do denominador — em compasso
@@ -310,13 +346,107 @@ Uma marca no fim de uma linha cantada é cauda **somada** àquela linha, nunca o
 tempo inteiro dela: um `[Am]x///` fechando a estrofe não faz a estrofe durar
 quatro pulsos.
 
-Um *playhead* percorre a cifra nesse relógio e a página só anda quando ele passa
-da **linha de leitura** (meio da tela): introdução e final ficam parados na tela,
-e o percurso inteiro gasta a duração declarada. `Timeline.bars` é o total do
-percurso e `runSec()` devolve exatamente ele — se os dois divergirem, **todo**
-segmento toca na razão entre eles, inclusive os compassos contados. Matemática
-em `src/core/timeline.ts` (framework-free); o RAF e a medição do DOM ficam no
-binding Vue.
+Notas de ensaio (`BEM SUAVE`), rótulos de seção (`INTRODUÇÃO`) e imagens soltas
+não têm relógio próprio: o papel delas anda com o próximo bloco musical (ou com
+o último, se vierem no fim). Dar-lhes o passo médio da página — e o padding do
+chrome absorvido no primeiro bloco — gastava 25 a 100 s antes da intro em
+cifras reais, e um verso no celular ainda estava fora da tela quando o músico
+chegava lá.
+
+**Hard gate:** Rolar só parte se a cifra declara `{duration:}` (m:ss, ≥ 20 s).
+Sem duração, o botão fica morto — BPM e acordes sem `x///` não substituem.
+
+Gramática da convenção, o que a engine **não** adivinha, lente Só letra, lint e
+regras para agente: [`docs/MARCAS-X.md`](docs/MARCAS-X.md).
+
+Um *playhead* percorre a cifra nesse relógio e o percurso inteiro gasta a
+duração declarada. `Timeline.bars` é o total do percurso e `runSec()` devolve
+exatamente ele — se os dois divergirem, **todo** segmento toca na razão entre
+eles, inclusive os compassos contados. Matemática em `src/core/timeline.ts`
+(framework-free); o RAF e a medição do DOM ficam no binding Vue.
+
+#### Onde a página fica: âncora com rampa, nunca congelada
+
+Na primeira nota a música está obrigatoriamente no topo do papel — não há nada
+acima dela para rolar. A âncora define onde a música **descansa** na tela
+(`ANCHOR_RATIO`, um terço: dois terços da tela ficam para o que vem, que é para
+onde o olho do músico já está indo).
+
+A dívida entre as duas coisas era paga **parando a página** até a música ter
+percorrido uma âncora inteira de papel. Medido no corpus de `fixtures/`, isso
+era de **25 a 96 segundos** de página morta em toda cifra — um terço de
+`entrega-2`, metade de `088-minha-ofertinha`, que tem 29px de rolagem no total.
+Meia tela de papel não é a introdução: é a introdução mais quase toda a primeira
+estrofe.
+
+Duas correções:
+
+1. `anchorPx(viewport, doc)` é limitado pela rolagem que a cifra **tem** para
+   dar (`min(viewport, doc − viewport)`). Uma cifra que mal passa da moldura não
+   consegue segurar a música um terço abaixo, e pedir isso congelava a página
+   quase a música inteira por causa de algumas dezenas de pixels.
+2. `scrollAtPx()` paga a dívida em rampa: a página anda a `1 − ANCHOR_RAMP` do
+   passo da música enquanto a música desce até o lugar de descanso, e no passo
+   da música dali em diante. Nada congela — no corpus, toda cifra está andando
+   em **0,1 a 0,5 s**.
+
+`pxAtScroll()` é a inversa, e é ela que lê de volta a posição quando o músico
+arrasta a cifra com o dedo.
+
+#### Movimento contínuo: o meio pixel vai no compositor
+
+Um offset de rolagem é **encaixado em pixels inteiros** — medido, `scrollTop`
+volta inteiro em todo frame, escreva-se o que escrever. Na velocidade em que uma
+cifra realmente anda (5 px/s e menos), isso são onze frames imóveis e então um
+teleporte de 1px, seis vezes por segundo. Parece calmo num screenshot e é
+sofrível de olhar: salto discreto é o que o sistema vestibular lê como
+movimento, e para quem tem labirintite isso é sintoma.
+
+Os pixels inteiros vão para o `scrollTop`, que mantém a barra de rolagem, o
+arrasto e todas as medições honestos; o resto anda num `translate3d` na coluna
+da cifra, que o compositor **não** encaixa. Medido no mesmo trecho: de 34
+posições distintas em 361 frames para **361 em 361**, passo de 0,091px, 60fps
+nos dois casos. `measureBlocks()` zera o transform antes de medir — senão todo
+retângulo voltaria deslocado pelo carregador.
+
+Cifra que **cabe na moldura** não tem o que rolar, e o botão Rolar fica
+desativado dizendo isso — antes ele ficava vivo, ligava a rolagem e nada se
+movia até a música "acabar". O espaço é medido no DOM (`ResizeObserver` na
+coluna da cifra, mais a moldura), porque ele muda com tipografia, ajuste ao
+espaço e o tom em que a cifra foi transposta. O mesmo estado desliga o vínculo
+do metrônomo: sem rolagem, não há contagem de entrada nem "Iniciar com a
+rolagem". O botão continua vivo enquanto a rolagem corre — é a única forma de
+pará-la.
+
+Não há régua desenhada sobre a cifra. Uma linha de leitura permanente competia
+com o texto e afirmava uma precisão que a estimativa não tem — o olho lê
+adiantado da mão, então "a música está aqui" aponta para um lugar que ele já
+deixou. Quem diz que a rolagem está viva é a própria página andando, e a barra
+de progresso no topo (`.cpv-progress.is-live`) para as cifras que andam pouco.
+
+### Metrônomo: um controle, não dois
+
+Com **rolagem vinculada** (padrão), o click e a auto-rolagem são um só controle:
+iniciar o click põe a cifra para andar, e parar **qualquer um dos dois** para os
+dois — um click sobre cifra parada não serve para nada, e cifra andando sob um
+click que foi silenciado, menos ainda. Todo caminho de saída da rolagem passa
+por `stopScroll()`, então o fim da música, um transporte e uma troca de cifra
+levam o click junto. `Rolagem independente` desliga o par.
+
+Iniciar **fecha o painel**: ele cobre a cifra que acabou de pôr em movimento. O
+que fica é a badge do pulso, ancorada na borda da **coluna de leitura** e não na
+borda da janela — num monitor de 1600px a quina do vidro está a 300px de
+qualquer coisa que o músico esteja olhando.
+
+**Contagem de entrada** (padrão, só com a rolagem vinculada): um compasso de
+click antes de a cifra andar, entrando no tempo forte junto com o acento. Conta
+o compasso escrito na cifra, não quatro fixos.
+
+**Tap tempo** resolve a cifra sem `{tempo:}`, que cai num 100 arbitrário. Média
+móvel das últimas 5 batidas; um toque a menos de 200 ms do anterior é mão que
+escorregou e é descartado **antes** da média — depois dela um toque duplo já
+está dentro de qualquer faixa tocável e puxaria o andamento sem deixar rastro.
+Pausa acima de 2,4 s começa medição nova.
 
 ## Mental model
 
@@ -327,15 +457,18 @@ binding Vue.
   → renderHtml({ theme: 'light' | 'dark' | 'print' })
   → Vue <ChordproViewer>  // UI completa 1 cifra (format-agnostic)
   → renderPdf()           // entry …/pdf
+  → exportLyrics(source)  // letra plaintext (cadastrar sem o viewer)
+  → exportSlja(source)    // entry …/slides — .slja sem montar o viewer
+  → renderSlja(view)      // o mesmo ZIP, a partir do ViewModel
 ```
 
 OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` or CE — not a fork, not a plugin registry.
 
 ## Fixtures
 
-Real ChordPro (IASD Ermelinda via SDA design-handoff): `fixtures/`.
+Real ChordPro de produção: `fixtures/sda/` (lista do demo). Extra de partitura/imagem: `fixtures/013-ele-vive-em-mim-partitura.cho`.
 
-### Tema e tipografia no embed
+### Tema e tipografia
 
 `<ChordproViewer :theme="hostTheme" theme-control="host" />` torna a prop
 imediatamente autoritativa, mesmo com preferência antiga. O default
@@ -344,19 +477,49 @@ imediatamente autoritativa, mesmo com preferência antiga. O default
 aceita atualizando a prop. Retornar ao modo livre retoma a preferência anterior.
 
 ```css
-.sda-cifra {
+.host-cifra {
   --cpv-font-lyrics: Figtree, system-ui, sans-serif;
   --cpv-font-controls: Figtree, system-ui, sans-serif;
   --cpv-font-chords: 'Space Mono', monospace;
 }
 ```
 
-Use `class="sda-cifra"` no componente; carregue as fontes no host. Para herdar
-só a fonte dos controles, `font-family: inherit` na mesma classe é uma
-alternativa ao token explícito. Source/TAB mantêm monospace. Defaults:
-Sora para letra/controles e Space Mono para acordes, com fallback de sistema.
+Use uma classe no componente; carregue as fontes no host. Para herdar só a
+fonte dos controles, `font-family: inherit` na mesma classe é uma alternativa
+ao token explícito. Source/TAB mantêm monospace. Defaults: Sora para
+letra/controles e Space Mono para acordes, com fallback de sistema.
 
-[Contrato completo, precedência, fontes e distribuição ao SDA](docs/EMBED-SDA.md).
-A integração real SDA/Nova (A6) não foi executada nesta alteração.
-[Testes de navegador e evidência da regressão](docs/SDA-VIEWER-VALIDATION.md):
+[Guia do consumer: composições, tema, fontes](docs/CONSUMER.md).
+[Testes de navegador](docs/SDA-VIEWER-VALIDATION.md):
 `pnpm exec playwright install chromium webkit` e `pnpm test:browser`.
+
+## Publish (npm)
+
+Same pattern as [`@henryavila/mdprobe`](https://www.npmjs.com/package/@henryavila/mdprobe).
+
+### First publish (local, token)
+
+Creates the package on the registry with an npm automation token. The token never lands in the repo — only in the env var `NPM_KEY`.
+
+```sh
+export NPM_KEY=npm_…          # automation token with publish rights
+pnpm run publish:npm          # build + test + publish
+# or:  NPM_KEY=… pnpm run publish:npm -- --dry-run
+```
+
+Script: [`scripts/publish-npm.sh`](scripts/publish-npm.sh).
+
+### Later releases (Trusted Publishing)
+
+1. **One-time on npmjs.com** (after the package exists): enable **Trusted Publisher** for GitHub repo `henryavila/titan-chordpro-ui`, workflow `.github/workflows/publish.yml`.
+2. Bump `version` in `package.json` and finalize the section in `CHANGELOG.md`.
+3. Merge to the default branch, then create a GitHub Release tagged `vX.Y.Z` (must match `package.json`).
+4. The `Publish to npm` workflow runs `pnpm install` → `build` → `test` → `pnpm publish --provenance --access public`.
+
+Consumer install:
+
+```sh
+pnpm add @henryavila/titan-chordpro-ui
+```
+
+Pre-1.0: prefer `~0.1.0` (patch-only) if the host cannot absorb minor breaks.

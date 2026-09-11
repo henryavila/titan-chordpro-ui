@@ -18,20 +18,45 @@ import type { BlockMusic, ChordProView } from './types'
  *     bar count, and it becomes the scroll time of that stretch directly. So
  *     is a bar drawn in a tab or a score, and so is the held tail at the end of
  *     a sung line. This layer is never calibrated: it is already the answer.
- *  2. What the chart LEAVES OUT. A sung row with no marks is worth
- *     {@link BARS_PER_ROW} bars, and only this layer is stretched or squeezed
- *     to close on a declared `{duration:}`.
+ *  2. What the chart LEAVES OUT. A sung row with no marks is a placeholder
+ *     ({@link BEATS_PER_ROW} pulses) that is stretched or squeezed to close on
+ *     a declared `{duration:}`. Unmarked chords are not duration: `[G] [A]
+ *     [B] [C]` may be four bars or four beats, and the engine does not guess.
  *
  * A mark on a sung line belongs to layer 1 as a tail ADDED to that row, never
  * as the row's whole time — one `[Am]x///` at the end of a verse does not make
  * the verse four beats long.
  *
+ * Rehearsal notes, section labels and loose images are paper, not music. Their
+ * pixels ride with the next musical block (or the last one, when they trail)
+ * so a "BEM SUAVE" at the top does not spend half a minute before the intro,
+ * and the playhead does not jump over them either.
+ *
  * This module is the framework-free half: pure math over measured blocks. The
  * binding owns the DOM measurements and the RAF loop.
  */
 
-/** Fraction of the viewport where the reading line sits. */
-export const ANCHOR_RATIO = 0.5
+/**
+ * Fraction of the viewport where the music comes to rest, once the scroll has
+ * room to place it there. A third leaves two thirds of the screen for what is
+ * coming, which is where a musician's eye already is — half the screen spent
+ * on what has been played is half a screen not read.
+ */
+export const ANCHOR_RATIO = 0.34
+
+/**
+ * Share of the early scroll given over to building the anchor up.
+ *
+ * At the first note the music is necessarily at the top of the page: there is
+ * nothing above it to scroll away. The old scroll paid that debt by standing
+ * completely still until the music had covered a whole anchor of paper, which
+ * on real charts was 25 to 96 seconds — a third of the song on `entrega-2`,
+ * and half of `088-minha-ofertinha`, a chart with 29px of scrolling in it. The
+ * page pays it gradually instead: it runs at `1 - ANCHOR_RAMP` of the music's
+ * pace while the music drifts down to its resting place, and at the music's
+ * pace from there. Nothing is ever frozen.
+ */
+export const ANCHOR_RAMP = 0.5
 
 /**
  * One sung row is worth about eight beats when nothing else is written — two
@@ -45,11 +70,13 @@ export const ANCHOR_RATIO = 0.5
 export const BEATS_PER_ROW = 8
 
 /**
- * Beats written on the line in the `x///` convention — `x` is beat one of the
- * bar and every `/` is a following beat. `[Dsus]x/ [D]//` is four beats, one
- * bar in 4/4. It is the only EXACT duration a chart offers, and it shows up
+ * Beats written on the line in the `x///` convention — `x` is always the head
+ * of the time (downbeat); `/` is a beat that is not the head. `[Cm]//` with no
+ * `x` is two beats, including as a phrase tail. `[Dsus]x/ [D]//` is four beats,
+ * one bar in 4/4. It is the only EXACT duration a chart offers, and it shows up
  * exactly where height lies: intro and interlude, many chords and few lyrics.
  * Returns 0 when the line carries no marks — the block falls back to estimate.
+ * Product SoT: `docs/MARCAS-X.md`. Do not treat these marks as lyric.
  */
 export function lineBeats(src: string): number {
   const s = String(src ?? '')
@@ -95,6 +122,14 @@ export function songDurationSec(duration: string | number | null | undefined): n
   if (m) sec = Number(m[1] || 0) * 3600 + Number(m[2]) * 60 + Number(m[3])
   else if (/^\d+$/.test(s)) sec = Number(s)
   return sec && sec >= 20 && sec <= 3 * 3600 ? sec : null
+}
+
+/**
+ * Hard gate: auto-scroll runs only when the chart declares a usable
+ * `{duration:}`. Unmarked chords and a BPM are not a duration.
+ */
+export function hasSongDuration(duration: string | number | null | undefined): boolean {
+  return songDurationSec(duration) != null
 }
 
 /** `{time:}` as a numerator and a denominator, 4/4 when absent or unusable. */
@@ -211,6 +246,41 @@ export type Timeline = {
   counted: boolean
 }
 
+/** Paper that is not music — folded into the next (or last) musical block. */
+const SILENT_KIND = new Set(['comment', 'note', 'image'])
+
+type RawSeg = { top: number; h: number; fx: number; es: number; kind: string }
+
+function foldSilent(raw: RawSeg[]): RawSeg[] {
+  const out: RawSeg[] = []
+  let pending: RawSeg[] = []
+  for (const s of raw) {
+    if (SILENT_KIND.has(s.kind) && s.fx + s.es <= 0) {
+      pending.push(s)
+      continue
+    }
+    if (pending.length) {
+      const first = pending[0]
+      if (first) {
+        s.h = Math.max(1, s.top + s.h - first.top)
+        s.top = first.top
+      }
+      pending = []
+    }
+    out.push(s)
+  }
+  if (pending.length) {
+    if (out.length) {
+      const last = out[out.length - 1]
+      const end = pending[pending.length - 1]
+      if (last && end) last.h = Math.max(1, end.top + end.h - last.top)
+    } else {
+      out.push(...pending)
+    }
+  }
+  return out
+}
+
 export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Timeline {
   const bpb = Math.max(1, opts.beatsPerBar)
   // One beat is one pulse of the `{tempo:}`; one `x///` mark is one unit of the
@@ -224,7 +294,7 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
   // — time it leaves out. A block usually carries both: a verse whose last line
   // ends on `[Am]x///` is four beats of tail on top of its sung rows, and the
   // one thing it is NOT is four beats long.
-  const raw: Array<{ top: number; h: number; fx: number; es: number }> = []
+  const counted: RawSeg[] = []
   let exact = 0
   let est = 0
 
@@ -242,24 +312,34 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
     }
     exact += fx
     est += es
-    raw.push({ top: b.top, h: Math.max(1, b.h), fx, es })
+    counted.push({ top: b.top, h: Math.max(1, b.h), fx, es, kind: b.kind })
   }
 
   // The gap between two blocks belongs to the block above it. Left out of every
   // segment, it is pixels the mapping does not own, and the playhead teleported
-  // across one at every block boundary.
-  if (raw[0]) {
-    raw[0].h += raw[0].top
-    raw[0].top = 0
-    for (let i = 0; i < raw.length - 1; i++) {
-      const s = raw[i]
-      const nx = raw[i + 1]
+  // across one at every block boundary. The same is true of the trailing pad
+  // under the last block: without it, barsAtPx saturates at t.bars as soon as
+  // the reading line passes the last measured box, and a resume mid-page
+  // looks like the end of the song.
+  if (counted[0]) {
+    counted[0].h += counted[0].top
+    counted[0].top = 0
+    for (let i = 0; i < counted.length - 1; i++) {
+      const s = counted[i]
+      const nx = counted[i + 1]
       if (s && nx) s.h = Math.max(1, nx.top - s.top)
     }
+    const last = counted[counted.length - 1]
+    if (last) last.h = Math.max(last.h, Math.max(1, opts.doc - last.top))
   }
 
-  // Blocks with no music of their own (label, note, loose image) cross at the
-  // page's average pace, so they neither steal time from what is sung nor jump.
+  // Labels and notes do not get their own clock. Their paper is attached to
+  // the next musical block so the intro still lasts the bars it writes, and
+  // "BEM SUAVE" is already on screen at t=0 instead of being a 25 s tax.
+  const raw = foldSilent(counted)
+
+  // Anything still without music (a chart of notes, a leftover empty stanza)
+  // crosses at the page's average pace so the playhead does not jump.
   const musicalPx = raw.reduce((a, s) => a + (s.fx + s.es > 0 ? s.h : 0), 0) || 1
   const pxSec = exact + est > 0 ? musicalPx / (exact + est) : barPx / secBar
   for (const s of raw) {
@@ -372,9 +452,32 @@ export function formatEta(seconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-/** Reading-line offset inside the scroller. */
-export function anchorPx(viewportHeight: number): number {
-  return Math.round(viewportHeight * ANCHOR_RATIO)
+/**
+ * Where the music rests on screen, in px from the top of the viewport.
+ *
+ * Bounded by the scrolling the chart actually has to give: a chart barely
+ * taller than the frame cannot hold the music a third of the way down, and
+ * asking it to used to freeze the page for most of the song over a scroll of
+ * a few dozen pixels.
+ */
+export function anchorPx(viewportHeight: number, docHeight = Infinity): number {
+  const room = Math.max(0, docHeight - viewportHeight)
+  return Math.round(ANCHOR_RATIO * Math.min(viewportHeight, room))
+}
+
+/** Where the page sits when the music has reached `px` of the document. */
+export function scrollAtPx(px: number, anchor: number): number {
+  if (px <= 0) return 0
+  return px - Math.min(anchor, px * ANCHOR_RAMP)
+}
+
+/** The music shown at a given scroll offset — the inverse of {@link scrollAtPx}. */
+export function pxAtScroll(scroll: number, anchor: number): number {
+  const s = Math.max(0, scroll)
+  // Below the knee the anchor is still growing, so the page has covered only
+  // `1 - ANCHOR_RAMP` of the music's paper.
+  const knee = (anchor * (1 - ANCHOR_RAMP)) / ANCHOR_RAMP
+  return s < knee ? s / (1 - ANCHOR_RAMP) : s + anchor
 }
 
 /** Clock inputs a chart provides; `bpmOverride` is the reader's own tempo. */

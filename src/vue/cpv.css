@@ -29,11 +29,13 @@
   --scrim: rgba(6, 8, 12, 0.55);
   --danger: #FF8574;
   --danger-soft: rgba(255, 133, 116, 0.14);
-  --focus: #9EB8FF;
+  --focus: var(--chord);
   --capo: #6E7686;
   --capo-soft: rgba(110, 118, 134, 0.10);
   --capo-edge: rgba(110, 118, 134, 0.22);
   --shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --downbeat: #EAECF2;
+  --downbeat-ink: #0B0D12;
 }
 .cpv-root[data-theme='light'] {
   color-scheme: light;
@@ -64,11 +66,13 @@
   --scrim: rgba(22, 25, 33, 0.38);
   --danger: #B02016;
   --danger-soft: rgba(176, 32, 22, 0.08);
-  --focus: #2563EB;
+  --focus: var(--chord);
   --capo: #8D94A0;
   --capo-soft: rgba(141, 148, 160, 0.08);
   --capo-edge: rgba(141, 148, 160, 0.20);
   --shadow: 0 20px 44px -20px rgba(18, 23, 30, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --downbeat: #13161D;
+  --downbeat-ink: #F5F6F8;
 }
 
 .cpv-root {
@@ -117,12 +121,14 @@
   width: 100%;
   margin: 0 auto;
 }
+/* While the scroll runs this is the one element that is visibly alive on a
+   chart that barely moves, so it earns a pixel and the full accent. */
 .cpv-progress {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   z-index: 14;
   pointer-events: none;
 }
@@ -130,7 +136,11 @@
   display: block;
   height: 2px;
   background: linear-gradient(90deg, var(--chord-edge), var(--chord));
-  transition: width 0.1s linear;
+  transition: width 0.1s linear, height 0.2s ease, box-shadow 0.2s ease;
+}
+.cpv-progress.is-live > span {
+  height: 3px;
+  box-shadow: 0 0 10px -1px var(--chord);
 }
 .cpv-veil {
   background: var(--veil);
@@ -157,6 +167,174 @@
   padding: 40px;
   text-align: center;
 }
+/* Chart placeholder while loadSong is in flight — title + nav stay live. */
+.cpv-song-skel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+  gap: 14px;
+  pointer-events: none;
+}
+.cpv-song-skel-head,
+.cpv-song-skel-dock,
+.cpv-song-skel-title,
+.cpv-song-skel-nav,
+.cpv-song-skel-list {
+  pointer-events: auto;
+}
+.cpv-song-skel-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 8px 0 14px;
+  border-radius: 16px;
+}
+.cpv-song-skel-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cpv-song-skel-pos {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 7px;
+  background: var(--chord-soft);
+  border: 1px solid var(--chord-edge);
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.cpv-song-skel-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cpv-song-skel-name > span:first-child {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cpv-song-skel-name > span:last-child {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.cpv-song-skel-chev {
+  flex: none;
+  font-size: 9px;
+  color: var(--muted);
+  padding-right: 4px;
+}
+.cpv-song-skel-page {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 720px);
+  margin: 8px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 4px 24px;
+}
+.cpv-song-skel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cpv-song-skel-bar {
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+  animation: cpv-skel-pulse 1.25s ease-in-out infinite;
+  animation-delay: calc(var(--i, 1) * 70ms);
+}
+.cpv-song-skel-chords {
+  width: 42%;
+  height: 12px;
+  background: color-mix(in srgb, var(--chord) 18%, transparent);
+}
+.cpv-song-skel-lyric {
+  width: 78%;
+  height: 16px;
+}
+.cpv-song-skel-row:nth-child(2n) .cpv-song-skel-chords { width: 28%; }
+.cpv-song-skel-row:nth-child(2n) .cpv-song-skel-lyric { width: 64%; }
+.cpv-song-skel-row:nth-child(3n) .cpv-song-skel-chords { width: 55%; }
+.cpv-song-skel-row:nth-child(3n) .cpv-song-skel-lyric { width: 88%; }
+.cpv-song-skel-dock {
+  flex: none;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 16px;
+}
+.cpv-song-skel-nav {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.cpv-song-skel-list {
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.cpv-song-skel-list > span:first-child {
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.cpv-song-skel-list > span:last-child {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+@keyframes cpv-skel-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
 .cpv-ph {
   width: 46px;
   height: 46px;
@@ -173,9 +351,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 21px;
-  font-weight: 700;
-  line-height: 1;
 }
 .cpv-spin {
   width: 22px;
@@ -592,22 +767,11 @@
 .cpv-hit {
   pointer-events: auto;
 }
-.cpv-icon-play,
-.cpv-icon-stop {
+.cpv-ico {
   flex: none;
-  width: 10px;
-  height: 10px;
+  display: block;
   color: inherit;
-  background-color: currentColor;
-}
-.cpv-icon-play {
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-}
-.cpv-icon-stop {
-  border-radius: 2px;
-}
-.cpv-glyph {
-  font-family: system-ui, -apple-system, 'Segoe UI Symbol', sans-serif;
+  pointer-events: none;
 }
 .cpv-scrim {
   position: absolute;
@@ -642,15 +806,33 @@
   right: 0;
   margin: 0 auto;
   width: max-content;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - 40px);
   z-index: 29;
-  padding: 9px 15px;
-  border-radius: 11px;
-  font-size: 12.5px;
-  line-height: 1.4;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
   text-align: center;
-  text-wrap: pretty;
-  animation: cpv-rise 0.2s ease-out;
+  pointer-events: none;
+  animation: cpv-toast-in 0.45s ease;
+  transition: opacity 0.42s ease, filter 0.42s ease;
+}
+.cpv-toast.is-out {
+  opacity: 0;
+  filter: blur(6px);
+  animation: none;
+}
+@keyframes cpv-toast-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
 }
 .cpv-error-banner {
   position: absolute;
@@ -710,29 +892,6 @@
   font-size: 11.5px;
 }
 
-/* Reading line: the chart waits until the playhead reaches it. */
-.cpv-guide {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 9;
-  height: 1px;
-  background: var(--chord);
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-.cpv-guide-label {
-  position: absolute;
-  left: 16px;
-  z-index: 10;
-  transform: translateY(-140%);
-  pointer-events: none;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--chord);
-}
 .cpv-sheet.is-compact {
   align-items: flex-end;
   padding: 0;
@@ -758,51 +917,144 @@
   align-items: center;
   justify-content: center;
   gap: 1px;
-  height: 38px;
-  padding: 0 3px;
-  border-radius: 11px;
+  height: 30px;
+  padding: 0 2px;
+  border-radius: 9px;
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
+}
+/*
+ * Identity bar — floating card (same family as the dock). Compact controls
+ * keep the height down; the reading column (`--cpv-page-max`) is a ceiling
+ * for the chart, not the name (12rem floor + wrap).
+ *
+ * `margin-left: auto` on Tela cheia keeps it on the right of its flex line
+ * even when it wraps alone.
+ */
+.cpv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+.cpv-head.is-phone {
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 14px;
+}
+.cpv-head.is-wide {
+  width: max-content;
+  max-width: 100%;
+  min-width: min(100%, var(--cpv-page-max, 100%));
+  gap: 8px 12px;
+  padding: 5px 8px 5px 14px;
+  border-radius: 13px;
+}
+.cpv-head [data-fs] {
+  margin-left: auto;
+}
+.cpv-head-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 12rem;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+}
+button.cpv-head-id {
+  cursor: pointer;
+}
+span.cpv-head-id,
+div.cpv-head-id {
+  cursor: default;
+}
+.cpv-head.is-phone .cpv-head-id {
+  height: 32px;
+}
+.cpv-head.is-wide .cpv-head-id {
+  gap: 9px;
+  padding: 1px 4px 1px 0;
+  min-height: 32px;
+}
+.cpv-head.is-wide button.cpv-head-id:hover {
+  background: var(--hover);
+}
+.cpv-head-pos {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--chord-soft);
+  border: 1px solid var(--chord-edge);
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.cpv-head.is-wide .cpv-head-pos {
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+.cpv-head-name {
+  flex: 1 1 12rem;
+  min-width: 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cpv-head-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cpv-head.is-wide .cpv-head-title {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.cpv-head-sub {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cpv-head.is-wide .cpv-head-sub {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.cpv-head-meta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
 }
 .cpv-keypill > button:hover {
   background: var(--chord-hover);
 }
-.cpv-edit-chip {
-  pointer-events: auto;
-  position: absolute;
-  right: 16px;
-  bottom: 22px;
-  z-index: 14;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 11px;
-  border: 1px solid var(--line);
-  background: var(--veil);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  backdrop-filter: blur(18px);
-}
-.cpv-edit-chip:hover {
-  background: var(--surface-hover);
-}
-.cpv-edit-chip.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-.cpv-edit-diamond {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  border: 1.5px solid var(--chord);
-  transform: rotate(45deg);
-}
 .cpv-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: transparent;
   color: var(--text);
@@ -861,71 +1113,151 @@
 .cpv-met-switch:hover {
   background: var(--surface-hover);
 }
-/* Beat readout that stays on screen while the panel is closed. */
-.cpv-met-pulse {
-  position: absolute;
-  right: 16px;
-  z-index: 15;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 6px 0 10px;
-  border-radius: 11px;
-  border: 1px solid var(--chord-edge);
-  background: var(--veil-2);
-  color: var(--chord);
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  transition: transform 0.07s ease-out;
-}
-.cpv-met-pulse-box {
-  width: 20px;
-  height: 20px;
-  border-radius: 7px;
-  border: 1.5px solid var(--chord-edge);
+/* Tap tempo: a wide, forgiving target — it is hit repeatedly and in a hurry. */
+.cpv-met-tap {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10.5px;
-  transition: background 0.07s linear, color 0.07s linear;
+  gap: 9px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
 }
-.cpv-chrome-hint {
+.cpv-met-tap:hover {
+  background: var(--surface-hover);
+}
+.cpv-met-tap:active {
+  background: var(--chord-soft);
+}
+/* Beat count: original 20px cell, stacked left of the column, outside chrome. */
+.cpv-met-count {
   position: absolute;
-  bottom: 16px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  overflow: visible;
+}
+/* In the count column flow (below the title strip, above 1–2–3).
+   flex-start — not center: a ~51px word centered on a 20px column at
+   left:2px hangs off the root and loses the leading E. Badge fill so
+   the word stays readable on the lyric for the one bar of count-in. */
+.cpv-met-entrada {
+  flex: none;
+  align-self: flex-start;
   width: max-content;
-  max-width: calc(100% - 28px);
-  z-index: 11;
-  padding: 6px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--line-soft);
-  box-shadow: none;
-  font-size: 10.5px;
+  max-width: none;
+  white-space: nowrap;
+  font-size: 8.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--chord);
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--canvas);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--chord-edge);
+}
+.cpv-met-bpm {
+  flex: none;
+  align-self: flex-start;
+  width: max-content;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: var(--canvas);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--line);
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
-  font-weight: 600;
-  text-align: center;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  animation: cpv-fade 0.4s ease;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.cpv-met-beat {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  opacity: 1;
+  border: 0;
+}
+.cpv-met-beat.is-now {
+  font-weight: 700;
+  background: var(--chord);
+  color: var(--chord-ink);
+}
+
+.cpv-head-hit-1 {
+  --veil: var(--downbeat);
+  --line: var(--downbeat);
+  --text: var(--downbeat-ink);
+  --muted: color-mix(in srgb, var(--downbeat-ink) 72%, transparent);
+  --chord: var(--downbeat);
+  --chord-soft: var(--downbeat-ink);
+  --chord-edge: var(--downbeat-ink);
+  --chord-ink: var(--downbeat);
+  color: var(--downbeat-ink);
+}
+.cpv-head-hit-n {
+  animation: cpv-head-n var(--cpv-met-hit, 420ms) ease-out;
+}
+@keyframes cpv-head-n {
+  0% { background: var(--chord-fill); border-color: var(--chord-edge); }
+  100% { background: var(--veil); border-color: var(--line); }
+}
+
+.cpv-met-hit-1 .cpv-chord {
+  animation: cpv-chord-1 var(--cpv-met-hit, 420ms) ease-out;
+}
+.cpv-met-hit-n .cpv-chord {
+  animation: cpv-chord-n var(--cpv-met-hit, 420ms) ease-out;
+}
+@keyframes cpv-chord-1 {
+  0%, 40% { color: var(--downbeat); }
+  100% { color: var(--chord); }
+}
+@keyframes cpv-chord-n {
+  0% { filter: brightness(1.18); }
+  100% { filter: brightness(1); }
 }
 .cpv-more-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   width: 100%;
   text-align: left;
 }
-.cpv-more-item > span {
+.cpv-more-copy {
+  flex: 1;
+  min-width: 0;
+}
+.cpv-more-item > span:last-child {
+  flex: none;
   font-size: 11.5px;
   font-weight: 500;
   color: var(--muted);
@@ -1273,6 +1605,16 @@
 .cpv-pill:hover {
   background: var(--chord-hover);
 }
+/* Voiceless line: the pill stays in the column, same reserve as reading. */
+.cpv-pill--flow {
+  position: relative;
+  left: auto;
+  top: auto;
+  margin: 0 0.8em 2px 0;
+}
+.cpv-editrow[data-played] {
+  line-height: normal;
+}
 .cpv-pill:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
@@ -1449,6 +1791,9 @@
 }
 .cpv-selbar-icon {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 34px;
   height: 34px;
   border: 1px solid var(--line);
@@ -1544,7 +1889,9 @@
 .cpv-insert-item > span {
   flex: none;
   width: 22px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--chord);
   font-size: 14px;
 }

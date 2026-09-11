@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CpvIcon from '../icon/CpvIcon.vue'
 defineProps<{
   shownKey: string
   hasOffset: boolean
@@ -27,7 +28,7 @@ const emit = defineEmits<{
     <div class="cpv-bottom-sheet cpv-veil-2" role="dialog" aria-label="Tom e capotraste">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom e capotraste</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:36px;height:36px;border-radius:12px;background:var(--surface);color:var(--muted);font-size:16px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:36px;height:36px;border-radius:12px;background:var(--surface);color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="16" /></button>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <button aria-label="Baixar meio tom" style="flex:none;width:60px;height:56px;border:1px solid var(--chord-edge);border-radius:16px;background:var(--chord-soft);color:var(--chord);font-size:22px;cursor:pointer;" @click="emit('down')">−</button>

@@ -98,7 +98,7 @@ Alguém copia o repo Vue e reescreve em React.
 | PDF/jsPDF no bundle Vue | Média | Entry `core/pdf` lazy; bindings só chamam |
 | Duas UIs de controles a manter | Alta **depois** | Aceitar: toolbar React ≠ copy-paste do SFC; reusa **controller + HTML cifra** |
 | Testes só no Vue | Média | 80% dos testes no core (fixtures jesus/entrega) |
-| Versionamento multi-package | Baixa–média | Monorepo depois; no v0.1 pode ser `exports`: `.` core e `./vue` |
+| Versionamento multi-package | Baixa–média | Monorepo depois; no v0.1 é um pacote `@henryavila/titan-chordpro-ui` com `exports`: `.` core e `./vue` |
 
 **Complexidade típica de um binding React bem preparado:** da ordem de **dias a poucas semanas** (controles + wiring), não meses — **se** o core existir. Sem core: **reescrita** (mês+).
 

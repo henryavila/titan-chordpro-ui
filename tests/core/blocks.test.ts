@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { layoutChart, parse } from '../../src/core/index'
-import { loadFixture } from '../helpers/load-fixture'
-
-const ELE_VIVE = 'ministerio-tons/013-ele-vive-em-mim.cho'
-const ELE_VIVE_IMG = 'ministerio-tons/013-ele-vive-em-mim-partitura.cho'
+import { ELE_VIVE, ELE_VIVE_IMG, JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 describe('CRLF sources', () => {
   it('normalises line endings so no \\r leaks into lyrics', () => {
@@ -71,7 +68,7 @@ describe('reading-surface blocks', () => {
   })
 
   it('groups loose comments into one Execução note and keeps labels apart', () => {
-    const blocks = layoutChart(parse(loadFixture('jesus-tu-es-a-minha-vida-1.cho')))
+    const blocks = layoutChart(parse(loadFixture(JESUS_1)))
     const note = blocks.find((b) => b.kind === 'note')
     expect(note?.kind === 'note' && note.items.length).toBeGreaterThan(1)
     const labels = blocks.filter((b) => b.kind === 'comment')

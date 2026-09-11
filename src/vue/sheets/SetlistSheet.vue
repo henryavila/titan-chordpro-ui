@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 export type SetlistItem = {
   i: number
@@ -9,6 +10,7 @@ export type SetlistItem = {
   sub: string
   keyLabel: string
   hasKey: boolean
+  bpmLabel: string
   current: boolean
   failed: boolean
   busy: boolean
@@ -36,12 +38,7 @@ const geom = computed(() =>
     : { align: 'center', pad: '20px', max: '400px', radius: '18px' },
 )
 
-/** `!` did not load · `…` on its way · `✓` already rehearsed. */
-function mark(it: SetlistItem): string {
-  if (it.failed) return '!'
-  if (it.busy) return '…'
-  return it.seen ? '✓' : ''
-}
+/** Fail / busy / seen. Seen is an SVG check: `✓` is Dingbats, not in Sora. */
 </script>
 
 <template>
@@ -62,7 +59,7 @@ function mark(it: SetlistItem): string {
           <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Ensaio · {{ headLabel }}</span>
           <span style="font-size:11.5px;color:var(--muted);">{{ seenLabel }}</span>
         </span>
-        <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:38px;height:38px;color:var(--muted);font-size:17px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:38px;height:38px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="18" /></button>
       </div>
 
       <!-- Search earns its place only once the list is too long to scan. -->
@@ -107,10 +104,21 @@ function mark(it: SetlistItem): string {
             style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);"
           >{{ it.keyLabel }}</span>
           <span
-            v-if="mark(it)"
+            v-if="it.bpmLabel"
+            data-setlist-bpm
+            :title="`${it.bpmLabel} BPM`"
+            style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);letter-spacing:0.02em;"
+          >{{ it.bpmLabel }}</span>
+          <span
+            v-if="it.failed || it.busy || it.seen"
             :style="{ color: it.failed ? 'var(--danger)' : 'var(--muted)' }"
-            style="flex:none;width:20px;text-align:center;font-size:12px;font-weight:700;"
-          >{{ mark(it) }}</span>
+            data-setlist-mark
+            style="flex:none;width:20px;display:flex;align-items:center;justify-content:center;"
+          >
+            <CpvIcon v-if="it.failed" name="alertTri" :size="14" />
+            <CpvIcon v-else-if="it.seen" name="check" :size="13" :weight="2" />
+            <span v-else style="font-size:12px;font-weight:700;">…</span>
+          </span>
         </button>
         <div v-if="noHit" style="padding:22px 4px;text-align:center;font-size:12.5px;color:var(--muted);">Nenhuma música com esse nome.</div>
       </div>

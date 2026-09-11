@@ -12,6 +12,7 @@ import {
   moveBlock,
   moveChord,
   pasteHarmony,
+  playedColumns,
   rowJoin,
   rowParts,
   setBlockCapo,
@@ -72,6 +73,53 @@ describe('a lyric line', () => {
   it('leaves the line alone when the words did not change', () => {
     const l = 'Je[G]sus'
     expect(setLyric(l, 'Jesus')).toBe(l)
+  })
+})
+
+/**
+ * The reported intro: each group is a column whose width is the marks (the
+ * clock) plus the chord sitting on them — the same columns reading already
+ * draws. Editing used to ignore that and pile the pills.
+ */
+const PLAYED =
+  '[G/D]x///   [D7(4)]x///    [G]x///    [C/E]x/    [D/F#]//'
+
+describe('a voiceless line is columns, not a pile of pills', () => {
+  it('splits the reported intro into one column per chord, marks as the clock', () => {
+    const cols = playedColumns(PLAYED)
+    expect(cols).not.toBeNull()
+    expect(cols!.map((c) => c.name)).toEqual(['G/D', 'D7(4)', 'G', 'C/E', 'D/F#'])
+    expect(cols!.map((c) => c.marks.map((m) => m.ch).join(''))).toEqual([
+      'x///',
+      'x///',
+      'x///',
+      'x/',
+      '//',
+    ])
+    // Four-beat groups keep a longer tail than the two-beat close.
+    expect(cols![0]!.tail.length).toBeGreaterThanOrEqual(2)
+    expect(cols![3]!.marks).toHaveLength(2)
+    expect(cols![4]!.marks).toHaveLength(2)
+  })
+
+  it('keeps character offsets so a pill can still land on a mark', () => {
+    const cols = playedColumns(PLAYED)!
+    const p = rowParts(PLAYED)
+    expect(cols[0]!.off).toBe(0)
+    expect(cols[1]!.off).toBe(p.chords[1]!.off)
+    expect(cols[0]!.marks[0]!.i).toBe(0)
+    expect(p.plain.slice(cols[3]!.off, cols[3]!.off + 2)).toBe('x/')
+  })
+
+  it('returns null on a sung line — those stay syllables with floating pills', () => {
+    expect(playedColumns('Je[G]sus, Tu [C]És')).toBeNull()
+    expect(playedColumns('[D]Preciso ouvir Tua [A]voz [B]x///')).toBeNull()
+  })
+
+  it('still columns a voiceless line that has chords and no marks', () => {
+    const cols = playedColumns('[G] [C] [D]')
+    expect(cols).not.toBeNull()
+    expect(cols!.map((c) => c.name)).toEqual(['G', 'C', 'D'])
   })
 })
 

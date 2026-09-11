@@ -74,6 +74,53 @@ describe('the editing surface', () => {
     w.unmount()
   })
 
+  it('spaces a voiceless intro as reading columns, not a pile of pills', async () => {
+    const src = [
+      '{title: T}',
+      '{key: G}',
+      '',
+      '{c:Intro}',
+      '[G/D]x///   [D7(4)]x///    [G]x///    [C/E]x/    [D/F#]//',
+      '',
+    ].join('\n')
+    const w = await edit({ source: src })
+    const row = w.get('[data-played]')
+    expect(row.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual([
+      'G/D',
+      'D7(4)',
+      'G',
+      'C/E',
+      'D/F#',
+    ])
+    expect(
+      row
+        .findAll('.cpv-lyric')
+        .map((l) => l.text())
+        .filter((t) => /[x/]/.test(t)),
+    ).toEqual(['x///', 'x///', 'x///', 'x/', '//'])
+    expect(row.findAll('.cpv-reading-word').length).toBeGreaterThanOrEqual(5)
+    // Sung rows keep the floating pills; this intro must not.
+    expect(row.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    w.unmount()
+  })
+
+  it('A+ widens a voiceless intro in edit — the spacing control reaches those columns', async () => {
+    const src = [
+      '{title: T}',
+      '{key: G}',
+      '',
+      '{c:Intro}',
+      '[G/D]x///   [D7(4)]x///    [G]x///    [C/E]x/    [D/F#]//',
+    ].join('\n')
+    const w = await edit({ source: src })
+    const before = Number.parseFloat((w.get('[data-played]').element as HTMLElement).style.fontSize)
+    await w.get('[aria-label="Aumentar tipografia"]').trigger('click')
+    await flushPromises()
+    const after = Number.parseFloat((w.get('[data-played]').element as HTMLElement).style.fontSize)
+    expect(after).toBeGreaterThan(before)
+    w.unmount()
+  })
+
   it('opens the chord editor on a pill, and renames from it', async () => {
     const w = await edit()
     const before = await sourceOf(w)

@@ -8,9 +8,10 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      'titan-chordpro-ui/pdf': `${root}src/pdf/index.ts`,
-      'titan-chordpro-ui/vue': `${root}src/vue/index.ts`,
-      'titan-chordpro-ui': `${root}src/core/index.ts`,
+      '@henryavila/titan-chordpro-ui/pdf': `${root}src/pdf/index.ts`,
+      '@henryavila/titan-chordpro-ui/slides': `${root}src/slides/index.ts`,
+      '@henryavila/titan-chordpro-ui/vue': `${root}src/vue/index.ts`,
+      '@henryavila/titan-chordpro-ui': `${root}src/core/index.ts`,
     },
   },
   test: {

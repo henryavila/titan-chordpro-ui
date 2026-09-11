@@ -1,4 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
+import { sheetBpm } from '@henryavila/titan-chordpro-ui'
 
 /** One entry of the rehearsal list, as the host describes it. */
 export type SetlistSong = {
@@ -6,8 +7,23 @@ export type SetlistSong = {
   title: string
   subtitle?: string
   key?: string
+  /** `{tempo:}` when the host already knows it, even without the ChordPro. */
+  tempo?: string | number
   /** The ChordPro itself, when the host already has it. */
   source?: string
+}
+
+/** `{tempo:72}` from a chart body — enough to label the list without a parse. */
+function bpmFromCho(source: string | undefined): string {
+  const m = String(source ?? '').match(/\{\s*tempo\s*:\s*([^}]+)\}/i)
+  const n = sheetBpm(m?.[1]?.trim())
+  return n ? String(n) : ''
+}
+
+function bpmLabelOf(song: SetlistSong, cached?: string): string {
+  const host = sheetBpm(song.tempo)
+  if (host) return String(host)
+  return bpmFromCho(song.source ?? cached)
 }
 
 export type LoadSong = (id: string, song: SetlistSong) => Promise<string> | string
@@ -71,6 +87,7 @@ export function useSetlist(opts: SetlistOpts) {
         title: String(item.title || item.id || 'Sem título'),
         subtitle: item.subtitle ? String(item.subtitle) : '',
         key: item.key ? String(item.key) : '',
+        tempo: item.tempo,
         source: typeof item.source === 'string' && item.source.trim() ? item.source : undefined,
       })
     }
@@ -199,6 +216,7 @@ export function useSetlist(opts: SetlistOpts) {
         sub: s.subtitle ?? '',
         keyLabel: s.key ?? '',
         hasKey: !!s.key,
+        bpmLabel: bpmLabelOf(s, cache.value[s.id]),
         current: i === si.value,
         failed: !!failed.value[s.id] && !s.source && typeof cache.value[s.id] !== 'string',
         busy: !!busy.value[s.id],

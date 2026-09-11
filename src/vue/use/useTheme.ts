@@ -1,5 +1,5 @@
-import { THEME_VARS, accentVars } from 'titan-chordpro-ui'
-import type { AccentProp, ThemeId } from 'titan-chordpro-ui'
+import { THEME_VARS, accentVars } from '@henryavila/titan-chordpro-ui'
+import type { AccentProp, ThemeId } from '@henryavila/titan-chordpro-ui'
 
 export function applyThemeVars(
   el: HTMLElement,
@@ -15,10 +15,11 @@ export function applyThemeVars(
   el.style.background = vars['--cpv-canvas']
 }
 
-export function themeGlyph(theme: ThemeId | string): string {
-  if (theme === 'auto') return '◐'
-  if (theme === 'light') return '○'
-  return '●'
+/** Lucide names that replaced the typed ◐ ○ ● glyphs. */
+export function themeIcon(theme: ThemeId | string): 'sunMoon' | 'sun' | 'moon' {
+  if (theme === 'auto') return 'sunMoon'
+  if (theme === 'light') return 'sun'
+  return 'moon'
 }
 
 export function themeLabel(theme: ThemeId | string): string {

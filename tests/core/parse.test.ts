@@ -32,7 +32,7 @@ describe('parse', () => {
   })
 
   it('parses tab sections from ele-vive fixture', () => {
-    const view = parse(loadFixture('ministerio-tons/013-ele-vive-em-mim.cho'))
+    const view = parse(loadFixture('sda/013-ele-vive-em-mim.cho'))
     const tabs = view.sections.filter((s) => s.kind === 'tab')
     expect(tabs.length).toBeGreaterThan(0)
   })

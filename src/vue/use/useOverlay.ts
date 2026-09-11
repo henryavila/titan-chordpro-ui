@@ -13,8 +13,8 @@ import {
   tuneText,
   readStoredJson as readStored,
   writeStoredJson as writeStored,
-} from 'titan-chordpro-ui'
-import type { ChartStore, Overlay, OverlayOp, ReadingCtx, Suggestion, TuneOp } from 'titan-chordpro-ui'
+} from '@henryavila/titan-chordpro-ui'
+import type { ChartStore, Overlay, OverlayOp, ReadingCtx, Suggestion, TuneOp } from '@henryavila/titan-chordpro-ui'
 import type { WriteMode } from '../public'
 
 export type { ModesProp, WriteMode } from '../public'

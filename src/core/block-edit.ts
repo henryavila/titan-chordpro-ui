@@ -6,11 +6,50 @@
  * says so in the file itself and survives a reload, an undo and a re-parse.
  */
 
+import { isPlayedLine } from './timeline'
 import { transposeToken } from './transpose'
 import type { ChartBlock } from './types'
 
 export type ChordRef = { name: string; off: number }
 export type RowParts = { plain: string; chords: ChordRef[] }
+
+/** One chord on a voiceless line, with the `x///` clock that gives it width. */
+export type PlayedCol = {
+  idx: number
+  name: string
+  off: number
+  marks: Array<{ ch: string; i: number }>
+  tail: Array<{ ch: string; i: number }>
+}
+
+/**
+ * A played line (intro, interlude, ending) is columns, like reading: the
+ * marks are the clock, the chord sits on them. Null on a sung line — those
+ * stay syllables with a pill floating above.
+ */
+export function playedColumns(line: string): PlayedCol[] | null {
+  if (!isPlayedLine(line)) return null
+  const p = rowParts(line)
+  if (!p.chords.length) return []
+  const cols: PlayedCol[] = []
+  for (let i = 0; i < p.chords.length; i++) {
+    const c = p.chords[i]!
+    const from = c.off
+    const to = p.chords[i + 1]?.off ?? p.plain.length
+    const slice = p.plain.slice(from, to)
+    const m = /^(\S*)([\s\S]*)$/.exec(slice)
+    const markStr = m?.[1] ?? ''
+    const tailStr = m?.[2] ?? ''
+    cols.push({
+      idx: i,
+      name: c.name,
+      off: c.off,
+      marks: [...markStr].map((ch, k) => ({ ch, i: from + k })),
+      tail: [...tailStr].map((ch, k) => ({ ch, i: from + markStr.length + k })),
+    })
+  }
+  return cols
+}
 
 /** A lyric line split into what is sung and where each chord sits in it. */
 export function rowParts(text: string): RowParts {

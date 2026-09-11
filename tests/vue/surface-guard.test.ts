@@ -55,7 +55,7 @@ describe('the host has to give the frame a height', () => {
     vi.advanceTimersByTime(1200)
     expect(g.bad.value).toBe(true)
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(String(warn.mock.calls[0]?.[0])).toContain('docs/EMBED-SDA.md')
+    expect(String(warn.mock.calls[0]?.[0])).toContain('docs/CONSUMER.md')
   })
 
   it('says nothing when the parent has a height', () => {

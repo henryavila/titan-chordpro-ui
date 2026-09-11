@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { QueueOpCard, QueueRow } from '../use/useOverlay'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 defineProps<{
   title: string
@@ -30,9 +31,9 @@ const emit = defineEmits<{
         v-if="showBack"
         aria-label="Voltar"
         data-q-back
-        style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:14px;cursor:pointer;"
+        style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
         @click="emit('back')"
-      >‹</button>
+      ><CpvIcon name="chevronLeft" :size="16" /></button>
       <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Sugestões dos músicos</span>
         <span style="font-size:15.5px;font-weight:700;color:var(--text);">{{ title }}</span>

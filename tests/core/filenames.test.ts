@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildChoFilename, buildPdfFilename } from '../../src/core/filenames'
+import { buildChoFilename, buildPdfFilename, buildSljaFilename } from '../../src/core/filenames'
 
 describe('buildChoFilename', () => {
   it('creates filename with key', () => {
@@ -36,5 +36,12 @@ describe('buildPdfFilename', () => {
     expect(buildPdfFilename('Jesus Tu És a Minha Vida', 'A')).toBe(
       'cifra-jesus-tu-es-a-minha-vida-tom-a.pdf',
     )
+  })
+})
+
+describe('buildSljaFilename', () => {
+  it('slugs the title without a key — slides are not a transposed chart', () => {
+    expect(buildSljaFilename('Fala Comigo')).toBe('slides-fala-comigo.slja')
+    expect(buildSljaFilename('Lindo És')).toBe('slides-lindo-es.slja')
   })
 })

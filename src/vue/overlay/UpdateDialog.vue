@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { UpdCard } from '../use/useOverlay'
+import CpvIcon from '../icon/CpvIcon.vue'
 
 defineProps<{ compact: boolean; items: UpdCard[] }>()
 const emit = defineEmits<{ toggle: [id: string]; keep: []; adopt: [] }>()
@@ -36,7 +37,7 @@ const emit = defineEmits<{ toggle: [id: string]; keep: []; adopt: [] }>()
             color: it.on ? 'var(--chord-ink)' : 'transparent',
           }"
           style="flex:none;width:18px;height:18px;margin-top:1px;border-radius:5px;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;"
-        >{{ it.on ? '✓' : '' }}</span>
+        ><CpvIcon v-if="it.on" name="check" :size="12" /></span>
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
           <span style="font-size:12.5px;font-weight:600;">{{ it.label }}</span>
           <span v-if="it.why" style="font-size:10.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">{{ it.why }}</span>

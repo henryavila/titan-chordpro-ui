@@ -1,20 +1,23 @@
 <script setup lang="ts">
+import CpvIcon from '../icon/CpvIcon.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
     pdfBusy: boolean
+    slidesBusy?: boolean
     /** Phone width: the dialog becomes a bottom sheet. */
     compact?: boolean
     /** The reader has a personal version: the file has to say which one it is. */
     hasOverlay?: boolean
     exportOrig?: boolean
   }>(),
-  { compact: false, hasOverlay: false, exportOrig: false },
+  { compact: false, hasOverlay: false, exportOrig: false, slidesBusy: false },
 )
 const emit = defineEmits<{
   close: []
   cho: []
   pdf: []
+  slides: []
   pick: [orig: boolean]
 }>()
 </script>
@@ -32,7 +35,7 @@ const emit = defineEmits<{
         <span style="font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">
           Exportar {{ exportKeyNote }}
         </span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);font-size:15px;" @click="emit('close')">×</button>
+        <button class="cpv-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
       </div>
       <div v-if="hasOverlay" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;">
         <button
@@ -73,6 +76,19 @@ const emit = defineEmits<{
         Documento
         <span style="flex:1;" />
         <span v-if="pdfBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
+          <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
+        </span>
+      </button>
+      <button
+        data-export="slides"
+        class="cpv-surface-btn"
+        style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;"
+        @click="emit('slides')"
+      >
+        <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.slja</span>
+        Slide Louvor JA
+        <span style="flex:1;" />
+        <span v-if="slidesBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
           <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
         </span>
       </button>

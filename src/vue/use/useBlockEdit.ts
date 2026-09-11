@@ -16,6 +16,7 @@ import {
   moveBlock as moveBlockTo,
   moveChord as moveChordTo,
   pasteHarmony as pasteHarmonyOn,
+  playedColumns,
   removeChord as removeChordAt,
   renameChord,
   rowParts,
@@ -26,8 +27,8 @@ import {
   shiftLabel,
   toggleBlockDual as toggleBlockDualOn,
   unhideBlock as unhideBlockAt,
-} from 'titan-chordpro-ui'
-import type { ChartBlock, Harmony, InsertKind } from 'titan-chordpro-ui'
+} from '@henryavila/titan-chordpro-ui'
+import type { ChartBlock, Harmony, InsertKind, PlayedCol } from '@henryavila/titan-chordpro-ui'
 import type { WriteMode } from '../public'
 
 export type BlockEditOpts = {
@@ -58,6 +59,9 @@ export type EditRow = {
   tokens: EditToken[]
   chords: Array<{ name: string; off: number }>
   plain: string
+  /** Voiceless intro/interlude: columns like reading, not a pile of pills. */
+  played: boolean
+  columns: PlayedCol[]
 }
 
 /**
@@ -662,7 +666,9 @@ export function useBlockEdit(opts: BlockEditOpts) {
 
   /** A row split into measurable syllables — what a chord can be dropped on. */
   function buildRow(li: number): EditRow {
-    const p = rowParts(lines.value[li] ?? '')
+    const raw = lines.value[li] ?? ''
+    const p = rowParts(raw)
+    const columns = playedColumns(raw)
     const tokens: EditToken[] = []
     let i = 0
     while (i < p.plain.length) {
@@ -674,7 +680,14 @@ export function useBlockEdit(opts: BlockEditOpts) {
       tokens.push({ isWord: !sp, chars })
       i = j
     }
-    return { li, tokens, chords: p.chords.map((c) => ({ name: c.name, off: c.off })), plain: p.plain }
+    return {
+      li,
+      tokens,
+      chords: p.chords.map((c) => ({ name: c.name, off: c.off })),
+      plain: p.plain,
+      played: columns !== null,
+      columns: columns ?? [],
+    }
   }
 
   /**
@@ -686,6 +699,8 @@ export function useBlockEdit(opts: BlockEditOpts) {
     const root = opts.root.value
     if (!opts.editing.value || !root) return
     for (const row of root.querySelectorAll<HTMLElement>('[data-row]')) {
+      // Played lines keep the reading columns: pills are in the flow.
+      if (row.hasAttribute('data-played')) continue
       const rr = row.getBoundingClientRect()
       const chars = row.querySelectorAll<HTMLElement>('[data-i]')
       const last = chars.length ? chars[chars.length - 1]?.getBoundingClientRect() : null

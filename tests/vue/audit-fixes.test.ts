@@ -9,7 +9,7 @@ const UNIQUE = 'Je[G]sus, Tu És a minha [G]vida.'
 const PLAIN = 'Jesus, Tu És a minha vida.'
 
 const pdfCalls: Array<Record<string, unknown> | undefined> = []
-vi.mock('titan-chordpro-ui/pdf', () => ({
+vi.mock('@henryavila/titan-chordpro-ui/pdf', () => ({
   renderPdf: (_view: unknown, opts?: Record<string, unknown>) => {
     pdfCalls.push(opts)
     return Promise.resolve(new Uint8Array([1, 2, 3]))
@@ -335,7 +335,7 @@ describe('B4 · the score editor owns the keyboard', () => {
 describe('M1 · the editor introduces itself once', () => {
   /** The hint yields to the toast that entering the editor raises. */
   async function afterToast(w: ReturnType<typeof mountViewer>) {
-    vi.advanceTimersByTime(2300)
+    vi.advanceTimersByTime(3000)
     await flushPromises()
     return w
   }
@@ -432,7 +432,7 @@ describe('M2 · the source pane jumps to the selection', () => {
 })
 
 /**
- * M3 — the accent is the one token a host may choose. The seven derivatives
+ * M3 — the accent is the one token a host may choose. The derivatives
  * come from a single RGB at fixed opacities, so a host picks a colour, not a
  * palette, and the relationships stay as the design set them.
  */
@@ -442,6 +442,7 @@ describe('M3 · the host may choose the accent', () => {
     await flushPromises()
     const root = w.get('.cpv-root').element as HTMLElement
     expect(root.style.getPropertyValue('--chord')).toBe('#6FD8E4')
+    expect(root.style.getPropertyValue('--focus')).toBe('#6FD8E4')
     w.unmount()
   })
 
@@ -463,6 +464,17 @@ describe('M3 · the host may choose the accent', () => {
     expect(chord).toMatch(/^#[0-9A-F]{6}$/)
     expect(chord).not.toBe('#17713C')
     expect(root.style.getPropertyValue('--chord-soft')).toMatch(/^rgba\(\d+,\d+,\d+,0\.10\)$/)
+    w.unmount()
+  })
+
+  it('forwards the host accent to the PDF', async () => {
+    const w = mountViewer({ accent: 'teal' })
+    await flushPromises()
+    await w.get('[aria-label="Exportar"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-export="pdf"]').trigger('click')
+    await flushPromises()
+    expect(pdfCalls.at(-1)).toMatchObject({ accent: 'teal' })
     w.unmount()
   })
 

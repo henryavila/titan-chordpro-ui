@@ -32,6 +32,31 @@ describe('accentVars', () => {
     const fromRgb = accentVars('rgb(68, 102, 238)', 'light')['--cpv-chord']
     expect(fromHex).toBe(fromRgb)
   })
+
+  it('paints the focus ring from the same primary, not a leftover blue', () => {
+    const teal = accentVars('teal', 'dark')
+    expect(teal['--cpv-focus']).toBe(teal['--cpv-chord'])
+    const hex = accentVars('#4F46E5', 'light')
+    expect(hex['--cpv-focus']).toBe(hex['--cpv-chord'])
+    expect(hex['--cpv-focus']).not.toBe('#2563EB')
+  })
+
+  it('keeps every fill/edge/glow on the same RGB as the primary', () => {
+    const v = accentVars('#4F46E5', 'dark')
+    const rgb = (v['--cpv-chord-soft'] ?? '').match(/^rgba\((\d+,\d+,\d+),/)?.[1]
+    expect(rgb).toMatch(/^\d+,\d+,\d+$/)
+    for (const k of [
+      '--cpv-chord-soft',
+      '--cpv-chord-edge',
+      '--cpv-chord-hover',
+      '--cpv-chord-fill',
+      '--cpv-block',
+      '--cpv-block-line',
+      '--cpv-glow',
+    ] as const) {
+      expect(v[k], k).toContain(`rgba(${rgb},`)
+    }
+  })
 })
 
 describe('listAccents', () => {

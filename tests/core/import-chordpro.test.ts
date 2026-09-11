@@ -1,10 +1,30 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
-  convert, detect, fromPlain, hostOk, missingOf, readMeta, titleFromUrl, toPlain, writeMeta,
+  convert,
+  detect,
+  fromCifraClubHtml,
+  fromPlain,
+  hostOk,
+  isChord,
+  isChordLine,
+  looksLikeCifraClubHtml,
+  missingOf,
+  readMeta,
+  titleFromUrl,
+  toPlain,
+  writeMeta,
 } from '../../src/core/import-chordpro'
 import { looksLikeOnSong } from '../../src/core/onsong'
-import { parse } from '../../src/core'
+import { layoutChart, parse } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
+
+const UNIDOS = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../helpers/cifraclub-unidos.html'),
+  'utf8',
+)
 
 describe('recognising what was handed over', () => {
   it('knows nothing from something', () => {
@@ -60,6 +80,12 @@ describe('chords above the lyric become chords in the lyric', () => {
     const out = fromPlain('Refrão:\nG\nUma letra')
     expect(out).toContain('{soc}')
     expect(out.trimEnd().endsWith('{eoc}')).toBe(true)
+  })
+
+  it('a blank after the refrain is the next verse, not more chorus', () => {
+    const out = fromPlain('[Refrão]\nG       C\nPois a força\n\nG       C\nUma voz sozinha')
+    expect(out.indexOf('{eoc}')).toBeGreaterThan(-1)
+    expect(out.indexOf('{eoc}')).toBeLessThan(out.indexOf('Uma voz'))
   })
 
   it('names other sections as comments', () => {
@@ -125,12 +151,42 @@ describe('the chart\'s own details', () => {
   })
 
   it('lists what is still missing before it can stand for everyone', () => {
-    expect(missingOf({ title: 'Uma' })).toEqual(['key', 'tempo', 'time'])
-    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4' })).toEqual([])
+    expect(missingOf({ title: 'Uma' })).toEqual(['key', 'tempo', 'time', 'duration'])
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4' })).toEqual(['duration'])
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4', duration: '04:26' })).toEqual([])
+  })
+
+  it('a duration too short to roll is still missing', () => {
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4', duration: '5' })).toEqual(['duration'])
+    expect(missingOf({ title: 'U', key: 'G', tempo: '80', time: '4/4', duration: 'abc' })).toEqual(['duration'])
+  })
+
+  it('reads and rewrites duration with the other header details', () => {
+    expect(readMeta('{duration:04:26}\n[G]Letra')).toMatchObject({ duration: '04:26' })
+    const out = writeMeta('[G]Letra', {
+      title: 'Uma',
+      key: 'G',
+      tempo: '80',
+      time: '4/4',
+      duration: '04:26',
+    })
+    expect(out.split('\n').slice(0, 5)).toEqual([
+      '{title:Uma}',
+      '{key:G}',
+      '{tempo:80}',
+      '{time:4/4}',
+      '{duration:04:26}',
+    ])
   })
 
   it('survives a round trip', () => {
-    const src = writeMeta('[G]Letra', { title: 'Uma', key: 'G', tempo: '80', time: '4/4' })
+    const src = writeMeta('[G]Letra', {
+      title: 'Uma',
+      key: 'G',
+      tempo: '80',
+      time: '4/4',
+      duration: '04:26',
+    })
     expect(missingOf(readMeta(src))).toEqual([])
   })
 })
@@ -170,5 +226,70 @@ describe('going back out to plain text', () => {
 
   it('names the chorus so the converter can find it again', () => {
     expect(toPlain('{soc}\n[G]Uma\n{eoc}')).toContain('[Refrão]')
+  })
+
+  it('a rehearsal comment is still a comment after a round trip through plain', () => {
+    const src = '{c:(INTRODUÇÃO - strings, piano e violino)}\n[D]x//   [G/D]x//'
+    const out = fromPlain(toPlain(src))
+    expect(out).toContain('{c:INTRODUÇÃO - strings, piano e violino}')
+    expect(out).not.toMatch(/\[INTRODUÇÃO/)
+    const view = parse(out)
+    expect(view.sections.some((s) => s.lines.some((l) => l.type === 'comment'))).toBe(true)
+  })
+})
+
+describe('Cifra Club chords and HTML', () => {
+  it('accepts the qualities Cifra Club writes', () => {
+    for (const name of ['G/D', 'D7(4)', 'C7M', 'C7M(9)', 'Em7(11)', 'D7(9/11)', 'C9/E', 'Bb9', 'Eb°', 'G6', 'Am7']) {
+      expect(isChord(name), name).toBe(true)
+    }
+    expect(isChord('Intro')).toBe(false)
+    expect(isChordLine('G/D  D7(4)  G  C/E  D/F#')).toBe(true)
+  })
+
+  it('a [Intro] sitting on the same line as the chords is a section, not lyrics', () => {
+    const out = fromPlain('[Intro] G/D  D7(4)  G  C/E  D/F#')
+    expect(out).toContain('{c:Intro}')
+    expect(out).toContain('[G/D]')
+    expect(out).toContain('[D7(4)]')
+    expect(out).not.toContain('[Intro]')
+  })
+
+  it('reads the Unidos em Cristo page the site actually serves', () => {
+    expect(looksLikeCifraClubHtml(UNIDOS)).toBe(true)
+    const page = fromCifraClubHtml(UNIDOS)
+    expect(page.title).toBe('Unidos Em Cristo')
+    expect(page.subtitle).toBe('Novo Hinário Adventista')
+    expect(page.key).toBe('G')
+    expect(page.body).toContain('[Intro]')
+    expect(page.body).toContain('G/D')
+    expect(page.body).toContain('D7(4)')
+    // Dots stay in the plain pair so merge can read the attack column.
+    expect(page.body).toContain('U.ma andorinha nco f.az verao')
+    expect(page.body).toContain('[Refrão]')
+
+    const r = convert(UNIDOS)
+    expect(r.format).toBe('cifraclub')
+    expect(r.label).toBe('Cifra Club')
+    expect(r.source).toContain('{title:Unidos Em Cristo}')
+    expect(r.source).toContain('{key:G}')
+    expect(r.source).toContain('{c:Intro}')
+    expect(r.source).toContain('[G/D]')
+    expect(r.source).toContain('[D7(4)]')
+    expect(r.source).toContain('[G9]Uma andorinha nco [D/G]faz verao')
+    expect(r.source).not.toMatch(/U\.ma|f\.az|a\.té|m\.ulti|uni\.ao/)
+    const view = parse(r.source)
+    expect(view.meta.title).toBe('Unidos Em Cristo')
+    expect(view.meta.key).toBe('G')
+    // A blank between every Cifra Club pair was splitting the editor into
+    // one chorus/stanza box per line.
+    expect(r.source).toMatch(/andorinha[^\n]+\n\[G7\(4\)\]/)
+    expect(r.source).not.toMatch(/andorinha[^\n]+\n\n\[G7\(4\)\]/)
+    const blocks = layoutChart(view)
+    const choruses = blocks.filter((b) => b.kind === 'chorus')
+    expect(choruses).toHaveLength(1)
+    expect(choruses[0]?.rows.length).toBeGreaterThan(1)
+    const verse = blocks.find((b) => b.kind === 'stanza' && b.rows.some((row) => /andorinha/.test(row.plain)))
+    expect(verse?.rows.length).toBeGreaterThan(1)
   })
 })

@@ -30,6 +30,27 @@ describe('lintSource', () => {
     const r = lintSource('{soc}\n[C a')
     expect(r.message.split(' · ').length).toBe(2)
   })
+
+  it('flags a voiceless line that has chords and no x///', () => {
+    const r = lintSource('{title: T}\n{c:Intro}\n[G] [C] [D]\n\n[G]uma letra\n')
+    expect(r.ok).toBe(false)
+    expect(r.issues).toContain('trecho sem voz sem x/// (1 linha)')
+  })
+
+  it('accepts the same intro when it writes the marks', () => {
+    const r = lintSource('{title: T}\n{c:Intro}\n[G]x///    [C]x///\n\n[G]uma letra\n')
+    expect(r.issues.filter((i) => i.includes('x///'))).toEqual([])
+  })
+
+  it('does not treat a sung tail as a missing intro', () => {
+    const r = lintSource('[D]Preciso ouvir Tua [A]voz [B]x///\n')
+    expect(r.issues.filter((i) => i.includes('x///'))).toEqual([])
+  })
+
+  it('does not read TAB mute x as a missing time mark', () => {
+    const r = lintSource('{sot}\nE|--x--|\n{eot}\n[G]letra\n')
+    expect(r.issues.filter((i) => i.includes('x///'))).toEqual([])
+  })
 })
 
 describe('patchMeta', () => {

@@ -44,7 +44,6 @@ export const THEME_VARS = {
     '--cpv-scrim': 'rgba(6,8,12,0.55)',
     '--cpv-danger': '#FF8574',
     '--cpv-danger-soft': 'rgba(255,133,116,0.14)',
-    '--cpv-focus': '#9EB8FF',
     '--cpv-capo': '#6E7686',
     '--cpv-capo-soft': 'rgba(110,118,134,0.10)',
     '--cpv-capo-edge': 'rgba(110,118,134,0.22)',
@@ -78,7 +77,6 @@ export const THEME_VARS = {
     '--cpv-scrim': 'rgba(22,25,33,0.38)',
     '--cpv-danger': '#B02016',
     '--cpv-danger-soft': 'rgba(176,32,22,0.08)',
-    '--cpv-focus': '#2563EB',
     '--cpv-capo': '#8D94A0',
     '--cpv-capo-soft': 'rgba(141,148,160,0.08)',
     '--cpv-capo-edge': 'rgba(141,148,160,0.20)',
@@ -207,9 +205,11 @@ function resolveAccent(accent: string, mode: 'light' | 'dark'): Swatch {
 }
 
 /**
- * The seven derivatives all come from one RGB at fixed opacities, scaled by
+ * The derivatives all come from one RGB at fixed opacities, scaled by
  * `strength`. Deriving them means a host picks a colour, not a palette — the
- * relationships between fill, edge and glow stay as the design set them.
+ * relationships between fill, edge, glow and the focus ring stay as the
+ * design set them. `--focus` is the primary itself: the ring sits on the
+ * canvas, where that colour was already measured to AA.
  */
 export function accentVars(
   accent: AccentProp = 'verde',
@@ -235,6 +235,9 @@ export function accentVars(
     '--cpv-block': f(0.04),
     '--cpv-block-line': f(0.16),
     '--cpv-glow': f(0.06),
+    // Focus is the same primary: the ring sits on the canvas, where --chord
+    // was already measured to AA. A leftover blue is not a variation.
+    '--cpv-focus': hex,
   }
 }
 

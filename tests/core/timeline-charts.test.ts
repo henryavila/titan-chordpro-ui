@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  anchorPx,
+  barsAtPx,
   buildTimeline,
   clockOf,
   layoutChart,
   parse,
+  pxAtBars,
+  pxAtScroll,
   runSec,
+  scrollAtPx,
   typeScale,
 } from '../../src/core/index'
 import type { ChartBlock, TimelineBlock } from '../../src/core/index'
@@ -24,40 +29,51 @@ import { loadFixture } from '../helpers/load-fixture'
 const scale = typeScale(0, false, 900, 40, false)
 const GAP = Number(String(scale.blockGap).replace('px', ''))
 
-function heightOf(b: ChartBlock): number {
-  if (b.kind === 'stanza' || b.kind === 'chorus') return b.rows.length * scale.barPx
+function heightOf(b: ChartBlock, barPx = scale.barPx): number {
+  if (b.kind === 'stanza' || b.kind === 'chorus') return b.rows.length * barPx
   if (b.kind === 'tab') return 140
   if (b.kind === 'score') return 220
+  if (b.kind === 'note') return 28 + b.items.length * 22
   return 30
 }
 
-function timelineOf(rel: string) {
+function timelineOf(rel: string, opts?: { topPad?: number; bottomPad?: number; viewport?: number; width?: number }) {
   const view = parse(loadFixture(rel))
   const blocks = layoutChart(view)
   const clock = clockOf(view)
-  let top = 0
+  const width = opts?.width ?? 900
+  const local = typeScale(0, false, width, 40, false)
+  const gap = Number(String(local.blockGap).replace('px', ''))
+  let top = opts?.topPad ?? 0
   const measured: TimelineBlock[] = blocks.map((b) => {
-    const h = heightOf(b)
+    const h = heightOf(b, local.barPx)
     const tb = { top, h, music: b.music, kind: b.kind }
-    top += h + GAP
+    top += h + gap
     return tb
   })
+  const doc = top + (opts?.bottomPad ?? 0)
+  const viewport = opts?.viewport ?? 700
   const t = buildTimeline(measured, {
     bpm: clock.bpm,
     beatsPerBar: clock.beatsPerBar,
+    marksPerBeat: clock.marksPerBeat,
     durationSec: clock.durationSec,
-    barPx: scale.barPx,
-    doc: top,
-    viewport: 700,
+    barPx: local.barPx,
+    doc,
+    viewport,
   })
-  return { blocks, clock, t, run: runSec(t, clock.durationSec) }
+  return { blocks, clock, t, run: runSec(t, clock.durationSec), measured, doc, viewport }
 }
 
 /** Seconds a block really lasts on screen, at 1×. */
 function wall(rel: string) {
-  const { blocks, t, run } = timelineOf(rel)
+  const { blocks, t, run, measured } = timelineOf(rel)
   const stretch = run / t.bars
-  return blocks.map((b, i) => ({ block: b, sec: (t.segs[i]?.bars ?? 0) * stretch }))
+  return blocks.map((b, i) => {
+    const top = measured[i]?.top ?? 0
+    const bot = measured[i + 1]?.top ?? t.doc
+    return { block: b, sec: (barsAtPx(t, bot) - barsAtPx(t, top)) * stretch }
+  })
 }
 
 describe('the clock on real charts', () => {
@@ -67,16 +83,19 @@ describe('the clock on real charts', () => {
    * height and no words to pace them. Those beats ARE the scroll time there.
    */
   it('spends the written bars of an intro at the chart’s BPM, to the second', () => {
-    const { blocks, t, run } = timelineOf('ministerio-tons/013-ele-vive-em-mim.cho')
-    const stretch = run / t.bars
-    const played = blocks
-      .map((b, i) => ({ b, sec: (t.segs[i]?.bars ?? 0) * stretch }))
-      .filter((x) => x.b.music.beats > 0)
-    expect(played.length).toBeGreaterThanOrEqual(3)
-    // 72 BPM: one beat is 60/72 s, and the chart's own count sets the time.
-    for (const { b, sec } of played) expect(sec).toBeCloseTo(b.music.beats * (60 / 72), 4)
-    // The 32-beat intro of this chart: 26.7 s, not a number the page invented.
-    expect(played[0]?.sec).toBeCloseTo(26.667, 2)
+    const { blocks, t, measured } = timelineOf('sda/013-ele-vive-em-mim.cho')
+    const span = (i: number, from = i) =>
+      barsAtPx(t, measured[i + 1]?.top ?? t.doc) - barsAtPx(t, measured[from]?.top ?? 0)
+    const intro = blocks.findIndex((b) => b.music.beats === 32)
+    expect(intro).toBeGreaterThan(0)
+    // 72 BPM: one beat is 60/72 s. The 32-beat intro is 26.7 s of wall clock,
+    // not a number the page invented — and not 26.7 s plus the "INTRODUÇÃO"
+    // label, which used to sit on the clock as average-pace paper.
+    expect(span(intro)).toBeCloseTo(32 * (60 / 72), 2)
+    const inter = blocks.findIndex((b, i) => i > intro && b.music.beats === 16)
+    expect(inter).toBeGreaterThan(0)
+    expect(blocks[inter - 1]?.kind).toBe('comment')
+    expect(span(inter, inter - 1)).toBeCloseTo(16 * (60 / 72), 2)
   })
 
   /**
@@ -85,9 +104,9 @@ describe('the clock on real charts', () => {
    */
   it('never lets a mark on a sung line swallow the rows it sits on', () => {
     for (const rel of [
-      'ministerio-tons/088-minha-ofertinha.cho',
-      'ministerio-tons/060-deixai-vir-pequeninos-h588.cho',
-      'entrega-1.cho',
+      'sda/088-minha-ofertinha.cho',
+      'sda/060-deixai-vir-a-mim-os-pequeninos-h588.cho',
+      'sda/078-entrega-h310.cho',
     ]) {
       for (const { block, sec } of wall(rel)) {
         if (block.kind !== 'stanza' && block.kind !== 'chorus') continue
@@ -99,20 +118,15 @@ describe('the clock on real charts', () => {
   })
 
   /**
-   * Two choruses of the same shape must roll at the same pace. In
-   * `060-deixai-vir` they did not: the second one ends on a stray `[D]x` and
-   * that single character used to declare the whole chorus one beat long — it
-   * went by 44× faster than the chorus above it, at 341 px/s.
-   *
-   * Read as a tail, the mark says what it always said: hold one more beat. At
-   * 82 BPM that is 0.73 s of difference between the two, and nothing more.
+   * Two choruses of the same shape must roll at the same pace. A stray mark
+   * used to declare the whole second chorus one beat long.
    */
   it('rolls repeats of the same block at the same pace', () => {
-    const [first, second] = wall('ministerio-tons/060-deixai-vir-pequeninos-h588.cho')
+    const [first, second] = wall('sda/002-em-gratidao.cho')
       .filter((x) => x.block.kind === 'chorus')
       .map((x) => x.sec)
     expect(first).toBeGreaterThan(0)
-    expect(second).toBeCloseTo((first ?? 0) + 60 / 82, 4)
+    expect(second).toBeCloseTo(first ?? 0, 4)
   })
 
   /**
@@ -122,13 +136,13 @@ describe('the clock on real charts', () => {
    */
   it('keeps the run and the timeline the same number, on every chart', () => {
     for (const rel of [
-      'entrega-1.cho',
-      'entrega-2.cho',
-      'entrega-3.cho',
-      'ministerio-tons/002-em-gratidao.cho',
-      'ministerio-tons/013-ele-vive-em-mim.cho',
-      'ministerio-tons/088-minha-ofertinha.cho',
-      'jesus-tu-es-a-minha-vida-1.cho',
+      'sda/078-entrega-h310.cho',
+      'sda/002-em-gratidao.cho',
+      'sda/013-ele-vive-em-mim.cho',
+      'sda/088-minha-ofertinha.cho',
+      'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho',
+      'sda/010-adora-lo.cho',
+      'sda/052-fidelidade-e-missao.cho',
     ]) {
       const { t, run, clock } = timelineOf(rel)
       expect(run).toBeCloseTo(t.bars, 5)
@@ -142,13 +156,75 @@ describe('the clock on real charts', () => {
    * dense verse, and that is the point of a musical clock. What it may not do
    * is lurch: before the layering, one chart ran from 4.9 px/s to 291 px/s.
    */
+  /**
+   * 087 — Jesus, Tu És a minha vida. A musician who starts on the downbeat
+   * after the count-in is at "Jesus, Tu És meu Pai querido" after the written
+   * intro, two interludes and five four-line stanzas: 218 s at the chart's
+   * 60 BPM. The clock used to spend 54 s on "BEM SUAVE", "INTRODUÇÃO" and the
+   * chrome pad first, so on a phone that line was still below the fold.
+   */
+  /**
+   * 088 is 4/4 at 136. Sixteen `x///` marks on the intro are four bars of
+   * quarter notes, not eight bars of 2/4. Unmarked `[C] [F] [C]` on a lyric
+   * is not duration — those rows follow `{duration:}` when the chart has one,
+   * and the placeholder estimate when it does not.
+   */
+  it('reads 088 in 4/4 and does not guess duration from unmarked chords', () => {
+    const { blocks, clock, t } = timelineOf('sda/088-minha-ofertinha.cho')
+    expect(clock.beatsPerBar).toBe(4)
+    expect(clock.marksPerBeat).toBe(1)
+    expect(clock.bpm).toBe(136)
+    expect(clock.durationSec).toBe(72)
+    const intro = blocks.find((b) => b.music.beats === 16)
+    expect(intro).toBeDefined()
+    expect(16 / clock.beatsPerBar).toBe(4)
+    const beat = 60 / clock.bpm
+    const sung = blocks.filter((b) => b.music.rows > 0)
+    const tails = sung.reduce((a, b) => a + b.music.tail, 0)
+    const played = blocks.reduce((a, b) => a + b.music.beats, 0)
+    // Exact layer: written marks only. Sung rows fill the rest of {duration:}.
+    expect(t.exact).toBeCloseTo((played + tails) * beat, 3)
+    expect(t.est).toBeCloseTo(72 - t.exact, 3)
+  })
+
+  it('has Pai querido on a phone screen when the musician gets there', () => {
+    const PHONE = 700
+    const { blocks, t, run, measured, doc } = timelineOf(
+      'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho',
+      {
+        topPad: 100,
+        bottomPad: 178,
+        viewport: PHONE,
+        width: 390,
+      },
+    )
+    const idx = blocks.findIndex(
+      (b) => b.kind === 'stanza' && b.rows.some((r) => /Pai que/i.test(r.plain)),
+    )
+    expect(idx).toBeGreaterThan(0)
+    const line = measured[idx]
+    expect(line).toBeDefined()
+    const arrive = barsAtPx(t, line!.top)
+    // Written music to that line: 16 + 34 + 36 + 12 + 36 + 36 + 12 + 36 = 218 s.
+    // A 54 s comment tax put it at 272 s — past a 4:37 recording.
+    expect(arrive).toBeGreaterThan(180)
+    expect(arrive).toBeLessThan(230)
+    const musician = 218
+    const anchor = anchorPx(PHONE, doc)
+    const max = Math.max(0, doc - PHONE)
+    const scroll = Math.min(max, scrollAtPx(pxAtBars(t, musician), anchor))
+    expect(line!.top).toBeGreaterThanOrEqual(scroll)
+    expect(line!.top).toBeLessThan(scroll + PHONE - 80)
+    expect(run).toBeLessThan(290)
+  })
+
   it('holds one recognisable pace across a chart', () => {
     for (const rel of [
-      'ministerio-tons/010-adoralo.cho',
-      'ministerio-tons/013-ele-vive-em-mim.cho',
-      'ministerio-tons/052-fidelidade-e-missao.cho',
-      'entrega-1.cho',
-      'jesus-tu-es-a-minha-vida-1.cho',
+      'sda/010-adora-lo.cho',
+      'sda/013-ele-vive-em-mim.cho',
+      'sda/052-fidelidade-e-missao.cho',
+      'sda/078-entrega-h310.cho',
+      'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho',
     ]) {
       const speeds = wall(rel)
         .filter((x) => x.block.music.rows > 0 && x.sec > 0)
@@ -157,5 +233,116 @@ describe('the clock on real charts', () => {
       const slowest = Math.min(...speeds)
       expect(fastest / slowest).toBeLessThan(4)
     }
+  })
+})
+
+/**
+ * Where the page IS, in seconds, on real charts.
+ *
+ * The clock above says how long each stretch of paper lasts. This says what
+ * the reader actually sees, which is a different question and the one that was
+ * wrong: with the whole clock correct to the second, the page stood dead still
+ * for 25 to 96 seconds at the start of every chart in the corpus — a third of
+ * `entrega-2` and half of `088-minha-ofertinha`, a chart with 29px of scroll
+ * in it. The anchor asked for half a viewport of paper before it would move,
+ * and half a viewport is the intro plus most of the first verse.
+ */
+describe('where the page is', () => {
+  const PHONE = 860
+
+  /** Scroll offset at a given second, the way the RAF loop computes it. */
+  function pageAt(rel: string, viewport = PHONE) {
+    const { blocks, clock, t, run } = timelineOf(rel)
+    let doc = 0
+    for (const b of blocks) doc += heightOf(b) + GAP
+    const anchor = anchorPx(viewport, doc)
+    const max = Math.max(0, doc - viewport)
+    return {
+      run,
+      max,
+      anchor,
+      at: (sec: number) =>
+        Math.min(max, scrollAtPx(pxAtBars(t, (sec / run) * t.bars), anchor)),
+    }
+  }
+
+  const CORPUS = [
+    'sda/078-entrega-h310.cho',
+    'sda/084-escuta-meu-clamor.cho',
+    'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho',
+    'sda/002-em-gratidao.cho',
+    'sda/010-adora-lo.cho',
+    'sda/013-ele-vive-em-mim.cho',
+    'sda/060-deixai-vir-a-mim-os-pequeninos-h588.cho',
+    'sda/088-minha-ofertinha.cho',
+    'sda/094-maranata-ja-2024.cho',
+    'sda/001-tudo-que-ha-de-bom-em-mim.cho',
+  ]
+
+  it('never freezes the chart at the start — every chart is moving inside a second', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      // A chart shorter than the frame has nothing to scroll, and saying so is
+      // the honest answer; every other chart must be visibly alive at once.
+      if (p.max < 1) continue
+      expect(p.at(1), rel).toBeGreaterThan(0)
+    }
+  })
+
+  it('has covered a readable distance by the time the intro is over', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      if (p.max < 1) continue
+      // 30s in — past the intro of every chart in the corpus — the page has
+      // moved a line of chart, or all the paper the chart has, whichever comes
+      // first: `088-minha-ofertinha` is 29px taller than the frame in total.
+      expect(p.at(30), rel).toBeGreaterThanOrEqual(Math.min(40, p.max))
+    }
+  })
+
+  it('never asks a chart for more room than it has', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      expect(p.anchor, rel).toBeLessThanOrEqual(p.max)
+    }
+  })
+
+  it('reaches the end of the paper by the end of the song', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      expect(p.at(p.run), rel).toBeCloseTo(p.max, 0)
+    }
+  })
+
+  it('never runs the page backwards', () => {
+    for (const rel of CORPUS) {
+      const p = pageAt(rel)
+      let prev = -1
+      for (let s = 0; s <= p.run; s += p.run / 200) {
+        const now = p.at(s)
+        expect(now, `${rel} at ${s.toFixed(1)}s`).toBeGreaterThanOrEqual(prev)
+        prev = now
+      }
+    }
+  })
+
+  /**
+   * A drag has to land the playhead where the reader put it, or the chart
+   * jumps back the moment the loop takes over again.
+   */
+  it('reads a dragged position back to the music that is showing', () => {
+    for (const anchor of [0, 40, 292]) {
+      for (const px of [0, 10, 120, 400, 2000]) {
+        expect(pxAtScroll(scrollAtPx(px, anchor), anchor)).toBeCloseTo(px, 6)
+      }
+    }
+  })
+
+  it('rests the music a third down the frame once there is room for it', () => {
+    // Tall chart, deep into the song: the anchor is fully built.
+    const anchor = anchorPx(PHONE, 4000)
+    expect(anchor).toBe(292)
+    const px = 2000
+    expect(px - scrollAtPx(px, anchor)).toBe(anchor)
   })
 })

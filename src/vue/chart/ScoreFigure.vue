@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { parseScore } from 'titan-chordpro-ui'
+import { parseScore } from '@henryavila/titan-chordpro-ui'
 import { drawScore, loadVex, vexNow } from '../edit/score-draw'
 
 const props = withDefaults(

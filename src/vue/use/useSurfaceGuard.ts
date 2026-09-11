@@ -20,7 +20,7 @@ const WARNING =
   '[Titan Chordpro] Viewer sem altura resolvível: caiu no piso de min-height:460px dentro ' +
   'de uma página que rola. Dê ao ancestral imediato uma altura definida (ex.: ' +
   'height:calc(100dvh - 88px)) e não sobrescreva height/overflow/position do root nem do ' +
-  'scroller. A posição em fluxo do frame deve igualar o top do sticky. Ver docs/EMBED-SDA.md.'
+  'scroller. Numa ficha, o frame é 100dvh no fluxo (snap no topo). Ver docs/CONSUMER.md.'
 
 /**
  * The viewer only works with a scroll region of its own: it is `height:100%`

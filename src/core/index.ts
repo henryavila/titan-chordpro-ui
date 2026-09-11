@@ -36,18 +36,24 @@ export { parse, normalizeSource, setKey, transpose } from './parse'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
-export { buildChoFilename, buildPdfFilename } from './filenames'
+export { buildChoFilename, buildPdfFilename, buildSljaFilename } from './filenames'
+export { lyricsForSlides, lyricsText, exportLyrics } from './lyrics-for-slides'
+export type { SlideSourceLine, ChartLyrics } from './lyrics-for-slides'
 export { exportCho, patchMeta } from './export-cho'
 export { calcScrollSpeed, adjustScrollSpeed, viewerMulStep } from './scroll'
 export {
+  ANCHOR_RAMP,
   ANCHOR_RATIO,
   anchorPx,
+  pxAtScroll,
+  scrollAtPx,
   barsAtPx,
   beatsPerBar,
   buildTimeline,
   clockOf,
   etaSec,
   formatEta,
+  hasSongDuration,
   isPlayedLine,
   lineBeats,
   marksPerBeat,
@@ -70,6 +76,8 @@ export {
   markTight,
 } from './layout'
 export type { ChartLayout, LayoutOpts } from './layout'
+export { readingWords } from './reading-words'
+export type { ReadingCell, ReadingWord } from './reading-words'
 export {
   absorbInto,
   absorbedOp,
@@ -115,6 +123,7 @@ export {
   moveBlock,
   moveChord,
   pasteHarmony,
+  playedColumns,
   removeChord,
   renameChord,
   rowJoin,
@@ -136,6 +145,7 @@ export type {
   HarmonyRow,
   InsertKind,
   MarkCtx,
+  PlayedCol,
   RowParts,
 } from './block-edit'
 export {
@@ -165,10 +175,13 @@ export { looksLikeOnSong, normalizeOnSong } from './onsong'
 export {
   convert,
   detect,
+  fromCifraClubHtml,
   fromOnSong,
   fromPlain,
   hostOk,
+  isChord,
   isChordLine,
+  looksLikeCifraClubHtml,
   META_KEYS,
   MISSING_LABEL,
   missingOf,
@@ -178,4 +191,4 @@ export {
   toPlain,
   writeMeta,
 } from './import-chordpro'
-export type { ChartMeta, ImportFormat, ImportResult, MetaKey } from './import-chordpro'
+export type { ChartMeta, CifraClubPage, ImportFormat, ImportResult, MetaKey } from './import-chordpro'
