@@ -10,6 +10,8 @@
 | Composições do consumer: palco × ficha, com/sem lista; iframe cancelado (2026-09-10) | [consumer-compositions-2026-09-10.md](./consumer-compositions-2026-09-10.md) |
 | Importar Cifra Club: HTML, pontos de ataque, agrupamento de verso/refrão (2026-09-11) | [cifraclub-import-2026-09-11.md](./cifraclub-import-2026-09-11.md) |
 | Marcas `x///` e lente Só letra (2026-09-11) | [marcas-x-2026-09-11.md](./marcas-x-2026-09-11.md) |
+| Dock telefone: Ajuste no dock, Tema em Mais (2026-09-11) | [phone-dock-fit-theme-2026-09-11.md](./phone-dock-fit-theme-2026-09-11.md) |
+| npm publish stage+2FA; `@henryavila/titan-chordpro-ui@0.1.0` no registry (2026-09-11) | [npm-publish-2026-09-11.md](./npm-publish-2026-09-11.md) |
 
 Consult before changing editor scope or handoff.
 Antes de mexer em integração (componente na página / standalone): leia
@@ -24,3 +26,7 @@ sobre `fixtures/`, nunca em `bars` de segmento.
 Antes de mexer em `x///`, lente Só letra, ou “limpar” marcas da letra: leia
 `marcas-x-2026-09-11.md` e `docs/MARCAS-X.md`. `x` é cabeça do tempo; `//`
 sozinho são tempos válidos.
+Antes de mexer no dock do telefone (fit/tema/mais): leia
+`phone-dock-fit-theme-2026-09-11.md`.
+Antes de publicar no npm / Trusted Publisher: leia
+`npm-publish-2026-09-11.md` — stage + approve 2FA; sem bypass2FA.
