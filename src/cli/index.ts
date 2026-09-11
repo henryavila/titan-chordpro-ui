@@ -1,11 +1,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, extname } from 'node:path'
 import { parse, renderHtml, resolveTheme, transpose } from '../core/index'
-import { buildChoFilename, buildPdfFilename } from '../core/filenames'
+import { buildChoFilename, buildPdfFilename, buildSljaFilename } from '../core/filenames'
 import { semitoneDelta } from '../core/transpose'
 
 function usage(): never {
-  console.error(`titan-chordpro-ui <html|pdf|parse> <file> [--theme light|dark|print|default] [--key A] [-o out]`)
+  console.error(`titan-chordpro-ui <html|pdf|slides|parse> <file> [--theme light|dark|print|default] [--key A] [-o out]`)
   process.exit(1)
 }
 
@@ -19,7 +19,7 @@ async function main() {
   const argv = process.argv.slice(2)
   const cmd = argv[0]
   const file = argv[1]
-  if (!cmd || !file || !['html', 'pdf', 'parse'].includes(cmd)) usage()
+  if (!cmd || !file || !['html', 'pdf', 'slides', 'parse'].includes(cmd)) usage()
 
   let source: string
   try {
@@ -71,6 +71,15 @@ async function main() {
       const { renderPdf } = await import('../pdf/index')
       const bytes = await renderPdf(view)
       const dest = out ?? buildPdfFilename(view.meta.title ?? 'cifra', view.displayKey)
+      const dir = dirname(dest)
+      if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
+      writeFileSync(dest, bytes)
+      return
+    }
+    if (cmd === 'slides') {
+      const { renderSlja } = await import('../slides/index')
+      const bytes = await renderSlja(view)
+      const dest = out ?? buildSljaFilename(view.meta.title ?? 'cifra')
       const dir = dirname(dest)
       if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
       writeFileSync(dest, bytes)

@@ -7,6 +7,7 @@ export type {
   ChordproViewerProps,
   ImageChoice,
   ModesProp,
+  SlideImage,
   ViewerCapabilities,
   WriteMode,
 } from './public'

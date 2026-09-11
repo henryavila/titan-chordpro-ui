@@ -19,6 +19,13 @@ export default defineConfig([
     external: ['jspdf'],
   },
   {
+    entry: { 'slides/index': 'src/slides/index.ts' },
+    format: ['esm'],
+    dts: true,
+    sourcemap: true,
+    splitting: false,
+  },
+  {
     entry: { 'cli/index': 'src/cli/index.ts' },
     format: ['esm'],
     dts: false,

@@ -1,6 +1,6 @@
 # titan-chordpro-ui
 
-Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF.  
+Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF + slides LouvorJA.  
 Repo / pacote npm: **`titan-chordpro-ui`**. Decisão: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md).
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
@@ -25,7 +25,7 @@ pnpm build
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX, view↔edit E0, zen | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`** |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -89,6 +89,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `titan-chordpro-ui/pdf` |
+| `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `titan-chordpro-ui/slides` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o host serve — o que “Inserir · Imagem” oferece |
 | `accent` | `'verde'` | `verde` \| `teal` \| `#hex` \| `rgb()`: a cor dos acordes e tudo que deriva dela |
@@ -452,6 +453,9 @@ Pausa acima de 2,4 s começa medição nova.
   → renderHtml({ theme: 'light' | 'dark' | 'print' })
   → Vue <ChordproViewer>  // UI completa 1 cifra (format-agnostic)
   → renderPdf()           // entry …/pdf
+  → exportLyrics(source)  // letra plaintext (cadastrar sem o viewer)
+  → exportSlja(source)    // entry …/slides — .slja sem montar o viewer
+  → renderSlja(view)      // o mesmo ZIP, a partir do ViewModel
 ```
 
 OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` or CE — not a fork, not a plugin registry.

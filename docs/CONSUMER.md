@@ -62,7 +62,7 @@ export default defineNuxtConfig({
 |---|---|
 | Um SFC: `<ChordproViewer>` | Um `<iframe src="…">` |
 | Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export, ensaio) | Shell do app (login, nav, lista de músicas do site, player) |
+| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio) | Shell do app (login, nav, lista de músicas do site, player) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -334,7 +334,47 @@ O pacote não baixa fontes. O host carrega as faces. Defaults: Sora + Space Mono
 
 ---
 
-## 9. Edição e persistência
+## 9. Letra e slides — sem abrir a cifra
+
+O viewer exporta `.slja` pelo menu **Exportar**. Numa lista de músicas o host
+não precisa montar `<ChordproViewer>`: a string ChordPro basta.
+
+```ts
+import { exportSlja, NoSlideLyricsError } from 'titan-chordpro-ui/slides'
+
+async function baixarSlides(chordpro: string, capa?: Uint8Array, fundo?: Uint8Array) {
+  const { bytes, filename } = await exportSlja(chordpro, {
+    coverImage: capa,      // opcional — default do pacote
+    slidesImage: fundo,    // opcional — default do pacote
+  })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }))
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+```
+
+`NoSlideLyricsError` é a cifra sem letra (só intro/`x///`). Serve no browser
+e num handler Nitro/Node — não puxa Vue. A quebra de slide segue as linhas
+da cifra.
+
+A mesma cifra cadastra a letra — sem acordes, `x///` nem comentário de ensaio:
+
+```ts
+import { exportLyrics } from 'titan-chordpro-ui'
+
+const { title, artist, lyrics } = exportLyrics(chordpro)
+// lyrics: plaintext, linha da cifra = linha; linha em branco = seção
+```
+
+Cifra só instrumental: `lyrics` vem `''`. Não puxa Vue.
+
+No viewer, as mesmas imagens entram pelas props `coverImage` / `slidesImage`.
+
+---
+
+## 10. Edição e persistência
 
 | `modes` | O que existe |
 |---|---|
@@ -352,7 +392,7 @@ antigos sob outro id **não** migram.
 
 ---
 
-## 10. Checklist rápido
+## 11. Checklist rápido
 
 - [ ] Vue 3 único no bundle; CSS do pacote no app
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente

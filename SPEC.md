@@ -8,7 +8,7 @@
 |---|---|
 | Product / repo | **`titan-chordpro-ui`** (view **+** edit, one package) — formerly seed `chordpro-viewer` |
 | Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
-| Packages (npm) | **`titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./vue"` |
+| Packages (npm) | **`titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
 | Repo path | `/Volumes/External/code/titan-chordpro-ui` |
 | Sibling generator | **`titan-chordpro-gen`** — audio → ChordPro — **out of scope** |
 | Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
@@ -90,6 +90,12 @@ export function renderHtml(view: ChordProView, opts?: { theme?: string }): strin
 export function listThemes(): string[]
 export function buildChoFilename(title: string, key: string | null): string
 export function buildPdfFilename(title: string, key: string | null): string
+export function buildSljaFilename(title: string): string
+export function lyricsForSlides(view: ChordProView): SlideSourceLine[]
+export function lyricsText(view: ChordProView): string
+export function exportLyrics(source: string): ChartLyrics
+// ChartLyrics = { title, artist, lyrics }. Host cadastra letra sem Vue.
+// Lyrics drop chords, x///, comments, tab, images. Empty string if none.
 export function exportCho(source: string, opts?: { key?: string | null }): string
 export function calcScrollSpeed(contentHeight: number, durationSeconds: number | null, bpm: number | null): number
 export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): number
@@ -98,6 +104,13 @@ export function createViewerController(opts: { source: string }): ViewerControll
 
 // titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
 export function renderPdf(view: ChordProView, opts: PdfOptions): Promise<Uint8Array>
+
+// titan-chordpro-ui/slides  (separate entry — ZIP / CP1252 stay out of core)
+export function renderSlja(view: ChordProView, opts?: SljaOptions): Promise<Uint8Array>
+export function exportSlja(source: string, opts?: SljaOptions): Promise<SljaFile>
+// SljaFile = { bytes, filename, title }. Host download button: no Vue tree.
+// SljaOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
+// Chart line breaks are the phrasing. Do not reflow like louvorja-slides ASR.
 
 // titan-chordpro-ui/vue
 export { ChordproViewer } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
@@ -171,6 +184,8 @@ export type ChordProLine =
 | `buildPdfFilename('Amazing Grace', 'Am')` | `cifra-amazing-grace-tom-am.pdf` |
 | `buildPdfFilename('Amazing Grace', null)` | `cifra-amazing-grace.pdf` |
 | `buildPdfFilename('Lindo És', 'C#')` | `cifra-lindo-es-tom-c#.pdf` |
+| `buildSljaFilename('Fala Comigo')` | `slides-fala-comigo.slja` |
+| `buildSljaFilename('Lindo És')` | `slides-lindo-es.slja` |
 
 Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
@@ -274,7 +289,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 
 | # | Criterion | How verified |
 |---|---|---|
-| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.` and `./pdf` | `pnpm build` |
+| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.`, `./pdf`, `./slides` and `./vue` | `pnpm build` |
 | A2 | Filename helpers match §4.5 exactly | unit tests ported from SDA |
 | A3 | Scroll helpers match §4.6 exactly | unit tests ported from SDA |
 | A2b | CLI accepts `.cho`, `.chordpro`, and `.onsong` (auto-detect) for `html`/`pdf`/`parse` | integration |

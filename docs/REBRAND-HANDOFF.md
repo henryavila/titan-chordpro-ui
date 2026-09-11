@@ -24,7 +24,7 @@
 | Concern | Decision |
 |---|---|
 | npm package | **`titan-chordpro-ui`** (unscoped) |
-| exports | `"."` (core), `"./pdf"`, `"./vue"` |
+| exports | `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
 | CLI bin | **`titan-chordpro-ui`** |
 | Vue SFC | **`ChordproViewer`** (keep — SDA mental model) |
 | CSS / DOM prefix | **`cpv-*`**, `[data-cpv-scroll]` (keep — technical, stable) |

@@ -9,6 +9,7 @@ import {
   buildTimeline,
   buildChoFilename,
   buildPdfFilename,
+  buildSljaFilename,
   clockOf,
   createSourceSession,
   editTypeScale,
@@ -65,6 +66,7 @@ const props = withDefaults(
     ChordproViewerProps & {
       forceParseError?: boolean
       pdfShouldFail?: boolean
+      slidesShouldFail?: boolean
     }
   >(),
   {
@@ -92,6 +94,7 @@ const props = withDefaults(
     images: () => [],
     forceParseError: false,
     pdfShouldFail: false,
+    slidesShouldFail: false,
     capabilities: () => ({ sourcePane: true }),
   },
 )
@@ -133,6 +136,7 @@ const progress = ref(0)
 const etaLabel = ref('—')
 const sheet = ref(false)
 const pdf = ref<'idle' | 'busy' | 'error'>('idle')
+const slides = ref<'idle' | 'busy' | 'error'>('idle')
 const toast = ref<string | null>(null)
 const toastOut = ref(false)
 const fs = ref(false)
@@ -1581,6 +1585,40 @@ async function doExportPdf() {
   }
 }
 
+async function imageBytes(
+  input: Blob | ArrayBuffer | Uint8Array | undefined,
+): Promise<Uint8Array | undefined> {
+  if (!input) return undefined
+  if (input instanceof Uint8Array) return input
+  if (input instanceof ArrayBuffer) return new Uint8Array(input)
+  return new Uint8Array(await input.arrayBuffer())
+}
+
+async function doExportSlides() {
+  if (slides.value === 'busy') return
+  slides.value = 'busy'
+  try {
+    if (props.slidesShouldFail) throw new Error('simulado')
+    const { renderSlja } = await import('titan-chordpro-ui/slides')
+    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const bytes = await renderSlja(view, {
+      title: meta.value.title ?? 'cifra',
+      coverImage: await imageBytes(props.coverImage),
+      slidesImage: await imageBytes(props.slidesImage),
+    })
+    download(
+      buildSljaFilename(meta.value.title ?? 'cifra'),
+      new Blob([bytes as BlobPart], { type: 'application/zip' }),
+    )
+    slides.value = 'idle'
+    sheet.value = false
+    toastMsg('Slides gerados')
+  } catch {
+    slides.value = 'error'
+    sheet.value = false
+  }
+}
+
 // ------------------------------------------------------------------ listeners
 
 function wake() {
@@ -1773,6 +1811,7 @@ function syncHostSource() {
   progress.value = spot ? spot.u || 0 : 0
   etaLabel.value = '—'
   pdf.value = 'idle'
+  slides.value = 'idle'
   sheet.value = false
   touch()
   // The reader's own version of THIS chart, and the key they pinned to it.
@@ -2639,7 +2678,7 @@ defineExpose({
         >
           <CpvIcon name="pencil" :size="16" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
         </button>
-        <button class="cpv-ghost" aria-label="Exportar" title="Exportar CHO ou PDF" style="width:36px;height:36px;" @click="sheet = true"><CpvIcon name="download" :size="16" /></button>
+        <button class="cpv-ghost" aria-label="Exportar" title="Exportar CHO, PDF ou slides" style="width:36px;height:36px;" @click="sheet = true"><CpvIcon name="download" :size="16" /></button>
       </div>
     </div>
 
@@ -2860,6 +2899,13 @@ defineExpose({
       />
     </div>
 
+    <div v-if="slides === 'error'" class="cpv-error-banner">
+      <CpvIcon name="alertTri" :size="18" style="color:var(--danger)" />
+      <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em slides falhou.</span>
+      <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="slides = 'idle'; doExportSlides()">Tentar de novo</button>
+      <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="slides = 'idle'"><CpvIcon name="x" :size="14" /></button>
+    </div>
+
     <div v-if="pdf === 'error'" class="cpv-error-banner">
       <CpvIcon name="alertTri" :size="18" style="color:var(--danger)" />
       <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em PDF falhou.</span>
@@ -2923,12 +2969,14 @@ defineExpose({
       v-if="sheet"
       :export-key-note="exportKeyNote"
       :pdf-busy="pdf === 'busy'"
+      :slides-busy="slides === 'busy'"
       :compact="compact"
       :has-overlay="ov.hasOverlay.value"
       :export-orig="ov.exportOrig.value"
       @close="sheet = false"
       @cho="doExportCho"
       @pdf="doExportPdf"
+      @slides="doExportSlides"
       @pick="(orig) => { ov.exportOrig.value = orig; toggleOriginal(orig) }"
     />
 
@@ -3046,7 +3094,7 @@ defineExpose({
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFit()"><CpvIcon name="scan" :size="18" /><span class="cpv-more-copy">Ajuste ao espaço</span><span>{{ fitOn ? 'Ligado' : 'Desligado' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes, graus ou só letra</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro ou PDF</span></button>
+        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro, PDF ou slides</span></button>
         <template v-if="showMine">
           <button class="cpv-surface-btn cpv-more-item" data-more-original @click="moreOpen = false; toggleOriginal(!ov.showOriginal.value)">
             <CpvIcon name="layers" :size="18" /><span class="cpv-more-copy">{{ ov.showOriginal.value ? 'Ler minha versão' : 'Ler o original' }}</span><span>{{ ov.mineCount.value }} {{ ov.mineCount.value === 1 ? 'ajuste seu' : 'ajustes seus' }}</span>
@@ -3124,6 +3172,6 @@ defineExpose({
     />
 
     <div class="cpv-live" role="status" aria-live="polite">{{ toast }}</div>
-    <div class="cpv-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : '') }}</div>
+    <div class="cpv-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : '') }}</div>
   </div>
 </template>

@@ -12,6 +12,9 @@ export type ModesProp = 'none' | 'local' | 'content' | 'both'
 
 export type ViewerCapabilities = { sourcePane?: boolean }
 
+/** Cover or lyric-slide background the host wants in the `.slja`. */
+export type SlideImage = Blob | ArrayBuffer | Uint8Array
+
 /**
  * Host-facing props of `<ChordproViewer>`. Test-only knobs stay off this type.
  */
@@ -94,6 +97,16 @@ export type ChordproViewerProps = {
    * PDF import. Without it, PDFs are refused up front.
    */
   readPdf?: (file: File) => Promise<string>
+  /**
+   * Cover JPEG/PNG for the `.slja` (LouvorJA `imagens\Capa.jpg`).
+   * Omitted → the package default.
+   */
+  coverImage?: SlideImage
+  /**
+   * Background for every lyric slide (`imagens\slides.jpg`).
+   * Omitted → the package default. The host overrides both independently.
+   */
+  slidesImage?: SlideImage
 }
 
 export type ChordproViewerEmits = {

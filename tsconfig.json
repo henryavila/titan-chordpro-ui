@@ -16,6 +16,7 @@
     "paths": {
       "titan-chordpro-ui": ["./src/core/index.ts"],
       "titan-chordpro-ui/pdf": ["./src/pdf/index.ts"],
+      "titan-chordpro-ui/slides": ["./src/slides/index.ts"],
       "titan-chordpro-ui/vue": ["./src/vue/index.ts"]
     }
   },

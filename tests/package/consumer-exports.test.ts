@@ -28,7 +28,7 @@ describe('package.json is what a published consumer resolves', () => {
     exports: Record<string, string | { types?: string; import?: string; default?: string }>
   }
 
-  it('exposes core, pdf and vue under dist — never src', () => {
+  it('exposes core, pdf, slides and vue under dist — never src', () => {
     expect(pkg.main).toBe('./dist/core/index.js')
     expect(pkg.types).toBe('./dist/core/index.d.ts')
     expect(pkg.exports['.']).toMatchObject({
@@ -38,6 +38,10 @@ describe('package.json is what a published consumer resolves', () => {
     expect(pkg.exports['./pdf']).toMatchObject({
       types: './dist/pdf/index.d.ts',
       import: './dist/pdf/index.js',
+    })
+    expect(pkg.exports['./slides']).toMatchObject({
+      types: './dist/slides/index.d.ts',
+      import: './dist/slides/index.js',
     })
     expect(pkg.exports['./vue']).toMatchObject({
       types: './dist/vue/index.d.ts',
@@ -49,6 +53,7 @@ describe('package.json is what a published consumer resolves', () => {
       pkg.types,
       (pkg.exports['.'] as { types: string }).types,
       (pkg.exports['./pdf'] as { types: string }).types,
+      (pkg.exports['./slides'] as { types: string }).types,
       (pkg.exports['./vue'] as { types: string }).types,
     ]
     for (const p of typesPaths) {
@@ -77,6 +82,10 @@ describe('SPEC §4 public API is importable from the package name', () => {
       'listThemes',
       'buildChoFilename',
       'buildPdfFilename',
+      'buildSljaFilename',
+      'lyricsForSlides',
+      'lyricsText',
+      'exportLyrics',
       'exportCho',
       'calcScrollSpeed',
       'adjustScrollSpeed',
@@ -130,7 +139,8 @@ describe('Vue binding consumes core through the package name', () => {
 })
 
 describe('built dist (consumer tarball shape)', () => {
-  const built = existsSync(join(root, 'dist/core/index.js'))
+  const built =
+    existsSync(join(root, 'dist/core/index.js')) && existsSync(join(root, 'dist/slides/index.js'))
 
   it.skipIf(!built)('ships vue types next to the vue JS', () => {
     expect(existsSync(join(root, 'dist/vue/index.d.ts'))).toBe(true)
@@ -160,9 +170,10 @@ describe('built dist (consumer tarball shape)', () => {
     expect(hashed).toEqual([])
   })
 
-  it.skipIf(!built)('core and pdf type files exist', () => {
+  it.skipIf(!built)('core, pdf and slides type files exist', () => {
     expect(existsSync(join(root, 'dist/core/index.d.ts'))).toBe(true)
     expect(existsSync(join(root, 'dist/pdf/index.d.ts'))).toBe(true)
+    expect(existsSync(join(root, 'dist/slides/index.d.ts'))).toBe(true)
     const coreDts = readFileSync(join(root, 'dist/core/index.d.ts'), 'utf8')
     expect(coreDts).toMatch(/export \{/)
     expect(coreDts).toMatch(/type ChordProView/)
@@ -170,11 +181,14 @@ describe('built dist (consumer tarball shape)', () => {
     expect(coreDts).toMatch(/THEME_VARS/)
   })
 
-  it.skipIf(!built)('dist core and pdf load as ESM', async () => {
+  it.skipIf(!built)('dist core, pdf and slides load as ESM', async () => {
     const coreMod = await import(pathToFileURL(join(root, 'dist/core/index.js')).href)
     expect(coreMod.parse).toBeTypeOf('function')
     expect(coreMod.listThemes()).toEqual(expect.arrayContaining(['light', 'dark', 'print']))
     const pdfMod = await import(pathToFileURL(join(root, 'dist/pdf/index.js')).href)
     expect(pdfMod.renderPdf).toBeTypeOf('function')
+    const slidesMod = await import(pathToFileURL(join(root, 'dist/slides/index.js')).href)
+    expect(slidesMod.renderSlja).toBeTypeOf('function')
+    expect(slidesMod.exportSlja).toBeTypeOf('function')
   })
 })

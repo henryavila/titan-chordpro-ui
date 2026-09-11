@@ -4,18 +4,20 @@ withDefaults(
   defineProps<{
     exportKeyNote: string
     pdfBusy: boolean
+    slidesBusy?: boolean
     /** Phone width: the dialog becomes a bottom sheet. */
     compact?: boolean
     /** The reader has a personal version: the file has to say which one it is. */
     hasOverlay?: boolean
     exportOrig?: boolean
   }>(),
-  { compact: false, hasOverlay: false, exportOrig: false },
+  { compact: false, hasOverlay: false, exportOrig: false, slidesBusy: false },
 )
 const emit = defineEmits<{
   close: []
   cho: []
   pdf: []
+  slides: []
   pick: [orig: boolean]
 }>()
 </script>
@@ -74,6 +76,19 @@ const emit = defineEmits<{
         Documento
         <span style="flex:1;" />
         <span v-if="pdfBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
+          <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
+        </span>
+      </button>
+      <button
+        data-export="slides"
+        class="cpv-surface-btn"
+        style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;"
+        @click="emit('slides')"
+      >
+        <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.slja</span>
+        Slide Louvor JA
+        <span style="flex:1;" />
+        <span v-if="slidesBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
           <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
         </span>
       </button>

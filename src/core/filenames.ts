@@ -23,3 +23,8 @@ export function buildPdfFilename(title: string, key: string | null): string {
   const suffix = key ? `-tom-${keyPart(key)}` : ''
   return `cifra-${slug}${suffix}.pdf`
 }
+
+export function buildSljaFilename(title: string): string {
+  const slug = slugify(title) || 'cifra'
+  return `slides-${slug}.slja`
+}
