@@ -176,26 +176,38 @@ async function enterContentEdit(w: ReturnType<typeof mountViewer>) {
   }
 }
 
+async function renameChart(w: ReturnType<typeof mountViewer>, title: string) {
+  await w.get('[data-meta-open]').trigger('click')
+  await flushPromises()
+  await w.get('[data-meta-title]').setValue(title)
+  await w.get('[data-meta-apply]').trigger('click')
+  await flushPromises()
+}
+
+async function titleInMeta(w: ReturnType<typeof mountViewer>) {
+  if (!w.find('[data-meta-title]').exists()) {
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+  }
+  return (w.get('[data-meta-title]').element as HTMLInputElement).value
+}
+
 describe('edit chrome (E0)', () => {
   it('editing meta marks the chart dirty and rewrites the directive', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
-
-    const title = w.get('input[aria-label="Título"]')
-    await title.setValue('Outro título')
-    await title.trigger('blur')
-    await flushPromises()
+    await renameChart(w, 'Outro título')
 
     expect(w.text()).toContain('não salvo')
     expect(w.emitted('dirty')?.at(-1)?.[0]).toBe(true)
-    expect(w.get('input[aria-label="Título"]').element).toHaveProperty('value', 'Outro título')
+    expect(await titleInMeta(w)).toBe('Outro título')
 
     await w.get('[data-save]').trigger('click')
     await flushPromises()
-    expect(w.emitted('save')?.at(-1)?.[0]).toContain('{title: Outro título}')
-    expect(w.emitted('update:source')?.at(-1)?.[0]).toContain('{title: Outro título}')
+    expect(String(w.emitted('save')?.at(-1)?.[0] ?? '')).toMatch(/\{title:\s*Outro título\}/)
+    expect(String(w.emitted('update:source')?.at(-1)?.[0] ?? '')).toMatch(/\{title:\s*Outro título\}/)
     expect(w.text()).not.toContain('não salvo')
     w.unmount()
   })
@@ -205,10 +217,7 @@ describe('edit chrome (E0)', () => {
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
-    const title = w.get('input[aria-label="Título"]')
-    await title.setValue('Rascunho vivo')
-    await title.trigger('blur')
-    await flushPromises()
+    await renameChart(w, 'Rascunho vivo')
 
     await w.get('[data-read]').trigger('click')
     await flushPromises()
@@ -217,7 +226,7 @@ describe('edit chrome (E0)', () => {
     expect(w.get('[data-edit]').text()).toContain('rascunho')
 
     await enterContentEdit(w)
-    expect(w.get('input[aria-label="Título"]').element).toHaveProperty('value', 'Rascunho vivo')
+    expect(await titleInMeta(w)).toBe('Rascunho vivo')
     w.unmount()
   })
 
@@ -226,10 +235,7 @@ describe('edit chrome (E0)', () => {
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
-    const title = w.get('input[aria-label="Título"]')
-    await title.setValue('Some outro')
-    await title.trigger('blur')
-    await flushPromises()
+    await renameChart(w, 'Some outro')
 
     expect(w.get('[data-discard]').text()).toBe('Descartar')
     await w.get('[data-discard]').trigger('click')
@@ -238,10 +244,7 @@ describe('edit chrome (E0)', () => {
     await w.get('[data-discard]').trigger('click')
     await flushPromises()
     expect(w.text()).not.toContain('não salvo')
-    expect(w.get('input[aria-label="Título"]').element).toHaveProperty(
-      'value',
-      '087 - Jesus, Tu És a minha vida',
-    )
+    expect(await titleInMeta(w)).toBe('087 - Jesus, Tu És a minha vida')
     w.unmount()
   })
 
@@ -252,16 +255,13 @@ describe('edit chrome (E0)', () => {
     await enterContentEdit(w)
     expect(w.find('[data-redo]').exists()).toBe(false)
 
-    const title = w.get('input[aria-label="Título"]')
-    await title.setValue('Mudou')
-    await title.trigger('blur')
-    await flushPromises()
+    await renameChart(w, 'Mudou')
     await w.get('[data-undo]').trigger('click')
     await flushPromises()
     expect(w.find('[data-redo]').exists()).toBe(true)
     await w.get('[data-redo]').trigger('click')
     await flushPromises()
-    expect(w.get('input[aria-label="Título"]').element).toHaveProperty('value', 'Mudou')
+    expect(await titleInMeta(w)).toBe('Mudou')
     w.unmount()
   })
 })

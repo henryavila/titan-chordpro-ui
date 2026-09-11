@@ -112,9 +112,10 @@ describe('Editar lives in the bottom bar at every width', () => {
       await pick.trigger('click')
       await flushPromises()
     }
-    const title = w.get('input[aria-label="Título"]')
-    await title.setValue('Rascunho vivo')
-    await title.trigger('blur')
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Rascunho vivo')
+    await w.get('[data-meta-apply]').trigger('click')
     await flushPromises()
     await w.get('[data-read]').trigger('click')
     await flushPromises()
