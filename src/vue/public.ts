@@ -92,6 +92,12 @@ export type ChordproViewerProps = {
    */
   fetchChart?: (url: string) => Promise<string>
   /**
+   * Fetches a YouTube watch page (or already-parsed duration) so a Cifra Club
+   * import can fill `{duration:}`. The core parses the HTML; the host does the
+   * network. Without it, duration stays a manual field.
+   */
+  fetchYoutubeDuration?: (videoId: string) => Promise<string>
+  /**
    * Reads a PDF that has text. `pdfText` from `titan-chordpro-ui/pdf` does it;
    * it is a prop so the optional `pdfjs-dist` only loads for a host that wants
    * PDF import. Without it, PDFs are refused up front.

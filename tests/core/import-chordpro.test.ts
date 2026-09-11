@@ -24,6 +24,8 @@ import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
 const UNIDOS = readFileSync(join(helpers, 'cifraclub-unidos.html'), 'utf8')
 const TU_ES_TABS = readFileSync(join(helpers, 'cifraclub-tu-es-tabs.html'), 'utf8')
+const WONDERWALL_CAPO = readFileSync(join(helpers, 'cifraclub-wonderwall-capo.html'), 'utf8')
+const CEU_AZUL_STRUM = readFileSync(join(helpers, 'cifraclub-ceu-azul-strum.html'), 'utf8')
 
 describe('recognising what was handed over', () => {
   it('knows nothing from something', () => {
@@ -320,5 +322,56 @@ describe('Cifra Club chords and HTML', () => {
     // Intro chords appear once — not again as a TAB caption.
     expect(r.source.match(/\[Bm7\] \[A\/C#\] \[G2\]/g)).toHaveLength(1)
     expect(r.source).toContain('Junto ao poço')
+  })
+
+  it('reads tempo, time, youtube and strum from the songData payload', () => {
+    const page = fromCifraClubHtml(TU_ES_TABS)
+    expect(page.tempo).toBe('71')
+    expect(page.time).toBe('4/4')
+    expect(page.youtubeId).toBe('YXnQ02HYB1w')
+    expect(page.capo).toBe('0')
+    expect(page.strums).toHaveLength(1)
+    expect(page.strums[0]?.bpm).toBe(71)
+    expect(page.strums[0]?.slots).toHaveLength(16)
+    expect(page.strums[0]?.slots[0]).toEqual({ dir: 'down', contact: 'hit', essence: 'normal' })
+    expect(page.strums[0]?.slots[1]?.contact).toBe('ghost')
+
+    const r = convert(TU_ES_TABS)
+    const meta = readMeta(r.source)
+    expect(meta.tempo).toBe('71')
+    expect(meta.time).toBe('4/4')
+    expect(meta.x_youtube).toBe('YXnQ02HYB1w')
+    expect(meta.capo).toBeUndefined()
+    expect(meta.x_strum).toContain('bpm=71')
+    expect(meta.x_strum).toContain('pat=')
+    expect(missingOf(meta).filter((k) => k === 'tempo' || k === 'time')).toEqual([])
+  })
+
+  it('transposes shape chords to sounding pitch when the page has a capo', () => {
+    const page = fromCifraClubHtml(WONDERWALL_CAPO)
+    expect(page.capo).toBe('2')
+    expect(page.key).toBe('Em')
+    expect(page.body).toContain('Em')
+
+    const r = convert(WONDERWALL_CAPO)
+    const meta = readMeta(r.source)
+    expect(meta.capo).toBe('2')
+    // Em shapes + capo 2 → F#m sounding
+    expect(meta.key).toBe('F#m')
+    expect(r.source).toContain('[F#m]')
+    expect(r.source).toContain('[A]')
+    expect(r.source).toContain('[E]')
+    expect(r.source).toMatch(/\{capo:2\}/)
+  })
+
+  it('keeps every strumming section and maps abafada (code 0)', () => {
+    const page = fromCifraClubHtml(CEU_AZUL_STRUM)
+    expect(page.strums.length).toBe(2)
+    expect(page.strums[0]?.label).toContain('Parte 1')
+    const muted = page.strums[0]?.slots.find((s) => s.essence === 'muted')
+    expect(muted).toEqual({ dir: 'down', contact: 'hit', essence: 'muted' })
+    const r = convert(CEU_AZUL_STRUM)
+    // First pattern is what writeMeta stores
+    expect(readMeta(r.source).x_strum).toContain('Da')
   })
 })

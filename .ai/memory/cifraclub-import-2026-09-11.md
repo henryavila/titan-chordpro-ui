@@ -3,6 +3,8 @@
 O link de cifra nova é **só Cifra Club**. Arquivo e texto colado continuam
 ChordPro / OnSong / acordes sobre a letra.
 
+Plano consolidado: `plano-import-cifraclub-2026-09-11.md` (implementado).
+
 ## O que o designer tinha vs o que faltava
 
 `importar.js` convertia texto. Não lia o HTML. A demo devolvia `toPlain` de uma
@@ -11,8 +13,12 @@ fixture — a URL do Unidos em Cristo virava Escuta Meu Clamor.
 ## Como lê a página
 
 - `fetchChart` (host) busca o HTML. Na demo: proxy `/__cifra_fetch` (CORS).
+- `fetchYoutubeDuration` → `/__youtube_duration?id=` para `{duration:}`.
 - `fromCifraClubHtml`: `<pre data-chord-content>`, pares `.kvMV`, JSON-LD
-  (título/artista), tom no `data-anchor="--chord-tone"`.
+  (título/artista), tom no `data-anchor="--chord-tone"`, mais `songData`
+  (bpm, timeSignature, capo, youtubeID, strummings).
+- Capo>0: transpõe formas → o que soa + `{capo:N}`.
+- Batida: `{x_strum:}` com essências normal/acento/mute/abafada; UI com toggle.
 - Acordes BR: `D7(4)`, `C7M`, `Em7(11)`. `unwrapChord` não pode comer o `)` de
   `D7(4)`.
 

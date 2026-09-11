@@ -87,6 +87,45 @@ export function handleCifraFetch(
   })()
 }
 
+const YT_ID = /^[A-Za-z0-9_-]{11}$/
+
+/**
+ * Duration of a YouTube clip for `{duration:}` after a Cifra Club import.
+ * The watch page carries lengthSeconds; the browser cannot fetch it itself.
+ */
+export function handleYoutubeDuration(
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: () => void,
+): void {
+  const raw = req.url ?? ''
+  const path = raw.split('?')[0]
+  if (path !== '/__youtube_duration') {
+    next()
+    return
+  }
+  const id = new URL(raw, 'http://local').searchParams.get('id') ?? ''
+  if (!YT_ID.test(id)) {
+    res.statusCode = 400
+    res.end()
+    return
+  }
+  void (async () => {
+    try {
+      const r = await fetch(`https://www.youtube.com/watch?v=${id}`, {
+        headers: { 'user-agent': 'Mozilla/5.0 (compatible; titan-chordpro-ui)' },
+      })
+      const html = await r.text()
+      res.statusCode = r.ok ? 200 : 502
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.end(html)
+    } catch {
+      res.statusCode = 502
+      res.end()
+    }
+  })()
+}
+
 export function previewDirPlugin(dir = process.env.TITAN_PREVIEW_DIR): Plugin {
   return {
     name: 'titan-preview-dir',
@@ -100,6 +139,7 @@ export function previewDirPlugin(dir = process.env.TITAN_PREVIEW_DIR): Plugin {
     configureServer(server) {
       server.middlewares.use(handlePreviewRequest(dir))
       server.middlewares.use(handleCifraFetch)
+      server.middlewares.use(handleYoutubeDuration)
     },
   }
 }

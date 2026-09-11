@@ -54,6 +54,8 @@ export {
   contentOrigin,
   etaSec,
   formatEta,
+  durationFromYoutubeHtml,
+  formatDurationFromSec,
   hasSongDuration,
   isPlayedLine,
   lineBeats,
@@ -197,3 +199,14 @@ export {
   writeMeta,
 } from './import-chordpro'
 export type { ChartMeta, CifraClubPage, ImportFormat, ImportResult, MetaKey } from './import-chordpro'
+export {
+  decodeStrumPat,
+  encodeStrumPat,
+  formatXStrum,
+  meterFromTimeSignature,
+  parseXStrum,
+  patternFromCc,
+  slotFromCcCode,
+  slotsFromCcPattern,
+} from './strum'
+export type { StrumContact, StrumDir, StrumEssence, StrumPattern, StrumSlot } from './strum'

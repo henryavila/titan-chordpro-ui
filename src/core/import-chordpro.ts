@@ -12,7 +12,9 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
+import { formatXStrum, patternFromCc, type StrumPattern } from './strum'
 import { hasSongDuration } from './timeline'
+import { transposeTextChords, transposeToken, usesFlats } from './transpose'
 
 const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
@@ -280,12 +282,26 @@ export function convert(text: string): ImportResult {
   if (fmt === 'cifraclub') {
     const page = fromCifraClubHtml(text)
     if (!page.body.trim()) return { source: '', format: 'vazio', label: '', changed: false }
-    const converted = stripLyricDots(fromPlain(page.body))
-    const meta = {
+    let converted = stripLyricDots(fromPlain(page.body))
+    let key = page.key
+    const capoN = Math.max(0, Math.min(9, Number(page.capo) || 0))
+    // CC writes shapes; Titan stores sounding chords + {capo:N}.
+    if (capoN > 0) {
+      const flats = usesFlats(key)
+      converted = transposeTextChords(converted, capoN, flats)
+      if (key) key = transposeToken(key, capoN, flats)
+    }
+    const strum = page.strums[0]
+    const meta: ChartMeta = {
       ...readMeta(converted),
       ...(page.title ? { title: page.title } : {}),
       ...(page.subtitle ? { subtitle: page.subtitle } : {}),
-      ...(page.key ? { key: page.key } : {}),
+      ...(key ? { key } : {}),
+      ...(page.tempo ? { tempo: page.tempo } : {}),
+      ...(page.time ? { time: page.time } : {}),
+      ...(capoN > 0 ? { capo: String(capoN) } : {}),
+      ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
+      ...(strum ? { x_strum: formatXStrum(strum) } : {}),
     }
     return {
       source: writeMeta(converted, meta),
@@ -301,9 +317,20 @@ export function convert(text: string): ImportResult {
 
 // ----------------------------------------------------------------- metadata
 
-export const META_KEYS = ['title', 'subtitle', 'key', 'tempo', 'time', 'duration', 'x_origem'] as const
+export const META_KEYS = [
+  'title',
+  'subtitle',
+  'key',
+  'tempo',
+  'time',
+  'duration',
+  'capo',
+  'x_origem',
+  'x_youtube',
+  'x_strum',
+] as const
 export type MetaKey = (typeof META_KEYS)[number]
-export type ChartMeta = Partial<Record<MetaKey | 'capo', string>>
+export type ChartMeta = Partial<Record<MetaKey, string>>
 
 export function readMeta(source: string): ChartMeta {
   const meta: ChartMeta = {}
@@ -316,7 +343,7 @@ export function readMeta(source: string): ChartMeta {
       const v = (d[2] ?? '').trim()
       if (k === 't') meta.title = v
       else if (k === 'st') meta.subtitle = v
-      else if ((META_KEYS as readonly string[]).includes(k) || k === 'capo') meta[k as MetaKey] = v
+      else if ((META_KEYS as readonly string[]).includes(k)) meta[k as MetaKey] = v
     })
   return meta
 }
@@ -414,7 +441,152 @@ function stripLyricDots(source: string): string {
     .join('\n')
 }
 
-export type CifraClubPage = { body: string; title: string; subtitle: string; key: string }
+export type CifraClubPage = {
+  body: string
+  title: string
+  subtitle: string
+  key: string
+  tempo: string
+  time: string
+  capo: string
+  youtubeId: string
+  strums: StrumPattern[]
+}
+
+/**
+ * Next.js flight embeds songData with `\"` escapes. Turn those into real
+ * quotes so ordinary JSON walking works. Only used for metadata extraction.
+ */
+function flightJsonView(html: string): string {
+  return String(html ?? '').replace(/\\"/g, '"')
+}
+
+/**
+ * Read a JSON value that starts at `from` in `text`. Understands strings with
+ * escapes so nested `{` / `[` inside `"…"` do not break the walk.
+ */
+function readJsonValue(text: string, from: number): { value: unknown; end: number } | null {
+  let i = from
+  while (i < text.length && /\s/.test(text[i] ?? '')) i++
+  const start = i
+  const ch = text[i]
+  if (ch === '"' || ch === "'") {
+    const quote = ch
+    i++
+    let out = ''
+    while (i < text.length) {
+      const c = text[i++]
+      if (c === '\\') {
+        const n = text[i++]
+        if (n === 'n') out += '\n'
+        else if (n === 't') out += '\t'
+        else if (n === '"' || n === "'" || n === '\\' || n === '/') out += n ?? ''
+        else if (n === 'u' && i + 3 < text.length) {
+          out += String.fromCharCode(parseInt(text.slice(i, i + 4), 16))
+          i += 4
+        } else out += n ?? ''
+        continue
+      }
+      if (c === quote) break
+      out += c
+    }
+    return { value: out, end: i }
+  }
+  if (ch === '{' || ch === '[') {
+    const open = ch
+    const close = ch === '{' ? '}' : ']'
+    let depth = 0
+    let inStr = false
+    let esc = false
+    for (; i < text.length; i++) {
+      const c = text[i]
+      if (inStr) {
+        if (esc) esc = false
+        else if (c === '\\') esc = true
+        else if (c === '"') inStr = false
+        continue
+      }
+      if (c === '"') {
+        inStr = true
+        continue
+      }
+      if (c === open) depth++
+      else if (c === close) {
+        depth--
+        if (depth === 0) {
+          i++
+          try {
+            return { value: JSON.parse(text.slice(start, i)), end: i }
+          } catch {
+            return null
+          }
+        }
+      }
+    }
+    return null
+  }
+  const lit = text.slice(i).match(/^(true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/)
+  if (lit) return { value: JSON.parse(lit[1]!), end: i + lit[1]!.length }
+  return null
+}
+
+/** Find `"key":` and parse the following JSON value (on a flight-normalized view). */
+function jsonAfterKey(view: string, key: string): unknown {
+  const re = new RegExp(`"${key}"\\s*:`)
+  const m = re.exec(view)
+  if (!m) return undefined
+  const got = readJsonValue(view, m.index + m[0].length)
+  return got?.value
+}
+
+function extractCcStrums(html: string): StrumPattern[] {
+  const view = flightJsonView(html)
+  const raw = jsonAfterKey(view, 'strummings')
+  if (!Array.isArray(raw)) return []
+  const out: StrumPattern[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const pattern = Array.isArray(o.pattern) ? o.pattern.map((n) => Number(n) || 0) : []
+    if (!pattern.length) continue
+    const ts = Array.isArray(o.timeSignature) ? o.timeSignature.map(String) : []
+    const bpm = typeof o.bpm === 'number' ? o.bpm : Number(o.bpm) || null
+    const label = typeof o.section === 'string' ? o.section : 'Padrão'
+    out.push(patternFromCc(pattern, ts, bpm, label))
+  }
+  return out
+}
+
+function extractYoutubeId(html: string): string {
+  const view = flightJsonView(html)
+  // Clip lives on metadata.youtubeID; videoLesson also has one — take the id
+  // that appears before "videoLesson" when both are present.
+  const cut = view.search(/"videoLesson"/)
+  const head = cut >= 0 ? view.slice(0, cut) : view
+  const m = head.match(/"youtubeID"\s*:\s*"([A-Za-z0-9_-]{11})"/)
+  return m?.[1] ?? ''
+}
+
+function extractCapo(html: string): string {
+  const view = flightJsonView(html)
+  const cfg = jsonAfterKey(view, 'config')
+  if (cfg && typeof cfg === 'object' && cfg !== null && 'capo' in cfg) {
+    const n = Number((cfg as { capo: unknown }).capo)
+    if (Number.isFinite(n) && n >= 0) return String(Math.min(9, Math.floor(n)))
+  }
+  const m = view.match(/"capo"\s*:\s*(\d+)/)
+  return m?.[1] ?? '0'
+}
+
+function extractKeyShape(html: string): string {
+  const view = flightJsonView(html)
+  const cfg = jsonAfterKey(view, 'config')
+  if (cfg && typeof cfg === 'object' && cfg !== null && 'keyShape' in cfg) {
+    const k = String((cfg as { keyShape: unknown }).keyShape ?? '').trim()
+    if (/^[A-G][#b]?m?$/.test(k)) return k
+  }
+  return ''
+}
 
 export function fromCifraClubHtml(html: string): CifraClubPage {
   const title =
@@ -429,10 +601,16 @@ export function fromCifraClubHtml(html: string): CifraClubPage {
   const key =
     (html.match(/data-anchor="--chord-tone"[^>]*>([A-G][#b]?m?)</i) || [])[1] ||
     (html.match(/>\s*Tom:\s*<\/span>\s*<button[^>]*>([A-G][#b]?m?)</i) || [])[1] ||
+    extractKeyShape(html) ||
     ''
   const pre = (html.match(/<pre[^>]*data-chord-content[^>]*>([\s\S]*?)<\/pre>/i) || [])[1] ?? ''
   const body = cifraPreToPlain(pre)
-  return { body, title, subtitle, key }
+  const strums = extractCcStrums(html)
+  const tempo = strums[0]?.bpm != null ? String(strums[0].bpm) : ''
+  const time = strums[0]?.meter || ''
+  const capo = extractCapo(html)
+  const youtubeId = extractYoutubeId(html)
+  return { body, title, subtitle, key, tempo, time, capo, youtubeId, strums }
 }
 
 function htmlChunkToText(chunk: string): string {

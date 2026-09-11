@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import NewChartDialog from '../../src/vue/edit/NewChartDialog.vue'
 import { memoryStore } from '../../src/core'
+
+const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
 
 const mounted: ReturnType<typeof mount>[] = []
 afterEach(() => {
@@ -160,6 +165,23 @@ describe('bringing a chart in', () => {
     await w.get('[data-nova-duration]').setValue('4:26')
     await w.get('[data-nova-go]').trigger('click')
     expect(String(w.emitted('commit')?.[0]?.[0])).toContain('{duration:04:26}')
+  })
+
+  it('fills duration from YouTube when the host can fetch the watch page', async () => {
+    const html = readFileSync(join(helpers, 'cifraclub-tu-es-tabs.html'), 'utf8')
+    const w = dialog({
+      fetchChart: () => Promise.resolve(html),
+      fetchYoutubeDuration: () =>
+        Promise.resolve('<meta itemprop="duration" content="PT7M57S"><script>"lengthSeconds":"477"</script>'),
+    })
+    await w.get('[data-nova-url]').setValue(
+      'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/',
+    )
+    await w.get('[data-nova-url-go]').trigger('click')
+    await flushPromises()
+    expect((w.get('[data-nova-duration]').element as HTMLInputElement).value).toBe('07:57')
+    expect(w.find('[data-nova-youtube]').exists()).toBe(true)
+    expect(w.text()).toMatch(/vieram preenchidos|Convertido do Cifra Club/i)
   })
 
   it('reports a fetch that failed rather than opening an empty editor', async () => {

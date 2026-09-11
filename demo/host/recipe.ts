@@ -140,6 +140,7 @@ export const DEMOS: readonly DemoEntry[] = [
   song-id="vazio"
   modes="content"
   :fetch-chart="fetchChart"
+  :fetch-youtube-duration="fetchYoutubeDuration"
   :read-pdf="pdfText"
 />`,
   },
