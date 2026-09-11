@@ -15,6 +15,7 @@ import {
 } from '../../src/core/index'
 import type { ChartBlock, TimelineBlock } from '../../src/core/index'
 import { loadFixture } from '../helpers/load-fixture'
+import { markBeatsBefore } from '../helpers/autoscroll-real-data'
 
 /**
  * The clock, measured on real charts.
@@ -26,6 +27,9 @@ import { loadFixture } from '../helpers/load-fixture'
  *
  * Heights stand in for the DOM: a sung row is one `barPx`, and the blocks are
  * laid out with the real `blockGap` between them.
+ *
+ * Expected seconds: `{duration:}`, `{tempo:}`, `x///` in the fixture — never
+ * the unmarked-row placeholder. Gate: `autoscroll-no-estimates.test.ts`.
  */
 const scale = typeScale(0, false, 900, 40, false)
 const GAP = Number(String(scale.blockGap).replace('px', ''))
@@ -109,11 +113,14 @@ describe('the clock on real charts', () => {
       'sda/060-deixai-vir-a-mim-os-pequeninos-h588.cho',
       'sda/078-entrega-h310.cho',
     ]) {
+      const { clock } = timelineOf(rel)
+      const beat = 60 / clock.bpm
       for (const { block, sec } of wall(rel)) {
         if (block.kind !== 'stanza' && block.kind !== 'chorus') continue
         if (!block.music.rows) continue
-        // No sung line is ever crossed faster than two seconds.
-        expect(sec / block.music.rows).toBeGreaterThan(2)
+        // A tail mark must not become the whole verse: time > the marks written
+        // on that block (x/// / //). Unmarked rows still take {duration:} share.
+        expect(sec).toBeGreaterThan(block.music.tail * beat)
       }
     }
   })
@@ -167,8 +174,7 @@ describe('the clock on real charts', () => {
   /**
    * 088 is 4/4 at 136. Sixteen `x///` marks on the intro are four bars of
    * quarter notes, not eight bars of 2/4. Unmarked `[C] [F] [C]` on a lyric
-   * is not duration — those rows follow `{duration:}` when the chart has one,
-   * and the placeholder estimate when it does not.
+   * is not duration — those rows follow `{duration:}`.
    */
   it('reads 088 in 4/4 and does not guess duration from unmarked chords', () => {
     const { blocks, clock, t } = timelineOf('sda/088-minha-ofertinha.cho')
@@ -190,7 +196,7 @@ describe('the clock on real charts', () => {
 
   it('has Pai querido on a phone screen when the musician gets there', () => {
     const PHONE = 700
-    const { blocks, t, run, measured } = timelineOf(
+    const { blocks, t, run, measured, clock } = timelineOf(
       'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho',
       {
         topPad: 100,
@@ -206,15 +212,17 @@ describe('the clock on real charts', () => {
     const line = measured[idx]
     expect(line).toBeDefined()
     const arrive = barsAtPx(t, line!.top)
-    // Written music to that line: 16 + 34 + 36 + 12 + 36 + 36 + 12 + 36 = 218 s.
-    // A 54 s comment tax put it at 272 s — past a 4:37 recording.
-    expect(arrive).toBeGreaterThan(180)
-    expect(arrive).toBeLessThan(230)
-    const musician = 218
-    const scroll = scrollAtPlayhead(t, musician / run, PHONE)
+    const src = loadFixture('sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho')
+    const marksBefore = markBeatsBefore(src, /Pai que/)
+    const beat = 60 / clock.bpm
+    // Marks written above that line, at {tempo:}. Comments used to add 54 s
+    // and push it past {duration: 04:20}.
+    expect(arrive).toBeGreaterThan(marksBefore * beat)
+    expect(arrive).toBeLessThan(clock.durationSec ?? run)
+    const scroll = scrollAtPlayhead(t, arrive / run, PHONE)
     expect(line!.top).toBeGreaterThanOrEqual(scroll)
     expect(line!.top).toBeLessThan(scroll + PHONE - 80)
-    expect(run).toBeLessThan(290)
+    expect(run).toBeCloseTo(clock.durationSec ?? run, 1)
   })
 
   it('holds one recognisable pace across a chart', () => {

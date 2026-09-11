@@ -160,6 +160,9 @@ describe('song clock helpers', () => {
 })
 
 describe('buildTimeline', () => {
+  // This file tests the estimate *engine* (unmarked-row placeholder). Song
+  // clock expected values live in autoscroll-states / timeline-charts and
+  // must come from the fixture — see autoscroll-no-estimates.test.ts.
   const blocks: TimelineBlock[] = [
     // Intro: 8 beats played, no lyric of its own, short on screen.
     { top: 0, h: 100, kind: 'stanza', music: music({ beats: 8, chords: 2 }) },

@@ -470,12 +470,42 @@ describe('the end-of-song offer does not fire mid-chart', () => {
     }))
   }
 
+  /**
+   * jsdom reports every rect as 0. `measureBlocks` then places every block at
+   * `scrollTop`, and the content origin follows the musician down the page —
+   * which is how "Fim da música" used to fire after a drag. Real layout is
+   * document-relative; this is that layout, with the scroller's current
+   * `scrollTop` subtracted the way a browser would.
+   */
+  function fakePaper(el: HTMLElement, doc = 4000, view = 500, pad = 80) {
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: doc })
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: view })
+    const box = (top: number, height: number) =>
+      ({
+        top,
+        bottom: top + height,
+        left: 0,
+        right: 400,
+        width: 400,
+        height,
+        x: 0,
+        y: top,
+        toJSON() {
+          return {}
+        },
+      }) as DOMRect
+    el.getBoundingClientRect = () => box(0, view)
+    ;[...el.querySelectorAll('[data-block]')].forEach((n, i) => {
+      const topDoc = pad + i * 48
+      ;(n as HTMLElement).getBoundingClientRect = () => box(topDoc - el.scrollTop, 40)
+    })
+  }
+
   async function rehearsalWithRoom(list: SetlistSong[] = songs(2)) {
     const w = viewer({ source: '', songs: list, autoHide: false })
     await flushPromises()
     const el = w.get('[data-cpv-scroll]').element as HTMLElement
-    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
-    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+    fakePaper(el)
     observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
     await flushPromises()
     await w.get('[data-met-btn]').trigger('click')
@@ -549,8 +579,7 @@ describe('the end-of-song offer does not fire mid-chart', () => {
     await w.get('[data-song-next]').trigger('click')
     await flushPromises()
     const el = w.get('[data-cpv-scroll]').element as HTMLElement
-    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
-    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+    fakePaper(el)
     observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
     await flushPromises()
     await w.get('[data-met-btn]').trigger('click')

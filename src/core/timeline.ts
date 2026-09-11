@@ -379,6 +379,11 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
   // stretched or squeezed so the whole closes on the target, which is the
   // declared duration when there is one. Without one the chart's own musical
   // time IS the target, so `k` is 1 and nothing is invented.
+  //
+  // Do not skip the stretch. 009's first verse at raw BPM (14 s) sends the
+  // lyric off the top before the musician has sung it; `{duration: 02:40}` is
+  // the run, and the four sung lines take their share of that. A leftover
+  // parked on the last screen was the wrong extra — it stole time from verse 1.
   const dur = opts.durationSec
   const music = exact + est
   const target = dur || music

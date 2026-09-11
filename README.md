@@ -331,8 +331,10 @@ ele é montado em duas camadas — a distinção entre elas é o ponto:
    de uma linha cantada. Esta camada nunca é calibrada: ela já é a resposta.
 2. **O que ela deixa de fora.** Uma linha cantada sem marca é um espaço
    (`BEATS_PER_ROW` pulsos) que só esta camada estica ou comprime para fechar
-   em `{duration:}`. Acorde sem `x///` / `//` **não é duração**: `[G] [A] [B]
-   [C]` pode ser quatro compassos ou quatro tempos, e a engine não adivinha.
+   em `{duration:}`. Não estacionar o extra no último ecrã: em `009` isso
+   mandava a primeira estrofe embora em 14 s, no meio do verso. Acorde sem
+   `x///` / `//` **não é duração**: `[G] [A] [B] [C]` pode ser quatro compassos
+   ou quatro tempos, e a engine não adivinha.
 
 `{time:}` é lido inteiro, numerador **e** denominador. O `{tempo:}` nomeia o
 *pulso sentido* e uma marca `x///` é uma unidade do denominador — em compasso
@@ -350,10 +352,11 @@ quatro pulsos.
 
 Notas de ensaio (`BEM SUAVE`), rótulos de seção (`INTRODUÇÃO`) e imagens soltas
 não têm relógio próprio: o papel delas anda com o próximo bloco musical (ou com
-o último, se vierem no fim). Dar-lhes o passo médio da página — e o padding do
-chrome absorvido no primeiro bloco — gastava 25 a 100 s antes da intro em
-cifras reais, e um verso no celular ainda estava fora da tela quando o músico
-chegava lá.
+o último, se vierem no fim). Dar-lhes o passo médio da página gastava 25 a 100 s
+antes da intro em cifras reais, e um verso no celular ainda estava fora da tela
+quando o músico chegava lá. O padding do título e a legenda do capo **não**
+são esse papel: ficam na origem (`segs[0].top`), e compactar o chrome, ligar
+ajuste ou dual não come segundos da intro.
 
 **Hard gate:** Rolar só parte se a cifra declara `{duration:}` (m:ss, ≥ 20 s).
 Sem duração, o botão fica morto — BPM e acordes sem `x///` não substituem.

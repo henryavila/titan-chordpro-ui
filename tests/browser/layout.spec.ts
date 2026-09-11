@@ -54,7 +54,7 @@ async function checkGeometry(page: Page, semitones = 0, capo = 0) {
 
 for (const width of [1280, 375]) {
   test(`real fixture geometry, fonts, transpose/capo and resize at ${width}px`, async ({ page }, info) => {
-    expect(createHash('sha256').update(source).digest('hex')).toBe('d7d80be43cac373bf4615b8c0413c14b96a62804a57972da1173054ed38b3be2')
+    expect(createHash('sha256').update(source).digest('hex')).toBe('65280dffc3eedb99f0d7a3eae0a39b0eb57e629066cdd0586f0e90fe1a56bd2c')
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
     await page.locator('.cpv-chord').first().waitFor()
@@ -880,7 +880,9 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(pinned.y).toBe(0)
   expect(pinned.h).toBeGreaterThanOrEqual(840)
   // The host chrome is gone. Ours stays: a live set needs Rolar and Tom.
-  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(60)
+  // Compact chrome is ~52px on a phone; the band has to exist so the title
+  // does not sit on the lyric, not to match a frozen pixel count.
+  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
   await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) => ({
     opacity: getComputedStyle(el.closest('.cpv-chrome')!).opacity,
@@ -907,7 +909,7 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(shown.y).toBe(0)
   expect(await page.locator('[data-fs]').evaluate((el) =>
     getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('1')
-  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(60)
+  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
 
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(700)

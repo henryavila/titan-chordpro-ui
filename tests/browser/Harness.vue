@@ -4,6 +4,13 @@ import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
 import oRei from '../../fixtures/sda/082-o-rei-vem-vindo.cho?raw'
 import jesus from '../../fixtures/sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho?raw'
+
+const catalog = import.meta.glob('../../fixtures/sda/*.cho', {
+  query: '?raw',
+  eager: true,
+  import: 'default',
+}) as Record<string, string>
+
 /**
  * Off by default so no test has to fight a chrome that vanishes under it; the
  * one test that is about the auto-hide asks for it with `?autoHide=1`.
@@ -13,8 +20,22 @@ const autoHide = q.get('autoHide') === '1'
 /** The reported voiceless intro: editor spacing must match reading. */
 const PLAYED =
   '{title:T}\n{key:G}\n\n{c:Intro}\n[G/D]x///   [D7(4)]x///    [G]x///    [C/E]x/    [D/F#]//\n'
-/** Scroll is gated on `{duration:}`. The fixture has none; the harness adds one so layout tests can still roll. */
-const source = q.get('chart') === 'played' ? PLAYED : `{duration: 04:26}\n${raw}`
+function pickSource(): string {
+  const name = q.get('chart')
+  if (name === 'played') return PLAYED
+  if (name && name !== '084') {
+    const hit = Object.entries(catalog).find(([k]) => k.endsWith(`/${name}`) || k.endsWith(`/${name}.cho`))
+    if (hit) return String(hit[1])
+  }
+  /** Scroll is gated on `{duration:}`. The default fixture has none; the harness adds one so layout tests can still roll. */
+  return `{duration: 04:26}\n${raw}`
+}
+const source = pickSource()
+const fitDefault = q.get('fit') !== '0'
+const capoQ = q.get('capo')
+const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined
+const dualQ = q.get('dual')
+const initialDual = dualQ === '0' ? false : dualQ === '1' ? true : undefined
 const modes = ref<'local' | 'content'>('content')
 const fonts = ref('fallback')
 async function loadFonts() {
@@ -80,7 +101,18 @@ const themeControl = ref<'host' | 'preference'>('host')
         ? 'height:100dvh;min-height:560px;overflow:hidden;scroll-snap-align:start'
         : 'flex:1;min-height:0;position:relative'"
     >
-      <ChordproViewer :source="source" :songs="songs" :theme="theme" :theme-control="themeControl" :auto-hide="autoHide" :modes="modes" song-id="sda-86" />
+      <ChordproViewer
+        :source="source"
+        :songs="songs"
+        :theme="theme"
+        :theme-control="themeControl"
+        :auto-hide="autoHide"
+        :modes="modes"
+        :fit-default="fitDefault"
+        :initial-capo="initialCapo"
+        :initial-dual="initialDual"
+        song-id="sda-86"
+      />
     </div>
     <div
       v-if="ficha"

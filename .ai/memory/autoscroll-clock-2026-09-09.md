@@ -36,11 +36,29 @@ arquivo**. `{duration:}` corrige o total, não a camada exata. Só existe uma ci
 6/8 no corpus (`005 - Tua Vontade`) — se aparecerem mais, dá para heurística por
 faixa de BPM.
 
+## Chrome, capo, dual e ajuste não são música (2026-09-11)
+
+O padding do título, a legenda do capo e a faixa dual **não** entram no
+relógio. `segs[0].top` é a origem do conteúdo; `scrollAtPlayhead` /
+`playheadAtScroll` usam essa origem. Compactar o chrome, ligar ajuste ou
+capo dual muda os **pixels**, não os segundos da intro.
+
+Validar em `tests/core/autoscroll-states.test.ts` (cifras × superfícies)
+e `tests/browser/autoscroll.spec.ts` (DOM real). Um compacto do topo que
+voltar a absorver o pad no primeiro bloco quebra `barsAtPx(first.top) === 0`.
+
+## Relógio nos testes: só dados da cifra (2026-09-11)
+
+Nenhum teste de auto-scroll pode usar a estimativa de linha sem marca como
+valor esperado. Segundos vêm de `{duration:}`, `{tempo:}`, `{time:}`, `x///`
+contado no `.cho`. Gate: `tests/core/autoscroll-no-estimates.test.ts`.
+`BEATS_PER_ROW` só em `timeline.test.ts` como unidade da engine.
+
+`ANCHOR_RATIO` hoje é **0.34** (não 0.5). A rampa (`ANCHOR_RAMP = 0.5`)
+ainda paga a âncora sem congelar.
+
 ## Aberto para ajuste fino
 
-- **`ANCHOR_RATIO = 0.5`** deixa a página ~15–20 s parada no topo numa viewport
-  de 860px (medido no navegador). É o desenho — a introdução fica visível
-  enquanto é tocada — mas é um pedaço grande do percurso no celular. Não mexi.
 - **Linha instrumental com sílaba solta.** Em `entrega-1` o interlúdio é
   `[A]for   [D]x///   [A]x///   [D]x/[E]//`: o "for" que sobrou do verso
   anterior faz `isPlayedLine` classificar como cantada, e o bloco ganha 2
