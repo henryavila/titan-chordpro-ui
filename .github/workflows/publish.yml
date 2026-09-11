@@ -35,11 +35,12 @@ jobs:
       # before the version becomes installable.
       - name: Stage package on npm
         run: |
-          npm --version
+          # Node 22 ships npm 10; `npm stage` needs ≥ 11.5.1
+          npx --yes npm@11.19.1 --version
           NAME="$(node -p 'require("./package.json").name')"
           VERSION="$(node -p 'require("./package.json").version')"
           echo "Staging ${NAME}@${VERSION}"
-          npm stage publish --access public
+          npx --yes npm@11.19.1 stage publish --access public
           {
             echo "## Staged ${NAME}@${VERSION}"
             echo ""
