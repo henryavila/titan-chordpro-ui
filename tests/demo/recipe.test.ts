@@ -50,29 +50,58 @@ describe('the four HTML mounts', () => {
 })
 
 describe('the catalog', () => {
-  it('is grouped by what you do, not four recipes plus a lab', () => {
-    expect(GROUPS.map((g) => g.id)).toEqual(['tocar', 'escrever', 'host'])
+  it('is the 2×2 of incorporating, plus create, accent and a bad host', () => {
+    expect(GROUPS.map((g) => g.id)).toEqual(['incorporar', 'criar', 'acento', 'host'])
     expect(DEMOS.every((d) => GROUPS.some((g) => g.id === d.group))).toBe(true)
     expect(DEMOS.map((d) => d.id).length).toBe(new Set(DEMOS.map((d) => d.id)).size)
+    expect(demosOf('incorporar').map((d) => d.id)).toEqual([
+      'standalone',
+      'standalone-apresentacao',
+      'shell',
+      'shell-apresentacao',
+    ])
   })
 
-  it('puts create, edit modes, score and slow list on the same shelf as palco', () => {
+  it('keeps the four states and the extras on those cells, not as sibling types', () => {
     const hrefs = DEMOS.map((d) => d.href)
+    const extra = DEMOS.flatMap((d) => d.extra ?? []).map((l) => l.href)
     expect(hrefs).toContain('/standalone.html')
+    expect(hrefs).toContain('/standalone-lista.html')
+    expect(hrefs).toContain('/site.html')
+    expect(hrefs).toContain('/site-lista.html')
     expect(hrefs).toContain('/standalone.html?criar=1')
-    expect(hrefs).toContain('/site.html?criar=1')
-    expect(hrefs).toContain('/standalone.html?modes=local')
-    expect(hrefs).toContain('/standalone.html?modes=content')
-    expect(hrefs).toContain('/standalone.html?modes=none')
-    expect(hrefs).toContain('/standalone.html?song=013-ele-vive-em-mim')
-    expect(hrefs).toContain('/standalone-lista.html?ensaio=demanda')
+    expect(hrefs).not.toContain('/site.html?criar=1')
     expect(hrefs).toContain('/standalone.html?quebrar=1')
+    expect(hrefs).toContain('/standalone.html?accent=verde')
+    expect(hrefs).toContain('/standalone.html?accent=teal')
+    expect(hrefs.some((h) => h.includes('accent=') && h.includes('4F46E5'))).toBe(true)
+    expect(extra).toContain('/standalone.html?song=013-ele-vive-em-mim')
+    expect(extra).toContain('/standalone.html?modes=local')
+    expect(extra).toContain('/standalone.html?modes=content')
+    expect(extra).toContain('/standalone.html?modes=none')
+    expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
+  })
+
+  it('ships a compact ChordproViewer call on every catalog entry', () => {
+    for (const demo of DEMOS) {
+      expect(demo.call, demo.id).toMatch(/<ChordproViewer/)
+      expect(demo.call, demo.id).toMatch(/\/>/)
+    }
+    expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).toMatch(/:songs="songs"/)
+    expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).not.toMatch(/song-id/)
+    expect(DEMOS.find((d) => d.id === 'shell-apresentacao')?.call).not.toMatch(/song-id/)
+    expect(DEMOS.find((d) => d.id === 'criar')?.call).toMatch(/modes="content"/)
+    expect(DEMOS.find((d) => d.id === 'accent-teal')?.call).toMatch(/accent="teal"/)
+    expect(DEMOS.find((d) => d.id === 'accent-hex')?.call).toMatch(/accent="#4F46E5"/)
   })
 
   it('only links the four mounts, with query flags', () => {
     const pages = new Set(PAGES.map((p) => p.href))
     for (const demo of DEMOS) {
       expect(pages.has(demo.href.split('?')[0] ?? ''), demo.href).toBe(true)
+      for (const link of demo.extra ?? []) {
+        expect(pages.has(link.href.split('?')[0] ?? ''), link.href).toBe(true)
+      }
     }
   })
 
@@ -102,6 +131,7 @@ describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
     ['?criar=1', '/standalone.html?criar=1'],
     ['?ficha=1&criar=1', '/site.html?criar=1'],
     ['?modes=local', '/standalone.html?modes=local'],
+    ['?accent=teal', '/standalone.html?accent=teal'],
   ])('%s → %s', (search, href) => {
     expect(hubRedirect(search)).toBe(href)
   })
@@ -116,6 +146,7 @@ describe('labQuery', () => {
       carga: 'juntas',
       criar: false,
       modes: null,
+      accent: null,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
@@ -124,6 +155,7 @@ describe('labQuery', () => {
       carga: 'demanda',
       criar: false,
       modes: null,
+      accent: null,
     })
   })
 
@@ -141,6 +173,11 @@ describe('labQuery', () => {
     expect(labQuery('?modes=none').modes).toBe('none')
     expect(labQuery('?modes=both').modes).toBe('both')
     expect(labQuery('?modes=nope').modes).toBeNull()
+  })
+
+  it('reads the host accent, named or hex', () => {
+    expect(labQuery('?accent=teal').accent).toBe('teal')
+    expect(labQuery('?accent=%234F46E5').accent).toBe('#4F46E5')
   })
 })
 
@@ -196,6 +233,14 @@ describe('Hub', () => {
     for (const group of GROUPS) expect(w.find(`[data-group="${group.id}"]`).exists()).toBe(true)
     expect(w.text()).not.toMatch(/Laboratório/)
     expect(w.text()).not.toMatch(/quatro receitas/i)
+    expect(w.text()).not.toMatch(/\bPalco\b/)
+    expect(w.text()).not.toMatch(/\bFicha\b/)
+    expect(w.text()).not.toMatch(/\bEnsaio\b/)
+    for (const demo of DEMOS) {
+      expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('ChordproViewer')
+    }
+    expect(w.get('[data-demo="standalone"] .more').text()).toMatch(/Partitura/)
+    expect(w.get('[data-demo="standalone-apresentacao"] .more').text()).toMatch(/demanda/i)
   })
 
   /**
@@ -209,7 +254,9 @@ describe('Hub', () => {
       const card = w.get('.card').element
       expect(getComputedStyle(hub).overflowX).toMatch(/clip|hidden/)
       expect(parseFloat(getComputedStyle(card).minWidth)).toBe(0)
-      expect(w.find('.card pre').exists()).toBe(false)
+      const call = w.get('[data-call]').element
+      expect(getComputedStyle(call).whiteSpace).toMatch(/pre-wrap/)
+      expect(parseFloat(getComputedStyle(call).minWidth)).toBe(0)
     } finally {
       w.unmount()
     }
@@ -288,6 +335,21 @@ describe('CifraDemo', () => {
       expect(viewer.props('songId')).toBe('vazio')
       expect(typeof viewer.props('fetchChart')).toBe('function')
       expect(typeof viewer.props('readPdf')).toBe('function')
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+  })
+
+  it('honours ?accent= as the host primary', () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?accent=teal')
+    try {
+      const w = mount(CifraDemo, {
+        props: { surface: 'standalone', lista: false },
+        global: { stubs: stub },
+      })
+      expect(w.getComponent({ name: 'ChordproViewer' }).props('accent')).toBe('teal')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')

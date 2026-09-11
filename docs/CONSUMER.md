@@ -5,19 +5,21 @@ iframe, não é um site, e **não amarra um consumer específico**. Quem consome
 escolhe a composição; o Titan entrega o mesmo componente.
 
 Demo neste repo (`pnpm dev`): índice em `/`. O mesmo `<ChordproViewer>`;
-a lista é prop do host; **não** há iframe. O índice agrupa por o que se faz
-(tocar, escrever, host) — não quatro receitas + um laboratório.
+**não** há iframe. Quatro estados (standalone × shell, uma cifra ×
+apresentação ao vivo), mais criar, acento e um host errado. Cada card traz
+a chamada resumida.
 
 | URL | O que é |
 |---|---|
 | `/` | Índice das demos |
-| `/standalone.html` | Palco: página só da cifra |
-| `/standalone-lista.html` | Palco com repertório (`songs`) |
-| `/site.html` | Componente no meio de um site (ficha, conteúdo acima e abaixo) |
-| `/site-lista.html` | Ficha com repertório |
+| `/standalone.html` | Standalone: a cifra é a página |
+| `/standalone-lista.html` | Standalone com apresentação (`songs`) |
+| `/site.html` | Vue no shell do consumer (conteúdo acima e abaixo) |
+| `/site-lista.html` | Shell com apresentação |
 
 Query nas mesmas páginas: `criar=1`, `modes` (local / content / none),
-`ensaio=demanda`, `song`, `tema`, `quebrar=1`.
+`ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
+`teal` / `#hex`), `quebrar=1`.
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 

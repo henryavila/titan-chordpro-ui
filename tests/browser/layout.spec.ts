@@ -127,6 +127,30 @@ test('controlled auto follows system changes, explicit host theme wins old prefe
 })
 
 
+test('editor spaces a voiceless intro like reading — pills do not pile', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/?chart=played')
+  await page.locator('[data-edit]').click()
+  const pick = page.locator('[data-mode-content]')
+  if (await pick.count()) await pick.click()
+  const pills = page.locator('[data-played] .cpv-pill--flow')
+  await expect(pills).toHaveCount(5)
+  await expect(pills).toHaveText(['G/D', 'D7(4)', 'G', 'C/E', 'D/F#'])
+  const failures = await pills.evaluateAll((els) => {
+    const fails: string[] = []
+    const boxes = els.map((e) => e.getBoundingClientRect())
+    for (let i = 1; i < boxes.length; i++) {
+      const a = boxes[i - 1]!
+      const b = boxes[i]!
+      if (Math.abs(a.y - b.y) < 1 && b.x - a.right < 3.5) {
+        fails.push(`${els[i - 1]!.textContent}/${els[i]!.textContent}: ${(b.x - a.right).toFixed(2)}px`)
+      }
+    }
+    return fails
+  })
+  expect(failures, 'editor pills on the reported intro overlapped').toEqual([])
+})
+
 test('font tokens reach edit lyrics and pills while source remains monospace', async ({ page }) => {
   await page.goto('/')
   await page.locator('#load-fonts').click()
@@ -258,16 +282,19 @@ test('phone beat count overlays the margin — page left pad does not jump to 44
   const beats = await page.locator('.cpv-met-beat').evaluateAll((els) =>
     els.map((el) => {
       const bg = getComputedStyle(el).backgroundColor
-      return { bg, now: el.classList.contains('is-now') }
+      const empty = bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)'
+      return { empty, now: el.classList.contains('is-now') }
     }),
   )
   expect(beats.length).toBeGreaterThan(1)
-  for (const b of beats) {
-    expect(
-      b.bg === 'transparent' || b.bg === 'rgba(0, 0, 0, 0)',
-      `${b.now ? 'current' : 'idle'} beat sat on the lyric with no fill (${b.bg})`,
-    ).toBe(false)
+  const idle = beats.filter((b) => !b.now)
+  const live = beats.filter((b) => b.now)
+  expect(idle.length).toBeGreaterThan(0)
+  expect(live.length).toBe(1)
+  for (const b of idle) {
+    expect(b.empty, 'idle beat kept a box on the lyric').toBe(true)
   }
+  expect(live[0]!.empty, 'pulse has no fill').toBe(false)
 })
 
 test('tela cheia: beat column stays flush left, entrada is a filled badge', async ({ page }) => {

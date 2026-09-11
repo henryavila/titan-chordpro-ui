@@ -16,6 +16,17 @@ describe('chrome contrast vs template', () => {
     expect(css).toMatch(/\.cpv-ico[\s\S]*?color:\s*inherit/)
   })
 
+  it('beat numbers stay bare; the pulse fills from the primary', () => {
+    const idle = css.match(/\.cpv-met-beat\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(idle).toMatch(/background:\s*transparent/)
+    expect(idle).toMatch(/border:\s*0/)
+    const pulse = css.match(/\.cpv-met-beat\.is-now\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(pulse).toMatch(/background:\s*var\(--chord\)/)
+    expect(pulse).toMatch(/color:\s*var\(--chord-ink\)/)
+    expect(css).not.toMatch(/\.cpv-met-hit-1\s+\.cpv-met-beat\.is-now/)
+    expect(css).not.toMatch(/\.cpv-met-hit-n\s+\.cpv-met-beat\.is-now/)
+  })
+
   it('toast arrives and leaves by fade and blur, not a jump', () => {
     const block = css.match(/\.cpv-toast\s*\{[^}]+\}/)?.[0] ?? ''
     expect(block, 'toast still uses the rise jump').not.toMatch(/cpv-rise/)

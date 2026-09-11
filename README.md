@@ -67,7 +67,8 @@ import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
 `titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
 
 Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
-(tocar, escrever, host); `/standalone.html` palco; `/site.html` ficha.
+(standalone × shell, uma cifra × apresentação); `/standalone.html` a cifra
+é a página; `/site.html` o Vue no shell do consumer.
 
 ### `<ChordproViewer>` props
 

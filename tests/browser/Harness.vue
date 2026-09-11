@@ -2,8 +2,17 @@
 import { ref } from 'vue'
 import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
+/**
+ * Off by default so no test has to fight a chrome that vanishes under it; the
+ * one test that is about the auto-hide asks for it with `?autoHide=1`.
+ */
+const q = new URLSearchParams(location.search)
+const autoHide = q.get('autoHide') === '1'
+/** The reported voiceless intro: editor spacing must match reading. */
+const PLAYED =
+  '{title:T}\n{key:G}\n\n{c:Intro}\n[G/D]x///   [D7(4)]x///    [G]x///    [C/E]x/    [D/F#]//\n'
 /** Scroll is gated on `{duration:}`. The fixture has none; the harness adds one so layout tests can still roll. */
-const source = `{duration: 04:26}\n${raw}`
+const source = q.get('chart') === 'played' ? PLAYED : `{duration: 04:26}\n${raw}`
 const modes = ref<'local' | 'content'>('content')
 const fonts = ref('fallback')
 async function loadFonts() {
@@ -11,12 +20,6 @@ async function loadFonts() {
   await Promise.all([document.fonts.load('18px Figtree'), document.fonts.load('18px Sora'), document.fonts.load('700 22px "Space Mono"')])
   fonts.value = 'loaded'
 }
-/**
- * Off by default so no test has to fight a chrome that vanishes under it; the
- * one test that is about the auto-hide asks for it with `?autoHide=1`.
- */
-const q = new URLSearchParams(location.search)
-const autoHide = q.get('autoHide') === '1'
 /**
  * `?ficha=1` is a real host page: blocks above and below the chart, and a
  * 100dvh frame in the flow. Default is the standalone page.

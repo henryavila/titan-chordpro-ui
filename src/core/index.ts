@@ -119,6 +119,7 @@ export {
   moveBlock,
   moveChord,
   pasteHarmony,
+  playedColumns,
   removeChord,
   renameChord,
   rowJoin,
@@ -140,6 +141,7 @@ export type {
   HarmonyRow,
   InsertKind,
   MarkCtx,
+  PlayedCol,
   RowParts,
 } from './block-edit'
 export {

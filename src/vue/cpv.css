@@ -29,7 +29,7 @@
   --scrim: rgba(6, 8, 12, 0.55);
   --danger: #FF8574;
   --danger-soft: rgba(255, 133, 116, 0.14);
-  --focus: #9EB8FF;
+  --focus: var(--chord);
   --capo: #6E7686;
   --capo-soft: rgba(110, 118, 134, 0.10);
   --capo-edge: rgba(110, 118, 134, 0.22);
@@ -66,7 +66,7 @@
   --scrim: rgba(22, 25, 33, 0.38);
   --danger: #B02016;
   --danger-soft: rgba(176, 32, 22, 0.08);
-  --focus: #2563EB;
+  --focus: var(--chord);
   --capo: #8D94A0;
   --capo-soft: rgba(141, 148, 160, 0.08);
   --capo-edge: rgba(141, 148, 160, 0.20);
@@ -1077,24 +1077,14 @@
   font-size: 10.5px;
   font-weight: 500;
   color: var(--muted);
-  background: var(--canvas);
+  background: transparent;
   opacity: 1;
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--line);
+  border: 0;
 }
 .cpv-met-beat.is-now {
   font-weight: 700;
-}
-.cpv-met-hit-1 .cpv-met-beat.is-now {
-  background: var(--downbeat);
-  color: var(--downbeat-ink);
-  border-color: var(--downbeat);
-}
-.cpv-met-hit-n .cpv-met-beat.is-now {
-  background: var(--canvas);
-  color: var(--chord);
-  border-color: var(--chord-edge);
+  background: var(--chord);
+  color: var(--chord-ink);
 }
 
 .cpv-head-hit-1 {
@@ -1489,6 +1479,16 @@
 }
 .cpv-pill:hover {
   background: var(--chord-hover);
+}
+/* Voiceless line: the pill stays in the column, same reserve as reading. */
+.cpv-pill--flow {
+  position: relative;
+  left: auto;
+  top: auto;
+  margin: 0 0.8em 2px 0;
+}
+.cpv-editrow[data-played] {
+  line-height: normal;
 }
 .cpv-pill:focus-visible {
   outline: 2px solid var(--focus);

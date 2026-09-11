@@ -432,7 +432,7 @@ describe('M2 · the source pane jumps to the selection', () => {
 })
 
 /**
- * M3 — the accent is the one token a host may choose. The seven derivatives
+ * M3 — the accent is the one token a host may choose. The derivatives
  * come from a single RGB at fixed opacities, so a host picks a colour, not a
  * palette, and the relationships stay as the design set them.
  */
@@ -442,6 +442,7 @@ describe('M3 · the host may choose the accent', () => {
     await flushPromises()
     const root = w.get('.cpv-root').element as HTMLElement
     expect(root.style.getPropertyValue('--chord')).toBe('#6FD8E4')
+    expect(root.style.getPropertyValue('--focus')).toBe('#6FD8E4')
     w.unmount()
   })
 

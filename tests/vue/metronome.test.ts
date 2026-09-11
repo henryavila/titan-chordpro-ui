@@ -723,26 +723,36 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
  * keeps "entrada" readable even when it sits on the first letters.
  */
 /**
- * The column sits on the lyric. Beat 1 already fills; 2–3–4 used opacity
- * 0.38 and a transparent box, so they vanished on the words. Every cell is
- * a badge; the downbeat stays the louder one.
+ * The 1–2–3–4 column is numbers. A box on every cell fought the lyric
+ * underneath; only the pulse fills, and it fills with the same primary as
+ * the chords — beat 1 is not a different colour from 2–3–4.
  */
-describe('every beat cell is a readable badge', () => {
-  it('does not fade idle beats with opacity — that would fade the fill too', async () => {
+describe('beat numbers are bare; only the pulse fills', () => {
+  function transparent(bg: string) {
+    return bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)' || bg === 'rgba(0,0,0,0)'
+  }
+
+  it('does not fade idle beats with opacity', async () => {
     const w = await viewerAt(390)
     const idle = w.findAll('.cpv-met-beat').filter((b) => !b.classes().includes('is-now'))
     expect(idle.length).toBeGreaterThan(0)
     const style = getComputedStyle(idle[0]!.element)
-    expect(Number.parseFloat(style.opacity), 'opacity 0.38 made 2–3–4 disappear on the lyric').toBeGreaterThan(0.9)
+    expect(Number.parseFloat(style.opacity)).toBeGreaterThan(0.9)
   })
 
-  it('gives idle beats a solid box, not a naked number', async () => {
+  it('leaves idle beats as numbers — no fill, no edge', async () => {
     const w = await viewerAt(390)
     const idle = w.findAll('.cpv-met-beat').filter((b) => !b.classes().includes('is-now'))
     const style = getComputedStyle(idle[0]!.element)
-    expect(style.borderTopStyle, 'transparent cells have no edge').toBe('solid')
-    expect(parseFloat(style.borderTopWidth)).toBeGreaterThan(0)
-    expect(parseFloat(style.borderRadius)).toBeGreaterThan(0)
+    expect(transparent(style.backgroundColor), `idle still boxed (${style.backgroundColor})`).toBe(true)
+    expect(parseFloat(style.borderTopWidth) === 0 || style.borderTopStyle === 'none').toBe(true)
+  })
+
+  it('marks exactly one beat as the pulse', async () => {
+    const w = await viewerAt(390)
+    const now = w.findAll('.cpv-met-beat').filter((b) => b.classes().includes('is-now'))
+    expect(now).toHaveLength(1)
+    expect(getComputedStyle(now[0]!.element).fontWeight).toMatch(/700|bold/)
   })
 })
 

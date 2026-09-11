@@ -8,8 +8,8 @@ import { GROUPS, demosOf } from './host/recipe'
       <p class="mark">titan-chordpro-ui</p>
       <h1>Demos</h1>
       <p class="lead">
-        O mesmo <code>&lt;ChordproViewer&gt;</code>. Palco ou ficha, uma cifra
-        ou um ensaio, criar, importar, só ler.
+        O mesmo <code>&lt;ChordproViewer&gt;</code>. Standalone ou no shell do
+        consumer. Uma cifra ou uma apresentação ao vivo.
       </p>
     </header>
 
@@ -30,10 +30,21 @@ import { GROUPS, demosOf } from './host/recipe'
           :class="{ warn: demo.warn }"
           :data-demo="demo.id"
         >
-          <p class="kicker">{{ demo.kicker }}</p>
+          <p class="kicker">
+            <span
+              v-if="demo.swatch"
+              class="swatch"
+              :style="{ background: demo.swatch }"
+              aria-hidden="true"
+            />{{ demo.kicker }}
+          </p>
           <h3>{{ demo.title }}</h3>
           <p class="why">{{ demo.blurb }}</p>
+          <pre class="call" data-call>{{ demo.call }}</pre>
           <a class="go" :href="demo.href">Abrir</a>
+          <nav v-if="demo.extra?.length" class="more">
+            <a v-for="link in demo.extra" :key="link.href" :href="link.href">{{ link.label }}</a>
+          </nav>
         </article>
       </div>
     </section>
@@ -161,10 +172,20 @@ h1 {
 }
 .kicker {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font: 700 11px/1 'Space Mono', ui-monospace, monospace;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #84dfa6;
+}
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 .card.warn .kicker {
   color: #e89c5c;
@@ -182,6 +203,20 @@ h1 {
   line-height: 1.5;
   color: #c4c9d4;
   text-wrap: pretty;
+}
+.call {
+  margin: 2px 0 0;
+  padding: 10px 11px;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c4c9d4;
+  font: 400 11px/1.45 'Space Mono', ui-monospace, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
 }
 .go {
   display: inline-flex;
@@ -203,5 +238,21 @@ h1 {
   background: transparent;
   color: #e89c5c;
   border: 1px solid rgba(232, 156, 92, 0.55);
+}
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-width: 0;
+}
+.more a {
+  font-size: 12px;
+  font-weight: 600;
+  color: #84dfa6;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.more a:hover {
+  text-decoration: underline;
 }
 </style>

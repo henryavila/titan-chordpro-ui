@@ -94,6 +94,7 @@ onMounted(async () => {
       :source="source"
       :theme="theme"
       theme-control="host"
+      :accent="lab.accent || 'verde'"
       :song-id="id"
       :songs="songs"
       :load-song="lazyLista ? loadSong : undefined"
@@ -117,6 +118,7 @@ onMounted(async () => {
     <ChordproViewer
       :source="source"
       :theme="theme"
+      :accent="lab.accent || 'verde'"
       :song-id="id"
       :songs="songs"
       :load-song="lazyLista ? loadSong : undefined"
