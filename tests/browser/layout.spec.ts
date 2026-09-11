@@ -80,7 +80,10 @@ for (const width of [1280, 375]) {
       style.setProperty('--cpv-font-chords', 'Sora, sans-serif')
     })
     expect(await page.locator('.cpv-lyric').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
-    expect(await page.locator('[data-theme-btn]').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Arial')
+    // Phone dock keeps fit on the row; theme lives in Mais. Desktop keeps theme
+    // on the wide bar. Either control proves the chrome still inherits Arial.
+    const chromeFont = width < 640 ? '[data-fit]' : '[data-theme-btn]'
+    expect(await page.locator(chromeFont).first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Arial')
     expect(await page.locator('.cpv-chord').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
     await checkGeometry(page)
     // Keyboard is the same user control on phone and desktop.
@@ -539,12 +542,12 @@ test('Tela cheia is on the header, and not also buried in Mais', async ({ page }
       const r = ico!.getBoundingClientRect()
       return Math.max(r.width, r.height)
     }
-    return { full: box('[data-fs]'), theme: box('[data-theme-btn]') }
+    return { full: box('[data-fs]'), fit: box('[data-fit]') }
   })
 
-  // Within a quarter of the theme glyph: the dock's icons have to read as one
-  // set, and half-size is what the eye catches first.
-  expect(Math.abs(ink.full - ink.theme) / ink.theme).toBeLessThan(0.25)
+  // Within a quarter of the dock glyph: the header and dock icons have to
+  // read as one set, and half-size is what the eye catches first.
+  expect(Math.abs(ink.full - ink.fit) / ink.fit).toBeLessThan(0.25)
 
   // The same control in two places on one screen is clutter, not redundancy.
   await page.getByRole('button', { name: 'Mais controles' }).click()
@@ -570,13 +573,6 @@ const fsPlace = (page: Page) => page.evaluate(() => {
   }
 })
 
-/**
- * The bug this guards: Editar sat in a green pill (`--chord-soft` fill,
- * `--chord-edge` stroke, `--chord` ink) next to Tema / Tela cheia / Mais,
- * which are ghosts. And `✎` painted 12.2 × 8.9 next to a 12.7 × 12.7 theme
- * glyph — the short axis is what the eye reads as "the icon is smaller".
- * Same class as `⤢`: a symbol character's ink is the font's decision.
- */
 /**
  * The bug this guards: on desktop Editar was a floating chip at
  * `right:16px; bottom:22px` of the glass. Narrow desktop made it look glued
@@ -619,6 +615,14 @@ test('Editar sits inside the bottom bar on desktop, not floating beside it', asy
   }
 })
 
+/**
+ * The bug this guards: Editar sat in a green pill (`--chord-soft` fill,
+ * `--chord-edge` stroke, `--chord` ink) next to the dock ghosts. And `✎`
+ * painted 12.2 × 8.9 next to a 12.7 × 12.7 neighbour glyph — the short axis
+ * is what the eye reads as "the icon is smaller". Same class as `⤢`: a
+ * symbol character's ink is the font's decision. Fit may be lit when on; the
+ * ghost sibling for paint is Mais.
+ */
 test('Edit on the dock is a sibling of the other icons, not a highlight', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 860 })
   await page.goto('/')
@@ -636,24 +640,22 @@ test('Edit on the dock is a sibling of the other icons, not a highlight', async 
       return { w: r.width, h: r.height }
     }
     const editInk = box('[data-edit]')
-    const theme = box('[data-theme-btn]')
-    const themeSize = Math.max(theme.w, theme.h)
+    const fit = box('[data-fit]')
+    const fitSize = Math.max(fit.w, fit.h)
     return {
       edit: paint('[data-edit]'),
-      theme: paint('[data-theme-btn]'),
       more: paint('[aria-label="Mais controles"]'),
       editInk,
-      themeSize,
+      fitSize,
     }
   })
 
-  expect(look.edit, 'edit must not wear the chord highlight').toEqual(look.theme)
-  expect(look.edit).toEqual(look.more)
+  expect(look.edit, 'edit must not wear the chord highlight').toEqual(look.more)
 
   // Both axes, not just the longer one: ✎ already matched on width and failed
   // on height, which is the thing that made the pencil look smaller.
-  expect(Math.abs(look.editInk.w - look.themeSize) / look.themeSize).toBeLessThan(0.25)
-  expect(Math.abs(look.editInk.h - look.themeSize) / look.themeSize).toBeLessThan(0.25)
+  expect(Math.abs(look.editInk.w - look.fitSize) / look.fitSize).toBeLessThan(0.25)
+  expect(Math.abs(look.editInk.h - look.fitSize) / look.fitSize).toBeLessThan(0.25)
 })
 
 /**
@@ -741,6 +743,7 @@ test('Tela cheia wins the screen and a tap still hides the chrome without leavin
   await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
 
   // Zen is a separate gesture: hide our chrome, keep the screen the button won.
+  // Padding stays — reclaiming the band used to jump the chart under the eye.
   await tapChart(page)
   await page.waitForTimeout(600)
   const zen = await immersiveSpot(page)
@@ -748,21 +751,24 @@ test('Tela cheia wins the screen and a tap still hides the chrome without leavin
   expect(zen.label).toBe('Sair da tela cheia')
   await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
   await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
-  expect(zen.padTop).toBeLessThan(40)
-  expect(zen.padBottom).toBeLessThan(60)
+  expect(zen.padTop).toBe(inFs.padTop)
+  expect(zen.padBottom).toBe(inFs.padBottom)
+  expect(zen.firstRowY).toBe(inFs.firstRowY)
 
   await tapChart(page)
   await page.waitForTimeout(600)
   const shown = await immersiveSpot(page)
   expect(shown.dockGone).toBe(false)
   expect(shown.label).toBe('Sair da tela cheia')
+  expect(shown.padTop).toBe(inFs.padTop)
+  expect(shown.firstRowY).toBe(inFs.firstRowY)
 
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(600)
   expect(await immersiveSpot(page)).toEqual(before)
 })
 
-test('a tap still hands the chrome band back when there is no screen to win', async ({ page }) => {
+test('a tap hides the chrome without jumping the chart when there is no screen to win', async ({ page }) => {
   // iPhone Safari: the request is not merely refused, the method is not
   // there to call. The button stays off; the gesture is what hides the frame.
   await page.addInitScript(() => {
@@ -787,11 +793,10 @@ test('a tap still hands the chrome band back when there is no screen to win', as
   expect(after.label).toBe(null)
   await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
   await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
-  expect(after.padTop).toBeLessThan(40)
-  expect(after.padBottom).toBeLessThan(60)
-  const won = before.padTop + before.padBottom - (after.padTop + after.padBottom)
-  expect(won).toBeGreaterThan(150)
-  expect(before.firstRowY - after.firstRowY).toBeGreaterThan(60)
+  expect(after.padTop).toBe(before.padTop)
+  expect(after.padBottom).toBe(before.padBottom)
+  expect(after.firstRowY).toBe(before.firstRowY)
+  expect(after.scrollTop).toBe(before.scrollTop)
 
   await tapChart(page)
   await page.waitForTimeout(600)

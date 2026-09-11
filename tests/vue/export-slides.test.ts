@@ -4,7 +4,7 @@ import { ChordproViewer } from '../../src/vue/index'
 import { loadFixture } from '../helpers/load-fixture'
 
 const sljaCalls: Array<Record<string, unknown> | undefined> = []
-vi.mock('titan-chordpro-ui/slides', () => ({
+vi.mock('@henryavila/titan-chordpro-ui/slides', () => ({
   renderSlja: (_view: unknown, opts?: Record<string, unknown>) => {
     sljaCalls.push(opts)
     return Promise.resolve(new Uint8Array([80, 75, 3, 4]))

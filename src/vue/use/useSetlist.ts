@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import { sheetBpm } from 'titan-chordpro-ui'
+import { sheetBpm } from '@henryavila/titan-chordpro-ui'
 
 /** One entry of the rehearsal list, as the host describes it. */
 export type SetlistSong = {

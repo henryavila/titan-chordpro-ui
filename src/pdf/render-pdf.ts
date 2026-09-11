@@ -286,7 +286,7 @@ export async function renderPdf(view: ChordProView, opts: PdfOptions = {}): Prom
     title,
     subject: keyNote || 'Cifra',
     author: meta.artist || meta.subtitle || '',
-    creator: 'titan-chordpro-ui',
+    creator: '@henryavila/titan-chordpro-ui',
     keywords: personal ? 'versão pessoal' : 'cifra',
   })
 

@@ -14,10 +14,10 @@
     "noUncheckedIndexedAccess": true,
     "types": ["node", "vitest/globals"],
     "paths": {
-      "titan-chordpro-ui": ["./src/core/index.ts"],
-      "titan-chordpro-ui/pdf": ["./src/pdf/index.ts"],
-      "titan-chordpro-ui/slides": ["./src/slides/index.ts"],
-      "titan-chordpro-ui/vue": ["./src/vue/index.ts"]
+      "@henryavila/titan-chordpro-ui": ["./src/core/index.ts"],
+      "@henryavila/titan-chordpro-ui/pdf": ["./src/pdf/index.ts"],
+      "@henryavila/titan-chordpro-ui/slides": ["./src/slides/index.ts"],
+      "@henryavila/titan-chordpro-ui/vue": ["./src/vue/index.ts"]
     }
   },
   "include": ["src", "tests", "demo", "vite.config.ts", "vite.lib.config.ts", "vite.browser.config.ts", "playwright.config.ts", "vitest.config.ts", "tsup.config.ts"]

@@ -4,7 +4,7 @@
 
 | Piece | Role | Repo (target name) | Stack |
 |---|---|---|---|
-| **UI** | Viewer **+** editor (one layer) | **`titan-chordpro-ui`** | TypeScript / Vue |
+| **UI** | Viewer **+** editor (one layer) | **`titan-chordpro-ui`** (npm: **`@henryavila/titan-chordpro-ui`**) | TypeScript / Vue |
 | **Generator** | Audio → `.chordpro` / `.cho` | **`titan-chordpro-gen`** — handoff: [`../titan-chordpro-gen/docs/REBRAND-HANDOFF.md`](../../titan-chordpro-gen/docs/REBRAND-HANDOFF.md) | Python |
 | **App / studio** | Standalone Titan host (shell + editor + extras) | **`titan-chordpro`** (future; none today) | TBD |
 | **SDA** | Church product host — **first consumer** | `sda-v2` (consumes **ui** only) | Nuxt |

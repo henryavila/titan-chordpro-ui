@@ -1,5 +1,5 @@
-import type { ThemeId } from 'titan-chordpro-ui'
-import type { ModesProp } from 'titan-chordpro-ui/vue'
+import type { ThemeId } from '@henryavila/titan-chordpro-ui'
+import type { ModesProp } from '@henryavila/titan-chordpro-ui/vue'
 
 export type Surface = 'standalone' | 'site'
 export type ListaMode = 'off' | 'juntas' | 'demanda'

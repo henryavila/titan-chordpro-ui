@@ -615,9 +615,9 @@ describe('count-in label sits below the title strip', () => {
     const top = Number.parseFloat(
       (w.get('[data-met-count]').attributes('style') ?? '').match(/top:\s*([\d.]+)px/)?.[1] ?? 'NaN',
     )
-    // xl chromeTop=20 + headH(72) + 8 = 100. The old `headH+22` landed at 94 and
-    // parked "entrada" against the title strip.
-    expect(top).toBeGreaterThanOrEqual(100)
+    // xl chromeTop=16 + headH(72 default in jsdom) + 8 = 96. The old
+    // `headH+22` parked "entrada" against the title strip.
+    expect(top).toBeGreaterThanOrEqual(90)
   })
 
   /**

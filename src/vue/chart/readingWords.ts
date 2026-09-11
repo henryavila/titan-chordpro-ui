@@ -1,2 +1,2 @@
-export { readingWords } from 'titan-chordpro-ui'
-export type { ReadingCell, ReadingWord } from 'titan-chordpro-ui'
+export { readingWords } from '@henryavila/titan-chordpro-ui'
+export type { ReadingCell, ReadingWord } from '@henryavila/titan-chordpro-ui'

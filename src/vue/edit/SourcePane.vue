@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import type { LintResult } from 'titan-chordpro-ui'
+import type { LintResult } from '@henryavila/titan-chordpro-ui'
 import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{

@@ -1,9 +1,28 @@
 {
-  "name": "titan-chordpro-ui",
+  "name": "@henryavila/titan-chordpro-ui",
   "version": "0.1.0",
   "description": "UI ChordPro: leitura + edição. Core TypeScript + binding Vue.",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "author": "Henry Avila",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/henryavila/titan-chordpro-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/henryavila/titan-chordpro-ui/issues"
+  },
+  "homepage": "https://github.com/henryavila/titan-chordpro-ui#readme",
+  "keywords": [
+    "chordpro",
+    "vue",
+    "cifra",
+    "viewer",
+    "editor",
+    "music",
+    "transpose",
+    "pdf"
+  ],
   "main": "./dist/core/index.js",
   "module": "./dist/core/index.js",
   "types": "./dist/core/index.d.ts",
@@ -35,21 +54,30 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "sideEffects": [
     "**/*.css",
     "./dist/vue/index.js"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "packageManager": "pnpm@11.17.0",
   "scripts": {
     "dev": "vite",
-    "prepare": "npm run build",
+    "prepare": "pnpm run build",
+    "prepublishOnly": "pnpm run build",
     "build": "tsup && vite build --config vite.lib.config.ts && tsx scripts/pack-vue.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "pack:check": "pnpm pack --pack-destination .tmp && tar -tzf .tmp/henryavila-titan-chordpro-ui-*.tgz | head -80",
+    "publish:npm": "bash scripts/publish-npm.sh"
   },
   "dependencies": {
     "jspdf": "^2.5.1"
@@ -87,11 +115,5 @@
     "vitest": "^3.2.4",
     "vue": "^3.5.18",
     "vue-tsc": "^3.3.11"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "core-js"
-    ]
   }
 }

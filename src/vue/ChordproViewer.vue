@@ -30,8 +30,8 @@ import {
   viewerMulStep,
   STORE_KEYS,
   browserStore,
-} from 'titan-chordpro-ui'
-import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from 'titan-chordpro-ui'
+} from '@henryavila/titan-chordpro-ui'
+import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import LensSheet from './sheets/LensSheet.vue'
@@ -274,10 +274,12 @@ const padX = computed(() =>
     ? ({ xs: '8px', sm: '10px', md: '14px', lg: '18px', xl: '24px' } as const)[bp.value]
     : ({ xs: '14px', sm: '16px', md: '22px', lg: '28px', xl: '40px' } as const)[bp.value],
 )
+/** Floating chrome inset above the chart (head + edit). Slightly tighter than
+ * the old band so a compact head still reads as a card, not a strip. */
 const chromePad = computed(() =>
   fs.value
     ? ({ xs: '4px 6px 0', sm: '5px 8px 0', md: '6px 12px 0', lg: '7px 14px 0', xl: '8px 18px 0' } as const)[bp.value]
-    : ({ xs: '10px 10px 0', sm: '12px 12px 0', md: '14px 16px 0', lg: '18px 20px 0', xl: '20px 26px 0' } as const)[
+    : ({ xs: '8px 10px 0', sm: '10px 12px 0', md: '12px 16px 0', lg: '14px 20px 0', xl: '16px 26px 0' } as const)[
         bp.value
       ],
 )
@@ -285,7 +287,7 @@ const chromeTop = computed(
   () =>
     (fs.value
       ? ({ xs: 4, sm: 5, md: 6, lg: 7, xl: 8 } as const)
-      : ({ xs: 10, sm: 12, md: 14, lg: 18, xl: 20 } as const))[bp.value],
+      : ({ xs: 8, sm: 10, md: 12, lg: 14, xl: 16 } as const))[bp.value],
 )
 const padBottom = computed(() => {
   const base = fs.value
@@ -295,35 +297,14 @@ const padBottom = computed(() => {
   return `${base + (phone.value ? (scrolling.value ? 54 : 10) : 0)}px`
 })
 /**
- * The chrome is gone because the reader asked for it — not because auto-scroll
- * noticed them go still. Only the deliberate kind gives its band back: taking
- * the reserve away under the idle auto-hide would slide the chart out from
- * under someone mid-song, which is the one thing a chart may never do.
- *
- * Desktop keeps the reserve even in zen: fading the controls without
- * reflowing the page. At the top of a song there is no negative scrollTop to
- * absorb a pad shrink, and a presentation must not jump the chart. A phone
- * still reclaims the band — a quarter of a small screen.
+ * Zen only fades the chrome. The page pad stays put on phone and desktop —
+ * reclaiming the band used to shove the line under the eye, which a chart
+ * may never do. Idle auto-hide follows the same rule (opacity only).
  */
-const chromeGone = computed(
-  () => zen.value && compact.value && !sheet.value && !isEdit.value,
-)
-/**
- * With the header and the dock away on a phone, the reserve they stood in is
- * dead space: ~82px above and ~134px below on a 390px frame. What stays is an
- * edge for the eye and the phone's own safe area — a notch does not go away
- * when the chrome does. How to bring the chrome back is a toast that leaves,
- * not a band that stays on the chart.
- */
-const zenPad = computed(() => ({
-  top: 'calc(12px + env(safe-area-inset-top))',
-  bottom: 'calc(12px + env(safe-area-inset-bottom))',
-}))
 const pagePad = computed(() => {
-  if (chromeGone.value) return `${zenPad.value.top} ${padX.value} ${zenPad.value.bottom}`
   // The header changes height (subtitle, key on its own row): measure, do not guess.
-  const extra = fs.value ? 8 : compact.value ? 16 : 22
-  const top = Math.round(chromeTop.value + Math.max(56, headH.value || 72) + extra)
+  const extra = fs.value ? 6 : compact.value ? 10 : 14
+  const top = Math.round(chromeTop.value + Math.max(40, headH.value || 56) + extra)
   return `${top}px ${padX.value} ${padBottom.value}`
 })
 /**
@@ -341,7 +322,7 @@ const countLeft = computed(() =>
  * ignored the chrome pad and parked "entrada" against the title.
  */
 const countTop = computed(
-  () => `${chromeTop.value + Math.max(56, headH.value || 72) + 8}px`,
+  () => `${chromeTop.value + Math.max(40, headH.value || 56) + 8}px`,
 )
 /**
  * Hard gate: no `{duration:}`, no auto-scroll. A BPM and unmarked chords are
@@ -1099,18 +1080,11 @@ function toggleZen() {
   }
 }
 
-/**
- * On a phone, hiding the chrome moves the chart: the band it stood in stops
- * being reserved. That is why the reader's place has to be carried across the
- * relayout by hand. On desktop the pad does not move — only opacity — so the
- * spot is unchanged.
- */
+/** Fade the chrome in or out. Padding does not move — the chart stays put. */
 function setChromeGone(on: boolean) {
-  const before = pageSpot()
   zen.value = on
   capoOpen.value = false
   toneOpen.value = false
-  reflowPage(before)
 }
 
 /**
@@ -1564,7 +1538,7 @@ async function doExportPdf() {
   pdf.value = 'busy'
   try {
     if (props.pdfShouldFail) throw new Error('simulado')
-    const { renderPdf } = await import('titan-chordpro-ui/pdf')
+    const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
     // The PDF always uses the default scale: fit mode serves the screen, not paper.
     const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
     // A personal version leaves marked on paper too: it must not circulate as
@@ -1600,7 +1574,7 @@ async function doExportSlides() {
   slides.value = 'busy'
   try {
     if (props.slidesShouldFail) throw new Error('simulado')
-    const { renderSlja } = await import('titan-chordpro-ui/slides')
+    const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
     const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
     const bytes = await renderSlja(view, {
       title: meta.value.title ?? 'cifra',
@@ -2154,7 +2128,6 @@ defineExpose({
             <span>{{ setlist.current.value?.title || '…' }}</span>
             <span>Buscando cifra…</span>
           </span>
-          <CpvIcon name="listMusic" :size="16" class="cpv-song-skel-chev" />
         </button>
       </div>
       <div class="cpv-song-skel-page" aria-hidden="true">
@@ -2248,7 +2221,7 @@ defineExpose({
 
     <div class="cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
-    <!-- Phone identity bar -->
+    <!-- Phone identity bar — floating card, compact controls. -->
     <div
       v-if="!isEdit && phone && isPopulated"
       class="cpv-chrome"
@@ -2256,25 +2229,26 @@ defineExpose({
       style="position:absolute;top:0;left:0;right:0;z-index:12;"
       :style="{ padding: chromePad }"
     >
-      <div :ref="bindHead" class="cpv-hit cpv-veil" :class="headHitClass" style="display:flex;align-items:center;gap:10px;height:56px;padding:0 6px 0 14px;border-radius:18px;">
+      <div :ref="bindHead" class="cpv-hit cpv-veil cpv-head is-phone" :class="headHitClass" data-cpv-head>
         <!-- In a rehearsal the title is the way into the list. -->
         <button
           v-if="setlist.on.value"
           data-setlist-open
+          class="cpv-head-id"
           title="Abrir a lista do ensaio"
-          style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;height:48px;padding:0;border:0;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;"
           @click="setlist.open()"
         >
-          <span style="flex:none;display:flex;align-items:center;height:22px;padding:0 7px;border-radius:7px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
-          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-            <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
-            <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
+          <span class="cpv-head-pos">{{ setlist.posLabel.value }}</span>
+          <span class="cpv-head-name">
+            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
+            <span class="cpv-head-sub">{{ phoneSub }}</span>
           </span>
-          <CpvIcon name="listMusic" :size="16" />
         </button>
-        <span v-else style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-          <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
-          <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ phoneSub }}</span>
+        <span v-else class="cpv-head-id">
+          <span class="cpv-head-name">
+            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
+            <span class="cpv-head-sub">{{ phoneSub }}</span>
+          </span>
         </span>
         <button
           v-if="hasKey"
@@ -2282,12 +2256,12 @@ defineExpose({
           aria-label="Tom e capotraste"
           title="Tom e capotraste"
           :style="{ background: hasReset ? 'var(--chord-fill)' : 'var(--chord-soft)' }"
-          style="flex:none;display:flex;align-items:center;gap:7px;height:44px;padding:0 12px;border:1px solid var(--chord-edge);border-radius:14px;color:var(--chord);cursor:pointer;font-family:inherit;"
+          style="flex:none;display:flex;align-items:center;gap:5px;height:28px;padding:0 8px;border:1px solid var(--chord-edge);border-radius:9px;color:var(--chord);cursor:pointer;font-family:inherit;"
           @click="toneOpen = true; zen = false; moreOpen = false"
         >
-          <span style="font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-          <span style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;line-height:1;">{{ shownKey }}{{ hasCapo ? ` · capo ${capo}` : '' }}</span>
-          <CpvIcon name="chevronDown" :size="12" />
+          <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ shownKey }}{{ hasCapo ? ` · capo ${capo}` : '' }}</span>
+          <CpvIcon name="chevronDown" :size="10" />
         </button>
         <!-- Header, not dock: parking the ficha or a landscape width must not move this. -->
         <button
@@ -2295,14 +2269,14 @@ defineExpose({
           data-fs
           :aria-label="fsTitle"
           :title="fsTitle"
-          :style="{ width: '44px', height: '44px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
-          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--text);cursor:pointer;"
+          :style="{ width: '28px', height: '28px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
+          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;color:var(--text);cursor:pointer;"
           @click="toggleFs"
-        ><CpvIcon name="maximize2" :size="16" /></button>
+        ><CpvIcon name="maximize2" :size="14" /></button>
       </div>
     </div>
 
-    <!-- Wide top bar -->
+    <!-- Wide top bar — floating card, compact controls. -->
     <div
       v-if="!isEdit && !phone && isPopulated"
       class="cpv-chrome"
@@ -2310,44 +2284,51 @@ defineExpose({
       style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;"
       :style="{ padding: chromePad }"
     >
-      <div :ref="bindHead" class="cpv-hit cpv-veil" :class="headHitClass" style="width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:9px 10px 9px 16px;border-radius:15px;" :style="{ maxWidth: pageMax }">
+      <div
+        :ref="bindHead"
+        class="cpv-hit cpv-veil cpv-head is-wide"
+        :class="headHitClass"
+        data-cpv-head
+        :style="{ '--cpv-page-max': pageMax }"
+      >
         <button
           v-if="setlist.on.value"
           data-setlist-open
+          class="cpv-head-id"
           title="Abrir a lista do ensaio"
-          style="flex:1 1 170px;min-width:150px;display:flex;align-items:center;gap:10px;padding:2px 6px 2px 0;border:0;border-radius:10px;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;"
           @click="setlist.open()"
         >
-          <span style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
-          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-            <span style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</span>
-            <span style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ setlist.nextChip.value }}</span>
+          <span class="cpv-head-pos">{{ setlist.posLabel.value }}</span>
+          <span class="cpv-head-name">
+            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
+            <span class="cpv-head-sub">{{ setlist.nextChip.value }}</span>
           </span>
-          <CpvIcon name="listMusic" :size="16" />
         </button>
-        <div v-else style="flex:1 1 170px;min-width:150px;display:flex;flex-direction:column;gap:2px;">
-          <div style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || 'Sem título' }}</div>
-          <div v-if="meta.subtitle" style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.subtitle }}</div>
+        <div v-else class="cpv-head-id">
+          <span class="cpv-head-name">
+            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
+            <span v-if="meta.subtitle" class="cpv-head-sub">{{ meta.subtitle }}</span>
+          </span>
         </div>
-        <div style="flex:none;display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">
+        <div v-if="meta.tempo || meta.time || meta.duration" class="cpv-head-meta">
           <span v-if="meta.tempo">{{ meta.tempo }} BPM</span>
           <span v-if="meta.time">{{ meta.time }}</span>
           <span v-if="meta.duration">{{ meta.duration }}</span>
         </div>
         <div v-if="hasKey" ref="capoBox" style="position:relative;flex:none;">
           <div class="cpv-keypill">
-            <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:40px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--chord);font-size:17px;line-height:1;cursor:pointer;" @click="shift(-1)">−</button>
-            <div style="display:flex;align-items:baseline;gap:6px;padding:0 7px;">
-              <span style="font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-              <span data-display-key style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
-              <span v-if="hasOffset" style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--chord-ink);background:var(--chord);border-radius:4px;padding:2px 4px;line-height:1;">{{ offset > 0 ? '+' : '' }}{{ offset }}</span>
+            <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(-1)">−</button>
+            <div style="display:flex;align-items:baseline;gap:5px;padding:0 5px;">
+              <span style="font-size:7.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
+              <span data-display-key style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
+              <span v-if="hasOffset" style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;color:var(--chord-ink);background:var(--chord);border-radius:4px;padding:1px 4px;line-height:1;">{{ offset > 0 ? '+' : '' }}{{ offset }}</span>
             </div>
-            <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:40px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--chord);font-size:17px;line-height:1;cursor:pointer;" @click="shift(1)">+</button>
-            <span style="width:1px;height:24px;background:var(--chord-edge);margin:0 3px;" />
-            <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:5px;height:32px;padding:0 9px;border:0;border-radius:9px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
-              {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="12" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
+            <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(1)">+</button>
+            <span style="width:1px;height:18px;background:var(--chord-edge);margin:0 2px;" />
+            <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:0;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
+              {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
             </button>
-            <button v-if="hasReset" title="Voltar ao tom original, sem capo" style="height:32px;padding:0 9px;margin-left:2px;border:0;border-radius:9px;background:var(--chord-fill);color:var(--chord);font-size:11.5px;font-weight:600;cursor:pointer;" @click="resetTone">Original</button>
+            <button v-if="hasReset" title="Voltar ao tom original, sem capo" style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;" @click="resetTone">Original</button>
           </div>
           <div v-if="capoOpen" class="cpv-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:cpv-rise .18s ease-out;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -2386,10 +2367,10 @@ defineExpose({
           data-fs
           :aria-label="fsTitle"
           :title="`${fsTitle} (F)`"
-          :style="{ width: '36px', height: '36px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
-          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:12px;color:var(--text);cursor:pointer;"
+          :style="{ width: '30px', height: '30px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
+          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;color:var(--text);cursor:pointer;"
           @click="toggleFs"
-        ><CpvIcon name="maximize2" :size="16" /></button>
+        ><CpvIcon name="maximize2" :size="14" /></button>
       </div>
     </div>
 

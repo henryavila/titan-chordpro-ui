@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
+import oRei from '../../fixtures/sda/082-o-rei-vem-vindo.cho?raw'
+import jesus from '../../fixtures/sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho?raw'
 /**
  * Off by default so no test has to fight a chrome that vanishes under it; the
  * one test that is about the auto-hide asks for it with `?autoHide=1`.
@@ -25,6 +27,15 @@ async function loadFonts() {
  * 100dvh frame in the flow. Default is the standalone page.
  */
 const ficha = q.get('ficha') === '1'
+const lista = q.get('lista') === '1'
+const songs = computed(() =>
+  lista
+    ? [
+        { id: 'o-rei', title: '082 - O Rei vem vindo', source: oRei },
+        { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: jesus },
+      ]
+    : undefined,
+)
 const theme = ref<'auto' | 'light' | 'dark'>('light')
 const themeControl = ref<'host' | 'preference'>('host')
 </script>
@@ -69,7 +80,7 @@ const themeControl = ref<'host' | 'preference'>('host')
         ? 'height:100dvh;min-height:560px;overflow:hidden;scroll-snap-align:start'
         : 'flex:1;min-height:0;position:relative'"
     >
-      <ChordproViewer :source="source" :theme="theme" :theme-control="themeControl" :auto-hide="autoHide" :modes="modes" song-id="sda-86" />
+      <ChordproViewer :source="source" :songs="songs" :theme="theme" :theme-control="themeControl" :auto-hide="autoHide" :modes="modes" song-id="sda-86" />
     </div>
     <div
       v-if="ficha"

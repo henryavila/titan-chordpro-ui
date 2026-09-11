@@ -8,7 +8,7 @@
 |---|---|
 | Product / repo | **`titan-chordpro-ui`** (view **+** edit, one package) — formerly seed `chordpro-viewer` |
 | Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
-| Packages (npm) | **`titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
+| Packages (npm) | **`@henryavila/titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
 | Repo path | `/Volumes/External/code/titan-chordpro-ui` |
 | Sibling generator | **`titan-chordpro-gen`** — audio → ChordPro — **out of scope** |
 | Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
@@ -81,7 +81,7 @@ Ship:
 ## 4. Public API (must exist)
 
 ```ts
-// titan-chordpro-ui (core — export ".")
+// @henryavila/titan-chordpro-ui (core — export ".")
 export function parse(source: string): ChordProView
 // parse() accepts ChordPro, OnSong, or mixed text; detection/normalization is internal.
 export function transpose(view: ChordProView, semitones: number): ChordProView
@@ -102,17 +102,17 @@ export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): nu
 export function createViewerController(opts: { source: string }): ViewerController
 // ViewerController: getState / subscribe / dispatch / optional attachScroll(el)
 
-// titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
+// @henryavila/titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
 export function renderPdf(view: ChordProView, opts: PdfOptions): Promise<Uint8Array>
 
-// titan-chordpro-ui/slides  (separate entry — ZIP / CP1252 stay out of core)
+// @henryavila/titan-chordpro-ui/slides  (separate entry — ZIP / CP1252 stay out of core)
 export function renderSlja(view: ChordProView, opts?: SljaOptions): Promise<Uint8Array>
 export function exportSlja(source: string, opts?: SljaOptions): Promise<SljaFile>
 // SljaFile = { bytes, filename, title }. Host download button: no Vue tree.
 // SljaOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
 // Chart line breaks are the phrasing. Do not reflow like louvorja-slides ASR.
 
-// titan-chordpro-ui/vue
+// @henryavila/titan-chordpro-ui/vue
 export { ChordproViewer } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
 ```
 
@@ -332,7 +332,7 @@ Do not start sda-v2 cutover until A1–A12 + A15–A17 green (or A1–A15 if UI 
 
 ## 11. SDA integration (after v0.1 tag)
 
-1. Depend on local path or published version (`titan-chordpro-ui` + `/vue`).
+1. Depend on local path or published version (`@henryavila/titan-chordpro-ui` + `/vue`).
 2. sda-v2 keeps **shell / multi-cifra / sanitize / i18n / player**.
 3. Replace inline parser + HTML/PDF/toolbar-of-cifra with `<ChordproViewer :source="activeCho" />` (or equivalent).
 4. Map host tokens to `--cpv-*` if needed.
@@ -344,7 +344,7 @@ Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SP
 
 ## 12. Open questions (block only if agent hits them)
 
-1. ~~Package scope name under npm~~ — **locked:** unscoped `titan-chordpro-ui` with exports `"."` / `"./pdf"` / `"./vue"` (see `docs/REBRAND-HANDOFF.md`).
+1. ~~Package scope name under npm~~ — **locked:** `@henryavila/titan-chordpro-ui` with exports `"."` / `"./pdf"` / `"./vue"` (publish via GitHub Release → OIDC, same pattern as `@henryavila/mdprobe`; see `docs/REBRAND-HANDOFF.md`).
 2. Whether `setKey` is required in v0.1 or only semitone `transpose` (SDA today = semitone offset).
 3. PDF engine long-term (jsPDF vs print-CSS + headless) — **v0.1 = jsPDF** for parity with SDA.
 4. Exact `ViewerController` action union (document in types when implementing).

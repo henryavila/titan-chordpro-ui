@@ -4,7 +4,7 @@ import CpvIcon from '../icon/CpvIcon.vue'
 import {
   convert, detect, hostOk, missingOf, MISSING_LABEL, readMeta, titleFromUrl, writeMeta,
   type ChartMeta, type MetaKey,
-} from 'titan-chordpro-ui'
+} from '@henryavila/titan-chordpro-ui'
 import type { CpvIconName } from '../icon/paths'
 
 /**

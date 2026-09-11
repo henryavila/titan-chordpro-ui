@@ -27,8 +27,8 @@ import {
   shiftLabel,
   toggleBlockDual as toggleBlockDualOn,
   unhideBlock as unhideBlockAt,
-} from 'titan-chordpro-ui'
-import type { ChartBlock, Harmony, InsertKind, PlayedCol } from 'titan-chordpro-ui'
+} from '@henryavila/titan-chordpro-ui'
+import type { ChartBlock, Harmony, InsertKind, PlayedCol } from '@henryavila/titan-chordpro-ui'
 import type { WriteMode } from '../public'
 
 export type BlockEditOpts = {

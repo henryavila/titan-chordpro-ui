@@ -8,8 +8,8 @@
  * Without either, the caller falls back to showing the source text.
  */
 
-import { beatsOf, keyOf, NAMES, scoreBeatsPerBar as beatsPerBar, scoreLayout as layout, tabOf } from 'titan-chordpro-ui'
-import type { ScoreNote } from 'titan-chordpro-ui'
+import { beatsOf, keyOf, NAMES, scoreBeatsPerBar as beatsPerBar, scoreLayout as layout, tabOf } from '@henryavila/titan-chordpro-ui'
+import type { ScoreNote } from '@henryavila/titan-chordpro-ui'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Vex = any

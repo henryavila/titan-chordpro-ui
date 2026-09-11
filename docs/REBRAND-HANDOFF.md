@@ -23,7 +23,7 @@
 
 | Concern | Decision |
 |---|---|
-| npm package | **`titan-chordpro-ui`** (unscoped) |
+| npm package | **`@henryavila/titan-chordpro-ui`** (scoped; same publish pattern as `@henryavila/mdprobe`) |
 | exports | `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
 | CLI bin | **`titan-chordpro-ui`** |
 | Vue SFC | **`ChordproViewer`** (keep — SDA mental model) |
@@ -51,7 +51,7 @@
 ### 4.2 Docs & branding (this repo)
 
 - [x] `SPEC.md` — title, path, §4 exports, §8 CLI, §11 dep, §12.1 npm lock
-- [x] `AGENTS.md` — title + Vue package path `titan-chordpro-ui/vue`
+- [x] `AGENTS.md` — title + Vue package path `@henryavila/titan-chordpro-ui/vue`
 - [x] `README.md` — product title (not “seed → target”)
 - [x] `docs/NAMING.md`, `docs/VISAO.md` — present tense; former name as one-line note only
 - [x] `design-handoff/*` titles → `titan-chordpro-ui`

@@ -2,8 +2,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import * as core from 'titan-chordpro-ui'
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
+import * as core from '@henryavila/titan-chordpro-ui'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import type { ChordproViewerProps, ImageChoice, ModesProp } from '../../src/vue/public'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -107,7 +107,7 @@ describe('SPEC §4 public API is importable from the package name', () => {
   })
 
   it('vue entry exports ChordproViewer as named and default', async () => {
-    const mod = await import('titan-chordpro-ui/vue')
+    const mod = await import('@henryavila/titan-chordpro-ui/vue')
     expect(mod.ChordproViewer).toBeTypeOf('object')
     expect(mod.default).toBe(mod.ChordproViewer)
     expect(ChordproViewer).toBe(mod.ChordproViewer)
@@ -155,7 +155,7 @@ describe('built dist (consumer tarball shape)', () => {
   it.skipIf(!built)('vue JS pulls CSS in, so a host import is enough', () => {
     const js = readFileSync(join(root, 'dist/vue/index.js'), 'utf8')
     expect(js).toMatch(/import ['"]\.\/style\.css['"]/)
-    expect(js).toMatch(/from ['"]titan-chordpro-ui['"]/)
+    expect(js).toMatch(/from ['"]@henryavila\/titan-chordpro-ui['"]/)
     expect(js).toMatch(/from ['"]vue['"]/)
   })
 

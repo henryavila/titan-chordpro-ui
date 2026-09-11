@@ -120,11 +120,13 @@ describe('zen', () => {
   })
 
   /**
-   * Desktop presentation: hiding the chrome must not reflow the chart. The
-   * phone still reclaims the reserve (a quarter of a small screen); a wide
-   * stage only fades the controls so the line under the eye stays put.
+   * Hiding the chrome must not reflow the chart — phone or desktop. Opacity
+   * only: reclaiming the band shoved the line under the eye.
    */
-  it('on desktop, zen hides the chrome without shrinking the page pad', async () => {
+  it.each([
+    [1280, 'desktop'],
+    [390, 'phone'],
+  ] as const)('on %s, zen hides the chrome without shrinking the page pad', async (width) => {
     localStorage.setItem('cpv:fitSeen', '1')
     const observers: ((entries: unknown[]) => void)[] = []
     class RO {
@@ -140,7 +142,7 @@ describe('zen', () => {
     try {
       const w = mountViewer()
       await flushPromises()
-      observers.forEach((cb) => cb([{ contentRect: { width: 1280, height: 900 } }]))
+      observers.forEach((cb) => cb([{ contentRect: { width, height: 900 } }]))
       await flushPromises()
 
       const pad = () => (w.get('.cpv-page').attributes('style') ?? '')
@@ -150,44 +152,12 @@ describe('zen', () => {
       await w.get('[data-cpv-scroll]').trigger('click')
       await flushPromises()
       expect(w.get('.cpv-chrome').classes()).toContain('is-hidden')
-      expect(pad(), 'desktop zen reclaimed the chrome band and jumped the chart').toBe(before)
+      expect(pad(), 'zen reclaimed the chrome band and jumped the chart').toBe(before)
 
       await w.get('[data-cpv-scroll]').trigger('click')
       await flushPromises()
       expect(w.get('.cpv-chrome').classes()).not.toContain('is-hidden')
       expect(pad()).toBe(before)
-      w.unmount()
-    } finally {
-      globalThis.ResizeObserver = realRO
-    }
-  })
-
-  it('on a phone, zen still hands the chrome band back to the chart', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
-    const observers: ((entries: unknown[]) => void)[] = []
-    class RO {
-      constructor(cb: (entries: unknown[]) => void) {
-        observers.push(cb)
-      }
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    }
-    const realRO = globalThis.ResizeObserver
-    globalThis.ResizeObserver = RO as unknown as typeof ResizeObserver
-    try {
-      const w = mountViewer()
-      await flushPromises()
-      observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 844 } }]))
-      await flushPromises()
-
-      const pad = () => (w.get('.cpv-page').attributes('style') ?? '')
-      const before = pad()
-      await w.get('[data-cpv-scroll]').trigger('click')
-      await flushPromises()
-      expect(w.get('.cpv-chrome').classes()).toContain('is-hidden')
-      expect(pad()).not.toBe(before)
-      expect(pad()).toMatch(/12px|safe-area/)
       w.unmount()
     } finally {
       globalThis.ResizeObserver = realRO

@@ -1,4 +1,4 @@
-# Guia do consumer — `titan-chordpro-ui`
+# Guia do consumer — `@henryavila/titan-chordpro-ui`
 
 Como um app Vue 3 ou Nuxt **incorpora** a UI de 1 cifra. Este pacote não é um
 iframe, não é um site, e **não amarra um consumer específico**. Quem consome
@@ -28,16 +28,16 @@ Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página n
 ## 1. Instalar
 
 ```sh
-pnpm add titan-chordpro-ui
+pnpm add @henryavila/titan-chordpro-ui
 # peers: vue ^3.5 (obrigatório para a UI)
 #        vexflow (só se for desenhar {sos}/{sot})
 #        pdfjs-dist (só se for importar PDF)
 ```
 
 ```ts
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 // o pacote já puxa o CSS; importe de novo só para controlar a ordem:
-import 'titan-chordpro-ui/vue/style.css'
+import '@henryavila/titan-chordpro-ui/vue/style.css'
 ```
 
 Em Nuxt, monte no cliente (`ClientOnly`): o viewer fala com `document` /
@@ -45,10 +45,10 @@ Em Nuxt, monte no cliente (`ClientOnly`): o viewer fala com `document` /
 
 ```ts
 export default defineNuxtConfig({
-  css: ['titan-chordpro-ui/vue/style.css'],
-  vite: { optimizeDeps: { include: ['titan-chordpro-ui'] } },
+  css: ['@henryavila/titan-chordpro-ui/vue/style.css'],
+  vite: { optimizeDeps: { include: ['@henryavila/titan-chordpro-ui'] } },
   // se o bundler externalizar o pacote e quebrar o SFC:
-  // nitro: { externals: { inline: ['titan-chordpro-ui'] } }
+  // nitro: { externals: { inline: ['@henryavila/titan-chordpro-ui'] } }
 })
 ```
 
@@ -87,8 +87,8 @@ moldura do Titan); o toque na cifra só esconde/mostra os controles.
 
 ```vue
 <script setup lang="ts">
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
-import 'titan-chordpro-ui/vue/style.css'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
+import '@henryavila/titan-chordpro-ui/vue/style.css'
 
 defineProps<{ source: string; songId: string }>()
 </script>
@@ -147,7 +147,7 @@ da viewport (`scroll-snap`) e o dock senta na dobra. Aí o músico toca.
 
 ```vue
 <script setup lang="ts">
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 
 const props = defineProps<{
   source: string
@@ -340,7 +340,7 @@ O viewer exporta `.slja` pelo menu **Exportar**. Numa lista de músicas o host
 não precisa montar `<ChordproViewer>`: a string ChordPro basta.
 
 ```ts
-import { exportSlja, NoSlideLyricsError } from 'titan-chordpro-ui/slides'
+import { exportSlja, NoSlideLyricsError } from '@henryavila/titan-chordpro-ui/slides'
 
 async function baixarSlides(chordpro: string, capa?: Uint8Array, fundo?: Uint8Array) {
   const { bytes, filename } = await exportSlja(chordpro, {
@@ -362,7 +362,7 @@ da cifra.
 A mesma cifra cadastra a letra — sem acordes, `x///` nem comentário de ensaio:
 
 ```ts
-import { exportLyrics } from 'titan-chordpro-ui'
+import { exportLyrics } from '@henryavila/titan-chordpro-ui'
 
 const { title, artist, lyrics } = exportLyrics(chordpro)
 // lyrics: plaintext, linha da cifra = linha; linha em branco = seção

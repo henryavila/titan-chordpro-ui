@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
-import type { ChartBlock } from 'titan-chordpro-ui'
+import type { ChartBlock } from '@henryavila/titan-chordpro-ui'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import ScoreFigure from './ScoreFigure.vue'
 import { readingWords, type ReadingWord } from './readingWords'

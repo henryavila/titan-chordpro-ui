@@ -917,11 +917,136 @@
   align-items: center;
   justify-content: center;
   gap: 1px;
-  height: 38px;
-  padding: 0 3px;
-  border-radius: 11px;
+  height: 30px;
+  padding: 0 2px;
+  border-radius: 9px;
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
+}
+/*
+ * Identity bar — floating card (same family as the dock). Compact controls
+ * keep the height down; the reading column (`--cpv-page-max`) is a ceiling
+ * for the chart, not the name (12rem floor + wrap).
+ *
+ * `margin-left: auto` on Tela cheia keeps it on the right of its flex line
+ * even when it wraps alone.
+ */
+.cpv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+.cpv-head.is-phone {
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 14px;
+}
+.cpv-head.is-wide {
+  width: max-content;
+  max-width: 100%;
+  min-width: min(100%, var(--cpv-page-max, 100%));
+  gap: 8px 12px;
+  padding: 5px 8px 5px 14px;
+  border-radius: 13px;
+}
+.cpv-head [data-fs] {
+  margin-left: auto;
+}
+.cpv-head-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 12rem;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+}
+button.cpv-head-id {
+  cursor: pointer;
+}
+span.cpv-head-id,
+div.cpv-head-id {
+  cursor: default;
+}
+.cpv-head.is-phone .cpv-head-id {
+  height: 32px;
+}
+.cpv-head.is-wide .cpv-head-id {
+  gap: 9px;
+  padding: 1px 4px 1px 0;
+  min-height: 32px;
+}
+.cpv-head.is-wide button.cpv-head-id:hover {
+  background: var(--hover);
+}
+.cpv-head-pos {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--chord-soft);
+  border: 1px solid var(--chord-edge);
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.cpv-head.is-wide .cpv-head-pos {
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+.cpv-head-name {
+  flex: 1 1 12rem;
+  min-width: 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cpv-head-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cpv-head.is-wide .cpv-head-title {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.cpv-head-sub {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cpv-head.is-wide .cpv-head-sub {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.cpv-head-meta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
 }
 .cpv-keypill > button:hover {
   background: var(--chord-hover);

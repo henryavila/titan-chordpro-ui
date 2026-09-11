@@ -145,7 +145,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 2. Controles da cifra: barra no miolo vs chrome mínimo fixo (ainda “não-shell”).
    ~~Host: iframe vs página.~~ **Locked 2026-09-10:** componente Vue na ficha **e/ou** rota `100dvh`; iframe cancelado (`docs/CONSUMER.md`).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
-4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
+4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `@henryavila/titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
 5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING).
 
 ---

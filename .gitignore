@@ -4,6 +4,7 @@ coverage/
 demo/dist/
 .DS_Store
 *.tgz
+.tmp/
 .atomic-skills/status/stop.log
 .atomic-skills/status/drift.log
 .atomic-skills/status/emergent-drift.log

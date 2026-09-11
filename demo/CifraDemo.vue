@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { readMeta } from 'titan-chordpro-ui'
-import { pdfText } from 'titan-chordpro-ui/pdf'
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
+import { readMeta } from '@henryavila/titan-chordpro-ui'
+import { pdfText } from '@henryavila/titan-chordpro-ui/pdf'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
   FAIL_ID,

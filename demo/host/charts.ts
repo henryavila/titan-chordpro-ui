@@ -1,5 +1,5 @@
-import { readMeta } from 'titan-chordpro-ui'
-import type { ChordproViewerProps, ImageChoice } from 'titan-chordpro-ui/vue'
+import { readMeta } from '@henryavila/titan-chordpro-ui'
+import type { ChordproViewerProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
 import type { ListaMode } from './recipe'
 
 type DemoSong = NonNullable<ChordproViewerProps['songs']>[number]

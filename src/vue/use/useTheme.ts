@@ -1,5 +1,5 @@
-import { THEME_VARS, accentVars } from 'titan-chordpro-ui'
-import type { AccentProp, ThemeId } from 'titan-chordpro-ui'
+import { THEME_VARS, accentVars } from '@henryavila/titan-chordpro-ui'
+import type { AccentProp, ThemeId } from '@henryavila/titan-chordpro-ui'
 
 export function applyThemeVars(
   el: HTMLElement,

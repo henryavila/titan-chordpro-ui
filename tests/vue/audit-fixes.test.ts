@@ -9,7 +9,7 @@ const UNIQUE = 'Je[G]sus, Tu És a minha [G]vida.'
 const PLAIN = 'Jesus, Tu És a minha vida.'
 
 const pdfCalls: Array<Record<string, unknown> | undefined> = []
-vi.mock('titan-chordpro-ui/pdf', () => ({
+vi.mock('@henryavila/titan-chordpro-ui/pdf', () => ({
   renderPdf: (_view: unknown, opts?: Record<string, unknown>) => {
     pdfCalls.push(opts)
     return Promise.resolve(new Uint8Array([1, 2, 3]))

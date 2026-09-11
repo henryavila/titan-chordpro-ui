@@ -1,7 +1,11 @@
 # titan-chordpro-ui
 
 Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF + slides LouvorJA.  
-Repo / pacote npm: **`titan-chordpro-ui`**. Decisão: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md).
+Repo: **`titan-chordpro-ui`** · npm: **[`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)**.  
+Decisão: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md).
+
+[![npm](https://img.shields.io/npm/v/@henryavila/titan-chordpro-ui)](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)
+[![license](https://img.shields.io/npm/l/@henryavila/titan-chordpro-ui)](LICENSE)
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
@@ -57,14 +61,14 @@ Exemplos completos (Nuxt/Vue, ficha real, palco, ensaio, gestos):
 ```
 
 ```ts
-import { parse, memoryStore } from 'titan-chordpro-ui'
-import type { ChartStore } from 'titan-chordpro-ui'
-import { renderPdf } from 'titan-chordpro-ui/pdf'
-import { ChordproViewer } from 'titan-chordpro-ui/vue'
-import type { ChordproViewerProps } from 'titan-chordpro-ui/vue'
+import { parse, memoryStore } from '@henryavila/titan-chordpro-ui'
+import type { ChartStore } from '@henryavila/titan-chordpro-ui'
+import { renderPdf } from '@henryavila/titan-chordpro-ui/pdf'
+import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
+import type { ChordproViewerProps } from '@henryavila/titan-chordpro-ui/vue'
 ```
 
-`titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
+`@henryavila/titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
 
 Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 (standalone × shell, uma cifra × apresentação); `/standalone.html` a cifra
@@ -88,8 +92,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
-| `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `titan-chordpro-ui/pdf` |
-| `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `titan-chordpro-ui/slides` |
+| `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
+| `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `@henryavila/titan-chordpro-ui/slides` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o host serve — o que “Inserir · Imagem” oferece |
 | `accent` | `'verde'` | `verde` \| `teal` \| `#hex` \| `rgb()`: a cor dos acordes e tudo que deriva dela |
@@ -122,7 +126,7 @@ As duas que dependem do mundo externo são props, não mágica do pacote:
 
 `fetchChart` é o **backend do host**: o navegador não alcança outro site de
 dentro do viewer. Sem ela, a aba Link diz isso em vez de fingir. `readPdf` vem
-de `titan-chordpro-ui/pdf`; é prop para que o `pdfjs-dist` (peer opcional) só
+de `@henryavila/titan-chordpro-ui/pdf`; é prop para que o `pdfjs-dist` (peer opcional) só
 carregue em host que queira importar PDF. Sem ela, PDF é recusado na entrada —
 e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.
 
@@ -215,8 +219,8 @@ O default é o `localStorage` deste aparelho, então quem não passa nada
 continua funcionando. Para assumir o controle, entregue um `ChartStore`:
 
 ```ts
-import type { ChartStore } from 'titan-chordpro-ui'
-import { STORE_KEYS, overlayKey } from 'titan-chordpro-ui'
+import type { ChartStore } from '@henryavila/titan-chordpro-ui'
+import { STORE_KEYS, overlayKey } from '@henryavila/titan-chordpro-ui'
 
 const storage: ChartStore = {
   get: (key) => cache.get(key) ?? null,
@@ -488,3 +492,34 @@ letra/controles e Space Mono para acordes, com fallback de sistema.
 [Guia do consumer: composições, tema, fontes](docs/CONSUMER.md).
 [Testes de navegador](docs/SDA-VIEWER-VALIDATION.md):
 `pnpm exec playwright install chromium webkit` e `pnpm test:browser`.
+
+## Publish (npm)
+
+Same pattern as [`@henryavila/mdprobe`](https://www.npmjs.com/package/@henryavila/mdprobe).
+
+### First publish (local, token)
+
+Creates the package on the registry with an npm automation token. The token never lands in the repo — only in the env var `NPM_KEY`.
+
+```sh
+export NPM_KEY=npm_…          # automation token with publish rights
+pnpm run publish:npm          # build + test + publish
+# or:  NPM_KEY=… pnpm run publish:npm -- --dry-run
+```
+
+Script: [`scripts/publish-npm.sh`](scripts/publish-npm.sh).
+
+### Later releases (Trusted Publishing)
+
+1. **One-time on npmjs.com** (after the package exists): enable **Trusted Publisher** for GitHub repo `henryavila/titan-chordpro-ui`, workflow `.github/workflows/publish.yml`.
+2. Bump `version` in `package.json` and finalize the section in `CHANGELOG.md`.
+3. Merge to the default branch, then create a GitHub Release tagged `vX.Y.Z` (must match `package.json`).
+4. The `Publish to npm` workflow runs `pnpm install` → `build` → `test` → `pnpm publish --provenance --access public`.
+
+Consumer install:
+
+```sh
+pnpm add @henryavila/titan-chordpro-ui
+```
+
+Pre-1.0: prefer `~0.1.0` (patch-only) if the host cannot absorb minor breaks.

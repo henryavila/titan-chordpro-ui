@@ -89,12 +89,20 @@ describe('chrome uses the locked set', () => {
     expect(w.get('[aria-label="Aumentar tipografia"]').text()).toBe('A+')
   })
 
-  it('dock theme / edit / more / fullscreen share SVG siblings', async () => {
+  it('dock fit / edit / more / fullscreen share SVG siblings', async () => {
     const w = await viewerAt(390)
-    expect(w.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
+    expect(w.find('[data-fit] [data-icon=scan]').exists()).toBe(true)
     expect(w.find('[data-edit] [data-icon=pencil]').exists()).toBe(true)
     expect(w.find('[aria-label="Mais controles"] [data-icon=ellipsis]').exists()).toBe(true)
     expect(w.find('[data-fs] [data-icon=maximize2]').exists()).toBe(true)
+    expect(w.find('[data-theme-btn]').exists()).toBe(false)
+    // Fit sits right of Edit: its on-state border looks odd between two ghosts.
+    const row = w.get('[data-scroll]').element.parentElement!
+    const icons = [...row.querySelectorAll('button')].map(
+      (b) => b.getAttribute('aria-label') ?? '',
+    )
+    expect(icons.indexOf('Editar esta cifra')).toBeLessThan(icons.indexOf('Ajuste ao espaço'))
+    expect(icons.indexOf('Ajuste ao espaço')).toBeLessThan(icons.indexOf('Mais controles'))
   })
 
   it('wide bar names the tools with the same icons the dock uses', async () => {
@@ -107,14 +115,35 @@ describe('chrome uses the locked set', () => {
     expect(w.find('[data-edit] [data-icon=pencil]').exists()).toBe(true)
   })
 
-  it('Mais rows carry the same icons, not a text-only sheet', async () => {
+  it('Mais rows carry theme and the sheet tools, not a text-only sheet', async () => {
     const w = await viewerAt(390)
     await w.get('[aria-label="Mais controles"]').trigger('click')
     await flushPromises()
     const dlg = w.get('[role="dialog"][aria-label="Mais controles"]')
     const icons = dlg.findAll('.cpv-ico').map((n) => n.attributes('data-icon'))
-    expect(icons).toEqual(expect.arrayContaining(['scan', 'glasses', 'metronome', 'download']))
+    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'metronome', 'download']))
+    expect(icons).not.toContain('scan')
+    expect(dlg.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
     expect(dlg.find('[data-icon=x]').exists()).toBe(true)
+  })
+
+  it('phone dock cycles fit; Mais keeps theme open so it can cycle', async () => {
+    const w = await viewerAt(390)
+    const fit = w.get('[data-fit]')
+    expect(fit.attributes('aria-pressed')).toBe('true')
+    await fit.trigger('click')
+    await flushPromises()
+    expect(w.get('[data-fit]').attributes('aria-pressed')).toBe('false')
+
+    await w.get('[aria-label="Mais controles"]').trigger('click')
+    await flushPromises()
+    const theme = w.get('[data-theme-btn]')
+    expect(theme.text()).toMatch(/Escuro/)
+    await theme.trigger('click')
+    await flushPromises()
+    expect(w.find('[role="dialog"][aria-label="Mais controles"]').exists()).toBe(true)
+    expect(w.get('[data-theme-btn]').text()).toMatch(/Auto/)
+    expect(w.find('[data-theme-btn] [data-icon=sunMoon]').exists()).toBe(true)
   })
 })
 

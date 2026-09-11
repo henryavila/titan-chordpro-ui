@@ -1,4 +1,4 @@
-import type { AccentProp, ChartStore, ThemeId } from 'titan-chordpro-ui'
+import type { AccentProp, ChartStore, ThemeId } from '@henryavila/titan-chordpro-ui'
 import type { LoadSong, SetlistSong } from './use/useSetlist'
 
 export type { LoadSong, SetlistSong }

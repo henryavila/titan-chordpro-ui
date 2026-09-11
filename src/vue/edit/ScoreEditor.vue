@@ -14,8 +14,8 @@ import {
   serializeScore as serialize,
   tabOf,
   toTab,
-} from 'titan-chordpro-ui'
-import type { Dur, ScoreMeta, ScoreNote } from 'titan-chordpro-ui'
+} from '@henryavila/titan-chordpro-ui'
+import type { Dur, ScoreMeta, ScoreNote } from '@henryavila/titan-chordpro-ui'
 import { drawScore, loadVex } from './score-draw'
 import CpvIcon from '../icon/CpvIcon.vue'
 

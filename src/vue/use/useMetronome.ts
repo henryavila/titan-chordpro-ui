@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
-import { beatsPerBar, sheetBpm, STORE_KEYS, readStoredJson as readJson, writeStoredJson as writeJson } from 'titan-chordpro-ui'
-import type { ChartStore } from 'titan-chordpro-ui'
+import { beatsPerBar, sheetBpm, STORE_KEYS, readStoredJson as readJson, writeStoredJson as writeJson } from '@henryavila/titan-chordpro-ui'
+import type { ChartStore } from '@henryavila/titan-chordpro-ui'
 
 /** A pause this long ends the current tap measurement and starts a new one. */
 const TAP_GAP_MS = 2400
