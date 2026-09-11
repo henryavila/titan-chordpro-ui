@@ -159,7 +159,7 @@ describe('bringing a chart in', () => {
     expect(w.emitted('commit')).toBeUndefined()
     await w.get('[data-nova-duration]').setValue('4:26')
     await w.get('[data-nova-go]').trigger('click')
-    expect(String(w.emitted('commit')?.[0]?.[0])).toContain('{duration:4:26}')
+    expect(String(w.emitted('commit')?.[0]?.[0])).toContain('{duration:04:26}')
   })
 
   it('reports a fetch that failed rather than opening an empty editor', async () => {
@@ -252,7 +252,7 @@ describe('identifying the song', () => {
     const src = String(w.emitted('commit')?.[0]?.[0])
     expect(src).toContain('{title:Minha música}')
     expect(src).toContain('{time:4/4}')
-    expect(src).toContain('{duration:4:26}')
+    expect(src).toContain('{duration:04:26}')
     expect(src).toContain('{c:Intro}')
   })
 
@@ -264,7 +264,7 @@ describe('identifying the song', () => {
     const src = String(w.emitted('commit')?.[0]?.[0])
     expect(src.match(/\{key:/g)).toHaveLength(1)
     expect(src.split('\n')[0]).toBe('{title:Uma}')
-    expect(src).toContain('{duration:4:26}')
+    expect(src).toContain('{duration:04:26}')
   })
 
   it('keeps a duration that was already in the chart', async () => {
@@ -291,7 +291,7 @@ describe('what the flow hands back', () => {
     await nextTick()
     expect(w.find('[data-new-chart]').exists()).toBe(false)
     expect(w.emitted('save-content')?.[0]?.[0]).toContain('{title:Minha música}')
-    expect(w.emitted('save-content')?.[0]?.[0]).toContain('{duration:4:26}')
+    expect(w.emitted('save-content')?.[0]?.[0]).toContain('{duration:04:26}')
     expect(w.emitted('update:mode')?.at(-1)?.[0]).toBe('edit')
   })
 

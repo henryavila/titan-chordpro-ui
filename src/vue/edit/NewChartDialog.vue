@@ -2,7 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import {
-  convert, detect, hostOk, missingOf, MISSING_LABEL, readMeta, titleFromUrl, writeMeta,
+  convert, detect, hostOk, maskDurationMmSs, missingOf, MISSING_LABEL, normalizeDurationMmSs,
+  readMeta, titleFromUrl, writeMeta,
   type ChartMeta, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
 import type { CpvIconName } from '../icon/paths'
@@ -263,6 +264,12 @@ function onDrop(e: DragEvent) {
 function setMeta(k: MetaKey, v: string) {
   meta.value = { ...meta.value, [k]: v }
 }
+function onDurationInput(e: Event) {
+  setMeta('duration', maskDurationMmSs((e.target as HTMLInputElement).value))
+}
+function onDurationBlur() {
+  setMeta('duration', normalizeDurationMmSs(meta.value.duration ?? ''))
+}
 function bpmStep(d: number) {
   const cur = parseInt(String(meta.value.tempo ?? ''), 10)
   setMeta('tempo', String(Math.max(30, Math.min(260, (Number.isNaN(cur) ? 90 : cur) + d))))
@@ -297,8 +304,10 @@ function back() {
 }
 function go() {
   if (durationMissing.value) return
+  const next = { ...meta.value, duration: normalizeDurationMmSs(meta.value.duration ?? '') }
+  meta.value = next
   const body = source.value.trim() ? source.value : BLANK_BODY
-  emit('commit', writeMeta(body, meta.value))
+  emit('commit', writeMeta(body, next))
 }
 const goLabel = computed(() =>
   from.value === 'save' ? 'Salvar para todos' : from.value === 'blank' ? 'Abrir editor vazio' : 'Abrir no editor',
@@ -465,14 +474,19 @@ onMounted(() => {
           <div style="display:flex;align-items:baseline;gap:8px;">
             <input
               :value="meta.duration ?? ''"
-              placeholder="mm:ss"
+              placeholder="MM:SS"
+              inputmode="numeric"
+              autocomplete="off"
               spellcheck="false"
+              maxlength="5"
+              aria-label="Duração em minutos e segundos"
               data-nova-duration
               :style="{ fontSize: meta.duration ? '22px' : '16px' }"
               style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
-              @input="setMeta('duration', ($event.target as HTMLInputElement).value.replace(/[^\d:]/g, '').slice(0, 8))"
+              @input="onDurationInput"
+              @blur="onDurationBlur"
             />
-            <span style="font-size:11px;color:var(--muted);">min:seg</span>
+            <span style="font-size:11px;color:var(--muted);">MM:SS</span>
           </div>
           <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Tempo da música, como no YouTube. A rolagem precisa disso.</span>
         </div>
