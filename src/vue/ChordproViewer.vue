@@ -1571,6 +1571,7 @@ async function doExportPdf() {
     // the team's chart.
     const bytes = await renderPdf(view, {
       personal: !ov.exportOrig.value && ov.hasOverlay.value,
+      accent: props.accent,
     })
     download(
       buildPdfFilename(meta.value.title ?? 'cifra', shownKey.value || null),

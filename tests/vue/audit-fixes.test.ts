@@ -467,6 +467,17 @@ describe('M3 · the host may choose the accent', () => {
     w.unmount()
   })
 
+  it('forwards the host accent to the PDF', async () => {
+    const w = mountViewer({ accent: 'teal' })
+    await flushPromises()
+    await w.get('[aria-label="Exportar"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-export="pdf"]').trigger('click')
+    await flushPromises()
+    expect(pdfCalls.at(-1)).toMatchObject({ accent: 'teal' })
+    w.unmount()
+  })
+
   it('scales the derivatives without moving the hue', async () => {
     const w = mountViewer({ accent: 'verde', theme: 'light', accentStrength: 1.5 })
     await flushPromises()

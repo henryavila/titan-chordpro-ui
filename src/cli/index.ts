@@ -5,7 +5,7 @@ import { buildChoFilename, buildPdfFilename, buildSljaFilename } from '../core/f
 import { semitoneDelta } from '../core/transpose'
 
 function usage(): never {
-  console.error(`titan-chordpro-ui <html|pdf|slides|parse> <file> [--theme light|dark|print|default] [--key A] [-o out]`)
+  console.error(`titan-chordpro-ui <html|pdf|slides|parse> <file> [--theme light|dark|print|default] [--key A] [--accent verde|teal|#hex] [-o out]`)
   process.exit(1)
 }
 
@@ -69,7 +69,8 @@ async function main() {
     }
     if (cmd === 'pdf') {
       const { renderPdf } = await import('../pdf/index')
-      const bytes = await renderPdf(view)
+      const accent = arg(argv, '--accent')
+      const bytes = await renderPdf(view, accent ? { accent } : {})
       const dest = out ?? buildPdfFilename(view.meta.title ?? 'cifra', view.displayKey)
       const dir = dirname(dest)
       if (dir && dir !== '.') mkdirSync(dir, { recursive: true })

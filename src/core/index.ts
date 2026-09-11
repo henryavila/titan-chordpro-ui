@@ -76,6 +76,8 @@ export {
   markTight,
 } from './layout'
 export type { ChartLayout, LayoutOpts } from './layout'
+export { readingWords } from './reading-words'
+export type { ReadingCell, ReadingWord } from './reading-words'
 export {
   absorbInto,
   absorbedOp,
