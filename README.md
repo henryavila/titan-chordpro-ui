@@ -495,26 +495,52 @@ letra/controles e Space Mono para acordes, com fallback de sistema.
 
 ## Publish (npm)
 
-Same pattern as [`@henryavila/mdprobe`](https://www.npmjs.com/package/@henryavila/mdprobe).
+Follows the 2026 npm model ([bypass2FA deprecation + staged publishing](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)):
 
-### First publish (local, token)
+- **Do not** create Granular Access Tokens with **Bypass 2FA** (deprecated).
+- **Stage-only** tokens cannot `npm publish` — they upload with `npm stage publish`, then a maintainer promotes with 2FA (`npm stage approve`).
+- A **new package name** cannot be staged: the package must exist first. Create `0.1.0` once with an interactive session + 2FA.
 
-Creates the package on the registry with an npm automation token. The token never lands in the repo — only in the env var `NPM_KEY`.
+Same overall pattern as [`@henryavila/mdprobe`](https://www.npmjs.com/package/@henryavila/mdprobe).
+
+### First publish (interactive, once)
 
 ```sh
-export NPM_KEY=npm_…          # automation token with publish rights
-pnpm run publish:npm          # build + test + publish
-# or:  NPM_KEY=… pnpm run publish:npm -- --dry-run
+pnpm run publish:npm
+# script builds + tests, then walks you through:
+#   npm login
+#   npx npm@11.19.1 publish --access public   # prompts for 2FA
 ```
+
+Or run those two commands yourself after `pnpm build && pnpm test`.  
+A `404` on a token-based `PUT` is npm masking auth/permission failure — not “create the package somehow else”. Interactive publish with 2FA is the supported create path without bypass2FA.
 
 Script: [`scripts/publish-npm.sh`](scripts/publish-npm.sh).
 
-### Later releases (Trusted Publishing)
+### Wire Trusted Publishing (after `0.1.0` exists)
 
-1. **One-time on npmjs.com** (after the package exists): enable **Trusted Publisher** for GitHub repo `henryavila/titan-chordpro-ui`, workflow `.github/workflows/publish.yml`.
-2. Bump `version` in `package.json` and finalize the section in `CHANGELOG.md`.
-3. Merge to the default branch, then create a GitHub Release tagged `vX.Y.Z` (must match `package.json`).
-4. The `Publish to npm` workflow runs `pnpm install` → `build` → `test` → `pnpm publish --provenance --access public`.
+1. npmjs.com → package → **Access** → **Trusted Publisher**  
+   - GitHub repo `henryavila/titan-chordpro-ui`  
+   - workflow `publish.yml`  
+   - **Allowed actions:** `npm stage publish` only (do **not** allow direct `npm publish`)
+2. **Publishing access** → “Require two-factor authentication and disallow tokens”
+3. Delete any old Bypass-2FA tokens on the account
+
+### Later releases
+
+1. Bump `version` in `package.json` and finalize the section in `CHANGELOG.md`.
+2. Merge to the default branch, then create a GitHub Release tagged `vX.Y.Z` (must match `package.json`).
+3. Workflow [`.github/workflows/publish.yml`](.github/workflows/publish.yml) stages the tarball (OIDC, no token).
+4. **You** promote it (2FA) — OIDC cannot approve:
+
+```sh
+npx npm@11.19.1 stage list @henryavila/titan-chordpro-ui
+npx npm@11.19.1 stage approve <stage-id>
+```
+
+Or approve under **Staged packages** on the npm package page.
+
+Emergency / local re-stage of an existing package: `./scripts/publish-npm.sh` (optional `NPM_KEY` = stage-only GAT, **no** bypass2FA).
 
 Consumer install:
 

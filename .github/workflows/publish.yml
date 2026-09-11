@@ -4,7 +4,9 @@ on:
   release:
     types: [published]
 
-# OIDC Trusted Publishing — no npm token needed
+# OIDC Trusted Publishing — no long-lived npm token.
+# Preferred model (2026): stage from CI, maintainer approves with 2FA.
+# https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/
 permissions:
   contents: read
   id-token: write
@@ -17,9 +19,10 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # Trusted Publishing needs Node ≥ 22.14 and npm ≥ 11.5.1
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
@@ -27,4 +30,25 @@ jobs:
       - run: pnpm run build
       - run: pnpm test
 
-      - run: pnpm publish --provenance --access public --no-git-checks
+      # Stage only — do not allow direct `npm publish` on the Trusted Publisher.
+      # A maintainer must run `npm stage approve <id>` (2FA) or approve on npmjs.com
+      # before the version becomes installable.
+      - name: Stage package on npm
+        run: |
+          npm --version
+          NAME="$(node -p 'require("./package.json").name')"
+          VERSION="$(node -p 'require("./package.json").version')"
+          echo "Staging ${NAME}@${VERSION}"
+          npm stage publish --access public
+          {
+            echo "## Staged ${NAME}@${VERSION}"
+            echo ""
+            echo "This Release uploaded a **staged** version. It is **not** installable until a maintainer approves with 2FA:"
+            echo ""
+            echo '```sh'
+            echo "npm stage list ${NAME}"
+            echo "npm stage approve <stage-id>"
+            echo '```'
+            echo ""
+            echo "Or: https://www.npmjs.com/package/${NAME} → Staged packages."
+          } >> "$GITHUB_STEP_SUMMARY"
