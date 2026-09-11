@@ -2675,7 +2675,7 @@ defineExpose({
            version lives in "Mais" — one row to read the original, one to
            revert. -->
       <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:cpv-rise .25s ease-out;">
-        <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — desligue em “Mais”.</span>
+        <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
         <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);" @click="dismissHint(true)"><CpvIcon name="x" :size="14" /></button>
       </div>
 
@@ -2738,7 +2738,6 @@ defineExpose({
             <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
             <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
           </span>
-          <button data-theme-btn class="cpv-ghost" aria-label="Tema" :title="themeTitle" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="16" /></button>
           <button
             v-if="canEditNow"
             data-edit
@@ -2749,6 +2748,21 @@ defineExpose({
             style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
             @click="enterEdit"
           ><CpvIcon name="pencil" :size="16" /></button>
+          <button
+            data-fit
+            class="cpv-ghost"
+            aria-label="Ajuste ao espaço"
+            title="Modo ajuste ao espaço"
+            :aria-pressed="fitOn ? 'true' : 'false'"
+            :style="{
+              width: dockIconSize,
+              height: dockCtrlH,
+              background: fitOn ? 'var(--sel)' : undefined,
+              border: fitOn ? '1px solid var(--sel-line)' : undefined,
+            }"
+            style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
+            @click="toggleFit"
+          ><CpvIcon name="scan" :size="16" /></button>
           <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;" @click="moreOpen = true"><CpvIcon name="ellipsis" :size="16" /></button>
         </div>
       </div>
@@ -3073,7 +3087,7 @@ defineExpose({
           <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Mais controles</span>
           <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="moreOpen = false"><CpvIcon name="x" :size="16" /></button>
         </div>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleFit()"><CpvIcon name="scan" :size="18" /><span class="cpv-more-copy">Ajuste ao espaço</span><span>{{ fitOn ? 'Ligado' : 'Desligado' }}</span></button>
+        <button data-theme-btn class="cpv-surface-btn cpv-more-item" :title="themeTitle" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="18" /><span class="cpv-more-copy">Tema</span><span>{{ themeLabel(themeMode) }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes, graus ou só letra</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro, PDF ou slides</span></button>
