@@ -506,7 +506,7 @@ const chordVocab = computed(() =>
   ).slice(0, 12),
 )
 const insertItems = computed(() => {
-  const out: Array<{ icon?: CpvIconName; glyph?: string; label: string; go: () => void }> = [
+  const out: Array<{ icon: CpvIconName; label: string; go: () => void }> = [
     { icon: 'music2', label: 'Partitura ou solo', go: () => newScore() },
   ]
   // Without a catalogue from the host there is nothing to pick from, and an
@@ -516,8 +516,7 @@ const insertItems = computed(() => {
   out.push(
     { icon: 'msgQuote', label: 'Coment\u00e1rio de ensaio', go: () => bedit.insertBlock('comment') },
     { icon: 'alignLeft', label: 'Nova estrofe', go: () => bedit.insertBlock('lyrics') },
-    // Chorus mark is still open: none of the catalog options were accepted.
-    { glyph: '\u276F', label: 'Refr\u00e3o', go: () => bedit.insertBlock('chorus') },
+    { icon: 'repeatBar', label: 'Refr\u00e3o', go: () => bedit.insertBlock('chorus') },
   )
   return out
 })
@@ -2778,7 +2777,7 @@ defineExpose({
             class="cpv-insert-item"
             type="button"
             @click="it.go()"
-          ><span><CpvIcon v-if="it.icon" :name="it.icon" :size="16" /><template v-else>{{ it.glyph }}</template></span>{{ it.label }}</button>
+          ><span><CpvIcon :name="it.icon" :size="16" /></span>{{ it.label }}</button>
         </div>
 
         <button

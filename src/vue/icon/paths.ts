@@ -3,8 +3,8 @@
  * family as the pencil that already replaced `✎`. No npm icon package:
  * only the names the UI actually draws.
  *
- * `repeat` is intentionally absent: the chorus insert mark is still open
- * (none of the catalog options were accepted).
+ * Lucide `repeat` (circular arrows) is absent on purpose — it reads as
+ * refresh. Chorus uses `repeatBar`, the |: barline.
  *
  * `check` is not Lucide's wide tick. Sora/Space Mono/Figtree are Latin
  * subsets, so Unicode `✓` (Dingbats U+2713) falls back to Apple Symbols /
@@ -229,11 +229,18 @@ export const ICONS = {
     { tag: 'path', attrs: { d: 'M3 12h.01' } },
     { tag: 'path', attrs: { d: 'M3 18h.01' } },
   ],
+  /** Music notation start-repeat |: — two dots and the thick bar. */
+  repeatBar: [
+    { tag: 'rect', attrs: { x: '7', y: '4', width: '1.4', height: '16', rx: '0.4', fill: 'currentColor', stroke: 'none' } },
+    { tag: 'rect', attrs: { x: '10', y: '4', width: '2.4', height: '16', rx: '0.4', fill: 'currentColor', stroke: 'none' } },
+    { tag: 'circle', attrs: { cx: '15.2', cy: '9', r: '1.5', fill: 'currentColor', stroke: 'none' } },
+    { tag: 'circle', attrs: { cx: '15.2', cy: '15', r: '1.5', fill: 'currentColor', stroke: 'none' } },
+  ],
 } as const satisfies Record<string, IconNode[]>
 
 export type CpvIconName = keyof typeof ICONS
 
-/** Names the JSON selection locked, minus chorus (open) and type (keep A−/A+). */
+/** Names the JSON selection locked. Type stays A−/A+. Chorus is `repeatBar`. */
 export const PICKED_ICONS = [
   'chevronsDown',
   'square',
@@ -259,6 +266,7 @@ export const PICKED_ICONS = [
   'image',
   'msgQuote',
   'alignLeft',
+  'repeatBar',
   'gripV',
   'chevronUp',
   'chevronDown',

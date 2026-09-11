@@ -57,6 +57,7 @@ describe('icon set', () => {
       expect(ICONS[name].length, name).toBeGreaterThan(0)
     }
     expect('repeat' in ICONS).toBe(false)
+    expect(ICONS.repeatBar.length).toBeGreaterThan(0)
   })
 
   it('draws currentColor so a green button is not a black triangle', () => {
@@ -169,7 +170,7 @@ describe('setlist seen mark', () => {
 })
 
 describe('insert menu', () => {
-  it('uses the locked block icons and does not sneak Lucide repeat onto refrão', async () => {
+  it('marks refrão with the repeat barline, not Lucide refresh or the old chevron', async () => {
     const w = await viewerAt(1024, { canEdit: true, modes: 'content' })
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
@@ -181,9 +182,11 @@ describe('insert menu', () => {
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
     const menu = w.get('.cpv-insert-menu')
+    const chorus = menu.findAll('.cpv-insert-item').find((b) => b.text().includes('Refrão'))
+    expect(chorus?.find('[data-icon=repeatBar]').exists()).toBe(true)
+    expect(chorus?.text()).not.toContain('❯')
     const names = menu.findAll('[data-icon]').map((n) => n.attributes('data-icon') as CpvIconName)
-    expect(names).toEqual(expect.arrayContaining(['music2', 'msgQuote', 'alignLeft']))
+    expect(names).toEqual(expect.arrayContaining(['music2', 'msgQuote', 'alignLeft', 'repeatBar']))
     expect(names).not.toContain('repeat')
-    expect(menu.text()).toMatch(/Refrão/)
   })
 })
