@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import {
-  convert, detect, hostOk, maskDurationMmSs, missingOf, MISSING_LABEL, normalizeDurationMmSs,
-  readMeta, titleFromUrl, writeMeta,
+  convert, detect, durationFromYoutubeHtml, hostOk, maskDurationMmSs, missingOf, MISSING_LABEL,
+  normalizeDurationMmSs, readMeta, titleFromUrl, writeMeta,
   type ChartMeta, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
 import type { CpvIconName } from '../icon/paths'
@@ -23,6 +23,11 @@ const props = withDefaults(
      * tab says so instead of pretending.
      */
     fetchChart?: (url: string) => Promise<string>
+    /**
+     * Host fetch of a YouTube watch page (HTML) or a ready `MM:SS` duration.
+     * Used after Cifra Club import when `{x_youtube:}` is present.
+     */
+    fetchYoutubeDuration?: (videoId: string) => Promise<string>
     /** Reads a PDF that has text. Without it, PDFs are refused up front. */
     readPdf?: (file: File) => Promise<string>
     /**
@@ -167,6 +172,22 @@ function startBlank() {
   step.value = 'ficha'
 }
 
+async function fillDurationFromYoutube(m: ChartMeta): Promise<ChartMeta> {
+  const id = String(m.x_youtube ?? '').trim()
+  if (!id || !props.fetchYoutubeDuration) return m
+  try {
+    const raw = await props.fetchYoutubeDuration(id)
+    const dur =
+      /^\d{1,2}:\d{2}$/.test(raw.trim()) || /^\d+:\d{2}:\d{2}$/.test(raw.trim())
+        ? normalizeDurationMmSs(raw.trim())
+        : durationFromYoutubeHtml(raw)
+    if (dur) return { ...m, duration: dur }
+  } catch {
+    /* keep asking on the ficha */
+  }
+  return m
+}
+
 async function runUrl() {
   const u = url.value.trim()
   if (!u)
@@ -188,14 +209,20 @@ async function runUrl() {
     const r = convert(text)
     if (!r.source.trim()) throw new Error('vazio')
     const guess = titleFromUrl(u)
-    source.value = r.source
-    const m: ChartMeta = { ...readMeta(r.source), x_origem: u }
+    let m: ChartMeta = { ...readMeta(r.source), x_origem: u }
     if (!m.title) m.title = guess.title
     if (!m.subtitle) m.subtitle = guess.subtitle
+    m = await fillDurationFromYoutube(m)
+    source.value = writeMeta(r.source, m)
     meta.value = m
     keyEdit.value = !String(m.key ?? '').trim()
     from.value = 'url'
-    note.value = 'Convertido do Cifra Club. Complete o que o site não traz — a duração é obrigatória para a rolagem.'
+    const still = missingOf(m)
+    note.value = still.length
+      ? still.includes('duration')
+        ? 'Convertido do Cifra Club. Falta a duração para a rolagem — confira no YouTube se o site não trouxe.'
+        : `Convertido do Cifra Club. Complete: ${still.map((k) => MISSING_LABEL[k] ?? k).join(', ')}.`
+      : 'Convertido do Cifra Club — tempo, compasso e duração vieram preenchidos.'
     busy.value = false
     step.value = 'ficha'
   } catch {
@@ -489,6 +516,14 @@ onMounted(() => {
             <span style="font-size:11px;color:var(--muted);">MM:SS</span>
           </div>
           <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Tempo da música, como no YouTube. A rolagem precisa disso.</span>
+          <a
+            v-if="meta.x_youtube"
+            :href="'https://www.youtube.com/watch?v=' + meta.x_youtube"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-nova-youtube
+            style="font-size:11.5px;font-weight:600;color:var(--chord);text-decoration:none;"
+          >Abrir no YouTube</a>
         </div>
 
         <div :style="{ gridTemplateColumns: geom.cols }" style="display:grid;gap:9px;">

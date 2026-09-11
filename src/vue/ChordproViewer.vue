@@ -20,7 +20,9 @@ import {
   MISSING_LABEL,
   normalizeSource,
   parse,
+  parseXStrum,
   playheadAtScroll,
+  readMeta,
   runSec,
   scrollAtPlayhead,
   transposeToken,
@@ -37,6 +39,7 @@ import LensSheet from './sheets/LensSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
+import StrumStrip from './StrumStrip.vue'
 import SourcePane from './edit/SourcePane.vue'
 import ChordDialog from './edit/ChordDialog.vue'
 import ImagePicker from './edit/ImagePicker.vue'
@@ -93,6 +96,7 @@ const props = withDefaults(
     songs: undefined,
     loadSong: undefined,
     fetchChart: undefined,
+    fetchYoutubeDuration: undefined,
     readPdf: undefined,
     version: 'v1',
     images: () => [],
@@ -305,12 +309,6 @@ const padBottom = computed(() => {
  * reclaiming the band used to shove the line under the eye, which a chart
  * may never do. Idle auto-hide follows the same rule (opacity only).
  */
-const pagePad = computed(() => {
-  // The header changes height (subtitle, key on its own row): measure, do not guess.
-  const extra = fs.value ? 6 : compact.value ? 10 : 14
-  const top = Math.round(chromeTop.value + Math.max(40, headH.value || 56) + extra)
-  return `${top}px ${padX.value} ${padBottom.value}`
-})
 /**
  * Right edge of the reading column. Chrome that belongs to the chart hangs
  * here rather than off the window: on a phone the two are the same place, but
@@ -359,6 +357,91 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
  */
 const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
+
+/** Batida from `{x_strum:}` — toggle is the reader's choice. */
+const strumPattern = computed(() => {
+  const raw = readMeta(liveSource.value).x_strum
+  return raw ? parseXStrum(raw) : null
+})
+const strumOn = ref(false)
+const strumDock = ref<HTMLElement | null>(null)
+const strumH = ref(0)
+let strumRo: ResizeObserver | null = null
+const hasStrum = computed(() => !!strumPattern.value?.slots.length)
+const strumVisible = computed(() => strumOn.value && !!strumPattern.value && !isEdit.value)
+watch(hasStrum, (ok) => {
+  if (!ok) strumOn.value = false
+})
+function toggleStrum() {
+  if (!hasStrum.value) return
+  strumOn.value = !strumOn.value
+}
+function bindStrumDock(el: unknown) {
+  const node = (el as HTMLElement | null) ?? null
+  strumDock.value = node
+  strumRo?.disconnect()
+  strumRo = null
+  if (!node || typeof ResizeObserver === 'undefined') {
+    strumH.value = 0
+    return
+  }
+  strumRo = new ResizeObserver(() => syncStrumH())
+  strumRo.observe(node)
+  syncStrumH()
+}
+function syncStrumH() {
+  const el = strumDock.value
+  if (!el) {
+    strumH.value = 0
+    return
+  }
+  const h = Math.round(el.getBoundingClientRect().height)
+  if (Math.abs(h - strumH.value) > 1) strumH.value = h
+}
+watch(strumVisible, async (on) => {
+  if (!on) {
+    strumH.value = 0
+    return
+  }
+  await nextTick()
+  syncStrumH()
+})
+
+/**
+ * Where the batida sits. Under the title normally; when the head is gone
+ * (zen / tela cheia) it slides up into that band so the space is not wasted.
+ * `headHidden` is declared later — the getter only runs after setup.
+ */
+const strumDockTop = computed(() => {
+  if (headHidden.value) return `${chromeTop.value + (fs.value ? 4 : 8)}px`
+  return countTop.value
+})
+
+const pagePad = computed(() => {
+  // The header changes height (subtitle, key on its own row): measure, do not guess.
+  const extra = fs.value ? 6 : compact.value ? 10 : 14
+  // Measured dock height (+ gap). Guess 72 until the observer lands so the
+  // first paint after toggle does not put lyrics under the strip.
+  const strumBand = strumVisible.value ? Math.max(72, strumH.value + 10) : 0
+  let belowChrome: number
+  if (strumVisible.value && headHidden.value) {
+    // Batida occupies the head's place — only strip + small inset.
+    belowChrome = (fs.value ? 4 : 8) + strumBand
+  } else {
+    // Head band stays reserved (zen without batida must not shove the lyric).
+    belowChrome = Math.max(40, headH.value || 56) + extra + strumBand
+  }
+  const top = Math.round(chromeTop.value + belowChrome)
+  return `${top}px ${padX.value} ${padBottom.value}`
+})
+/** Batida dock: pinned; above the scroll, never under the lyric. */
+const strumDockStyle = computed(() => {
+  const col =
+    pageMax.value === '100%'
+      ? `left:${padX.value};right:${padX.value};`
+      : `left:max(${padX.value}, calc((100% - ${pageMax.value}) / 2));right:max(${padX.value}, calc((100% - ${pageMax.value}) / 2));`
+  return `position:absolute;top:${strumDockTop.value};${col}z-index:13;pointer-events:auto;`
+})
 
 /**
  * Which saves this host allows. Default is local-only: "Para todos" is a
@@ -1987,6 +2070,7 @@ onUnmounted(() => {
   mq?.removeEventListener('change', onMq)
   ro?.disconnect()
   headRo?.disconnect()
+  strumRo?.disconnect()
   pageRo?.disconnect()
 })
 
@@ -2610,6 +2694,15 @@ defineExpose({
         >
           <CpvIcon name="metronome" :size="16" />{{ met.running.value ? `${met.bpm.value} BPM` : 'Metrônomo' }}
         </button>
+        <button
+          v-if="hasStrum"
+          data-strum-btn
+          title="Batida"
+          class="cpv-bar-btn"
+          :style="{ background: strumOn ? 'var(--chord-fill)' : 'transparent', color: strumOn ? 'var(--chord)' : 'var(--text)', border: `1px solid ${strumOn ? 'var(--chord-edge)' : 'var(--line)'}` }"
+          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+          @click="toggleStrum"
+        >↓↑ Batida</button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
         <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="requestTheme">
           <CpvIcon :name="themeIcon(themeMode)" :size="16" />{{ themeLabel(themeMode) }}
@@ -2941,6 +3034,21 @@ defineExpose({
       @pick="(orig) => { ov.exportOrig.value = orig; toggleOriginal(orig) }"
     />
 
+    <!-- Batida: fixed under the head — scrolling the chart must not take it away. -->
+    <div
+      v-if="strumVisible && strumPattern"
+      :ref="bindStrumDock"
+      class="cpv-strum-dock"
+      data-strum-dock
+      :style="strumDockStyle"
+    >
+      <StrumStrip
+        :pattern="strumPattern"
+        :beat-clock="met.running.value ? met.beatClock.value : -1"
+        :bar-beats="met.bar.value"
+      />
+    </div>
+
     <!-- Beat count: left of the column, sticky, outside chrome so zen cannot take it. -->
     <button
       v-if="met.running.value && !isEdit"
@@ -3006,8 +3114,9 @@ defineExpose({
       v-if="novaOpen"
       :compact="compact"
       :start="novaStart"
-      :fetch-chart="fetchChart"
-      :read-pdf="readPdf"
+      :fetch-chart="props.fetchChart"
+      :fetch-youtube-duration="props.fetchYoutubeDuration"
+      :read-pdf="props.readPdf"
       @close="novaOpen = false"
       @commit="commitNewChart"
     />
@@ -3063,6 +3172,12 @@ defineExpose({
         <button data-theme-btn class="cpv-surface-btn cpv-more-item" :title="themeTitle" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="18" /><span class="cpv-more-copy">Tema</span><span>{{ themeLabel(themeMode) }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes, graus ou só letra</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
+        <button
+          v-if="hasStrum"
+          class="cpv-surface-btn cpv-more-item"
+          data-strum-more
+          @click="moreOpen = false; toggleStrum()"
+        ><span style="font-size:16px;width:18px;text-align:center;">↓↑</span><span class="cpv-more-copy">Batida</span><span>{{ strumOn ? 'visível' : 'mostrar' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro, PDF ou slides</span></button>
         <template v-if="showMine">
           <button class="cpv-surface-btn cpv-more-item" data-more-original @click="moreOpen = false; toggleOriginal(!ov.showOriginal.value)">

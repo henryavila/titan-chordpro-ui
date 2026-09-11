@@ -147,6 +147,40 @@ export function normalizeDurationMmSs(raw: string): string {
   return `${mm}:${String(ss).padStart(2, '0')}`
 }
 
+/** Whole seconds → `MM:SS` (or `H:MM:SS` above an hour), for `{duration:}`. */
+export function formatDurationFromSec(sec: number): string {
+  const s = Math.max(0, Math.round(sec))
+  const h = Math.floor(s / 3600)
+  const mm = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  if (h > 0) return `${h}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+  return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+}
+
+/**
+ * Duration from a YouTube watch-page HTML. Prefers `lengthSeconds`, then the
+ * ISO-8601 `itemprop="duration"` meta. Returns `MM:SS` or null.
+ */
+export function durationFromYoutubeHtml(html: string): string | null {
+  const t = String(html ?? '')
+  const secM = t.match(/"lengthSeconds"\s*:\s*"(\d+)"/) || t.match(/"lengthSeconds"\s*:\s*(\d+)/)
+  if (secM) {
+    const sec = Number(secM[1])
+    if (sec >= 20 && sec <= 3 * 3600) return formatDurationFromSec(sec)
+  }
+  const iso = (t.match(/itemprop="duration"[^>]*content="([^"]+)"/i) ||
+    t.match(/content="(PT[^"]+)"[^>]*itemprop="duration"/i) ||
+    [])[1]
+  if (iso) {
+    const m = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i)
+    if (m) {
+      const sec = Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0)
+      if (sec >= 20 && sec <= 3 * 3600) return formatDurationFromSec(sec)
+    }
+  }
+  return null
+}
+
 /**
  * Hard gate: auto-scroll runs only when the chart declares a usable
  * `{duration:}`. Unmarked chords and a BPM are not a duration.

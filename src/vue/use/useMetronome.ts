@@ -43,6 +43,12 @@ export type MetronomeOpts = {
 export function useMetronome(opts: MetronomeOpts) {
   const running = ref(false)
   const beat = ref(0)
+  /**
+   * Absolute beat clock since start (float). Integer part = beats elapsed;
+   * fraction = progress inside the current beat. Updated every frame so a
+   * strum grid can light one arrow at a time, not a whole beat slice.
+   */
+  const beatClock = ref(0)
   /** Off until the panel arms it. Rolar still starts the pulse and the count-in. */
   const sound = ref(false)
   /**
@@ -147,6 +153,11 @@ export function useMetronome(opts: MetronomeOpts) {
       nextAt = (now - nextAt > spb ? now : nextAt) + spb
       beat.value = b
     }
+    // Phase inside the current beat: nextAt is when the *next* beat is due.
+    const absBeat = Math.max(0, idx - 1)
+    const beatStart = nextAt - spb
+    const frac = Math.max(0, Math.min(0.999, (now - beatStart) / spb))
+    beatClock.value = absBeat + frac
     raf = requestAnimationFrame(loop)
   }
 
@@ -158,6 +169,7 @@ export function useMetronome(opts: MetronomeOpts) {
     if (sound.value) ensureAudio()
     running.value = true
     beat.value = 0
+    beatClock.value = 0
     // Only a chart standing still can be counted in: joining one already
     // rolling means playing along from here, and there is nothing to wait for.
     // A chart that fits the frame has no scroll to lead into either.
@@ -180,6 +192,7 @@ export function useMetronome(opts: MetronomeOpts) {
     countIn.value = 0
     running.value = false
     beat.value = 0
+    beatClock.value = 0
     // Guarded on `wasLive`: the scroll stops the click in turn, and without
     // this the two would call each other for as long as the stack allowed.
     if (wasLive && follow.value) opts.onFollowStop()
@@ -262,6 +275,7 @@ export function useMetronome(opts: MetronomeOpts) {
   return {
     running,
     beat,
+    beatClock,
     sound,
     pulseHead,
     follow,

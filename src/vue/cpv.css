@@ -1218,6 +1218,17 @@ div.cpv-head-id {
   background: var(--chord-soft);
 }
 /* Beat count: original 20px cell, stacked left of the column, outside chrome. */
+.cpv-strum-dock {
+  /* Outside .cpv-scroll; opaque so lyrics never paint through the strip. */
+  max-width: 100%;
+  background: var(--canvas);
+  border-radius: 14px;
+  transition: top 0.35s ease;
+}
+.cpv-strum-dock .strum-strip {
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
+}
+
 .cpv-met-count {
   position: absolute;
   z-index: 15;

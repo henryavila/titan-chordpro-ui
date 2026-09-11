@@ -69,6 +69,12 @@ const fetchChart = async (url: string) => {
   return r.text()
 }
 
+const fetchYoutubeDuration = async (videoId: string) => {
+  const r = await fetch('/__youtube_duration?' + new URLSearchParams({ id: videoId }))
+  if (!r.ok) throw new Error('rede')
+  return r.text()
+}
+
 onMounted(async () => {
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
@@ -99,6 +105,7 @@ onMounted(async () => {
       :songs="songs"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
+      :fetch-youtube-duration="fetchYoutubeDuration"
       :read-pdf="(file: File) => pdfText(file)"
       :modes="modes"
       :resolve-image="resolveImage"
@@ -123,6 +130,7 @@ onMounted(async () => {
       :songs="songs"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
+      :fetch-youtube-duration="fetchYoutubeDuration"
       :read-pdf="(file: File) => pdfText(file)"
       :modes="modes"
       :resolve-image="resolveImage"
