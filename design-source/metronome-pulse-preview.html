@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prévia · pulso do metrônomo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #F5F6F8;
+    --veil: rgba(255,255,255,.88);
+    --text: #13161D;
+    --muted: #5B6270;
+    --lyric: #2B303B;
+    --chord: #17713C;
+    --chord-ink: #fff;
+    --chord-soft: rgba(23,113,60,.10);
+    --chord-edge: rgba(23,113,60,.30);
+    --chord-fill: rgba(23,113,60,.17);
+    --line: rgba(19,22,29,.12);
+    --downbeat: #13161D;
+    --downbeat-ink: #F5F6F8;
+    --shadow: 0 20px 44px -20px rgba(18,23,30,.26);
+    --hit: 420ms;
+  }
+  [data-theme="dark"] {
+    --canvas: #0B0D12;
+    --veil: rgba(20,23,31,.88);
+    --text: #EAECF2;
+    --muted: #888F9E;
+    --lyric: #C4C9D4;
+    --chord: #84DFA6;
+    --chord-ink: #10131A;
+    --chord-soft: rgba(132,223,166,.10);
+    --chord-edge: rgba(132,223,166,.30);
+    --chord-fill: rgba(132,223,166,.17);
+    --line: rgba(255,255,255,.10);
+    --downbeat: #EAECF2;
+    --downbeat-ink: #0B0D12;
+    --shadow: 0 24px 60px -18px rgba(0,0,0,.75);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #07090D; color: #EAECF2; font-family: Sora, system-ui, sans-serif; }
+  body { padding: 28px 28px 80px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
+  .lede { color: #888F9E; font-size: 13.5px; line-height: 1.55; max-width: 760px; margin: 0 0 18px; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin: 0 0 18px; }
+  .note { background: #11141A; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; color: #C4C9D4; }
+  .note strong { color: #EAECF2; font-weight: 600; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 22px; }
+  .bar button, .bar label {
+    height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12);
+    background: #15181F; color: #EAECF2; font: 600 12px Sora, system-ui; cursor: pointer;
+    display: inline-flex; align-items: center;
+  }
+  .bar button.is-on, .bar label.is-on { background: #84DFA6; color: #10131A; border-color: #84DFA6; }
+  .bar .sep { width: 1px; height: 18px; background: rgba(255,255,255,.12); }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: #888F9E; }
+  .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+  .sw.one { background: #13161D; }
+  .sw.rest { background: #17713C; }
+  .stages { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .stage-label { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: #6FD8E4; margin: 0 0 6px; }
+  .stage-sub { font-size: 11.5px; color: #888F9E; margin: 0 0 10px; max-width: 400px; }
+
+  .viewer {
+    position: relative;
+    background: var(--canvas);
+    color: var(--text);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .viewer.desk { width: 1180px; height: 720px; border-radius: 18px; border: 1px solid rgba(255,255,255,.12); }
+  .viewer.phone { width: 390px; height: 720px; border-radius: 28px; border: 1px solid rgba(255,255,255,.12); }
+
+  .head {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 4; width: calc(100% - 32px); max-width: 880px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 10px 9px 16px; border-radius: 15px;
+    background: var(--veil); border: 1px solid var(--line);
+    backdrop-filter: blur(18px);
+  }
+  .viewer.phone .head { max-width: none; height: 56px; border-radius: 18px; }
+  .title { flex: 1; min-width: 0; }
+  .title .n { font-size: 15.5px; font-weight: 600; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title .s { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .meta { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); display: flex; gap: 8px; }
+  .keypill {
+    display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 10px;
+    border-radius: 11px; background: var(--chord-soft); border: 1px solid var(--chord-edge); color: var(--chord);
+    font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700;
+  }
+  .keypill small { font-size: 8.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
+  /* Same 20px cell as the original chip, but no box until the downbeat. */
+  .count {
+    position: absolute;
+    z-index: 5;
+    top: 78px;
+    left: calc(50% - 440px - 36px);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: none;
+  }
+  .viewer.phone .count { left: 12px; top: 80px; }
+  .count b {
+    width: 20px; height: 20px; border-radius: 6px;
+    display: grid; place-items: center;
+    font-family: 'Space Mono', monospace; font-size: 10.5px; font-weight: 500;
+    color: var(--muted);
+    background: var(--canvas);
+    opacity: 1;
+    border: 1px solid var(--line);
+    transition: color .12s linear, background .12s linear, border-color .12s linear;
+  }
+  .count b.is-now { font-weight: 700; }
+  [data-beat="1"] .count b.is-now {
+    background: var(--downbeat); color: var(--downbeat-ink); border-color: var(--downbeat);
+  }
+  [data-beat="n"] .count b.is-now {
+    background: var(--canvas); color: var(--chord); border-color: var(--chord-edge);
+  }
+
+  .page {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: min(880px, 100%);
+    transform: translateX(-50%);
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 92px 40px 140px;
+    scrollbar-width: thin;
+  }
+  /* Overlay: beat column sits on padX — do not reserve a 44px left gutter. */
+  .viewer.phone .page { width: 100%; padding: 88px 16px 140px; }
+
+  .sec { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 22px 0 10px; display: flex; align-items: center; gap: 10px; }
+  .sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .row { margin: 0 0 16px; }
+  .chords {
+    display: flex; gap: 22px;
+    font-family: 'Space Mono', monospace; font-weight: 700;
+    color: var(--chord); font-size: 22px; line-height: 1.1; min-height: 26px;
+  }
+  .lyrics { font-size: 20px; color: var(--lyric); line-height: 1.25; font-weight: 500; }
+  .tab { font-family: 'Space Mono', monospace; color: var(--muted); font-size: 13px; margin: 4px 0 14px; }
+
+  .dock {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 17px;
+    background: var(--veil); border: 1px solid var(--line); backdrop-filter: blur(18px); z-index: 4;
+  }
+  .dock .play { height: 36px; padding: 0 14px; border-radius: 12px; border: 0; background: #1A1D26; color: #fff; font: 700 12.5px Sora, system-ui; }
+  [data-theme="dark"] .dock .play { background: #E8EAF0; color: #13161D; }
+  .ghost { height: 36px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--text); font: 600 12.5px Sora, system-ui; }
+  .met-chip { height: 36px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--chord-edge); background: var(--chord-fill); color: var(--chord); font: 600 12.5px Sora, system-ui; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid currentColor; }
+
+  /*
+   * 1 = ink (black on light, paper on dark) and invert the strip so the title
+   * stays readable. 2–4 = theme green, no invert.
+   */
+  .mix-head.hit-1 .head { animation: head1bg var(--hit) ease-out; }
+  .mix-head.hit-1 .title .n { animation: head1title var(--hit) ease-out; }
+  .mix-head.hit-1 .title .s,
+  .mix-head.hit-1 .meta { animation: head1muted var(--hit) ease-out; }
+  .mix-head.hit-1 .keypill { animation: head1pill var(--hit) ease-out; }
+  .mix-head.hit-1 .keypill small { animation: head1pillsmall var(--hit) ease-out; }
+  .mix-head.hit-n .head { animation: headN var(--hit) ease-out; }
+  .mix-chords.hit-1 .chords { animation: chord1 var(--hit) ease-out; }
+  .mix-chords.hit-n .chords { animation: chordN var(--hit) ease-out; }
+
+  @keyframes head1bg {
+    0%, 40% { background: var(--downbeat); border-color: var(--downbeat); }
+    100% { background: var(--veil); border-color: var(--line); }
+  }
+  @keyframes head1title {
+    0%, 40% { color: var(--downbeat-ink); }
+    100% { color: var(--text); }
+  }
+  @keyframes head1muted {
+    0%, 40% { color: color-mix(in srgb, var(--downbeat-ink) 72%, transparent); }
+    100% { color: var(--muted); }
+  }
+  @keyframes head1pill {
+    0%, 40% { background: var(--downbeat-ink); border-color: var(--downbeat-ink); color: var(--downbeat); }
+    100% { background: var(--chord-soft); border-color: var(--chord-edge); color: var(--chord); }
+  }
+  @keyframes head1pillsmall {
+    0%, 40% { color: color-mix(in srgb, var(--downbeat) 55%, transparent); }
+    100% { color: var(--muted); }
+  }
+  @keyframes headN {
+    0% { background: var(--chord-fill); border-color: var(--chord-edge); }
+    100% { background: var(--veil); border-color: var(--line); }
+  }
+  @keyframes chord1 {
+    0%, 40% { color: var(--downbeat); }
+    100% { color: var(--chord); }
+  }
+  @keyframes chordN {
+    0% { filter: brightness(1.18); }
+    100% { filter: brightness(1); }
+  }
+</style>
+</head>
+<body>
+  <h1>O 1 é tinta. O resto é o tema.</h1>
+  <p class="lede">
+    Tempo 1 pinta a faixa de <strong style="color:#EAECF2">preto</strong> (no escuro, de papel claro) e
+    <strong style="color:#EAECF2">inverte o título, o tom e o BPM</strong> para continuar legível.
+    Tempos 2–3–4 usam a <strong style="color:#84DFA6">cor do tema</strong>.
+    Qual tempo se lê no número à esquerda; o 1 é o único que vira tinta.
+    Faixa e contagem ficam <strong style="color:#EAECF2">fixas</strong> — role a cifra.
+  </p>
+
+  <div class="notes">
+    <div class="note"><strong>1 ≠ resto, sem azul.</strong> Verde contra verde-mais-escuro não se via. Preto (ou claro) contra a cor do acorde é o contraste que a periferia pega.</div>
+    <div class="note"><strong>Faixa no 1.</strong> Fundo vira tinta e o conteúdo inverte: título claro no preto, título escuro no papel. A pílula do tom inverte junto.</div>
+    <div class="note"><strong>Acordes.</strong> No 1, a mesma tinta. Nos outros, só um brilho na cor do tema — sem pular, sem trocar de família.</div>
+    <div class="note"><strong>Contagem delicada.</strong> Sem caixa, sem borda. Os números esperam em cinza; o atual só ganha peso e cor. O 1 é o único que se preenche de tinta. Role a cifra: faixa e coluna 1–2–3 não saem do lugar.</div>
+  </div>
+
+  <div class="bar" id="ctrls">
+    <button type="button" id="play" class="is-on">Parar</button>
+    <button type="button" data-bar="3" class="is-on">3/4</button>
+    <button type="button" data-bar="4">4/4</button>
+    <button type="button" data-bpm="63" class="is-on">63</button>
+    <button type="button" data-bpm="96">96</button>
+    <button type="button" data-bpm="120">120</button>
+    <span class="sep"></span>
+    <label class="is-on"><input type="checkbox" id="mixCount" checked hidden />Contagem</label>
+    <label class="is-on"><input type="checkbox" id="mixHead" checked hidden />Faixa</label>
+    <label class="is-on"><input type="checkbox" id="mixChords" checked hidden />Acordes</label>
+    <span class="sep"></span>
+    <button type="button" id="theme">Escuro</button>
+    <span class="legend"><span><i class="sw one"></i>1 tinta</span><span><i class="sw rest"></i>2 · 3 · 4 tema</span></span>
+  </div>
+
+  <div class="stages">
+    <div>
+      <div class="stage-label">lg · 1180 · notebook</div>
+      <div class="stage-sub">Role a cifra: faixa e contagem ficam. Números à esquerda, sem caixa — só o atual acende.</div>
+      <div class="viewer desk mix-head mix-chords" data-theme="light" id="desk">
+        <div class="head">
+          <div class="title"><div class="n">084 – Escuta Meu Clamor</div><div class="s">Adoradores 1</div></div>
+          <div class="meta"><span data-bpm-label>63 BPM</span><span data-time-label>3/4</span></div>
+          <div class="keypill"><small>Tom</small> Gm</div>
+        </div>
+        <div class="count" data-count></div>
+        <div class="page">
+          <div class="sec">Introdução — strings, piano e violino</div>
+          <div class="row"><div class="chords"><span>D</span><span>G/D</span><span>E/D</span><span>E/D</span></div><div class="tab">x//&nbsp;&nbsp;x//&nbsp;&nbsp;x//&nbsp;&nbsp;x//</div></div>
+          <div class="sec">Piano e strings</div>
+          <div class="row"><div class="chords"><span>D</span><span>G</span><span>Bm</span><span>E</span></div><div class="lyrics">Eu oro pela cura</div></div>
+          <div class="row"><div class="chords"><span>Gm</span><span>A</span><span>D</span><span>D</span></div><div class="lyrics">Eu peço por perdão x//</div></div>
+          <div class="row"><div class="chords"><span>D7</span><span>Em</span><span>B</span><span>E</span></div><div class="lyrics">E por sabedoria x//</div></div>
+          <div class="row"><div class="chords"><span>Gm</span><span>A</span><span>G</span><span>D</span></div><div class="lyrics">Nas minhas decisões x//</div></div>
+          <div class="sec">Todos bem suave</div>
+          <div class="row"><div class="chords"><span>D</span><span>B7</span><span>B7</span><span>Em</span></div><div class="lyrics">Que eu possa ter mais comunhão</div></div>
+          <div class="row"><div class="chords"><span>Em</span><span>A</span><span>A</span><span>D</span></div><div class="lyrics">Ter mais motivos pra louvar</div></div>
+          <div class="row"><div class="chords"><span>D</span><span>B7</span><span>B7</span><span>Em</span></div><div class="lyrics">E que a minha vida seja um culto</div></div>
+          <div class="row"><div class="chords"><span>G</span><span>A</span><span>A</span><span>D</span></div><div class="lyrics">Que te possa agradar</div></div>
+          <div class="sec">Refrão</div>
+          <div class="row"><div class="chords"><span>D</span><span>G</span><span>A</span><span>D</span></div><div class="lyrics">Escuta o meu clamor, Senhor</div></div>
+          <div class="row"><div class="chords"><span>Bm</span><span>Em</span><span>A</span><span>D</span></div><div class="lyrics">Inclina o teu ouvido a mim</div></div>
+          <div class="row"><div class="chords"><span>D</span><span>G</span><span>A</span><span>Bm</span></div><div class="lyrics">Porque a ti clamo de dia e de noite</div></div>
+          <div class="row"><div class="chords"><span>G</span><span>A</span><span>A</span><span>D</span></div><div class="lyrics">Não te cales diante de mim</div></div>
+        </div>
+        <div class="dock">
+          <button class="play" type="button">Parar</button>
+          <button class="ghost" type="button">A−</button>
+          <button class="ghost" type="button">A+</button>
+          <span class="met-chip"><span class="dot"></span>63 BPM</span>
+          <button class="ghost" type="button">Auto</button>
+          <button class="ghost" type="button">Editar</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="stage-label">sm · 390 · telefone</div>
+      <div class="stage-sub">Faixa e 1–2–3 presos; a letra sobe por baixo.</div>
+      <div class="viewer phone mix-head mix-chords" data-theme="light" id="phone">
+        <div class="head">
+          <div class="title"><div class="n">084 – Escuta Meu Clamor</div><div class="s">Adoradores 1</div></div>
+          <div class="keypill"><small>Tom</small> Gm</div>
+        </div>
+        <div class="count" data-count></div>
+        <div class="page">
+          <div class="sec">Piano e strings</div>
+          <div class="row"><div class="chords"><span>D</span><span>G</span><span>Bm</span><span>E</span></div><div class="lyrics">Eu oro pela cura</div></div>
+          <div class="row"><div class="chords"><span>Gm</span><span>A</span><span>D</span></div><div class="lyrics">Eu peço por perdão</div></div>
+          <div class="row"><div class="chords"><span>D7</span><span>Em</span><span>B</span></div><div class="lyrics">E por sabedoria</div></div>
+        </div>
+        <div class="dock" style="left:10px;right:10px;transform:none;width:auto;justify-content:space-between;">
+          <button class="play" type="button">Parar</button>
+          <button class="ghost" type="button">A− A+</button>
+          <span class="met-chip"><span class="dot"></span></span>
+          <button class="ghost" type="button">⋯</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let bpm = 63
+  let bar = 3
+  let beat = 0
+  let playing = true
+  let timer = 0
+  const viewers = [...document.querySelectorAll('.viewer')]
+
+  function hitMs() {
+    return Math.round((60000 / bpm) * 0.5)
+  }
+
+  function renderCounts() {
+    viewers.forEach((v) => {
+      v.querySelector('[data-count]').innerHTML =
+        Array.from({ length: bar }, (_, i) => `<b data-i="${i}">${i + 1}</b>`).join('')
+    })
+  }
+
+  function paint() {
+    const hit = beat === 0 ? 'hit-1' : 'hit-n'
+    const mixHead = document.getElementById('mixHead').checked
+    const mixCount = document.getElementById('mixCount').checked
+    const mixChords = document.getElementById('mixChords').checked
+    document.documentElement.style.setProperty('--hit', hitMs() + 'ms')
+    viewers.forEach((v) => {
+      v.dataset.beat = beat === 0 ? '1' : 'n'
+      v.classList.toggle('mix-head', mixHead)
+      v.classList.toggle('mix-chords', mixChords)
+      v.classList.remove('hit-1', 'hit-n')
+      void v.offsetWidth
+      v.classList.add(hit)
+      v.querySelector('[data-count]').style.display = mixCount ? 'flex' : 'none'
+      v.querySelectorAll('[data-count] b').forEach((b) => {
+        b.classList.toggle('is-now', Number(b.dataset.i) === beat)
+      })
+    })
+  }
+
+  function step() {
+    paint()
+    beat = (beat + 1) % bar
+  }
+
+  function arm() {
+    clearInterval(timer)
+    if (!playing) return
+    step()
+    timer = setInterval(step, 60000 / bpm)
+  }
+
+  document.getElementById('play').onclick = () => {
+    playing = !playing
+    document.getElementById('play').textContent = playing ? 'Parar' : 'Tocar'
+    document.getElementById('play').classList.toggle('is-on', playing)
+    if (playing) arm()
+    else clearInterval(timer)
+  }
+  document.querySelectorAll('[data-bar]').forEach((b) => {
+    b.onclick = () => {
+      document.querySelectorAll('[data-bar]').forEach((x) => x.classList.toggle('is-on', x === b))
+      bar = Number(b.dataset.bar)
+      beat = 0
+      document.querySelectorAll('[data-time-label]').forEach((s) => { s.textContent = bar + '/4' })
+      renderCounts()
+      if (playing) arm()
+      else paint()
+    }
+  })
+  document.querySelectorAll('[data-bpm]').forEach((b) => {
+    b.onclick = () => {
+      document.querySelectorAll('[data-bpm]').forEach((x) => x.classList.toggle('is-on', x === b))
+      bpm = Number(b.dataset.bpm)
+      document.querySelectorAll('[data-bpm-label]').forEach((s) => { s.textContent = bpm + ' BPM' })
+      if (playing) arm()
+    }
+  })
+  document.querySelectorAll('#ctrls label').forEach((l) => {
+    const inp = l.querySelector('input')
+    inp.addEventListener('change', () => {
+      l.classList.toggle('is-on', inp.checked)
+      paint()
+    })
+  })
+  document.getElementById('theme').onclick = () => {
+    const next = viewers[0].getAttribute('data-theme') === 'light' ? 'dark' : 'light'
+    viewers.forEach((v) => v.setAttribute('data-theme', next))
+    document.getElementById('theme').textContent = next === 'light' ? 'Escuro' : 'Claro'
+  }
+
+  renderCounts()
+  arm()
+</script>
+</body>
+</html>
