@@ -80,4 +80,10 @@ describe('patchMeta', () => {
   it('writes into a chart with no meta at all', () => {
     expect(patchMeta('[G]hey', { title: 'T' })).toBe('{title: T}\n[G]hey')
   })
+
+  it('writes duration and time the same way as title', () => {
+    expect(patchMeta(src, { duration: '04:26', time: '4/4' })).toBe(
+      '{title: A}\n{key: G}\n{duration: 04:26}\n{time: 4/4}\n\n[G]hey',
+    )
+  })
 })

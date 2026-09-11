@@ -9,6 +9,7 @@ import {
   pxAtBars,
   pxAtScroll,
   runSec,
+  scrollAtPlayhead,
   scrollAtPx,
   typeScale,
 } from '../../src/core/index'
@@ -189,7 +190,7 @@ describe('the clock on real charts', () => {
 
   it('has Pai querido on a phone screen when the musician gets there', () => {
     const PHONE = 700
-    const { blocks, t, run, measured, doc } = timelineOf(
+    const { blocks, t, run, measured } = timelineOf(
       'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho',
       {
         topPad: 100,
@@ -210,9 +211,7 @@ describe('the clock on real charts', () => {
     expect(arrive).toBeGreaterThan(180)
     expect(arrive).toBeLessThan(230)
     const musician = 218
-    const anchor = anchorPx(PHONE, doc)
-    const max = Math.max(0, doc - PHONE)
-    const scroll = Math.min(max, scrollAtPx(pxAtBars(t, musician), anchor))
+    const scroll = scrollAtPlayhead(t, musician / run, PHONE)
     expect(line!.top).toBeGreaterThanOrEqual(scroll)
     expect(line!.top).toBeLessThan(scroll + PHONE - 80)
     expect(run).toBeLessThan(290)
@@ -261,8 +260,7 @@ describe('where the page is', () => {
       run,
       max,
       anchor,
-      at: (sec: number) =>
-        Math.min(max, scrollAtPx(pxAtBars(t, (sec / run) * t.bars), anchor)),
+      at: (sec: number) => scrollAtPlayhead(t, run > 0 ? sec / run : 0, viewport),
     }
   }
 

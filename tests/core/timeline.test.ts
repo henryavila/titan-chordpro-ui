@@ -10,6 +10,8 @@ import {
   isPlayedLine,
   lineBeats,
   marksPerBeat,
+  maskDurationMmSs,
+  normalizeDurationMmSs,
   pxAtBars,
   runSec,
   sheetBpm,
@@ -90,6 +92,25 @@ describe('song clock helpers', () => {
     expect(hasSongDuration(undefined)).toBe(false)
     expect(hasSongDuration('')).toBe(false)
     expect(hasSongDuration('5')).toBe(false)
+  })
+
+  it('masks duration as MM:SS while typing', () => {
+    expect(maskDurationMmSs('')).toBe('')
+    expect(maskDurationMmSs('4')).toBe('4')
+    expect(maskDurationMmSs('42')).toBe('42')
+    expect(maskDurationMmSs('426')).toBe('4:26')
+    expect(maskDurationMmSs('0426')).toBe('04:26')
+    expect(maskDurationMmSs('4:26')).toBe('4:26')
+    expect(maskDurationMmSs('04:26abc')).toBe('04:26')
+    expect(maskDurationMmSs('12345')).toBe('12:34')
+  })
+
+  it('normalizes duration to padded MM:SS and clamps seconds', () => {
+    expect(normalizeDurationMmSs('')).toBe('')
+    expect(normalizeDurationMmSs('4')).toBe('4')
+    expect(normalizeDurationMmSs('426')).toBe('04:26')
+    expect(normalizeDurationMmSs('4:26')).toBe('04:26')
+    expect(normalizeDurationMmSs('12:99')).toBe('12:59')
   })
 
   it('reads the time signature and the tempo', () => {
@@ -296,11 +317,11 @@ describe('buildTimeline', () => {
 
   /**
    * Rehearsal notes and section labels are paper, not music. Giving them the
-   * page's average pace — and worse, the chrome pad absorbed into the first
-   * block — spent 25 to 100 seconds on "BEM SUAVE" before the intro of real
-   * charts, so a later verse was still off a phone screen when the musician
-   * got there. Their pixels ride with the next musical block (the last one,
-   * when they trail), and the run is only the music.
+   * page's average pace spent 25 to 100 seconds on "BEM SUAVE" before the intro
+   * of real charts. Their pixels ride with the next musical block (the last
+   * one, when they trail), and the run is only the music. Chrome pad is not
+   * that paper — it is origin, above the first block, and does not share the
+   * intro's clock.
    */
   it('does not spend clock time on a rehearsal note or a section label', () => {
     const labeled: TimelineBlock[] = [
@@ -393,12 +414,13 @@ describe('buildTimeline', () => {
       { top: 207, h: 100, kind: 'stanza', music: music({ beats: 40 }) },
     ]
     const t = buildTimeline(spaced, opts)
-    // The first block owns the page above it and the 47px gap below it.
-    expect(pxAtBars(t, 0)).toBe(0)
+    // Chrome above the first block is origin, not a slice of its clock. The
+    // 47px gap below it still belongs to the block above.
+    expect(pxAtBars(t, 0)).toBe(60)
     const edge = t.segs[1]?.at ?? 0
     expect(pxAtBars(t, edge - 0.001)).toBeCloseTo(pxAtBars(t, edge), 0)
     // No step anywhere along the run.
-    let prev = 0
+    let prev = pxAtBars(t, 0)
     for (let i = 1; i <= 400; i++) {
       const px = pxAtBars(t, (t.bars * i) / 400)
       expect(px - prev).toBeLessThan(12)

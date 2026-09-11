@@ -85,38 +85,39 @@ describe('B1 · the PDF says when it is a personal version', () => {
 })
 
 /**
- * B2 — meta belongs to the chart everyone reads. Worse than the spec breach:
- * `songId` falls back to the title, so committing one in the local mode moved
- * the overlay's own key and orphaned the reader's version.
+ * B2 — meta is editable in both edits. The overlay key must stay on the host
+ * identity: if songId followed the draft title, a local rename would orphan
+ * the reader's version.
  */
-describe('B2 · meta is a "for everyone" tool', () => {
-  it('shows no meta fields in the local mode', async () => {
+describe('B2 · meta door in both edits, overlay key stays put', () => {
+  it('offers the metadata door in the local mode', async () => {
     const w = mountViewer()
     await enterEdit(w, 'local')
-    expect(w.find('[data-meta="title"]').exists()).toBe(false)
-    expect(w.find('[data-meta="key"]').exists()).toBe(false)
-    expect(w.get('[data-meta-locked]').text()).toContain('só o responsável muda')
-    w.unmount()
-  })
-
-  it('keeps them in the "for everyone" mode', async () => {
-    const w = mountViewer({ modes: 'content' })
-    await enterEdit(w, 'content')
-    expect(w.find('[data-meta="title"]').exists()).toBe(true)
-    expect(w.find('[data-meta="key"]').exists()).toBe(true)
+    expect(w.find('[data-meta-open]').exists()).toBe(true)
     expect(w.find('[data-meta-locked]').exists()).toBe(false)
     w.unmount()
   })
 
-  it('a personal version survives, because the title cannot move under it', async () => {
+  it('keeps the dedicated metadata door in the "for everyone" mode', async () => {
+    const w = mountViewer({ modes: 'content' })
+    await enterEdit(w, 'content')
+    expect(w.find('[data-meta-open]').exists()).toBe(true)
+    expect(w.find('[data-meta-locked]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('a personal version survives a local title change', async () => {
     const w = mountViewer({ songId: '' })
     await enterEdit(w, 'local')
     await editLyric(w, `${PLAIN} (meu)`)
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Título local novo')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
     await w.get('[data-read]').trigger('click')
     await flushPromises()
 
-    // songId falls back to the title: the key that holds the overlay is the
-    // one the reader's own edit must never be able to change.
     const keys = Object.keys(localStorage).filter((k) => k.startsWith('cpv:my:'))
     expect(keys).toHaveLength(1)
     expect(w.html()).toContain('(meu)')

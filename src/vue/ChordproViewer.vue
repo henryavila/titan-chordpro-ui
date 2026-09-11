@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
-  anchorPx,
-  pxAtScroll,
-  scrollAtPx,
-  barsAtPx,
   blockSpan,
   buildTimeline,
   buildChoFilename,
@@ -20,10 +16,13 @@ import {
   isParseFatal,
   layoutChartFull,
   maxPlainChars,
+  missingOf,
+  MISSING_LABEL,
   normalizeSource,
   parse,
-  pxAtBars,
+  playheadAtScroll,
   runSec,
+  scrollAtPlayhead,
   transposeToken,
   typeScale,
   usesFlats,
@@ -43,6 +42,7 @@ import ChordDialog from './edit/ChordDialog.vue'
 import ImagePicker from './edit/ImagePicker.vue'
 import ScoreEditor from './edit/ScoreEditor.vue'
 import NewChartDialog from './edit/NewChartDialog.vue'
+import MetaDialog from './edit/MetaDialog.vue'
 import SelectionBar from './edit/SelectionBar.vue'
 import ModePickDialog from './overlay/ModePickDialog.vue'
 import MyVersionPanel from './overlay/MyVersionPanel.vue'
@@ -67,6 +67,10 @@ const props = withDefaults(
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
+      /** Test harness: start with this capo instead of the file's `{capo:}`. */
+      initialCapo?: number
+      /** Test harness: start with dual on/off. Default on when there is a capo. */
+      initialDual?: boolean
     }
   >(),
   {
@@ -160,7 +164,7 @@ const localMode = ref<'view' | 'edit' | null>(null)
 const wMode = ref<WriteMode | null>(null)
 const modePick = ref(false)
 const confirmDiscard = ref(false)
-const metaDraft = ref<Record<string, string>>({})
+const metaOpen = ref(false)
 
 const session = createSourceSession({ source: props.source ?? '' })
 /** Working source: the draft while editing, the host source otherwise. */
@@ -407,12 +411,14 @@ const offerBottom = computed(() =>
 
 const ov = useOverlay({
   // In a rehearsal the identity is the song's, so a personal version follows
-  // the right one through the list.
-  songId: computed(() =>
-    setlist.on.value
-      ? (setlist.current.value?.id ?? 'song')
-      : props.songId || meta.value.title || 'song',
-  ),
+  // the right one through the list. Outside a list, the host id / official
+  // title is the key — never the draft title, or a local meta edit would move
+  // the overlay and orphan the reader's version.
+  songId: computed(() => {
+    if (setlist.on.value) return setlist.current.value?.id ?? 'song'
+    if (props.songId) return props.songId
+    return parse(normalizeSource(hostSource.value)).meta.title || 'song'
+  }),
   version: computed(() => props.version || 'v1'),
   // Line indices are what an adjustment anchors on: the overlay lives in the
   // same normalised text the parser numbers.
@@ -436,6 +442,30 @@ const phoneSub = computed(
       .filter(Boolean)
       .join(' · '),
 )
+/** Compact chip on the edit bar: what the dedicated meta dialog owns. */
+const metaSummary = computed(() => {
+  const bits = [
+    meta.value.key || '',
+    meta.value.tempo ? `${meta.value.tempo} BPM` : '',
+    meta.value.time || '',
+    meta.value.duration || '',
+  ].filter(Boolean)
+  return bits.join(' · ') || 'preencher'
+})
+const metaGaps = computed(() => missingOf({
+  title: meta.value.title,
+  subtitle: meta.value.subtitle,
+  key: meta.value.key,
+  tempo: meta.value.tempo != null ? String(meta.value.tempo) : '',
+  time: meta.value.time,
+  duration: meta.value.duration,
+}))
+const metaGapLabel = computed(() => {
+  const gaps = metaGaps.value
+  if (!gaps.length) return ''
+  const w = gaps.map((k) => MISSING_LABEL[k] ?? k)
+  return w.length > 1 ? `Falta ${w.slice(0, -1).join(', ')} e ${w[w.length - 1]}` : `Falta ${w[0]}`
+})
 const hasKey = computed(() => !!meta.value.key)
 const flats = computed(() => usesFlats(meta.value.key))
 const shownKey = computed(() => (meta.value.key ? transposeToken(meta.value.key, offset.value, flats.value) : ''))
@@ -576,10 +606,10 @@ const lensChipLabel = computed(() =>
   activeLens.value === 'nashville' ? 'Graus' : activeLens.value === 'letra' ? 'Só letra' : 'Lentes',
 )
 /**
- * Only the "for everyone" edit owns the chart's identity. Meta, the source
- * pane and deleting a block write things an anchored overlay cannot carry —
- * and a title change would move `songId` out from under the reader's own
- * version, which is stored against it.
+ * Source pane / structural deletes stay "for everyone". Meta is editable in
+ * both edits: content writes the official header; local keeps it on the
+ * personal overlay (suggestion submit comes later). songId is pinned to the
+ * host identity so a local title change cannot orphan the overlay key.
  */
 const isContentEdit = computed(() => isEdit.value && wMode.value === 'content')
 
@@ -799,11 +829,6 @@ function timelineFor(): Timeline | null {
   * The anchor is read from the live frame, not cached: the reader changes type
   * size and turns fit on mid-song, and both move how much paper there is.
   */
-function anchor(): number {
-  const el = scroller.value
-  return el ? anchorPx(el.clientHeight, el.scrollHeight) : 0
-}
-
 /**
  * Measured, never derived: the chart's height moves with type size, fit, the
  * key it was transposed to and the width it wraps at, and only the DOM knows.
@@ -819,8 +844,7 @@ function reseatScroll() {
   if (!el) return
   rebuildTimeline()
   const max = el.scrollHeight - el.clientHeight
-  const px = scrollAtPx(pxAtBars(timelineFor(), playhead * totalBars()), anchor())
-  el.scrollTop = Math.max(0, Math.min(max, px))
+  el.scrollTop = Math.max(0, Math.min(max, scrollAtPlayhead(timelineFor(), playhead, el.clientHeight)))
   written = el.scrollTop
 }
 
@@ -864,11 +888,6 @@ function reflowPage(before: PageSpot) {
     }
     written = el.scrollTop
   })
-}
-
-function totalBars(): number {
-  const t = timelineFor()
-  return t ? t.bars : 0
 }
 
 /**
@@ -919,9 +938,8 @@ function startScroll() {
   // From the top the playhead starts at 0 and the page stays put until it
   // reaches the reading line — the whole intro stays on screen. Resuming
   // mid-song, the playhead adopts the current reading line.
-  const total = totalBars() || 1
   const max0 = Math.max(0, el.scrollHeight - el.clientHeight)
-  const mapped = barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / total
+  const mapped = playheadAtScroll(timelineFor(), el.scrollTop, el.clientHeight)
   const atPaperEnd = max0 <= 1 || el.scrollTop >= max0 - 2
   playhead = el.scrollTop <= 1 ? 0 : Math.min(atPaperEnd ? 1 : 0.999, Math.max(0, mapped))
   written = el.scrollTop
@@ -933,10 +951,9 @@ function startScroll() {
   userScroll = () => {
     if (!scrolling.value) return
     if (Math.abs(el.scrollTop - written) > 1.5) {
-      const t = totalBars() || 1
       const maxS = Math.max(0, el.scrollHeight - el.clientHeight)
       const atEnd = maxS <= 1 || el.scrollTop >= maxS - 2
-      const u = barsAtPx(timelineFor(), pxAtScroll(el.scrollTop, anchor())) / t
+      const u = playheadAtScroll(timelineFor(), el.scrollTop, el.clientHeight)
       playhead = Math.min(atEnd ? 1 : 0.999, Math.max(0, u))
     }
   }
@@ -956,7 +973,7 @@ function startScroll() {
     const run = runSec(t, dur)
     if (run > 0 && dt > 0) playhead = Math.min(1, playhead + (dt / run) * mul.value)
     const max = el.scrollHeight - el.clientHeight
-    const target = Math.max(0, Math.min(max, scrollAtPx(pxAtBars(t, playhead * (t ? t.bars : 0)), anchor())))
+    const target = Math.max(0, Math.min(max, scrollAtPlayhead(t, playhead, el.clientHeight)))
     // Floor, never round: rounding would put the page half a pixel ahead of
     // the transform and hand back the jump this is here to remove.
     const whole = Math.floor(target)
@@ -1305,6 +1322,7 @@ function beginEdit(kind: WriteMode) {
   capoOpen.value = false
   toneOpen.value = false
   moreOpen.value = false
+  metaOpen.value = false
   modePick.value = false
   ov.myPanel.value = false
   ov.showOriginal.value = false
@@ -1326,7 +1344,7 @@ function exitEdit() {
   const local = wMode.value === 'local'
   if (!local && dirty.value) toastMsg('Rascunho não salvo — continua aqui quando você voltar')
   srcOpen.value = false
-  metaDraft.value = {}
+  metaOpen.value = false
   bedit.reset()
   scoreEd.value = null
   wMode.value = null
@@ -1446,7 +1464,7 @@ function discard() {
   window.clearTimeout(discardT)
   confirmDiscard.value = false
   session.discard()
-  metaDraft.value = {}
+  metaOpen.value = false
   touch()
 }
 
@@ -1465,44 +1483,14 @@ function redo() {
   touch()
 }
 
-function metaValue(k: 'title' | 'subtitle' | 'key' | 'tempo'): string {
-  const v = metaDraft.value[k]
-  if (v !== undefined) return v
-  const raw = meta.value[k]
-  return raw === undefined || raw === null ? '' : String(raw)
+function openMeta() {
+  if (!isEdit.value) return
+  metaOpen.value = true
 }
-function onMetaInput(e: Event) {
-  const el = e.target as HTMLInputElement
-  metaDraft.value = { ...metaDraft.value, [el.dataset.meta ?? '']: el.value }
-}
-function commitMeta(e: Event) {
-  const el = e.target as HTMLInputElement
-  const k = (el.dataset.meta ?? '') as 'title' | 'subtitle' | 'key' | 'tempo'
-  if (!k) return
-  let v = el.value
-  if (k === 'tempo') v = v.replace(/[^\d]/g, '')
-  const clean = v.trim()
-  if (k === 'key' && clean && !/^[A-G](#|b)?/.test(clean)) {
-    toastMsg('Tom não reconhecido — use C, F#, Bb…')
-  }
-  session.setMeta({ [k]: v })
-  const next = { ...metaDraft.value }
-  delete next[k]
-  metaDraft.value = next
+function applyMeta(next: string) {
+  session.replace(next)
+  metaOpen.value = false
   touch()
-}
-function onMetaKey(e: KeyboardEvent) {
-  const el = e.target as HTMLInputElement
-  if (e.key === 'Enter') el.blur()
-  else if (e.key === 'Escape') {
-    // Without this the blur fired by Escape would write the cancelled text.
-    const k = el.dataset.meta ?? ''
-    const next = { ...metaDraft.value }
-    delete next[k]
-    metaDraft.value = next
-    el.value = metaValue(k as 'title')
-    el.blur()
-  }
 }
 
 // ------------------------------------------------------------------- exports
@@ -1645,6 +1633,7 @@ function onKey(e: KeyboardEvent) {
       else if (bedit.placing.value) bedit.placing.value = false
       else if (bedit.clip.value) bedit.clip.value = null
       else if (bedit.sel.value !== null) bedit.clearSel()
+      else if (metaOpen.value) metaOpen.value = false
       else if (srcOpen.value) srcOpen.value = false
     }
     return
@@ -1760,7 +1749,7 @@ function syncHostSource() {
   lastSrc = raw
   const src = normalizeSource(raw)
   session.reset(src)
-  metaDraft.value = {}
+  metaOpen.value = false
   confirmDiscard.value = false
   wMode.value = null
   modePick.value = false
@@ -1776,8 +1765,9 @@ function syncHostSource() {
     capo.value = spot.capo
     mul.value = spot.mul
   }
+  if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
   lens.value = 'none'
-  capoMap.value = true
+  capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
   hideComments.value = false
   metOpen.value = false
   met.stop()
@@ -2374,93 +2364,65 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Edit top bar (E0: meta, dirty, save, back to reading) -->
-    <div v-if="isEdit" style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;" :style="{ padding: chromePad }">
+    <!-- Edit top bar — same floating-card rules as the view identity head. -->
+    <div
+      v-if="isEdit"
+      style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;"
+      :style="{ padding: chromePad }"
+    >
       <div
         :ref="bindHead"
-        class="cpv-veil"
-        style="width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 10px 9px 14px;border-radius:15px;"
-        :style="{ maxWidth: pageMax, borderColor: wMode === 'content' ? 'var(--danger)' : 'var(--line)' }"
+        class="cpv-veil cpv-head is-edit"
+        :class="[phone ? 'is-phone' : 'is-wide', isContentEdit ? 'is-content' : '']"
+        data-cpv-head
+        :style="{ '--cpv-page-max': pageMax }"
       >
         <!-- The badge is the whole difference between the two edits: it says
              where this is landing, in the colour of the risk it carries. -->
         <span
           data-edit-badge
+          class="cpv-edit-badge"
           :style="{
             background: wMode === 'content' ? 'var(--danger-soft)' : 'var(--chord-fill)',
             color: wMode === 'content' ? 'var(--danger)' : 'var(--chord)',
           }"
-          style="flex:none;display:flex;align-items:center;gap:7px;height:26px;padding:0 9px;border-radius:8px;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;"
         >{{ editBadge }}</span>
 
-        <!-- Meta belongs to the chart everyone reads, so only the "for
-             everyone" edit may touch it. On the phone the reader sees whose
-             title it is instead of a field that would fork the song. -->
-        <div v-if="isContentEdit" style="flex:1 1 180px;min-width:118px;display:flex;flex-direction:column;gap:1px;">
-          <input
-            data-meta="title"
-            :value="metaValue('title')"
-            aria-label="Título"
-            placeholder="Título da música"
-            style="width:100%;border:0;border-bottom:1px dashed var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:15.5px;font-weight:600;letter-spacing:-0.015em;padding:2px 0;"
-            @input="onMetaInput"
-            @blur="commitMeta"
-            @keydown="onMetaKey"
-          >
-          <input
-            data-meta="subtitle"
-            :value="metaValue('subtitle')"
-            aria-label="Subtítulo"
-            placeholder="subtítulo"
-            style="width:100%;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;padding:2px 0;"
-            @input="onMetaInput"
-            @blur="commitMeta"
-            @keydown="onMetaKey"
-          >
+        <!-- Name only here. Duration/key live behind Metadados — never both. -->
+        <div class="cpv-head-id">
+          <span class="cpv-head-name">
+            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
+            <span v-if="meta.subtitle" class="cpv-head-sub">{{ meta.subtitle }}</span>
+            <span v-else-if="wMode === 'local' && !compact" class="cpv-head-sub">ajuste local · ainda não vai para todos</span>
+          </span>
         </div>
 
-        <span
-          v-else
-          data-meta-locked
-          style="flex:1 1 180px;min-width:118px;display:flex;flex-direction:column;gap:1px;"
-        >
-          <span style="font-size:15.5px;font-weight:600;letter-spacing:-0.015em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ meta.title || '' }}</span>
-          <span :style="{ display: compact ? 'none' : 'block' }" style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;color:var(--muted);">título e tom oficiais · só o responsável muda</span>
-        </span>
+        <div class="cpv-head-edit-acts">
+          <button
+            data-meta-open
+            type="button"
+            class="cpv-head-edit-meta"
+            :title="metaGapLabel || `Metadados · ${metaSummary}`"
+            :aria-label="metaGapLabel ? `Metadados — ${metaGapLabel}` : 'Editar metadados'"
+            :style="{
+              borderColor: metaGaps.length ? 'var(--danger)' : 'var(--chord-edge)',
+              background: metaGaps.length ? 'var(--danger-soft)' : 'var(--chord-soft)',
+              color: metaGaps.length ? 'var(--danger)' : 'var(--chord)',
+            }"
+            @click="openMeta"
+          >
+            <CpvIcon name="list" :size="14" />
+            <span style="font-size:12px;font-weight:700;">Metadados</span>
+            <span
+              v-if="!compact && metaSummary !== 'preencher'"
+              style="font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;opacity:0.8;"
+            >{{ metaSummary }}</span>
+            <span
+              v-else-if="metaGaps.length"
+              style="font-size:10px;font-weight:700;opacity:0.85;"
+            >falta</span>
+          </button>
 
-        <div v-if="isContentEdit" style="flex:none;display:flex;align-items:center;gap:6px;">
-          <label style="display:flex;align-items:center;gap:5px;height:34px;padding:0 9px;border-radius:10px;border:1px solid var(--chord-edge);background:var(--chord-soft);">
-            <span style="font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-            <input
-              data-meta="key"
-              :value="metaValue('key')"
-              aria-label="Tom"
-              placeholder="—"
-              style="width:38px;border:0;background:transparent;color:var(--chord);font-family:'Space Mono',monospace;font-size:15px;font-weight:700;padding:0;"
-              @input="onMetaInput"
-              @blur="commitMeta"
-              @keydown="onMetaKey"
-            >
-          </label>
-          <label style="display:flex;align-items:center;gap:5px;height:34px;padding:0 9px;border-radius:10px;border:1px solid var(--line);">
-            <input
-              data-meta="tempo"
-              :value="metaValue('tempo')"
-              aria-label="Andamento"
-              placeholder="—"
-              style="width:34px;border:0;background:transparent;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;font-weight:700;padding:0;"
-              @input="onMetaInput"
-              @blur="commitMeta"
-              @keydown="onMetaKey"
-            >
-            <span style="font-size:9px;letter-spacing:0.12em;color:var(--muted);font-weight:700;">BPM</span>
-          </label>
-        </div>
-
-        <div
-          style="display:flex;justify-content:flex-end;align-items:center;gap:6px;min-width:0;"
-          :style="{ flex: compact ? '1 1 100%' : 'none', flexWrap: compact ? 'wrap' : 'nowrap' }"
-        >
           <span
             v-if="dirty"
             title="Alterações não salvas"
@@ -2472,8 +2434,8 @@ defineExpose({
             title="Desfazer (Ctrl+Z)"
             aria-label="Desfazer"
             :disabled="!canUndo"
-            :style="{ opacity: canUndo ? '1' : '0.4' }"
-            style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
+            :style="{ opacity: canUndo ? '1' : '0.4', width: compact ? '32px' : '34px', height: compact ? '32px' : '34px' }"
+            style="border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="undo"
           ><CpvIcon name="undo2" :size="16" /></button>
           <button
@@ -2481,7 +2443,8 @@ defineExpose({
             data-redo
             title="Refazer (Ctrl+Shift+Z)"
             aria-label="Refazer"
-            style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
+            :style="{ width: compact ? '32px' : '34px', height: compact ? '32px' : '34px' }"
+            style="border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
             @click="redo"
           ><CpvIcon name="redo2" :size="16" /></button>
           <span
@@ -2492,21 +2455,23 @@ defineExpose({
             <button
               data-discard
               title="Voltar ao último salvo"
-              :style="{ color: confirmDiscard ? 'var(--danger)' : 'var(--muted)' }"
-              style="height:34px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+              :style="{ color: confirmDiscard ? 'var(--danger)' : 'var(--muted)', height: compact ? '32px' : '34px' }"
+              style="padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
               @click="discard"
             >{{ discardLabel }}</button>
             <button
               data-save
               title="Salvar — passa a valer para todos (Ctrl+S)"
-              style="height:34px;padding:0 13px;border:0;border-radius:10px;background:var(--danger);color:var(--chord-ink);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
+              :style="{ height: compact ? '32px' : '34px', padding: compact ? '0 11px' : '0 13px' }"
+              style="border:0;border-radius:10px;background:var(--danger);color:var(--chord-ink);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
               @click="save"
-            >Salvar para todos</button>
+            >{{ compact ? 'Salvar' : 'Salvar para todos' }}</button>
           </template>
           <button
             data-read
             title="Voltar para leitura"
-            style="height:34px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
+            :style="{ height: compact ? '32px' : '34px' }"
+            style="padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
             @click="exitEdit"
           >Ler</button>
         </div>
@@ -3045,6 +3010,14 @@ defineExpose({
       :read-pdf="readPdf"
       @close="novaOpen = false"
       @commit="commitNewChart"
+    />
+
+    <MetaDialog
+      v-if="metaOpen && isEdit"
+      :compact="compact"
+      :source="working"
+      @close="metaOpen = false"
+      @apply="applyMeta"
     />
 
     <SetlistSheet

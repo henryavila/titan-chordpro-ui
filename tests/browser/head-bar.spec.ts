@@ -61,6 +61,58 @@ test('wrapped phone head pins tom left and tela cheia right', async ({ page }) =
   expect(place.fsRight).toBeLessThanOrEqual(12)
 })
 
+/**
+ * Edit reused the old full-bleed strip after the view head became a floating
+ * card. Metadados sat outside the action cluster and landed alone on a middle
+ * row; the subtitle repeated the same key/BPM chip the door already shows.
+ */
+test('edit head is a floating card and keeps Metadados with the actions', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('[data-edit]').click()
+  const content = page.locator('[data-mode-content], button:has-text("Para todos")').first()
+  if (await content.count()) await content.click()
+  const head = page.locator('[data-cpv-head]')
+  await expect(head).toBeVisible()
+  await expect(page.locator('[data-edit-badge]')).toBeVisible()
+  await expect(page.locator('[data-meta-open]')).toBeVisible()
+
+  const place = await page.evaluate(() => {
+    const el = document.querySelector('[data-cpv-head]') as HTMLElement
+    const root = document.querySelector('[data-cpv-root]') as HTMLElement
+    const acts = el.querySelector('.cpv-head-edit-acts') as HTMLElement
+    const meta = el.querySelector('[data-meta-open]') as HTMLElement
+    const title = el.querySelector('[data-chart-title]') as HTMLElement
+    const hr = el.getBoundingClientRect()
+    const rr = root.getBoundingClientRect()
+    const ar = acts.getBoundingClientRect()
+    const mr = meta.getBoundingClientRect()
+    const sub = el.querySelector('.cpv-head-sub')
+    return {
+      radius: parseFloat(getComputedStyle(el).borderRadius),
+      barH: Math.round(hr.height),
+      width: Math.round(hr.width),
+      rootW: Math.round(rr.width),
+      fromTop: Math.round(hr.top - rr.top),
+      metaInActs: acts.contains(meta),
+      metaTop: Math.round(mr.top - hr.top),
+      actsTop: Math.round(ar.top - hr.top),
+      titleText: title?.textContent ?? '',
+      subText: sub?.textContent?.trim() ?? '',
+      justify: getComputedStyle(el).justifyContent,
+    }
+  })
+
+  expect(place.radius).toBeGreaterThan(0)
+  expect(place.fromTop).toBeGreaterThan(4)
+  expect(place.metaInActs).toBe(true)
+  expect(place.metaTop).toBe(place.actsTop)
+  // Subtitle must not repeat the Metadados chip (key · BPM · time · duration).
+  expect(place.subText).not.toMatch(/\d+\s*BPM/i)
+  expect(place.barH).toBeLessThanOrEqual(110)
+  await page.screenshot({ path: test.info().outputPath('edit-head-phone.png'), clip: { x: 0, y: 0, width: 390, height: 200 } })
+})
+
 test('wide floating head may grow past the reading column when capo is on', async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 900 })
   await page.goto('/?lista=1')

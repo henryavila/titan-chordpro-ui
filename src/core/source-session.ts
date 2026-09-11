@@ -1,9 +1,11 @@
 import { parse } from './parse'
-import { patchMeta } from './export-cho'
+import { readMeta, writeMeta, type ChartMeta, type MetaKey } from './import-chordpro'
 import { lintSource } from './lint'
 import type { ChordProView } from './types'
 
 export type SourceChangeReason = 'edit' | 'import' | 'undo' | 'redo' | 'meta'
+
+export type MetaPatch = ChartMeta & { tempo?: string | number }
 
 export type SourceSession = {
   getSource: () => string
@@ -18,7 +20,8 @@ export type SourceSession = {
   edit: (next: string) => void
   /** Remembers the current text as the point `undo()` comes back to. */
   checkpoint: () => void
-  setMeta: (patch: { title?: string; subtitle?: string; key?: string; tempo?: string | number }) => void
+  /** Rewrites the ChordPro header for every known meta key (canonical order). */
+  setMeta: (patch: MetaPatch) => void
   undo: () => void
   redo: () => void
   canUndo: () => boolean
@@ -58,7 +61,14 @@ export function createSourceSession(opts: { source: string }): SourceSession {
       if (undoStack.length > 50) undoStack.shift()
       redoStack.length = 0
     },
-    setMeta: (patch) => push(patchMeta(source, patch)),
+    setMeta: (patch) => {
+      const next: ChartMeta = { ...readMeta(source) }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === undefined) continue
+        next[k as MetaKey] = String(v)
+      }
+      push(writeMeta(source, next))
+    },
     undo: () => {
       const prev = undoStack.pop()
       if (prev === undefined) return

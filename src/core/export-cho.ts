@@ -31,15 +31,30 @@ export function exportCho(
  */
 export function patchMeta(
   source: string,
-  patch: { title?: string; subtitle?: string; key?: string; tempo?: string | number },
+  patch: {
+    title?: string
+    subtitle?: string
+    artist?: string
+    key?: string
+    tempo?: string | number
+    time?: string
+    duration?: string
+    capo?: string | number
+    x_origem?: string
+  },
 ): string {
   const lines = String(source ?? '').split('\n')
   const DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/
   const ALIASES: Record<string, string[]> = {
     title: ['title', 't'],
     subtitle: ['subtitle', 'st'],
+    artist: ['artist', 'composer'],
     key: ['key'],
     tempo: ['tempo'],
+    time: ['time'],
+    duration: ['duration'],
+    capo: ['capo'],
+    x_origem: ['x_origem'],
   }
   const META = new Set([
     'title',
@@ -53,6 +68,7 @@ export function patchMeta(
     'time',
     'duration',
     'capo',
+    'x_origem',
   ])
 
   const indexOfMeta = (names: string[]) =>

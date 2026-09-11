@@ -1048,6 +1048,83 @@ div.cpv-head-id {
   font-size: 11px;
   color: var(--muted);
 }
+/*
+ * Edit identity bar — same floating card as view. Badge + name on the left;
+ * meta door + save cluster on the right (`margin-left: auto`), wrapping as
+ * one unit so Metadados never lands alone on a middle row.
+ */
+.cpv-head.is-edit.is-wide {
+  width: max-content;
+  max-width: 100%;
+  min-width: min(100%, var(--cpv-page-max, 100%));
+  gap: 8px 10px;
+  padding: 5px 8px 5px 12px;
+  border-radius: 13px;
+}
+.cpv-head.is-edit.is-phone {
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 14px;
+}
+.cpv-head.is-edit.is-content {
+  border-color: var(--danger);
+}
+.cpv-edit-badge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.cpv-head.is-edit .cpv-head-id {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.cpv-head.is-edit .cpv-head-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cpv-head.is-edit.is-phone .cpv-head-id {
+  height: auto;
+  min-height: 32px;
+}
+.cpv-head-edit-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin-left: auto;
+}
+.cpv-head.is-edit.is-phone .cpv-head-edit-acts {
+  flex: 1 1 100%;
+  margin-left: 0;
+}
+.cpv-head-edit-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid;
+  border-radius: 9px;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cpv-head.is-edit.is-phone .cpv-head-edit-meta {
+  height: 32px;
+  padding: 0 9px;
+}
 .cpv-keypill > button:hover {
   background: var(--chord-hover);
 }

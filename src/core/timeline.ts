@@ -125,6 +125,29 @@ export function songDurationSec(duration: string | number | null | undefined): n
 }
 
 /**
+ * Progressive `MM:SS` mask for duration fields: digits only, colon before the
+ * last two when there are 3+. `426` → `4:26`, `0426` → `04:26`.
+ */
+export function maskDurationMmSs(raw: string): string {
+  const d = String(raw ?? '').replace(/\D/g, '').slice(0, 4)
+  if (d.length <= 2) return d
+  return `${d.slice(0, -2)}:${d.slice(-2)}`
+}
+
+/**
+ * Finalize a masked duration on blur: `MM:SS`, seconds clamped to 0–59.
+ * Incomplete values (fewer than 3 digits) stay as typed so the field can keep
+ * showing "falta" until the musician finishes.
+ */
+export function normalizeDurationMmSs(raw: string): string {
+  const d = String(raw ?? '').replace(/\D/g, '').slice(0, 4)
+  if (d.length < 3) return maskDurationMmSs(raw)
+  const mm = d.slice(0, -2).padStart(2, '0')
+  const ss = Math.min(59, Number(d.slice(-2)))
+  return `${mm}:${String(ss).padStart(2, '0')}`
+}
+
+/**
  * Hard gate: auto-scroll runs only when the chart declares a usable
  * `{duration:}`. Unmarked chords and a BPM are not a duration.
  */
@@ -321,9 +344,13 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
   // under the last block: without it, barsAtPx saturates at t.bars as soon as
   // the reading line passes the last measured box, and a resume mid-page
   // looks like the end of the song.
+  //
+  // The leading offset is different: it is chrome (page pad, capo legend), not
+  // music. Folding it into the first block spent a slice of the intro walking
+  // empty paper — 4.8 s of an 8-beat intro on 120px of pad, and every compact
+  // of the title strip changed the clock. It stays as `segs[0].top` (the
+  // content origin). The RAF starts there at t=0 with scroll 0.
   if (counted[0]) {
-    counted[0].h += counted[0].top
-    counted[0].top = 0
     for (let i = 0; i < counted.length - 1; i++) {
       const s = counted[i]
       const nx = counted[i + 1]
@@ -406,10 +433,15 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
   }
 }
 
+/** Document y of the first musical pixel — chrome pad and legend sit above it. */
+export function contentOrigin(t: Timeline | null): number {
+  return t?.segs[0]?.top ?? 0
+}
+
 /** Pixel offset of a point in musical time. */
 export function pxAtBars(t: Timeline | null, bars: number): number {
   if (!t) return 0
-  if (bars <= 0) return 0
+  if (bars <= 0) return contentOrigin(t)
   for (const s of t.segs) if (bars < s.at + s.bars) return s.top + ((bars - s.at) / s.bars) * s.h
   const last = t.segs[t.segs.length - 1]
   return last ? last.top + last.h : 0
@@ -418,7 +450,7 @@ export function pxAtBars(t: Timeline | null, bars: number): number {
 /** Musical time at a pixel offset. */
 export function barsAtPx(t: Timeline | null, px: number): number {
   if (!t) return 0
-  if (px <= 0) return 0
+  if (px <= contentOrigin(t)) return 0
   for (const s of t.segs) if (px < s.top + s.h) return s.at + Math.max(0, (px - s.top) / s.h) * s.bars
   return t.bars
 }
@@ -465,19 +497,47 @@ export function anchorPx(viewportHeight: number, docHeight = Infinity): number {
   return Math.round(ANCHOR_RATIO * Math.min(viewportHeight, room))
 }
 
-/** Where the page sits when the music has reached `px` of the document. */
-export function scrollAtPx(px: number, anchor: number): number {
-  if (px <= 0) return 0
-  return px - Math.min(anchor, px * ANCHOR_RAMP)
+/**
+ * Where the page sits when the music has reached `px` of the document.
+ *
+ * `origin` is the first musical pixel ({@link contentOrigin}). Chrome above it
+ * must not consume the ramp: at t=0 the playhead is already at `origin` and
+ * the page is at scroll 0. With `origin = 0` this is the original formula.
+ */
+export function scrollAtPx(px: number, anchor: number, origin = 0): number {
+  const rel = Math.max(0, px - origin)
+  const room = Math.max(0, anchor - origin)
+  return rel - Math.min(room, rel * ANCHOR_RAMP)
 }
 
 /** The music shown at a given scroll offset — the inverse of {@link scrollAtPx}. */
-export function pxAtScroll(scroll: number, anchor: number): number {
+export function pxAtScroll(scroll: number, anchor: number, origin = 0): number {
   const s = Math.max(0, scroll)
-  // Below the knee the anchor is still growing, so the page has covered only
-  // `1 - ANCHOR_RAMP` of the music's paper.
-  const knee = (anchor * (1 - ANCHOR_RAMP)) / ANCHOR_RAMP
-  return s < knee ? s / (1 - ANCHOR_RAMP) : s + anchor
+  const room = Math.max(0, anchor - origin)
+  if (room <= 0) return origin + s
+  // Below the knee the remaining anchor is still growing, so the page has
+  // covered only `1 - ANCHOR_RAMP` of the music's paper past the origin.
+  const knee = (room * (1 - ANCHOR_RAMP)) / ANCHOR_RAMP
+  return s < knee ? origin + s / (1 - ANCHOR_RAMP) : s + origin + room
+}
+
+/** Scroll offset the RAF writes at musical fraction `u` (0 at the first note). */
+export function scrollAtPlayhead(t: Timeline | null, u: number, viewport: number): number {
+  if (!t) return 0
+  const origin = contentOrigin(t)
+  const anchor = anchorPx(viewport, t.doc)
+  const max = Math.max(0, t.doc - viewport)
+  const px = pxAtBars(t, Math.max(0, Math.min(1, u)) * t.bars)
+  return Math.min(max, scrollAtPx(px, anchor, origin))
+}
+
+/** Musical fraction shown at a scroll offset — inverse of {@link scrollAtPlayhead}. */
+export function playheadAtScroll(t: Timeline | null, scroll: number, viewport: number): number {
+  if (!t) return 0
+  const origin = contentOrigin(t)
+  const anchor = anchorPx(viewport, t.doc)
+  const bars = t.bars || 1
+  return barsAtPx(t, pxAtScroll(scroll, anchor, origin)) / bars
 }
 
 /** Clock inputs a chart provides; `bpmOverride` is the reader's own tempo. */
