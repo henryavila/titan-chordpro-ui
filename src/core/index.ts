@@ -180,8 +180,11 @@ export type { LintResult } from './lint'
 export { transposeToken, usesFlats, keyRootOf, nashvilleToken, semitoneDelta, transposeTextChords } from './transpose'
 export { looksLikeOnSong, normalizeOnSong } from './onsong'
 export {
+  applyCifraClubEnrich,
+  chartBody,
   convert,
   detect,
+  enrichMetaFromCifraClubHtml,
   fromCifraClubHtml,
   fromOnSong,
   fromPlain,
@@ -192,13 +195,25 @@ export {
   META_KEYS,
   MISSING_LABEL,
   missingOf,
+  proposeCifraClubEnrich,
   readMeta,
   SUPPORTED_HOSTS,
   titleFromUrl,
   toPlain,
   writeMeta,
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
 } from './import-chordpro'
-export type { ChartMeta, CifraClubPage, ImportFormat, ImportResult, MetaKey } from './import-chordpro'
+export type {
+  ChartMeta,
+  CifraClubPage,
+  EnrichConflict,
+  EnrichProposal,
+  EnrichYoutube,
+  ImportFormat,
+  ImportResult,
+  MetaKey,
+} from './import-chordpro'
 export {
   decodeStrumPat,
   encodeStrumPat,
