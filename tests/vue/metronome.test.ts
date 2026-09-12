@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { computed, ref, type Ref } from 'vue'
+import { computed, nextTick, ref, type Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import { memoryStore, STORE_KEYS } from '../../src/core'
@@ -564,6 +564,37 @@ describe('Rolar starts the metronome with the chart', () => {
     await flushPromises()
     expect(w.find('.cpv-head-hit-1, .cpv-head-hit-n').exists()).toBe(true)
     expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ metPulseHead: true })
+  })
+
+  it('inverts the tom pill as its own surface so Tom / key / split stay readable', async () => {
+    const w = await viewerWithRoom()
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.get('[data-met-head]').trigger('click')
+    await flushPromises()
+    await w.get('[data-met-run]').trigger('click')
+    await flushPromises()
+    await nextTick()
+    await flushPromises()
+
+    const head = w.get('.cpv-head-hit-1').element as HTMLElement
+    const pill = w.get('.cpv-keypill').element as HTMLElement
+    const key = w.get('[data-display-key]').element as HTMLElement
+    const tom = [...pill.querySelectorAll('span')].find((el) => el.textContent === 'Tom') as HTMLElement
+    expect(tom).toBeTruthy()
+
+    const headMuted = getComputedStyle(head).getPropertyValue('--muted').trim()
+    const pillMuted = getComputedStyle(pill).getPropertyValue('--muted').trim()
+    const pillChord = getComputedStyle(pill).getPropertyValue('--chord').trim()
+    const pillEdge = getComputedStyle(pill).getPropertyValue('--chord-edge').trim()
+    const pillSoft = getComputedStyle(pill).getPropertyValue('--chord-soft').trim()
+    expect(pillMuted, 'Tom kicker still uses the strip muted (ink on ink)').not.toBe(headMuted)
+    expect(pillMuted).toMatch(/--downbeat(?!-ink)/)
+    expect(pillChord).toBe('var(--downbeat)')
+    expect(pillSoft).toBe('var(--downbeat-ink)')
+    expect(pillEdge, 'split vanished into the pill fill').toMatch(/--downbeat(?!-ink)/)
+    expect(getComputedStyle(key).color).not.toBe(getComputedStyle(pill).backgroundColor)
+    expect(getComputedStyle(tom).color).not.toBe(getComputedStyle(pill).backgroundColor)
   })
 
   it('keeps the count outside the chrome so a hidden dock does not take it', async () => {

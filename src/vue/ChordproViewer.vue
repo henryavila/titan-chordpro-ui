@@ -2397,6 +2397,7 @@ defineExpose({
       :style="{ padding: chromePad }"
     >
       <div :ref="bindHead" class="cpv-hit cpv-veil cpv-head is-phone" :class="headHitClass" data-cpv-head>
+        <!-- Nested fill on this bar: cpv-head-chip (tests/vue/head-chip.test.ts). -->
         <!-- In a rehearsal the title is the way into the list. -->
         <button
           v-if="setlist.on.value"
@@ -2405,7 +2406,7 @@ defineExpose({
           title="Abrir a lista do ensaio"
           @click="setlist.open()"
         >
-          <span class="cpv-head-pos">{{ setlist.posLabel.value }}</span>
+          <span class="cpv-head-pos cpv-head-chip">{{ setlist.posLabel.value }}</span>
           <span class="cpv-head-name">
             <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
             <span class="cpv-head-sub">{{ phoneSub }}</span>
@@ -2420,6 +2421,7 @@ defineExpose({
         <button
           v-if="hasKey"
           data-tone
+          class="cpv-head-chip"
           aria-label="Tom e capotraste"
           title="Tom e capotraste"
           :style="{ background: hasReset ? 'var(--chord-fill)' : 'var(--chord-soft)' }"
@@ -2458,6 +2460,7 @@ defineExpose({
         data-cpv-head
         :style="{ '--cpv-page-max': pageMax }"
       >
+        <!-- Nested fill on this bar: cpv-head-chip (tests/vue/head-chip.test.ts). -->
         <button
           v-if="setlist.on.value"
           data-setlist-open
@@ -2465,7 +2468,7 @@ defineExpose({
           title="Abrir a lista do ensaio"
           @click="setlist.open()"
         >
-          <span class="cpv-head-pos">{{ setlist.posLabel.value }}</span>
+          <span class="cpv-head-pos cpv-head-chip">{{ setlist.posLabel.value }}</span>
           <span class="cpv-head-name">
             <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
             <span class="cpv-head-sub">{{ setlist.nextChip.value }}</span>
@@ -2483,7 +2486,7 @@ defineExpose({
           <span v-if="meta.duration">{{ meta.duration }}</span>
         </div>
         <div v-if="hasKey" ref="capoBox" style="position:relative;flex:none;">
-          <div class="cpv-keypill">
+          <div class="cpv-keypill cpv-head-chip">
             <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(-1)">−</button>
             <div style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 5px;">
               <span style="display:flex;align-items:baseline;gap:5px;">
@@ -2493,7 +2496,7 @@ defineExpose({
               <span v-if="songKeyCaption" data-tone-shift style="font-size:9.5px;font-weight:600;color:var(--muted);line-height:1.2;">{{ songKeyCaption }}</span>
             </div>
             <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(1)">+</button>
-            <span style="width:1px;height:18px;background:var(--chord-edge);margin:0 2px;" />
+            <span class="cpv-keypill-split" aria-hidden="true" />
             <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:0;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
               {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
             </button>
