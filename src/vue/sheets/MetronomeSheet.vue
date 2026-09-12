@@ -223,13 +223,12 @@ const geom = computed(() =>
         </span>
       </button>
 
-      <div v-if="!overridden && chartBpm" style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);">
-        <span style="width:5px;height:5px;border-radius:50%;background:var(--chord);" /><span>Andamento vindo da cifra ({{ chartBpm }} BPM).</span>
-      </div>
       <button
-        v-if="overridden"
-        style="display:flex;align-items:center;justify-content:center;height:30px;border:0;border-radius:9px;background:var(--surface);color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
-        @click="emit('resetBpm')"
+        data-met-reset
+        :disabled="!overridden"
+        :style="{ opacity: overridden ? '1' : '0.45', cursor: overridden ? 'pointer' : 'default' }"
+        style="display:flex;align-items:center;justify-content:center;height:30px;border:0;border-radius:9px;background:var(--surface);color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;"
+        @click="overridden && $emit('resetBpm')"
       >
         Voltar ao andamento da cifra ({{ chartBpm ? `${chartBpm} BPM` : '—' }})
       </button>

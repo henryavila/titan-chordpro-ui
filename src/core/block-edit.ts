@@ -421,7 +421,7 @@ export function toggleBlockDual(lines: string[], block: ChartBlock): BlockWrite 
   const on = !ctx.capoMapOn
   return {
     lines: writeMarks(lines, ctx, ctx.shiftTotal, ctx.capoVal, on),
-    message: on ? 'Duas cifras neste bloco' : 'Só a cifra real neste bloco',
+    message: on ? 'Duas cifras neste bloco' : 'Formas do capo neste bloco',
     sel: null,
   }
 }

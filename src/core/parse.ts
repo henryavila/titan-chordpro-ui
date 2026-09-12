@@ -30,7 +30,7 @@ const DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/
 const HIDDEN = /^#~ ?(.*)$/
 /** `#^+2` — section transpose already applied to the chords below. */
 const MARK_SHIFT = /^#\^([+-]?\d+)\s*$/
-/** `#capo:3` / `#capo:3!` — capo for this block only (`!` = no dual chart). */
+/** `#capo:3` / `#capo:3!` — capo for this block only (`!` = shapes only, no dual). */
 const MARK_CAPO = /^#capo:(\d+)(!?)\s*$/
 
 function splitLyricLine(raw: string): Array<{ chord?: string; lyric: string }> {

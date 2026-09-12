@@ -702,9 +702,7 @@ const fixTuneLabel = computed(() =>
 const editBadge = computed(() => (wMode.value === 'content' ? 'Para todos' : 'Só para mim'))
 const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}ª casa`))
 const capoHint = computed(() =>
-  capo.value === 0
-    ? 'A cifra fica no tom real. Com o capo, um mapa mostra a forma de cada acorde.'
-    : `A cifra segue em ${playingKey.value} — no capo ${capo.value} você faz as formas de ${shapeKey.value}.`,
+  capo.value === 0 ? 'A cifra fica no tom real.' : `Formas de ${shapeKey.value}`,
 )
 /** The capo button says whether both chords are on screen. */
 const capoBtnLabel = computed(() =>
@@ -2518,26 +2516,35 @@ defineExpose({
               <div style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</div>
               <button aria-label="Capo acima" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="setCapo(capo + 1)">+</button>
             </div>
-            <div style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ capoHint }}</div>
-            <template v-if="hasCapo">
-              <button
-                data-dual
-                role="switch"
-                :aria-checked="mapOn"
-                :style="{ border: `1px solid ${twin ? 'var(--chord-edge)' : 'var(--line)'}`, background: twin ? 'var(--chord-soft)' : 'transparent' }"
-                style="display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:12px;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
-                @click="toggleMap"
-              >
-                <span :style="{ background: twin ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-                  <span :style="{ left: twin ? '14px' : '2px', background: twin ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-                </span>
-                <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-                  <span style="font-size:12.5px;font-weight:600;">Modo dual</span>
-                  <span style="font-size:11px;line-height:1.4;color:var(--muted);text-wrap:pretty;">Duas cifras na mesma linha: quem está com capo e quem não está.</span>
-                </span>
-              </button>
-              <button style="height:30px;border:0;border-radius:9px;background:var(--chord-fill);color:var(--chord);font-size:12px;font-weight:600;cursor:pointer;" @click="setCapo(0)">Tirar o capo</button>
-            </template>
+            <div style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;min-height:17px;">{{ capoHint }}</div>
+            <button
+              data-dual
+              role="switch"
+              :aria-checked="mapOn"
+              :disabled="!hasCapo"
+              :style="{
+                border: `1px solid ${hasCapo && twin ? 'var(--chord-edge)' : 'var(--line)'}`,
+                background: hasCapo && twin ? 'var(--chord-soft)' : 'transparent',
+                opacity: hasCapo ? '1' : '0.45',
+                cursor: hasCapo ? 'pointer' : 'default',
+              }"
+              style="display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:12px;color:var(--text);font-family:inherit;text-align:left;"
+              @click="hasCapo && toggleMap()"
+            >
+              <span :style="{ background: hasCapo && twin ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
+                <span :style="{ left: hasCapo && twin ? '14px' : '2px', background: hasCapo && twin ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
+              </span>
+              <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                <span style="font-size:12.5px;font-weight:600;">Modo dual</span>
+                <span style="font-size:11px;line-height:1.4;color:var(--muted);text-wrap:pretty;min-height:30px;">{{ hasCapo ? (mapOn ? 'Duas cifras na mesma linha: quem está com capo e quem não está.' : 'Desligado, a cifra vira as formas do capo — quem toca sozinho.') : 'Liga com o capotraste: duas cifras, ou só as formas.' }}</span>
+              </span>
+            </button>
+            <button
+              :disabled="!hasCapo"
+              :style="{ opacity: hasCapo ? '1' : '0.4', cursor: hasCapo ? 'pointer' : 'default' }"
+              style="height:30px;border:0;border-radius:9px;background:var(--chord-fill);color:var(--chord);font-size:12px;font-weight:600;"
+              @click="hasCapo && setCapo(0)"
+            >Tirar o capo</button>
           </div>
         </div>
         <button
