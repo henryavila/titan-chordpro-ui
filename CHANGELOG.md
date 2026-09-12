@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-12
+
 ### Added
 - **Prop `lens` / `hideComments`:** o host abre o viewer já em Só letra (`lens="letra"`), Nashville ou com comentários ocultos — URL de cantor sem depender do UI. Emite `update:lens` / `update:hideComments`. Demo: `?lens=letra`, `?comentarios=0`. Docs: `docs/CONSUMER.md` §8, `README` props.
 - **Reescrever no tom (cifras já cadastradas):** quando `{key:}` não bate com os acordes (082, capo usado como transposição de banda), a ficha e a folha de tom oferecem **Reescrever em Ab**. Grava o corpo no tom declarado, tira o capo falso e guarda `{transpose:N}` para a leitura continuar no tom tocado.
@@ -21,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sheet de tom e metrônomo:** reset e dual já ocupam o lugar, desligados no estado original — mudar tom/capo/BPM não estica o sheet.
 - **Lente no ensaio:** trocar de música na lista não desliga mais Só letra / Nashville nem reexibe comentários que o músico tinha ocultado.
 - **Lente Só letra — marcas de relógio:** `x///`, `//`, `x`, `/_`, `/-` e `x...` não vazam mais na letra quando o acorde some (`razão.[E]//` → `razão.`, `Amém[G]x` → `Amém`). `cami/nhar` e a letra x em palavras (Exaltado) ficam. Rescan: 149 fixtures limpas. SoT: `docs/MARCAS-X.md` § Lente Só letra.
+
+### Notes
+- Feature = MINOR, bugfix = PATCH. `0.1.1`–`0.1.3` foram features lançadas como patch; a linha `0.2` começa aqui. Pin `~0.2.0` se o host só quer bugfix. Chooser: `pnpm release`.
 
 ## [0.1.3] - 2026-09-12
 
@@ -54,7 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.2.0
 [0.1.3]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.3
 [0.1.2]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.2
 [0.1.1]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.1

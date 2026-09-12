@@ -538,8 +538,18 @@ Script: [`scripts/publish-npm.sh`](scripts/publish-npm.sh).
 
 ### Later releases
 
-1. Bump `version` in `package.json` and finalize the section in `CHANGELOG.md`.
-2. Merge to the default branch, then create a GitHub Release tagged `vX.Y.Z` (must match `package.json`).
+Chooser (feature = MINOR, not patch): [`scripts/release.ts`](scripts/release.ts) · skill [`.grok/skills/release/SKILL.md`](.grok/skills/release/SKILL.md).
+
+```sh
+pnpm release                       # prints next version; do not guess
+pnpm test && pnpm typecheck
+pnpm release:apply                 # package.json + CHANGELOG.md
+# commit, then:
+pnpm release:ship                  # tag + GitHub Release
+```
+
+1. `--apply` writes `version` and moves `CHANGELOG.md` `[Unreleased]` into `X.Y.Z`.
+2. `--ship` pushes an annotated tag `vX.Y.Z` and creates the GitHub Release (must match `package.json`).
 3. Workflow [`.github/workflows/publish.yml`](.github/workflows/publish.yml) stages the tarball (OIDC, no token).
 4. **You** promote it (2FA) — OIDC cannot approve:
 
@@ -558,4 +568,4 @@ Consumer install:
 pnpm add @henryavila/titan-chordpro-ui
 ```
 
-Pre-1.0: prefer `~0.1.0` (patch-only) if the host cannot absorb minor breaks.
+Pre-1.0: prefer `~0.2.0` (patch-only) if the host cannot absorb minor breaks. Feature releases bump MINOR (`0.2.0`, not `0.1.4`).
