@@ -49,7 +49,7 @@ export type Lens = 'none' | 'nashville' | 'letra'
 /**
  * Marks a block carries in the file, written by the editor and invisible while
  * reading: `#^±n` records a section transpose already applied to the chords,
- * `#capo:n[!]` gives the block a capo of its own (`!` = no dual chart there).
+ * `#capo:n[!]` gives the block a capo of its own (`!` = shapes only, no dual).
  */
 export type BlockMarks = {
   shift: number
@@ -109,9 +109,9 @@ export type ViewerController = {
 }
 
 export type ChartSeg = {
-  /** The chord as it sounds — what most of the group plays. */
+  /** Chord on the lyric: concert pitch in dual, capo shape when dual is off. */
   chord: string
-  /** The shape to fret under a capo, shown above the real chord. */
+  /** Capo shape drawn above the concert chord when dual is on. */
   shape: string
   hasShape: boolean
   text: string

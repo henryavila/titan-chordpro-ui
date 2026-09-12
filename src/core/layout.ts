@@ -286,7 +286,10 @@ export type LayoutOpts = {
   semitones?: number
   /** Capo of the song. */
   capo?: number
-  /** Show the capo shape above the real chord, for the whole song. */
+  /**
+   * Dual (default): concert chord on the lyric, capo shape above.
+   * `false`: rewrite the chart to the capo shapes — the reader is alone.
+   */
   dual?: boolean
   /** Reading lens: chord spelling, or lyrics-only. */
   lens?: Lens
@@ -426,9 +429,10 @@ export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlo
 }
 
 /**
- * A capo never rewrites the chart: most of the group plays in the real key,
- * and whoever put the capo on needs a map — "see G, play E" — once, not on
- * every line. So chord names stay real and the shape rides above them.
+ * Dual capo keeps concert names on the lyric and draws the fret shape above —
+ * two people, one sheet. Capo without dual is the capo player alone: the
+ * chart itself is rewritten to the shapes they fret. The sounding key does
+ * not change.
  */
 export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): ChartLayout {
   const semis = opts.semitones ?? view.transposeSemitones
@@ -441,28 +445,28 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
 
   const drafts = groupChorus(groupNotes(flatten(view)), view.eocOf ?? {})
 
-  // A capo chosen for ONE block is already a request to see both chords there:
-  // it does not depend on the song-wide map switch, which only exists when the
-  // song itself has a capo.
-  const shapeCapoOf = (marks: BlockMarks): number => {
-    if (editing || nash) return 0
+  // A capo chosen for ONE block follows that block's own dual mark (`#capo:n`
+  // vs `#capo:n!`). The song-wide switch only applies when the block has none.
+  const capoReadOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
+    if (editing || nash) return { fret: 0, dual: false }
     const own = marks.blockCapo != null
-    const cp = own ? (marks.blockCapo ?? 0) : capo
-    if (cp <= 0) return 0
-    return (own ? marks.blockCapoMap !== false : opts.dual !== false) ? cp : 0
+    const fret = own ? (marks.blockCapo ?? 0) : capo
+    if (fret <= 0) return { fret: 0, dual: false }
+    const dual = own ? marks.blockCapoMap !== false : opts.dual !== false
+    return { fret, dual }
   }
 
   const nashRoot = transposeToken(keyRoot, semis, flats)
-  const display = (chord: string, shapeCapo: number): { name: string; shape: string } => {
+  const display = (chord: string, read: { fret: number; dual: boolean }): { name: string; shape: string } => {
     if (!chord) return { name: chord, shape: '' }
     if (nash) {
       return { name: nashvilleToken(transposeToken(chord, semis, flats), nashRoot), shape: '' }
     }
     const real = semis ? transposeToken(chord, semis, flats) : chord
-    return {
-      name: real,
-      shape: shapeCapo > 0 ? transposeToken(chord, semis - shapeCapo, flats) : '',
-    }
+    if (read.fret <= 0) return { name: real, shape: '' }
+    const shape = transposeToken(chord, semis - read.fret, flats)
+    if (!read.dual) return { name: shape, shape: '' }
+    return { name: real, shape }
   }
 
   let anyBlockCapo = false
@@ -474,12 +478,13 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
     }
     if (draft.kind !== 'stanza' && draft.kind !== 'chorus') return { ...draft, music }
 
-    const shapeCapo = shapeCapoOf(draft)
+    const read = capoReadOf(draft)
+    const shapeCapo = read.dual ? read.fret : 0
     if (draft.blockCapo != null && draft.blockCapo > 0) anyBlockCapo = true
     if (shapeCapo > 0) twin = true
     const rows: ChartRow[] = draft.rows.map((row) => {
       const segs = row.segs.map((s): ChartSeg => {
-        const d = display(s.chord, shapeCapo)
+        const d = display(s.chord, read)
         return { ...s, chord: d.name, shape: d.shape, hasShape: !!d.shape }
       })
       markTight(segs)
