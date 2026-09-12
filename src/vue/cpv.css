@@ -769,6 +769,35 @@
 .cpv-chrome.is-hidden .cpv-hit {
   pointer-events: none;
 }
+.cpv-chrome.is-wide-wrap,
+.cpv-zen-title.is-wide-wrap {
+  display: flex;
+  justify-content: center;
+}
+/* Zen: only the song name in the head band — no card, no controls. */
+.cpv-zen-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 11;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--canvas) 62%, transparent);
+}
+.cpv-zen-title-text {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 4px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .cpv-hit {
   pointer-events: auto;
 }
