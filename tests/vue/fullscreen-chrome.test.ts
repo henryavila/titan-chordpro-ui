@@ -154,6 +154,7 @@ const FS_LABELS = ['Tela cheia', 'Sair da tela cheia', 'Modo imersivo', 'Sair do
 function fsControls(w: Awaited<ReturnType<typeof viewerAt>>) {
   const seen = new Set<Element>()
   return [...w.findAll('[data-fs]'), ...w.findAll('button')].filter((b) => {
+    if (b.element.closest('[data-cpv-zen-title]')) return false
     const hit = b.attributes('data-fs') !== undefined || FS_LABELS.includes(b.attributes('aria-label') ?? '')
     if (!hit || seen.has(b.element)) return false
     seen.add(b.element)

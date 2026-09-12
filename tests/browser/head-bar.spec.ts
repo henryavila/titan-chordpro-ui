@@ -144,3 +144,32 @@ test('wide floating head may grow past the reading column when capo is on', asyn
   expect(place.fsRight, 'Tela cheia wrapped to the left of the card').toBeLessThanOrEqual(16)
   await page.screenshot({ path: test.info().outputPath('wide-head.png'), clip: { x: 0, y: 0, width: 800, height: 160 } })
 })
+
+test('zen pins a plain song name — not a second card', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.locator('[data-cpv-head]').waitFor()
+  await expect(page.locator('[data-cpv-zen-title]')).toHaveCount(0)
+  await expect(page.locator('[data-chart-title]')).toContainText(/Escuta/i)
+  const chart = page.locator('.cpv-page')
+  await chart.dispatchEvent('pointerdown')
+  await chart.dispatchEvent('click')
+  await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
+  await expect.poll(async () =>
+    page.locator('[data-cpv-head]').evaluate((el) => getComputedStyle(el.closest('.cpv-chrome')!).opacity),
+  ).toBe('0')
+  const zen = page.locator('[data-cpv-zen-title]')
+  await expect(zen).toContainText(/Escuta/i)
+  expect(await zen.evaluate((el) => getComputedStyle(el).position)).toMatch(/absolute|fixed/)
+  expect(await zen.locator('.cpv-veil, button').count()).toBe(0)
+  expect(await page.locator('[data-scroll]').evaluate((el) =>
+    el.closest('.cpv-chrome')!.classList.contains('is-hidden'))).toBe(true)
+  await page.screenshot({ path: test.info().outputPath('zen-title.png'), clip: { x: 0, y: 0, width: 390, height: 180 } })
+  const y0 = (await zen.boundingBox())!.y
+  await page.locator('[data-cpv-scroll]').evaluate((el) => {
+    (el as HTMLElement).scrollTop = 220
+  })
+  const y1 = (await zen.boundingBox())!.y
+  expect(Math.abs(y1 - y0), 'plain name left the head band while scrolling').toBeLessThan(2)
+  await page.screenshot({ path: test.info().outputPath('zen-title-scrolled.png'), clip: { x: 0, y: 0, width: 390, height: 180 } })
+})

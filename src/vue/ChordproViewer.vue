@@ -40,7 +40,6 @@ import {
 import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
-import ReadingSwitch from './ReadingSwitch.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
@@ -51,11 +50,20 @@ import ImagePicker from './edit/ImagePicker.vue'
 import ScoreEditor from './edit/ScoreEditor.vue'
 import NewChartDialog from './edit/NewChartDialog.vue'
 import MetaDialog from './edit/MetaDialog.vue'
-import SelectionBar from './edit/SelectionBar.vue'
 import ModePickDialog from './overlay/ModePickDialog.vue'
 import MyVersionPanel from './overlay/MyVersionPanel.vue'
 import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
+import CpvViewHead from './chrome/CpvViewHead.vue'
+import type { ViewHeadModel } from './chrome/view-head'
+import CpvCapoLegend from './chrome/CpvCapoLegend.vue'
+import CpvViewerStates from './chrome/CpvViewerStates.vue'
+import CpvEditHead from './chrome/CpvEditHead.vue'
+import CpvWideDock from './chrome/CpvWideDock.vue'
+import CpvPhoneDock from './chrome/CpvPhoneDock.vue'
+import CpvMoreSheet from './chrome/CpvMoreSheet.vue'
+import CpvEditDock from './chrome/CpvEditDock.vue'
+import CpvEndOffer from './chrome/CpvEndOffer.vue'
 import { useBlockEdit } from './use/useBlockEdit'
 import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
 import { pinWouldFillViewport } from './use/viewportPin'
@@ -414,40 +422,26 @@ watch(strumVisible, async (on) => {
   syncStrumH()
 })
 
-/**
- * Where the batida sits. Under the title normally; when the head is gone
- * (zen / tela cheia) it slides up into that band so the space is not wasted.
- * `headHidden` is declared later — the getter only runs after setup.
- */
-const strumDockTop = computed(() => {
-  if (headHidden.value) return `${chromeTop.value + (fs.value ? 4 : 8)}px`
-  return countTop.value
-})
-
+/** Gap between the identity bar and the first lyric. */
+const pageGap = computed(() => (fs.value ? 6 : compact.value ? 10 : 14))
+const strumSpacer = computed(() => (strumVisible.value ? Math.max(72, strumH.value + 10) : 0))
 const pagePad = computed(() => {
-  // The header changes height (subtitle, key on its own row): measure, do not guess.
-  const extra = fs.value ? 6 : compact.value ? 10 : 14
-  // Measured dock height (+ gap). Guess 72 until the observer lands so the
-  // first paint after toggle does not put lyrics under the strip.
-  const strumBand = strumVisible.value ? Math.max(72, strumH.value + 10) : 0
-  let belowChrome: number
-  if (strumVisible.value && headHidden.value) {
-    // Batida occupies the head's place — only strip + small inset.
-    belowChrome = (fs.value ? 4 : 8) + strumBand
-  } else {
-    // Head band stays reserved (zen without batida must not shove the lyric).
-    belowChrome = Math.max(40, headH.value || 56) + extra + strumBand
-  }
+  // Head is overlay-only. Top pad keeps the lyric under the card (and under
+  // the batida dock when it is open). Zen drops a plain name into that band —
+  // never a second card in the page, or overscroll shows two bars.
+  const belowChrome =
+    Math.max(40, headH.value || 56) + pageGap.value + (isEdit.value ? 0 : strumSpacer.value)
   const top = Math.round(chromeTop.value + belowChrome)
   return `${top}px ${padX.value} ${padBottom.value}`
 })
-/** Batida dock: pinned; above the scroll, never under the lyric. */
+const pageBodyPad = computed(() => '0')
+/** Batida dock: pinned under the title; scrolling the chart must not take it. */
 const strumDockStyle = computed(() => {
   const col =
     pageMax.value === '100%'
       ? `left:${padX.value};right:${padX.value};`
       : `left:max(${padX.value}, calc((100% - ${pageMax.value}) / 2));right:max(${padX.value}, calc((100% - ${pageMax.value}) / 2));`
-  return `position:absolute;top:${strumDockTop.value};${col}z-index:13;pointer-events:auto;`
+  return `position:absolute;top:${countTop.value};${col}z-index:13;pointer-events:auto;`
 })
 
 /**
@@ -1416,6 +1410,37 @@ const fsTitle = computed(() => {
   return fs.value ? 'Sair do modo imersivo' : 'Modo imersivo'
 })
 
+const viewHeadBind = computed((): ViewHeadModel => ({
+  variant: (phone.value ? 'phone' : 'wide') as 'phone' | 'wide',
+  pageMax: pageMax.value,
+  hitClass: headHitClass.value,
+  setlistOn: setlist.on.value,
+  posLabel: setlist.posLabel.value,
+  nextChip: setlist.nextChip.value,
+  title: meta.value.title || 'Sem título',
+  subtitle: meta.value.subtitle || '',
+  phoneSub: phoneSub.value,
+  hasKey: hasKey.value,
+  hasReset: hasReset.value,
+  toneLabel: toneLabel.value,
+  playingKey: playingKey.value,
+  songKeyCaption: songKeyCaption.value,
+  hasCapo: hasCapo.value,
+  capoBtnLabel: capoBtnLabel.value,
+  capoLabel: capoLabel.value,
+  capoHint: capoHint.value,
+  mapOn: mapOn.value,
+  twin: twin.value,
+  canRewrite: canRewrite.value,
+  metaKey: meta.value.key || '',
+  metaTempo: meta.value.tempo,
+  metaTime: meta.value.time,
+  metaDuration: meta.value.duration,
+  canWinScreen: canWinScreen.value,
+  fs: fs.value,
+  fsTitle: fsTitle.value,
+}))
+
 // ------------------------------------------------------------------ edit (E0)
 
 /**
@@ -2009,8 +2034,14 @@ function bindPage(el: unknown) {
   syncScrollRoom()
 }
 
+function bindCapoBox(el: unknown) {
+  capoBox.value = (el as HTMLElement | null) ?? null
+}
+
 function bindHead(el: unknown) {
-  const node = (el as HTMLElement | null) ?? null
+  const raw = el as { $el?: HTMLElement } | HTMLElement | null
+  const node =
+    raw && typeof raw === 'object' && '$el' in raw ? (raw.$el ?? null) : ((raw as HTMLElement | null) ?? null)
   head.value = node
   headRo?.disconnect()
   headRo = null
@@ -2209,27 +2240,8 @@ defineExpose({
 
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
       <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
-        <!-- The capo map, said once: "see G, play E". -->
-        <div v-if="legend" class="cpv-legend" data-legend>
-          <span class="cpv-legend-half">
-            <span class="cpv-legend-dot" style="background:var(--capo);" />
-            <span class="cpv-legend-name" style="color:var(--capo);">{{ legend.shape }}</span>
-            <span class="cpv-legend-note">com capo {{ capo }}</span>
-          </span>
-          <span class="cpv-legend-sep" />
-          <span class="cpv-legend-half">
-            <span class="cpv-legend-dot" style="background:var(--chord);" />
-            <span class="cpv-legend-name" style="color:var(--chord);">{{ legend.real }}</span>
-            <span class="cpv-legend-note">sem capo</span>
-          </span>
-          <button
-            class="cpv-ghost"
-            aria-label="Sair do modo dual"
-            title="Sair do modo dual"
-            style="flex:none;width:24px;height:24px;border-radius:8px;color:var(--muted);font-size:14px;line-height:1;"
-            @click="toggleMap"
-          ><CpvIcon name="x" :size="14" /></button>
-        </div>
+        <div :style="{ padding: pageBodyPad }">
+        <CpvCapoLegend v-if="legend" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
         <ChartBody
           v-bind="chartScale"
           :blocks="blocks"
@@ -2245,756 +2257,194 @@ defineExpose({
           @revert-line="ov.revertLine"
           @edit-score="openScore"
         />
-      </div>
-    </div>
-
-    <!-- A song of the list that never arrived. The rehearsal is not over: the
-         others are still there, and this one can be asked for again. -->
-    <div
-      v-else-if="setlist.failing.value"
-      class="cpv-center"
-      role="alert"
-      data-song-fail
-    >
-      <div class="cpv-veil-2" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);">
-        <div style="display:flex;flex-direction:column;gap:6px;text-align:left;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Não carregou</span>
-          <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.3;text-wrap:pretty;">{{ setlist.current.value?.title }}</span>
-          <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Esta cifra não chegou. As outras da lista continuam disponíveis.</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
-          <button
-            data-song-retry
-            style="height:44px;padding:0 16px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
-            @click="setlist.retry()"
-          >Tentar de novo</button>
-          <button
-            style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;"
-            @click="setlist.open()"
-          >Abrir a lista</button>
-          <span style="flex:1;" />
-          <button
-            aria-label="Música anterior"
-            :disabled="setlist.noPrev.value"
-            :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="goPrev"
-          ><CpvIcon name="chevronLeft" :size="16" /></button>
-          <button
-            aria-label="Próxima música"
-            :disabled="setlist.noNext.value"
-            :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-            style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="goNext"
-          ><CpvIcon name="chevronRight" :size="16" /></button>
         </div>
       </div>
     </div>
 
-    <!-- Waiting on a chart is exactly when a musician wants to skip ahead, so
-         the rehearsal stays navigable. Skeleton stands in for the paper; the
-         list and prev/next stay live. -->
-    <div
-      v-else-if="songLoading"
-      class="cpv-song-skel"
-      data-song-loading
-      role="status"
-      :aria-label="`Buscando ${setlist.current.value?.title || 'cifra'}`"
-    >
-      <div class="cpv-song-skel-head cpv-veil">
-        <button
-          data-setlist-open
-          title="Abrir a lista do ensaio"
-          class="cpv-song-skel-title"
-          @click="setlist.open()"
-        >
-          <span class="cpv-song-skel-pos">{{ setlist.posLabel.value }}</span>
-          <span class="cpv-song-skel-name">
-            <span>{{ setlist.current.value?.title || '…' }}</span>
-            <span>Buscando cifra…</span>
-          </span>
-        </button>
-      </div>
-      <div class="cpv-song-skel-page" aria-hidden="true">
-        <div v-for="n in 6" :key="n" class="cpv-song-skel-row" :style="{ '--i': n }">
-          <span class="cpv-song-skel-bar cpv-song-skel-chords" />
-          <span class="cpv-song-skel-bar cpv-song-skel-lyric" />
-        </div>
-      </div>
-      <div class="cpv-song-skel-dock cpv-veil">
-        <button
-          data-song-prev
-          aria-label="Música anterior"
-          :disabled="setlist.noPrev.value"
-          :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-          class="cpv-song-skel-nav"
-          @click="goPrev"
-        ><CpvIcon name="chevronLeft" :size="16" /></button>
-        <button data-setlist-open class="cpv-song-skel-list" @click="setlist.open()">
-          <span>{{ setlist.posLabel.value }}</span>
-          <span>Lista</span>
-        </button>
-        <button
-          data-song-next
-          aria-label="Próxima música"
-          :disabled="setlist.noNext.value"
-          :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-          class="cpv-song-skel-nav"
-          @click="goNext"
-        ><CpvIcon name="chevronRight" :size="16" /></button>
-      </div>
-    </div>
-
-    <!-- The host handed over a list and it is empty: nothing is selected, so
-         this is not an invitation to author a chart that may already exist. -->
-    <div v-else-if="listEmpty" class="cpv-center" data-empty-setlist>
-      <div class="cpv-ph" />
-      <div style="font-size:15px;font-weight:600;">Nenhuma música na lista</div>
-      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O ensaio ainda não tem repertório.</div>
-    </div>
-
-    <div v-else-if="isEmpty" class="cpv-center">
-      <!-- Whoever may write for everyone starts the chart from here. -->
-      <div v-if="canStartNew" style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;text-align:left;">
-        <div style="display:flex;flex-direction:column;gap:7px;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Para todos</span>
-          <span style="font-size:19px;font-weight:700;letter-spacing:-0.02em;line-height:1.25;">{{ setlist.current.value?.title || meta.title || 'Cifra nova' }}</span>
-          <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Ainda não existe cifra aqui. O que você criar vira a cifra do sistema — todos os músicos passam a ler assim.</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:9px;">
-          <button
-            data-start-import
-            style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--chord-edge);border-radius:15px;background:var(--chord-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
-            @click="startNew('import')"
-          >
-            <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;"><CpvIcon name="fileInput" :size="16" /></span>
-            <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-              <span style="font-size:14.5px;font-weight:700;">Importar</span>
-              <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Link do CifraClub, arquivo .cho ou PDF, ou texto colado — inclusive OnSong.</span>
-            </span>
-          </button>
-          <button
-            data-start-blank
-            style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:15px;background:transparent;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
-            @click="startNew('blank')"
-          >
-            <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);"><CpvIcon name="filePlus" :size="16" /></span>
-            <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-              <span style="font-size:14.5px;font-weight:700;">Começar em branco</span>
-              <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Digitar letra e acordes no editor, do zero.</span>
-            </span>
-          </button>
-        </div>
-      </div>
-      <template v-else>
-        <div class="cpv-ph" />
-        <div style="font-size:15px;font-weight:600;">Nenhuma cifra carregada</div>
-        <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O host ainda não entregou uma fonte ChordPro para este viewer.</div>
-      </template>
-    </div>
-
-    <div v-else-if="fatal" class="cpv-center" role="alert">
-      <div class="cpv-fatal-mark"><CpvIcon name="alertTri" :size="22" /></div>
-      <div style="font-size:15px;font-weight:600;">Não foi possível ler esta cifra</div>
-      <div style="font-size:13px;color:var(--muted);max-width:340px;line-height:1.55;text-wrap:pretty;">{{ fatal }}</div>
-    </div>
-
-    <div v-else-if="isLoading" class="cpv-center">
-      <div class="cpv-spin" />
-      <div style="font-size:13px;color:var(--muted);">Preparando a cifra…</div>
-    </div>
-
+    <CpvViewerStates
+      v-else
+      :failing="setlist.failing.value"
+      :song-loading="songLoading"
+      :list-empty="listEmpty"
+      :is-empty="isEmpty"
+      :can-start-new="canStartNew"
+      :fatal="fatal || ''"
+      :is-loading="isLoading"
+      :fail-title="setlist.current.value?.title || ''"
+      :load-title="setlist.current.value?.title || ''"
+      :pos-label="setlist.posLabel.value"
+      :no-prev="setlist.noPrev.value"
+      :no-next="setlist.noNext.value"
+      :empty-title="setlist.current.value?.title || meta.title || 'Cifra nova'"
+      @retry="setlist.retry()"
+      @open-list="setlist.open()"
+      @prev="goPrev"
+      @next="goNext"
+      @start="startNew"
+    />
     <div class="cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
-    <!-- Phone identity bar — floating card, compact controls. -->
+    <!-- Identity card — fades with zen. A plain name takes the same band while chrome is gone. -->
     <div
-      v-if="!isEdit && phone && isPopulated"
+      v-if="!isEdit && isPopulated"
       class="cpv-chrome"
-      :class="{ 'is-hidden': headHidden }"
+      :class="{ 'is-hidden': headHidden, 'is-wide-wrap': !phone }"
       style="position:absolute;top:0;left:0;right:0;z-index:12;"
       :style="{ padding: chromePad }"
     >
-      <div :ref="bindHead" class="cpv-hit cpv-veil cpv-head is-phone" :class="headHitClass" data-cpv-head>
-        <!-- Nested fill on this bar: cpv-head-chip (tests/vue/head-chip.test.ts). -->
-        <!-- In a rehearsal the title is the way into the list. -->
-        <button
-          v-if="setlist.on.value"
-          data-setlist-open
-          class="cpv-head-id"
-          title="Abrir a lista do ensaio"
-          @click="setlist.open()"
-        >
-          <span class="cpv-head-pos cpv-head-chip">{{ setlist.posLabel.value }}</span>
-          <span class="cpv-head-name">
-            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
-            <span class="cpv-head-sub">{{ phoneSub }}</span>
-          </span>
-        </button>
-        <span v-else class="cpv-head-id">
-          <span class="cpv-head-name">
-            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
-            <span class="cpv-head-sub">{{ phoneSub }}</span>
-          </span>
-        </span>
-        <button
-          v-if="hasKey"
-          data-tone
-          class="cpv-head-chip"
-          aria-label="Tom e capotraste"
-          title="Tom e capotraste"
-          :style="{ background: hasReset ? 'var(--chord-fill)' : 'var(--chord-soft)' }"
-          style="flex:none;display:flex;align-items:center;gap:5px;height:28px;padding:0 8px;border:1px solid var(--chord-edge);border-radius:9px;color:var(--chord);cursor:pointer;font-family:inherit;"
-          @click="toneOpen = true; zen = false; moreOpen = false"
-        >
-          <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ toneLabel }}</span>
-          <CpvIcon name="chevronDown" :size="10" />
-        </button>
-        <!-- Header, not dock: parking the ficha or a landscape width must not move this. -->
-        <button
-          v-if="canWinScreen"
-          data-fs
-          :aria-label="fsTitle"
-          :title="fsTitle"
-          :style="{ width: '28px', height: '28px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
-          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;color:var(--text);cursor:pointer;"
-          @click="toggleFs"
-        ><CpvIcon name="maximize2" :size="14" /></button>
-      </div>
+      <CpvViewHead
+        v-bind="viewHeadBind"
+        v-model:capo-open="capoOpen"
+        :ref="bindHead"
+        @open-setlist="setlist.open()"
+        @open-tone="toneOpen = true; zen = false; moreOpen = false"
+        @toggle-fs="toggleFs"
+        @shift="shift"
+        @reset-tone="resetTone"
+        @rewrite="rewriteToDeclared"
+        @capo-nudge="(n) => setCapo(capo + n)"
+        @toggle-map="toggleMap"
+        @capo-zero="setCapo(0)"
+        @bind-capo="bindCapoBox"
+      />
     </div>
-
-    <!-- Wide top bar — floating card, compact controls. -->
     <div
-      v-if="!isEdit && !phone && isPopulated"
-      class="cpv-chrome"
-      :class="{ 'is-hidden': headHidden }"
-      style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;"
+      v-if="!isEdit && isPopulated && headHidden"
+      class="cpv-zen-title"
+      :class="{ 'is-wide-wrap': !phone }"
+      data-cpv-zen-title
+      aria-hidden="true"
       :style="{ padding: chromePad }"
     >
-      <div
-        :ref="bindHead"
-        class="cpv-hit cpv-veil cpv-head is-wide"
-        :class="headHitClass"
-        data-cpv-head
-        :style="{ '--cpv-page-max': pageMax }"
-      >
-        <!-- Nested fill on this bar: cpv-head-chip (tests/vue/head-chip.test.ts). -->
-        <button
-          v-if="setlist.on.value"
-          data-setlist-open
-          class="cpv-head-id"
-          title="Abrir a lista do ensaio"
-          @click="setlist.open()"
-        >
-          <span class="cpv-head-pos cpv-head-chip">{{ setlist.posLabel.value }}</span>
-          <span class="cpv-head-name">
-            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
-            <span class="cpv-head-sub">{{ setlist.nextChip.value }}</span>
-          </span>
-        </button>
-        <div v-else class="cpv-head-id">
-          <span class="cpv-head-name">
-            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
-            <span v-if="meta.subtitle" class="cpv-head-sub">{{ meta.subtitle }}</span>
-          </span>
-        </div>
-        <div v-if="meta.tempo || meta.time || meta.duration" class="cpv-head-meta">
-          <span v-if="meta.tempo">{{ meta.tempo }} BPM</span>
-          <span v-if="meta.time">{{ meta.time }}</span>
-          <span v-if="meta.duration">{{ meta.duration }}</span>
-        </div>
-        <div v-if="hasKey" ref="capoBox" style="position:relative;flex:none;">
-          <div class="cpv-keypill cpv-head-chip">
-            <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(-1)">−</button>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 5px;">
-              <span style="display:flex;align-items:baseline;gap:5px;">
-                <span style="font-size:7.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-                <span data-display-key style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);line-height:1;">{{ playingKey }}</span>
-              </span>
-              <span v-if="songKeyCaption" data-tone-shift style="font-size:9.5px;font-weight:600;color:var(--muted);line-height:1.2;">{{ songKeyCaption }}</span>
-            </div>
-            <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(1)">+</button>
-            <span class="cpv-keypill-split" aria-hidden="true" />
-            <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:0;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
-              {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
-            </button>
-            <button v-if="hasReset" title="Voltar ao tom original, sem capo" style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;" @click="resetTone">Original</button>
-            <button
-              v-if="canRewrite"
-              data-rewrite-go
-              title="Reescrever os acordes no tom declarado"
-              style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;"
-              @click="rewriteToDeclared"
-            >Reescrever em {{ meta.key }}</button>
-          </div>
-          <div v-if="capoOpen" class="cpv-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:cpv-rise .18s ease-out;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Capotraste</span>
-              <button class="cpv-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);" @click="capoOpen = false"><CpvIcon name="x" :size="14" /></button>
-            </div>
-            <div style="display:flex;align-items:center;gap:7px;">
-              <button aria-label="Capo abaixo" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="setCapo(capo - 1)">−</button>
-              <div style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</div>
-              <button aria-label="Capo acima" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="setCapo(capo + 1)">+</button>
-            </div>
-            <div style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;min-height:17px;">{{ capoHint }}</div>
-            <button
-              data-dual
-              role="switch"
-              :aria-checked="mapOn"
-              :disabled="!hasCapo"
-              :style="{
-                border: `1px solid ${hasCapo && twin ? 'var(--chord-edge)' : 'var(--line)'}`,
-                background: hasCapo && twin ? 'var(--chord-soft)' : 'transparent',
-                opacity: hasCapo ? '1' : '0.45',
-                cursor: hasCapo ? 'pointer' : 'default',
-              }"
-              style="display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:12px;color:var(--text);font-family:inherit;text-align:left;"
-              @click="hasCapo && toggleMap()"
-            >
-              <span :style="{ background: hasCapo && twin ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-                <span :style="{ left: hasCapo && twin ? '14px' : '2px', background: hasCapo && twin ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-              </span>
-              <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-                <span style="font-size:12.5px;font-weight:600;">Modo dual</span>
-                <span style="font-size:11px;line-height:1.4;color:var(--muted);text-wrap:pretty;min-height:30px;">{{ hasCapo ? (mapOn ? 'Duas cifras na mesma linha: quem está com capo e quem não está.' : 'Desligado, a cifra vira as formas do capo — quem toca sozinho.') : 'Liga com o capotraste: duas cifras, ou só as formas.' }}</span>
-              </span>
-            </button>
-            <button
-              :disabled="!hasCapo"
-              :style="{ opacity: hasCapo ? '1' : '0.4', cursor: hasCapo ? 'pointer' : 'default' }"
-              style="height:30px;border:0;border-radius:9px;background:var(--chord-fill);color:var(--chord);font-size:12px;font-weight:600;"
-              @click="hasCapo && setCapo(0)"
-            >Tirar o capo</button>
-          </div>
-        </div>
-        <button
-          v-if="canWinScreen"
-          data-fs
-          :aria-label="fsTitle"
-          :title="`${fsTitle} (F)`"
-          :style="{ width: '30px', height: '30px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
-          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;color:var(--text);cursor:pointer;"
-          @click="toggleFs"
-        ><CpvIcon name="maximize2" :size="14" /></button>
-      </div>
+      <span class="cpv-zen-title-text" :style="!phone ? { maxWidth: pageMax } : undefined">{{
+        meta.title || 'Sem título'
+      }}</span>
     </div>
-
-    <!-- Edit top bar — same floating-card rules as the view identity head. -->
-    <div
+    <CpvEditHead
       v-if="isEdit"
-      style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;justify-content:center;"
-      :style="{ padding: chromePad }"
-    >
-      <div
-        :ref="bindHead"
-        class="cpv-veil cpv-head is-edit"
-        :class="[phone ? 'is-phone' : 'is-wide', isContentEdit ? 'is-content' : '']"
-        data-cpv-head
-        :style="{ '--cpv-page-max': pageMax }"
-      >
-        <!-- The badge is the whole difference between the two edits: it says
-             where this is landing, in the colour of the risk it carries. -->
-        <span
-          data-edit-badge
-          class="cpv-edit-badge"
-          :style="{
-            background: wMode === 'content' ? 'var(--danger-soft)' : 'var(--chord-fill)',
-            color: wMode === 'content' ? 'var(--danger)' : 'var(--chord)',
-          }"
-        >{{ editBadge }}</span>
+      :phone="phone"
+      :compact="compact"
+      :content-edit="isContentEdit"
+      :page-max="pageMax"
+      :chrome-pad="chromePad"
+      :edit-badge="editBadge"
+      :w-mode="wMode"
+      :title="meta.title || 'Sem título'"
+      :subtitle="meta.subtitle || ''"
+      :meta-gap-label="metaGapLabel"
+      :meta-summary="metaSummary"
+      :meta-gaps="metaGaps.length"
+      :dirty="dirty"
+      :can-undo="canUndo"
+      :can-redo="canRedo"
+      :confirm-discard="confirmDiscard"
+      :discard-label="discardLabel"
+      @bind-head="bindHead"
+      @open-meta="openMeta"
+      @undo="undo"
+      @redo="redo"
+      @discard="discard"
+      @save="save"
+      @read="exitEdit"
+    />
 
-        <!-- Name only here. Duration/key live behind Metadados — never both. -->
-        <div class="cpv-head-id">
-          <span class="cpv-head-name">
-            <span data-chart-title class="cpv-head-title">{{ meta.title || 'Sem título' }}</span>
-            <span v-if="meta.subtitle" class="cpv-head-sub">{{ meta.subtitle }}</span>
-            <span v-else-if="wMode === 'local' && !compact" class="cpv-head-sub">ajuste local · ainda não vai para todos</span>
-          </span>
-        </div>
-
-        <div class="cpv-head-edit-acts">
-          <button
-            data-meta-open
-            type="button"
-            class="cpv-head-edit-meta"
-            :title="metaGapLabel || `Metadados · ${metaSummary}`"
-            :aria-label="metaGapLabel ? `Metadados — ${metaGapLabel}` : 'Editar metadados'"
-            :style="{
-              borderColor: metaGaps.length ? 'var(--danger)' : 'var(--chord-edge)',
-              background: metaGaps.length ? 'var(--danger-soft)' : 'var(--chord-soft)',
-              color: metaGaps.length ? 'var(--danger)' : 'var(--chord)',
-            }"
-            @click="openMeta"
-          >
-            <CpvIcon name="list" :size="14" />
-            <span style="font-size:12px;font-weight:700;">Metadados</span>
-            <span
-              v-if="!compact && metaSummary !== 'preencher'"
-              style="font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;opacity:0.8;"
-            >{{ metaSummary }}</span>
-            <span
-              v-else-if="metaGaps.length"
-              style="font-size:10px;font-weight:700;opacity:0.85;"
-            >falta</span>
-          </button>
-
-          <span
-            v-if="dirty"
-            title="Alterações não salvas"
-            :style="{ display: compact ? 'none' : 'flex' }"
-            style="align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:9px;background:var(--surface);font-size:11px;font-weight:600;color:var(--text);"
-          ><span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />não salvo</span>
-          <button
-            data-undo
-            title="Desfazer (Ctrl+Z)"
-            aria-label="Desfazer"
-            :disabled="!canUndo"
-            :style="{ opacity: canUndo ? '1' : '0.4', width: compact ? '32px' : '34px', height: compact ? '32px' : '34px' }"
-            style="border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="undo"
-          ><CpvIcon name="undo2" :size="16" /></button>
-          <button
-            v-if="canRedo"
-            data-redo
-            title="Refazer (Ctrl+Shift+Z)"
-            aria-label="Refazer"
-            :style="{ width: compact ? '32px' : '34px', height: compact ? '32px' : '34px' }"
-            style="border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="redo"
-          ><CpvIcon name="redo2" :size="16" /></button>
-          <span
-            v-if="wMode === 'local'"
-            style="display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:9px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-size:11px;font-weight:600;color:var(--chord);"
-          ><span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />salvo neste celular</span>
-          <template v-if="dirty">
-            <button
-              data-discard
-              title="Voltar ao último salvo"
-              :style="{ color: confirmDiscard ? 'var(--danger)' : 'var(--muted)', height: compact ? '32px' : '34px' }"
-              style="padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-              @click="discard"
-            >{{ discardLabel }}</button>
-            <button
-              data-save
-              title="Salvar — passa a valer para todos (Ctrl+S)"
-              :style="{ height: compact ? '32px' : '34px', padding: compact ? '0 11px' : '0 13px' }"
-              style="border:0;border-radius:10px;background:var(--danger);color:var(--chord-ink);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
-              @click="save"
-            >{{ compact ? 'Salvar' : 'Salvar para todos' }}</button>
-          </template>
-          <button
-            data-read
-            title="Voltar para leitura"
-            :style="{ height: compact ? '32px' : '34px' }"
-            style="padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
-            @click="exitEdit"
-          >Ler</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Wide bottom bar -->
-    <div
+    <CpvWideDock
       v-if="!isEdit && !phone && isPopulated"
-      class="cpv-chrome"
-      :class="{ 'is-hidden': chromeHidden }"
-      style="position:absolute;bottom:0;left:0;right:0;z-index:13;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px 18px;"
-    >
-      <!-- The reader's own version is never a hidden state: it says so, and
-           the original is one tap away. -->
-      <div v-if="showMine" class="cpv-hit cpv-veil-2 cpv-mine-switch" data-mine-switch>
-        <button
-          data-read-mine
-          :style="{
-            border: `1px solid ${ov.showOriginal.value ? 'var(--line)' : 'var(--chord-edge)'}`,
-            background: ov.showOriginal.value ? 'transparent' : 'var(--chord-fill)',
-            color: ov.showOriginal.value ? 'var(--muted)' : 'var(--chord)',
-          }"
-          @click="toggleOriginal(false)"
-        >{{ ov.mineLabel.value }}</button>
-        <button
-          data-read-orig
-          :style="{
-            border: `1px solid ${ov.showOriginal.value ? 'var(--sel-line)' : 'var(--line)'}`,
-            background: ov.showOriginal.value ? 'var(--sel)' : 'transparent',
-            color: ov.showOriginal.value ? 'var(--text)' : 'var(--muted)',
-          }"
-          @click="toggleOriginal(true)"
-        >Original</button>
-        <button
-          class="cpv-ghost"
-          data-open-my
-          aria-label="Ver e reverter meus ajustes"
-          title="Ver e reverter meus ajustes"
-          style="width:30px;height:30px;border-radius:10px;color:var(--muted);font-size:15px;line-height:1;"
-          @click="ov.myPanel.value = true"
-        ><CpvIcon name="ellipsis" :size="16" /></button>
-      </div>
+      :hidden="chromeHidden"
+      :show-mine="showMine"
+      :mine-label="ov.mineLabel.value"
+      :show-original="ov.showOriginal.value"
+      :hint-fit="hintFit"
+      :scrolling="scrolling"
+      :mul="mul"
+      :eta-label="etaLabel"
+      :progress="progress"
+      :setlist-on="setlist.on.value"
+      :no-prev="setlist.noPrev.value"
+      :no-next="setlist.noNext.value"
+      :pos-label="setlist.posLabel.value"
+      :scroll-title="scrollTitle"
+      :scroll-off="scrollOff"
+      :roll-live="rollLive"
+      :fit-on="fitOn"
+      :letra="activeLens === 'letra'"
+      :has-key="hasKey"
+      :nashville-on="nashvilleOn"
+      :hide-comments="hideComments"
+      :met-running="met.running.value"
+      :met-bpm="met.bpm.value"
+      :has-strum="hasStrum"
+      :strum-on="strumOn"
+      :theme-title="themeTitle"
+      :theme-icon="themeIcon(themeMode)"
+      :theme-label="themeLabel(themeMode)"
+      :can-edit="canEditNow"
+      :dirty="dirty"
+      @original="toggleOriginal"
+      @open-my="ov.myPanel.value = true"
+      @dismiss-hint="dismissHint(true)"
+      @slower="mul = viewerMulStep(mul, 'down')"
+      @faster="mul = viewerMulStep(mul, 'up')"
+      @prev="goPrev"
+      @open-list="setlist.open()"
+      @next="goNext"
+      @toggle-scroll="toggleScroll"
+      @smaller-type="bias = Math.max(-3, bias - 1)"
+      @bigger-type="bias = Math.min(5, bias + 1)"
+      @toggle-fit="toggleFit"
+      @cifra="showCifra"
+      @letra="showLetra"
+      @toggle-nashville="toggleNashville"
+      @toggle-comments="setHideComments(!hideComments)"
+      @toggle-met="toggleMetPanel"
+      @toggle-strum="toggleStrum"
+      @theme="requestTheme"
+      @edit="enterEdit"
+      @export="sheet = true"
+    />
 
-      <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;max-width:360px;padding:7px 8px 7px 13px;border-radius:13px;animation:cpv-rise .25s ease-out;">
-        <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
-        <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:26px;height:26px;color:var(--muted);" @click="dismissHint(true)"><CpvIcon name="x" :size="14" /></button>
-      </div>
-
-      <div v-if="scrolling" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:10px;padding:7px 8px 7px 14px;border-radius:14px;animation:cpv-rise .2s ease-out;">
-        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Velocidade</span>
-        <button aria-label="Mais devagar" title="Mais devagar (←)" style="width:32px;height:30px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:15px;line-height:1;cursor:pointer;" @click="mul = viewerMulStep(mul, 'down')">−</button>
-        <span style="min-width:56px;text-align:center;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">{{ mul.toFixed(2) }}×</span>
-        <button aria-label="Mais rápido" title="Mais rápido (→)" style="width:32px;height:30px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:15px;line-height:1;cursor:pointer;" @click="mul = viewerMulStep(mul, 'up')">+</button>
-        <span style="width:1px;height:22px;background:var(--line);" />
-        <span style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;min-width:52px;padding-right:6px;">
-          <span data-eta style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text);">−{{ etaLabel }}</span>
-          <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ Math.round(progress * 100) }}%</span>
-        </span>
-      </div>
-
-      <div class="cpv-hit cpv-veil" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
-        <template v-if="setlist.on.value">
-          <button
-            data-song-prev
-            aria-label="Música anterior"
-            title="Música anterior"
-            :disabled="setlist.noPrev.value"
-            :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="goPrev"
-          ><CpvIcon name="chevronLeft" :size="16" /></button>
-          <button
-            data-setlist-open
-            title="Abrir a lista do ensaio"
-            style="height:38px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;"
-            @click="setlist.open()"
-          >
-            <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
-            <span style="flex:none;font-size:12px;font-weight:600;color:var(--muted);">Lista</span>
-            <CpvIcon name="listMusic" :size="14" />
-          </button>
-          <button
-            data-song-next
-            aria-label="Próxima música"
-            title="Próxima música"
-            :disabled="setlist.noNext.value"
-            :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-            style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="goNext"
-          ><CpvIcon name="chevronRight" :size="16" /></button>
-          <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-        </template>
-        <button
-          data-scroll
-          :title="scrollTitle"
-          :disabled="scrollOff"
-          :style="{ background: rollLive ? 'var(--pill)' : 'transparent', color: rollLive ? 'var(--pill-ink)' : 'var(--text)', border: `1px solid ${rollLive ? 'var(--pill)' : 'var(--line)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
-          class="cpv-bar-btn"
-          style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:9px;"
-          @click="toggleScroll"
-        >
-          <CpvIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ rollLive ? 'Parar' : 'Rolar' }}
-        </button>
-        <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-        <button class="cpv-ghost" aria-label="Diminuir tipografia" title="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
-        <button class="cpv-ghost" aria-label="Aumentar tipografia" title="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
-        <button
-          data-fit
-          title="Modo ajuste ao espaço"
-          :style="{ background: fitOn ? 'var(--sel)' : 'transparent', border: `1px solid ${fitOn ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }"
-          class="cpv-bar-btn"
-          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="toggleFit"
-        >
-          <CpvIcon name="scan" :size="16" />Ajuste
-        </button>
-        <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-        <ReadingSwitch
-          variant="bar"
-          :letra="activeLens === 'letra'"
-          @cifra="showCifra"
-          @letra="showLetra"
-        />
-        <button
-          data-lens="nashville"
-          title="Nashville — graus no lugar dos nomes"
-          class="cpv-bar-btn"
-          :disabled="!hasKey"
-          :aria-pressed="nashvilleOn ? 'true' : 'false'"
-          :style="{
-            background: nashvilleOn ? 'var(--chord-fill)' : 'transparent',
-            color: nashvilleOn ? 'var(--chord)' : 'var(--text)',
-            border: `1px solid ${nashvilleOn ? 'var(--chord-edge)' : 'var(--line)'}`,
-            opacity: hasKey ? '1' : '0.4',
-            cursor: hasKey ? 'pointer' : 'default',
-          }"
-          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
-          @click="toggleNashville"
-        >
-          <CpvIcon name="glasses" :size="16" />Graus
-        </button>
-        <button
-          data-comments-toggle
-          :title="hideComments ? 'Mostrar comentários de ensaio' : 'Ocultar comentários de ensaio'"
-          class="cpv-bar-btn"
-          :aria-pressed="hideComments ? 'true' : 'false'"
-          :style="{
-            background: hideComments ? 'var(--sel)' : 'transparent',
-            color: 'var(--text)',
-            border: `1px solid ${hideComments ? 'var(--sel-line)' : 'var(--line)'}`,
-          }"
-          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="setHideComments(!hideComments)"
-        >
-          <CpvIcon name="eyeOff" :size="16" />Comentários
-        </button>
-        <button
-          data-met-btn
-          title="Metrônomo (M)"
-          class="cpv-bar-btn"
-          :style="{ background: met.running.value ? 'var(--chord-fill)' : 'transparent', color: met.running.value ? 'var(--chord)' : 'var(--text)', border: `1px solid ${met.running.value ? 'var(--chord-edge)' : 'var(--line)'}` }"
-          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;"
-          @click="toggleMetPanel"
-        >
-          <CpvIcon name="metronome" :size="16" />{{ met.running.value ? `${met.bpm.value} BPM` : 'Metrônomo' }}
-        </button>
-        <button
-          v-if="hasStrum"
-          data-strum-btn
-          title="Batida"
-          class="cpv-bar-btn"
-          :style="{ background: strumOn ? 'var(--chord-fill)' : 'transparent', color: strumOn ? 'var(--chord)' : 'var(--text)', border: `1px solid ${strumOn ? 'var(--chord-edge)' : 'var(--line)'}` }"
-          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="toggleStrum"
-        >↓↑ Batida</button>
-        <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-        <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="requestTheme">
-          <CpvIcon :name="themeIcon(themeMode)" :size="16" />{{ themeLabel(themeMode) }}
-        </button>
-        <button
-          v-if="canEditNow"
-          data-edit
-          class="cpv-ghost"
-          aria-label="Editar esta cifra"
-          :title="dirty ? 'Editar esta cifra · rascunho' : 'Editar esta cifra'"
-          style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
-          @click="enterEdit"
-        >
-          <CpvIcon name="pencil" :size="16" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
-        </button>
-        <button class="cpv-ghost" aria-label="Exportar" title="Exportar CHO, PDF ou slides" style="width:36px;height:36px;" @click="sheet = true"><CpvIcon name="download" :size="16" /></button>
-      </div>
-    </div>
-
-    <!-- Phone dock -->
-    <div
+    <CpvPhoneDock
       v-if="!isEdit && phone && isPopulated"
-      class="cpv-chrome"
-      :class="{ 'is-hidden': chromeHidden || moreOpen }"
-      style="position:absolute;bottom:0;left:0;right:0;z-index:13;padding:0 10px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:stretch;gap:8px;"
-    >
-      <!-- No switch here: on a phone the dock is already full, so the personal
-           version lives in "Mais" — one row to read the original, one to
-           revert. -->
-      <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:cpv-rise .25s ease-out;">
-        <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
-        <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);" @click="dismissHint(true)"><CpvIcon name="x" :size="14" /></button>
-      </div>
-
-      <div class="cpv-hit cpv-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
-        <div style="padding:6px;border-bottom:1px solid var(--line-soft);">
-          <ReadingSwitch
-            variant="dock"
-            :letra="activeLens === 'letra'"
-            :height="dockCtrlH"
-            @cifra="showCifra"
-            @letra="showLetra"
-          />
-        </div>
-        <!-- The list gets its own row: the dock below is already full. -->
-        <div v-if="setlist.on.value" style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--line-soft);">
-          <button
-            data-song-prev
-            aria-label="Música anterior"
-            :disabled="setlist.noPrev.value"
-            :style="{ opacity: setlist.noPrev.value ? '0.32' : '1' }"
-            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="goPrev"
-          ><CpvIcon name="chevronLeft" :size="16" /></button>
-          <button
-            data-setlist-open
-            title="Abrir a lista do ensaio"
-            style="flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:13px;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:9px;"
-            @click="setlist.open()"
-          >
-            <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ setlist.posLabel.value }}</span>
-            <span style="flex:1;min-width:0;font-size:11.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">{{ setlist.nextChipShort.value }}</span>
-            <CpvIcon name="listMusic" :size="14" />
-          </button>
-          <button
-            data-song-next
-            aria-label="Próxima música"
-            :disabled="setlist.noNext.value"
-            :style="{ opacity: setlist.noNext.value ? '0.32' : '1' }"
-            style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-            @click="goNext"
-          ><CpvIcon name="chevronRight" :size="16" /></button>
-        </div>
-        <div v-if="scrolling" style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line-soft);">
-          <button aria-label="Mais devagar" style="flex:none;width:40px;height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="mul = viewerMulStep(mul, 'down')">−</button>
-          <span style="flex:none;min-width:58px;text-align:center;font-family:'Space Mono',monospace;font-size:13.5px;font-weight:700;color:var(--text);">{{ mul.toFixed(2) }}×</span>
-          <button aria-label="Mais rápido" style="flex:none;width:40px;height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="mul = viewerMulStep(mul, 'up')">+</button>
-          <span style="flex:1;" />
-          <span style="flex:none;display:flex;align-items:baseline;gap:8px;padding-right:6px;font-family:'Space Mono',monospace;">
-            <span data-eta style="font-size:12px;color:var(--text);">−{{ etaLabel }}</span>
-            <span style="font-size:10px;letter-spacing:0.08em;color:var(--muted);font-weight:700;">{{ Math.round(progress * 100) }}%</span>
-          </span>
-        </div>
-        <div
-          :style="{ gap: width < 360 ? '3px' : '4px' }"
-          style="display:flex;align-items:center;justify-content:space-between;padding:6px;"
-        >
-          <button
-            data-scroll
-            :aria-label="dockPlayName"
-            :title="scrollTitle"
-            :disabled="scrollOff"
-            :style="{ background: rollLive ? 'var(--pill)' : 'var(--chord)', color: 'var(--chord-ink)', minWidth: dockCtrlH, height: dockCtrlH, padding: dockPlayLabeled ? '0 20px' : '0', gap: dockPlayLabeled ? '9px' : '0', opacity: scrollOff ? '0.38' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
-            style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
-            @click="toggleScroll"
-          >
-            <CpvIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ dockPlayLabel }}
-          </button>
-          <span :style="{ height: dockCtrlH }" style="flex:none;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:14px;background:var(--surface);">
-            <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
-            <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
-          </span>
-          <button
-            v-if="canEditNow"
-            data-edit
-            class="cpv-ghost"
-            aria-label="Editar esta cifra"
-            title="Editar esta cifra"
-            :style="{ width: dockIconSize, height: dockCtrlH }"
-            style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
-            @click="enterEdit"
-          ><CpvIcon name="pencil" :size="16" /></button>
-          <button
-            data-fit
-            class="cpv-ghost"
-            aria-label="Ajuste ao espaço"
-            title="Modo ajuste ao espaço"
-            :aria-pressed="fitOn ? 'true' : 'false'"
-            :style="{
-              width: dockIconSize,
-              height: dockCtrlH,
-              background: fitOn ? 'var(--sel)' : undefined,
-              border: fitOn ? '1px solid var(--sel-line)' : undefined,
-            }"
-            style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
-            @click="toggleFit"
-          ><CpvIcon name="scan" :size="16" /></button>
-          <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;" @click="moreOpen = true"><CpvIcon name="ellipsis" :size="16" /></button>
-        </div>
-      </div>
-    </div>
+      :hidden="chromeHidden || moreOpen"
+      :hint-fit="hintFit"
+      :letra="activeLens === 'letra'"
+      :dock-ctrl-h="dockCtrlH"
+      :setlist-on="setlist.on.value"
+      :no-prev="setlist.noPrev.value"
+      :no-next="setlist.noNext.value"
+      :pos-label="setlist.posLabel.value"
+      :next-chip-short="setlist.nextChipShort.value"
+      :scrolling="scrolling"
+      :mul="mul"
+      :eta-label="etaLabel"
+      :progress="progress"
+      :width="width"
+      :dock-play-name="dockPlayName"
+      :scroll-title="scrollTitle"
+      :scroll-off="scrollOff"
+      :roll-live="rollLive"
+      :dock-play-labeled="dockPlayLabeled"
+      :dock-play-label="dockPlayLabel"
+      :dock-type-w="dockTypeW"
+      :bp="bp"
+      :can-edit="canEditNow"
+      :dock-icon-size="dockIconSize"
+      :fit-on="fitOn"
+      @dismiss-hint="dismissHint(true)"
+      @cifra="showCifra"
+      @letra="showLetra"
+      @prev="goPrev"
+      @open-list="setlist.open()"
+      @next="goNext"
+      @slower="mul = viewerMulStep(mul, 'down')"
+      @faster="mul = viewerMulStep(mul, 'up')"
+      @toggle-scroll="toggleScroll"
+      @smaller-type="bias = Math.max(-3, bias - 1)"
+      @bigger-type="bias = Math.min(5, bias + 1)"
+      @edit="enterEdit"
+      @toggle-fit="toggleFit"
+      @more="moreOpen = true"
+    />
 
     <button
       v-if="queueEntry"
@@ -3008,82 +2458,29 @@ defineExpose({
       <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />Sugestões · {{ ov.pendingCount.value }}
     </button>
 
-    <!-- Edit bottom bar: what is selected, what is on the clipboard, the dock -->
-    <div
+    <CpvEditDock
       v-if="isEdit && !srcOpen"
-      style="position:absolute;bottom:0;left:0;right:0;z-index:13;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 16px 18px;pointer-events:none;"
-    >
-      <div v-if="editHint" class="cpv-clip-bar cpv-veil-2" data-edit-hint style="border-style:solid;">
-        <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
-          Toque na linha para editar a letra · segure o acorde e arraste até a sílaba ·
-          <CpvIcon name="gripV" :size="14" /> seleciona e reordena o bloco.
-        </span>
-        <button
-          class="cpv-ghost"
-          aria-label="Entendi"
-          style="flex:none;width:26px;height:26px;color:var(--muted);font-size:14px;line-height:1;"
-          @click="markEditSeen()"
-        ><CpvIcon name="x" :size="14" /></button>
-      </div>
-
-      <div v-if="bedit.clip.value" class="cpv-clip-bar cpv-veil-2">
-        <span style="font-size:11.5px;line-height:1.4;color:var(--text);text-wrap:pretty;">
-          Harmonia de <strong style="color:var(--chord);">{{ bedit.clip.value.label }}</strong> na mão — toque em “Colar harmonia aqui” nos blocos destino.
-        </span>
-        <button
-          style="flex:none;height:28px;padding:0 10px;border:0;border-radius:9px;background:var(--surface);color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
-          @click="bedit.clip.value = null"
-        >Dispensar</button>
-      </div>
-
-      <SelectionBar
-        v-if="bedit.sel.value !== null"
-        :edit="bedit"
-        :compact="compact"
-        :w-mode="wMode"
-        @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
-      />
-
-      <div class="cpv-veil" style="pointer-events:auto;position:relative;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
-        <div v-if="bedit.insertMenu.value" class="cpv-insert-menu cpv-veil-2">
-          <div class="cpv-insert-where">{{ bedit.insertWhere.value }}</div>
-          <button
-            v-for="it in insertItems"
-            :key="it.label"
-            class="cpv-insert-item"
-            type="button"
-            @click="it.go()"
-          ><span><CpvIcon :name="it.icon" :size="16" /></span>{{ it.label }}</button>
-        </div>
-
-        <button
-          data-insert
-          title="Inserir bloco"
-          :style="{
-            border: `1px solid ${bedit.insertMenu.value ? 'var(--sel-line)' : 'var(--line)'}`,
-            background: bedit.insertMenu.value ? 'var(--sel)' : 'transparent',
-          }"
-          style="height:36px;padding:0 13px;border-radius:12px;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="bedit.toggleInsertMenu()"
-        ><CpvIcon name="plus" :size="16" style="color:var(--chord)" />Inserir</button>
-
-        <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-
-        <button
-          v-if="isContentEdit && capabilities.sourcePane !== false"
-          data-source
-          title="Fonte ChordPro assistida"
-          style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="srcOpen = true"
-        >
-          <CpvIcon name="braces" :size="16" />Fonte
-          <span v-if="!lint.ok" title="Diretiva sem par nesta cifra" style="width:6px;height:6px;border-radius:50%;background:var(--danger);" />
-        </button>
-        <button class="cpv-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="bias = Math.max(-3, bias - 1)">A−</button>
-        <button class="cpv-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="bias = Math.min(5, bias + 1)">A+</button>
-        <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="width:36px;height:36px;" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="16" /></button>
-      </div>
-    </div>
+      :compact="compact"
+      :edit-hint="editHint"
+      :clip-label="bedit.clip.value?.label ?? null"
+      :edit="bedit"
+      :w-mode="wMode"
+      :insert-where="bedit.insertWhere.value"
+      :insert-open="bedit.insertMenu.value"
+      :insert-items="insertItems"
+      :show-source="isContentEdit && capabilities.sourcePane !== false"
+      :lint-ok="lint.ok"
+      :theme-title="themeTitle"
+      :theme-icon="themeIcon(themeMode)"
+      @seen-hint="markEditSeen()"
+      @drop-clip="bedit.clip.value = null"
+      @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
+      @insert="bedit.toggleInsertMenu()"
+      @source="srcOpen = true"
+      @smaller-type="bias = Math.max(-3, bias - 1)"
+      @bigger-type="bias = Math.min(5, bias + 1)"
+      @theme="requestTheme"
+    />
 
     <div v-if="isEdit && bedit.placing.value" class="cpv-placing-bar cpv-veil-2" data-placing>
       <span style="font-size:11.5px;color:var(--text);">Toque na sílaba onde o acorde entra.</span>
@@ -3144,35 +2541,13 @@ defineExpose({
       :style="{ bottom: toastBottom }"
     >{{ toast }}</div>
 
-    <!-- The song ended. Offer the next one; never take the decision. -->
-    <div
+    <CpvEndOffer
       v-if="setlist.endOffer.value && !isEdit"
-      :style="{ bottom: offerBottom }"
-      style="position:absolute;left:0;right:0;z-index:15;display:flex;justify-content:center;padding:0 12px;pointer-events:none;"
-    >
-      <div
-        class="cpv-veil-2"
-        data-end-offer
-        style="pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:420px;padding:9px 10px 9px 15px;border-radius:16px;border:1px solid var(--chord-edge);box-shadow:var(--shadow);animation:cpv-rise .2s ease-out;"
-      >
-        <span style="min-width:0;display:flex;flex-direction:column;gap:2px;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Fim da música</span>
-          <span style="font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ setlist.nextTitle.value }}</span>
-        </span>
-        <button
-          data-end-next
-          style="flex:none;height:40px;padding:0 15px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
-          @click="endNext"
-        >Próxima</button>
-        <button
-          class="cpv-ghost"
-          aria-label="Ficar nesta música"
-          title="Ficar nesta música"
-          style="flex:none;width:34px;height:34px;color:var(--muted);font-size:16px;"
-          @click="setlist.dismissEnd()"
-        ><CpvIcon name="x" :size="16" /></button>
-      </div>
-    </div>
+      :next-title="setlist.nextTitle.value"
+      :bottom="offerBottom"
+      @next="endNext"
+      @dismiss="setlist.dismissEnd()"
+    />
 
     <div v-if="guard.bad.value" class="cpv-surface-warn" role="alert">
       <CpvIcon name="alertTri" :size="16" style="color:var(--danger)" />
@@ -3326,58 +2701,35 @@ defineExpose({
       @rewrite="rewriteToDeclared"
     />
 
-    <div v-if="moreOpen && compact" style="position:absolute;inset:0;z-index:27;">
-      <div class="cpv-scrim" @click="moreOpen = false" />
-      <div class="cpv-bottom-sheet cpv-veil-2" role="dialog" aria-label="Mais controles" style="gap:6px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Mais controles</span>
-          <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="moreOpen = false"><CpvIcon name="x" :size="16" /></button>
-        </div>
-        <button data-theme-btn class="cpv-surface-btn cpv-more-item" :title="themeTitle" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="18" /><span class="cpv-more-copy">Tema</span><span>{{ themeLabel(themeMode) }}</span></button>
-        <button
-          class="cpv-surface-btn cpv-more-item"
-          data-lens="nashville"
-          :disabled="!hasKey"
-          :aria-pressed="nashvilleOn ? 'true' : 'false'"
-          :style="{
-            borderColor: nashvilleOn ? 'var(--chord-edge)' : undefined,
-            background: nashvilleOn ? 'var(--chord-soft)' : undefined,
-            opacity: hasKey ? '1' : '0.45',
-          }"
-          @click="toggleNashville"
-        ><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Nashville</span><span>{{ nashvilleHint }}</span></button>
-        <button
-          class="cpv-surface-btn cpv-more-item"
-          data-comments-toggle
-          :aria-pressed="hideComments ? 'true' : 'false'"
-          :style="{
-            borderColor: hideComments ? 'var(--sel-line)' : undefined,
-            background: hideComments ? 'var(--sel)' : undefined,
-          }"
-          @click="setHideComments(!hideComments)"
-        ><CpvIcon name="eyeOff" :size="18" /><span class="cpv-more-copy">Comentários de ensaio</span><span>{{ hideComments ? 'ocultos' : 'visíveis' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
-        <button
-          v-if="hasStrum"
-          class="cpv-surface-btn cpv-more-item"
-          data-strum-more
-          @click="moreOpen = false; toggleStrum()"
-        ><span style="font-size:16px;width:18px;text-align:center;">↓↑</span><span class="cpv-more-copy">Batida</span><span>{{ strumOn ? 'visível' : 'mostrar' }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; sheet = true"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro, PDF ou slides</span></button>
-        <template v-if="showMine">
-          <button class="cpv-surface-btn cpv-more-item" data-more-original @click="moreOpen = false; toggleOriginal(!ov.showOriginal.value)">
-            <CpvIcon name="layers" :size="18" /><span class="cpv-more-copy">{{ ov.showOriginal.value ? 'Ler minha versão' : 'Ler o original' }}</span><span>{{ ov.mineCount.value }} {{ ov.mineCount.value === 1 ? 'ajuste seu' : 'ajustes seus' }}</span>
-          </button>
-          <button class="cpv-surface-btn cpv-more-item" data-more-my @click="moreOpen = false; ov.myPanel.value = true"><CpvIcon name="list" :size="18" /><span class="cpv-more-copy">Meus ajustes</span><span>Ver e reverter</span></button>
-        </template>
-        <button
-          v-if="modes.includes('content') && ov.pendingCount.value > 0"
-          class="cpv-surface-btn cpv-more-item"
-          data-more-queue
-          @click="moreOpen = false; ov.openQueue()"
-        ><CpvIcon name="msgQuote" :size="18" /><span class="cpv-more-copy">Sugestões dos músicos</span><span>{{ ov.pendingCount.value }} {{ ov.pendingCount.value === 1 ? 'pendente' : 'pendentes' }}</span></button>
-      </div>
-    </div>
+    <CpvMoreSheet
+      v-if="moreOpen && compact"
+      :theme-title="themeTitle"
+      :theme-icon="themeIcon(themeMode)"
+      :theme-label="themeLabel(themeMode)"
+      :has-key="hasKey"
+      :nashville-on="nashvilleOn"
+      :nashville-hint="nashvilleHint"
+      :hide-comments="hideComments"
+      :met-bpm="met.bpm.value"
+      :met-running="met.running.value"
+      :has-strum="hasStrum"
+      :strum-on="strumOn"
+      :show-mine="showMine"
+      :show-original="ov.showOriginal.value"
+      :mine-count="ov.mineCount.value"
+      :show-queue="modes.includes('content') && ov.pendingCount.value > 0"
+      :pending-count="ov.pendingCount.value"
+      @close="moreOpen = false"
+      @theme="requestTheme"
+      @toggle-nashville="toggleNashville"
+      @toggle-comments="setHideComments(!hideComments)"
+      @metronome="moreOpen = false; toggleMetPanel()"
+      @strum="moreOpen = false; toggleStrum()"
+      @export="moreOpen = false; sheet = true"
+      @toggle-original="moreOpen = false; toggleOriginal(!ov.showOriginal.value)"
+      @open-my="moreOpen = false; ov.myPanel.value = true"
+      @open-queue="moreOpen = false; ov.openQueue()"
+    />
 
     <ModePickDialog
       v-if="modePick"

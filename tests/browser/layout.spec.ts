@@ -880,8 +880,7 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(pinned.y).toBe(0)
   expect(pinned.h).toBeGreaterThanOrEqual(840)
   // The host chrome is gone. Ours stays: a live set needs Rolar and Tom.
-  // Compact chrome is ~52px on a phone; the band has to exist so the title
-  // does not sit on the lyric, not to match a frozen pixel count.
+  // Top pad (from the measured head) keeps the lyric under the name.
   expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
   await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) => ({
@@ -901,6 +900,10 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) =>
     getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('0')
+  await expect(page.locator('[data-cpv-zen-title]')).toContainText(/Escuta/i)
+  expect(await page.locator('[data-cpv-zen-title]').evaluate((el) => getComputedStyle(el).position)).toMatch(
+    /absolute|fixed/,
+  )
 
   await tapChart(page)
   await page.waitForTimeout(700)
@@ -909,6 +912,7 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(shown.y).toBe(0)
   expect(await page.locator('[data-fs]').evaluate((el) =>
     getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('1')
+  await expect(page.locator('[data-cpv-zen-title]')).toHaveCount(0)
   expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
 
   await page.locator('[data-fs]').click()
