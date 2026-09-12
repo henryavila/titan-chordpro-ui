@@ -3,8 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import {
   convert, detect, durationFromYoutubeHtml, hostOk, maskDurationMmSs, missingOf, MISSING_LABEL,
-  normalizeDurationMmSs, readMeta, titleFromUrl, writeMeta,
-  type ChartMeta, type MetaKey,
+  normalizeDurationMmSs, readMeta, rewriteToKey, titleFromUrl, writeMeta,
+  type ChartMeta, type KeyRewriteOffer, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
 import type { CpvIconName } from '../icon/paths'
 
@@ -75,6 +75,7 @@ const urlEl = ref<HTMLInputElement | null>(null)
 const source = ref(props.initialSource)
 const meta = ref<ChartMeta>({ ...readMeta(props.initialSource) })
 const keyEdit = ref(!String(readMeta(props.initialSource).key ?? '').trim())
+const keyRewrite = ref<KeyRewriteOffer | null>(null)
 
 const taps = ref<number[]>([])
 
@@ -156,6 +157,7 @@ function toFicha(text: string, origin: typeof from.value, why: string) {
   source.value = r.source
   meta.value = { ...readMeta(r.source) }
   keyEdit.value = !String(meta.value.key ?? '').trim()
+  keyRewrite.value = r.keyRewrite ?? null
   from.value = origin
   note.value = why
   err.value = ''
@@ -169,6 +171,7 @@ function startBlank() {
   keyEdit.value = true
   from.value = 'blank'
   note.value = BLANK_NOTE
+  keyRewrite.value = null
   step.value = 'ficha'
 }
 
@@ -216,6 +219,7 @@ async function runUrl() {
     source.value = writeMeta(r.source, m)
     meta.value = m
     keyEdit.value = !String(m.key ?? '').trim()
+    keyRewrite.value = r.keyRewrite ?? null
     from.value = 'url'
     const still = missingOf(m)
     note.value = still.length
@@ -329,8 +333,31 @@ function back() {
   tab.value = from.value === 'url' ? 'url' : from.value === 'arquivo' ? 'file' : 'text'
   err.value = ''
 }
+function acceptKeyRewrite() {
+  const offer = keyRewrite.value
+  if (!offer) return
+  const r = rewriteToKey(source.value, offer.declaredKey)
+  if (!r?.changed) return
+  const user = meta.value
+  source.value = r.source
+  meta.value = {
+    ...readMeta(r.source),
+    title: user.title,
+    subtitle: user.subtitle,
+    tempo: user.tempo,
+    time: user.time,
+    duration: user.duration,
+    x_origem: user.x_origem,
+  }
+  keyRewrite.value = null
+}
+
+function keepKeyRewrite() {
+  keyRewrite.value = null
+}
+
 function go() {
-  if (durationMissing.value) return
+  if (durationMissing.value || keyRewrite.value) return
   const next = { ...meta.value, duration: normalizeDurationMmSs(meta.value.duration ?? '') }
   meta.value = next
   const body = source.value.trim() ? source.value : BLANK_BODY
@@ -491,6 +518,33 @@ onMounted(() => {
           <span style="font-size:12px;line-height:1.5;color:var(--text);text-wrap:pretty;">{{ note }}</span>
         </div>
 
+        <div
+          v-if="keyRewrite"
+          data-nova-key-rewrite
+          style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;background:var(--chord-soft);border:1px solid var(--chord-edge);"
+        >
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom e capo</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--text);text-wrap:pretty;">
+            Tom declarado <strong>{{ keyRewrite.declaredKey }}</strong>, cifra escrita em
+            <strong>{{ keyRewrite.writtenKey }}</strong>, capo {{ keyRewrite.capo }}.
+            Isso parece transposição de banda, não capo de violão.
+          </span>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <button
+              type="button"
+              data-nova-key-rewrite-go
+              style="height:42px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
+              @click="acceptKeyRewrite"
+            >Reescrever em {{ keyRewrite.declaredKey }}</button>
+            <button
+              type="button"
+              data-nova-key-rewrite-keep
+              style="height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
+              @click="keepKeyRewrite"
+            >Manter escrita em {{ keyRewrite.writtenKey }} e capo {{ keyRewrite.capo }}</button>
+          </div>
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line-soft);">
           <input :value="meta.title ?? ''" data-nova-title placeholder="Nome da música" :style="{ fontSize: geom.titleSize }" style="width:100%;border:0;background:transparent;color:var(--text);font-family:inherit;font-weight:700;letter-spacing:-0.02em;padding:4px 0;" @input="setMeta('title', ($event.target as HTMLInputElement).value)" />
           <input :value="meta.subtitle ?? ''" placeholder="Artista ou ministério" style="width:100%;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;padding:4px 0;" @input="setMeta('subtitle', ($event.target as HTMLInputElement).value)" />
@@ -574,11 +628,12 @@ onMounted(() => {
         <div style="display:flex;flex-direction:column;gap:4px;">
           <span v-if="softMissing.length" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Falta {{ missingList }}. Dá para seguir e preencher depois — vai ser pedido de novo ao salvar.</span>
           <span v-if="durationMissing" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ durationNote }}</span>
+          <span v-if="keyRewrite" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Confirme o tom e o capo acima antes de abrir no editor.</span>
         </div>
 
         <div style="position:sticky;bottom:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 0;margin-top:4px;background:var(--canvas);border-top:1px solid var(--line-soft);">
           <button style="min-height:40px;padding:0 12px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" @click="back">{{ from === 'blank' || from === 'save' ? 'Cancelar' : 'Voltar' }}</button>
-          <button data-nova-go :disabled="durationMissing" :style="{ opacity: durationMissing ? 0.45 : 1, cursor: durationMissing ? 'not-allowed' : 'pointer' }" style="height:48px;padding:0 20px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14px;font-weight:700;" @click="go">{{ goLabel }}</button>
+          <button data-nova-go :disabled="durationMissing || !!keyRewrite" :style="{ opacity: durationMissing || keyRewrite ? 0.45 : 1, cursor: durationMissing || keyRewrite ? 'not-allowed' : 'pointer' }" style="height:48px;padding:0 20px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14px;font-weight:700;" @click="go">{{ goLabel }}</button>
         </div>
       </template>
     </div>

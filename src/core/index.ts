@@ -177,18 +177,20 @@ export {
 export type { Dur, LayoutItem, ParsedScore, ScoreMeta, ScoreNote, TabPos } from './score'
 export { lintSource } from './lint'
 export type { LintResult } from './lint'
-export { transposeToken, usesFlats, keyRootOf, nashvilleToken, semitoneDelta, transposeTextChords } from './transpose'
+export { transposeToken, usesFlats, keyIndex, keyRootOf, nashvilleToken, semitoneDelta, signedSemitoneDelta, formatToneShift, transposeTextChords } from './transpose'
 export { looksLikeOnSong, normalizeOnSong } from './onsong'
 export {
   applyCifraClubEnrich,
   chartBody,
   convert,
   detect,
+  detectKeyRewrite,
   enrichMetaFromCifraClubHtml,
   fromCifraClubHtml,
   fromOnSong,
   fromPlain,
   hostOk,
+  inferWrittenKey,
   isChord,
   isChordLine,
   looksLikeCifraClubHtml,
@@ -197,6 +199,7 @@ export {
   missingOf,
   proposeCifraClubEnrich,
   readMeta,
+  rewriteToKey,
   SUPPORTED_HOSTS,
   titleFromUrl,
   toPlain,
@@ -212,7 +215,9 @@ export type {
   EnrichYoutube,
   ImportFormat,
   ImportResult,
+  KeyRewriteOffer,
   MetaKey,
+  RewriteToKeyResult,
 } from './import-chordpro'
 export {
   decodeStrumPat,

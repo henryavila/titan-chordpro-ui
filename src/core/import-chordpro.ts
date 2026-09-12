@@ -14,7 +14,7 @@
 
 import { formatXStrum, patternFromCc, type StrumPattern } from './strum'
 import { hasSongDuration } from './timeline'
-import { transposeTextChords, transposeToken, usesFlats } from './transpose'
+import { keyIndex, keyRootOf, signedSemitoneDelta, transposeTextChords, usesFlats } from './transpose'
 
 const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
@@ -268,12 +268,20 @@ const FORMAT_LABEL: Record<string, string> = {
   cifraclub: 'Cifra Club',
 }
 
+export type KeyRewriteOffer = {
+  declaredKey: string
+  writtenKey: string
+  capo: number
+}
+
 export type ImportResult = {
   source: string
   format: ImportFormat
   label: string
   /** False when it was already ChordPro and nothing had to be rewritten. */
   changed: boolean
+  /** Fake-capo pattern: wait for the musician before calling `rewriteToKey`. */
+  keyRewrite?: KeyRewriteOffer
 }
 
 export function convert(text: string): ImportResult {
@@ -282,37 +290,40 @@ export function convert(text: string): ImportResult {
   if (fmt === 'cifraclub') {
     const page = fromCifraClubHtml(text)
     if (!page.body.trim()) return { source: '', format: 'vazio', label: '', changed: false }
-    let converted = stripLyricDots(fromPlain(page.body))
-    let key = page.key
+    const converted = stripLyricDots(fromPlain(page.body))
     const capoN = Math.max(0, Math.min(9, Number(page.capo) || 0))
-    // CC writes shapes; Titan stores sounding chords + {capo:N}.
-    if (capoN > 0) {
-      const flats = usesFlats(key)
-      converted = transposeTextChords(converted, capoN, flats)
-      if (key) key = transposeToken(key, capoN, flats)
-    }
     const strum = page.strums[0]
     const meta: ChartMeta = {
       ...readMeta(converted),
       ...(page.title ? { title: page.title } : {}),
       ...(page.subtitle ? { subtitle: page.subtitle } : {}),
-      ...(key ? { key } : {}),
+      ...(page.key ? { key: page.key } : {}),
       ...(page.tempo ? { tempo: page.tempo } : {}),
       ...(page.time ? { time: page.time } : {}),
       ...(capoN > 0 ? { capo: String(capoN) } : {}),
       ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
       ...(strum ? { x_strum: formatXStrum(strum) } : {}),
     }
+    const source = writeMeta(converted, meta)
+    const keyRewrite = detectKeyRewrite(source)
     return {
-      source: writeMeta(converted, meta),
+      source,
       format: fmt,
       label: FORMAT_LABEL[fmt] ?? fmt,
       changed: true,
+      ...(keyRewrite ? { keyRewrite } : {}),
     }
   }
   const source =
     fmt === 'chordpro' ? clean(text).trim() : fmt === 'onsong' ? fromOnSong(text) : fromPlain(text)
-  return { source, format: fmt, label: FORMAT_LABEL[fmt] ?? fmt, changed: fmt !== 'chordpro' }
+  const keyRewrite = detectKeyRewrite(source)
+  return {
+    source,
+    format: fmt,
+    label: FORMAT_LABEL[fmt] ?? fmt,
+    changed: fmt !== 'chordpro',
+    ...(keyRewrite ? { keyRewrite } : {}),
+  }
 }
 
 // ----------------------------------------------------------------- metadata
@@ -321,6 +332,7 @@ export const META_KEYS = [
   'title',
   'subtitle',
   'key',
+  'transpose',
   'tempo',
   'time',
   'duration',
@@ -365,6 +377,115 @@ export function writeMeta(source: string, meta: ChartMeta): string {
     (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
   )
   return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
+}
+
+/**
+ * The key the chords actually spell — most frequent root in the body, tabs
+ * and scores skipped. `{key:}` is the declared tom; when they disagree, the
+ * chart was already transposed on the page.
+ */
+export function inferWrittenKey(source: string): string | null {
+  const counts = new Map<string, number>()
+  let tab = false
+  let score = false
+  for (const raw of String(source ?? '').split('\n')) {
+    const d = raw.match(/^\s*\{\s*([a-zA-Z_]+)/)
+    const k = (d?.[1] ?? '').toLowerCase()
+    if (k === 'sot' || k === 'start_of_tab') {
+      tab = true
+      continue
+    }
+    if (k === 'eot' || k === 'end_of_tab') {
+      tab = false
+      continue
+    }
+    if (k === 'sos' || k === 'start_of_score') {
+      score = true
+      continue
+    }
+    if (k === 'eos' || k === 'end_of_score') {
+      score = false
+      continue
+    }
+    if (tab || score || d) continue
+    for (const m of raw.matchAll(/\[([A-G](?:#|b)?)(m)?/g)) {
+      const tok = (m[1] ?? '') + (m[2] ?? '')
+      if (!tok) continue
+      counts.set(tok, (counts.get(tok) ?? 0) + 1)
+    }
+  }
+  let best: string | null = null
+  let n = 0
+  for (const [tok, c] of counts) {
+    if (c > n) {
+      best = tok
+      n = c
+    }
+  }
+  return best
+}
+
+/**
+ * Fake-capo pattern: `{key:}` is not the written chords, and `{capo:}` is
+ * exactly that gap. Import surfaces this for confirmation; the rewrite itself
+ * is always `rewriteToKey`.
+ */
+export function detectKeyRewrite(source: string): KeyRewriteOffer | null {
+  const src = String(source ?? '')
+  if (!src.trim()) return null
+  const meta = readMeta(src)
+  const declaredKey = (meta.key ?? '').trim()
+  const writtenKey = inferWrittenKey(src)
+  const kr = keyRootOf(declaredKey)
+  const wr = keyRootOf(writtenKey)
+  if (!kr || !wr || keyIndex(kr) === keyIndex(wr)) return null
+  const capo = Number(meta.capo) || 0
+  const gap = Math.abs(signedSemitoneDelta(wr, kr))
+  if (!capo || capo !== gap) return null
+  return { declaredKey, writtenKey: writtenKey!, capo }
+}
+
+export type RewriteToKeyResult = {
+  source: string
+  from: string
+  to: string
+  transpose: number
+  changed: boolean
+}
+
+/**
+ * Move the written chords to `targetKey` and store `{transpose:N}` so the
+ * sounding/playing pitch stays where it was. A `{capo:}` that only encoded
+ * that same gap is dropped. Does not invent chords — semitone rewrite only.
+ */
+export function rewriteToKey(source: string, targetKey: string): RewriteToKeyResult | null {
+  const src = String(source ?? '')
+  const to = targetKey.trim()
+  if (!/^[A-G](?:#|b)?m?$/.test(to)) return null
+  const meta = readMeta(src)
+  const written = inferWrittenKey(src)
+  const fromRoot = keyRootOf(written) || keyRootOf(meta.key)
+  const toRoot = keyRootOf(to)
+  if (!fromRoot || !toRoot || keyIndex(fromRoot) === null || keyIndex(toRoot) === null) return null
+
+  const delta = signedSemitoneDelta(fromRoot, toRoot)
+  const moved = delta ? transposeTextChords(src, delta, usesFlats(to)) : src
+  const next: ChartMeta = { ...readMeta(moved), key: to }
+  const playing = signedSemitoneDelta(toRoot, fromRoot)
+  if (playing) next.transpose = String(playing)
+  else delete next.transpose
+
+  const capoN = Number(meta.capo) || Number(next.capo) || 0
+  if (capoN && capoN === Math.abs(delta)) delete next.capo
+
+  const out = writeMeta(moved, next)
+  return {
+    source: out,
+    from: written || fromRoot,
+    to,
+    transpose: playing,
+    changed: out !== src,
+  }
 }
 
 export const MISSING_LABEL: Record<string, string> = {

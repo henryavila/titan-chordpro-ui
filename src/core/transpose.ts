@@ -62,6 +62,26 @@ export function semitoneDelta(fromKey: string, toKey: string): number {
   return ((b - a) % 12 + 12) % 12
 }
 
+/** Shortest signed interval, −6…+6. Ab → G is −1, not +11. */
+export function signedSemitoneDelta(fromKey: string, toKey: string): number {
+  const d = semitoneDelta(fromKey, toKey)
+  return d > 6 ? d - 12 : d
+}
+
+/** Signed tons from the written key (`+ ½ tom`, `− 1 tom`). Empty at 0. */
+export function formatToneShift(semis: number): string {
+  if (!semis) return ''
+  const n = Math.trunc(semis)
+  const sign = n > 0 ? '+' : '−'
+  const abs = Math.abs(n)
+  const whole = Math.floor(abs / 2)
+  const half = abs % 2 === 1
+  if (!whole) return `${sign} ½ tom`
+  const unit = whole === 1 ? 'tom' : 'tons'
+  if (!half) return `${sign} ${whole} ${unit}`
+  return `${sign} ${whole} ½ ${unit}`
+}
+
 /** Scale degrees, the Nashville way: 1 #1 2 b3 3 4 #4 5 b6 6 b7 7. */
 const DEG: Record<number, string> = {
   0: '1',

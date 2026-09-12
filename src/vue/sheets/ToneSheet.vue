@@ -4,12 +4,16 @@ defineProps<{
   shownKey: string
   hasOffset: boolean
   offsetLabel: string
+  songCaption?: string
   capoLabel: string
   capoHint: string
   hasCapo: boolean
   hasReset: boolean
   /** The chart is showing both chords (capo shape + real). */
   dual: boolean
+  canRewrite?: boolean
+  writtenKey?: string
+  declaredKey?: string
 }>()
 const emit = defineEmits<{
   close: []
@@ -19,6 +23,7 @@ const emit = defineEmits<{
   capoUp: []
   reset: []
   dual: []
+  rewrite: []
 }>()
 </script>
 
@@ -33,8 +38,8 @@ const emit = defineEmits<{
       <div style="display:flex;align-items:center;gap:8px;">
         <button aria-label="Baixar meio tom" style="flex:none;width:60px;height:56px;border:1px solid var(--chord-edge);border-radius:16px;background:var(--chord-soft);color:var(--chord);font-size:22px;cursor:pointer;" @click="emit('down')">−</button>
         <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
-          <span v-if="hasOffset" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);">{{ offsetLabel }} semitons do original</span>
+          <span data-tone-playing-key style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
+          <span v-if="songCaption" data-tone-shift style="font-size:12px;font-weight:600;color:var(--muted);text-align:center;">{{ songCaption }}</span>
         </span>
         <button aria-label="Subir meio tom" style="flex:none;width:60px;height:56px;border:1px solid var(--chord-edge);border-radius:16px;background:var(--chord-soft);color:var(--chord);font-size:22px;cursor:pointer;" @click="emit('up')">+</button>
       </div>
@@ -62,6 +67,21 @@ const emit = defineEmits<{
           <span style="font-size:11.5px;line-height:1.4;color:var(--muted);text-wrap:pretty;">Duas cifras na mesma linha: quem está com capo e quem não está.</span>
         </span>
       </button>
+      <div
+        v-if="canRewrite && writtenKey && declaredKey"
+        data-rewrite-key
+        style="display:flex;flex-direction:column;gap:8px;padding-top:4px;border-top:1px solid var(--line);"
+      >
+        <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
+          Os acordes estão em <strong style="color:var(--text);">{{ writtenKey }}</strong>, o tom é
+          <strong style="color:var(--text);">{{ declaredKey }}</strong>. Reescrever grava a cifra em {{ declaredKey }} e guarda o transpose para continuar soando {{ writtenKey }}.
+        </span>
+        <button
+          data-rewrite-go
+          style="height:48px;border:0;border-radius:14px;background:var(--chord-fill);color:var(--chord);font-size:13.5px;font-weight:600;cursor:pointer;"
+          @click="emit('rewrite')"
+        >Reescrever em {{ declaredKey }}</button>
+      </div>
       <button
         v-if="hasReset"
         style="height:48px;border:0;border-radius:14px;background:var(--chord-fill);color:var(--chord);font-size:13.5px;font-weight:600;cursor:pointer;"

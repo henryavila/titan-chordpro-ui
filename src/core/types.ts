@@ -8,6 +8,8 @@ export type ChordProView = {
     time?: string
     duration?: string
     capo?: number
+    /** `{transpose:N}` — reading starts N semitones from `{key:}`. Body stays in the written key. */
+    transpose?: number
   }
   displayKey: string | null
   transposeSemitones: number
