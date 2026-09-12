@@ -1,4 +1,4 @@
-import type { ThemeId } from '@henryavila/titan-chordpro-ui'
+import type { Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
 import type { ModesProp } from '@henryavila/titan-chordpro-ui/vue'
 
 export type Surface = 'standalone' | 'site'
@@ -221,7 +221,7 @@ export function demosOf(group: DemoGroupId): DemoEntry[] {
   return DEMOS.filter((d) => d.group === group)
 }
 
-const INTENT = new Set(['ficha', 'ensaio', 'song', 'quebrar', 'tema', 'criar', 'modes', 'accent'])
+const INTENT = new Set(['ficha', 'ensaio', 'song', 'quebrar', 'tema', 'criar', 'modes', 'accent', 'lens', 'comentarios'])
 
 /** Old `/` + query bookmarks land on the matching named page. */
 export function hubRedirect(search: string): string | null {
@@ -258,12 +258,17 @@ export type LabQuery = {
   modes: ModesProp | null
   /** Host primary: named accent or `#hex`. */
   accent: string | null
+  /** Reading lens for the demo / singer URL. */
+  lens: Lens | null
+  /** Hide rehearsal comments in the reading projection. */
+  hideComments: boolean
 }
 
 export function labQuery(search: string): LabQuery {
   const p = new URLSearchParams(search)
   const tema = p.get('tema')
   const modes = p.get('modes')
+  const lens = p.get('lens')
   return {
     song: p.get('song'),
     tema: tema === 'claro' || tema === 'escuro' ? tema : null,
@@ -275,6 +280,8 @@ export function labQuery(search: string): LabQuery {
         ? modes
         : null,
     accent: p.get('accent'),
+    lens: lens === 'none' || lens === 'letra' || lens === 'nashville' ? lens : null,
+    hideComments: p.get('comentarios') === '0',
   }
 }
 

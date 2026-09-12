@@ -81,6 +81,8 @@ const props = withDefaults(
     mode: 'view',
     theme: 'auto',
     themeControl: 'preference',
+    lens: 'none',
+    hideComments: false,
     loading: false,
     autoHide: true,
     fitDefault: true,
@@ -158,10 +160,10 @@ const toneOpen = ref(false)
 const moreOpen = ref(false)
 const lensOpen = ref(false)
 const metOpen = ref(false)
-const lens = ref<Lens>('none')
+const lens = ref<Lens>(props.lens)
 /** Dual chart: show the capo shape above the real chord, song-wide. */
 const capoMap = ref(true)
-const hideComments = ref(false)
+const hideComments = ref(props.hideComments)
 const srcOpen = ref(false)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
@@ -810,7 +812,7 @@ function persistPrefs() {
     const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
     // Preserve the free theme preference (including older values) while the
     // host controls appearance; other controls must not rewrite that policy.
-    for (const key of ['bias', 'fit', 'metSound', 'metFollow', 'metCountIn', 'metPulseHead']) delete p[key]
+    for (const key of ['bias', 'fit', 'metSound', 'metFollow', 'metCountIn', 'metPulseHead', 'lens', 'hideComments']) delete p[key]
     if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
@@ -818,6 +820,10 @@ function persistPrefs() {
     if (met.pulseHead.value) p.metPulseHead = true
     if (met.follow.value === false) p.metFollow = false
     if (met.countInOn.value === false) p.metCountIn = false
+    // Reading lens survives song changes and remounts — singer / Nashville
+    // choice is a session preference, not per-chart state.
+    if (lens.value !== 'none') p.lens = lens.value
+    if (hideComments.value) p.hideComments = true
     if (Object.keys(p).length) store.set(STORE_KEYS.prefs, JSON.stringify(p))
     else store.remove(STORE_KEYS.prefs)
   } catch {
@@ -1135,7 +1141,14 @@ function toggleLens() {
 }
 
 function pickLens(next: Lens) {
-  lens.value = lens.value === next ? 'none' : next
+  const value: Lens = lens.value === next ? 'none' : next
+  lens.value = value
+  emit('update:lens', value)
+}
+
+function setHideComments(on: boolean) {
+  hideComments.value = on
+  emit('update:hideComments', on)
 }
 
 function toggleFit() {
@@ -1849,9 +1862,10 @@ function syncHostSource() {
     mul.value = spot.mul
   }
   if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
-  lens.value = 'none'
+  // Reading lens and comment filter stay: they are the reader's choice for the
+  // rehearsal, not part of the chart. Song switch must not kick a singer out
+  // of Só letra (or Nashville) mid-set.
   capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
-  hideComments.value = false
   metOpen.value = false
   met.stop()
   playhead = spot ? spot.u || 0 : 0
@@ -1942,7 +1956,21 @@ function syncHeadH() {
 }
 
 watch(hostSource, syncHostSource)
-watch([theme, bias, fit, met.sound, met.pulseHead, met.follow, met.countInOn], persistPrefs)
+watch([theme, bias, fit, lens, hideComments, met.sound, met.pulseHead, met.follow, met.countInOn], persistPrefs)
+watch(
+  () => props.lens,
+  (next) => {
+    if (next === lens.value) return
+    lens.value = next
+  },
+)
+watch(
+  () => props.hideComments,
+  (next) => {
+    if (next === hideComments.value) return
+    hideComments.value = next
+  },
+)
 watch([effTheme, () => props.accent, () => props.accentStrength], () => {
   if (root.value) applyThemeVars(root.value, effTheme.value, props.accent, props.accentStrength)
 })
@@ -1966,13 +1994,14 @@ watch([blocks, fitOn, bias, width], () => {
   // not the pixel — the clock line stays at the same point of the song.
   timeline = null
 })
-watch([offset, capo, themeMode, fitOn, bias, mode, dirty], () => {
+watch([offset, capo, themeMode, fitOn, bias, mode, dirty, activeLens, hideComments], () => {
   emit('state', {
     transposeSemitones: offset.value,
     capo: capo.value,
     theme: themeMode.value,
     displayKey: shownKey.value || null,
     lens: activeLens.value,
+    hideComments: hideComments.value,
     dual: mapOn.value,
     fit: fitOn.value,
     bias: bias.value,
@@ -1994,6 +2023,8 @@ onMounted(() => {
       metPulseHead?: boolean
       metFollow?: boolean
       metCountIn?: boolean
+      lens?: Lens
+      hideComments?: boolean
     }
     if (p.theme) theme.value = p.theme
     if (typeof p.bias === 'number') bias.value = p.bias
@@ -2002,6 +2033,11 @@ onMounted(() => {
     if (typeof p.metPulseHead === 'boolean') met.pulseHead.value = p.metPulseHead
     if (typeof p.metFollow === 'boolean') met.follow.value = p.metFollow
     if (typeof p.metCountIn === 'boolean') met.countInOn.value = p.metCountIn
+    // Host prop wins when it asks for a lens; otherwise restore the last choice.
+    if (props.lens !== 'none') lens.value = props.lens
+    else if (p.lens === 'nashville' || p.lens === 'letra') lens.value = p.lens
+    if (props.hideComments) hideComments.value = true
+    else if (p.hideComments === true) hideComments.value = true
     fitSeen.value = store.get(STORE_KEYS.fitSeen) === '1'
     editSeen.value = store.get(STORE_KEYS.editSeen) === '1'
   } catch {
@@ -3107,7 +3143,7 @@ defineExpose({
       :hide-comments="hideComments"
       @close="lensOpen = false"
       @pick="pickLens"
-      @toggle-comments="hideComments = !hideComments"
+      @toggle-comments="setHideComments(!hideComments)"
     />
 
     <NewChartDialog
@@ -3125,6 +3161,8 @@ defineExpose({
       v-if="metaOpen && isEdit"
       :compact="compact"
       :source="working"
+      :fetch-chart="props.fetchChart"
+      :fetch-youtube-duration="props.fetchYoutubeDuration"
       @close="metaOpen = false"
       @apply="applyMeta"
     />

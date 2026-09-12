@@ -1,7 +1,7 @@
-import type { AccentProp, ChartStore, ThemeId } from '@henryavila/titan-chordpro-ui'
+import type { AccentProp, ChartStore, Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
 import type { LoadSong, SetlistSong } from './use/useSetlist'
 
-export type { LoadSong, SetlistSong }
+export type { LoadSong, SetlistSong, Lens }
 
 /** A score the host already has on file, offered when inserting `{image:}`. */
 export type ImageChoice = { file: string; label?: string }
@@ -25,6 +25,17 @@ export type ChordproViewerProps = {
   theme?: ThemeId
   /** Default preference: musician choice persists. Host: prop always wins. */
   themeControl?: 'preference' | 'host'
+  /**
+   * Reading lens: chord names, Nashville degrees, or lyrics only.
+   * `'letra'` is the singer view (no chords / tab / score). Survives song
+   * changes in a setlist; the musician can still switch from the UI.
+   */
+  lens?: Lens
+  /**
+   * Hide rehearsal `{c:}` comments in the reading projection only.
+   * Same lifetime as `lens` — persists across songs in a setlist.
+   */
+  hideComments?: boolean
   loading?: boolean
   autoHide?: boolean
   /**
@@ -120,6 +131,8 @@ export type ChordproViewerEmits = {
   /** Request only in host mode: the host accepts by updating its theme prop. */
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
+  'update:lens': [value: Lens]
+  'update:hideComments': [value: boolean]
   dirty: [value: boolean]
   save: [value: string]
   /** A "for everyone" save: this text is the chart from now on. */

@@ -19,7 +19,8 @@ a chamada resumida.
 
 Query nas mesmas páginas: `criar=1`, `modes` (local / content / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
-`teal` / `#hex`), `quebrar=1`.
+`teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
+(oculta `{c:}` de ensaio), `quebrar=1`.
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
@@ -273,9 +274,10 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 `loadSong`. A atual e as duas vizinhas são buscadas na frente. Uma que não
 chega vira painel *Não carregou*.
 
-Trocar de música guarda tom, capo, velocidade e posição de rolagem daquela
-música. No fim da auto-rolagem o viewer **oferece** a próxima; nunca avança
-sozinho.
+Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
+música. A **lente** (`lens`: Só letra / Nashville) e `hideComments` são escolha
+do ensaio — **não** resetam ao mudar de cifra. No fim da auto-rolagem o viewer
+**oferece** a próxima; nunca avança sozinho.
 
 ---
 
@@ -302,7 +304,7 @@ SoT, gramática, 6/8, lente Só letra, lint e o que a IA **não** pode apagar:
 
 ---
 
-## 8. Tema, fonte, acento
+## 8. Tema, fonte, acento, lente
 
 ```vue
 <ChordproViewer
@@ -321,6 +323,53 @@ SoT, gramática, 6/8, lente Só letra, lint e o que a IA **não** pode apagar:
 | `host` | A prop `theme` sempre vence. `update:theme` pede; o host aceita atualizando a prop |
 
 `auto` segue o sistema, não o tema do site. Um site claro passa `light`.
+
+### Lente de leitura (cantores)
+
+| Prop | Valores | Papel |
+|---|---|---|
+| `lens` | `none` \| `letra` \| `nashville` | Projeção. `letra` = só a letra (sem acordes, tab, partitura nem marcas `x///`) |
+| `hideComments` | `boolean` | Esconde `{c:}` de ensaio **só** na leitura |
+
+As duas sobrevivem à troca de música no ensaio (`songs`) e emitem
+`update:lens` / `update:hideComments` (dá para `v-model:lens`). O músico ainda
+pode mudar pelo UI. O `.cho` **não** é reescrito — marcas e comentários
+continuam no arquivo.
+
+Na lente `letra`, `x///` / `//` / `/_` colados ao acorde **não** vazam na
+letra (`razão.[E]//` → `razão.`). Detalhe e o que **não** se apaga:
+[`MARCAS-X.md`](./MARCAS-X.md) § Lente Só letra.
+
+URL típica para o cantor (o host lê a query e passa a prop):
+
+```vue
+<!-- /cifras/[id]?lens=letra  →  pages/cifras/[id].vue -->
+<script setup lang="ts">
+const route = useRoute()
+const lens = computed(() =>
+  route.query.lens === 'letra' || route.query.lens === 'nashville'
+    ? route.query.lens
+    : 'none',
+)
+</script>
+
+<template>
+  <ClientOnly>
+    <div class="h-dvh overflow-hidden">
+      <ChordproViewer
+        v-if="song"
+        :source="song.chordpro"
+        :song-id="song.id"
+        :lens="lens"
+        modes="none"
+      />
+    </div>
+  </ClientOnly>
+</template>
+```
+
+Na demo deste repo: `/standalone-lista.html?lens=letra` (opcional:
+`&comentarios=0`).
 
 ```css
 .host-cifra {

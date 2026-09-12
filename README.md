@@ -83,6 +83,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `source` | `''` | Texto ChordPro/OnSong da cifra ativa (host escolhe qual) |
 | `mode` | `'view'` | `view` \| `edit`; a UI também alterna sozinha (`update:mode`) |
 | `theme` | `'auto'` | `auto` \| `light` \| `dark`; o leitor pode trocar |
+| `lens` | `'none'` | `none` \| `letra` \| `nashville` — projeção de leitura; `letra` = só a letra (cantor). Persiste entre músicas do ensaio |
+| `hideComments` | `false` | `true` esconde `{c:}` de ensaio só na leitura (mesmo lifetime que `lens`) |
 | `canEdit` | `true` | `false` remove toda entrada para o editor |
 | `fitDefault` / `autoHide` | `true` / `true` | Ajuste ao espaço inicial · esconder moldura na rolagem |
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
@@ -103,7 +105,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `storage` | `localStorage` | Onde o que o viewer lembra é gravado — ver abaixo |
 | `surfaceGuard` | `true` | Avisa (console + tela) quando o host embute sem dar altura ao pai |
 
-Emite `update:source`, `update:mode`, `save`, `save-content`, `dirty`, `state`.
+Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `dirty`, `state`.
 
 ### Cifra nova: importar ou começar em branco
 
@@ -152,8 +154,9 @@ trocar de música num ensaio não pode esperar rede. Uma que não chega vira pai
 *Não carregou*, com *Tentar de novo*; as outras seguem disponíveis.
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**
-daquela música. No fim da auto-rolagem o viewer **oferece** a próxima; nunca
-avança sozinho.
+daquela cifra. A **lente** (`lens`: Só letra / Nashville) e `hideComments` são
+do ensaio — **não** resetam ao mudar de música. No fim da auto-rolagem o viewer
+**oferece** a próxima; nunca avança sozinho.
 
 **Página instantânea, cifras chegando depois.** É o formato normal: mande a lista
 só com metadados (20 músicas ≈ 2 KB) e deixe o `loadSong` trazer o resto. O
@@ -361,8 +364,10 @@ ajuste ou dual não come segundos da intro.
 **Hard gate:** Rolar só parte se a cifra declara `{duration:}` (m:ss, ≥ 20 s).
 Sem duração, o botão fica morto — BPM e acordes sem `x///` não substituem.
 
-Gramática da convenção, o que a engine **não** adivinha, lente Só letra, lint e
-regras para agente: [`docs/MARCAS-X.md`](docs/MARCAS-X.md).
+Gramática da convenção, o que a engine **não** adivinha, lente Só letra (marcas
+não vazam na projeção; `cami/nhar` e a letra x em palavras ficam), lint e regras
+para agente: [`docs/MARCAS-X.md`](docs/MARCAS-X.md). Cantor via prop:
+`lens="letra"` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §8.
 
 Um *playhead* percorre a cifra nesse relógio e o percurso inteiro gasta a
 duração declarada. `Timeline.bars` é o total do percurso e `runSec()` devolve

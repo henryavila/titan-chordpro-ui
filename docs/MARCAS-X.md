@@ -98,11 +98,20 @@ Uma cifra 6/8 **escrita** como `{time: 3/4}` distorce toda intro com `x///`. Iss
 Quem canta com a banda não lê acorde nem relógio. A lente `letra`:
 
 - some acordes, tab, partitura e imagem
-- some **linhas** só de ritmo / só de acorde
+- some **linhas** só de ritmo / só de acorde (inclui resíduos de produção `/_`, `/-`, `x...`)
 - **apaga as marcas** (`x///`, `/`, `x` de compasso) das linhas cantadas que restam
 - **não reescreve o arquivo**
 
 O relógio do músico que **toca** continua a ver as marcas (lente desligada). Agente: esconder na leitura ≠ apagar no source.
+
+### Como a projeção limpa (sem mentir no `.cho`)
+
+1. Em cada segmento **com acorde**, remove a corrida de relógio que vinha colada nele (`[E]//`, `[G]x`, `[D]/_`) **antes** de juntar o texto — senão `amigo[Em]//` vira `amigo/` na letra.
+2. No texto já juntado, `stripBeatMarks` tira marcas restantes (espaço, pontuação, ou coladas após a letra quando o acorde saiu: `razão.[E]//` → `razão.`, `Amém[G]x` → `Amém`, `Oh!x///` → `Oh!`).
+3. Resíduo de produção grudado na marca (`/_`, `/-`, `x...`) some com a marca.
+4. **Não** come sílaba (`cami/nhar`) nem a letra **x** dentro de palavra (`Exaltado`).
+
+Host / cantor: prop `lens="letra"` em `<ChordproViewer>` (ver [`CONSUMER.md`](./CONSUMER.md) §8). A escolha **persiste** entre músicas do ensaio (`songs`); não é estado por cifra.
 
 ## Lint
 
@@ -148,5 +157,7 @@ Documentados para ninguém “corrigir” no escuro:
 | Pulso vs marca | `beatsPerBar`, `marksPerBeat` |
 | Peso do bloco | `BlockMusic.beats` (tocada) e `.tail` (cauda) — `src/core/types.ts` |
 | Relógio | `buildTimeline` |
-| Lente Só letra | `lyricsOnlyBlocks` / `stripBeatMarks` — `src/core/layout.ts` |
+| Lente Só letra | `lyricsOnlyBlocks` / `stripChordClock` / `stripBeatMarks` — `src/core/layout.ts` |
+| Testes da lente | `tests/core/layout-letra.test.ts` (vazamento de marca = falha) |
 | Aviso | `lintSource` — `src/core/lint.ts` |
+| Prop do host | `lens` / `hideComments` — `src/vue/public.ts` |

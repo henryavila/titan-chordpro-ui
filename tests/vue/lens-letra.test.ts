@@ -136,4 +136,22 @@ describe('lens Só letra', () => {
     expect(w.find('.cpv-chord').exists()).toBe(true)
     expect(w.get('[data-lens-btn]').text()).toContain('Lentes')
   })
+
+  it('opens already in Só letra when the host passes lens=letra', async () => {
+    const w = await viewerAt(1024, { lens: 'letra' })
+    expect(w.get('[data-lens-btn]').text()).toContain('Só letra')
+    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.text()).toMatch(/Jesus/i)
+  })
+
+  it('opens with Nashville when the host passes lens=nashville', async () => {
+    const w = await viewerAt(1024, { lens: 'nashville' })
+    expect(w.get('[data-lens-btn]').text()).toContain('Graus')
+  })
+
+  it('emits update:lens when the musician picks a lens', async () => {
+    const w = await viewerAt(1024)
+    await pickLetra(w)
+    expect(w.emitted('update:lens')?.at(-1)).toEqual(['letra'])
+  })
 })

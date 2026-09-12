@@ -147,6 +147,8 @@ describe('labQuery', () => {
       criar: false,
       modes: null,
       accent: null,
+      lens: null,
+      hideComments: false,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
@@ -156,7 +158,17 @@ describe('labQuery', () => {
       criar: false,
       modes: null,
       accent: null,
+      lens: null,
+      hideComments: false,
     })
+  })
+
+  it('reads the reading lens and comment filter', () => {
+    expect(labQuery('?lens=letra')).toMatchObject({ lens: 'letra', hideComments: false })
+    expect(labQuery('?lens=nashville')).toMatchObject({ lens: 'nashville' })
+    expect(labQuery('?lens=none')).toMatchObject({ lens: 'none' })
+    expect(labQuery('?lens=nope').lens).toBeNull()
+    expect(labQuery('?comentarios=0')).toMatchObject({ hideComments: true })
   })
 
   it('reads the empty-chart authoring flag', () => {
