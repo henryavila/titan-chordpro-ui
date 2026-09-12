@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reescrever no tom (cifras já cadastradas):** quando `{key:}` não bate com os acordes (082, capo usado como transposição de banda), a ficha e a folha de tom oferecem **Reescrever em Ab**. Grava o corpo no tom declarado, tira o capo falso e guarda `{transpose:N}` para a leitura continuar no tom tocado.
 
 ### Changed
+- **Cifra | Letra no chrome, sem menu Lentes.** Um toque troca o modo (banda = cifra, vocal = letra). Nashville e comentários de ensaio ficam na barra larga e, no celular, como itens diretos do menu Mais. `L` alterna cifra/letra. A prop `lens` do host não muda.
 - **Capo sem dual:** a cifra vira as formas do capo (quem toca sozinho). Dual continua com as duas cifras. O hint só nomeia o tom das formas.
 - **Import e “Reescrever” usam o mesmo `rewriteToKey`.** Se `{key:}` não é o tom dos acordes e o capo é esse intervalo, o import **mostra** tom declarado / escrita / capo e só reescreve depois de confirmar. Capo de verdade (tom = o que está escrito) permanece.
 

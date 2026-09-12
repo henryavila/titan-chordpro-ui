@@ -108,7 +108,8 @@ describe('chrome uses the locked set', () => {
   it('wide bar names the tools with the same icons the dock uses', async () => {
     const w = await viewerAt(1024)
     expect(w.find('[data-fit] [data-icon=scan]').exists()).toBe(true)
-    expect(w.find('[data-lens-btn] [data-icon=glasses]').exists()).toBe(true)
+    expect(w.find('[data-reading-switch]').exists()).toBe(true)
+    expect(w.find('[data-lens=nashville] [data-icon=glasses]').exists()).toBe(true)
     expect(w.find('[data-met-btn] [data-icon=metronome]').exists()).toBe(true)
     expect(w.find('[aria-label="Exportar"] [data-icon=download]').exists()).toBe(true)
     expect(w.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
@@ -121,7 +122,7 @@ describe('chrome uses the locked set', () => {
     await flushPromises()
     const dlg = w.get('[role="dialog"][aria-label="Mais controles"]')
     const icons = dlg.findAll('.cpv-ico').map((n) => n.attributes('data-icon'))
-    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'metronome', 'download']))
+    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'eyeOff', 'metronome', 'download']))
     expect(icons).not.toContain('scan')
     expect(dlg.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
     expect(dlg.find('[data-icon=x]').exists()).toBe(true)

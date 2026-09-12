@@ -154,8 +154,8 @@ trocar de música num ensaio não pode esperar rede. Uma que não chega vira pai
 *Não carregou*, com *Tentar de novo*; as outras seguem disponíveis.
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**
-daquela cifra. A **lente** (`lens`: Só letra / Nashville) e `hideComments` são
-do ensaio — **não** resetam ao mudar de música. No fim da auto-rolagem o viewer
+daquela cifra. **Cifra | Letra** (e Nashville / comentários) são do ensaio —
+prop `lens` / `hideComments` — **não** resetam ao mudar de música. No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
 
 **Página instantânea, cifras chegando depois.** É o formato normal: mande a lista

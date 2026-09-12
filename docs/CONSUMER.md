@@ -275,8 +275,8 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 chega vira painel *Não carregou*.
 
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
-música. A **lente** (`lens`: Só letra / Nashville) e `hideComments` são escolha
-do ensaio — **não** resetam ao mudar de cifra. No fim da auto-rolagem o viewer
+música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
+**não** resetam ao mudar de cifra. No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
 
 ---
@@ -304,7 +304,7 @@ SoT, gramática, 6/8, lente Só letra, lint e o que a IA **não** pode apagar:
 
 ---
 
-## 8. Tema, fonte, acento, lente
+## 8. Tema, fonte, acento, cifra ou letra
 
 ```vue
 <ChordproViewer
@@ -324,7 +324,11 @@ SoT, gramática, 6/8, lente Só letra, lint e o que a IA **não** pode apagar:
 
 `auto` segue o sistema, não o tema do site. Um site claro passa `light`.
 
-### Lente de leitura (cantores)
+### Cifra ou letra (cantores)
+
+Na UI o músico troca com o interruptor **Cifra | Letra** (tecla `L`). Nashville
+e os comentários de ensaio ficam na barra (desktop) ou no menu Mais (celular).
+Não há mais um menu chamado “Lentes”.
 
 | Prop | Valores | Papel |
 |---|---|---|
