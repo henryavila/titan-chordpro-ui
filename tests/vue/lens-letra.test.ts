@@ -50,30 +50,32 @@ async function viewerAt(width: number, props: Record<string, unknown> = {}) {
 }
 
 async function pickLetra(w: Awaited<ReturnType<typeof viewerAt>>) {
-  await w.get('[data-lens-btn]').trigger('click')
-  await flushPromises()
-  await w.get('[data-lens=letra]').trigger('click')
+  await w.get('[data-reading=letra]').trigger('click')
   await flushPromises()
 }
 
+function pressed(w: Awaited<ReturnType<typeof viewerAt>>, which: 'cifra' | 'letra') {
+  return w.get(`[data-reading=${which}]`).attributes('aria-pressed')
+}
+
 describe('lens Só letra', () => {
-  it('lists Só letra next to Nashville in the reading sheet', async () => {
+  it('puts Cifra | Letra on the chrome, not behind a Lentes sheet', async () => {
     const w = await viewerAt(1024)
-    await w.get('[data-lens-btn]').trigger('click')
-    await flushPromises()
-    const sheet = w.get('[role="dialog"][aria-label="Lentes de leitura"]')
-    expect(sheet.text()).toContain('Só letra')
-    expect(sheet.text()).toContain('Sem acordes, tab ou partitura')
-    expect(sheet.find('[data-lens=letra]').exists()).toBe(true)
-    expect(sheet.find('[data-lens=nashville]').exists()).toBe(true)
-    expect(sheet.find('[data-lens=none]').exists()).toBe(true)
+    expect(w.get('[data-reading-switch]').text()).toMatch(/Cifra/)
+    expect(w.get('[data-reading-switch]').text()).toMatch(/Letra/)
+    expect(pressed(w, 'cifra')).toBe('true')
+    expect(pressed(w, 'letra')).toBe('false')
+    expect(w.find('[role="dialog"][aria-label="Lentes de leitura"]').exists()).toBe(false)
+    expect(w.find('[data-lens=nashville]').exists()).toBe(true)
+    expect(w.find('[data-comments-toggle]').exists()).toBe(true)
   })
 
-  it('hides chords and the chord lane, and the chip says Só letra', async () => {
+  it('hides chords and the chord lane with one tap on Letra', async () => {
     const w = await viewerAt(1024)
     expect(w.find('.cpv-chord').exists()).toBe(true)
     await pickLetra(w)
-    expect(w.get('[data-lens-btn]').text()).toContain('Só letra')
+    expect(pressed(w, 'letra')).toBe('true')
+    expect(pressed(w, 'cifra')).toBe('false')
     expect(w.find('.cpv-chord').exists()).toBe(false)
     expect(w.text()).toMatch(/Jesus/i)
     const box = w.get('.cpv-chord-box')
@@ -119,39 +121,88 @@ describe('lens Só letra', () => {
     expect(w.find('.cpv-chord').exists() || w.find('[data-pill]').exists()).toBe(true)
   })
 
-  it('the phone Mais row names the three lenses', async () => {
+  it('on a phone, Letra is one tap on the dock — Mais is not required', async () => {
+    const w = await viewerAt(390)
+    expect(w.find('[role="dialog"][aria-label="Mais controles"]').exists()).toBe(false)
+    await pickLetra(w)
+    expect(pressed(w, 'letra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(false)
+  })
+
+  it('the phone Mais lists Nashville and comments, not a Lentes submenu', async () => {
     const w = await viewerAt(390)
     await w.get('[aria-label="Mais controles"]').trigger('click')
     await flushPromises()
     const dlg = w.get('[role="dialog"][aria-label="Mais controles"]')
-    expect(dlg.text()).toContain('Nomes, graus ou só letra')
+    expect(dlg.text()).toContain('Nashville')
+    expect(dlg.text()).toContain('Comentários de ensaio')
+    expect(dlg.text()).not.toContain('Lentes de leitura')
+    expect(dlg.find('[data-lens=nashville]').exists()).toBe(true)
+    expect(dlg.find('[data-comments-toggle]').exists()).toBe(true)
+    expect(w.get('[data-reading-switch]').element.closest('.cpv-chrome')!.classList.contains('is-hidden')).toBe(true)
   })
 
-  it('a second tap on Só letra returns to named chords', async () => {
+  it('Cifra brings named chords back after Letra', async () => {
     const w = await viewerAt(1024)
     await pickLetra(w)
     expect(w.find('.cpv-chord').exists()).toBe(false)
-    await w.get('[data-lens=letra]').trigger('click')
+    await w.get('[data-reading=cifra]').trigger('click')
     await flushPromises()
     expect(w.find('.cpv-chord').exists()).toBe(true)
-    expect(w.get('[data-lens-btn]').text()).toContain('Lentes')
+    expect(pressed(w, 'cifra')).toBe('true')
   })
 
-  it('opens already in Só letra when the host passes lens=letra', async () => {
+  it('opens already in Letra when the host passes lens=letra', async () => {
     const w = await viewerAt(1024, { lens: 'letra' })
-    expect(w.get('[data-lens-btn]').text()).toContain('Só letra')
+    expect(pressed(w, 'letra')).toBe('true')
     expect(w.find('.cpv-chord').exists()).toBe(false)
     expect(w.text()).toMatch(/Jesus/i)
   })
 
   it('opens with Nashville when the host passes lens=nashville', async () => {
     const w = await viewerAt(1024, { lens: 'nashville' })
-    expect(w.get('[data-lens-btn]').text()).toContain('Graus')
+    expect(pressed(w, 'cifra')).toBe('true')
+    expect(w.get('[data-lens=nashville]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('emits update:lens when the musician picks a lens', async () => {
+  it('emits update:lens when the musician picks Letra', async () => {
     const w = await viewerAt(1024)
     await pickLetra(w)
     expect(w.emitted('update:lens')?.at(-1)).toEqual(['letra'])
+  })
+
+  it('L toggles Letra without opening a sheet', async () => {
+    const w = await viewerAt(1024)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
+    await flushPromises()
+    expect(pressed(w, 'letra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('[role="dialog"][aria-label="Lentes de leitura"]').exists()).toBe(false)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
+    await flushPromises()
+    expect(pressed(w, 'cifra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(true)
+  })
+
+  it('Nashville from the bar, and Cifra restores it after Letra', async () => {
+    const w = await viewerAt(1024)
+    await w.get('[data-lens=nashville]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('update:lens')?.at(-1)).toEqual(['nashville'])
+    await pickLetra(w)
+    expect(pressed(w, 'letra')).toBe('true')
+    await w.get('[data-reading=cifra]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-lens=nashville]').attributes('aria-pressed')).toBe('true')
+    expect(w.emitted('update:lens')?.at(-1)).toEqual(['nashville'])
+  })
+
+  it('hides rehearsal comments from the bar without a Lentes sheet', async () => {
+    const w = await viewerAt(1024)
+    expect(w.text()).toMatch(/BEM SUAVE/)
+    await w.get('[data-comments-toggle]').trigger('click')
+    await flushPromises()
+    expect(w.text()).not.toMatch(/BEM SUAVE/)
+    expect(w.emitted('update:hideComments')?.at(-1)).toEqual([true])
   })
 })

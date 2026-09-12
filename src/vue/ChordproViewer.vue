@@ -40,7 +40,7 @@ import {
 import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
-import LensSheet from './sheets/LensSheet.vue'
+import ReadingSwitch from './ReadingSwitch.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
@@ -163,7 +163,7 @@ const editSeen = ref(false)
 const editHintOff = ref(false)
 const toneOpen = ref(false)
 const moreOpen = ref(false)
-const lensOpen = ref(false)
+
 const metOpen = ref(false)
 const lens = ref<Lens>(props.lens)
 /** Dual chart: show the capo shape above the real chord, song-wide. */
@@ -726,9 +726,13 @@ const editHint = computed(
 )
 
 const mapOn = computed(() => capoMap.value && capo.value > 0)
-const lensChipLabel = computed(() =>
-  activeLens.value === 'nashville' ? 'Graus' : activeLens.value === 'letra' ? 'Só letra' : 'Lentes',
-)
+const chordLens = ref<Exclude<Lens, 'letra'>>(props.lens === 'nashville' ? 'nashville' : 'none')
+const nashvilleOn = computed(() => activeLens.value === 'nashville')
+const nashvilleHint = computed(() => {
+  if (!hasKey.value) return 'Precisa de {key:} na cifra'
+  if (twin.value) return 'Graus nos dois grupos'
+  return nashvilleOn.value ? 'graus' : '1 4 5 6m'
+})
 /**
  * Source pane / structural deletes stay "for everyone". Meta is editable in
  * both edits: content writes the official header; local keeps it on the
@@ -838,7 +842,6 @@ const metPulseTitle = computed(() =>
 
 function toggleMetPanel() {
   metOpen.value = !metOpen.value
-  lensOpen.value = false
   capoOpen.value = false
 }
 
@@ -1192,15 +1195,29 @@ function toggleMap() {
   capoMap.value = !capoMap.value
 }
 
-function toggleLens() {
-  lensOpen.value = !lensOpen.value
-  capoOpen.value = false
-}
-
-function pickLens(next: Lens) {
-  const value: Lens = lens.value === next ? 'none' : next
+function setLens(value: Lens) {
+  if (lens.value === value) return
+  if (value !== 'letra') chordLens.value = value
   lens.value = value
   emit('update:lens', value)
+}
+
+function showCifra() {
+  setLens(chordLens.value)
+}
+
+function showLetra() {
+  setLens('letra')
+}
+
+function toggleReading() {
+  if (lens.value === 'letra') showCifra()
+  else showLetra()
+}
+
+function toggleNashville() {
+  if (!hasKey.value) return
+  setLens(lens.value === 'nashville' ? 'none' : 'nashville')
 }
 
 function setHideComments(on: boolean) {
@@ -1468,7 +1485,6 @@ function beginEdit(kind: WriteMode) {
   zen.value = false
   lens.value = 'none'
   hideComments.value = false
-  lensOpen.value = false
   metOpen.value = false
   met.stop()
   sheet.value = false
@@ -1815,7 +1831,7 @@ function onKey(e: KeyboardEvent) {
   else if (k === '0') resetTone()
   else if (k === 'ArrowRight' && scrolling.value) mul.value = viewerMulStep(mul.value, 'up')
   else if (k === 'ArrowLeft' && scrolling.value) mul.value = viewerMulStep(mul.value, 'down')
-  else if (k === 'l' || k === 'L') toggleLens()
+  else if ((k === 'l' || k === 'L') && !isEdit.value) toggleReading()
   else if (k === 'm' || k === 'M') met.toggle()
   else if (k === 'f' || k === 'F') toggleFs()
   else if (k === 't' || k === 'T') requestTheme()
@@ -1827,7 +1843,6 @@ function onKey(e: KeyboardEvent) {
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
-    else if (lensOpen.value) lensOpen.value = false
     else if (metOpen.value) metOpen.value = false
     else if (toneOpen.value) toneOpen.value = false
     else if (moreOpen.value) moreOpen.value = false
@@ -2014,6 +2029,9 @@ function syncHeadH() {
 
 watch(hostSource, syncHostSource)
 watch([theme, bias, fit, lens, hideComments, met.sound, met.pulseHead, met.follow, met.countInOn], persistPrefs)
+watch(lens, (v) => {
+  if (v !== 'letra') chordLens.value = v
+})
 watch(
   () => props.lens,
   (next) => {
@@ -2788,15 +2806,44 @@ defineExpose({
           <CpvIcon name="scan" :size="16" />Ajuste
         </button>
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
+        <ReadingSwitch
+          variant="bar"
+          :letra="activeLens === 'letra'"
+          @cifra="showCifra"
+          @letra="showLetra"
+        />
         <button
-          data-lens-btn
-          title="Lentes de leitura (L)"
+          data-lens="nashville"
+          title="Nashville — graus no lugar dos nomes"
           class="cpv-bar-btn"
-          :style="{ background: activeLens === 'none' ? 'transparent' : 'var(--chord-fill)', color: activeLens === 'none' ? 'var(--text)' : 'var(--chord)', border: `1px solid ${activeLens === 'none' ? 'var(--line)' : 'var(--chord-edge)'}` }"
-          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="toggleLens"
+          :disabled="!hasKey"
+          :aria-pressed="nashvilleOn ? 'true' : 'false'"
+          :style="{
+            background: nashvilleOn ? 'var(--chord-fill)' : 'transparent',
+            color: nashvilleOn ? 'var(--chord)' : 'var(--text)',
+            border: `1px solid ${nashvilleOn ? 'var(--chord-edge)' : 'var(--line)'}`,
+            opacity: hasKey ? '1' : '0.4',
+            cursor: hasKey ? 'pointer' : 'default',
+          }"
+          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
+          @click="toggleNashville"
         >
-          <CpvIcon name="glasses" :size="16" />{{ lensChipLabel }}
+          <CpvIcon name="glasses" :size="16" />Graus
+        </button>
+        <button
+          data-comments-toggle
+          :title="hideComments ? 'Mostrar comentários de ensaio' : 'Ocultar comentários de ensaio'"
+          class="cpv-bar-btn"
+          :aria-pressed="hideComments ? 'true' : 'false'"
+          :style="{
+            background: hideComments ? 'var(--sel)' : 'transparent',
+            color: 'var(--text)',
+            border: `1px solid ${hideComments ? 'var(--sel-line)' : 'var(--line)'}`,
+          }"
+          style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+          @click="setHideComments(!hideComments)"
+        >
+          <CpvIcon name="eyeOff" :size="16" />Comentários
         </button>
         <button
           data-met-btn
@@ -2840,7 +2887,7 @@ defineExpose({
     <div
       v-if="!isEdit && phone && isPopulated"
       class="cpv-chrome"
-      :class="{ 'is-hidden': chromeHidden }"
+      :class="{ 'is-hidden': chromeHidden || moreOpen }"
       style="position:absolute;bottom:0;left:0;right:0;z-index:13;padding:0 10px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:stretch;gap:8px;"
     >
       <!-- No switch here: on a phone the dock is already full, so the personal
@@ -2852,6 +2899,15 @@ defineExpose({
       </div>
 
       <div class="cpv-hit cpv-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
+        <div style="padding:6px;border-bottom:1px solid var(--line-soft);">
+          <ReadingSwitch
+            variant="dock"
+            :letra="activeLens === 'letra'"
+            :height="dockCtrlH"
+            @cifra="showCifra"
+            @letra="showLetra"
+          />
+        </div>
         <!-- The list gets its own row: the dock below is already full. -->
         <div v-if="setlist.on.value" style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--line-soft);">
           <button
@@ -3211,19 +3267,6 @@ defineExpose({
       @toggle-count-in="met.toggleCountIn()"
     />
 
-    <LensSheet
-      v-if="lensOpen && !isEdit"
-      :compact="compact"
-      :lens="activeLens"
-      :has-key="hasKey"
-      :twin="twin"
-      :capo="capo"
-      :hide-comments="hideComments"
-      @close="lensOpen = false"
-      @pick="pickLens"
-      @toggle-comments="setHideComments(!hideComments)"
-    />
-
     <NewChartDialog
       v-if="novaOpen"
       :compact="compact"
@@ -3291,7 +3334,28 @@ defineExpose({
           <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="moreOpen = false"><CpvIcon name="x" :size="16" /></button>
         </div>
         <button data-theme-btn class="cpv-surface-btn cpv-more-item" :title="themeTitle" @click="requestTheme"><CpvIcon :name="themeIcon(themeMode)" :size="18" /><span class="cpv-more-copy">Tema</span><span>{{ themeLabel(themeMode) }}</span></button>
-        <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleLens()"><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Lentes de leitura</span><span>Nomes, graus ou só letra</span></button>
+        <button
+          class="cpv-surface-btn cpv-more-item"
+          data-lens="nashville"
+          :disabled="!hasKey"
+          :aria-pressed="nashvilleOn ? 'true' : 'false'"
+          :style="{
+            borderColor: nashvilleOn ? 'var(--chord-edge)' : undefined,
+            background: nashvilleOn ? 'var(--chord-soft)' : undefined,
+            opacity: hasKey ? '1' : '0.45',
+          }"
+          @click="toggleNashville"
+        ><CpvIcon name="glasses" :size="18" /><span class="cpv-more-copy">Nashville</span><span>{{ nashvilleHint }}</span></button>
+        <button
+          class="cpv-surface-btn cpv-more-item"
+          data-comments-toggle
+          :aria-pressed="hideComments ? 'true' : 'false'"
+          :style="{
+            borderColor: hideComments ? 'var(--sel-line)' : undefined,
+            background: hideComments ? 'var(--sel)' : undefined,
+          }"
+          @click="setHideComments(!hideComments)"
+        ><CpvIcon name="eyeOff" :size="18" /><span class="cpv-more-copy">Comentários de ensaio</span><span>{{ hideComments ? 'ocultos' : 'visíveis' }}</span></button>
         <button class="cpv-surface-btn cpv-more-item" @click="moreOpen = false; toggleMetPanel()"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ met.bpm.value }} BPM{{ met.running.value ? ' · tocando' : '' }}</span></button>
         <button
           v-if="hasStrum"
