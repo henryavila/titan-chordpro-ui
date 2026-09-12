@@ -6,6 +6,7 @@ export type {
   ChordproViewerEmits,
   ChordproViewerProps,
   ImageChoice,
+  Lens,
   ModesProp,
   SlideImage,
   ViewerCapabilities,

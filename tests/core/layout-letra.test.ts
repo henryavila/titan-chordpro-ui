@@ -105,3 +105,114 @@ describe('lens letra — reading projection', () => {
     expect(view.source).toContain('[G]')
   })
 })
+
+/** Tiny charts that reproduce production leaks — expected values from MARCAS-X. */
+function letraPlains(src: string): string[] {
+  return layoutChartFull(parse(src), { lens: 'letra' }).blocks.flatMap((b) =>
+    b.kind === 'stanza' || b.kind === 'chorus' ? b.rows.map((r) => r.plain) : [],
+  )
+}
+
+describe('lens letra — beat marks must not leak into the lyric', () => {
+  it('strips // glued after a chord that sat on punctuation (razão.[E]//)', () => {
+    const plains = letraPlains('{title:t}\nrazão.[E]//')
+    expect(plains).toEqual(['razão.'])
+  })
+
+  it('strips // glued after a word with no space (amigo[Em]//)', () => {
+    const plains = letraPlains('{title:t}\nmeu a[C]migo[Em]//')
+    expect(plains.join(' ')).toMatch(/amigo/)
+    expect(plains.join(' ')).not.toMatch(/\//)
+  })
+
+  it('strips a lone x glued after a word (Amém[G]x)', () => {
+    const plains = letraPlains('{title:t}\nAleluia Amém[G]x')
+    expect(plains).toEqual(['Aleluia Amém'])
+  })
+
+  it('strips /_ residue that production charts leave after a chord', () => {
+    const plains = letraPlains('{title:t}\nPai [D]/_')
+    expect(plains.join(' ')).toBe('Pai')
+    expect(plains.join(' ')).not.toMatch(/[/_]/)
+  })
+
+  it('drops a row that is only /_ — nothing to sing', () => {
+    const plains = letraPlains('{title:t}\n[D]/_\nverso aqui')
+    expect(plains.some((t) => t.includes('verso'))).toBe(true)
+    expect(plains.every((t) => !/^[/_]+$/.test(t.trim()))).toBe(true)
+  })
+
+  it('strips /- and x... residue on a sung line', () => {
+    const plains = letraPlains('{title:t}\nPai [Bm]/-\nFalar [Em]x...')
+    const all = plains.join('\n')
+    expect(all).toMatch(/Pai/)
+    expect(all).toMatch(/Falar/)
+    expect(all).not.toMatch(/\//)
+    expect(all).not.toMatch(/x\.\.\./i)
+  })
+
+  it('strips Oh!x/// glued to punctuation without a chord gap', () => {
+    const plains = letraPlains('{title:t}\nOh!x///')
+    expect(plains).toEqual(['Oh!'])
+  })
+
+  it('keeps a slash that splits a sung word (cami/nhar)', () => {
+    const plains = letraPlains('{title:t}\ncami/nhar com [G]fé')
+    expect(plains.join(' ')).toMatch(/cami\/nhar/)
+  })
+
+  it('keeps the letter x inside a Portuguese word (Exaltado)', () => {
+    const plains = letraPlains('{title:t}\nExaltado seja [G]o Senhor')
+    expect(plains.join(' ')).toMatch(/Exaltado/)
+  })
+
+  it('mensageiro fixture: no trailing / after razão / soprar', () => {
+    const plains = letraPlains(loadFixture('sda/021-mensageiro.cho'))
+    const all = plains.join('\n')
+    expect(all).toMatch(/razão/)
+    expect(all).not.toMatch(/razão\.\//)
+    expect(all).not.toMatch(/soprar\.\//)
+    expect(all).not.toMatch(/[xX]\/+/)
+    expect(all).not.toMatch(/(^|\s)\/+(\s|$)/)
+  })
+})
+
+/**
+ * Fixtures that leaked beat marks into Só letra before stripChordClock /
+ * stripBeatMarks were fixed. Each row is a real chart + a lyric fragment that
+ * must still be readable (so the test does not pass on an empty projection).
+ * Expected: MARCAS-X — no clock marks in the lyric projection.
+ */
+const LEAKED_FIXTURES: { rel: string; mustKeep: RegExp }[] = [
+  { rel: 'sda/021-mensageiro.cho', mustKeep: /razão/i },
+  { rel: 'sda/023-em-mim.cho', mustKeep: /Senhor.*aviva|aviva Tua obra/i },
+  { rel: 'sda/036-tu-es-o-meu-viver.cho', mustKeep: /amigo|contigo/i },
+  { rel: 'sda/058-dez-mil-razoes.cho', mustKeep: /Santo é Teu nome/i },
+  { rel: 'sda/063-digno-de-louvor.cho', mustKeep: /digno de louvor/i },
+  { rel: 'sda/081-a-vida-e-tao-boa.cho', mustKeep: /passarinhos|vida é tão boa/i },
+  { rel: 'sda/009-verdadeira-alegria-versao-muralhas.cho', mustKeep: /Amém|Aleluia/i },
+  { rel: 'sda/054-inteiramente-fiel-h311.cho', mustKeep: /filho do Rei|inteiramente/i },
+  { rel: 'sda/077-fortes.cho', mustKeep: /Senhor/i },
+]
+
+function assertNoBeatMarkLeak(all: string) {
+  expect(all, 'x/// run').not.toMatch(/[xX]\/+/)
+  expect(all, 'bare //').not.toMatch(/(^|\s)\/+(\s|$)/)
+  expect(all, 'lone x mark').not.toMatch(/(^|\s)[xX](\s|$)/)
+  expect(all, '/_ residue').not.toMatch(/\/_/)
+  expect(all, '/- residue').not.toMatch(/\/-/)
+  expect(all, 'x... residue').not.toMatch(/[xX]\.\.\./)
+  expect(all, 'glued / after lyric or punct').not.toMatch(/(?:[\p{L}\p{N}]|[.,!;:?)])\/(?:\s|$)/u)
+  expect(all, 'glued x mark after lyric or punct').not.toMatch(
+    /(?:[\p{L}]|[.,!;:?)])[xX](?:\/|\s|$|\.|_|-)/u,
+  )
+}
+
+describe('lens letra — production fixtures that used to leak', () => {
+  it.each(LEAKED_FIXTURES)('$rel keeps lyric and drops clock marks', ({ rel, mustKeep }) => {
+    const plains = letraPlains(loadFixture(rel))
+    const all = plains.join('\n')
+    expect(all, 'still has something to sing').toMatch(mustKeep)
+    assertNoBeatMarkLeak(all)
+  })
+})

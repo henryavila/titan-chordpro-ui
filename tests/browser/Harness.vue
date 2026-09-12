@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { Lens } from '../../src/vue'
 import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
 import oRei from '../../fixtures/sda/082-o-rei-vem-vindo.cho?raw'
@@ -59,6 +60,10 @@ const songs = computed(() =>
 )
 const theme = ref<'auto' | 'light' | 'dark'>('light')
 const themeControl = ref<'host' | 'preference'>('host')
+const lensQ = q.get('lens')
+const lens: Lens =
+  lensQ === 'letra' || lensQ === 'nashville' || lensQ === 'none' ? lensQ : 'none'
+const hideComments = q.get('comentarios') === '0'
 </script>
 <template>
   <div
@@ -106,6 +111,8 @@ const themeControl = ref<'host' | 'preference'>('host')
         :songs="songs"
         :theme="theme"
         :theme-control="themeControl"
+        :lens="lens"
+        :hide-comments="hideComments"
         :auto-hide="autoHide"
         :modes="modes"
         :fit-default="fitDefault"
