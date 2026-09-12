@@ -2,23 +2,33 @@
 import { computed, onMounted, ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import {
+  applyCifraClubEnrich,
+  durationFromYoutubeHtml,
+  hostOk,
   maskDurationMmSs,
   missingOf,
   MISSING_LABEL,
   normalizeDurationMmSs,
+  proposeCifraClubEnrich,
   readMeta,
   writeMeta,
+  youtubeEmbedUrl,
   type ChartMeta,
+  type EnrichProposal,
   type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
 
 /**
  * Full chart identity — title, artist, key, tempo, time, duration, reference.
- * The edit chrome only surfaces a door into this form; cramped header fields
- * cannot carry duration (auto-scroll) or time signature without burying them.
+ * Also: Completar com Cifra Club (meta only — never replaces the body).
  */
 
-const props = defineProps<{ compact: boolean; source: string }>()
+const props = defineProps<{
+  compact: boolean
+  source: string
+  fetchChart?: (url: string) => Promise<string>
+  fetchYoutubeDuration?: (videoId: string) => Promise<string>
+}>()
 const emit = defineEmits<{ close: []; apply: [source: string] }>()
 
 const SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -29,6 +39,15 @@ const keyEdit = ref(!String(readMeta(props.source).key ?? '').trim())
 const taps = ref<number[]>([])
 const titleEl = ref<HTMLInputElement | null>(null)
 
+type EnrichPhase = 'idle' | 'busy' | 'preview' | 'youtube' | 'error'
+const enrichPhase = ref<EnrichPhase>('idle')
+const enrichUrl = ref('')
+const enrichErr = ref('')
+const enrichNote = ref('')
+const proposal = ref<EnrichProposal | null>(null)
+const ytPick = ref<'remote' | 'local' | 'skip' | ''>('')
+
+const canFetch = computed(() => !!props.fetchChart)
 const missing = computed(() => missingOf(meta.value))
 const durationMissing = computed(() => missing.value.includes('duration'))
 const durationNote = computed(() => {
@@ -52,6 +71,10 @@ const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
 const minor = computed(() => /m$/.test(String(meta.value.key ?? '')))
 const showKeyPad = computed(() => keyEdit.value || !keyRoot.value)
 
+const wide = computed(
+  () => enrichPhase.value === 'youtube' || enrichPhase.value === 'preview',
+)
+
 const geom = computed(() =>
   props.compact
     ? {
@@ -67,7 +90,7 @@ const geom = computed(() =>
     : {
         align: 'center',
         wrapPad: '20px',
-        max: '480px',
+        max: wide.value ? '720px' : '480px',
         maxH: '92%',
         pad: '20px 18px 16px',
         radius: '20px',
@@ -80,6 +103,18 @@ const chip = (on: boolean) => ({
   background: on ? 'var(--chord)' : 'transparent',
   color: on ? 'var(--chord-ink)' : 'var(--text)',
   borderColor: on ? 'var(--chord)' : 'var(--line)',
+})
+
+const patchLabels = computed(() => {
+  const p = proposal.value?.patch
+  if (!p) return [] as string[]
+  const out: string[] = []
+  if (p.x_strum) out.push('batida (x_strum)')
+  if (p.x_origem) out.push('origem')
+  for (const k of ['title', 'subtitle', 'key', 'tempo', 'time', 'duration'] as const) {
+    if (p[k]) out.push(MISSING_LABEL[k] ?? k)
+  }
+  return out
 })
 
 function setMeta(k: MetaKey, v: string) {
@@ -122,6 +157,102 @@ function apply() {
   emit('apply', writeMeta(props.source, next))
 }
 
+function resetEnrich() {
+  enrichPhase.value = 'idle'
+  enrichErr.value = ''
+  enrichNote.value = ''
+  proposal.value = null
+  ytPick.value = ''
+}
+
+async function runEnrich() {
+  const u = enrichUrl.value.trim()
+  if (!u) {
+    enrichErr.value = 'Cole o endereço do Cifra Club'
+    enrichPhase.value = 'error'
+    return
+  }
+  if (!hostOk(u)) {
+    enrichErr.value = 'Só cifraclub.com.br'
+    enrichPhase.value = 'error'
+    return
+  }
+  if (!props.fetchChart) {
+    enrichErr.value = 'Buscar no Cifra Club não está disponível neste site'
+    enrichPhase.value = 'error'
+    return
+  }
+  enrichPhase.value = 'busy'
+  enrichErr.value = ''
+  try {
+    const html = await props.fetchChart(u)
+    const live = writeMeta(props.source, meta.value)
+    const p = proposeCifraClubEnrich(live, html, { url: u })
+    proposal.value = p
+    ytPick.value = ''
+    if (p.youtube) {
+      enrichPhase.value = 'youtube'
+      enrichNote.value = p.capoWarning ?? ''
+    } else {
+      enrichPhase.value = 'preview'
+      enrichNote.value = p.capoWarning ?? ''
+    }
+  } catch {
+    enrichErr.value = 'Não deu para ler essa página no Cifra Club'
+    enrichPhase.value = 'error'
+  }
+}
+
+function onEnrichPaste(e: ClipboardEvent) {
+  const t = (e.clipboardData?.getData('text') ?? '').trim()
+  if (!hostOk(t)) return
+  e.preventDefault()
+  enrichUrl.value = t
+  enrichErr.value = ''
+  if (props.fetchChart) void runEnrich()
+}
+
+async function fillDuration(id: string, m: ChartMeta): Promise<ChartMeta> {
+  if (!id || !props.fetchYoutubeDuration) return m
+  if (String(m.duration ?? '').trim()) return m
+  try {
+    const raw = await props.fetchYoutubeDuration(id)
+    const dur =
+      /^\d{1,2}:\d{2}$/.test(raw.trim()) || /^\d+:\d{2}:\d{2}$/.test(raw.trim())
+        ? normalizeDurationMmSs(raw.trim())
+        : durationFromYoutubeHtml(raw)
+    if (dur) return { ...m, duration: dur }
+  } catch {
+    /* keep asking on the form */
+  }
+  return m
+}
+
+async function commitEnrich() {
+  const p = proposal.value
+  if (!p) return
+  if (p.youtube && !ytPick.value) {
+    enrichErr.value = 'Escolha qual vídeo usar, ou pule o YouTube'
+    return
+  }
+  enrichPhase.value = 'busy'
+  enrichErr.value = ''
+  const youtubeId =
+    ytPick.value === 'remote'
+      ? p.youtube?.remoteId
+      : ytPick.value === 'local'
+        ? p.youtube?.localId
+        : null
+  const live = writeMeta(props.source, meta.value)
+  let next = applyCifraClubEnrich(live, p, { youtubeId: youtubeId || null })
+  let m = readMeta(next)
+  if (youtubeId) m = await fillDuration(youtubeId, m)
+  next = writeMeta(next, m)
+  meta.value = { ...m }
+  keyEdit.value = !String(m.key ?? '').trim()
+  emit('apply', next)
+}
+
 onMounted(() => {
   titleEl.value?.focus()
   titleEl.value?.select()
@@ -149,6 +280,169 @@ onMounted(() => {
           <span style="font-size:12.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Título, tom, andamento, compasso e duração — o que a leitura e a rolagem precisam.</span>
         </div>
         <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="16" /></button>
+      </div>
+
+      <!-- Cifra Club enrich (meta only) -->
+      <div
+        data-meta-enrich
+        style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line);"
+      >
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra Club</span>
+          <span style="font-size:13px;font-weight:700;letter-spacing:-0.02em;">Completar com Cifra Club</span>
+          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Traz batida, YouTube e o que faltar — sem substituir a cifra.</span>
+        </div>
+
+        <template v-if="!canFetch">
+          <span data-meta-enrich-unavailable style="font-size:12px;line-height:1.45;color:var(--muted);">Buscar no Cifra Club não está disponível — o site precisa buscar a página.</span>
+        </template>
+        <template v-else>
+          <div style="display:flex;gap:8px;align-items:stretch;">
+            <input
+              v-model="enrichUrl"
+              type="url"
+              data-meta-enrich-url
+              placeholder="cifraclub.com.br/artista/musica"
+              spellcheck="false"
+              :disabled="enrichPhase === 'busy'"
+              style="flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;"
+              @paste="onEnrichPaste"
+              @keydown.enter.prevent="runEnrich"
+            >
+            <button
+              data-meta-enrich-fetch
+              :disabled="enrichPhase === 'busy'"
+              style="flex:none;height:40px;padding:0 14px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
+              @click="runEnrich"
+            >{{ enrichPhase === 'busy' ? 'Buscando…' : 'Buscar' }}</button>
+          </div>
+        </template>
+
+        <span v-if="enrichPhase === 'error' && enrichErr" data-meta-enrich-error style="font-size:12px;line-height:1.45;color:var(--danger);">{{ enrichErr }}</span>
+
+        <!-- YouTube ask -->
+        <div
+          v-if="enrichPhase === 'youtube' && proposal?.youtube"
+          data-meta-enrich-youtube
+          style="display:flex;flex-direction:column;gap:10px;padding-top:4px;"
+        >
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:12.5px;font-weight:700;">Qual vídeo é o certo?</span>
+            <span data-meta-enrich-yt-title style="font-size:12px;color:var(--muted);">{{ proposal.youtube.songTitle }}</span>
+          </div>
+          <div :style="{ gridTemplateColumns: props.compact ? '1fr' : '1fr 1fr' }" style="display:grid;gap:10px;">
+            <div
+              v-if="proposal.youtube.remoteId"
+              data-meta-enrich-yt-remote
+              :style="chip(ytPick === 'remote')"
+              style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid;border-radius:14px;cursor:pointer;"
+              @click="ytPick = 'remote'"
+            >
+              <span style="font-size:11px;font-weight:700;">Cifra Club</span>
+              <a
+                :href="proposal.youtube.remoteUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-meta-enrich-yt-remote-link
+                style="font-size:10.5px;font-family:var(--cpv-font-chords,'Space Mono',monospace);color:var(--chord);text-decoration:none;word-break:break-all;"
+                @click.stop
+              >{{ proposal.youtube.remoteUrl }}</a>
+              <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;">
+                <iframe
+                  :src="youtubeEmbedUrl(proposal.youtube.remoteId)"
+                  title="YouTube Cifra Club"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen
+                  style="position:absolute;inset:0;width:100%;height:100%;border:0;"
+                />
+              </div>
+              <button
+                type="button"
+                data-meta-enrich-yt-pick-remote
+                :style="chip(ytPick === 'remote')"
+                style="height:34px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                @click.stop="ytPick = 'remote'"
+              >Usar este</button>
+            </div>
+            <div
+              v-if="proposal.youtube.localId"
+              data-meta-enrich-yt-local
+              :style="chip(ytPick === 'local')"
+              style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid;border-radius:14px;cursor:pointer;"
+              @click="ytPick = 'local'"
+            >
+              <span style="font-size:11px;font-weight:700;">Já na cifra</span>
+              <a
+                :href="proposal.youtube.localUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-meta-enrich-yt-local-link
+                style="font-size:10.5px;font-family:var(--cpv-font-chords,'Space Mono',monospace);color:var(--chord);text-decoration:none;word-break:break-all;"
+                @click.stop
+              >{{ proposal.youtube.localUrl }}</a>
+              <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;">
+                <iframe
+                  :src="youtubeEmbedUrl(proposal.youtube.localId)"
+                  title="YouTube local"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen
+                  style="position:absolute;inset:0;width:100%;height:100%;border:0;"
+                />
+              </div>
+              <button
+                type="button"
+                data-meta-enrich-yt-pick-local
+                :style="chip(ytPick === 'local')"
+                style="height:34px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                @click.stop="ytPick = 'local'"
+              >Usar este</button>
+            </div>
+          </div>
+          <button
+            type="button"
+            data-meta-enrich-yt-skip
+            style="align-self:flex-start;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
+            @click="ytPick = 'skip'"
+          >Pular YouTube</button>
+        </div>
+
+        <!-- Preview patch -->
+        <div
+          v-if="(enrichPhase === 'preview' || enrichPhase === 'youtube') && proposal"
+          data-meta-enrich-preview
+          style="display:flex;flex-direction:column;gap:6px;"
+        >
+          <span v-if="patchLabels.length" style="font-size:12px;line-height:1.45;color:var(--text);">
+            Vai preencher: <strong>{{ patchLabels.join(', ') }}</strong>
+          </span>
+          <span v-else style="font-size:12px;line-height:1.45;color:var(--muted);">Nada novo além do que você escolher no YouTube.</span>
+          <span
+            v-if="proposal.strumMissing"
+            data-meta-enrich-no-strum
+            style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;"
+          >Cifra Club não traz batida nesta página (o menu Batidas pode aparecer vazio).</span>
+          <span
+            v-for="c in proposal.conflicts"
+            :key="c.key"
+            data-meta-enrich-conflict
+            style="font-size:11.5px;line-height:1.45;color:var(--muted);"
+          >Mantido local: {{ MISSING_LABEL[c.key] ?? c.key }} {{ c.local }} (CC {{ c.remote }})</span>
+          <span v-if="enrichNote || proposal.capoWarning" data-meta-enrich-capo style="font-size:11.5px;line-height:1.45;color:var(--muted);">{{ enrichNote || proposal.capoWarning }}</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;">
+            <button
+              data-meta-enrich-apply
+              :disabled="Boolean(proposal.youtube && !ytPick)"
+              style="height:40px;padding:0 16px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+              @click="commitEnrich"
+            >Trazer metadados</button>
+            <button
+              data-meta-enrich-cancel
+              style="height:40px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
+              @click="resetEnrich"
+            >Cancelar busca</button>
+          </div>
+          <span v-if="enrichErr" data-meta-enrich-error style="font-size:12px;color:var(--danger);">{{ enrichErr }}</span>
+        </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line-soft);">

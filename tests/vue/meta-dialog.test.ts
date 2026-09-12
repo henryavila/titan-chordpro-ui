@@ -1,8 +1,19 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { chartBody, memoryStore } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
 import MetaDialog from '../../src/vue/edit/MetaDialog.vue'
-import { memoryStore } from '../../src/core'
+
+const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
+const TU_ES = readFileSync(join(helpers, 'cifraclub-tu-es-tabs.html'), 'utf8')
+const TUA_CC_NO_STRUM = readFileSync(join(helpers, 'cifraclub-tua-vontade-no-strum.html'), 'utf8')
+const SDA = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../../fixtures/sda/005-tua-vontade.cho'),
+  'utf8',
+)
 
 const mounted: ReturnType<typeof mount>[] = []
 afterEach(() => {
@@ -150,5 +161,74 @@ describe('edit chrome · dedicated metadata door', () => {
     await enterContent(w)
     const btn = w.get('[data-meta-open]')
     expect(btn.attributes('title')).toMatch(/duração/i)
+  })
+})
+
+describe('MetaDialog · Completar com Cifra Club', () => {
+  it('says fetch is unavailable without fetchChart', () => {
+    const w = dialog(SDA)
+    expect(w.text()).toContain('Completar com Cifra Club')
+    expect(w.find('[data-meta-enrich-unavailable]').exists()).toBe(true)
+    expect(w.find('[data-meta-enrich-url]').exists()).toBe(false)
+  })
+
+  it('asks for YouTube, then applies meta without replacing the body', async () => {
+    const fetchChart = vi.fn(async () => TU_ES)
+    const url = 'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/'
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+
+    await w.get('[data-meta-enrich-url]').setValue(url)
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+
+    expect(fetchChart).toHaveBeenCalledWith(url)
+    expect(w.find('[data-meta-enrich-youtube]').exists()).toBe(true)
+    expect(w.get('[data-meta-enrich-yt-title]').text()).toMatch(/Tua Vontade/i)
+    expect(w.get('[data-meta-enrich-yt-remote-link]').attributes('href')).toContain('YXnQ02HYB1w')
+    expect(w.find('iframe').exists()).toBe(true)
+
+    await w.get('[data-meta-enrich-yt-pick-remote]').trigger('click')
+    await w.get('[data-meta-enrich-apply]').trigger('click')
+    await flushPromises()
+
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(chartBody(next)).toBe(chartBody(SDA))
+    expect(next).not.toContain('[Bm7]')
+    expect(next).toMatch(/\{x_youtube:YXnQ02HYB1w\}/)
+    expect(next).toMatch(/\{x_strum:[^}]*bpm=71/)
+    expect(next).toContain(`{x_origem:${url}}`)
+    expect(next).toMatch(/\{tempo:75\}/)
+  })
+
+  it('refuses a non-Cifra-Club URL before fetching', async () => {
+    const fetchChart = vi.fn(async () => TU_ES)
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    await w.get('[data-meta-enrich-url]').setValue('https://example.com/x')
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    expect(fetchChart).not.toHaveBeenCalled()
+    expect(w.text()).toMatch(/Só cifraclub/i)
+  })
+
+  it('warns when the Cifra Club page has no batida', async () => {
+    const fetchChart = vi.fn(async () => TUA_CC_NO_STRUM)
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    await w.get('[data-meta-enrich-url]').setValue('https://www.cifraclub.com.br/adoradores/tua-vontade/')
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-meta-enrich-no-strum]').exists()).toBe(true)
+    expect(w.text()).toMatch(/não traz batida/i)
   })
 })

@@ -754,3 +754,142 @@ export function toPlain(source: string): string {
     })
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
+
+// ---------------------------------------------------- enrich existing charts
+
+const FILL_EMPTY_KEYS: readonly MetaKey[] = [
+  'title',
+  'subtitle',
+  'key',
+  'tempo',
+  'time',
+  'duration',
+]
+
+/** Chart body with known meta header lines removed (for body-equality checks). */
+export function chartBody(source: string): string {
+  return String(source ?? '')
+    .split('\n')
+    .filter((l) => {
+      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
+      if (!d) return true
+      const k = (d[1] ?? '').toLowerCase()
+      return !((META_KEYS as readonly string[]).includes(k) || k === 't' || k === 'st')
+    })
+    .join('\n')
+    .replace(/^\n+/, '')
+}
+
+export function youtubeWatchUrl(id: string): string {
+  const v = String(id ?? '').trim()
+  return v ? `https://www.youtube.com/watch?v=${v}` : ''
+}
+
+export function youtubeEmbedUrl(id: string): string {
+  const v = String(id ?? '').trim()
+  return v ? `https://www.youtube.com/embed/${v}` : ''
+}
+
+export type EnrichConflict = { key: MetaKey; local: string; remote: string }
+
+export type EnrichYoutube = {
+  songTitle: string
+  localId: string
+  remoteId: string
+  localUrl: string
+  remoteUrl: string
+}
+
+/**
+ * Meta-only proposal from a Cifra Club page. Never touches the chord body,
+ * never calls convert/fromPlain, never applies capo.
+ */
+export type EnrichProposal = {
+  proposed: ChartMeta
+  /** Auto fields: fill-empty + x_strum (prefer-cc) + x_origem. No youtube/capo. */
+  patch: ChartMeta
+  conflicts: EnrichConflict[]
+  youtube: EnrichYoutube | null
+  capoWarning: string | null
+  /** True when the CC page has no `strummings` payload (toolbar “Batidas” may still show). */
+  strumMissing: boolean
+}
+
+export function proposeCifraClubEnrich(
+  source: string,
+  html: string,
+  opts?: { url?: string },
+): EnrichProposal {
+  const page = fromCifraClubHtml(html)
+  const local = readMeta(source)
+  const strum = page.strums[0]
+  const proposed: ChartMeta = {
+    ...(page.title ? { title: page.title } : {}),
+    ...(page.subtitle ? { subtitle: page.subtitle } : {}),
+    ...(page.key ? { key: page.key } : {}),
+    ...(page.tempo ? { tempo: page.tempo } : {}),
+    ...(page.time ? { time: page.time } : {}),
+    ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
+    ...(strum ? { x_strum: formatXStrum(strum) } : {}),
+    ...(opts?.url?.trim() ? { x_origem: opts.url.trim() } : {}),
+  }
+
+  const patch: ChartMeta = {}
+  const conflicts: EnrichConflict[] = []
+  for (const k of FILL_EMPTY_KEYS) {
+    const remote = String(proposed[k] ?? '').trim()
+    if (!remote) continue
+    const loc = String(local[k] ?? '').trim()
+    if (!loc) patch[k] = remote
+    else if (loc !== remote) conflicts.push({ key: k, local: loc, remote })
+  }
+  if (proposed.x_strum) patch.x_strum = proposed.x_strum
+  if (proposed.x_origem) patch.x_origem = proposed.x_origem
+
+  const remoteId = String(proposed.x_youtube ?? '').trim()
+  const localId = String(local.x_youtube ?? '').trim()
+  const songTitle =
+    String(local.title ?? '').trim() || String(page.title ?? '').trim() || 'Música'
+  const youtube: EnrichYoutube | null = remoteId
+    ? {
+        songTitle,
+        localId,
+        remoteId,
+        localUrl: youtubeWatchUrl(localId),
+        remoteUrl: youtubeWatchUrl(remoteId),
+      }
+    : null
+
+  const capoN = Math.max(0, Math.min(9, Number(page.capo) || 0))
+  const capoWarning =
+    capoN > 0
+      ? `Cifra Club usa capo ${capoN} (formas no site). A cifra local não foi alterada.`
+      : null
+
+  return {
+    proposed,
+    patch,
+    conflicts,
+    youtube,
+    capoWarning,
+    strumMissing: page.strums.length === 0,
+  }
+}
+
+/** Alias used in the research contract — same as proposeCifraClubEnrich. */
+export const enrichMetaFromCifraClubHtml = proposeCifraClubEnrich
+
+/**
+ * Apply an enrich proposal. `youtubeId` is written only when provided (ask
+ * always). Capo is never taken from the proposal.
+ */
+export function applyCifraClubEnrich(
+  source: string,
+  proposal: EnrichProposal,
+  choice?: { youtubeId?: string | null },
+): string {
+  const next: ChartMeta = { ...readMeta(source), ...proposal.patch }
+  const id = choice?.youtubeId
+  if (typeof id === 'string' && id.trim()) next.x_youtube = id.trim()
+  return writeMeta(source, next)
+}

@@ -1,0 +1,54 @@
+version: 1
+schema_version: 2
+source: research-cifraclub-enrich-existentes.md
+source_hash: sha256:13a6807b463bd5cc089a50c53da0392b51092b7ba8219d109fef0289a061eb0f
+sections: []
+annotations:
+  - id: '36548269'
+    comment: 'Preferência: em conflito de YouTube, perguntar sempre ou sobrescrever com o do CC?'
+    tag: question
+    status: resolved
+    author: Henry Ávila
+    created_at: '2026-09-11T22:00:24.996Z'
+    updated_at: '2026-09-11T23:12:10.046Z'
+    replies:
+      - id: abb83686-57ec-4aed-b6a6-38fbe9ff68c4
+        author: Henry Ávila
+        comment: 'Ratificado: ask sempre. Mostrar nome da música + os dois links (quando existirem) e montar página web com os dois embeds YouTube para dar play e validar.'
+        created_at: '2026-09-11T23:12:10.046Z'
+    quote:
+      exact: '1. Em conflito `x_youtube` local ≠ CC: ask sempre, ou prefer-cc silencioso?'
+      prefix: ''
+      suffix: ''
+  - id: 3a007267
+    comment: 'Batida: sempre prefer-cc ou só fill-empty como os outros campos?'
+    tag: question
+    status: resolved
+    author: Henry Ávila
+    created_at: '2026-09-11T22:00:24.996Z'
+    updated_at: '2026-09-11T23:12:10.046Z'
+    replies:
+      - id: 55df58a3-f528-42a2-8d84-8a348173f449
+        author: Henry Ávila
+        comment: 'Ratificado: x_strum sobrescreve o local (hoje não existe nas fixtures).'
+        created_at: '2026-09-11T23:12:10.046Z'
+    quote:
+      exact: 2. `x_strum` deve **sempre** sobrescrever batida local, ou só se não houver `{x_strum:}`?
+      prefix: ''
+      suffix: ''
+  - id: 329bb3e3
+    comment: 'Recomendação do doc: colar URL + só meta + fill-empty. Concorda com v1 assim, ou quer busca por nome já no primeiro corte?'
+    tag: suggestion
+    status: resolved
+    author: Henry Ávila
+    created_at: '2026-09-11T22:00:24.996Z'
+    updated_at: '2026-09-11T23:12:10.046Z'
+    replies:
+      - id: 05eae50f-2d6d-4cd6-993f-532cbf3d61ae
+        author: Henry Ávila
+        comment: 'Ratificado com reforço: enrich NÃO usa cifra do CC nem o pipeline convert/import — só meta. Discovery continua colar URL. Validação em fixtures antes de produção. Só 1 versão canônica.'
+        created_at: '2026-09-11T23:12:10.046Z'
+    quote:
+      exact: '## 9. Recomendação'
+      prefix: ''
+      suffix: ''

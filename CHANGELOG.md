@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lente no ensaio:** trocar de música na lista não desliga mais Só letra / Nashville nem reexibe comentários que o músico tinha ocultado.
 - **Lente Só letra — marcas de relógio:** `x///`, `//`, `x`, `/_`, `/-` e `x...` não vazam mais na letra quando o acorde some (`razão.[E]//` → `razão.`, `Amém[G]x` → `Amém`). `cami/nhar` e a letra x em palavras (Exaltado) ficam. Rescan: 149 fixtures limpas. SoT: `docs/MARCAS-X.md` § Lente Só letra.
 
+## [0.1.3] - 2026-09-12
+
+### Added
+- **Enrich Cifra Club em cifra existente:** Metadados → “Completar com Cifra Club” traz `x_strum` / `x_origem` / buracos fill-empty **sem** substituir o corpo; YouTube pede escolha com embeds lado a lado. Core: `proposeCifraClubEnrich` / `applyCifraClubEnrich`.
+- **CLI `enrich-cc`:** batch/servidor — `--url` + `--in`/`--out` + `--youtube remote|skip` (corpo intocado).
+- Aviso na UI quando a página do CC não traz batida (`strummings` ausente).
+
+### Notes
+- Produção (SDA): `docs/HANDOFF-CC-ENRICH-PRODUCAO.md` · mapa `artifacts/cifraclub-url-map.json` keyed por `chordpro_id`/`song_id` (`scripts/discover-cifraclub-urls-from-db.mjs`).
+
 ## [0.1.2] - 2026-09-11
 
 ### Added
@@ -36,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.3
 [0.1.2]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.2
 [0.1.1]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.1
 
