@@ -12,6 +12,7 @@
 | Marcas `x///` e lente Só letra (2026-09-11) | [marcas-x-2026-09-11.md](./marcas-x-2026-09-11.md) |
 | Dock telefone: Ajuste no dock, Tema em Mais (2026-09-11) | [phone-dock-fit-theme-2026-09-11.md](./phone-dock-fit-theme-2026-09-11.md) |
 | npm publish stage+2FA; `@henryavila/titan-chordpro-ui@0.1.0` no registry (2026-09-11) | [npm-publish-2026-09-11.md](./npm-publish-2026-09-11.md) |
+| Pulso do metrônomo na barra: `.cpv-head-chip` é o invert do tempo 1 (2026-09-12) | [head-chip-pulse-2026-09-12.md](./head-chip-pulse-2026-09-12.md) |
 
 Consult before changing editor scope or handoff.
 Antes de mexer em integração (componente na página / standalone): leia
@@ -30,3 +31,5 @@ Antes de mexer no dock do telefone (fit/tema/mais): leia
 `phone-dock-fit-theme-2026-09-11.md`.
 Antes de publicar no npm / Trusted Publisher: leia
 `npm-publish-2026-09-11.md` — stage + approve 2FA; sem bypass2FA.
+Antes de pintar controle novo na barra do título / pulso do metrônomo: leia
+`head-chip-pulse-2026-09-12.md` — `cpv-head-chip`, sem whitelist de widgets.
