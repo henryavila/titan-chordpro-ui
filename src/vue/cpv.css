@@ -921,12 +921,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 4px;
   height: 30px;
-  padding: 0 2px;
+  padding: 0 4px;
   border-radius: 9px;
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
+}
+.cpv-keypill-split {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--chord-edge);
 }
 /*
  * Identity bar — floating card (same family as the dock). Compact controls
@@ -1312,16 +1319,36 @@ div.cpv-head-id {
   border-color: transparent;
 }
 
+/* Beat 1: the strip becomes ink. Do not remap --chord here — that is the
+   inverted background. Nested fills invert only via `.cpv-head-chip`.
+   Title / subtitle / meta / ghost sit on the strip. Anything with its own
+   fill (tom, capo, list index, a future chip) adds `cpv-head-chip` —
+   tests/vue/head-chip.test.ts fails the bar if a painted surface forgets it. */
 .cpv-head-hit-1 {
   --veil: var(--downbeat);
   --line: var(--downbeat);
   --text: var(--downbeat-ink);
   --muted: color-mix(in srgb, var(--downbeat-ink) 72%, transparent);
-  --chord: var(--downbeat);
-  --chord-soft: var(--downbeat-ink);
-  --chord-edge: var(--downbeat-ink);
-  --chord-ink: var(--downbeat);
+  --sel: color-mix(in srgb, var(--downbeat-ink) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--downbeat-ink) 28%, transparent);
+  --hover: color-mix(in srgb, var(--downbeat-ink) 8%, transparent);
   color: var(--downbeat-ink);
+}
+.cpv-head-hit-1 .cpv-head-chip {
+  --text: var(--downbeat);
+  --muted: color-mix(in srgb, var(--downbeat) 72%, transparent);
+  --chord: var(--downbeat);
+  --chord-ink: var(--downbeat);
+  --chord-soft: var(--downbeat-ink);
+  --chord-fill: color-mix(in srgb, var(--downbeat) 16%, var(--downbeat-ink));
+  --chord-hover: color-mix(in srgb, var(--downbeat) 12%, transparent);
+  --chord-edge: color-mix(in srgb, var(--downbeat) 40%, transparent);
+  --surface: color-mix(in srgb, var(--downbeat) 12%, var(--downbeat-ink));
+  --line: color-mix(in srgb, var(--downbeat) 40%, transparent);
+  --sel: color-mix(in srgb, var(--downbeat) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--downbeat) 28%, transparent);
+  --hover: color-mix(in srgb, var(--downbeat) 12%, transparent);
+  color: var(--downbeat);
 }
 .cpv-head-hit-n {
   animation: cpv-head-n var(--cpv-met-hit, 420ms) ease-out;

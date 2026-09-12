@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import e “Reescrever” usam o mesmo `rewriteToKey`.** Se `{key:}` não é o tom dos acordes e o capo é esse intervalo, o import **mostra** tom declarado / escrita / capo e só reescreve depois de confirmar. Capo de verdade (tom = o que está escrito) permanece.
 
 ### Fixed
+- **Pulso do metrônomo na barra do título:** no tempo 1 a pílula do tom inverte como superfície própria — “Tom”, acorde, +/capo e o divisor continuam legíveis e não se colam. A faixa ainda vira tinta; os chips não herdam a cor do fundo. Superfície pintada na barra entra em `.cpv-head-chip` (único alvo do invert); `tests/vue/head-chip.test.ts` recusa peça nova sem a classe.
 - **Sheet de tom e metrônomo:** reset e dual já ocupam o lugar, desligados no estado original — mudar tom/capo/BPM não estica o sheet.
 - **Lente no ensaio:** trocar de música na lista não desliga mais Só letra / Nashville nem reexibe comentários que o músico tinha ocultado.
 - **Lente Só letra — marcas de relógio:** `x///`, `//`, `x`, `/_`, `/-` e `x...` não vazam mais na letra quando o acorde some (`razão.[E]//` → `razão.`, `Amém[G]x` → `Amém`). `cami/nhar` e a letra x em palavras (Exaltado) ficam. Rescan: 149 fixtures limpas. SoT: `docs/MARCAS-X.md` § Lente Só letra.
