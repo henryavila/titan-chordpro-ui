@@ -13,7 +13,10 @@ import {
   exportCho,
   formatEta,
   hasSongDuration,
+  inferWrittenKey,
   isParseFatal,
+  keyIndex,
+  keyRootOf,
   layoutChartFull,
   maxPlainChars,
   missingOf,
@@ -23,9 +26,11 @@ import {
   parseXStrum,
   playheadAtScroll,
   readMeta,
+  rewriteToKey,
   runSec,
   scrollAtPlayhead,
   transposeToken,
+  formatToneShift,
   typeScale,
   usesFlats,
   viewerMulStep,
@@ -553,14 +558,49 @@ const metaGapLabel = computed(() => {
 })
 const hasKey = computed(() => !!meta.value.key)
 const flats = computed(() => usesFlats(meta.value.key))
+const fileTranspose = computed(() => {
+  const n = Number(meta.value.transpose)
+  return Number.isFinite(n) ? n : 0
+})
+const writtenKey = computed(() => inferWrittenKey(liveSource.value))
+const writtenMatchesKey = computed(() => {
+  const a = keyIndex(keyRootOf(writtenKey.value || ''))
+  const b = keyIndex(keyRootOf(meta.value.key || ''))
+  return a != null && b != null && a === b
+})
+const keyMismatch = computed(() => {
+  const a = keyIndex(keyRootOf(writtenKey.value || ''))
+  const b = keyIndex(keyRootOf(meta.value.key || ''))
+  return a != null && b != null && a !== b
+})
+const viewSemis = computed(() =>
+  isEdit.value ? 0 : offset.value + (writtenMatchesKey.value ? fileTranspose.value : 0),
+)
 const shownKey = computed(() => (meta.value.key ? transposeToken(meta.value.key, offset.value, flats.value) : ''))
+const playingKey = computed(() =>
+  meta.value.key ? transposeToken(meta.value.key, viewSemis.value, flats.value) : '',
+)
+const toneLabel = computed(() => {
+  if (!meta.value.key) return ''
+  const id = fileTranspose.value ? meta.value.key : shownKey.value
+  const bits = [id]
+  if (fileTranspose.value && playingKey.value && playingKey.value !== id) bits.push(`tocando em ${playingKey.value}`)
+  if (hasCapo.value) bits.push(`capo ${capo.value}`)
+  return bits.join(' · ')
+})
+const songKeyCaption = computed(() => {
+  const written = meta.value.key
+  const shift = formatToneShift(viewSemis.value)
+  if (!written || !shift) return ''
+  return `${written} · ${shift}`
+})
 /** The shapes a capo player frets: `capo` frets below what sounds. */
-const shapeKey = computed(() => transposeToken(meta.value.key || '', offset.value - capo.value, flats.value))
+const shapeKey = computed(() => transposeToken(meta.value.key || '', viewSemis.value - capo.value, flats.value))
 const fitOn = computed(() => (isEdit.value ? false : (fit.value ?? props.fitDefault)))
 const activeLens = computed<Lens>(() => (isEdit.value ? 'none' : lens.value))
 const layout = computed(() =>
   layoutChartFull(parsed.value, {
-    semitones: offset.value,
+    semitones: viewSemis.value,
     capo: capo.value,
     dual: capoMap.value,
     lens: activeLens.value,
@@ -643,6 +683,7 @@ const hasReset = computed(() => hasOffset.value || hasCapo.value)
 const canEditNow = computed(
   () => !isEdit.value && isPopulated.value && props.canEdit && modes.value.length > 0,
 )
+const canRewrite = computed(() => !!props.canEdit && keyMismatch.value && !!meta.value.key && !!writtenKey.value)
 /** The owner's entry into the queue: only where a chart can be changed at all. */
 const queueEntry = computed(
   () =>
@@ -663,7 +704,7 @@ const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}
 const capoHint = computed(() =>
   capo.value === 0
     ? 'A cifra fica no tom real. Com o capo, um mapa mostra a forma de cada acorde.'
-    : `A cifra segue em ${shownKey.value} — no capo ${capo.value} você faz as formas de ${shapeKey.value}.`,
+    : `A cifra segue em ${playingKey.value} — no capo ${capo.value} você faz as formas de ${shapeKey.value}.`,
 )
 /** The capo button says whether both chords are on screen. */
 const capoBtnLabel = computed(() =>
@@ -718,7 +759,7 @@ const canRedo = computed(() => {
 })
 const discardLabel = computed(() => (confirmDiscard.value ? 'Confirmar descarte' : 'Descartar'))
 const exportKeyNote = computed(() =>
-  meta.value.key ? `em ${shownKey.value}${capo.value ? ` · capo ${capo.value}` : ''}` : '',
+  meta.value.key ? `em ${playingKey.value}${capo.value ? ` · capo ${capo.value}` : ''}` : '',
 )
 
 /** Identity of the song for the per-song tempo memory. */
@@ -1125,6 +1166,24 @@ function resetTone() {
   stopScroll()
   offset.value = 0
   capo.value = 0
+}
+
+function rewriteToDeclared() {
+  const target = String(meta.value.key ?? '').trim()
+  if (!target) return
+  const r = rewriteToKey(liveSource.value, target)
+  if (!r?.changed) return
+  session.replace(r.source)
+  capo.value = Number(readMeta(r.source).capo) || 0
+  offset.value = 0
+  touch()
+  const n = r.transpose
+  toastMsg(
+    n
+      ? `Cifra reescrita em ${r.to} · tocando em ${r.from} (transpose ${n > 0 ? '+' : ''}${n})`
+      : `Cifra reescrita em ${r.to}`,
+  )
+  toneOpen.value = false
 }
 
 function setCapo(n: number) {
@@ -1999,7 +2058,7 @@ watch([offset, capo, themeMode, fitOn, bias, mode, dirty, activeLens, hideCommen
     transposeSemitones: offset.value,
     capo: capo.value,
     theme: themeMode.value,
-    displayKey: shownKey.value || null,
+    displayKey: playingKey.value || shownKey.value || null,
     lens: activeLens.value,
     hideComments: hideComments.value,
     dual: mapOn.value,
@@ -2370,7 +2429,7 @@ defineExpose({
           @click="toneOpen = true; zen = false; moreOpen = false"
         >
           <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ shownKey }}{{ hasCapo ? ` · capo ${capo}` : '' }}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ toneLabel }}</span>
           <CpvIcon name="chevronDown" :size="10" />
         </button>
         <!-- Header, not dock: parking the ficha or a landscape width must not move this. -->
@@ -2428,10 +2487,12 @@ defineExpose({
         <div v-if="hasKey" ref="capoBox" style="position:relative;flex:none;">
           <div class="cpv-keypill">
             <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(-1)">−</button>
-            <div style="display:flex;align-items:baseline;gap:5px;padding:0 5px;">
-              <span style="font-size:7.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
-              <span data-display-key style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
-              <span v-if="hasOffset" style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;color:var(--chord-ink);background:var(--chord);border-radius:4px;padding:1px 4px;line-height:1;">{{ offset > 0 ? '+' : '' }}{{ offset }}</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 5px;">
+              <span style="display:flex;align-items:baseline;gap:5px;">
+                <span style="font-size:7.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
+                <span data-display-key style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);line-height:1;">{{ playingKey }}</span>
+              </span>
+              <span v-if="songKeyCaption" data-tone-shift style="font-size:9.5px;font-weight:600;color:var(--muted);line-height:1.2;">{{ songKeyCaption }}</span>
             </div>
             <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="shift(1)">+</button>
             <span style="width:1px;height:18px;background:var(--chord-edge);margin:0 2px;" />
@@ -2439,6 +2500,13 @@ defineExpose({
               {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
             </button>
             <button v-if="hasReset" title="Voltar ao tom original, sem capo" style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;" @click="resetTone">Original</button>
+            <button
+              v-if="canRewrite"
+              data-rewrite-go
+              title="Reescrever os acordes no tom declarado"
+              style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;"
+              @click="rewriteToDeclared"
+            >Reescrever em {{ meta.key }}</button>
           </div>
           <div v-if="capoOpen" class="cpv-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:cpv-rise .18s ease-out;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -3183,14 +3251,18 @@ defineExpose({
 
     <ToneSheet
       v-if="toneOpen && phone && !isEdit"
-      :shown-key="shownKey"
+      :shown-key="playingKey"
       :has-offset="hasOffset"
       :offset-label="`${offset > 0 ? '+' : ''}${offset}`"
+      :song-caption="songKeyCaption"
       :capo-label="capoLabel"
       :capo-hint="capoHint"
       :has-capo="hasCapo"
       :has-reset="hasReset"
       :dual="twin"
+      :can-rewrite="canRewrite"
+      :written-key="writtenKey || ''"
+      :declared-key="meta.key || ''"
       @dual="toggleMap"
       @close="toneOpen = false"
       @down="shift(-1)"
@@ -3198,6 +3270,7 @@ defineExpose({
       @capo-down="setCapo(capo - 1)"
       @capo-up="setCapo(capo + 1)"
       @reset="resetTone"
+      @rewrite="rewriteToDeclared"
     />
 
     <div v-if="moreOpen && compact" style="position:absolute;inset:0;z-index:27;">

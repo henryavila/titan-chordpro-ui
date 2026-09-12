@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { chartBody, memoryStore } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
 import MetaDialog from '../../src/vue/edit/MetaDialog.vue'
+import { loadFixture } from '../helpers/load-fixture'
 
 const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
 const TU_ES = readFileSync(join(helpers, 'cifraclub-tu-es-tabs.html'), 'utf8')
@@ -61,6 +62,20 @@ async function enterContent(w: ReturnType<typeof viewer>) {
 }
 
 describe('MetaDialog', () => {
+  it('offers rewrite when the declared key is not what the chords spell', async () => {
+    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
+    const w = dialog(src)
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(true)
+    expect(w.text()).toMatch(/acordes estão em G/i)
+    await w.get('[data-meta-rewrite-go]').trigger('click')
+    const next = String(w.emitted('apply')?.at(-1)?.[0] ?? '')
+    expect(next).toMatch(/\{key:Ab\}/)
+    expect(next).toMatch(/\{transpose:-1\}/)
+    expect(next).toContain('[Ab]')
+    expect(next).not.toMatch(/\{capo:/)
+    expect(next).toContain('O Rei vem')
+  })
+
   it('loads every known header field into the form', () => {
     const w = dialog()
     expect((w.get('[data-meta-title]').element as HTMLInputElement).value).toBe('Uma')
@@ -100,6 +115,20 @@ describe('MetaDialog', () => {
     const next = w.emitted('apply')?.at(-1)?.[0] as string
     expect(next).toContain('{title:Novo}')
     expect(next).toContain(body)
+  })
+})
+
+describe('rewrite of a registered mismatch', () => {
+  it('rewrites from the tom pill and drops the fake capo', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
+    await flushPromises()
+    expect(w.find('[data-rewrite-go]').exists()).toBe(true)
+    await w.get('[data-rewrite-go]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-display-key]').text()).toBe('G')
+    expect(w.get('[data-tone-shift]').text()).toBe('Ab · − ½ tom')
+    w.unmount()
   })
 })
 

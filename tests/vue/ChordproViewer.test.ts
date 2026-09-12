@@ -1,6 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
+import { rewriteToKey } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 describe('ChordproViewer', () => {
@@ -19,6 +20,26 @@ describe('ChordproViewer', () => {
     await flushPromises()
     expect(w.get('[data-display-key]').text()).toBe('A')
     expect(w.html()).not.toBe(before)
+    w.unmount()
+  })
+
+  it('applies a saved {transpose:} on the transpose control', async () => {
+    const src = rewriteToKey(loadFixture('sda/082-o-rei-vem-vindo.cho'), 'Ab')!.source
+    const w = mount(ChordproViewer, {
+      props: { source: src, theme: 'dark', autoHide: false },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    expect(w.get('[data-display-key]').text()).toBe('G')
+    expect(w.get('[data-tone-shift]').text()).toBe('Ab · − ½ tom')
+    await w.get('[data-transpose-up]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-display-key]').text()).toBe('Ab')
+    expect(w.find('[data-tone-shift]').exists()).toBe(false)
+    await w.get('[data-transpose-up]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-display-key]').text()).toBe('A')
+    expect(w.get('[data-tone-shift]').text()).toBe('Ab · + ½ tom')
     w.unmount()
   })
 

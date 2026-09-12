@@ -11,6 +11,10 @@ import {
   normalizeDurationMmSs,
   proposeCifraClubEnrich,
   readMeta,
+  rewriteToKey,
+  inferWrittenKey,
+  keyIndex,
+  keyRootOf,
   writeMeta,
   youtubeEmbedUrl,
   type ChartMeta,
@@ -70,6 +74,12 @@ const edge = (k: string) => {
 const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
 const minor = computed(() => /m$/.test(String(meta.value.key ?? '')))
 const showKeyPad = computed(() => keyEdit.value || !keyRoot.value)
+const writtenKey = computed(() => inferWrittenKey(props.source))
+const keyMismatch = computed(() => {
+  const a = keyIndex(keyRootOf(writtenKey.value || ''))
+  const b = keyIndex(keyRootOf(meta.value.key || ''))
+  return a != null && b != null && a !== b
+})
 
 const wide = computed(
   () => enrichPhase.value === 'youtube' || enrichPhase.value === 'preview',
@@ -155,6 +165,14 @@ function apply() {
   const next = { ...meta.value, duration: normalizeDurationMmSs(meta.value.duration ?? '') }
   meta.value = next
   emit('apply', writeMeta(props.source, next))
+}
+
+function rewriteDeclared() {
+  const target = String(meta.value.key ?? '').trim()
+  if (!target) return
+  const r = rewriteToKey(props.source, target)
+  if (!r?.changed) return
+  emit('apply', r.source)
 }
 
 function resetEnrich() {
@@ -545,6 +563,22 @@ onMounted(() => {
           </div>
           <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
         </template>
+        <div
+          v-if="keyMismatch && writtenKey && meta.key"
+          data-meta-rewrite
+          style="display:flex;flex-direction:column;gap:8px;padding:10px 0 0;border-top:1px solid var(--line);"
+        >
+          <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
+            Os acordes estão em <strong style="color:var(--text);">{{ writtenKey }}</strong>, o tom declarado é
+            <strong style="color:var(--text);">{{ meta.key }}</strong>. Reescrever grava a cifra em {{ meta.key }} e guarda o transpose para continuar soando {{ writtenKey }}.
+          </span>
+          <button
+            type="button"
+            data-meta-rewrite-go
+            style="height:36px;border:0;border-radius:11px;background:var(--chord-fill);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+            @click="rewriteDeclared"
+          >Reescrever em {{ meta.key }}</button>
+        </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">

@@ -156,6 +156,10 @@ function parseRaw(src: string): {
       else if (k === 'time') meta.time = v
       else if (k === 'duration') meta.duration = v
       else if (k === 'capo') meta.capo = Number(v) || 0
+      else if (k === 'transpose') {
+        const n = Number(v)
+        if (Number.isFinite(n) && n !== 0) meta.transpose = n
+      }
       continue
     }
 

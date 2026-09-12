@@ -5,14 +5,17 @@ import { describe, expect, it } from 'vitest'
 import {
   convert,
   detect,
+  detectKeyRewrite,
   fromCifraClubHtml,
   fromPlain,
   hostOk,
+  inferWrittenKey,
   isChord,
   isChordLine,
   looksLikeCifraClubHtml,
   missingOf,
   readMeta,
+  rewriteToKey,
   titleFromUrl,
   toPlain,
   writeMeta,
@@ -347,7 +350,7 @@ describe('Cifra Club chords and HTML', () => {
     expect(missingOf(meta).filter((k) => k === 'tempo' || k === 'time')).toEqual([])
   })
 
-  it('transposes shape chords to sounding pitch when the page has a capo', () => {
+  it('keeps the written chords when the page has a capo that matches the tom', () => {
     const page = fromCifraClubHtml(WONDERWALL_CAPO)
     expect(page.capo).toBe('2')
     expect(page.key).toBe('Em')
@@ -355,13 +358,74 @@ describe('Cifra Club chords and HTML', () => {
 
     const r = convert(WONDERWALL_CAPO)
     const meta = readMeta(r.source)
+    expect(meta.key).toBe('Em')
     expect(meta.capo).toBe('2')
-    // Em shapes + capo 2 → F#m sounding
-    expect(meta.key).toBe('F#m')
-    expect(r.source).toContain('[F#m]')
-    expect(r.source).toContain('[A]')
-    expect(r.source).toContain('[E]')
+    expect(meta.transpose).toBeUndefined()
+    expect(r.source).toContain('[Em]')
+    expect(r.source).not.toContain('[F#m]')
     expect(r.source).toMatch(/\{capo:2\}/)
+  })
+
+  it('offers a key rewrite on import and does not apply it until confirmed', () => {
+    const html = `<!DOCTYPE html><html><head>
+<script type="application/ld+json">{"@type":"MusicComposition","name":"O Rei vem vindo"}</script>
+<script>self.__next_f.push([1,"{\\"songData\\":{\\"config\\":{\\"capo\\":1,\\"keyShape\\":\\"G\\"}}}"])</script>
+</head><body>
+<span data-anchor="--chord-tone">Ab</span>
+<pre class="_crVx" data-chord-content="true"><div class="kvMV">
+<b data-chord-name="G" data-chord-original-text="G">G</b>  <b data-chord-name="C" data-chord-original-text="C">C</b>  <b data-chord-name="D" data-chord-original-text="D">D</b>
+O Rei vem vindo
+</div></pre>
+</body></html>`
+    const page = fromCifraClubHtml(html)
+    expect(page.key).toBe('Ab')
+    expect(page.capo).toBe('1')
+    expect(page.body).toContain('G')
+
+    const r = convert(html)
+    expect(r.keyRewrite).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1 })
+    expect(r.source).toContain('[G]')
+    expect(r.source).not.toContain('[Ab]')
+    expect(r.source).toMatch(/\{capo:1\}/)
+
+    const done = rewriteToKey(r.source, r.keyRewrite!.declaredKey)
+    expect(done).not.toBeNull()
+    expect(readMeta(done!.source)).toMatchObject({ key: 'Ab', transpose: '-1' })
+    expect(done!.source).toContain('[Ab]')
+    expect(done!.source).not.toMatch(/\{capo:/)
+  })
+
+  it('import of a mismatched ChordPro offers the same rewrite as the button', () => {
+    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
+    expect(inferWrittenKey(src)).toBe('G')
+    const imported = convert(src)
+    expect(imported.changed).toBe(false)
+    expect(imported.keyRewrite).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1 })
+    expect(imported.source).toContain('[G]')
+    expect(detectKeyRewrite(imported.source)).toEqual(imported.keyRewrite)
+    const confirmed = rewriteToKey(imported.source, imported.keyRewrite!.declaredKey)
+    const button = rewriteToKey(src, 'Ab')
+    expect(confirmed).not.toBeNull()
+    expect(button).not.toBeNull()
+    expect(confirmed!.source.trim()).toBe(button!.source.trim())
+  })
+
+  it('rewrites a registered chart into the declared key and keeps the playing index', () => {
+    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
+    const r = rewriteToKey(src, 'Ab')
+    expect(r).not.toBeNull()
+    expect(r!.from).toBe('G')
+    expect(r!.to).toBe('Ab')
+    expect(r!.transpose).toBe(-1)
+    const meta = readMeta(r!.source)
+    expect(meta.key).toBe('Ab')
+    expect(meta.transpose).toBe('-1')
+    expect(meta.capo).toBeUndefined()
+    expect(r!.source).toContain('[Ab]')
+    expect(r!.source).toContain('[Db]')
+    expect(r!.source).not.toMatch(/\[G\]/)
+    expect(r!.source).toContain('O Rei vem')
+    expect(inferWrittenKey(r!.source)).toBe('Ab')
   })
 
   it('keeps every strumming section and maps abafada (code 0)', () => {

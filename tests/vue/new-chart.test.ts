@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import NewChartDialog from '../../src/vue/edit/NewChartDialog.vue'
 import { memoryStore } from '../../src/core'
+import { loadFixture } from '../helpers/load-fixture'
 
 const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
 
@@ -67,6 +68,38 @@ describe('a song with no chart', () => {
 })
 
 describe('bringing a chart in', () => {
+  it('asks before rewriting a fake-capo chart', async () => {
+    const w = dialog()
+    await w.get('[data-tab="text"]').trigger('click')
+    await w.get('[data-nova-text]').setValue(loadFixture('sda/082-o-rei-vem-vindo.cho'))
+    await w.get('[data-nova-text-go]').trigger('click')
+    expect(w.find('[data-nova-key-rewrite]').exists()).toBe(true)
+    expect(w.text()).toMatch(/Tom declarado Ab/)
+    expect(w.text()).toMatch(/escrita em G/)
+    expect(w.text()).toMatch(/capo 1/)
+    expect(w.get('[data-nova-go]').attributes('disabled')).toBeDefined()
+    await w.get('[data-nova-key-rewrite-go]').trigger('click')
+    expect(w.find('[data-nova-key-rewrite]').exists()).toBe(false)
+    await w.get('[data-nova-go]').trigger('click')
+    const committed = String(w.emitted('commit')?.[0]?.[0] ?? '')
+    expect(committed).toContain('[Ab]')
+    expect(committed).toMatch(/\{transpose:-1\}/)
+    expect(committed).not.toMatch(/\{capo:/)
+  })
+
+  it('can keep the written key and capo instead of rewriting', async () => {
+    const w = dialog()
+    await w.get('[data-tab="text"]').trigger('click')
+    await w.get('[data-nova-text]').setValue(loadFixture('sda/082-o-rei-vem-vindo.cho'))
+    await w.get('[data-nova-text-go]').trigger('click')
+    await w.get('[data-nova-key-rewrite-keep]').trigger('click')
+    await w.get('[data-nova-go]').trigger('click')
+    const committed = String(w.emitted('commit')?.[0]?.[0] ?? '')
+    expect(committed).toContain('[G]')
+    expect(committed).toMatch(/\{capo:1\}/)
+    expect(committed).not.toMatch(/\{transpose:/)
+  })
+
   it('converts pasted text and moves on to the details', async () => {
     const w = dialog()
     await w.get('[data-tab="text"]').trigger('click')

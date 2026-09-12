@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { parse, transpose } from '../../src/core/index'
+import { formatToneShift, parse, transpose } from '../../src/core/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
+
+describe('formatToneShift', () => {
+  it('writes the interval as signed tons with ½, blank at the original', () => {
+    expect(formatToneShift(0)).toBe('')
+    expect(formatToneShift(-1)).toBe('− ½ tom')
+    expect(formatToneShift(1)).toBe('+ ½ tom')
+    expect(formatToneShift(2)).toBe('+ 1 tom')
+    expect(formatToneShift(-2)).toBe('− 1 tom')
+    expect(formatToneShift(3)).toBe('+ 1 ½ tom')
+    expect(formatToneShift(-3)).toBe('− 1 ½ tom')
+    expect(formatToneShift(4)).toBe('+ 2 tons')
+    expect(formatToneShift(5)).toBe('+ 2 ½ tons')
+    expect(formatToneShift(-5)).toBe('− 2 ½ tons')
+    expect(formatToneShift(6)).toBe('+ 3 tons')
+  })
+})
 
 describe('transpose', () => {
   it('transpose +2 changes chord roots and displayKey', () => {
