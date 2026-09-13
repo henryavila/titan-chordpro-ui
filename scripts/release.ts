@@ -221,7 +221,7 @@ function printPlan(facts: Facts): string {
       `    pnpm test && pnpm typecheck`,
       `    git commit / tag v${plan.next} / push`,
       `    pnpm exec tsx scripts/release.ts --ship`,
-      `    human (UI): https://www.npmjs.com/package/${facts.name} → Staged packages → Approve`,
+      `    human (UI): https://www.npmjs.com/package/${facts.name}?activeTab=versions`,
     )
   }
   return lines.join('\n')
@@ -346,7 +346,7 @@ function main(): void {
     const result = ship(facts)
     process.stdout.write(`shipped ${result.tag}\n${facts.repoUrl}/releases/tag/${result.tag}\n`)
     process.stdout.write(
-      `\nNext (human, 2FA — npm UI only):\n  https://www.npmjs.com/package/${facts.name}\n  → Staged packages → Approve\n`,
+      `\nNext (human, 2FA — npm UI only):\n  https://www.npmjs.com/package/${facts.name}?activeTab=versions\n`,
     )
     return
   }

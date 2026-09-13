@@ -45,7 +45,5 @@ jobs:
             echo ""
             echo "This Release uploaded a **staged** version. It is **not** installable until a maintainer approves with 2FA on the **npm UI**:"
             echo ""
-            echo "https://www.npmjs.com/package/${NAME}"
-            echo ""
-            echo "→ **Staged packages** → **Approve**"
+            echo "https://www.npmjs.com/package/${NAME}?activeTab=versions"
           } >> "$GITHUB_STEP_SUMMARY"
