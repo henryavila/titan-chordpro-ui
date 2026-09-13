@@ -243,3 +243,5 @@ export type {
   StrumPattern,
   StrumSlot,
 } from './strum'
+export { applyStrumPreset, listStrumPresets } from './strum-presets'
+export type { StrumPreset } from './strum-presets'
