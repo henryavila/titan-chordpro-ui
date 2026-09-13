@@ -24,16 +24,19 @@ import {
 
 /**
  * Full chart identity — title, artist, key, tempo, time, duration, reference.
- * Also: Completar com Cifra Club (meta only — never replaces the body).
+ * Also: Completar com Cifra Club (meta only — never replaces the body),
+ * and Começar de novo (content edit only; explicit confirm → Nova cifra).
  */
 
 const props = defineProps<{
   compact: boolean
   source: string
+  /** Começar de novo / Nova cifra — only in “Para todos” (content) edit. */
+  allowRestart?: boolean
   fetchChart?: (url: string) => Promise<string>
   fetchYoutubeDuration?: (videoId: string) => Promise<string>
 }>()
-const emit = defineEmits<{ close: []; apply: [source: string] }>()
+const emit = defineEmits<{ close: []; apply: [source: string]; restart: [] }>()
 
 const SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const TIMES = ['4/4', '3/4', '6/8', '2/4']
@@ -50,6 +53,8 @@ const enrichErr = ref('')
 const enrichNote = ref('')
 const proposal = ref<EnrichProposal | null>(null)
 const ytPick = ref<'remote' | 'local' | 'skip' | ''>('')
+/** Two-step gate: first click reveals confirm; only confirm emits `restart`. */
+const restartAsk = ref(false)
 
 const canFetch = computed(() => !!props.fetchChart)
 const missing = computed(() => missingOf(meta.value))
@@ -181,6 +186,17 @@ function resetEnrich() {
   enrichNote.value = ''
   proposal.value = null
   ytPick.value = ''
+}
+
+function askRestart() {
+  restartAsk.value = true
+}
+function cancelRestart() {
+  restartAsk.value = false
+}
+function confirmRestart() {
+  restartAsk.value = false
+  emit('restart')
 }
 
 async function runEnrich() {
@@ -460,6 +476,46 @@ onMounted(() => {
             >Cancelar busca</button>
           </div>
           <span v-if="enrichErr" data-meta-enrich-error style="font-size:12px;color:var(--danger);">{{ enrichErr }}</span>
+        </div>
+
+        <div
+          v-if="props.allowRestart"
+          data-meta-restart-box
+          style="display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--line-soft);"
+        >
+          <template v-if="!restartAsk">
+            <button
+              type="button"
+              data-meta-restart
+              style="align-self:flex-start;min-height:36px;padding:0;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;"
+              @click="askRestart"
+            >Começar de novo</button>
+            <span style="font-size:11px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Abre Nova cifra (importar ou branco). A cifra atual só some quando você concluir.</span>
+          </template>
+          <div
+            v-else
+            data-meta-restart-confirm-panel
+            style="display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:var(--canvas);border:1px solid var(--danger);"
+          >
+            <span style="font-size:12.5px;font-weight:700;color:var(--text);">Substituir esta cifra?</span>
+            <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
+              Abre Nova cifra para importar do Cifra Club ou começar do zero. Ao concluir, esta cifra é substituída. Cancelar Nova cifra mantém o que está aqui.
+            </span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button
+                type="button"
+                data-meta-restart-confirm
+                style="height:40px;padding:0 14px;border:0;border-radius:12px;background:var(--danger);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+                @click="confirmRestart"
+              >Sim, abrir Nova cifra</button>
+              <button
+                type="button"
+                data-meta-restart-cancel
+                style="height:40px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
+                @click="cancelRestart"
+              >Cancelar</button>
+            </div>
+          </div>
         </div>
       </div>
 
