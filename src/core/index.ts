@@ -200,11 +200,13 @@ export {
   missingOf,
   proposeCifraClubEnrich,
   readMeta,
+  readStrumPatterns,
   rewriteToKey,
   SUPPORTED_HOSTS,
   titleFromUrl,
   toPlain,
   writeMeta,
+  writeStrumPatterns,
   youtubeEmbedUrl,
   youtubeWatchUrl,
 } from './import-chordpro'
@@ -220,6 +222,12 @@ export type {
   MetaKey,
   RewriteToKeyResult,
 } from './import-chordpro'
+export {
+  formatXStrumSet,
+  metaFromStrumSet,
+  parseXStrumSet,
+} from './strum-multi'
+export type { StrumPatternSet } from './strum-multi'
 export {
   decodeStrumPat,
   emptyPattern,

@@ -12,7 +12,12 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
-import { formatXStrum, patternFromCc, type StrumPattern } from './strum'
+import { parseXStrum, patternFromCc, type StrumPattern } from './strum'
+import {
+  metaFromStrumSet,
+  parseXStrumSet,
+  type StrumPatternSet,
+} from './strum-multi'
 import { hasSongDuration } from './timeline'
 import { keyIndex, keyRootOf, signedSemitoneDelta, transposeTextChords, usesFlats } from './transpose'
 
@@ -292,7 +297,9 @@ export function convert(text: string): ImportResult {
     if (!page.body.trim()) return { source: '', format: 'vazio', label: '', changed: false }
     const converted = stripLyricDots(fromPlain(page.body))
     const capoN = Math.max(0, Math.min(9, Number(page.capo) || 0))
-    const strum = page.strums[0]
+    const strumMeta = page.strums.length
+      ? metaFromStrumSet({ activeIndex: 0, patterns: page.strums })
+      : {}
     const meta: ChartMeta = {
       ...readMeta(converted),
       ...(page.title ? { title: page.title } : {}),
@@ -302,7 +309,7 @@ export function convert(text: string): ImportResult {
       ...(page.time ? { time: page.time } : {}),
       ...(capoN > 0 ? { capo: String(capoN) } : {}),
       ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
-      ...(strum ? { x_strum: formatXStrum(strum) } : {}),
+      ...strumMeta,
     }
     const source = writeMeta(converted, meta)
     const keyRewrite = detectKeyRewrite(source)
@@ -340,6 +347,7 @@ export const META_KEYS = [
   'x_origem',
   'x_youtube',
   'x_strum',
+  'x_strum_set',
 ] as const
 export type MetaKey = (typeof META_KEYS)[number]
 export type ChartMeta = Partial<Record<MetaKey, string>>
@@ -358,6 +366,50 @@ export function readMeta(source: string): ChartMeta {
       else if ((META_KEYS as readonly string[]).includes(k)) meta[k as MetaKey] = v
     })
   return meta
+}
+
+/**
+ * Read batida as a pattern set.
+ * - Only `{x_strum:}` → 1-pattern set.
+ * - `{x_strum_set:}` present → multi; when both exist, active slot mirrors `x_strum`.
+ */
+export function readStrumPatterns(source: string): StrumPatternSet {
+  const meta = readMeta(source)
+  const setRaw = String(meta.x_strum_set ?? '').trim()
+  const singleRaw = String(meta.x_strum ?? '').trim()
+  if (setRaw) {
+    const set = parseXStrumSet(setRaw)
+    if (set?.patterns.length) {
+      const live = singleRaw ? parseXStrum(singleRaw) : null
+      if (live) {
+        const i = set.activeIndex
+        return {
+          activeIndex: i,
+          patterns: set.patterns.map((p, idx) => (idx === i ? live : p)),
+        }
+      }
+      return set
+    }
+  }
+  if (singleRaw) {
+    const p = parseXStrum(singleRaw)
+    if (p) return { activeIndex: 0, patterns: [p] }
+  }
+  return { activeIndex: 0, patterns: [] }
+}
+
+/**
+ * Persist a pattern set: always writes active `{x_strum:}`; writes
+ * `{x_strum_set:}` only when N>1; clears both when empty.
+ */
+export function writeStrumPatterns(source: string, set: StrumPatternSet): string {
+  const cur: ChartMeta = { ...readMeta(source) }
+  delete cur.x_strum
+  delete cur.x_strum_set
+  const fields = metaFromStrumSet(set)
+  if (fields.x_strum) cur.x_strum = fields.x_strum
+  if (fields.x_strum_set) cur.x_strum_set = fields.x_strum_set
+  return writeMeta(source, cur)
 }
 
 /**
@@ -943,7 +995,9 @@ export function proposeCifraClubEnrich(
 ): EnrichProposal {
   const page = fromCifraClubHtml(html)
   const local = readMeta(source)
-  const strum = page.strums[0]
+  const strumMeta = page.strums.length
+    ? metaFromStrumSet({ activeIndex: 0, patterns: page.strums })
+    : {}
   const proposed: ChartMeta = {
     ...(page.title ? { title: page.title } : {}),
     ...(page.subtitle ? { subtitle: page.subtitle } : {}),
@@ -951,7 +1005,7 @@ export function proposeCifraClubEnrich(
     ...(page.tempo ? { tempo: page.tempo } : {}),
     ...(page.time ? { time: page.time } : {}),
     ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
-    ...(strum ? { x_strum: formatXStrum(strum) } : {}),
+    ...strumMeta,
     ...(opts?.url?.trim() ? { x_origem: opts.url.trim() } : {}),
   }
 
@@ -964,8 +1018,13 @@ export function proposeCifraClubEnrich(
     if (!loc) patch[k] = remote
     else if (loc !== remote) conflicts.push({ key: k, local: loc, remote })
   }
-  // Batida: keep-local — only fill when the chart has no x_strum yet.
-  if (proposed.x_strum && !String(local.x_strum ?? '').trim()) patch.x_strum = proposed.x_strum
+  // Batida: keep-local — only fill when the chart has no batida yet.
+  const localHasBatida =
+    !!String(local.x_strum ?? '').trim() || !!String(local.x_strum_set ?? '').trim()
+  if (!localHasBatida && proposed.x_strum) {
+    patch.x_strum = proposed.x_strum
+    if (proposed.x_strum_set) patch.x_strum_set = proposed.x_strum_set
+  }
   if (proposed.x_origem) patch.x_origem = proposed.x_origem
 
   const remoteId = String(proposed.x_youtube ?? '').trim()
