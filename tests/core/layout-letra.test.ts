@@ -1,6 +1,28 @@
+import { readdirSync, statSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { layoutChartFull, parse } from '../../src/core'
+import { layoutChartFull, maxPlainChars, parse, typeScale } from '../../src/core'
 import { ELE_VIVE_IMG, ENTREGA_1, JESUS_1, loadFixture } from '../helpers/load-fixture'
+
+const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../fixtures')
+
+function allChoFixtures(): string[] {
+  const out: string[] = []
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) walk(p)
+      else if (name.endsWith('.cho')) out.push(relative(FIXTURES_ROOT, p).split('\\').join('/'))
+    }
+  }
+  walk(FIXTURES_ROOT)
+  return out.sort()
+}
+
+function gapLines(scale: ReturnType<typeof typeScale>): number {
+  return parseFloat(scale.blockGap) / parseFloat(scale.lyricPx)
+}
 
 const JESUS = JESUS_1
 const ENTREGA = ENTREGA_1
@@ -214,5 +236,56 @@ describe('lens letra — production fixtures that used to leak', () => {
     const all = plains.join('\n')
     expect(all, 'still has something to sing').toMatch(mustKeep)
     assertNoBeatMarkLeak(all)
+  })
+})
+
+/**
+ * Só letra is a vocal reading surface, not a cut-down chord sheet. Between
+ * blocks the gap must be at most one blank line (≤ 1× lyricPx). Cifra keeps
+ * the taller rehearsal gap. Sweep: every fixture must lay out under that rule.
+ */
+describe('lens letra — spacing optimized for vocal reading', () => {
+  it('keeps the tall block gap on the cifra scale (unchanged)', () => {
+    const cifra = typeScale(0, false, 900, 40, false, 'none')
+    expect(gapLines(cifra)).toBeGreaterThan(2)
+  })
+
+  it('caps the letra block gap at one blank line', () => {
+    const letra = typeScale(0, false, 900, 40, false, 'letra')
+    expect(gapLines(letra)).toBeLessThanOrEqual(1)
+    expect(parseFloat(letra.blockGap)).toBeLessThanOrEqual(parseFloat(letra.lyricPx))
+  })
+
+  it('stays at most one blank line under fit and bias extremes', () => {
+    for (const fit of [false, true]) {
+      for (const bias of [-2, 0, 3]) {
+        const letra = typeScale(bias, fit, 900, 40, false, 'letra')
+        expect(gapLines(letra), `bias=${bias} fit=${fit}`).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  it('row padding is tighter than cifra — lyric reading, not chord lane', () => {
+    const cifra = typeScale(0, false, 900, 40, false, 'none')
+    const letra = typeScale(0, false, 900, 40, false, 'letra')
+    expect(parseFloat(letra.rowPad)).toBeLessThan(parseFloat(cifra.rowPad))
+  })
+
+  it('every fixture lays out in letra with at most one blank line between blocks', () => {
+    const fixtures = allChoFixtures()
+    expect(fixtures.length).toBeGreaterThan(100)
+
+    for (const rel of fixtures) {
+      const laid = layoutChartFull(parse(loadFixture(rel)), { lens: 'letra' })
+      const scale = typeScale(0, false, 900, maxPlainChars(laid.blocks) || 40, laid.twin, 'letra')
+      expect(gapLines(scale), rel).toBeLessThanOrEqual(1)
+
+      for (const b of laid.blocks) {
+        if (b.kind !== 'stanza' && b.kind !== 'chorus') continue
+        for (const row of b.rows) {
+          expect(row.plain.trim().length, `${rel} empty lyric row`).toBeGreaterThan(0)
+        }
+      }
+    }
   })
 })

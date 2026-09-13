@@ -550,6 +550,11 @@ export function typeScale(
   width: number,
   maxChars: number,
   twin = false,
+  /**
+   * Reading lens. `letra` is a vocal surface: at most one blank line between
+   * blocks, tighter row pad — not the cifra’s rehearsal gap with chords gone.
+   */
+  lens: Lens = 'none',
 ) {
   const base = 18 + bias * 1.7
   const factor = fitFactor(width, maxChars, base, fit)
@@ -558,6 +563,7 @@ export function typeScale(
   const tab = Math.max(9.5, Math.min(14, lyric * 0.62))
   // The dual chart needs a second chord lane above the line.
   const lane = twin ? 2.55 : 1.4
+  const letra = lens === 'letra'
   return {
     lyricPx: `${lyric.toFixed(1)}px`,
     chordPx: `${chord.toFixed(1)}px`,
@@ -568,8 +574,12 @@ export function typeScale(
     tabPx: `${tab.toFixed(1)}px`,
     tabLabelPx: `${(tab * 0.85).toFixed(1)}px`,
     tabRow: `${(tab * 1.8).toFixed(1)}px`,
-    rowPad: fit ? '3px' : '6px',
-    blockGap: `${Math.round(lyric * (fit ? 2.1 : 2.6))}px`,
+    rowPad: letra ? (fit ? '2px' : '3px') : fit ? '3px' : '6px',
+    // Cifra: room for the chord lane between boxes. Letra: exactly one blank
+    // line (same px as lyricPx — Math.round would overshoot on fractional sizes).
+    blockGap: letra
+      ? `${lyric.toFixed(1)}px`
+      : `${Math.round(lyric * (fit ? 2.1 : 2.6))}px`,
     /** Average pixel height of one bar — the auto-scroll fallback pace. */
     barPx: Math.max(18, lyric * 1.15 + chord * lane + (fit ? 6 : 12)),
   }

@@ -528,6 +528,17 @@
   position: relative;
   padding: 12px 16px 14px;
 }
+/* Só letra: lyric sheet for the vocalist — not a chord chart with the chords cut out. */
+.cpv-root[data-cpv-lens='letra'] .cpv-block {
+  padding: 4px 8px 6px;
+}
+.cpv-root[data-cpv-lens='letra'] .cpv-note {
+  margin: 0 0 12px;
+  padding: 10px 12px 11px;
+}
+.cpv-root[data-cpv-lens='letra'] .cpv-comment {
+  margin: 0 0 6px;
+}
 .cpv-chorus::before {
   content: '';
   position: absolute;
