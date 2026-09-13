@@ -442,7 +442,9 @@ O Rei vem vindo
     const muted = page.strums[0]?.slots.find((s) => s.essence === 'muted')
     expect(muted).toEqual({ dir: 'down', contact: 'hit', essence: 'muted' })
     const r = convert(CEU_AZUL_STRUM)
-    // First pattern is what writeMeta stores
+    // Active pattern in x_strum; full set in x_strum_set
     expect(readMeta(r.source).x_strum).toContain('Da')
+    expect(readMeta(r.source).x_strum_set).toBeTruthy()
+    expect(readMeta(r.source).x_strum_set!.split('|').length).toBe(3)
   })
 })
