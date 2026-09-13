@@ -27,9 +27,10 @@ describe('listStrumPresets', () => {
   it('patterns round-trip via formatXStrum/parseXStrum without rest tokens', () => {
     for (const p of listStrumPresets()) {
       const raw = formatXStrum(p.pattern)
-      expect(raw).not.toContain('-')
       const pat = raw.match(/pat=([^;]*)/)?.[1] ?? ''
+      expect(pat).not.toContain('-')
       expect(pat).toMatch(ALLOWED_PAT)
+      expect(p.pattern.slots.every((s) => s.contact !== 'rest')).toBe(true)
       const again = parseXStrum(raw)
       expect(again).not.toBeNull()
       expect(again!.slots).toEqual(p.pattern.slots)
@@ -53,7 +54,8 @@ describe('applyStrumPreset', () => {
     expect(next!.label).toBe(preset.pattern.label)
     expect(next!.slots).toEqual(preset.pattern.slots)
     expect(next!.slots).not.toBe(preset.pattern.slots)
-    expect(formatXStrum(next!)).not.toContain('-')
+    const pat = formatXStrum(next!).match(/pat=([^;]*)/)?.[1] ?? ''
+    expect(pat).not.toContain('-')
     expect(current.label).toBe('Rascunho')
     expect(current.slots).toHaveLength(8)
   })
