@@ -83,7 +83,7 @@
     "release:ship": "tsx scripts/release.ts --ship"
   },
   "dependencies": {
-    "jspdf": "^2.5.1"
+    "jspdf": "^4.2.1"
   },
   "peerDependencies": {
     "vexflow": "^4.2.3",
