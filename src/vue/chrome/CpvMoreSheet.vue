@@ -28,6 +28,8 @@ const emit = defineEmits<{
   toggleComments: []
   metronome: []
   strum: []
+  createBatida: []
+  editBatida: []
   export: []
   toggleOriginal: []
   openMy: []
@@ -68,11 +70,23 @@ const emit = defineEmits<{
       ><CpvIcon name="eyeOff" :size="18" /><span class="cpv-more-copy">Comentários de ensaio</span><span>{{ hideComments ? 'ocultos' : 'visíveis' }}</span></button>
       <button class="cpv-surface-btn cpv-more-item" @click="emit('metronome')"><CpvIcon name="metronome" :size="18" /><span class="cpv-more-copy">Metrônomo</span><span>{{ metBpm }} BPM{{ metRunning ? ' · tocando' : '' }}</span></button>
       <button
+        v-if="!hasStrum"
+        class="cpv-surface-btn cpv-more-item"
+        data-batida-create
+        @click="emit('createBatida')"
+      ><CpvIcon name="plus" :size="18" /><span class="cpv-more-copy">Criar batida</span><span>mapa de setas</span></button>
+      <button
         v-if="hasStrum"
         class="cpv-surface-btn cpv-more-item"
         data-strum-more
         @click="emit('strum')"
       ><span style="font-size:16px;width:18px;text-align:center;">↓↑</span><span class="cpv-more-copy">Batida</span><span>{{ strumOn ? 'visível' : 'mostrar' }}</span></button>
+      <button
+        v-if="hasStrum"
+        class="cpv-surface-btn cpv-more-item"
+        data-batida-edit-more
+        @click="emit('editBatida')"
+      ><CpvIcon name="pencil" :size="18" /><span class="cpv-more-copy">Editar batida</span><span>ajustar marcos</span></button>
       <button class="cpv-surface-btn cpv-more-item" @click="emit('export')"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro, PDF ou slides</span></button>
       <template v-if="showMine">
         <button class="cpv-surface-btn cpv-more-item" data-more-original @click="emit('toggleOriginal')">

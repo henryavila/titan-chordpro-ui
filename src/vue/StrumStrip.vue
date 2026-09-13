@@ -15,11 +15,13 @@ const props = withDefaults(
     barBeats?: number
     /** Show the “other patterns” control. */
     canPick?: boolean
+    /** Open-editor pencil — strip stays a read-only projection. */
+    canEdit?: boolean
   }>(),
-  { beatClock: -1, barBeats: 4, canPick: false },
+  { beatClock: -1, barBeats: 4, canPick: false, canEdit: false },
 )
 
-const emit = defineEmits<{ pick: [] }>()
+const emit = defineEmits<{ pick: []; edit: [] }>()
 
 const barBeats = computed(() => Math.max(1, props.barBeats || 4))
 const slotsPerBeat = computed(() =>
@@ -79,14 +81,25 @@ function ariaSlot(s: StrumSlot): string {
     <div class="strum-head">
       <span class="strum-title">{{ pattern.label || 'Batida' }}</span>
       <span v-if="pattern.bpm" class="strum-bpm">{{ pattern.bpm }} BPM</span>
-      <button
-        v-if="canPick"
-        type="button"
-        class="strum-pick"
-        data-strum-pick
-        title="Outras batidas"
-        @click="emit('pick')"
-      >⋯</button>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:2px;">
+        <button
+          v-if="canEdit"
+          type="button"
+          class="strum-edit"
+          data-strum-edit
+          title="Editar batida"
+          aria-label="Editar batida"
+          @click="emit('edit')"
+        >✎</button>
+        <button
+          v-if="canPick"
+          type="button"
+          class="strum-pick"
+          data-strum-pick
+          title="Outras batidas"
+          @click="emit('pick')"
+        >⋯</button>
+      </span>
     </div>
     <div class="strum-row">
       <div
@@ -138,8 +151,8 @@ function ariaSlot(s: StrumSlot): string {
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.strum-pick {
-  margin-left: auto;
+.strum-pick,
+.strum-edit {
   width: 28px;
   height: 24px;
   border: 0;
@@ -149,6 +162,10 @@ function ariaSlot(s: StrumSlot): string {
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
+}
+.strum-edit {
+  background: var(--chord-soft);
+  color: var(--chord);
 }
 .strum-row {
   display: flex;

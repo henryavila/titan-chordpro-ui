@@ -22,6 +22,9 @@ import {
   missingOf,
   MISSING_LABEL,
   normalizeSource,
+  beatsPerBar,
+  emptyPattern,
+  formatXStrum,
   parse,
   parseXStrum,
   playheadAtScroll,
@@ -29,19 +32,23 @@ import {
   rewriteToKey,
   runSec,
   scrollAtPlayhead,
+  sheetBpm,
   transposeToken,
   formatToneShift,
   typeScale,
   usesFlats,
   viewerMulStep,
+  writeMeta,
   STORE_KEYS,
   browserStore,
+  type StrumPattern,
 } from '@henryavila/titan-chordpro-ui'
 import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
+import BatidaSheet from './sheets/BatidaSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
 import StrumStrip from './StrumStrip.vue'
 import SourcePane from './edit/SourcePane.vue'
@@ -379,6 +386,8 @@ const strumPattern = computed(() => {
   return raw ? parseXStrum(raw) : null
 })
 const strumOn = ref(false)
+const batidaOpen = ref(false)
+const batidaDraft = ref<StrumPattern | null>(null)
 const strumDock = ref<HTMLElement | null>(null)
 const strumH = ref(0)
 let strumRo: ResizeObserver | null = null
@@ -390,6 +399,73 @@ watch(hasStrum, (ok) => {
 function toggleStrum() {
   if (!hasStrum.value) return
   strumOn.value = !strumOn.value
+}
+
+function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
+  return {
+    ...p,
+    slots: p.slots.map((s, i) =>
+      s.contact === 'rest'
+        ? { dir: i % 2 === 0 ? 'down' : 'up', contact: 'ghost' as const, essence: null }
+        : { ...s },
+    ),
+  }
+}
+
+function openBatidaCreate() {
+  const tempo = sheetBpm(meta.value.tempo)
+  const meter = String(meta.value.time ?? '').trim() || '4/4'
+  batidaDraft.value = emptyPattern({
+    bpm: tempo,
+    meter,
+    grid: 16,
+    label: 'Padrão',
+  })
+  batidaOpen.value = true
+}
+
+function openBatidaEdit() {
+  const p = strumPattern.value
+  if (!p) {
+    openBatidaCreate()
+    return
+  }
+  batidaDraft.value = normalizeBatidaPattern(p)
+  batidaOpen.value = true
+}
+
+function closeBatida() {
+  batidaOpen.value = false
+  batidaDraft.value = null
+}
+
+function publishBatidaSource(next: string) {
+  session.replace(next)
+  lastSrc = next
+  emit('update:source', next)
+  touch()
+}
+
+function saveBatida(pattern: StrumPattern) {
+  const cur = readMeta(liveSource.value)
+  const next = writeMeta(liveSource.value, {
+    ...cur,
+    x_strum: formatXStrum(normalizeBatidaPattern(pattern)),
+  })
+  publishBatidaSource(next)
+  closeBatida()
+  strumOn.value = true
+  toastMsg('Batida salva')
+}
+
+function deleteBatida() {
+  const cur = { ...readMeta(liveSource.value) }
+  delete cur.x_strum
+  const next = writeMeta(liveSource.value, cur)
+  publishBatidaSource(next)
+  closeBatida()
+  strumOn.value = false
+  toastMsg('Batida apagada')
 }
 function bindStrumDock(el: unknown) {
   const node = (el as HTMLElement | null) ?? null
@@ -1543,6 +1619,7 @@ function beginEdit(kind: WriteMode) {
   moreOpen.value = false
   metaOpen.value = false
   modePick.value = false
+  closeBatida()
   ov.myPanel.value = false
   ov.showOriginal.value = false
   bedit.reset()
@@ -1893,6 +1970,7 @@ function onKey(e: KeyboardEvent) {
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
+    else if (batidaOpen.value) closeBatida()
     else if (metOpen.value) metOpen.value = false
     else if (toneOpen.value) toneOpen.value = false
     else if (moreOpen.value) moreOpen.value = false
@@ -2424,6 +2502,8 @@ defineExpose({
       @toggle-comments="setHideComments(!hideComments)"
       @toggle-met="toggleMetPanel"
       @toggle-strum="toggleStrum"
+      @create-batida="openBatidaCreate"
+      @edit-batida="openBatidaEdit"
       @theme="requestTheme"
       @edit="enterEdit"
       @export="sheet = true"
@@ -2456,6 +2536,7 @@ defineExpose({
       :can-edit="canEditNow"
       :dock-icon-size="dockIconSize"
       :fit-on="fitOn"
+      :has-strum="hasStrum"
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
@@ -2470,6 +2551,7 @@ defineExpose({
       @edit="enterEdit"
       @toggle-fit="toggleFit"
       @more="moreOpen = true"
+      @create-batida="openBatidaCreate"
     />
 
     <button
@@ -2617,6 +2699,8 @@ defineExpose({
         :pattern="strumPattern"
         :beat-clock="met.running.value ? met.beatClock.value : -1"
         :bar-beats="met.bar.value"
+        :can-edit="true"
+        @edit="openBatidaEdit"
       />
     </div>
 
@@ -2666,6 +2750,17 @@ defineExpose({
       @toggle-pulse-head="met.togglePulseHead()"
       @toggle-follow="met.follow.value = !met.follow.value"
       @toggle-count-in="met.toggleCountIn()"
+    />
+
+    <BatidaSheet
+      v-if="batidaOpen && batidaDraft && !isEdit"
+      :compact="compact"
+      :pattern="batidaDraft"
+      :bar-beats="beatsPerBar(meta.time)"
+      :can-delete="hasStrum"
+      @close="closeBatida"
+      @save="saveBatida"
+      @delete="deleteBatida"
     />
 
     <NewChartDialog
@@ -2754,6 +2849,8 @@ defineExpose({
       @toggle-comments="setHideComments(!hideComments)"
       @metronome="moreOpen = false; toggleMetPanel()"
       @strum="moreOpen = false; toggleStrum()"
+      @create-batida="moreOpen = false; openBatidaCreate()"
+      @edit-batida="moreOpen = false; openBatidaEdit()"
       @export="moreOpen = false; sheet = true"
       @toggle-original="moreOpen = false; toggleOriginal(!ov.showOriginal.value)"
       @open-my="moreOpen = false; ov.myPanel.value = true"

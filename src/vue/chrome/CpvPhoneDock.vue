@@ -28,6 +28,7 @@ defineProps<{
   canEdit: boolean
   dockIconSize: string
   fitOn: boolean
+  hasStrum: boolean
 }>()
 
 const emit = defineEmits<{
@@ -45,6 +46,7 @@ const emit = defineEmits<{
   edit: []
   toggleFit: []
   more: []
+  createBatida: []
 }>()
 </script>
 
@@ -117,6 +119,16 @@ const emit = defineEmits<{
           <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="emit('smallerType')">A−</button>
           <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="emit('biggerType')">A+</button>
         </span>
+        <button
+          v-if="!hasStrum"
+          data-batida-create
+          class="cpv-ghost"
+          aria-label="Criar batida"
+          title="Criar batida"
+          :style="{ width: dockIconSize, height: dockCtrlH }"
+          style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;border:1px dashed var(--line);"
+          @click="emit('createBatida')"
+        ><CpvIcon name="plus" :size="16" /></button>
         <button
           v-if="canEdit"
           data-edit

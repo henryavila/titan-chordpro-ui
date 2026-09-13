@@ -228,7 +228,9 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     expect(chartBody(next)).toBe(chartBody(SDA))
     expect(next).not.toContain('[Bm7]')
     expect(next).toMatch(/\{x_youtube:YXnQ02HYB1w\}/)
-    expect(next).toMatch(/\{x_strum:[^}]*bpm=71/)
+    // keep-local: SDA already has x_strum — enrich must not overwrite batida
+    expect(next).toMatch(/\{x_strum:[^}]*bpm=75/)
+    expect(next).not.toMatch(/\{x_strum:[^}]*bpm=71/)
     expect(next).toContain(`{x_origem:${url}}`)
     expect(next).toMatch(/\{tempo:75\}/)
   })

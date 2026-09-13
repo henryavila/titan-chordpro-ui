@@ -48,6 +48,17 @@ describe('viewer batida toggle', () => {
     expect(w.find('[data-strum-strip]').exists()).toBe(false)
     await w.get('[data-strum-btn]').trigger('click')
     expect(w.find('[data-strum-strip]').exists()).toBe(true)
+    expect(w.find('[data-strum-edit]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('strip remains a read-only projection with open-editor affordance only', () => {
+    const pattern = patternFromCc([7, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'Padrão')
+    const w = mount(StrumStrip, {
+      props: { pattern, beatClock: 0, barBeats: 2, canEdit: true },
+    })
+    expect(w.find('[data-strum-edit]').exists()).toBe(true)
+    expect(w.findAll('[data-strum-i]').every((n) => n.element.tagName !== 'BUTTON')).toBe(true)
     w.unmount()
   })
 })
