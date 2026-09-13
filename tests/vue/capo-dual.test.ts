@@ -39,7 +39,12 @@ describe('capo dual vs capo sozinho', () => {
     expect(chordNames(w)[0]).toBe('F')
     expect(w.get('[data-display-key]').text()).toBe('G')
     expect(w.get('[data-capo]').text()).toMatch(/^Capo 2/i)
-    expect(w.text()).toMatch(/Formas de F/)
+    // Capo popover is still open — one line of new shapes, no prose.
+    const hint = w.get('[data-capo-hint]').text()
+    expect(hint).toMatch(/^F · /)
+    expect(hint).toMatch(/A#|Bb/)
+    expect(hint).toMatch(/Dm/)
+    expect(hint).not.toMatch(/Você toca|Soa|Formas de/)
     expect(w.text()).not.toMatch(/soa continua/)
 
     await w.get('[data-dual]').trigger('click')

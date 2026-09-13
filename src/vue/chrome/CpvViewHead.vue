@@ -119,7 +119,7 @@ const emit = defineEmits<{
             <div style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</div>
             <button aria-label="Capo acima" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('capo-nudge', 1)">+</button>
           </div>
-          <div style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;min-height:17px;">{{ capoHint }}</div>
+          <div data-capo-hint class="cpv-capo-hint" style="font-size:11.5px;">{{ capoHint }}</div>
           <button
             data-dual
             role="switch"

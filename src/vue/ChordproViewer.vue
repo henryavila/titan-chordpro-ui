@@ -610,6 +610,7 @@ const blocks = computed(() => {
 })
 const twin = computed(() => layout.value.twin)
 const legend = computed(() => layout.value.legend)
+const capoPairs = computed(() => layout.value.capoPairs)
 
 /**
  * Writing the chart by its blocks (E1/E2). Every action rewrites the source —
@@ -702,9 +703,13 @@ const fixTuneLabel = computed(() =>
 )
 const editBadge = computed(() => (wMode.value === 'content' ? 'Para todos' : 'Só para mim'))
 const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}ª casa`))
-const capoHint = computed(() =>
-  capo.value === 0 ? 'A cifra fica no tom real.' : `Formas de ${shapeKey.value}`,
-)
+/** New shapes only, one line — enough to fill the hint row, no prose. */
+const capoHint = computed(() => {
+  if (capo.value === 0) return 'A cifra fica no tom real.'
+  const shapes = capoPairs.value.map((p) => p.shape)
+  if (!shapes.length) return `Formas de ${shapeKey.value}`
+  return shapes.join(' · ')
+})
 /** The capo button says whether both chords are on screen. */
 const capoBtnLabel = computed(() =>
   capo.value === 0 ? 'Capo' : twin.value ? `Dual · capo ${capo.value}` : `Capo ${capo.value}`,

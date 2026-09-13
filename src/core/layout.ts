@@ -9,6 +9,7 @@ import {
 import type {
   BlockMarks,
   BlockMusic,
+  CapoChordPair,
   CapoLegend,
   ChartBlock,
   ChartBlockBody,
@@ -304,7 +305,13 @@ export type ChartLayout = {
    * taller chord lane, and the auto-scroll a longer page.
    */
   twin: boolean
-  /** First chord of the song in both readings, for the legend bar. */
+  /**
+   * Distinct song chords as capo shapes vs sounding names (first appearance).
+   * Present whenever a song capo is on — dual or not — so the tone sheet can
+   * preview the progression. Empty when there is no capo or nothing to map.
+   */
+  capoPairs: CapoChordPair[]
+  /** Dual-mode legend bar: same pairs, plus the first as `real` / `shape`. */
   legend: CapoLegend | null
   /** True when some block carries a capo of its own. */
   anyBlockCapo: boolean
@@ -499,22 +506,32 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
     }
   })
 
-  // The legend is written once, at the top, with the song's own first chord.
-  let legend: CapoLegend | null = null
-  if (!editing && !nash && opts.dual !== false && capo > 0) {
-    outer: for (const b of drafts) {
+  // Distinct chords of the song, in first-appearance order — the tone sheet
+  // and the dual legend both need the real progression, not just the key.
+  let capoPairs: CapoChordPair[] = []
+  if (!editing && !nash && capo > 0) {
+    const seen = new Set<string>()
+    for (const b of drafts) {
       if (b.kind !== 'stanza' && b.kind !== 'chorus') continue
       for (const row of b.rows) {
         for (const s of row.segs) {
           if (!s.chord) continue
-          legend = {
-            real: transposeToken(s.chord, semis, flats),
+          const real = transposeToken(s.chord, semis, flats)
+          if (seen.has(real)) continue
+          seen.add(real)
+          capoPairs.push({
+            real,
             shape: transposeToken(s.chord, semis - capo, flats),
-          }
-          break outer
+          })
         }
       }
     }
+  }
+
+  let legend: CapoLegend | null = null
+  if (capoPairs.length && opts.dual !== false) {
+    const first = capoPairs[0]!
+    legend = { real: first.real, shape: first.shape, pairs: capoPairs }
   }
 
   // Out of the reading, present to the editor: that is the whole point of `#~`.
@@ -522,10 +539,11 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
   if (lyricsOnly) {
     twin = false
     legend = null
+    capoPairs = []
   }
   const visible = editing ? all : all.filter((b) => b.kind !== 'hidden')
   const blocks = lyricsOnly ? lyricsOnlyBlocks(visible) : visible
-  return { blocks, twin, legend, anyBlockCapo }
+  return { blocks, twin, capoPairs, legend, anyBlockCapo }
 }
 
 export function maxPlainChars(blocks: ChartBlock[]): number {
