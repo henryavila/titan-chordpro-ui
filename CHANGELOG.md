@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Hint do capotraste:** em vez de só "Formas de X", mostra os acordes distintos da cifra como formas novas numa linha (`F · A# · Dm · …`), sem prosa e sem quebrar linha — a altura do bloco de tom/capo fica estável.
+
+### Fixed
+- **Só letra:** espaçamento compacto para leitura vocal (sem o gap de ensaio da cifra).
+- **Setlist de busca no celular:** sobe acima do teclado.
+- **Zen:** mostra só o nome da música, sem réplica do card.
+
 ## [0.2.0] - 2026-09-12
 
 ### Added
