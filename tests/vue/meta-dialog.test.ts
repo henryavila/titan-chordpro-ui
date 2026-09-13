@@ -32,9 +32,9 @@ const SRC = `{title: Uma}
 [G]letra
 `
 
-function dialog(source = SRC) {
+function dialog(source = SRC, extra: Record<string, unknown> = {}) {
   const w = mount(MetaDialog, {
-    props: { compact: false, source },
+    props: { compact: false, source, allowRestart: true, ...extra },
     attachTo: document.body,
   })
   mounted.push(w)
@@ -259,5 +259,73 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     await flushPromises()
     expect(w.find('[data-meta-enrich-no-strum]').exists()).toBe(true)
     expect(w.text()).toMatch(/não traz batida/i)
+  })
+})
+
+describe('MetaDialog · Começar de novo', () => {
+  it('offers a restart door next to Completar com Cifra Club', () => {
+    const w = dialog(SDA)
+    expect(w.find('[data-meta-restart]').exists()).toBe(true)
+    expect(w.text()).toMatch(/Começar de novo/i)
+    expect(w.find('[data-meta-restart-confirm]').exists()).toBe(false)
+  })
+
+  it('hides Começar de novo outside content edit (Só para mim)', () => {
+    const w = dialog(SDA, { allowRestart: false })
+    expect(w.find('[data-meta-restart]').exists()).toBe(false)
+    expect(w.find('[data-meta-restart-box]').exists()).toBe(false)
+  })
+
+  it('is absent in local edit on the viewer', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: SDA, modes: 'local', songId: 'tua' })
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-meta-dialog]').exists()).toBe(true)
+    expect(w.find('[data-meta-restart]').exists()).toBe(false)
+  })
+
+  it('does not emit restart on the first click — only after explicit confirm', async () => {
+    const w = dialog(SDA)
+    await w.get('[data-meta-restart]').trigger('click')
+    expect(w.emitted('restart')).toBeUndefined()
+    expect(w.find('[data-meta-restart-confirm]').exists()).toBe(true)
+    expect(w.text()).toMatch(/apaga|substitui|Nova cifra/i)
+
+    await w.get('[data-meta-restart-cancel]').trigger('click')
+    expect(w.find('[data-meta-restart-confirm]').exists()).toBe(false)
+    expect(w.emitted('restart')).toBeUndefined()
+
+    await w.get('[data-meta-restart]').trigger('click')
+    await w.get('[data-meta-restart-confirm]').trigger('click')
+    expect(w.emitted('restart')).toHaveLength(1)
+  })
+
+  it('opens Nova cifra from a populated chart only after confirm, and cancel keeps the body', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: SDA, fetchChart: vi.fn(async () => TU_ES) })
+    await enterContent(w)
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+
+    await w.get('[data-meta-restart]').trigger('click')
+    expect(w.find('[data-new-chart]').exists()).toBe(false)
+
+    await w.get('[data-meta-restart-confirm]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-meta-dialog]').exists()).toBe(false)
+    expect(w.find('[data-new-chart]').exists()).toBe(true)
+    expect(w.find('[data-nova-blank]').exists()).toBe(true)
+    expect(w.text()).toMatch(/Cifra Club/i)
+    // Current chart is not wiped until Nova commits — cancel keeps it
+    expect(w.text()).toMatch(/Norte ou Sul|Tua Vontade/i)
+
+    await w.get('[data-new-chart] button[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-new-chart]').exists()).toBe(false)
+    expect(w.text()).toContain('Tua Vontade')
+    expect(w.text()).toMatch(/Norte ou Sul/i)
   })
 })

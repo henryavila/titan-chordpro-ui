@@ -1494,6 +1494,17 @@ function commitNewChart(src: string) {
   beginEdit('content')
 }
 
+/**
+ * Explicit confirm in MetaDialog: close meta and open Nova cifra (import + blank)
+ * without clearing the current body yet — cancel Nova keeps the chart.
+ * Only from “Para todos” (content) edit — local overlays must not replace the chart.
+ */
+function restartFromMeta() {
+  if (!isContentEdit.value) return
+  metaOpen.value = false
+  startNew('import')
+}
+
 function enterEdit() {
   if (!canEditNow.value) return
   const ms = modes.value
@@ -2672,10 +2683,12 @@ defineExpose({
       v-if="metaOpen && isEdit"
       :compact="compact"
       :source="working"
+      :allow-restart="isContentEdit"
       :fetch-chart="props.fetchChart"
       :fetch-youtube-duration="props.fetchYoutubeDuration"
       @close="metaOpen = false"
       @apply="applyMeta"
+      @restart="restartFromMeta"
     />
 
     <SetlistSheet
