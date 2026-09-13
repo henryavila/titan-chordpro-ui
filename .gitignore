@@ -1,7 +1,9 @@
 node_modules/
 dist/
+dist-demo/
 coverage/
 demo/dist/
+.wrangler/
 .DS_Store
 *.tgz
 .tmp/

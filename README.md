@@ -23,9 +23,13 @@ Leitura, overlay pessoal, edição por bloco (E1/E2) e editor de partitura (VexF
 ```bash
 pnpm install
 pnpm test
-pnpm dev      # índice das demos em :5173
+pnpm dev          # índice das demos em :5173
 pnpm build
+pnpm build:pages  # demo estático → dist-demo/ (Cloudflare Pages)
 ```
+
+Demo público (hub completo, sem persistência, proxy de import por link):  
+[`docs/DEMO-PAGES.md`](docs/DEMO-PAGES.md).
 
 ## Core vs Vue vs host
 

@@ -248,6 +248,7 @@ describe('Hub', () => {
     expect(w.text()).not.toMatch(/\bPalco\b/)
     expect(w.text()).not.toMatch(/\bFicha\b/)
     expect(w.text()).not.toMatch(/\bEnsaio\b/)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/Sem persistência/i)
     for (const demo of DEMOS) {
       expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('ChordproViewer')
     }
@@ -284,6 +285,31 @@ describe('CifraDemo', () => {
       global: { stubs: stub },
     })
     expect(w.getComponent({ name: 'ChordproViewer' }).props('songs')).toBeUndefined()
+  })
+
+  it('uses memoryStore so a reload forgets prefs and overlays', () => {
+    const w = mount(CifraDemo, {
+      props: { surface: 'standalone', lista: false },
+      global: { stubs: stub },
+    })
+    const storage = w.getComponent({ name: 'ChordproViewer' }).props('storage') as {
+      get: (k: string) => string | null
+      set: (k: string, v: string) => void
+    }
+    expect(storage).toBeTruthy()
+    storage.set('cpv:prefs', '{"theme":"dark"}')
+    expect(storage.get('cpv:prefs')).toBe('{"theme":"dark"}')
+    // A fresh mount is a new Map — nothing survives like localStorage would.
+    const again = mount(CifraDemo, {
+      props: { surface: 'standalone', lista: false },
+      global: { stubs: stub },
+    })
+    const next = again.getComponent({ name: 'ChordproViewer' }).props('storage') as {
+      get: (k: string) => string | null
+    }
+    expect(next.get('cpv:prefs')).toBeNull()
+    w.unmount()
+    again.unmount()
   })
 
   it('passes a rehearsal list when the recipe has one', () => {

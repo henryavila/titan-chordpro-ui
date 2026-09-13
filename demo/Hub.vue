@@ -11,6 +11,10 @@ import { GROUPS, demosOf } from './host/recipe'
         O mesmo <code>&lt;ChordproViewer&gt;</code>. Standalone ou no shell do
         consumer. Uma cifra ou uma apresentação ao vivo.
       </p>
+      <p class="ephemeral" data-demo-ephemeral>
+        Sem persistência: recarregou = estado limpo. Import por arquivo, texto,
+        PDF ou link (Cifra Club via proxy deste host).
+      </p>
     </header>
 
     <section
@@ -116,6 +120,18 @@ h1 {
   font-family: 'Space Mono', ui-monospace, monospace;
   font-size: 0.92em;
   overflow-wrap: anywhere;
+}
+.ephemeral {
+  margin: 14px 0 0;
+  max-width: 40rem;
+  padding: 10px 12px;
+  border: 1px solid #2a3140;
+  border-radius: 10px;
+  background: #12151c;
+  color: #a8b0c0;
+  font-size: clamp(12.5px, 2.4vw, 13.5px);
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 .group {
   min-width: 0;

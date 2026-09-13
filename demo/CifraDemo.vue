@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { readMeta } from '@henryavila/titan-chordpro-ui'
+import { memoryStore, readMeta } from '@henryavila/titan-chordpro-ui'
 import { pdfText } from '@henryavila/titan-chordpro-ui/pdf'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
@@ -20,6 +20,8 @@ const props = defineProps<{ surface: Surface; lista: boolean }>()
 const fixtures = ref(bundledFixtures())
 const { images, resolveImage } = bundledImages()
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
+/** Demo is ephemeral: reload clears prefs, overlay, and session edits. */
+const store = memoryStore()
 
 const id = ref(
   lab.criar
@@ -105,6 +107,7 @@ onMounted(async () => {
       :hide-comments="lab.hideComments"
       :song-id="id"
       :songs="songs"
+      :storage="store"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :fetch-youtube-duration="fetchYoutubeDuration"
@@ -132,6 +135,7 @@ onMounted(async () => {
       :hide-comments="lab.hideComments"
       :song-id="id"
       :songs="songs"
+      :storage="store"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :fetch-youtube-duration="fetchYoutubeDuration"

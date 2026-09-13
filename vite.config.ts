@@ -4,12 +4,18 @@ import { fileURLToPath } from 'node:url'
 import { previewDirPlugin } from './demo/preview-plugin'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
+/** Static demo for Cloudflare Pages (`pnpm build:pages` → `dist-demo/`). */
+const pages = process.env.TITAN_PAGES === '1'
 
 export default defineConfig({
   plugins: [vue(), previewDirPlugin()],
   root: 'demo',
   publicDir: false,
+  // CF Pages serves the project at the host root (`*.pages.dev`).
+  base: process.env.VITE_BASE || '/',
   build: {
+    outDir: pages ? '../dist-demo' : 'dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         index: `${root}demo/index.html`,

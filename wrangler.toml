@@ -1,0 +1,7 @@
+# Cloudflare Pages — static demo + Functions (import proxy).
+# Dashboard: Workers & Pages → Create → Connect git → build below.
+# Or local: `pnpm pages:dev`
+
+name = "titan-chordpro-ui"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist-demo"
