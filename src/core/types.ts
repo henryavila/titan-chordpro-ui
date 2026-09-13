@@ -181,12 +181,21 @@ export type SongBlockExtras = BlockMarks & {
 
 export type ChartBlock = LineSpan & { music: BlockMusic } & ChartBlockBody
 
-/** What the reading surface needs to explain a capo once, at the top. */
-export type CapoLegend = {
-  /** First chord of the song, as it sounds. */
+/** One sounding chord and the shape fretted with the capo. */
+export type CapoChordPair = {
+  /** Chord as it sounds (no capo). */
   real: string
-  /** The same chord as a capo shape. */
+  /** Same chord as a capo shape. */
   shape: string
+}
+
+/**
+ * What the reading surface needs to explain a capo once, at the top.
+ * `pairs` lists every distinct chord of the song (first appearance order);
+ * `real` / `shape` keep the first pair for single-example callers (PDF).
+ */
+export type CapoLegend = CapoChordPair & {
+  pairs: CapoChordPair[]
 }
 
 export type ParseIssue = {

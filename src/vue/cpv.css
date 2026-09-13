@@ -679,6 +679,19 @@
   height: 20px;
   background: var(--line);
 }
+/* Capo hint: one line of new shapes — never wraps, never grows the sheet. */
+.cpv-capo-hint {
+  display: block;
+  min-height: 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .cpv-lyric {
   font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
   line-height: 1.32;

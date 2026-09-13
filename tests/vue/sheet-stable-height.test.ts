@@ -80,7 +80,7 @@ describe('a sheet does not grow when a reset action becomes available', () => {
       dual: true,
       songCaption: 'G · + ½ tom',
       capoLabel: '2ª casa',
-      capoHint: 'Formas de F',
+      capoHint: 'F · A# · Dm · C · G',
     })
     expect(dialogKids(moved)).toBe(dialogKids(idle))
     idle.unmount()

@@ -1,6 +1,7 @@
 export type {
   BlockMarks,
   BlockMusic,
+  CapoChordPair,
   CapoLegend,
   ChartBlock,
   ChartBlockBody,

@@ -22,7 +22,9 @@ describe('capo dual vs capo sozinho', () => {
   it('dual keeps concert chords and draws the capo shape above them', () => {
     const laid = layoutChartFull(view, { capo: 2, dual: true })
     expect(laid.twin).toBe(true)
-    expect(laid.legend).toEqual({ real: 'G', shape: 'F' })
+    expect(laid.legend?.real).toBe('G')
+    expect(laid.legend?.shape).toBe('F')
+    expect(laid.legend?.pairs[0]).toEqual({ real: 'G', shape: 'F' })
     const first = songSegs(laid).find((s) => s.chord)
     expect(first).toMatchObject({ chord: 'G', shape: 'F', hasShape: true })
     expect(chordsOf(laid)).toContain('G')
@@ -30,11 +32,25 @@ describe('capo dual vs capo sozinho', () => {
     expect(chordsOf(laid)).not.toContain('F')
   })
 
+  it('lists every distinct song chord as a real→shape pair, without repeats', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: true })
+    const pairs = laid.capoPairs
+    expect(pairs.length).toBeGreaterThan(4)
+    expect(pairs[0]).toEqual({ real: 'G', shape: 'F' })
+    expect(pairs.find((p) => p.real === 'C')).toEqual({ real: 'C', shape: 'A#' })
+    expect(pairs.find((p) => p.real === 'Em')).toEqual({ real: 'Em', shape: 'Dm' })
+    const reals = pairs.map((p) => p.real)
+    expect(new Set(reals).size).toBe(reals.length)
+    expect(laid.legend?.pairs).toEqual(pairs)
+  })
+
   it('without dual the chart itself becomes the capo shapes — the duo partner is not reading along', () => {
     const dual = layoutChartFull(view, { capo: 2, dual: true })
     const solo = layoutChartFull(view, { capo: 2, dual: false })
     expect(solo.twin).toBe(false)
     expect(solo.legend).toBeNull()
+    expect(solo.capoPairs.length).toBeGreaterThan(4)
+    expect(solo.capoPairs).toEqual(dual.capoPairs)
     const dualSegs = songSegs(dual)
     const soloSegs = songSegs(solo)
     expect(soloSegs).toHaveLength(dualSegs.length)
@@ -59,6 +75,7 @@ describe('capo dual vs capo sozinho', () => {
     const laid = layoutChartFull(view, { capo: 2 })
     expect(laid.twin).toBe(true)
     expect(laid.legend?.real).toBe('G')
+    expect(laid.capoPairs[0]?.shape).toBe('F')
     expect(chordsOf(laid)[0]).toBe('G')
   })
 
