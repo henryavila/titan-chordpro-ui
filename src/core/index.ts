@@ -222,12 +222,24 @@ export type {
 } from './import-chordpro'
 export {
   decodeStrumPat,
+  emptyPattern,
   encodeStrumPat,
   formatXStrum,
+  listSlotChoices,
   meterFromTimeSignature,
   parseXStrum,
   patternFromCc,
+  resizePattern,
+  setSlot,
+  slotEquals,
   slotFromCcCode,
   slotsFromCcPattern,
 } from './strum'
-export type { StrumContact, StrumDir, StrumEssence, StrumPattern, StrumSlot } from './strum'
+export type {
+  EmptyPatternOpts,
+  StrumContact,
+  StrumDir,
+  StrumEssence,
+  StrumPattern,
+  StrumSlot,
+} from './strum'

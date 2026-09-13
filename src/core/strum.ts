@@ -168,3 +168,69 @@ export function patternFromCc(
     slots: slotsFromCcPattern(pattern),
   }
 }
+
+const HIT_ESSENCES: StrumEssence[] = ['normal', 'accent', 'mute', 'muted']
+
+/** Picker catalog: 8 hit composites + 2 ghost (passa). No rest. */
+export function listSlotChoices(): StrumSlot[] {
+  const hits: StrumSlot[] = []
+  for (const dir of ['down', 'up'] as const) {
+    for (const essence of HIT_ESSENCES) {
+      hits.push({ dir, contact: 'hit', essence })
+    }
+  }
+  return [
+    ...hits,
+    { dir: 'down', contact: 'ghost', essence: null },
+    { dir: 'up', contact: 'ghost', essence: null },
+  ]
+}
+
+export function slotEquals(a: StrumSlot, b: StrumSlot): boolean {
+  return a.contact === b.contact && a.dir === b.dir && a.essence === b.essence
+}
+
+function ghostSlot(index: number): StrumSlot {
+  return { dir: index % 2 === 0 ? 'down' : 'up', contact: 'ghost', essence: null }
+}
+
+/** Immutable slot replace. */
+export function setSlot(pattern: StrumPattern, index: number, slot: StrumSlot): StrumPattern {
+  if (index < 0 || index >= pattern.slots.length) return pattern
+  const slots = pattern.slots.map((s, i) => (i === index ? { ...slot } : s))
+  return { ...pattern, slots }
+}
+
+/** Immutable resize; new cells are ghost (passa), never rest. */
+export function resizePattern(pattern: StrumPattern, grid: number): StrumPattern {
+  const n = Math.max(1, Math.floor(grid) || 1)
+  const slots =
+    n <= pattern.slots.length
+      ? pattern.slots.slice(0, n).map((s) => ({ ...s }))
+      : [
+          ...pattern.slots.map((s) => ({ ...s })),
+          ...Array.from({ length: n - pattern.slots.length }, (_, i) =>
+            ghostSlot(pattern.slots.length + i),
+          ),
+        ]
+  return { ...pattern, grid: n, slots }
+}
+
+export type EmptyPatternOpts = {
+  bpm?: number | null
+  meter?: string
+  grid?: number
+  label?: string
+}
+
+/** New pattern filled with passa (ghost); bpm mirrors chart tempo when given. */
+export function emptyPattern(opts: EmptyPatternOpts = {}): StrumPattern {
+  const grid = Math.max(1, Math.floor(opts.grid ?? 16) || 16)
+  return {
+    bpm: opts.bpm ?? null,
+    meter: opts.meter || '4/4',
+    grid,
+    label: opts.label || 'Padrão',
+    slots: Array.from({ length: grid }, (_, i) => ghostSlot(i)),
+  }
+}
