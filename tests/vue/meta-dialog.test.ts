@@ -11,6 +11,7 @@ import { loadFixture } from '../helpers/load-fixture'
 const helpers = join(dirname(fileURLToPath(import.meta.url)), '../helpers')
 const TU_ES = readFileSync(join(helpers, 'cifraclub-tu-es-tabs.html'), 'utf8')
 const TUA_CC_NO_STRUM = readFileSync(join(helpers, 'cifraclub-tua-vontade-no-strum.html'), 'utf8')
+const CEU_AZUL = readFileSync(join(helpers, 'cifraclub-ceu-azul-strum.html'), 'utf8')
 const SDA = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../../fixtures/sda/005-tua-vontade.cho'),
   'utf8',
@@ -261,6 +262,106 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     await flushPromises()
     expect(w.find('[data-meta-enrich-no-strum]').exists()).toBe(true)
     expect(w.text()).toMatch(/não traz batida/i)
+    expect(w.find('[data-meta-enrich-strum-conflict]').exists()).toBe(false)
+  })
+
+  it('surfaces Manter / Trazer CC when local batida conflicts with CC', async () => {
+    const fetchChart = vi.fn(async () => TU_ES)
+    const url = 'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/'
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+
+    await w.get('[data-meta-enrich-url]').setValue(url)
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+
+    expect(w.find('[data-meta-enrich-strum-conflict]').exists()).toBe(true)
+    expect(w.text()).toMatch(/batida local/i)
+    expect(w.find('[data-meta-enrich-strum-keep]').exists()).toBe(true)
+    expect(w.find('[data-meta-enrich-strum-replace]').exists()).toBe(true)
+    expect(w.text()).toMatch(/Manter/i)
+    expect(w.text()).toMatch(/Trazer CC/i)
+  })
+
+  it('Manter (default) keeps local batida on Trazer metadados', async () => {
+    const fetchChart = vi.fn(async () => TU_ES)
+    const url = 'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/'
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+
+    await w.get('[data-meta-enrich-url]').setValue(url)
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-enrich-yt-pick-remote]').trigger('click')
+    // Manter is the default — do not click Trazer CC
+    await w.get('[data-meta-enrich-apply]').trigger('click')
+    await flushPromises()
+
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toMatch(/\{x_strum:[^}]*bpm=75/)
+    expect(next).not.toMatch(/\{x_strum:[^}]*bpm=71/)
+  })
+
+  it('Trazer CC replaces local single batida with CC pattern', async () => {
+    const fetchChart = vi.fn(async () => TU_ES)
+    const url = 'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/'
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+
+    await w.get('[data-meta-enrich-url]').setValue(url)
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-enrich-yt-pick-remote]').trigger('click')
+    await w.get('[data-meta-enrich-strum-replace]').trigger('click')
+    await w.get('[data-meta-enrich-apply]').trigger('click')
+    await flushPromises()
+
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toMatch(/\{x_strum:[^}]*bpm=71/)
+    expect(next).not.toMatch(/\{x_strum:[^}]*bpm=75/)
+  })
+
+  it('Trazer CC with multi CC keeps previous local active as named copy', async () => {
+    const fetchChart = vi.fn(async () => CEU_AZUL)
+    const local = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n{x_origem:https://example.com}\n[G]a\n`
+    const w = mount(MetaDialog, {
+      props: {
+        compact: false,
+        source: local,
+        fetchChart,
+      },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+
+    await w.get('[data-meta-enrich-url]').setValue('https://www.cifraclub.com.br/charlie-brown-jr/ceu-azul/')
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    // CEU_AZUL has youtube — pick or skip
+    if (w.find('[data-meta-enrich-yt-skip]').exists()) {
+      await w.get('[data-meta-enrich-yt-skip]').trigger('click')
+    }
+    expect(w.find('[data-meta-enrich-strum-conflict]').exists()).toBe(true)
+    await w.get('[data-meta-enrich-strum-replace]').trigger('click')
+    await w.get('[data-meta-enrich-apply]').trigger('click')
+    await flushPromises()
+
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toMatch(/x_strum_set:/)
+    expect(next).toMatch(/Parte 1/)
+    expect(next).toMatch(/Parte 2/)
+    expect(next).toMatch(/Old/i)
+    expect(next).toMatch(/local/i)
+    expect(next).toMatch(/bpm=40/)
   })
 })
 
