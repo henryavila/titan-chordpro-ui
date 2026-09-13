@@ -24,7 +24,11 @@ class TestRO {
 
 const mounted: ReturnType<typeof mount>[] = []
 let realRO: typeof ResizeObserver
-let confirmSpy: ReturnType<typeof vi.spyOn>
+let confirmSpy: {
+  mockRestore: () => void
+  mockReturnValue: (v: boolean) => unknown
+  mockReturnValueOnce: (v: boolean) => unknown
+}
 
 beforeEach(() => {
   localStorage.clear()
