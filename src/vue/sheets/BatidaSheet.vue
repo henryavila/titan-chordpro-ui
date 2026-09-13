@@ -2,10 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import {
   applyStrumPreset,
+  emptyPattern,
   formatXStrum,
   resizePattern,
   setSlot,
   type StrumPattern,
+  type StrumPatternSet,
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
 import CpvIcon from '../icon/CpvIcon.vue'
@@ -16,34 +18,72 @@ const props = withDefaults(
   defineProps<{
     compact: boolean
     pattern: StrumPattern
+    /** Named patterns in the set (defaults to `[pattern]`). */
+    patterns?: StrumPattern[]
+    activeIndex?: number
     barBeats: number
     canDelete: boolean
     /** Host capability — off hides the presets section. */
     presetsEnabled?: boolean
   }>(),
-  { presetsEnabled: true },
+  { presetsEnabled: true, activeIndex: 0 },
 )
 
 const emit = defineEmits<{
   close: []
   save: [pattern: StrumPattern]
+  'save-set': [set: StrumPatternSet]
   delete: []
+  'select-pattern': [index: number]
+  'add-pattern': []
+  'duplicate-pattern': []
+  'remove-pattern': []
 }>()
 
-const draft = ref<StrumPattern>(clonePattern(props.pattern))
+function initialPatterns(): StrumPattern[] {
+  if (props.patterns?.length) return props.patterns.map(clonePattern)
+  return [clonePattern(props.pattern)]
+}
+
+const draftPatterns = ref<StrumPattern[]>(initialPatterns())
+const draftActive = ref(
+  Math.max(0, Math.min(props.activeIndex ?? 0, initialPatterns().length - 1)),
+)
+const draft = ref<StrumPattern>(clonePattern(draftPatterns.value[draftActive.value] ?? props.pattern))
 const pickIndex = ref(-1)
-const label = ref(props.pattern.label || 'Padrão')
-const grid = ref(props.pattern.grid || props.pattern.slots.length || 16)
+const label = ref(draft.value.label || 'Padrão')
+const grid = ref(draft.value.grid || draft.value.slots.length || 16)
 const baselineKey = ref(snapshotKey(draft.value, label.value))
 
+function loadActive(p: StrumPattern) {
+  draft.value = clonePattern(p)
+  label.value = p.label || 'Padrão'
+  grid.value = p.grid || p.slots.length || 16
+  pickIndex.value = -1
+  baselineKey.value = snapshotKey(draft.value, label.value)
+}
+
+function commitActiveToList() {
+  const next: StrumPattern = {
+    ...draft.value,
+    label: label.value.trim() || 'Padrão',
+    grid: draft.value.slots.length,
+  }
+  draftPatterns.value = draftPatterns.value.map((p, i) =>
+    i === draftActive.value ? next : p,
+  )
+  return next
+}
+
 watch(
-  () => props.pattern,
-  (p) => {
-    draft.value = clonePattern(p)
-    label.value = p.label || 'Padrão'
-    grid.value = p.grid || p.slots.length || 16
-    pickIndex.value = -1
-    baselineKey.value = snapshotKey(draft.value, label.value)
+  () => [props.pattern, props.patterns, props.activeIndex] as const,
+  () => {
+    draftPatterns.value = initialPatterns()
+    draftActive.value = Math.max(
+      0,
+      Math.min(props.activeIndex ?? 0, draftPatterns.value.length - 1),
+    )
+    loadActive(draftPatterns.value[draftActive.value] ?? props.pattern)
   },
 )
 
@@ -161,13 +201,58 @@ function applyPreset(presetId: string) {
   pickIndex.value = -1
 }
 
-function save() {
-  const next: StrumPattern = {
-    ...draft.value,
-    label: label.value.trim() || 'Padrão',
-    grid: draft.value.slots.length,
+function selectPattern(i: number) {
+  if (i === draftActive.value || i < 0 || i >= draftPatterns.value.length) return
+  commitActiveToList()
+  draftActive.value = i
+  loadActive(draftPatterns.value[i]!)
+  emit('select-pattern', i)
+}
+
+function addPattern() {
+  commitActiveToList()
+  const base = draftPatterns.value[draftActive.value] ?? draft.value
+  const neu = emptyPattern({
+    bpm: base.bpm,
+    meter: base.meter,
+    grid: base.grid || base.slots.length || 16,
+    label: `Padrão ${draftPatterns.value.length + 1}`,
+  })
+  draftPatterns.value = [...draftPatterns.value, neu]
+  draftActive.value = draftPatterns.value.length - 1
+  loadActive(neu)
+  emit('add-pattern')
+}
+
+function duplicatePattern() {
+  commitActiveToList()
+  const cur = draftPatterns.value[draftActive.value]!
+  const copy: StrumPattern = {
+    ...clonePattern(cur),
+    label: `${cur.label || 'Padrão'} (cópia)`,
   }
+  const next = [...draftPatterns.value]
+  next.splice(draftActive.value + 1, 0, copy)
+  draftPatterns.value = next
+  draftActive.value = draftActive.value + 1
+  loadActive(copy)
+  emit('duplicate-pattern')
+}
+
+function removePattern() {
+  if (draftPatterns.value.length <= 1) return
+  const next = draftPatterns.value.filter((_, i) => i !== draftActive.value)
+  const i = Math.min(draftActive.value, next.length - 1)
+  draftPatterns.value = next
+  draftActive.value = i
+  loadActive(next[i]!)
+  emit('remove-pattern')
+}
+
+function save() {
+  const next = commitActiveToList()
   emit('save', next)
+  emit('save-set', { activeIndex: draftActive.value, patterns: draftPatterns.value.map(clonePattern) })
 }
 
 const geom = computed(() =>
@@ -211,6 +296,54 @@ const geom = computed(() =>
         <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
           <CpvIcon name="x" :size="16" />
         </button>
+      </div>
+
+      <p
+        data-batida-multi-warn
+        style="margin:0;font-size:12px;line-height:1.45;color:var(--muted);"
+      >
+        A batida <b style="color:var(--text);font-weight:600;">não acompanha</b> automaticamente verso/refrão — escolha o padrão ativo.
+      </p>
+
+      <div data-batida-patterns style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+        <button
+          v-for="(p, i) in draftPatterns"
+          :key="i"
+          type="button"
+          :data-batida-pattern="i"
+          :class="{ 'is-active': i === draftActive }"
+          class="batida-pattern-chip"
+          style="height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+          @click="selectPattern(i)"
+        >{{ p.label || `Padrão ${i + 1}` }}</button>
+        <button
+          type="button"
+          data-batida-add
+          class="cpv-ghost"
+          title="Adicionar padrão"
+          aria-label="Adicionar padrão"
+          style="height:32px;padding:0 10px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;"
+          @click="addPattern"
+        >+</button>
+        <button
+          type="button"
+          data-batida-dup
+          class="cpv-ghost"
+          title="Duplicar padrão"
+          aria-label="Duplicar padrão"
+          style="height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;"
+          @click="duplicatePattern"
+        >Duplicar</button>
+        <button
+          v-if="draftPatterns.length > 1"
+          type="button"
+          data-batida-remove-pattern
+          class="cpv-ghost"
+          title="Remover padrão"
+          aria-label="Remover padrão"
+          style="height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;"
+          @click="removePattern"
+        >Remover</button>
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -322,5 +455,10 @@ const geom = computed(() =>
 }
 .batida-slot.is-muted {
   color: var(--muted);
+}
+.batida-pattern-chip.is-active {
+  background: var(--chord-soft) !important;
+  border-color: var(--chord-edge) !important;
+  color: var(--chord) !important;
 }
 </style>

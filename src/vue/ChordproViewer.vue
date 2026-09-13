@@ -24,11 +24,10 @@ import {
   normalizeSource,
   beatsPerBar,
   emptyPattern,
-  formatXStrum,
   parse,
-  parseXStrum,
   playheadAtScroll,
   readMeta,
+  readStrumPatterns,
   rewriteToKey,
   runSec,
   scrollAtPlayhead,
@@ -39,9 +38,11 @@ import {
   usesFlats,
   viewerMulStep,
   writeMeta,
+  writeStrumPatterns,
   STORE_KEYS,
   browserStore,
   type StrumPattern,
+  type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
 import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
@@ -380,14 +381,17 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
 const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
-/** Batida from `{x_strum:}` — toggle is the reader's choice. */
+/** Batida from `{x_strum:}` / `{x_strum_set:}` — toggle is the reader's choice. */
+const strumSet = computed(() => readStrumPatterns(liveSource.value))
 const strumPattern = computed(() => {
-  const raw = readMeta(liveSource.value).x_strum
-  return raw ? parseXStrum(raw) : null
+  const set = strumSet.value
+  return set.patterns[set.activeIndex] ?? set.patterns[0] ?? null
 })
+const canPickStrum = computed(() => strumSet.value.patterns.length > 1)
 const strumOn = ref(false)
 const batidaOpen = ref(false)
 const batidaDraft = ref<StrumPattern | null>(null)
+const batidaDraftSet = ref<StrumPatternSet | null>(null)
 const strumDock = ref<HTMLElement | null>(null)
 const strumH = ref(0)
 let strumRo: ResizeObserver | null = null
@@ -415,28 +419,34 @@ function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
 function openBatidaCreate() {
   const tempo = sheetBpm(meta.value.tempo)
   const meter = String(meta.value.time ?? '').trim() || '4/4'
-  batidaDraft.value = emptyPattern({
+  const p = emptyPattern({
     bpm: tempo,
     meter,
     grid: 16,
     label: 'Padrão',
   })
+  batidaDraft.value = p
+  batidaDraftSet.value = { activeIndex: 0, patterns: [p] }
   batidaOpen.value = true
 }
 
 function openBatidaEdit() {
-  const p = strumPattern.value
-  if (!p) {
+  const set = strumSet.value
+  if (!set.patterns.length) {
     openBatidaCreate()
     return
   }
-  batidaDraft.value = normalizeBatidaPattern(p)
+  const patterns = set.patterns.map(normalizeBatidaPattern)
+  const activeIndex = Math.max(0, Math.min(set.activeIndex, patterns.length - 1))
+  batidaDraftSet.value = { activeIndex, patterns }
+  batidaDraft.value = patterns[activeIndex]!
   batidaOpen.value = true
 }
 
 function closeBatida() {
   batidaOpen.value = false
   batidaDraft.value = null
+  batidaDraftSet.value = null
 }
 
 function publishBatidaSource(next: string) {
@@ -446,23 +456,27 @@ function publishBatidaSource(next: string) {
   touch()
 }
 
-function saveBatida(pattern: StrumPattern) {
-  const cur = readMeta(liveSource.value)
-  const next = writeMeta(liveSource.value, {
-    ...cur,
-    x_strum: formatXStrum(normalizeBatidaPattern(pattern)),
-  })
-  publishBatidaSource(next)
+function cycleStrumPattern() {
+  const set = strumSet.value
+  if (set.patterns.length < 2) return
+  const next: StrumPatternSet = {
+    activeIndex: (set.activeIndex + 1) % set.patterns.length,
+    patterns: set.patterns,
+  }
+  publishBatidaSource(writeStrumPatterns(liveSource.value, next))
+}
+
+function saveBatidaSet(set: StrumPatternSet) {
+  const patterns = set.patterns.map(normalizeBatidaPattern)
+  const activeIndex = Math.max(0, Math.min(set.activeIndex, Math.max(0, patterns.length - 1)))
+  publishBatidaSource(writeStrumPatterns(liveSource.value, { activeIndex, patterns }))
   closeBatida()
-  strumOn.value = true
-  toastMsg('Batida salva')
+  strumOn.value = patterns.length > 0
+  toastMsg(patterns.length ? 'Batida salva' : 'Batida apagada')
 }
 
 function deleteBatida() {
-  const cur = { ...readMeta(liveSource.value) }
-  delete cur.x_strum
-  const next = writeMeta(liveSource.value, cur)
-  publishBatidaSource(next)
+  publishBatidaSource(writeStrumPatterns(liveSource.value, { activeIndex: 0, patterns: [] }))
   closeBatida()
   strumOn.value = false
   toastMsg('Batida apagada')
@@ -2700,7 +2714,9 @@ defineExpose({
         :beat-clock="met.running.value ? met.beatClock.value : -1"
         :bar-beats="met.bar.value"
         :can-edit="true"
+        :can-pick="canPickStrum"
         @edit="openBatidaEdit"
+        @pick="cycleStrumPattern"
       />
     </div>
 
@@ -2756,10 +2772,12 @@ defineExpose({
       v-if="batidaOpen && batidaDraft && !isEdit"
       :compact="compact"
       :pattern="batidaDraft"
+      :patterns="batidaDraftSet?.patterns"
+      :active-index="batidaDraftSet?.activeIndex ?? 0"
       :bar-beats="beatsPerBar(meta.time)"
       :can-delete="hasStrum"
       @close="closeBatida"
-      @save="saveBatida"
+      @save-set="saveBatidaSet"
       @delete="deleteBatida"
     />
 
