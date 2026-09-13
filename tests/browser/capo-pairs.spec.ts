@@ -1,30 +1,38 @@
 import { expect, test } from '@playwright/test'
 
 /**
- * Capo hint is a single line of new shapes from the song — no prose, no wrap,
- * so the tone / capo block keeps a stable height.
+ * Capo hint is a single row of soft chord chips (viewer pill language, quieter)
+ * with horizontal scroll when the list does not fit — never wraps / grows height.
  */
-test.describe('capo shape list', () => {
-  test('desktop: capo popover shows one line of new shapes', async ({ page }) => {
+test.describe('capo shape chips', () => {
+  test('desktop: capo popover shows soft chips and scrolls sideways', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.goto('/?chart=087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho&capo=2&dual=1&fit=0')
     await page.locator('[data-capo]').click()
     const hint = page.locator('[data-capo-hint]')
     await expect(hint).toBeVisible()
-    const text = await hint.innerText()
-    expect(text).toMatch(/^F · /)
-    expect(text).toMatch(/A#|Bb/)
-    expect(text).not.toMatch(/Você toca|Soa|Formas de/)
+    const chips = page.locator('[data-capo-chip]')
+    await expect(chips.first()).toHaveText('F')
+    expect(await chips.count()).toBeGreaterThan(4)
     const style = await hint.evaluate((el) => {
       const cs = getComputedStyle(el)
-      return { whiteSpace: cs.whiteSpace, overflow: cs.overflow, textOverflow: cs.textOverflow }
+      return {
+        overflowX: cs.overflowX,
+        whiteSpace: cs.whiteSpace,
+        flexWrap: cs.flexWrap,
+        height: el.getBoundingClientRect().height,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+      }
     })
-    expect(style.whiteSpace).toBe('nowrap')
-    expect(style.overflow).toBe('hidden')
-    expect(style.textOverflow).toBe('ellipsis')
+    expect(style.overflowX).toMatch(/auto|scroll/)
+    expect(style.flexWrap === 'nowrap' || style.flexWrap === '').toBe(true)
+    expect(style.height).toBeLessThanOrEqual(28)
+    // Narrow the popover content so a long song overflows and can scroll.
+    expect(style.scrollWidth).toBeGreaterThanOrEqual(style.clientWidth)
   })
 
-  test('phone: tone sheet hint stays one line and does not grow the dialog', async ({ page }) => {
+  test('phone: tone sheet chips stay one row with sideways scroll', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/?chart=087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho&capo=2&dual=0&fit=0')
     await page.locator('[data-tone]').click()
@@ -32,11 +40,11 @@ test.describe('capo shape list', () => {
     await expect(sheet).toBeVisible()
     const hint = sheet.locator('[data-capo-hint]')
     await expect(hint).toBeVisible()
-    const text = await hint.innerText()
-    expect(text).toMatch(/^F · /)
-    expect(text).not.toMatch(/\n/)
+    await expect(sheet.locator('[data-capo-chip]').first()).toHaveText('F')
     const box = await hint.boundingBox()
     expect(box).toBeTruthy()
-    expect(box!.height).toBeLessThanOrEqual(24)
+    expect(box!.height).toBeLessThanOrEqual(28)
+    const overflowX = await hint.evaluate((el) => getComputedStyle(el).overflowX)
+    expect(overflowX).toMatch(/auto|scroll/)
   })
 })

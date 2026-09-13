@@ -9,6 +9,7 @@ const toneBase = {
   offsetLabel: '0',
   capoLabel: 'Sem capo',
   capoHint: 'A cifra fica no tom real.',
+  capoShapes: [] as string[],
   hasCapo: false,
   hasReset: false,
   dual: false,
@@ -80,7 +81,8 @@ describe('a sheet does not grow when a reset action becomes available', () => {
       dual: true,
       songCaption: 'G · + ½ tom',
       capoLabel: '2ª casa',
-      capoHint: 'F · A# · Dm · C · G',
+      capoHint: '',
+      capoShapes: ['F', 'A#', 'Dm', 'C', 'G'],
     })
     expect(dialogKids(moved)).toBe(dialogKids(idle))
     idle.unmount()

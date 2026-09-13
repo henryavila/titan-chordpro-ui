@@ -18,6 +18,8 @@ export type ViewHeadModel = {
   capoBtnLabel: string
   capoLabel: string
   capoHint: string
+  /** New capo shapes as chips; empty → show `capoHint` text. */
+  capoShapes: string[]
   mapOn: boolean
   twin: boolean
   canRewrite: boolean

@@ -119,7 +119,10 @@ const emit = defineEmits<{
             <div style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</div>
             <button aria-label="Capo acima" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('capo-nudge', 1)">+</button>
           </div>
-          <div data-capo-hint class="cpv-capo-hint" style="font-size:11.5px;">{{ capoHint }}</div>
+          <div v-if="capoShapes.length" data-capo-hint class="cpv-capo-hint">
+            <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="cpv-capo-chip" data-capo-chip>{{ s }}</span>
+          </div>
+          <div v-else data-capo-hint class="cpv-capo-hint--text" style="font-size:11.5px;">{{ capoHint }}</div>
           <button
             data-dual
             role="switch"
