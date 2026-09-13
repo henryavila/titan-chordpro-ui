@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { layoutChartFull, parse } from '../../src/core'
+import { layoutChartFull, parse, type ChartLayout, type ChartSeg } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import type { ChartLayout, ChartSeg } from '../../src/core/types'
 
 function songSegs(laid: ChartLayout): ChartSeg[] {
   const out: ChartSeg[] = []

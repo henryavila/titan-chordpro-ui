@@ -241,7 +241,7 @@ describe('the clock is the same music on every UI surface', () => {
       surfaceOf({ fit: false, width: 390, viewport: 844, topPad: 96 }),
     )
     expect(clock.durationSec).toBe(160)
-    expect(run).toBeCloseTo(clock.durationSec, 1)
+    expect(run).toBeCloseTo(160, 1)
     const from = measured[0]?.top ?? 0
     const until = measured[1]?.top ?? t.doc
     const verseSec = barsAtPx(t, until) - barsAtPx(t, from)

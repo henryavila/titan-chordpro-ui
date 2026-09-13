@@ -74,7 +74,7 @@ describe('Editar lives in the bottom bar at every width', () => {
     [768, 'tablet'],
     [900, 'default viewer width'],
     [1280, 'notebook — chip used to float at the glass corner'],
-  ] as const)('sits in the Rolar row at %ipx (%s)', async (width) => {
+  ] as const)('sits in the Rolar row at %ipx (%s)', async (width, _label) => {
     const place = editPlace(await viewerAt(width))
     expect(place.count, 'two Editar buttons at once').toBe(1)
     expect(place.chip, 'floating chip is still painted').toBe(false)

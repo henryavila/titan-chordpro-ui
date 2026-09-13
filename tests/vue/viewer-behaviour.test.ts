@@ -126,7 +126,7 @@ describe('zen', () => {
   it.each([
     [1280, 'desktop'],
     [390, 'phone'],
-  ] as const)('on %s, zen hides the chrome without shrinking the page pad', async (width) => {
+  ] as const)('on %s, zen hides the chrome without shrinking the page pad', async (width, _label) => {
     localStorage.setItem('cpv:fitSeen', '1')
     const observers: ((entries: unknown[]) => void)[] = []
     class RO {

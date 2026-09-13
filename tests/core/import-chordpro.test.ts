@@ -298,9 +298,16 @@ describe('Cifra Club chords and HTML', () => {
     const blocks = layoutChart(view)
     const choruses = blocks.filter((b) => b.kind === 'chorus')
     expect(choruses).toHaveLength(1)
-    expect(choruses[0]?.rows.length).toBeGreaterThan(1)
-    const verse = blocks.find((b) => b.kind === 'stanza' && b.rows.some((row) => /andorinha/.test(row.plain)))
-    expect(verse?.rows.length).toBeGreaterThan(1)
+    const chorus = choruses[0]
+    expect(chorus?.kind).toBe('chorus')
+    if (chorus?.kind !== 'chorus') throw new Error('expected chorus')
+    expect(chorus.rows.length).toBeGreaterThan(1)
+    const verse = blocks.find(
+      (b) => b.kind === 'stanza' && b.rows.some((row) => /andorinha/.test(row.plain)),
+    )
+    expect(verse?.kind).toBe('stanza')
+    if (verse?.kind !== 'stanza') throw new Error('expected stanza')
+    expect(verse.rows.length).toBeGreaterThan(1)
   })
 
   it('drops Cifra Club tablature blocks and keeps the rehearsal chart once', () => {

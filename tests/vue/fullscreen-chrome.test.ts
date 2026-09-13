@@ -232,7 +232,7 @@ describe('Tela cheia on a phone keeps the live controls', () => {
     await w.get('[aria-label="Tela cheia"]').trigger('click')
     await flushPromises()
     expect(chromeHidden(w).some(Boolean)).toBe(false)
-    expect(w.get('[aria-label="Sair da tela cheia"]').exists()).toBe(true)
+    expect(w.find('[aria-label="Sair da tela cheia"]').exists()).toBe(true)
   })
 })
 

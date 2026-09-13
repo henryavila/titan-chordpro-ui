@@ -59,7 +59,7 @@ describe('zen keeps a plain song name in the head band', () => {
   it.each([
     [390, 'phone'],
     [900, 'desktop'],
-  ] as const)('on a %s, with chrome up there is no second title bar', async (width) => {
+  ] as const)('on a %s, with chrome up there is no second title bar', async (width, _label) => {
     const w = await viewerAt(width)
     expect(w.find('[data-cpv-zen-title]').exists()).toBe(false)
     expect(w.findAll('[data-cpv-head]')).toHaveLength(1)
@@ -71,7 +71,7 @@ describe('zen keeps a plain song name in the head band', () => {
   it.each([
     [390, 'phone'],
     [900, 'desktop'],
-  ] as const)('on a %s, zen fades the card and pins only the name', async (width) => {
+  ] as const)('on a %s, zen fades the card and pins only the name', async (width, _label) => {
     const w = await viewerAt(width)
     await w.get('[data-cpv-scroll]').trigger('click')
     await flushPromises()
