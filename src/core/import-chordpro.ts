@@ -927,7 +927,7 @@ export type EnrichYoutube = {
  */
 export type EnrichProposal = {
   proposed: ChartMeta
-  /** Auto fields: fill-empty + x_strum (prefer-cc) + x_origem. No youtube/capo. */
+  /** Auto fields: fill-empty + x_strum (keep-local) + x_origem. No youtube/capo. */
   patch: ChartMeta
   conflicts: EnrichConflict[]
   youtube: EnrichYoutube | null
@@ -964,7 +964,8 @@ export function proposeCifraClubEnrich(
     if (!loc) patch[k] = remote
     else if (loc !== remote) conflicts.push({ key: k, local: loc, remote })
   }
-  if (proposed.x_strum) patch.x_strum = proposed.x_strum
+  // Batida: keep-local — only fill when the chart has no x_strum yet.
+  if (proposed.x_strum && !String(local.x_strum ?? '').trim()) patch.x_strum = proposed.x_strum
   if (proposed.x_origem) patch.x_origem = proposed.x_origem
 
   const remoteId = String(proposed.x_youtube ?? '').trim()

@@ -3,6 +3,7 @@
 {tempo: 75}
 {time: 6/8}
 {duration: 03:59}
+{x_strum:bpm=75; meter=6/8; grid=12; label=Padrão; pat=DdUu DdUu DdUu}
 
 {c:(INTRODUÇÃO)}
 [E]x//     [F#m7]x//     [D9]x//     [D9]x//

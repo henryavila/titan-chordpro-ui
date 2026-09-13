@@ -44,7 +44,10 @@ describe('proposeCifraClubEnrich — meta only, no convert', () => {
     expect(chartBody(applied)).toBe(chartBody(TUA))
     expect(applied).not.toContain('[Bm7]') // CC body never imported
     expect(readMeta(applied).x_origem).toBe(url)
-    expect(readMeta(applied).x_strum).toContain('bpm=71')
+    // local already has x_strum — keep-local omits batida from the patch
+    expect(proposal.patch.x_strum).toBeUndefined()
+    expect(readMeta(applied).x_strum).toContain('bpm=75')
+    expect(readMeta(applied).x_strum).not.toContain('bpm=71')
     expect(readMeta(applied).x_youtube).toBe('YXnQ02HYB1w')
     // local already had tempo/time/duration — fill-empty keeps them
     expect(readMeta(applied).tempo).toBe('75')
@@ -68,13 +71,22 @@ describe('proposeCifraClubEnrich — meta only, no convert', () => {
     expect(readMeta(withPick).x_youtube).toBe('YXnQ02HYB1w')
   })
 
-  it('overwrites local x_strum (prefer-cc)', () => {
+  it('keeps local x_strum (keep-local)', () => {
     const local = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=8;label=Old;pat=DUDU}\n[G]a\n`
+    const proposal = proposeCifraClubEnrich(local, TU_ES)
+    expect(proposal.patch.x_strum).toBeUndefined()
+    const next = applyCifraClubEnrich(local, proposal)
+    expect(readMeta(next).x_strum).toContain('bpm=40')
+    expect(readMeta(next).x_strum).not.toContain('bpm=71')
+    expect(chartBody(next)).toBe(chartBody(local))
+  })
+
+  it('fills x_strum when local lacks it and CC has strum', () => {
+    const local = `{title:X}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, TU_ES)
     expect(proposal.patch.x_strum).toContain('bpm=71')
     const next = applyCifraClubEnrich(local, proposal)
     expect(readMeta(next).x_strum).toContain('bpm=71')
-    expect(readMeta(next).x_strum).not.toContain('bpm=40')
     expect(chartBody(next)).toBe(chartBody(local))
   })
 
