@@ -27,3 +27,8 @@ demo/dist/
 /test-results/
 /playwright-report/
 /artifacts/
+
+
+/db/
+/design-handoff-editor/
+/design-handoff/
