@@ -703,13 +703,14 @@ const fixTuneLabel = computed(() =>
 )
 const editBadge = computed(() => (wMode.value === 'content' ? 'Para todos' : 'Só para mim'))
 const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}ª casa`))
-/** New shapes only, one line — enough to fill the hint row, no prose. */
+/** Fallback copy when there are no chord tokens to chip. */
 const capoHint = computed(() => {
   if (capo.value === 0) return 'A cifra fica no tom real.'
-  const shapes = capoPairs.value.map((p) => p.shape)
-  if (!shapes.length) return `Formas de ${shapeKey.value}`
-  return shapes.join(' · ')
+  if (!capoPairs.value.length) return `Formas de ${shapeKey.value}`
+  return ''
 })
+/** Distinct new shapes for the capo hint chips (one row, scroll sideways). */
+const capoShapes = computed(() => capoPairs.value.map((p) => p.shape))
 /** The capo button says whether both chords are on screen. */
 const capoBtnLabel = computed(() =>
   capo.value === 0 ? 'Capo' : twin.value ? `Dual · capo ${capo.value}` : `Capo ${capo.value}`,
@@ -1441,6 +1442,7 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   capoBtnLabel: capoBtnLabel.value,
   capoLabel: capoLabel.value,
   capoHint: capoHint.value,
+  capoShapes: capoShapes.value,
   mapOn: mapOn.value,
   twin: twin.value,
   canRewrite: canRewrite.value,
@@ -2698,6 +2700,7 @@ defineExpose({
       :song-caption="songKeyCaption"
       :capo-label="capoLabel"
       :capo-hint="capoHint"
+      :capo-shapes="capoShapes"
       :has-capo="hasCapo"
       :has-reset="hasReset"
       :dual="twin"

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Hint do capotraste:** em vez de só "Formas de X", mostra os acordes distintos da cifra como formas novas numa linha (`F · A# · Dm · …`), sem prosa e sem quebrar linha — a altura do bloco de tom/capo fica estável.
+- **Hint do capotraste:** em vez de só "Formas de X", mostra os acordes distintos da cifra como chips no estilo do badge do viewer (menores e mais discretos), numa linha com scroll horizontal quando não cabem — sem prosa e sem crescer a altura do bloco.
 
 ### Fixed
 - **Só letra:** espaçamento compacto para leitura vocal (sem o gap de ensaio da cifra).

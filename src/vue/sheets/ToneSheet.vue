@@ -7,6 +7,8 @@ defineProps<{
   songCaption?: string
   capoLabel: string
   capoHint: string
+  /** New capo shapes as chips; empty → show `capoHint` text. */
+  capoShapes?: string[]
   hasCapo: boolean
   hasReset: boolean
   /** The chart is showing both chords (capo shape + real). */
@@ -49,7 +51,10 @@ const emit = defineEmits<{
         <span style="flex:none;min-width:86px;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</span>
         <button aria-label="Capo acima" style="flex:none;width:48px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:18px;cursor:pointer;" @click="emit('capoUp')">+</button>
       </div>
-      <span data-capo-hint class="cpv-capo-hint">{{ capoHint }}</span>
+      <div v-if="capoShapes?.length" data-capo-hint class="cpv-capo-hint">
+        <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="cpv-capo-chip" data-capo-chip>{{ s }}</span>
+      </div>
+      <span v-else data-capo-hint class="cpv-capo-hint--text">{{ capoHint }}</span>
       <button
         data-dual
         role="switch"
