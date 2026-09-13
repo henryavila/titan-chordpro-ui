@@ -31,8 +31,7 @@ jobs:
       - run: pnpm test
 
       # Stage only — do not allow direct `npm publish` on the Trusted Publisher.
-      # A maintainer must run `npm stage approve <id>` (2FA) or approve on npmjs.com
-      # before the version becomes installable.
+      # Maintainer approves with 2FA on the npmjs.com UI (Staged packages) — not CLI.
       - name: Stage package on npm
         run: |
           # Node 22 ships npm 10; `npm stage` needs ≥ 11.5.1
@@ -44,12 +43,9 @@ jobs:
           {
             echo "## Staged ${NAME}@${VERSION}"
             echo ""
-            echo "This Release uploaded a **staged** version. It is **not** installable until a maintainer approves with 2FA:"
+            echo "This Release uploaded a **staged** version. It is **not** installable until a maintainer approves with 2FA on the **npm UI**:"
             echo ""
-            echo '```sh'
-            echo "npm stage list ${NAME}"
-            echo "npm stage approve <stage-id>"
-            echo '```'
+            echo "https://www.npmjs.com/package/${NAME}"
             echo ""
-            echo "Or: https://www.npmjs.com/package/${NAME} → Staged packages."
+            echo "→ **Staged packages** → **Approve**"
           } >> "$GITHUB_STEP_SUMMARY"

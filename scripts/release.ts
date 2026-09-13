@@ -9,7 +9,7 @@
  *   pnpm exec tsx scripts/release.ts --ship       tag + push + GitHub Release (tree must be clean)
  *
  * npm publish is NOT done here. GitHub Release triggers OIDC stage; a human
- * approves with 2FA (`npm stage approve`).
+ * approves with 2FA on the npmjs.com UI (Staged packages tab) — not CLI.
  */
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -221,7 +221,7 @@ function printPlan(facts: Facts): string {
       `    pnpm test && pnpm typecheck`,
       `    git commit / tag v${plan.next} / push`,
       `    pnpm exec tsx scripts/release.ts --ship`,
-      `    human: npx npm@11.19.1 stage approve <id>`,
+      `    human (UI): https://www.npmjs.com/package/${facts.name} → Staged packages → Approve`,
     )
   }
   return lines.join('\n')
@@ -346,7 +346,7 @@ function main(): void {
     const result = ship(facts)
     process.stdout.write(`shipped ${result.tag}\n${facts.repoUrl}/releases/tag/${result.tag}\n`)
     process.stdout.write(
-      `\nNext (human, 2FA):\n  npx npm@11.19.1 stage list ${facts.name}\n  npx npm@11.19.1 stage approve <stage-id>\n`,
+      `\nNext (human, 2FA — npm UI only):\n  https://www.npmjs.com/package/${facts.name}\n  → Staged packages → Approve\n`,
     )
     return
   }
