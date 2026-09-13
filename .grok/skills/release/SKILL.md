@@ -44,13 +44,13 @@ pnpm release:ship                  # annotated tag, push, gh release create
 
 `.github/workflows/publish.yml` stages via OIDC. The human promotes with **2FA na UI do npm** — never tell them to `npm stage approve` on the CLI.
 
-Give the direct package URL (Staged packages tab):
+Give the direct Versions tab URL (where the staged version is approved):
 
 ```
-https://www.npmjs.com/package/@henryavila/titan-chordpro-ui
+https://www.npmjs.com/package/@henryavila/titan-chordpro-ui?activeTab=versions
 ```
 
-Open that page → **Staged packages** → **Approve** (2FA). Do not paste CLI `stage list` / `stage approve` as the handoff.
+Open that page → **Approve** (2FA). Do not paste CLI `stage list` / `stage approve` as the handoff.
 
 Do not run `npm publish`, `pnpm publish`, or `scripts/publish-npm.sh` for a version that will get a GitHub Release.
 
