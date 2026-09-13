@@ -1,20 +1,28 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import {
+  applyStrumPreset,
+  formatXStrum,
   resizePattern,
   setSlot,
   type StrumPattern,
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
 import CpvIcon from '../icon/CpvIcon.vue'
+import BatidaPresets from '../edit/BatidaPresets.vue'
 import BatidaSlotPicker from '../edit/BatidaSlotPicker.vue'
 
-const props = defineProps<{
-  compact: boolean
-  pattern: StrumPattern
-  barBeats: number
-  canDelete: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    compact: boolean
+    pattern: StrumPattern
+    barBeats: number
+    canDelete: boolean
+    /** Host capability — off hides the presets section. */
+    presetsEnabled?: boolean
+  }>(),
+  { presetsEnabled: true },
+)
 
 const emit = defineEmits<{
   close: []
@@ -26,6 +34,7 @@ const draft = ref<StrumPattern>(clonePattern(props.pattern))
 const pickIndex = ref(-1)
 const label = ref(props.pattern.label || 'Padrão')
 const grid = ref(props.pattern.grid || props.pattern.slots.length || 16)
+const baselineKey = ref(snapshotKey(draft.value, label.value))
 
 watch(
   () => props.pattern,
@@ -34,6 +43,7 @@ watch(
     label.value = p.label || 'Padrão'
     grid.value = p.grid || p.slots.length || 16
     pickIndex.value = -1
+    baselineKey.value = snapshotKey(draft.value, label.value)
   },
 )
 
@@ -50,6 +60,18 @@ function normalizeSlot(s: StrumSlot, i: number): StrumSlot {
     return { dir: i % 2 === 0 ? 'down' : 'up', contact: 'ghost', essence: null }
   }
   return { ...s }
+}
+
+function snapshotKey(p: StrumPattern, lab: string): string {
+  return formatXStrum({
+    ...p,
+    label: lab.trim() || 'Padrão',
+    grid: p.slots.length,
+  })
+}
+
+function isDraftDirty(): boolean {
+  return snapshotKey(draft.value, label.value) !== baselineKey.value
 }
 
 const barBeats = computed(() => Math.max(1, props.barBeats || 4))
@@ -123,6 +145,19 @@ function openPick(i: number) {
 function applyPick(slot: StrumSlot) {
   if (pickIndex.value < 0) return
   draft.value = setSlot(draft.value, pickIndex.value, slot)
+  pickIndex.value = -1
+}
+
+function applyPreset(presetId: string) {
+  if (isDraftDirty() && !window.confirm('Substituir a batida atual por este preset?')) return
+  const next = applyStrumPreset(
+    { ...draft.value, label: label.value.trim() || 'Padrão' },
+    presetId,
+  )
+  if (!next) return
+  draft.value = next
+  label.value = next.label || 'Padrão'
+  grid.value = next.grid
   pickIndex.value = -1
 }
 
@@ -205,6 +240,8 @@ const geom = computed(() =>
           <span style="font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:13px;font-weight:700;color:var(--text);">{{ draft.bpm }} BPM</span>
         </div>
       </div>
+
+      <BatidaPresets v-if="presetsEnabled" @apply="applyPreset" />
 
       <p style="margin:0;font-size:12px;line-height:1.45;color:var(--muted);">
         Toque um <b style="color:var(--text);font-weight:600;">marco</b> para escolher — tocar ou passar (não tocar).
