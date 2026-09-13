@@ -181,6 +181,7 @@ export type { LintResult } from './lint'
 export { transposeToken, usesFlats, keyIndex, keyRootOf, nashvilleToken, semitoneDelta, signedSemitoneDelta, formatToneShift, transposeTextChords } from './transpose'
 export { looksLikeOnSong, normalizeOnSong } from './onsong'
 export {
+  applyCcStrumChoice,
   applyCifraClubEnrich,
   chartBody,
   convert,
@@ -205,16 +206,19 @@ export {
   SUPPORTED_HOSTS,
   titleFromUrl,
   toPlain,
+  trazerCcStrumChoice,
   writeMeta,
   writeStrumPatterns,
   youtubeEmbedUrl,
   youtubeWatchUrl,
 } from './import-chordpro'
 export type {
+  CcStrumChoice,
   ChartMeta,
   CifraClubPage,
   EnrichConflict,
   EnrichProposal,
+  EnrichStrumConflict,
   EnrichYoutube,
   ImportFormat,
   ImportResult,
