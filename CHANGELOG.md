@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Começar de novo (Metadados, Para todos):** confirmação explícita abre Nova cifra (Cifra Club / arquivo / texto / branco). A cifra atual só some ao concluir; cancelar Nova mantém o corpo. Ausente no editar Só para mim.
+
 ## [0.3.0] - 2026-09-13
 
 ### Changed
