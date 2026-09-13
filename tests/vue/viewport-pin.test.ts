@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { PIN_GAIN_PX, pinWouldFillViewport, uncoveredViewportPx } from '../../src/vue/use/viewportPin'
+import {
+  PIN_GAIN_PX,
+  pinWouldFillViewport,
+  uncoveredViewportPx,
+  visualViewportInsets,
+} from '../../src/vue/use/viewportPin'
 
 type Box = { top: number; left: number; width: number; height: number }
 
@@ -88,5 +93,41 @@ describe('uncoveredViewportPx', () => {
   it('is 0 without an element — nothing to pin', () => {
     expect(uncoveredViewportPx(null)).toBe(0)
     expect(pinWouldFillViewport(null)).toBe(false)
+  })
+})
+
+describe('visualViewportInsets', () => {
+  const parent = { top: 0, left: 0, right: 390, bottom: 844 }
+
+  it('lifts the bottom when the soft keyboard shrinks the visual viewport', () => {
+    // Layout 844px tall; keyboard leaves 500px visible — sheet must clear 344px.
+    expect(
+      visualViewportInsets(parent, { offsetTop: 0, offsetLeft: 0, width: 390, height: 500 }),
+    ).toEqual({ top: 0, left: 0, right: 0, bottom: 344 })
+  })
+
+  it('is all zeros when the visual viewport already matches the parent', () => {
+    expect(
+      visualViewportInsets(parent, { offsetTop: 0, offsetLeft: 0, width: 390, height: 844 }),
+    ).toEqual({ top: 0, left: 0, right: 0, bottom: 0 })
+  })
+
+  it('stays zero when the parent already sits inside a shifted iOS visual viewport', () => {
+    const host = { top: 88, left: 0, right: 390, bottom: 844 }
+    expect(
+      visualViewportInsets(host, { offsetTop: 88, offsetLeft: 0, width: 390, height: 756 }),
+    ).toEqual({ top: 0, left: 0, right: 0, bottom: 0 })
+  })
+
+  it('counts a top gap when the visual viewport starts below the parent', () => {
+    expect(
+      visualViewportInsets(parent, { offsetTop: 120, offsetLeft: 0, width: 390, height: 500 }),
+    ).toEqual({ top: 120, left: 0, right: 0, bottom: 224 })
+  })
+
+  it('never returns a negative inset when the view overflows the parent', () => {
+    expect(
+      visualViewportInsets(parent, { offsetTop: -20, offsetLeft: -10, width: 420, height: 900 }),
+    ).toEqual({ top: 0, left: 0, right: 0, bottom: 0 })
   })
 })

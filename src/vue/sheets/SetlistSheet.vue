@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
+import { overlayVisualInsets, type EdgeInsets } from '../use/viewportPin'
 
 export type SetlistItem = {
   i: number
@@ -32,19 +33,63 @@ const emit = defineEmits<{
   'update:query': [value: string]
 }>()
 
+/**
+ * Soft keyboards often overlay without shrinking visualViewport (Chrome
+ * overlays-content). A short no-hit sheet docked with flex-end then sits
+ * under the keyboard. While the musician is searching, lift to the top.
+ */
+const searchFocused = ref(false)
+const searching = computed(
+  () => searchFocused.value || props.query.trim().length > 0,
+)
+
 const geom = computed(() =>
   props.compact
-    ? { align: 'flex-end', pad: '0', max: '100%', radius: '20px 20px 0 0' }
+    ? {
+        align: searching.value ? 'flex-start' : 'flex-end',
+        pad: '0',
+        max: '100%',
+        radius: searching.value ? '0 0 20px 20px' : '20px 20px 0 0',
+      }
     : { align: 'center', pad: '20px', max: '400px', radius: '18px' },
 )
+
+/** Also pin to the visual viewport when the keyboard does resize it. */
+const root = ref<HTMLElement | null>(null)
+const insets = shallowRef<EdgeInsets>({ top: 0, left: 0, right: 0, bottom: 0 })
+function syncInsets() {
+  insets.value = overlayVisualInsets(root.value)
+}
+onMounted(() => {
+  syncInsets()
+  window.visualViewport?.addEventListener('resize', syncInsets)
+  window.visualViewport?.addEventListener('scroll', syncInsets)
+  window.addEventListener('resize', syncInsets)
+})
+onUnmounted(() => {
+  window.visualViewport?.removeEventListener('resize', syncInsets)
+  window.visualViewport?.removeEventListener('scroll', syncInsets)
+  window.removeEventListener('resize', syncInsets)
+})
+
+const wrapStyle = computed(() => ({
+  alignItems: geom.value.align,
+  padding: geom.value.pad,
+  top: `${insets.value.top}px`,
+  left: `${insets.value.left}px`,
+  right: `${insets.value.right}px`,
+  bottom: `${insets.value.bottom}px`,
+}))
 
 /** Fail / busy / seen. Seen is an SVG check: `✓` is Dingbats, not in Sora. */
 </script>
 
 <template>
   <div
-    :style="{ alignItems: geom.align, padding: geom.pad }"
-    style="position:absolute;inset:0;z-index:29;display:flex;justify-content:center;"
+    ref="root"
+    data-setlist-overlay
+    :style="wrapStyle"
+    style="position:absolute;z-index:29;display:flex;justify-content:center;"
   >
     <div class="cpv-scrim" @click="emit('close')" />
     <div
@@ -70,6 +115,8 @@ const geom = computed(() =>
           placeholder="Buscar na lista"
           aria-label="Buscar na lista"
           style="width:100%;height:42px;padding:0 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-family:inherit;font-size:13.5px;"
+          @focus="searchFocused = true"
+          @blur="searchFocused = false"
           @input="emit('update:query', ($event.target as HTMLInputElement).value)"
         />
       </div>

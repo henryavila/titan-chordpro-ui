@@ -42,3 +42,54 @@ export function uncoveredViewportPx(el: HTMLElement | null): number {
 export function pinWouldFillViewport(el: HTMLElement | null): boolean {
   return uncoveredViewportPx(el) >= PIN_GAIN_PX
 }
+
+export type EdgeInsets = { top: number; left: number; right: number; bottom: number }
+
+type RectLike = { top: number; left: number; right: number; bottom: number }
+type ViewLike = { offsetTop: number; offsetLeft: number; width: number; height: number }
+
+/**
+ * Absolute insets so an overlay covers only the visual viewport inside its
+ * positioned parent. Soft keyboards shrink the visual viewport; without this,
+ * `align-items:flex-end` docks a short sheet behind the keyboard.
+ */
+export function visualViewportInsets(parent: RectLike, view: ViewLike): EdgeInsets {
+  const vBottom = view.offsetTop + view.height
+  const vRight = view.offsetLeft + view.width
+  return {
+    top: Math.max(0, view.offsetTop - parent.top),
+    left: Math.max(0, view.offsetLeft - parent.left),
+    right: Math.max(0, parent.right - vRight),
+    bottom: Math.max(0, parent.bottom - vBottom),
+  }
+}
+
+/** Positioned ancestor the overlay is laid out against (viewer root, then CSS containing block). */
+function overlayContainingBlock(el: HTMLElement): HTMLElement | null {
+  const root = el.closest('.cpv-root, [data-cpv-root]')
+  if (root instanceof HTMLElement) return root
+  if (el.offsetParent instanceof HTMLElement) return el.offsetParent
+  let p = el.parentElement
+  while (p) {
+    const pos = getComputedStyle(p).position
+    if (pos && pos !== 'static') return p
+    p = p.parentElement
+  }
+  return el.parentElement
+}
+
+/** Read insets for `el`'s containing block against the live visual viewport. */
+export function overlayVisualInsets(el: HTMLElement | null): EdgeInsets {
+  const zero = { top: 0, left: 0, right: 0, bottom: 0 }
+  if (typeof window === 'undefined' || !el) return zero
+  const parent = overlayContainingBlock(el)
+  if (!parent) return zero
+  const vv = window.visualViewport
+  if (!vv) return zero
+  return visualViewportInsets(parent.getBoundingClientRect(), {
+    offsetTop: vv.offsetTop,
+    offsetLeft: vv.offsetLeft,
+    width: vv.width,
+    height: vv.height,
+  })
+}
