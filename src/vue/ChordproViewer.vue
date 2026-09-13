@@ -659,7 +659,14 @@ const insertItems = computed(() => {
   return out
 })
 const scale = computed(() => {
-  const s = typeScale(bias.value, fitOn.value, width.value, maxPlainChars(blocks.value), twin.value)
+  const s = typeScale(
+    bias.value,
+    fitOn.value,
+    width.value,
+    maxPlainChars(blocks.value),
+    twin.value,
+    activeLens.value,
+  )
   if (activeLens.value !== 'letra') return s
   // No chord lane: the lyric sits where the chord used to, and wrap is tighter.
   return { ...s, chordBox: '0px', chordBoxPlain: '0px' }
@@ -2233,6 +2240,7 @@ defineExpose({
     class="cpv-root"
     data-cpv-root
     :data-theme="effTheme"
+    :data-cpv-lens="activeLens"
     :class="rootHitClass"
     :style="{ '--cpv-met-hit': metHitMs }"
   >
