@@ -49,15 +49,26 @@ async function loadFonts() {
  * 100dvh frame in the flow. Default is the standalone page.
  */
 const ficha = q.get('ficha') === '1'
-const lista = q.get('lista') === '1'
-const songs = computed(() =>
-  lista
-    ? [
-        { id: 'o-rei', title: '082 - O Rei vem vindo', source: oRei },
-        { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: jesus },
-      ]
-    : undefined,
-)
+const lista = q.get('lista')
+const songs = computed(() => {
+  if (lista === 'busca') {
+    // Search only appears above 10 songs — enough real fixtures for the keyboard overlay test.
+    return Object.entries(catalog)
+      .slice(0, 12)
+      .map(([path, source], i) => ({
+        id: `s${i}`,
+        title: path.split('/').pop()?.replace(/\.cho$/, '') ?? `Música ${i + 1}`,
+        source: String(source),
+      }))
+  }
+  if (lista === '1') {
+    return [
+      { id: 'o-rei', title: '082 - O Rei vem vindo', source: oRei },
+      { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: jesus },
+    ]
+  }
+  return undefined
+})
 const theme = ref<'auto' | 'light' | 'dark'>('light')
 const themeControl = ref<'host' | 'preference'>('host')
 const lensQ = q.get('lens')
