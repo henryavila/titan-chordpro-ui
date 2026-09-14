@@ -27,6 +27,13 @@ describe('StrumStrip', () => {
     expect(w.find('[data-strum-i="1"]').classes()).toContain('strum-active')
     expect(w.find('[data-strum-i="0"]').classes()).not.toContain('strum-active')
   })
+
+  it('exposes a full-width row so slots can fill the reading column', () => {
+    const pattern = patternFromCc([7, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'Padrão')
+    const w = mount(StrumStrip, { props: { pattern } })
+    expect(w.find('[data-strum-row]').classes()).toContain('strum-row')
+    expect(w.findAll('[data-strum-i]')).toHaveLength(4)
+  })
 })
 
 describe('viewer batida toggle', () => {

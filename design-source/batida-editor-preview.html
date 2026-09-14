@@ -113,9 +113,9 @@
     margin-left: auto; width: 32px; height: 28px; border: 0; border-radius: 8px;
     background: var(--chord-soft); color: var(--chord); cursor: pointer; font-size: 14px;
   }
-  .strum-row { display: flex; gap: 2px; overflow-x: auto; }
+  .strum-row { display: flex; width: 100%; justify-content: center; gap: 2px; overflow-x: auto; }
   .strum-slot {
-    position: relative; flex: 0 0 auto; width: 18px; height: 28px;
+    position: relative; flex: 1 1 0; min-width: 18px; max-width: 36px; height: 28px;
     display: flex; align-items: flex-end; justify-content: center; border-radius: 6px;
   }
   .strum-beat { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 700; color: var(--muted); }
@@ -123,7 +123,15 @@
   .strum-ghost .strum-glyph { color: color-mix(in srgb, var(--text) 38%, transparent); font-weight: 500; }
   .strum-e-accent .strum-glyph { font-size: 17px; color: var(--chord); }
   .strum-e-muted .strum-glyph { color: var(--muted); font-size: 13px; }
-  .strum-dot { position: absolute; bottom: 15px; width: 3px; height: 3px; border-radius: 50%; background: var(--text); }
+  .strum-dot { position: absolute; bottom: calc(50% + 2px); width: 3px; height: 3px; border-radius: 50%; background: var(--text); }
+  .viewer.desk .strum-strip { gap: 8px; padding: 10px 14px 12px; }
+  .viewer.desk .strum-row { gap: 4px; }
+  .viewer.desk .strum-slot { min-width: 28px; max-width: 80px; height: 48px; border-radius: 8px; }
+  .viewer.desk .strum-beat { font-size: 10px; }
+  .viewer.desk .strum-glyph { font-size: 22px; margin-bottom: 4px; }
+  .viewer.desk .strum-e-accent .strum-glyph { font-size: 26px; }
+  .viewer.desk .strum-e-muted .strum-glyph { font-size: 20px; }
+  .viewer.desk .strum-dot { width: 4px; height: 4px; }
 
   .scrim {
     position: absolute; inset: 0; z-index: 8;

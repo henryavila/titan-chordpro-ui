@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Presets de batida (host-owned):** prop `strumPresets`, capability `batidaPresets`, evento `save-strum-preset` (`{ id?, label, pattern }`). O pacote não embute nem persiste catálogo — o consumer gerencia.
 
 ### Changed
+- **Batida de leitura no desktop:** a faixa (`StrumStrip`) preenche a largura da cifra com setas maiores para acompanhar o pulso; no celular permanece compacta.
 - **Enrich Cifra Club — batida keep-local:** se a cifra já tem `{x_strum:}`, `proposeCifraClubEnrich` não sobrescreve a batida local; só preenche quando a chave está ausente.
 
 ## [0.3.0] - 2026-09-13
