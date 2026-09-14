@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import SelectionBar from '../edit/SelectionBar.vue'
 import type { CpvIconName } from '../icon/paths'
 import type { WriteMode } from '../public'
 import type { BlockEditApi } from '../use/useBlockEdit'
 
-defineProps<{
+const props = defineProps<{
   compact: boolean
   editHint: boolean
   clipLabel: string | null
@@ -18,6 +19,8 @@ defineProps<{
   lintOk: boolean
   themeTitle: string
   themeIcon: CpvIconName
+  /** Batida create/edit is content-only ("Para todos"). */
+  hasStrum: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,7 +32,11 @@ const emit = defineEmits<{
   smallerType: []
   biggerType: []
   theme: []
+  createBatida: []
+  editBatida: []
 }>()
+
+const showBatidaTools = computed(() => props.wMode === 'content')
 </script>
 
 <template>
@@ -89,6 +96,21 @@ const emit = defineEmits<{
         style="height:36px;padding:0 13px;border-radius:12px;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('insert')"
       ><CpvIcon name="plus" :size="16" style="color:var(--chord)" />Inserir</button>
+
+      <button
+        v-if="showBatidaTools && !hasStrum"
+        data-batida-create
+        title="Criar batida"
+        style="height:36px;padding:0 12px;border-radius:12px;border:1px dashed var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        @click="emit('createBatida')"
+      ><CpvIcon name="plus" :size="14" />Criar batida</button>
+      <button
+        v-if="showBatidaTools && hasStrum"
+        data-batida-edit-chrome
+        title="Editar batida"
+        style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        @click="emit('editBatida')"
+      ><CpvIcon name="pencil" :size="14" />Editar batida</button>
 
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
 

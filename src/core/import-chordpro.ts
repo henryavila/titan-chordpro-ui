@@ -12,7 +12,18 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
-import { formatXStrum, patternFromCc, type StrumPattern } from './strum'
+import {
+  isLegalStrumPattern,
+  parseXStrum,
+  patternFromCc,
+  repairStrumPattern,
+  type StrumPattern,
+} from './strum'
+import {
+  metaFromStrumSet,
+  parseXStrumSet,
+  type StrumPatternSet,
+} from './strum-multi'
 import { hasSongDuration } from './timeline'
 import { keyIndex, keyRootOf, signedSemitoneDelta, transposeTextChords, usesFlats } from './transpose'
 
@@ -292,7 +303,9 @@ export function convert(text: string): ImportResult {
     if (!page.body.trim()) return { source: '', format: 'vazio', label: '', changed: false }
     const converted = stripLyricDots(fromPlain(page.body))
     const capoN = Math.max(0, Math.min(9, Number(page.capo) || 0))
-    const strum = page.strums[0]
+    const strumMeta = page.strums.length
+      ? metaFromStrumSet({ activeIndex: 0, patterns: page.strums })
+      : {}
     const meta: ChartMeta = {
       ...readMeta(converted),
       ...(page.title ? { title: page.title } : {}),
@@ -302,7 +315,7 @@ export function convert(text: string): ImportResult {
       ...(page.time ? { time: page.time } : {}),
       ...(capoN > 0 ? { capo: String(capoN) } : {}),
       ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
-      ...(strum ? { x_strum: formatXStrum(strum) } : {}),
+      ...strumMeta,
     }
     const source = writeMeta(converted, meta)
     const keyRewrite = detectKeyRewrite(source)
@@ -340,6 +353,7 @@ export const META_KEYS = [
   'x_origem',
   'x_youtube',
   'x_strum',
+  'x_strum_set',
 ] as const
 export type MetaKey = (typeof META_KEYS)[number]
 export type ChartMeta = Partial<Record<MetaKey, string>>
@@ -358,6 +372,50 @@ export function readMeta(source: string): ChartMeta {
       else if ((META_KEYS as readonly string[]).includes(k)) meta[k as MetaKey] = v
     })
   return meta
+}
+
+/**
+ * Read batida as a pattern set.
+ * - Only `{x_strum:}` → 1-pattern set.
+ * - `{x_strum_set:}` present → multi; when both exist, active slot mirrors `x_strum`.
+ */
+export function readStrumPatterns(source: string): StrumPatternSet {
+  const meta = readMeta(source)
+  const setRaw = String(meta.x_strum_set ?? '').trim()
+  const singleRaw = String(meta.x_strum ?? '').trim()
+  if (setRaw) {
+    const set = parseXStrumSet(setRaw)
+    if (set?.patterns.length) {
+      const live = singleRaw ? parseXStrum(singleRaw) : null
+      if (live) {
+        const i = set.activeIndex
+        return {
+          activeIndex: i,
+          patterns: set.patterns.map((p, idx) => (idx === i ? live : p)),
+        }
+      }
+      return set
+    }
+  }
+  if (singleRaw) {
+    const p = parseXStrum(singleRaw)
+    if (p) return { activeIndex: 0, patterns: [p] }
+  }
+  return { activeIndex: 0, patterns: [] }
+}
+
+/**
+ * Persist a pattern set: always writes active `{x_strum:}`; writes
+ * `{x_strum_set:}` only when N>1; clears both when empty.
+ */
+export function writeStrumPatterns(source: string, set: StrumPatternSet): string {
+  const cur: ChartMeta = { ...readMeta(source) }
+  delete cur.x_strum
+  delete cur.x_strum_set
+  const fields = metaFromStrumSet(set)
+  if (fields.x_strum) cur.x_strum = fields.x_strum
+  if (fields.x_strum_set) cur.x_strum_set = fields.x_strum_set
+  return writeMeta(source, cur)
 }
 
 /**
@@ -673,7 +731,12 @@ function extractCcStrums(html: string): StrumPattern[] {
     const ts = Array.isArray(o.timeSignature) ? o.timeSignature.map(String) : []
     const bpm = typeof o.bpm === 'number' ? o.bpm : Number(o.bpm) || null
     const label = typeof o.section === 'string' ? o.section : 'Padrão'
-    out.push(patternFromCc(pattern, ts, bpm, label))
+    const built = patternFromCc(pattern, ts, bpm, label)
+    // Hand physics: adequar fase ↓↑ (preserva contato/essência); rejeitar se
+    // ainda for ilegal (ex. grid ímpar que não fecha o loop).
+    const fixed = repairStrumPattern(built)
+    if (!isLegalStrumPattern(fixed)) continue
+    out.push(fixed)
   }
   return out
 }
@@ -921,19 +984,70 @@ export type EnrichYoutube = {
   remoteUrl: string
 }
 
+export type EnrichStrumConflict = {
+  local: StrumPatternSet
+  remote: StrumPatternSet
+}
+
+/** Explicit batida choice when local and CC both have patterns. Default keep. */
+export type CcStrumChoice = 'keep' | 'replace' | 'replace-with-local-copy'
+
 /**
  * Meta-only proposal from a Cifra Club page. Never touches the chord body,
  * never calls convert/fromPlain, never applies capo.
  */
 export type EnrichProposal = {
   proposed: ChartMeta
-  /** Auto fields: fill-empty + x_strum (prefer-cc) + x_origem. No youtube/capo. */
+  /** Auto fields: fill-empty + x_strum (keep-local) + x_origem. No youtube/capo. */
   patch: ChartMeta
   conflicts: EnrichConflict[]
   youtube: EnrichYoutube | null
   capoWarning: string | null
   /** True when the CC page has no `strummings` payload (toolbar “Batidas” may still show). */
   strumMissing: boolean
+  /**
+   * When local already has batida and CC brings patterns — patch still omits
+   * x_strum (keep-local). UI may offer Manter / Trazer CC.
+   */
+  strumConflict: EnrichStrumConflict | null
+}
+
+function localCopyLabel(label: string): string {
+  const base = String(label ?? '').trim() || 'Batida'
+  return /local/i.test(base) ? base : `${base} (local)`
+}
+
+/**
+ * Resolve an explicit Manter / Trazer CC batida choice.
+ * - keep → null (caller leaves local alone)
+ * - replace → CC set as-is (active 0)
+ * - replace-with-local-copy → CC patterns + named copy of previous local active
+ */
+export function applyCcStrumChoice(
+  conflict: EnrichStrumConflict,
+  choice: CcStrumChoice,
+): StrumPatternSet | null {
+  if (choice === 'keep') return null
+  const remote = {
+    activeIndex: 0,
+    patterns: [...conflict.remote.patterns],
+  }
+  if (choice === 'replace') return remote
+  const localActive =
+    conflict.local.patterns[conflict.local.activeIndex] ?? conflict.local.patterns[0]
+  if (!localActive) return remote
+  return {
+    activeIndex: 0,
+    patterns: [...remote.patterns, { ...localActive, label: localCopyLabel(localActive.label) }],
+  }
+}
+
+/** Trazer CC: named copy when local or remote is multi; plain replace for 1↔1. */
+export function trazerCcStrumChoice(conflict: EnrichStrumConflict): CcStrumChoice {
+  if (conflict.local.patterns.length > 1 || conflict.remote.patterns.length > 1) {
+    return 'replace-with-local-copy'
+  }
+  return 'replace'
 }
 
 export function proposeCifraClubEnrich(
@@ -943,7 +1057,10 @@ export function proposeCifraClubEnrich(
 ): EnrichProposal {
   const page = fromCifraClubHtml(html)
   const local = readMeta(source)
-  const strum = page.strums[0]
+  const remoteSet: StrumPatternSet | null = page.strums.length
+    ? { activeIndex: 0, patterns: page.strums }
+    : null
+  const strumMeta = remoteSet ? metaFromStrumSet(remoteSet) : {}
   const proposed: ChartMeta = {
     ...(page.title ? { title: page.title } : {}),
     ...(page.subtitle ? { subtitle: page.subtitle } : {}),
@@ -951,7 +1068,7 @@ export function proposeCifraClubEnrich(
     ...(page.tempo ? { tempo: page.tempo } : {}),
     ...(page.time ? { time: page.time } : {}),
     ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
-    ...(strum ? { x_strum: formatXStrum(strum) } : {}),
+    ...strumMeta,
     ...(opts?.url?.trim() ? { x_origem: opts.url.trim() } : {}),
   }
 
@@ -964,8 +1081,19 @@ export function proposeCifraClubEnrich(
     if (!loc) patch[k] = remote
     else if (loc !== remote) conflicts.push({ key: k, local: loc, remote })
   }
-  if (proposed.x_strum) patch.x_strum = proposed.x_strum
+  // Batida: keep-local — only fill when the chart has no batida yet.
+  const localSet = readStrumPatterns(source)
+  const localHasBatida = localSet.patterns.length > 0
+  if (!localHasBatida && proposed.x_strum) {
+    patch.x_strum = proposed.x_strum
+    if (proposed.x_strum_set) patch.x_strum_set = proposed.x_strum_set
+  }
   if (proposed.x_origem) patch.x_origem = proposed.x_origem
+
+  const strumConflict: EnrichStrumConflict | null =
+    localHasBatida && remoteSet
+      ? { local: localSet, remote: remoteSet }
+      : null
 
   const remoteId = String(proposed.x_youtube ?? '').trim()
   const localId = String(local.x_youtube ?? '').trim()
@@ -994,6 +1122,7 @@ export function proposeCifraClubEnrich(
     youtube,
     capoWarning,
     strumMissing: page.strums.length === 0,
+    strumConflict,
   }
 }
 
@@ -1002,15 +1131,28 @@ export const enrichMetaFromCifraClubHtml = proposeCifraClubEnrich
 
 /**
  * Apply an enrich proposal. `youtubeId` is written only when provided (ask
- * always). Capo is never taken from the proposal.
+ * always). Capo is never taken from the proposal. Batida defaults to keep-local;
+ * pass `strum: 'replace' | 'replace-with-local-copy'` for Trazer CC.
  */
 export function applyCifraClubEnrich(
   source: string,
   proposal: EnrichProposal,
-  choice?: { youtubeId?: string | null },
+  choice?: { youtubeId?: string | null; strum?: CcStrumChoice },
 ): string {
   const next: ChartMeta = { ...readMeta(source), ...proposal.patch }
   const id = choice?.youtubeId
   if (typeof id === 'string' && id.trim()) next.x_youtube = id.trim()
+
+  const strumChoice = choice?.strum ?? 'keep'
+  if (proposal.strumConflict && strumChoice !== 'keep') {
+    const set = applyCcStrumChoice(proposal.strumConflict, strumChoice)
+    delete next.x_strum
+    delete next.x_strum_set
+    if (set) {
+      const fields = metaFromStrumSet(set)
+      if (fields.x_strum) next.x_strum = fields.x_strum
+      if (fields.x_strum_set) next.x_strum_set = fields.x_strum_set
+    }
+  }
   return writeMeta(source, next)
 }

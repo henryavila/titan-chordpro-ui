@@ -1,0 +1,79 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F1",
+  "slug": "batida-editor-f1-b1-presets-embutidos",
+  "title": "B1 Presets embutidos",
+  "goal": "Core catalog of named strum presets apply into the single `{x_strum:}` pattern from the Batida sheet with confirm-if-dirty; IDs stable; tests green.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Core preset catalog",
+      "scopeBoundary": [
+        "No user-saved presets storage; no multi-pattern wire; no Vue beyond export surface."
+      ],
+      "acceptance": [
+        "listStrumPresets returns stable ids and patterns that formatXStrum/parseXStrum round-trip; at least three presets; applying a preset replaces slots/grid/label fields without inventing new token alphabet"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/strum-presets.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/strum-presets.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/core/index.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/strum-presets.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Vue presets section on Batida sheet",
+      "scopeBoundary": [
+        "Do not add host localStorage preset sync; do not implement multi-pattern picker here."
+      ],
+      "acceptance": [
+        "Batida sheet shows presets when capability/flag allows; applying a preset updates draft and asks confirm if draft dirty; save still writes single x_strum"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/batida-presets.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/sheets/BatidaSheet.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/edit/BatidaPresets.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/batida-presets.test.ts"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F1-G1",
+      "description": "Preset catalog + Vue apply tests green.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/strum-presets.test.ts tests/vue/batida-presets.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}

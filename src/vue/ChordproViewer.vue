@@ -22,26 +22,45 @@ import {
   missingOf,
   MISSING_LABEL,
   normalizeSource,
+  beatsPerBar,
+  emptyPattern,
+  gridFromDensity,
   parse,
-  parseXStrum,
+  repairStrumPattern,
   playheadAtScroll,
   readMeta,
+  readStrumPatterns,
   rewriteToKey,
   runSec,
   scrollAtPlayhead,
+  sheetBpm,
   transposeToken,
   formatToneShift,
   typeScale,
   usesFlats,
   viewerMulStep,
+  writeMeta,
+  writeStrumPatterns,
   STORE_KEYS,
   browserStore,
+  type StrumPattern,
+  type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
-import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
+import type {
+  ChartStore,
+  Lens,
+  ReadingCtx,
+  SaveStrumPresetPayload,
+  StrumPreset,
+  ThemeId,
+  Timeline,
+  TimelineBlock,
+} from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
+import BatidaSheet from './sheets/BatidaSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
 import StrumStrip from './StrumStrip.vue'
 import SourcePane from './edit/SourcePane.vue'
@@ -71,7 +90,7 @@ import { useMetronome } from './use/useMetronome'
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
-import type { ChordproViewerEmits, ChordproViewerProps, WriteMode } from './public'
+import type { ChordproViewerProps, WriteMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
 import CpvIcon from './icon/CpvIcon.vue'
 import type { CpvIconName } from './icon/paths'
@@ -80,6 +99,8 @@ import './cpv.css'
 const props = withDefaults(
   defineProps<
     ChordproViewerProps & {
+      /** Host batida presets (declared locally so the SFC macro always emits a runtime prop). */
+      strumPresets?: StrumPreset[]
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
@@ -119,10 +140,31 @@ const props = withDefaults(
     pdfShouldFail: false,
     slidesShouldFail: false,
     capabilities: () => ({ sourcePane: true }),
+    strumPresets: () => [],
   },
 )
 
-const emit = defineEmits<ChordproViewerEmits>()
+// Inline emit map so the SFC compiler emits a runtime declaration (imported
+// `ChordproViewerEmits` alone can omit new keys from the runtime emits list).
+const emit = defineEmits<{
+  'update:source': [value: string]
+  'update:theme': [value: ThemeId]
+  'update:mode': [value: 'view' | 'edit']
+  'update:lens': [value: Lens]
+  'update:hideComments': [value: boolean]
+  dirty: [value: boolean]
+  save: [value: string]
+  'save-content': [value: string]
+  'save-strum-preset': [value: SaveStrumPresetPayload]
+  state: [value: Record<string, unknown>]
+}>()
+
+/** Host catalog — explicit computed so the template always binds a real ref. */
+const strumPresetCatalog = computed<StrumPreset[]>(() => props.strumPresets ?? [])
+
+function onSaveStrumPreset(payload: SaveStrumPresetPayload) {
+  emit('save-strum-preset', payload)
+}
 
 /**
  * One object with a stable identity, so the composables can hold it, while a
@@ -373,12 +415,17 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
 const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
-/** Batida from `{x_strum:}` — toggle is the reader's choice. */
+/** Batida from `{x_strum:}` / `{x_strum_set:}` — toggle is the reader's choice. */
+const strumSet = computed(() => readStrumPatterns(liveSource.value))
 const strumPattern = computed(() => {
-  const raw = readMeta(liveSource.value).x_strum
-  return raw ? parseXStrum(raw) : null
+  const set = strumSet.value
+  return set.patterns[set.activeIndex] ?? set.patterns[0] ?? null
 })
+const canPickStrum = computed(() => strumSet.value.patterns.length > 1)
 const strumOn = ref(false)
+const batidaOpen = ref(false)
+const batidaDraft = ref<StrumPattern | null>(null)
+const batidaDraftSet = ref<StrumPatternSet | null>(null)
 const strumDock = ref<HTMLElement | null>(null)
 const strumH = ref(0)
 let strumRo: ResizeObserver | null = null
@@ -390,6 +437,82 @@ watch(hasStrum, (ok) => {
 function toggleStrum() {
   if (!hasStrum.value) return
   strumOn.value = !strumOn.value
+}
+
+function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
+  return repairStrumPattern({
+    ...p,
+    slots: p.slots.map((s) => ({ ...s })),
+  })
+}
+
+function openBatidaCreate() {
+  // Batida edits the official chart — only inside "Para todos".
+  if (!isContentEdit.value) return
+  const tempo = sheetBpm(meta.value.tempo)
+  const meter = String(meta.value.time ?? '').trim() || '4/4'
+  const p = emptyPattern({
+    bpm: tempo,
+    meter,
+    grid: gridFromDensity(meter, 4),
+    label: 'Padrão',
+  })
+  batidaDraft.value = p
+  batidaDraftSet.value = { activeIndex: 0, patterns: [p] }
+  batidaOpen.value = true
+}
+
+function openBatidaEdit() {
+  if (!isContentEdit.value) return
+  const set = strumSet.value
+  if (!set.patterns.length) {
+    openBatidaCreate()
+    return
+  }
+  const patterns = set.patterns.map(normalizeBatidaPattern)
+  const activeIndex = Math.max(0, Math.min(set.activeIndex, patterns.length - 1))
+  batidaDraftSet.value = { activeIndex, patterns }
+  batidaDraft.value = patterns[activeIndex]!
+  batidaOpen.value = true
+}
+
+function closeBatida() {
+  batidaOpen.value = false
+  batidaDraft.value = null
+  batidaDraftSet.value = null
+}
+
+function publishBatidaSource(next: string) {
+  session.replace(next)
+  lastSrc = next
+  emit('update:source', next)
+  touch()
+}
+
+function cycleStrumPattern() {
+  const set = strumSet.value
+  if (set.patterns.length < 2) return
+  const next: StrumPatternSet = {
+    activeIndex: (set.activeIndex + 1) % set.patterns.length,
+    patterns: set.patterns,
+  }
+  publishBatidaSource(writeStrumPatterns(liveSource.value, next))
+}
+
+function saveBatidaSet(set: StrumPatternSet) {
+  const patterns = set.patterns.map(normalizeBatidaPattern)
+  const activeIndex = Math.max(0, Math.min(set.activeIndex, Math.max(0, patterns.length - 1)))
+  publishBatidaSource(writeStrumPatterns(liveSource.value, { activeIndex, patterns }))
+  closeBatida()
+  strumOn.value = patterns.length > 0
+  toastMsg(patterns.length ? 'Batida salva' : 'Batida apagada')
+}
+
+function deleteBatida() {
+  publishBatidaSource(writeStrumPatterns(liveSource.value, { activeIndex: 0, patterns: [] }))
+  closeBatida()
+  strumOn.value = false
+  toastMsg('Batida apagada')
 }
 function bindStrumDock(el: unknown) {
   const node = (el as HTMLElement | null) ?? null
@@ -1543,6 +1666,7 @@ function beginEdit(kind: WriteMode) {
   moreOpen.value = false
   metaOpen.value = false
   modePick.value = false
+  closeBatida()
   ov.myPanel.value = false
   ov.showOriginal.value = false
   bedit.reset()
@@ -1893,6 +2017,7 @@ function onKey(e: KeyboardEvent) {
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
+    else if (batidaOpen.value) closeBatida()
     else if (metOpen.value) metOpen.value = false
     else if (toneOpen.value) toneOpen.value = false
     else if (moreOpen.value) moreOpen.value = false
@@ -2498,6 +2623,7 @@ defineExpose({
       :lint-ok="lint.ok"
       :theme-title="themeTitle"
       :theme-icon="themeIcon(themeMode)"
+      :has-strum="hasStrum"
       @seen-hint="markEditSeen()"
       @drop-clip="bedit.clip.value = null"
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
@@ -2506,6 +2632,8 @@ defineExpose({
       @smaller-type="bias = Math.max(-3, bias - 1)"
       @bigger-type="bias = Math.min(5, bias + 1)"
       @theme="requestTheme"
+      @create-batida="openBatidaCreate"
+      @edit-batida="openBatidaEdit"
     />
 
     <div v-if="isEdit && bedit.placing.value" class="cpv-placing-bar cpv-veil-2" data-placing>
@@ -2617,6 +2745,9 @@ defineExpose({
         :pattern="strumPattern"
         :beat-clock="met.running.value ? met.beatClock.value : -1"
         :bar-beats="met.bar.value"
+        :can-edit="false"
+        :can-pick="canPickStrum"
+        @pick="cycleStrumPattern"
       />
     </div>
 
@@ -2666,6 +2797,22 @@ defineExpose({
       @toggle-pulse-head="met.togglePulseHead()"
       @toggle-follow="met.follow.value = !met.follow.value"
       @toggle-count-in="met.toggleCountIn()"
+    />
+
+    <BatidaSheet
+      v-if="batidaOpen && batidaDraft && isContentEdit"
+      :compact="compact"
+      :pattern="batidaDraft"
+      :patterns="batidaDraftSet?.patterns"
+      :active-index="batidaDraftSet?.activeIndex ?? 0"
+      :bar-beats="beatsPerBar(meta.time)"
+      :can-delete="hasStrum"
+      :presets-enabled="capabilities.batidaPresets === true"
+      :presets="strumPresetCatalog"
+      @close="closeBatida"
+      @save-set="saveBatidaSet"
+      @delete="deleteBatida"
+      @save-preset="onSaveStrumPreset"
     />
 
     <NewChartDialog

@@ -181,6 +181,7 @@ export type { LintResult } from './lint'
 export { transposeToken, usesFlats, keyIndex, keyRootOf, nashvilleToken, semitoneDelta, signedSemitoneDelta, formatToneShift, transposeTextChords } from './transpose'
 export { looksLikeOnSong, normalizeOnSong } from './onsong'
 export {
+  applyCcStrumChoice,
   applyCifraClubEnrich,
   chartBody,
   convert,
@@ -200,19 +201,24 @@ export {
   missingOf,
   proposeCifraClubEnrich,
   readMeta,
+  readStrumPatterns,
   rewriteToKey,
   SUPPORTED_HOSTS,
   titleFromUrl,
   toPlain,
+  trazerCcStrumChoice,
   writeMeta,
+  writeStrumPatterns,
   youtubeEmbedUrl,
   youtubeWatchUrl,
 } from './import-chordpro'
 export type {
+  CcStrumChoice,
   ChartMeta,
   CifraClubPage,
   EnrichConflict,
   EnrichProposal,
+  EnrichStrumConflict,
   EnrichYoutube,
   ImportFormat,
   ImportResult,
@@ -221,13 +227,50 @@ export type {
   RewriteToKeyResult,
 } from './import-chordpro'
 export {
+  formatXStrumSet,
+  metaFromStrumSet,
+  parseXStrumSet,
+} from './strum-multi'
+export type { StrumPatternSet } from './strum-multi'
+export {
+  beatsInMeter,
   decodeStrumPat,
+  densityFromGrid,
+  dirAtOffset,
+  emptyPattern,
+  emptySlot,
   encodeStrumPat,
+  findAnchorIndex,
   formatXStrum,
+  gridFromDensity,
+  hasStrumAnchor,
+  inferSixEightPulse,
+  isCompleteStrumPattern,
+  isEmptySlot,
+  isLegalStrumPattern,
+  listSlotChoices,
   meterFromTimeSignature,
+  oppositeDir,
   parseXStrum,
   patternFromCc,
+  repairStrumPattern,
+  requiredDir,
+  resizePattern,
+  setSlot,
+  setSlotCascading,
+  slotEquals,
   slotFromCcCode,
   slotsFromCcPattern,
 } from './strum'
-export type { StrumContact, StrumDir, StrumEssence, StrumPattern, StrumSlot } from './strum'
+export type {
+  EmptyPatternOpts,
+  SixEightPulse,
+  StrumContact,
+  StrumDensity,
+  StrumDir,
+  StrumEssence,
+  StrumPattern,
+  StrumSlot,
+} from './strum'
+export { applyStrumPreset, draftStrumPreset, listStrumPresets } from './strum-presets'
+export type { SaveStrumPresetPayload, StrumPreset } from './strum-presets'

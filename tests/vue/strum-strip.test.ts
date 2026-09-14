@@ -27,6 +27,13 @@ describe('StrumStrip', () => {
     expect(w.find('[data-strum-i="1"]').classes()).toContain('strum-active')
     expect(w.find('[data-strum-i="0"]').classes()).not.toContain('strum-active')
   })
+
+  it('exposes a full-width row so slots can fill the reading column', () => {
+    const pattern = patternFromCc([7, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'Padrão')
+    const w = mount(StrumStrip, { props: { pattern } })
+    expect(w.find('[data-strum-row]').classes()).toContain('strum-row')
+    expect(w.findAll('[data-strum-i]')).toHaveLength(4)
+  })
 })
 
 describe('viewer batida toggle', () => {
@@ -48,6 +55,18 @@ describe('viewer batida toggle', () => {
     expect(w.find('[data-strum-strip]').exists()).toBe(false)
     await w.get('[data-strum-btn]').trigger('click')
     expect(w.find('[data-strum-strip]').exists()).toBe(true)
+    // Edit affordance lives in Para todos edit chrome — strip is read-only.
+    expect(w.find('[data-strum-edit]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('strip remains a read-only projection (no slot buttons)', () => {
+    const pattern = patternFromCc([7, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'Padrão')
+    const w = mount(StrumStrip, {
+      props: { pattern, beatClock: 0, barBeats: 2, canEdit: false },
+    })
+    expect(w.find('[data-strum-edit]').exists()).toBe(false)
+    expect(w.findAll('[data-strum-i]').every((n) => n.element.tagName !== 'BUTTON')).toBe(true)
     w.unmount()
   })
 })

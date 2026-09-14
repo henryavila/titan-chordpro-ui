@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "0.1",
+  "kind": "new-plan",
+  "projectId": "titan-chordpro-ui",
+  "slug": "batida-editor",
+  "stage": "ready",
+  "status": "ready",
+  "filesPlanned": [
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/plan.md",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f0-b0-create-edit-one-pattern-keep-local-en.md",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f1-b1-presets-embutidos.source.json",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f2-b2-multi-pattern-named-persistence.source.json",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f3-b3-enrich-conflict-polish.source.json"
+  ],
+  "filesWritten": [
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/plan.md",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f0-b0-create-edit-one-pattern-keep-local-en.md",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f1-b1-presets-embutidos.source.json",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f2-b2-multi-pattern-named-persistence.source.json",
+    ".atomic-skills/projects/titan-chordpro-ui/batida-editor/phases/f3-b3-enrich-conflict-polish.source.json"
+  ],
+  "updatedAt": "2026-09-13T22:11:19.082Z",
+  "sourcePath": "projects/titan-chordpro-ui/batida-editor/source.md",
+  "businessIntentAccepted": true
+}

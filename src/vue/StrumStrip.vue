@@ -15,11 +15,13 @@ const props = withDefaults(
     barBeats?: number
     /** Show the “other patterns” control. */
     canPick?: boolean
+    /** Open-editor pencil — strip stays a read-only projection. */
+    canEdit?: boolean
   }>(),
-  { beatClock: -1, barBeats: 4, canPick: false },
+  { beatClock: -1, barBeats: 4, canPick: false, canEdit: false },
 )
 
-const emit = defineEmits<{ pick: [] }>()
+const emit = defineEmits<{ pick: []; edit: [] }>()
 
 const barBeats = computed(() => Math.max(1, props.barBeats || 4))
 const slotsPerBeat = computed(() =>
@@ -79,16 +81,27 @@ function ariaSlot(s: StrumSlot): string {
     <div class="strum-head">
       <span class="strum-title">{{ pattern.label || 'Batida' }}</span>
       <span v-if="pattern.bpm" class="strum-bpm">{{ pattern.bpm }} BPM</span>
-      <button
-        v-if="canPick"
-        type="button"
-        class="strum-pick"
-        data-strum-pick
-        title="Outras batidas"
-        @click="emit('pick')"
-      >⋯</button>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:2px;">
+        <button
+          v-if="canEdit"
+          type="button"
+          class="strum-edit"
+          data-strum-edit
+          title="Editar batida"
+          aria-label="Editar batida"
+          @click="emit('edit')"
+        >✎</button>
+        <button
+          v-if="canPick"
+          type="button"
+          class="strum-pick"
+          data-strum-pick
+          title="Outras batidas"
+          @click="emit('pick')"
+        >⋯</button>
+      </span>
     </div>
-    <div class="strum-row">
+    <div class="strum-row" data-strum-row>
       <div
         v-for="(s, i) in pattern.slots"
         :key="i"
@@ -138,8 +151,8 @@ function ariaSlot(s: StrumSlot): string {
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.strum-pick {
-  margin-left: auto;
+.strum-pick,
+.strum-edit {
   width: 28px;
   height: 24px;
   border: 0;
@@ -150,16 +163,25 @@ function ariaSlot(s: StrumSlot): string {
   font-size: 14px;
   line-height: 1;
 }
+.strum-edit {
+  background: var(--chord-soft);
+  color: var(--chord);
+}
+/* Fill the reading column: slots grow across the strip, capped so short
+   patterns stay readable. Dense grids can still scroll horizontally. */
 .strum-row {
   display: flex;
+  width: 100%;
+  justify-content: center;
   gap: 2px;
   overflow-x: auto;
   padding-bottom: 2px;
 }
 .strum-slot {
   position: relative;
-  flex: 0 0 auto;
-  width: 18px;
+  flex: 1 1 0;
+  min-width: 18px;
+  max-width: 36px;
   height: 28px;
   display: flex;
   align-items: flex-end;
@@ -205,7 +227,7 @@ function ariaSlot(s: StrumSlot): string {
 }
 .strum-dot {
   position: absolute;
-  bottom: 15px;
+  bottom: calc(50% + 2px);
   width: 3px;
   height: 3px;
   border-radius: 50%;
@@ -213,5 +235,53 @@ function ariaSlot(s: StrumSlot): string {
 }
 .strum-rest .strum-glyph {
   opacity: 0;
+}
+
+/* Desktop: taller cells + larger glyphs so the pulse is followable at stand distance. */
+@media (min-width: 640px) {
+  .strum-strip {
+    gap: 8px;
+    padding: 10px 14px 12px;
+  }
+  .strum-title {
+    font-size: 11px;
+  }
+  .strum-bpm {
+    font-size: 13px;
+  }
+  .strum-row {
+    gap: 4px;
+  }
+  .strum-slot {
+    min-width: 28px;
+    /* Cap high enough that 12-slot patterns fill a ~880–980px column. */
+    max-width: 80px;
+    height: 48px;
+    border-radius: 8px;
+  }
+  .strum-beat {
+    font-size: 10px;
+  }
+  .strum-glyph {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .strum-e-accent .strum-glyph {
+    font-size: 26px;
+  }
+  .strum-e-muted .strum-glyph {
+    font-size: 20px;
+  }
+  .strum-dot {
+    width: 4px;
+    height: 4px;
+  }
+  .strum-active {
+    background: color-mix(in srgb, var(--chord) 40%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--chord-edge);
+  }
+  .strum-active .strum-glyph {
+    transform: scale(1.2);
+  }
 }
 </style>

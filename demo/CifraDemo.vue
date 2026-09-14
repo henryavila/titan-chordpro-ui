@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { memoryStore, readMeta } from '@henryavila/titan-chordpro-ui'
+import {
+  memoryStore,
+  readMeta,
+  type SaveStrumPresetPayload,
+  type StrumPreset,
+} from '@henryavila/titan-chordpro-ui'
 import { pdfText } from '@henryavila/titan-chordpro-ui/pdf'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
@@ -22,6 +27,21 @@ const { images, resolveImage } = bundledImages()
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
 /** Demo is ephemeral: reload clears prefs, overlay, and session edits. */
 const store = memoryStore()
+
+/**
+ * Host-owned batida presets (demo stand-in for SDA storage).
+ * The package emits `save-strum-preset`; the consumer persists and feeds the list back.
+ */
+const strumPresets = ref<StrumPreset[]>([])
+function onSaveStrumPreset(payload: SaveStrumPresetPayload) {
+  const id = payload.id?.trim() || `preset-${Date.now().toString(36)}`
+  const next: StrumPreset = { id, label: payload.label, pattern: payload.pattern }
+  const i = strumPresets.value.findIndex((p) => p.id === id)
+  strumPresets.value =
+    i >= 0
+      ? strumPresets.value.map((p, idx) => (idx === i ? next : p))
+      : [...strumPresets.value, next]
+}
 
 const id = ref(
   lab.criar
@@ -115,8 +135,11 @@ onMounted(async () => {
       :modes="modes"
       :resolve-image="resolveImage"
       :images="images"
+      :capabilities="{ batidaPresets: true }"
+      :strum-presets="strumPresets"
       @update:source="source = $event"
       @save-content="source = $event"
+      @save-strum-preset="onSaveStrumPreset"
     />
   </HostSite>
 
@@ -143,8 +166,11 @@ onMounted(async () => {
       :modes="modes"
       :resolve-image="resolveImage"
       :images="images"
+      :capabilities="{ batidaPresets: true }"
+      :strum-presets="strumPresets"
       @update:source="source = $event"
       @save-content="source = $event"
+      @save-strum-preset="onSaveStrumPreset"
     />
   </div>
 </template>

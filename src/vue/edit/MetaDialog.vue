@@ -15,8 +15,10 @@ import {
   inferWrittenKey,
   keyIndex,
   keyRootOf,
+  trazerCcStrumChoice,
   writeMeta,
   youtubeEmbedUrl,
+  type CcStrumChoice,
   type ChartMeta,
   type EnrichProposal,
   type MetaKey,
@@ -53,6 +55,8 @@ const enrichErr = ref('')
 const enrichNote = ref('')
 const proposal = ref<EnrichProposal | null>(null)
 const ytPick = ref<'remote' | 'local' | 'skip' | ''>('')
+/** Batida conflict: Manter (default) vs Trazer CC. */
+const strumPick = ref<'keep' | 'replace'>('keep')
 /** Two-step gate: first click reveals confirm; only confirm emits `restart`. */
 const restartAsk = ref(false)
 
@@ -186,7 +190,25 @@ function resetEnrich() {
   enrichNote.value = ''
   proposal.value = null
   ytPick.value = ''
+  strumPick.value = 'keep'
 }
+
+const strumConflictNote = computed(() => {
+  const c = proposal.value?.strumConflict
+  if (!c) return ''
+  const loc = c.local.patterns[c.local.activeIndex] ?? c.local.patterns[0]
+  const rem = c.remote.patterns[0]
+  const localBit = loc
+    ? `${loc.label || 'Padrão'}${loc.bpm != null ? ` · ${loc.bpm} bpm` : ''}`
+    : 'local'
+  const remoteBit =
+    c.remote.patterns.length > 1
+      ? `${c.remote.patterns.length} padrões CC`
+      : rem
+        ? `${rem.label || 'Padrão'}${rem.bpm != null ? ` · ${rem.bpm} bpm` : ''}`
+        : 'CC'
+  return `Batida local (${localBit}) e Cifra Club (${remoteBit}) — escolha Manter ou Trazer CC.`
+})
 
 function askRestart() {
   restartAsk.value = true
@@ -224,6 +246,7 @@ async function runEnrich() {
     const p = proposeCifraClubEnrich(live, html, { url: u })
     proposal.value = p
     ytPick.value = ''
+    strumPick.value = 'keep'
     if (p.youtube) {
       enrichPhase.value = 'youtube'
       enrichNote.value = p.capoWarning ?? ''
@@ -278,7 +301,11 @@ async function commitEnrich() {
         ? p.youtube?.localId
         : null
   const live = writeMeta(props.source, meta.value)
-  let next = applyCifraClubEnrich(live, p, { youtubeId: youtubeId || null })
+  let strum: CcStrumChoice = 'keep'
+  if (p.strumConflict && strumPick.value === 'replace') {
+    strum = trazerCcStrumChoice(p.strumConflict)
+  }
+  let next = applyCifraClubEnrich(live, p, { youtubeId: youtubeId || null, strum })
   let m = readMeta(next)
   if (youtubeId) m = await fillDuration(youtubeId, m)
   next = writeMeta(next, m)
@@ -455,6 +482,33 @@ onMounted(() => {
             data-meta-enrich-no-strum
             style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;"
           >Cifra Club não traz batida nesta página (o menu Batidas pode aparecer vazio).</span>
+          <div
+            v-if="proposal.strumConflict"
+            data-meta-enrich-strum-conflict
+            style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:var(--canvas);border:1px solid var(--line);"
+          >
+            <span style="font-size:12px;line-height:1.45;color:var(--text);text-wrap:pretty;">{{ strumConflictNote }}</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button
+                type="button"
+                data-meta-enrich-strum-keep
+                :style="chip(strumPick === 'keep')"
+                style="height:34px;padding:0 12px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                @click="strumPick = 'keep'"
+              >Manter</button>
+              <button
+                type="button"
+                data-meta-enrich-strum-replace
+                :style="chip(strumPick === 'replace')"
+                style="height:34px;padding:0 12px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                @click="strumPick = 'replace'"
+              >Trazer CC</button>
+            </div>
+            <span
+              v-if="strumPick === 'replace' && (proposal.strumConflict.local.patterns.length > 1 || proposal.strumConflict.remote.patterns.length > 1)"
+              style="font-size:11px;line-height:1.45;color:var(--muted);text-wrap:pretty;"
+            >A batida ativa local fica como cópia nomeada; os padrões do Cifra Club entram ativos.</span>
+          </div>
           <span
             v-for="c in proposal.conflicts"
             :key="c.key"
