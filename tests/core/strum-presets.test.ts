@@ -31,7 +31,7 @@ const SAMPLE: StrumPreset[] = [
       meter: '4/4',
       grid: 8,
       label: 'Host B',
-      slots: parseXStrum('bpm=71; meter=4/4; grid=8; label=Host B; pat=DdUu DdUu')!.slots,
+      slots: parseXStrum('bpm=71; meter=4/4; grid=8; label=Host B; pat=Dudu Dudu')!.slots,
     },
   },
   {

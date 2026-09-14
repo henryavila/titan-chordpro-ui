@@ -3,7 +3,7 @@
  * The package only formats/applies; it does not ship or persist presets.
  */
 
-import type { StrumPattern } from './strum'
+import { isLegalStrumPattern, type StrumPattern } from './strum'
 
 export type StrumPreset = {
   id: string
@@ -49,6 +49,7 @@ export function applyStrumPreset(
   const preset = catalog.find((p) => p.id === presetId)
   if (!preset) return null
   const p = preset.pattern
+  if (!isLegalStrumPattern(p)) return null
   return {
     bpm: current.bpm,
     meter: current.meter,

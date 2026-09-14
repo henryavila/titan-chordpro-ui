@@ -123,7 +123,29 @@ describe('Batida editor CTA + sheet', () => {
     }
   })
 
-  it('opens picker with 8 hit + 2 ghost and no pausa/rest', async () => {
+  it('Recomeçar clears the anchor so the musician can pick direction again', async () => {
+    const w = await viewerAt(NO_STRUM)
+    await enterContentEdit(w)
+    await w.get('[data-batida-create]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-restart]').exists()).toBe(false)
+    await w.get('[data-batida-slot="0"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-choice="hit"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-restart]').exists()).toBe(true)
+    expect(w.get('[data-batida-slot="0"]').text()).not.toMatch(/vazio/i)
+    await w.get('[data-batida-restart]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-batida-slot="0"]').text()).toMatch(/vazio/i)
+    expect(w.get('[data-batida-save]').attributes('disabled')).toBeDefined()
+    await w.get('[data-batida-slot="0"]').trigger('click')
+    await flushPromises()
+    // Back to both directions
+    expect(w.findAll('[data-batida-choice]')).toHaveLength(10)
+  })
+
+  it('unanchored picker offers both dirs; after anchor only the required dir', async () => {
     const w = await viewerAt(NO_STRUM)
     await enterContentEdit(w)
     await w.get('[data-batida-create]').trigger('click')
@@ -131,12 +153,27 @@ describe('Batida editor CTA + sheet', () => {
     await w.get('[data-batida-slot="0"]').trigger('click')
     await flushPromises()
     expect(w.find('[data-batida-picker]').exists()).toBe(true)
-    const choices = w.findAll('[data-batida-choice]')
-    expect(choices).toHaveLength(10)
-    expect(w.findAll('[data-batida-choice="hit"]')).toHaveLength(8)
-    expect(w.findAll('[data-batida-choice="ghost"]')).toHaveLength(2)
+    expect(w.find('[data-batida-pick-dirs]').exists()).toBe(true)
+    expect(w.find('[data-batida-dir-col="down"]').exists()).toBe(true)
+    expect(w.find('[data-batida-dir-col="up"]').exists()).toBe(true)
+    // Each direction column keeps its own hits + ghost (no mixed rows).
+    expect(w.findAll('[data-batida-dir-col="down"] [data-batida-choice="hit"]')).toHaveLength(4)
+    expect(w.findAll('[data-batida-dir-col="up"] [data-batida-choice="hit"]')).toHaveLength(4)
+    expect(w.findAll('[data-batida-dir-col="down"] [data-batida-choice="ghost"]')).toHaveLength(1)
+    expect(w.findAll('[data-batida-dir-col="up"] [data-batida-choice="ghost"]')).toHaveLength(1)
+    expect(w.findAll('[data-batida-choice]')).toHaveLength(10)
     expect(w.text().toLowerCase()).not.toMatch(/pausa/)
-    expect(w.find('[data-batida-choice="rest"]').exists()).toBe(false)
+
+    // Anchor with first hit in the down column
+    await w.get('[data-batida-dir-col="down"] [data-batida-choice="hit"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-slot="1"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-pick-dirs]').exists()).toBe(false)
+    expect(w.findAll('[data-batida-choice]')).toHaveLength(5)
+    expect(w.findAll('[data-batida-choice="hit"]')).toHaveLength(4)
+    expect(w.findAll('[data-batida-choice="ghost"]')).toHaveLength(1)
+    expect(w.get('[data-batida-picker]').text()).toMatch(/só ↑/)
   })
 
   it('marks the current choice via slotEquals', async () => {
@@ -156,10 +193,12 @@ describe('Batida editor CTA + sheet', () => {
     await enterContentEdit(w)
     await w.get('[data-batida-create]').trigger('click')
     await flushPromises()
+    expect(w.get('[data-batida-save]').attributes('disabled')).toBeDefined()
     await w.get('[data-batida-slot="0"]').trigger('click')
     await flushPromises()
     await w.get('[data-batida-choice="hit"]').trigger('click')
     await flushPromises()
+    expect(w.get('[data-batida-save]').attributes('disabled')).toBeUndefined()
     await w.get('[data-batida-save]').trigger('click')
     await flushPromises()
     expect(w.find('[data-batida-sheet]').exists()).toBe(false)
@@ -169,6 +208,9 @@ describe('Batida editor CTA + sheet', () => {
     expect(readMeta(src).x_strum).toBeTruthy()
     expect(readMeta(src).x_strum).toContain('bpm=90')
     expect(readMeta(src).x_strum).not.toContain('-')
+    // Cascaded fill must alternate — no DD/UU runs in pat=
+    const pat = String(readMeta(src).x_strum).match(/pat=([^;]*)/)?.[1] ?? ''
+    expect(pat).not.toMatch(/DD|UU|dd|uu|Dd|dD|Uu|uU/)
   })
 
   it('Apagar removes x_strum and restores + Criar', async () => {
@@ -207,6 +249,11 @@ describe('Batida editor CTA + sheet', () => {
     await w.get('[data-batida-create]').trigger('click')
     await flushPromises()
     expect(w.get('[data-batida-sheet]').text()).toMatch(/90/)
+    expect(w.get('[data-batida-sheet]').text()).toMatch(/4 por tempo/)
+    await w.get('[data-batida-slot="0"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-choice="hit"]').trigger('click')
+    await flushPromises()
     await w.get('[data-batida-save]').trigger('click')
     await flushPromises()
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''

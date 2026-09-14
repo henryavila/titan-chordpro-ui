@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prévia · editor de batida (slot → lista)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #F5F6F8;
+    --veil: rgba(255,255,255,.94);
+    --surface: #fff;
+    --text: #13161D;
+    --muted: #5B6270;
+    --lyric: #2B303B;
+    --chord: #17713C;
+    --chord-ink: #fff;
+    --chord-soft: rgba(23,113,60,.10);
+    --chord-edge: rgba(23,113,60,.28);
+    --chord-fill: rgba(23,113,60,.16);
+    --line: rgba(19,22,29,.12);
+    --line-soft: rgba(19,22,29,.07);
+    --shadow: 0 20px 44px -20px rgba(18,23,30,.28);
+    --sheet: #fff;
+    --pick: #fff;
+    --ok: #17713C;
+  }
+  [data-theme="dark"] {
+    --canvas: #0B0D12;
+    --veil: rgba(20,23,31,.94);
+    --surface: #15181F;
+    --text: #EAECF2;
+    --muted: #888F9E;
+    --lyric: #C4C9D4;
+    --chord: #84DFA6;
+    --chord-ink: #10131A;
+    --chord-soft: rgba(132,223,166,.12);
+    --chord-edge: rgba(132,223,166,.32);
+    --chord-fill: rgba(132,223,166,.18);
+    --line: rgba(255,255,255,.10);
+    --line-soft: rgba(255,255,255,.06);
+    --shadow: 0 24px 60px -18px rgba(0,0,0,.75);
+    --sheet: #14171E;
+    --pick: #1A1E27;
+    --ok: #84DFA6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #07090D; color: #EAECF2; font-family: Sora, system-ui, sans-serif; }
+  body { padding: 28px 28px 100px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
+  .lede { color: #888F9E; font-size: 13.5px; line-height: 1.55; max-width: 880px; margin: 0 0 14px; }
+  .lede strong { color: #EAECF2; }
+  .lede code { font-family: 'Space Mono', monospace; font-size: 12px; color: #6FD8E4; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 0 0 18px; }
+  .note { background: #11141A; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; color: #C4C9D4; }
+  .note strong { color: #EAECF2; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 22px; }
+  .bar button {
+    height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12);
+    background: #15181F; color: #EAECF2; font: 600 12px Sora, system-ui; cursor: pointer;
+  }
+  .bar button.is-on { background: #84DFA6; color: #10131A; border-color: #84DFA6; }
+  .stages { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .stage-label { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: #6FD8E4; margin: 0 0 6px; }
+  .stage-sub { font-size: 11.5px; color: #888F9E; margin: 0 0 10px; max-width: 400px; line-height: 1.45; }
+
+  .viewer {
+    position: relative;
+    background: var(--canvas);
+    color: var(--text);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .viewer.phone { width: 390px; height: 820px; border-radius: 28px; border: 1px solid rgba(255,255,255,.12); }
+  .viewer.desk { width: 1000px; height: 700px; border-radius: 18px; border: 1px solid rgba(255,255,255,.12); }
+
+  .head {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 4; width: calc(100% - 28px);
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 16px;
+    background: var(--veil); border: 1px solid var(--line);
+    backdrop-filter: blur(18px);
+  }
+  .title { flex: 1; min-width: 0; }
+  .title .n { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title .s { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .chip {
+    height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line);
+    background: transparent; color: var(--text); font: 600 11px Sora, system-ui; cursor: pointer;
+  }
+  .chip.accent { background: var(--chord-fill); border-color: var(--chord-edge); color: var(--chord); }
+  .chip.create { border-style: dashed; }
+
+  .body { position: absolute; inset: 78px 16px 20px; overflow: hidden; font-size: 15px; line-height: 1.55; color: var(--lyric); }
+  .body.with-strum { top: 148px; }
+  .chord { color: var(--chord); font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; }
+  .line { margin: 0 0 14px; }
+  .cmt { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; margin: 18px 0 8px; }
+
+  .strum-dock { position: absolute; left: 12px; right: 12px; top: 78px; z-index: 5; }
+  .strum-strip {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 8px 12px 10px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--line-soft);
+  }
+  .strum-head { display: flex; align-items: center; gap: 8px; }
+  .strum-title { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .strum-bpm { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; }
+  .strum-edit {
+    margin-left: auto; width: 32px; height: 28px; border: 0; border-radius: 8px;
+    background: var(--chord-soft); color: var(--chord); cursor: pointer; font-size: 14px;
+  }
+  .strum-row { display: flex; gap: 2px; overflow-x: auto; }
+  .strum-slot {
+    position: relative; flex: 0 0 auto; width: 18px; height: 28px;
+    display: flex; align-items: flex-end; justify-content: center; border-radius: 6px;
+  }
+  .strum-beat { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 700; color: var(--muted); }
+  .strum-glyph { font-size: 14px; font-weight: 700; line-height: 1; margin-bottom: 2px; color: var(--text); }
+  .strum-ghost .strum-glyph { color: color-mix(in srgb, var(--text) 38%, transparent); font-weight: 500; }
+  .strum-e-accent .strum-glyph { font-size: 17px; color: var(--chord); }
+  .strum-e-muted .strum-glyph { color: var(--muted); font-size: 13px; }
+  .strum-dot { position: absolute; bottom: 15px; width: 3px; height: 3px; border-radius: 50%; background: var(--text); }
+
+  .scrim {
+    position: absolute; inset: 0; z-index: 8;
+    background: rgba(7,9,13,.42); backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 9;
+    background: var(--sheet); color: var(--text);
+    border-radius: 22px 22px 0 0; border: 1px solid var(--line);
+    padding: 10px 14px 14px;
+    transform: translateY(110%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+    max-height: 92%; display: flex; flex-direction: column; gap: 12px;
+  }
+  .sheet.on { transform: translateY(0); }
+  .viewer.desk .sheet {
+    left: auto; right: 18px; top: 70px; bottom: 18px; width: 460px;
+    border-radius: 18px; max-height: none; transform: translateX(120%);
+  }
+  .viewer.desk .sheet.on { transform: translateX(0); }
+  .grab { width: 40px; height: 4px; border-radius: 99px; background: var(--line); margin: 0 auto 2px; }
+  .viewer.desk .grab { display: none; }
+  .sheet-h { display: flex; align-items: center; gap: 10px; }
+  .sheet-h h2 { margin: 0; font-size: 17px; font-weight: 600; flex: 1; }
+  .sheet-h .x {
+    width: 36px; height: 36px; border-radius: 12px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 16px;
+  }
+  .fields { display: grid; grid-template-columns: 1fr 88px; gap: 8px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .field input, .field select {
+    height: 40px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--canvas); color: var(--text); padding: 0 12px;
+    font: 500 14px Sora, system-ui;
+  }
+  .coach {
+    margin: 0; padding: 10px 12px; border-radius: 12px;
+    background: var(--chord-soft); border: 1px solid var(--chord-edge);
+    color: var(--text); font-size: 12.5px; line-height: 1.45;
+  }
+  .coach b { color: var(--chord); }
+
+  .beats { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow: auto; padding-bottom: 4px; }
+  .beat-row { display: grid; grid-template-columns: 36px 1fr; gap: 8px; align-items: stretch; }
+  .beat-n {
+    display: grid; place-items: center;
+    font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700;
+    color: var(--muted); border-radius: 12px; background: var(--canvas);
+    border: 1px solid var(--line-soft);
+  }
+  .beat-slots {
+    display: grid; gap: 6px;
+    grid-template-columns: repeat(var(--spb, 4), minmax(0, 1fr));
+  }
+  .edit-slot {
+    min-height: 64px; border-radius: 14px; border: 1.5px solid var(--line);
+    background: var(--canvas); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; user-select: none; padding: 8px 4px;
+    transition: border-color .15s, background .15s, transform .12s, box-shadow .15s;
+  }
+  .edit-slot:hover { border-color: var(--chord-edge); }
+  .edit-slot:active { transform: scale(.97); }
+  .edit-slot.is-focus {
+    border-color: var(--chord);
+    background: var(--chord-soft);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--chord) 25%, transparent);
+  }
+  .edit-slot .gl { font-size: 26px; font-weight: 700; line-height: 1; color: var(--text); min-height: 28px; }
+  .edit-slot .tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .02em; color: var(--muted);
+    text-transform: lowercase; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .edit-slot.ghost .gl { color: color-mix(in srgb, var(--text) 42%, transparent); font-weight: 500; }
+  .edit-slot.rest .gl { opacity: .4; font-size: 22px; }
+  .edit-slot.accent .gl { color: var(--chord); font-size: 28px; }
+  .edit-slot.muted .gl { color: var(--muted); }
+
+  .actions { display: flex; gap: 8px; }
+  .actions button {
+    flex: 1; height: 46px; border-radius: 14px; border: 1px solid var(--line);
+    font: 600 14px Sora, system-ui; cursor: pointer;
+  }
+  .actions .danger { background: transparent; color: var(--muted); }
+  .actions .save { background: var(--chord); color: var(--chord-ink); border-color: var(--chord); }
+
+  /* Picker list — high UX */
+  .picker-scrim {
+    position: absolute; inset: 0; z-index: 14;
+    background: rgba(7,9,13,.5); backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity .18s;
+  }
+  .picker-scrim.on { opacity: 1; pointer-events: auto; }
+
+  .picker {
+    position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 15;
+    background: var(--pick); color: var(--text);
+    border-radius: 22px; border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    max-height: 72%;
+    display: flex; flex-direction: column;
+    transform: translateY(110%);
+    transition: transform .28s cubic-bezier(.2,.8,.2,1);
+    overflow: hidden;
+  }
+  .picker.on { transform: translateY(0); }
+  .viewer.desk .picker {
+    left: auto; right: 36px; bottom: auto; top: 120px;
+    width: 340px; max-height: 520px;
+    transform: translateY(12px) scale(.98); opacity: 0;
+    transition: transform .2s ease, opacity .2s ease;
+    pointer-events: none;
+  }
+  .viewer.desk .picker.on {
+    transform: translateY(0) scale(1); opacity: 1; pointer-events: auto;
+  }
+
+  .picker-h {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 16px 16px 10px; border-bottom: 1px solid var(--line-soft);
+  }
+  .picker-h .who {
+    flex: 1; min-width: 0;
+  }
+  .picker-h .who .k {
+    font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  }
+  .picker-h .who .t {
+    font-size: 17px; font-weight: 600; margin-top: 2px;
+  }
+  .picker-h .cur {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: var(--chord-soft); border: 1px solid var(--chord-edge);
+    display: grid; place-items: center;
+    font-size: 24px; font-weight: 700; color: var(--chord);
+  }
+  .picker-h .close {
+    width: 36px; height: 36px; border-radius: 12px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 16px;
+  }
+
+  .picker-body { overflow: auto; padding: 8px 10px 14px; flex: 1; }
+  .sec {
+    font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); padding: 12px 8px 6px;
+  }
+  .choice {
+    width: 100%; display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center;
+    padding: 12px 12px; border-radius: 14px; border: 1.5px solid transparent;
+    background: transparent; color: var(--text); cursor: pointer; text-align: left;
+    font: 500 14px Sora, system-ui;
+    transition: background .12s, border-color .12s;
+  }
+  .choice:hover { background: var(--canvas); }
+  .choice.is-on {
+    background: var(--chord-soft);
+    border-color: var(--chord-edge);
+  }
+  .choice .g {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: var(--canvas); border: 1px solid var(--line-soft);
+    display: grid; place-items: center;
+    font-size: 24px; font-weight: 700;
+  }
+  .choice.is-on .g { border-color: var(--chord-edge); color: var(--chord); background: color-mix(in srgb, var(--chord) 12%, var(--canvas)); }
+  .choice .meta .name { font-weight: 600; font-size: 15px; }
+  .choice .meta .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .choice .check {
+    width: 22px; height: 22px; border-radius: 99px; border: 1.5px solid var(--line);
+    display: grid; place-items: center; font-size: 12px; color: transparent;
+  }
+  .choice.is-on .check {
+    background: var(--ok); border-color: var(--ok); color: var(--chord-ink);
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  @media (max-width: 400px) {
+    .viewer.desk .grid2 { grid-template-columns: 1fr; }
+  }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+    z-index: 20; padding: 10px 14px; border-radius: 12px;
+    background: var(--text); color: var(--canvas); font-size: 12.5px; font-weight: 600;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+    white-space: nowrap;
+  }
+  .toast.on { opacity: 1; }
+</style>
+</head>
+<body>
+  <h1>Prévia · editor de batida</h1>
+  <p class="lede">
+    <strong>Referência de interação</strong> (não UI final): toque num marco → <strong>lista</strong> de estados compostos
+    (↓ abafada e ↑ normal lado a lado). Phone: 1 tempo / linha. SoT: <code>design.md</code> Decision 7.
+  </p>
+  <div class="notes">
+    <div class="note"><strong>Slot-first</strong> — toque a seta/slot; a lista oferece tocar / passar / pausa com direção × essência.</div>
+    <div class="note"><strong>Composto</strong> — cada item da lista já é um estado válido completo (não exclusão dir↔essência).</div>
+    <div class="note"><strong>Implementação</strong> — pode (e deve) polir motion, a11y e hierarquia além deste HTML.</div>
+  </div>
+  <div class="bar">
+    <button type="button" id="themeBtn">Tema escuro</button>
+    <span style="width:1px;height:18px;background:rgba(255,255,255,.12)"></span>
+    <button type="button" data-scene="empty">Sem batida</button>
+    <button type="button" data-scene="has">Com batida</button>
+    <button type="button" class="is-on" data-scene="sheet">Folha aberta</button>
+  </div>
+
+  <div class="stages">
+    <div>
+      <div class="stage-label">PHONE</div>
+      <p class="stage-sub">Toque um slot → bottom sheet com a lista. Experimente ↓ abafada e ↑ normal.</p>
+      <div class="viewer phone" id="phone" data-theme="light">
+        <div class="head">
+          <div class="title"><div class="s">Cifra</div><div class="n">Tu És Águas Purificadoras</div></div>
+          <button type="button" class="chip">♩ 71</button>
+          <button type="button" class="chip create" id="phoneCreate" data-act="open">+ Criar batida</button>
+          <button type="button" class="chip accent" id="phoneBatida" data-act="toggle-strip" hidden>↓↑ Batida</button>
+        </div>
+        <div class="strum-dock" id="phoneStrip" hidden></div>
+        <div class="body" id="phoneBody">
+          <div class="cmt">Verso</div>
+          <div class="line"><span class="chord">G</span> Tu és águas purificadoras</div>
+          <div class="line"><span class="chord">Em</span> Vem lavar o meu coração</div>
+        </div>
+        <div class="scrim" id="phoneScrim" data-act="close"></div>
+        <div class="sheet" id="phoneSheet"></div>
+        <div class="picker-scrim" id="phonePickScrim" data-act="close-pick"></div>
+        <div class="picker" id="phonePicker"></div>
+        <div class="toast" id="phoneToast"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stage-label">DESK</div>
+      <p class="stage-sub">Mesma lista em popover. Slot focado fica com anel verde.</p>
+      <div class="viewer desk" id="desk" data-theme="light">
+        <div class="head" style="max-width:940px">
+          <div class="title"><div class="s">Cifra</div><div class="n">Tu És Águas Purificadoras</div></div>
+          <button type="button" class="chip">♩ 71</button>
+          <button type="button" class="chip create" id="deskCreate" data-act="open">+ Criar batida</button>
+          <button type="button" class="chip accent" id="deskBatida" data-act="toggle-strip" hidden>↓↑ Batida</button>
+          <button type="button" class="chip" data-act="open" id="deskEditChip" hidden>✎ Editar batida</button>
+        </div>
+        <div class="strum-dock" id="deskStrip" hidden style="left:24px;right:500px;top:78px"></div>
+        <div class="body" id="deskBody" style="left:24px;right:24px">
+          <div class="cmt">Verso</div>
+          <div class="line"><span class="chord">G</span> Tu és águas purificadoras &nbsp; <span class="chord">Em</span> Vem lavar o meu coração</div>
+        </div>
+        <div class="scrim" id="deskScrim" data-act="close"></div>
+        <div class="sheet" id="deskSheet"></div>
+        <div class="picker-scrim" id="deskPickScrim" data-act="close-pick"></div>
+        <div class="picker" id="deskPicker"></div>
+        <div class="toast" id="deskToast"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const PATTERN_SEED = [
+  { dir:'down', contact:'hit', essence:'normal' },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'up', contact:'hit', essence:'normal' },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'up', contact:'hit', essence:'normal' },
+  { dir:'down', contact:'hit', essence:'normal' },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'up', contact:'hit', essence:'normal' },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'up', contact:'hit', essence:'normal' },
+  { dir:'down', contact:'hit', essence:'accent' },
+  { dir:'up', contact:'ghost', essence:null },
+  { dir:'down', contact:'hit', essence:'muted' },
+  { dir:'up', contact:'hit', essence:'mute' },
+]
+
+/** Full composed catalog — dir ⟂ essence */
+function listSlotChoices() {
+  const hits = []
+  for (const dir of ['down', 'up']) {
+    for (const essence of ['normal', 'accent', 'mute', 'muted']) {
+      hits.push({ dir, contact: 'hit', essence })
+    }
+  }
+  return [
+    ...hits,
+    { dir: 'down', contact: 'ghost', essence: null },
+    { dir: 'up', contact: 'ghost', essence: null },
+    // no rest/pausa — passar = não tocar (design Decision 7)
+  ]
+}
+
+const ESS_LABEL = { normal: 'Normal', accent: 'Acento', mute: 'Mute', muted: 'Abafada' }
+
+const state = {
+  theme: 'light',
+  hasStrum: false,
+  stripOn: false,
+  sheetOpen: true,
+  pickIndex: -1,
+  label: 'Padrão',
+  grid: 16,
+  barBeats: 4,
+  slots: PATTERN_SEED.map((s) => ({ ...s })),
+}
+
+function spb() { return Math.max(1, Math.round(state.grid / state.barBeats)) }
+
+function glyph(s) {
+  if (s.contact === 'rest') return '–'
+  if (s.essence === 'muted') return '×'
+  if (s.dir === 'up') return '↑'
+  if (s.dir === 'down') return '↓'
+  return '×'
+}
+function shortLabel(s) {
+  if (s.contact === 'rest') return 'pausa'
+  if (s.contact === 'ghost') return 'passa'
+  return ESS_LABEL[s.essence] || ''
+}
+function longLabel(s) {
+  if (s.contact === 'rest') return { name: 'Não tocar', sub: 'Pausa neste pulso' }
+  if (s.contact === 'ghost') return {
+    name: s.dir === 'up' ? 'Passa ↑' : 'Passa ↓',
+    sub: 'Não tocar · mão passa',
+  }
+  const arrow = s.dir === 'up' ? '↑' : '↓'
+  return {
+    name: `${arrow}  ${ESS_LABEL[s.essence]}`,
+    sub: s.dir === 'up' ? 'Cima · toque' : 'Baixo · toque',
+  }
+}
+function slotClass(s) {
+  const bits = []
+  if (s.contact === 'ghost') bits.push('ghost')
+  if (s.contact === 'rest') bits.push('rest')
+  if (s.essence === 'accent') bits.push('accent')
+  if (s.essence === 'muted') bits.push('muted')
+  if (s.essence === 'mute') bits.push('mute')
+  return bits.join(' ')
+}
+function slotEquals(a, b) {
+  return a.contact === b.contact && a.dir === b.dir && a.essence === b.essence
+}
+function emptySlots(n) {
+  // New charts: passa (não tocar), never rest/- — design Decision 7
+  return Array.from({ length: n }, (_, i) => ({
+    dir: i % 2 === 0 ? 'down' : 'up',
+    contact: 'ghost',
+    essence: null,
+  }))
+}
+
+function renderStrip(el) {
+  if (!state.hasStrum || !state.stripOn) { el.hidden = true; el.innerHTML = ''; return }
+  el.hidden = false
+  const cells = state.slots.map((s, i) => {
+    const beat = i % spb() === 0 ? `<span class="strum-beat">${Math.floor(i / spb()) % state.barBeats + 1}</span>` : ''
+    const dot = s.essence === 'mute' && s.contact === 'hit' ? '<span class="strum-dot"></span>' : ''
+    return `<div class="strum-slot strum-${s.contact} ${s.essence ? 'strum-e-' + s.essence : ''}">${beat}<span class="strum-glyph">${glyph(s)}</span>${dot}</div>`
+  }).join('')
+  el.innerHTML = `<div class="strum-strip"><div class="strum-head"><span class="strum-title">${state.label}</span><span class="strum-bpm">71 BPM</span><button type="button" class="strum-edit" data-act="open">✎</button></div><div class="strum-row">${cells}</div></div>`
+}
+
+function beatsHTML() {
+  const n = spb()
+  const rows = []
+  for (let b = 0; b < state.barBeats; b++) {
+    const cells = []
+    for (let k = 0; k < n; k++) {
+      const i = b * n + k
+      const s = state.slots[i]
+      const focus = state.pickIndex === i ? ' is-focus' : ''
+      const tg = shortLabel(s)
+      cells.push(`<button type="button" class="edit-slot ${slotClass(s)}${focus}" data-slot="${i}" aria-label="tempo ${b + 1}, subdivisão ${k + 1}">
+        <span class="gl">${glyph(s)}</span>
+        ${tg ? `<span class="tag">${tg}</span>` : `<span class="tag">&nbsp;</span>`}
+      </button>`)
+    }
+    rows.push(`<div class="beat-row"><div class="beat-n">${b + 1}</div><div class="beat-slots" style="--spb:${n}">${cells.join('')}</div></div>`)
+  }
+  return `<div class="beats">${rows.join('')}</div>`
+}
+
+function sheetHTML(idPrefix) {
+  return `
+    <div class="grab"></div>
+    <div class="sheet-h">
+      <h2>Batida</h2>
+      <button type="button" class="x" data-act="close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="fields">
+      <div class="field"><label>Nome</label><input id="${idPrefix}-label" value="${state.label}" /></div>
+      <div class="field"><label>Grade</label>
+        <select id="${idPrefix}-grid">
+          <option value="8" ${state.grid === 8 ? 'selected' : ''}>8</option>
+          <option value="16" ${state.grid === 16 ? 'selected' : ''}>16</option>
+        </select>
+      </div>
+    </div>
+    <p class="coach">Toque um <b>marco</b> (seta / pulso) para escolher o estado — tocar ou passar (não tocar).</p>
+    ${beatsHTML()}
+    <div class="actions">
+      <button type="button" class="danger" data-act="delete">Apagar batida</button>
+      <button type="button" class="save" data-act="save">Salvar</button>
+    </div>`
+}
+
+function pickerHTML() {
+  if (state.pickIndex < 0) return ''
+  const cur = state.slots[state.pickIndex]
+  const beat = Math.floor(state.pickIndex / spb()) % state.barBeats + 1
+  const sub = (state.pickIndex % spb()) + 1
+  const choices = listSlotChoices()
+  const hits = choices.filter((c) => c.contact === 'hit')
+  const ghosts = choices.filter((c) => c.contact === 'ghost')
+
+  const item = (s) => {
+    const L = longLabel(s)
+    const on = slotEquals(s, cur) ? ' is-on' : ''
+    const payload = encodeURIComponent(JSON.stringify(s))
+    return `<button type="button" class="choice${on}" data-pick="${payload}">
+      <span class="g">${glyph(s)}</span>
+      <span class="meta"><div class="name">${L.name}</div><div class="sub">${L.sub}</div></span>
+      <span class="check">✓</span>
+    </button>`
+  }
+
+  // Hits in 2-col: pair down/up for same essence
+  const essOrder = ['normal', 'accent', 'mute', 'muted']
+  let hitRows = ''
+  for (const e of essOrder) {
+    const down = hits.find((h) => h.dir === 'down' && h.essence === e)
+    const up = hits.find((h) => h.dir === 'up' && h.essence === e)
+    hitRows += `<div class="grid2">${item(down)}${item(up)}</div>`
+  }
+
+  return `
+    <div class="picker-h">
+      <div class="cur">${glyph(cur)}</div>
+      <div class="who">
+        <div class="k">Tempo ${beat} · pulso ${sub}</div>
+        <div class="t">Escolher batida</div>
+      </div>
+      <button type="button" class="close" data-act="close-pick" aria-label="Fechar">✕</button>
+    </div>
+    <div class="picker-body">
+      <div class="sec">Tocar</div>
+      ${hitRows}
+      <div class="sec">Passar / não tocar</div>
+      <div class="grid2">${ghosts.map(item).join('')}</div>
+    </div>`
+}
+
+function toast(which, msg) {
+  const el = document.getElementById(which + 'Toast')
+  el.textContent = msg
+  el.classList.add('on')
+  clearTimeout(el._t)
+  el._t = setTimeout(() => el.classList.remove('on'), 1600)
+}
+
+function syncChrome() {
+  for (const [createId, batId, bodyId, stripId] of [
+    ['phoneCreate', 'phoneBatida', 'phoneBody', 'phoneStrip'],
+    ['deskCreate', 'deskBatida', 'deskBody', 'deskStrip'],
+  ]) {
+    document.getElementById(createId).hidden = state.hasStrum
+    document.getElementById(batId).hidden = !state.hasStrum
+    document.getElementById(bodyId).classList.toggle('with-strum', state.hasStrum && state.stripOn)
+    renderStrip(document.getElementById(stripId))
+  }
+  document.getElementById('deskEditChip').hidden = !state.hasStrum
+}
+
+function syncSheet() {
+  for (const id of ['phone', 'desk']) {
+    const sheet = document.getElementById(id + 'Sheet')
+    const scrim = document.getElementById(id + 'Scrim')
+    sheet.classList.toggle('on', state.sheetOpen)
+    scrim.classList.toggle('on', state.sheetOpen && state.pickIndex < 0)
+    if (state.sheetOpen) {
+      sheet.innerHTML = sheetHTML(id)
+      wireSheet(id, sheet)
+    }
+  }
+  syncPicker()
+}
+
+function syncPicker() {
+  const open = state.pickIndex >= 0
+  for (const id of ['phone', 'desk']) {
+    const pick = document.getElementById(id + 'Picker')
+    const scrim = document.getElementById(id + 'PickScrim')
+    pick.classList.toggle('on', open)
+    scrim.classList.toggle('on', open)
+    if (open) {
+      pick.innerHTML = pickerHTML()
+      pick.querySelectorAll('[data-pick]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const s = JSON.parse(decodeURIComponent(btn.getAttribute('data-pick')))
+          state.slots[state.pickIndex] = s
+          state.pickIndex = -1
+          syncSheet(); syncChrome()
+          toast(id, 'Marco atualizado')
+        })
+      })
+    } else {
+      pick.innerHTML = ''
+    }
+  }
+}
+
+function wireSheet(id, sheet) {
+  sheet.querySelector(`#${id}-label`)?.addEventListener('change', (e) => { state.label = e.target.value || 'Padrão' })
+  sheet.querySelector(`#${id}-grid`)?.addEventListener('change', (e) => {
+    const n = Number(e.target.value)
+    state.grid = n
+    if (state.slots.length > n) state.slots = state.slots.slice(0, n)
+    else while (state.slots.length < n) state.slots.push({ dir: null, contact: 'rest', essence: null })
+    state.pickIndex = -1
+    syncSheet(); syncChrome()
+  })
+  sheet.querySelectorAll('[data-slot]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.pickIndex = Number(btn.getAttribute('data-slot'))
+      syncSheet()
+    })
+  })
+}
+
+function openSheet(fresh) {
+  if (fresh && !state.hasStrum) {
+    state.slots = emptySlots(state.grid)
+    state.label = 'Padrão'
+  }
+  state.sheetOpen = true
+  state.pickIndex = -1
+  syncSheet(); syncChrome()
+}
+function closeSheet() {
+  state.sheetOpen = false
+  state.pickIndex = -1
+  syncSheet()
+}
+function closePick() {
+  state.pickIndex = -1
+  syncSheet()
+}
+function saveSheet(which) {
+  state.hasStrum = true
+  state.stripOn = true
+  state.sheetOpen = false
+  state.pickIndex = -1
+  syncSheet(); syncChrome()
+  toast(which, 'Salvo · {x_strum:} (mock)')
+}
+function deleteBatida(which) {
+  state.hasStrum = false
+  state.stripOn = false
+  state.sheetOpen = false
+  state.pickIndex = -1
+  state.slots = emptySlots(16)
+  syncSheet(); syncChrome()
+  toast(which, 'Batida apagada')
+}
+
+document.body.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]')
+  if (!t) return
+  const act = t.getAttribute('data-act')
+  const root = t.closest('.viewer')
+  const which = root?.id === 'desk' ? 'desk' : 'phone'
+  if (act === 'open') openSheet(!state.hasStrum)
+  if (act === 'close') closeSheet()
+  if (act === 'close-pick') closePick()
+  if (act === 'save') saveSheet(which)
+  if (act === 'delete') deleteBatida(which)
+  if (act === 'toggle-strip') { state.stripOn = !state.stripOn; syncChrome() }
+})
+
+document.getElementById('themeBtn').addEventListener('click', () => {
+  state.theme = state.theme === 'light' ? 'dark' : 'light'
+  document.querySelectorAll('.viewer').forEach((v) => v.setAttribute('data-theme', state.theme))
+  document.getElementById('themeBtn').textContent = state.theme === 'light' ? 'Tema escuro' : 'Tema claro'
+})
+
+document.querySelectorAll('[data-scene]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-scene]').forEach((b) => b.classList.remove('is-on'))
+    btn.classList.add('is-on')
+    const sc = btn.getAttribute('data-scene')
+    state.pickIndex = -1
+    if (sc === 'empty') {
+      state.hasStrum = false; state.stripOn = false; state.sheetOpen = false
+      state.slots = emptySlots(16)
+    } else if (sc === 'has') {
+      state.hasStrum = true; state.stripOn = true; state.sheetOpen = false
+      state.slots = PATTERN_SEED.map((s) => ({ ...s }))
+    } else {
+      state.hasStrum = true; state.stripOn = true; state.sheetOpen = true
+      state.slots = PATTERN_SEED.map((s) => ({ ...s }))
+    }
+    syncSheet(); syncChrome()
+  })
+})
+
+state.hasStrum = true
+state.stripOn = true
+state.sheetOpen = true
+syncChrome(); syncSheet()
+</script>
+</body>
+</html>

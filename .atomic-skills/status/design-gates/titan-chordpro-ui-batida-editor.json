@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "0.1",
+  "projectId": "titan-chordpro-ui",
+  "slug": "batida-editor",
+  "interviewAccepted": true,
+  "debateGate": {
+    "invoked": true,
+    "readyForValidation": true,
+    "singleApproach": false
+  },
+  "researchDigest": "projects/titan-chordpro-ui/batida-editor/research-digest.md",
+  "criticVerdict": "Approved",
+  "userApproved": true,
+  "status": "ready",
+  "updatedAt": "2026-09-13T20:31:04.803Z"
+}

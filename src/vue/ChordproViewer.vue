@@ -24,7 +24,9 @@ import {
   normalizeSource,
   beatsPerBar,
   emptyPattern,
+  gridFromDensity,
   parse,
+  repairStrumPattern,
   playheadAtScroll,
   readMeta,
   readStrumPatterns,
@@ -438,14 +440,10 @@ function toggleStrum() {
 }
 
 function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
-  return {
+  return repairStrumPattern({
     ...p,
-    slots: p.slots.map((s, i) =>
-      s.contact === 'rest'
-        ? { dir: i % 2 === 0 ? 'down' : 'up', contact: 'ghost' as const, essence: null }
-        : { ...s },
-    ),
-  }
+    slots: p.slots.map((s) => ({ ...s })),
+  })
 }
 
 function openBatidaCreate() {
@@ -456,7 +454,7 @@ function openBatidaCreate() {
   const p = emptyPattern({
     bpm: tempo,
     meter,
-    grid: 16,
+    grid: gridFromDensity(meter, 4),
     label: 'Padrão',
   })
   batidaDraft.value = p

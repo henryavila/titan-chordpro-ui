@@ -12,7 +12,13 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
-import { parseXStrum, patternFromCc, type StrumPattern } from './strum'
+import {
+  isLegalStrumPattern,
+  parseXStrum,
+  patternFromCc,
+  repairStrumPattern,
+  type StrumPattern,
+} from './strum'
 import {
   metaFromStrumSet,
   parseXStrumSet,
@@ -725,7 +731,12 @@ function extractCcStrums(html: string): StrumPattern[] {
     const ts = Array.isArray(o.timeSignature) ? o.timeSignature.map(String) : []
     const bpm = typeof o.bpm === 'number' ? o.bpm : Number(o.bpm) || null
     const label = typeof o.section === 'string' ? o.section : 'Padrão'
-    out.push(patternFromCc(pattern, ts, bpm, label))
+    const built = patternFromCc(pattern, ts, bpm, label)
+    // Hand physics: adequar fase ↓↑ (preserva contato/essência); rejeitar se
+    // ainda for ilegal (ex. grid ímpar que não fecha o loop).
+    const fixed = repairStrumPattern(built)
+    if (!isLegalStrumPattern(fixed)) continue
+    out.push(fixed)
   }
   return out
 }

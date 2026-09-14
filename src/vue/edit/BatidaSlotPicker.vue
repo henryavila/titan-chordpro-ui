@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { listSlotChoices, slotEquals, type StrumSlot } from '@henryavila/titan-chordpro-ui'
+import {
+  listSlotChoices,
+  slotEquals,
+  type StrumPattern,
+  type StrumSlot,
+} from '@henryavila/titan-chordpro-ui'
 import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
   compact: boolean
   current: StrumSlot
   beatLabel: string
+  /** When set with slotIndex, only legal directions are listed. */
+  pattern?: StrumPattern
+  slotIndex?: number
+  dirHint?: string
 }>()
 
 const emit = defineEmits<{
@@ -21,17 +30,50 @@ const ESS_LABEL: Record<string, string> = {
   muted: 'Abafada',
 }
 
-const choices = computed(() => listSlotChoices())
+const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
+
+const choices = computed(() =>
+  props.pattern != null && props.slotIndex != null
+    ? listSlotChoices(props.pattern, props.slotIndex)
+    : listSlotChoices(),
+)
 const hits = computed(() => choices.value.filter((c) => c.contact === 'hit'))
 const ghosts = computed(() => choices.value.filter((c) => c.contact === 'ghost'))
+const singleDir = computed(() => {
+  const dirs = new Set(choices.value.map((c) => c.dir).filter(Boolean))
+  return dirs.size === 1
+})
+
+/** Dual-dir: one column per hand direction (baixo | cima). */
+const dualColumns = computed(() => {
+  if (singleDir.value) return null
+  return (['down', 'up'] as const).map((dir) => ({
+    dir,
+    label: dir === 'down' ? 'Baixo' : 'Cima',
+    hits: essOrder
+      .map((e) => hits.value.find((h) => h.dir === dir && h.essence === e))
+      .filter((h): h is NonNullable<typeof h> => !!h),
+    ghost: ghosts.value.find((g) => g.dir === dir) ?? null,
+  }))
+})
+
+/** Single-dir: flat hit list for a 2-column option grid. */
+const singleHits = computed(() => {
+  if (!singleDir.value) return []
+  return essOrder
+    .map((e) => hits.value.find((h) => h.essence === e))
+    .filter((h): h is NonNullable<typeof h> => !!h)
+})
+const singleGhost = computed(() => (singleDir.value ? ghosts.value[0] ?? null : null))
 
 /** Primary mark — same vocabulary as StrumStrip. */
 function glyph(s: StrumSlot): string {
+  if (s.dir == null) return '·'
   if (s.contact === 'ghost') return s.dir === 'up' ? '↑' : '↓'
   if (s.essence === 'muted') return '×'
   if (s.dir === 'up') return '↑'
   if (s.dir === 'down') return '↓'
-  return '×'
+  return '·'
 }
 
 /** Secondary copy — no arrow (the tile already shows direction). */
@@ -41,10 +83,12 @@ function labelOf(s: StrumSlot): string {
 }
 
 function dirHint(s: StrumSlot): string {
+  if (s.dir == null) return ''
   return s.dir === 'up' ? 'cima' : 'baixo'
 }
 
 function toneClass(s: StrumSlot): string {
+  if (s.dir == null) return 'is-empty'
   if (s.contact === 'ghost') return 'is-ghost'
   if (s.essence === 'accent') return 'is-accent'
   if (s.essence === 'mute') return 'is-mute'
@@ -57,41 +101,32 @@ function ariaOf(s: StrumSlot): string {
   return `${labelOf(s)} ${dirHint(s)}`
 }
 
-const geom = computed(() =>
-  props.compact
-    ? {
-        left: '0',
-        right: '0',
-        bottom: '0',
-        width: 'auto',
-        maxHeight: '78%',
-        padding: '14px 14px calc(14px + env(safe-area-inset-bottom))',
-        borderRadius: '20px 20px 0 0',
-      }
-    : {
-        left: 'auto',
-        right: '16px',
-        bottom: '96px',
-        width: 'min(360px,calc(100% - 32px))',
-        maxHeight: '72%',
-        padding: '14px',
-        borderRadius: '17px',
-      },
-)
 
-const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
+
+const titleHint = computed(() => {
+  if (props.dirHint) return props.dirHint
+  if (singleDir.value) {
+    const d = choices.value[0]?.dir
+    return d === 'up' ? 'só ↑' : d === 'down' ? 'só ↓' : ''
+  }
+  return 'Defina o sentido'
+})
 </script>
 
 <template>
-  <div style="position:absolute;inset:0;z-index:29;">
+  <div
+    class="cpv-sheet batida-picker-root"
+    :class="{ 'is-compact': compact }"
+    style="z-index:29;"
+  >
     <div class="cpv-scrim" data-batida-pick-scrim @click="emit('close')" />
     <div
       class="cpv-veil-2 batida-picker"
+      :class="{ 'is-compact': compact }"
       role="dialog"
       aria-label="Escolher batida"
+      aria-modal="true"
       data-batida-picker
-      :style="geom"
-      style="position:absolute;overflow-y:auto;display:flex;flex-direction:column;gap:12px;animation:cpv-rise .2s ease-out;"
     >
       <div style="display:flex;align-items:center;gap:10px;">
         <span
@@ -103,7 +138,7 @@ const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
           <span v-if="current.contact === 'hit' && current.essence === 'mute'" class="batida-pick-dot" />
         </span>
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ beatLabel }}</span>
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ beatLabel }} · {{ titleHint }}</span>
           <span style="font-size:14px;font-weight:700;color:var(--text);">Escolher batida</span>
         </span>
         <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
@@ -111,61 +146,135 @@ const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
         </button>
       </div>
 
-      <div class="batida-pick-sec">Tocar</div>
+      <!-- Dual direction: column Baixo | column Cima (never mix in one row). -->
       <div
-        v-for="e in essOrder"
-        :key="e"
-        class="batida-pick-grid"
+        v-if="dualColumns"
+        class="batida-pick-dirs"
+        data-batida-pick-dirs
       >
-        <button
-          v-for="s in hits.filter((h) => h.essence === e)"
-          :key="`${s.dir}-${s.essence}`"
-          type="button"
-          class="batida-pick-choice"
-          :class="[toneClass(s), { 'is-on': slotEquals(s, current) }]"
-          data-batida-choice="hit"
-          :aria-label="ariaOf(s)"
-          :aria-pressed="slotEquals(s, current) ? 'true' : 'false'"
-          @click="emit('pick', s)"
+        <div
+          v-for="col in dualColumns"
+          :key="col.dir"
+          class="batida-pick-dir-col"
+          :data-batida-dir-col="col.dir"
         >
-          <span class="batida-pick-mark" aria-hidden="true">
-            <span class="batida-pick-gl">{{ glyph(s) }}</span>
-            <span v-if="s.essence === 'mute'" class="batida-pick-dot" />
-          </span>
-          <span class="batida-pick-copy">
-            <span class="batida-pick-name">{{ labelOf(s) }}</span>
-            <span class="batida-pick-sub">{{ dirHint(s) }}</span>
-          </span>
-        </button>
+          <div class="batida-pick-sec">{{ col.label }} · tocar</div>
+          <button
+            v-for="s in col.hits"
+            :key="`${s.dir}-${s.essence}`"
+            type="button"
+            class="batida-pick-choice"
+            :class="[toneClass(s), { 'is-on': slotEquals(s, current) }]"
+            data-batida-choice="hit"
+            :aria-label="ariaOf(s)"
+            :aria-pressed="slotEquals(s, current) ? 'true' : 'false'"
+            @click="emit('pick', s)"
+          >
+            <span class="batida-pick-mark" aria-hidden="true">
+              <span class="batida-pick-gl">{{ glyph(s) }}</span>
+              <span v-if="s.essence === 'mute'" class="batida-pick-dot" />
+            </span>
+            <span class="batida-pick-copy">
+              <span class="batida-pick-name">{{ labelOf(s) }}</span>
+              <span class="batida-pick-sub">{{ dirHint(s) }}</span>
+            </span>
+          </button>
+          <div class="batida-pick-sec">Passar</div>
+          <button
+            v-if="col.ghost"
+            type="button"
+            class="batida-pick-choice is-ghost"
+            :class="{ 'is-on': slotEquals(col.ghost, current) }"
+            data-batida-choice="ghost"
+            :aria-label="ariaOf(col.ghost)"
+            :aria-pressed="slotEquals(col.ghost, current) ? 'true' : 'false'"
+            @click="emit('pick', col.ghost)"
+          >
+            <span class="batida-pick-mark" aria-hidden="true">
+              <span class="batida-pick-gl">{{ glyph(col.ghost) }}</span>
+            </span>
+            <span class="batida-pick-copy">
+              <span class="batida-pick-name">Passa</span>
+              <span class="batida-pick-sub">não tocar</span>
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div class="batida-pick-sec">Passar / não tocar</div>
-      <div class="batida-pick-grid">
-        <button
-          v-for="s in ghosts"
-          :key="`ghost-${s.dir}`"
-          type="button"
-          class="batida-pick-choice is-ghost"
-          :class="{ 'is-on': slotEquals(s, current) }"
-          data-batida-choice="ghost"
-          :aria-label="ariaOf(s)"
-          :aria-pressed="slotEquals(s, current) ? 'true' : 'false'"
-          @click="emit('pick', s)"
-        >
-          <span class="batida-pick-mark" aria-hidden="true">
-            <span class="batida-pick-gl">{{ glyph(s) }}</span>
-          </span>
-          <span class="batida-pick-copy">
-            <span class="batida-pick-name">Passa</span>
-            <span class="batida-pick-sub">{{ dirHint(s) }} · não tocar</span>
-          </span>
-        </button>
-      </div>
+      <!-- Single direction: 2-column option grid is fine. -->
+      <template v-else>
+        <div class="batida-pick-sec">Tocar</div>
+        <div class="batida-pick-grid is-options">
+          <button
+            v-for="s in singleHits"
+            :key="`${s.dir}-${s.essence}`"
+            type="button"
+            class="batida-pick-choice"
+            :class="[toneClass(s), { 'is-on': slotEquals(s, current) }]"
+            data-batida-choice="hit"
+            :aria-label="ariaOf(s)"
+            :aria-pressed="slotEquals(s, current) ? 'true' : 'false'"
+            @click="emit('pick', s)"
+          >
+            <span class="batida-pick-mark" aria-hidden="true">
+              <span class="batida-pick-gl">{{ glyph(s) }}</span>
+              <span v-if="s.essence === 'mute'" class="batida-pick-dot" />
+            </span>
+            <span class="batida-pick-copy">
+              <span class="batida-pick-name">{{ labelOf(s) }}</span>
+              <span class="batida-pick-sub">{{ dirHint(s) }}</span>
+            </span>
+          </button>
+        </div>
+        <div class="batida-pick-sec">Passar / não tocar</div>
+        <div class="batida-pick-grid is-options">
+          <button
+            v-if="singleGhost"
+            type="button"
+            class="batida-pick-choice is-ghost"
+            :class="{ 'is-on': slotEquals(singleGhost, current) }"
+            data-batida-choice="ghost"
+            :aria-label="ariaOf(singleGhost)"
+            :aria-pressed="slotEquals(singleGhost, current) ? 'true' : 'false'"
+            @click="emit('pick', singleGhost)"
+          >
+            <span class="batida-pick-mark" aria-hidden="true">
+              <span class="batida-pick-gl">{{ glyph(singleGhost) }}</span>
+            </span>
+            <span class="batida-pick-copy">
+              <span class="batida-pick-name">Passa</span>
+              <span class="batida-pick-sub">{{ dirHint(singleGhost) }} · não tocar</span>
+            </span>
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <style scoped>
+.batida-picker {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: min(720px, calc(100% - 48px));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  animation: cpv-rise 0.2s ease-out;
+  box-shadow: var(--shadow);
+}
+.batida-picker.is-compact {
+  max-width: 100%;
+  max-height: 78%;
+  padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  gap: 12px;
+  box-shadow: none;
+}
 .batida-pick-sec {
   font-size: 9.5px;
   letter-spacing: 0.14em;
@@ -174,10 +283,25 @@ const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
   font-weight: 700;
   padding: 2px 2px 0;
 }
+.batida-pick-dirs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.batida-pick-dir-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 .batida-pick-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+.batida-pick-grid.is-options {
+  grid-template-columns: 1fr 1fr;
 }
 .batida-pick-choice {
   display: flex;
@@ -295,6 +419,11 @@ const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
   border-style: dashed;
 }
 
+.batida-pick-choice.is-empty .batida-pick-gl {
+  font-weight: 500;
+  color: var(--muted);
+}
+
 /* Header current preview */
 .batida-pick-cur {
   position: relative;
@@ -319,6 +448,10 @@ const essOrder = ['normal', 'accent', 'mute', 'muted'] as const
 }
 .batida-pick-cur.is-muted .batida-pick-gl {
   color: var(--muted);
+}
+.batida-pick-cur.is-empty .batida-pick-gl {
+  color: var(--muted);
+  font-weight: 500;
 }
 .batida-pick-cur.is-accent .batida-pick-gl {
   font-size: 22px;

@@ -6,7 +6,7 @@ import {
   memoryStore,
   parseXStrum,
   readMeta,
-  setSlot,
+  setSlotCascading,
   type StrumPreset,
 } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
@@ -36,7 +36,7 @@ const HOST_PRESETS: StrumPreset[] = [
     id: 'folk-passa',
     label: 'Folk passa',
     pattern: parseXStrum(
-      'bpm=90; meter=4/4; grid=16; label=Folk passa; pat=DdUu DdUu DdUu DdUu',
+      'bpm=90; meter=4/4; grid=16; label=Folk passa; pat=Dudu Dudu Dudu Dudu',
     )!,
   },
   {
@@ -157,12 +157,15 @@ describe('Batida presets section (host catalog)', () => {
   it('asks UI confirm when draft is dirty before applying', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm')
     const base = emptyPattern({ bpm: 90, meter: '4/4', grid: 16, label: 'Padrão' })
-    const dirty = setSlot(base, 0, { dir: 'down', contact: 'hit', essence: 'accent' })
+    const dirty = setSlotCascading(base, 0, { dir: 'down', contact: 'hit', essence: 'accent' })
     const w = mountSheet(dirty)
     await flushPromises()
-    await w.get('[data-batida-slot="1"]').trigger('click')
+    // Change essence on slot 0 so the draft diverges from baseline.
+    await w.get('[data-batida-slot="0"]').trigger('click')
     await flushPromises()
-    await w.get('[data-batida-choice="ghost"]').trigger('click')
+    const mute = w.findAll('[data-batida-choice="hit"]').find((b) => b.text().match(/Mute/i))
+    expect(mute).toBeTruthy()
+    await mute!.trigger('click')
     await flushPromises()
 
     const preset = HOST_PRESETS[1]!
