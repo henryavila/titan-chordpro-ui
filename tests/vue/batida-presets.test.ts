@@ -29,11 +29,6 @@ let confirmSpy: {
   mockReturnValue: (v: boolean) => unknown
   mockReturnValueOnce: (v: boolean) => unknown
 }
-let promptSpy: {
-  mockRestore: () => void
-  mockReturnValue: (v: string | null) => unknown
-}
-
 const HOST_PRESETS: StrumPreset[] = [
   {
     id: 'basic-down-up',
@@ -65,14 +60,12 @@ beforeEach(() => {
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
   confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-  promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('Novo preset')
 })
 afterEach(() => {
   mounted.splice(0).forEach((w) => w.unmount())
   globalThis.ResizeObserver = realRO
   localStorage.clear()
   confirmSpy.mockRestore()
-  promptSpy.mockRestore()
 })
 
 const NO_STRUM = `{title:Teste}
@@ -188,11 +181,16 @@ describe('Batida presets section (host catalog)', () => {
     expect(w.get('[data-batida-label]').element).toHaveProperty('value', preset.pattern.label)
   })
 
-  it('emits save-preset for the host to persist', async () => {
+  it('emits save-preset from the in-sheet name dialog (no browser prompt)', async () => {
+    const promptSpy = vi.spyOn(window, 'prompt')
     const w = mountSheet()
     await flushPromises()
-    promptSpy.mockReturnValue('Ensaio sexta')
     await w.get('[data-batida-preset-save]').trigger('click')
+    await flushPromises()
+    expect(promptSpy).not.toHaveBeenCalled()
+    expect(w.find('[data-batida-preset-name-dialog]').exists()).toBe(true)
+    await w.get('[data-batida-preset-name]').setValue('Ensaio sexta')
+    await w.get('[data-batida-preset-name-ok]').trigger('click')
     await flushPromises()
     const payload = w.emitted('save-preset')?.at(-1)?.[0] as {
       id?: string
@@ -203,6 +201,19 @@ describe('Batida presets section (host catalog)', () => {
     expect(payload.id).toBeUndefined()
     expect(payload.label).toBe('Ensaio sexta')
     expect(payload.pattern.label).toBe('Ensaio sexta')
+    expect(w.find('[data-batida-preset-name-dialog]').exists()).toBe(false)
+    promptSpy.mockRestore()
+  })
+
+  it('cancel closes the name dialog without emitting', async () => {
+    const w = mountSheet()
+    await flushPromises()
+    await w.get('[data-batida-preset-save]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-preset-name-cancel]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-preset-name-dialog]').exists()).toBe(false)
+    expect(w.emitted('save-preset')).toBeUndefined()
   })
 
   it('viewer forwards save-strum-preset and applies host presets', async () => {
@@ -228,8 +239,10 @@ describe('Batida presets section (host catalog)', () => {
 
     await w.get('[data-batida-edit-chrome]').trigger('click')
     await flushPromises()
-    promptSpy.mockReturnValue('Salvo pelo host')
     await w.get('[data-batida-preset-save]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-preset-name]').setValue('Salvo pelo host')
+    await w.get('[data-batida-preset-name-ok]').trigger('click')
     await flushPromises()
     const saved = w.emitted('save-strum-preset')?.at(-1)?.[0] as { label: string }
     expect(saved.label).toBe('Salvo pelo host')
