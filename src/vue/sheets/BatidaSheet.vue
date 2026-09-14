@@ -2,12 +2,15 @@
 import { computed, ref, watch } from 'vue'
 import {
   applyStrumPreset,
+  draftStrumPreset,
   emptyPattern,
   formatXStrum,
   resizePattern,
   setSlot,
+  type SaveStrumPresetPayload,
   type StrumPattern,
   type StrumPatternSet,
+  type StrumPreset,
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
 import CpvIcon from '../icon/CpvIcon.vue'
@@ -25,8 +28,10 @@ const props = withDefaults(
     canDelete: boolean
     /** Host capability — off hides the presets section. */
     presetsEnabled?: boolean
+    /** Host-owned catalog (never shipped by the package). */
+    presets?: StrumPreset[]
   }>(),
-  { presetsEnabled: true, activeIndex: 0 },
+  { presetsEnabled: false, activeIndex: 0, presets: () => [] },
 )
 
 const emit = defineEmits<{
@@ -38,6 +43,7 @@ const emit = defineEmits<{
   'add-pattern': []
   'duplicate-pattern': []
   'remove-pattern': []
+  'save-preset': [payload: SaveStrumPresetPayload]
 }>()
 
 function initialPatterns(): StrumPattern[] {
@@ -193,12 +199,25 @@ function applyPreset(presetId: string) {
   const next = applyStrumPreset(
     { ...draft.value, label: label.value.trim() || 'Padrão' },
     presetId,
+    props.presets,
   )
   if (!next) return
   draft.value = next
   label.value = next.label || 'Padrão'
   grid.value = next.grid
   pickIndex.value = -1
+}
+
+function saveAsPreset() {
+  const currentLabel = label.value.trim() || draft.value.label || 'Padrão'
+  const typed = window.prompt('Nome do preset', currentLabel)
+  if (typed == null) return
+  const name = typed.trim()
+  if (!name) return
+  emit(
+    'save-preset',
+    draftStrumPreset({ ...draft.value, label: name, grid: grid.value }, name),
+  )
 }
 
 function selectPattern(i: number) {
@@ -374,7 +393,12 @@ const geom = computed(() =>
         </div>
       </div>
 
-      <BatidaPresets v-if="presetsEnabled" @apply="applyPreset" />
+      <BatidaPresets
+        v-if="presetsEnabled"
+        :presets="presets"
+        @apply="applyPreset"
+        @save="saveAsPreset"
+      />
 
       <p style="margin:0;font-size:12px;line-height:1.45;color:var(--muted);">
         Toque um <b style="color:var(--text);font-weight:600;">marco</b> para escolher — tocar ou passar (não tocar).

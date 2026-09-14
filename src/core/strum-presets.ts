@@ -1,9 +1,9 @@
 /**
- * Built-in strum presets for the Batida sheet (B1).
- * Patterns use only the frozen x_strum token alphabet — no rest `-`.
+ * Strum presets — catalog owned by the host/consumer.
+ * The package only formats/applies; it does not ship or persist presets.
  */
 
-import { decodeStrumPat, type StrumPattern } from './strum'
+import type { StrumPattern } from './strum'
 
 export type StrumPreset = {
   id: string
@@ -11,58 +11,42 @@ export type StrumPreset = {
   pattern: StrumPattern
 }
 
-function fromPat(pat: string, label: string, meter = '4/4'): StrumPattern {
-  const slots = decodeStrumPat(pat)
+/** Payload the viewer emits when the musician saves the draft as a preset. */
+export type SaveStrumPresetPayload = {
+  /** Omit when creating — the host assigns a stable id on persist. */
+  id?: string
+  label: string
+  pattern: StrumPattern
+}
+
+function clonePattern(p: StrumPattern): StrumPattern {
   return {
-    bpm: null,
-    meter,
-    grid: slots.length,
-    label,
-    slots,
+    ...p,
+    slots: p.slots.map((s) => ({ ...s })),
   }
 }
 
-/** Stable catalog — ids must not rename once shipped. */
-const PRESETS: StrumPreset[] = [
-  {
-    id: 'basic-down-up',
-    label: 'Baixo-cima',
-    pattern: fromPat('DuDu DuDu DuDu DuDu', 'Baixo-cima'),
-  },
-  {
-    id: 'folk-passa',
-    label: 'Folk passa',
-    pattern: fromPat('DdUu DdUu DdUu DdUu', 'Folk passa'),
-  },
-  {
-    id: 'pop-accent',
-    label: 'Pop acento',
-    pattern: fromPat('DuDu DuD!u DuDu DuD!u', 'Pop acento'),
-  },
-  {
-    id: 'mute-pulse',
-    label: 'Mute',
-    pattern: fromPat('DmUm DmUm DmUm DmUm', 'Mute'),
-  },
-]
-
-export function listStrumPresets(): StrumPreset[] {
-  return PRESETS.map((p) => ({
+/** Immutable copy of a host-provided catalog (default empty). */
+export function listStrumPresets(
+  catalog: readonly StrumPreset[] = [],
+): StrumPreset[] {
+  return catalog.map((p) => ({
     id: p.id,
     label: p.label,
-    pattern: {
-      ...p.pattern,
-      slots: p.pattern.slots.map((s) => ({ ...s })),
-    },
+    pattern: clonePattern(p.pattern),
   }))
 }
 
-/** Apply preset slots/grid/label; keep current bpm and meter. */
+/**
+ * Apply preset slots/grid/label from `catalog`; keep current bpm and meter.
+ * Returns null when the id is missing from the catalog.
+ */
 export function applyStrumPreset(
   current: StrumPattern,
   presetId: string,
+  catalog: readonly StrumPreset[] = [],
 ): StrumPattern | null {
-  const preset = PRESETS.find((p) => p.id === presetId)
+  const preset = catalog.find((p) => p.id === presetId)
   if (!preset) return null
   const p = preset.pattern
   return {
@@ -71,5 +55,17 @@ export function applyStrumPreset(
     grid: p.grid,
     label: p.label,
     slots: p.slots.map((s) => ({ ...s })),
+  }
+}
+
+/** Build a save payload from the current draft (host owns id + storage). */
+export function draftStrumPreset(
+  pattern: StrumPattern,
+  label?: string,
+): SaveStrumPresetPayload {
+  const trimmed = (label ?? pattern.label ?? '').trim() || 'Padrão'
+  return {
+    label: trimmed,
+    pattern: clonePattern({ ...pattern, label: trimmed }),
   }
 }

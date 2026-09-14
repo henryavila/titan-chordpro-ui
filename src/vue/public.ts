@@ -1,7 +1,14 @@
-import type { AccentProp, ChartStore, Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
+import type {
+  AccentProp,
+  ChartStore,
+  Lens,
+  SaveStrumPresetPayload,
+  StrumPreset,
+  ThemeId,
+} from '@henryavila/titan-chordpro-ui'
 import type { LoadSong, SetlistSong } from './use/useSetlist'
 
-export type { LoadSong, SetlistSong, Lens }
+export type { LoadSong, SetlistSong, Lens, SaveStrumPresetPayload, StrumPreset }
 
 /** A score the host already has on file, offered when inserting `{image:}`. */
 export type ImageChoice = { file: string; label?: string }
@@ -10,7 +17,14 @@ export type ImageChoice = { file: string; label?: string }
 export type WriteMode = 'local' | 'content'
 export type ModesProp = 'none' | 'local' | 'content' | 'both'
 
-export type ViewerCapabilities = { sourcePane?: boolean }
+export type ViewerCapabilities = {
+  sourcePane?: boolean
+  /**
+   * Host-owned strum presets on the Batida sheet (list + “Salvar como preset”).
+   * Off by default — pass `true` and feed `strumPresets`.
+   */
+  batidaPresets?: boolean
+}
 
 /** Cover or lyric-slide background the host wants in the `.slja`. */
 export type SlideImage = Blob | ArrayBuffer | Uint8Array
@@ -97,6 +111,12 @@ export type ChordproViewerProps = {
   storage?: ChartStore
   capabilities?: ViewerCapabilities
   /**
+   * Host catalog of strum presets for the Batida sheet. The package does not
+   * ship or persist these — the consumer owns storage and passes the list.
+   * Requires `capabilities.batidaPresets: true`.
+   */
+  strumPresets?: StrumPreset[]
+  /**
    * Fetches the page behind a link, for "new chart · import". The browser
    * cannot reach another site from inside the viewer, so this is the host's
    * backend. Without it the Link tab says so rather than pretending.
@@ -137,5 +157,10 @@ export type ChordproViewerEmits = {
   save: [value: string]
   /** A "for everyone" save: this text is the chart from now on. */
   'save-content': [value: string]
+  /**
+   * Musician asked to persist the current batida draft as a preset.
+   * Host assigns `id` (if omitted), stores it, and refreshes `strumPresets`.
+   */
+  'save-strum-preset': [value: SaveStrumPresetPayload]
   state: [value: Record<string, unknown>]
 }

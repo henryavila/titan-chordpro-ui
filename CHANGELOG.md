@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Começar de novo (Metadados, Para todos):** confirmação explícita abre Nova cifra (Cifra Club / arquivo / texto / branco). A cifra atual só some ao concluir; cancelar Nova mantém o corpo. Ausente no editar Só para mim.
-- **Editor de batida (B0):** CTA `+ Criar batida` no view, folha Batida (1 tempo/linha no celular), seletor de marco (8 toques + 2 passa, sem pausa) e lápis na faixa. Grava/apaga `{x_strum:}` via `writeMeta`; cria com BPM de `{tempo:}`.
+- **Editor de batida (B0–B3):** criar/editar `{x_strum:}` na folha Batida (só **Para todos**), multi `{x_strum_set:}`, conflito enrich Manter/Trazer CC.
+- **Presets de batida (host-owned):** prop `strumPresets`, capability `batidaPresets`, evento `save-strum-preset` (`{ id?, label, pattern }`). O pacote não embute nem persiste catálogo — o consumer gerencia.
 
 ### Changed
 - **Enrich Cifra Club — batida keep-local:** se a cifra já tem `{x_strum:}`, `proposeCifraClubEnrich` não sobrescreve a batida local; só preenche quando a chave está ausente.

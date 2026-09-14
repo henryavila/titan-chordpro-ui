@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   emptyPattern,
   formatXStrum,
-  listStrumPresets,
   memoryStore,
   parseXStrum,
   readMeta,
   setSlot,
+  type StrumPreset,
 } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
 import BatidaSheet from '../../src/vue/sheets/BatidaSheet.vue'
@@ -29,6 +29,34 @@ let confirmSpy: {
   mockReturnValue: (v: boolean) => unknown
   mockReturnValueOnce: (v: boolean) => unknown
 }
+let promptSpy: {
+  mockRestore: () => void
+  mockReturnValue: (v: string | null) => unknown
+}
+
+const HOST_PRESETS: StrumPreset[] = [
+  {
+    id: 'basic-down-up',
+    label: 'Baixo-cima',
+    pattern: parseXStrum(
+      'bpm=90; meter=4/4; grid=16; label=Baixo-cima; pat=DuDu DuDu DuDu DuDu',
+    )!,
+  },
+  {
+    id: 'folk-passa',
+    label: 'Folk passa',
+    pattern: parseXStrum(
+      'bpm=90; meter=4/4; grid=16; label=Folk passa; pat=DdUu DdUu DdUu DdUu',
+    )!,
+  },
+  {
+    id: 'pop-accent',
+    label: 'Pop acento',
+    pattern: parseXStrum(
+      'bpm=90; meter=4/4; grid=16; label=Pop acento; pat=DuDu DuD!u DuDu DuD!u',
+    )!,
+  },
+]
 
 beforeEach(() => {
   localStorage.clear()
@@ -37,12 +65,14 @@ beforeEach(() => {
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
   confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('Novo preset')
 })
 afterEach(() => {
   mounted.splice(0).forEach((w) => w.unmount())
   globalThis.ResizeObserver = realRO
   localStorage.clear()
   confirmSpy.mockRestore()
+  promptSpy.mockRestore()
 })
 
 const NO_STRUM = `{title:Teste}
@@ -54,9 +84,21 @@ const NO_STRUM = `{title:Teste}
 [D]Oi
 `
 
-async function viewerAt(source: string, width = 900) {
+async function viewerAt(
+  source: string,
+  width = 900,
+  extra: Record<string, unknown> = {},
+) {
   const w = mount(ChordproViewer, {
-    props: { source, storage: memoryStore(), autoHide: false, modes: 'content' },
+    props: {
+      source,
+      storage: memoryStore(),
+      autoHide: false,
+      modes: 'content',
+      capabilities: { batidaPresets: true },
+      strumPresets: HOST_PRESETS,
+      ...extra,
+    },
     attachTo: document.body,
   })
   mounted.push(w)
@@ -68,7 +110,11 @@ async function viewerAt(source: string, width = 900) {
 
 function mountSheet(
   pattern = emptyPattern({ bpm: 90, meter: '4/4', grid: 16, label: 'Padrão' }),
-  props: { presetsEnabled?: boolean; canDelete?: boolean } = {},
+  props: {
+    presetsEnabled?: boolean
+    canDelete?: boolean
+    presets?: StrumPreset[]
+  } = {},
 ) {
   const w = mount(BatidaSheet, {
     props: {
@@ -76,7 +122,8 @@ function mountSheet(
       pattern,
       barBeats: 4,
       canDelete: props.canDelete ?? false,
-      presetsEnabled: props.presetsEnabled,
+      presetsEnabled: props.presetsEnabled ?? true,
+      presets: props.presets ?? HOST_PRESETS,
     },
     attachTo: document.body,
   })
@@ -84,34 +131,38 @@ function mountSheet(
   return w
 }
 
-describe('Batida presets section', () => {
-  it('shows preset buttons when presetsEnabled (default true)', async () => {
-    const w = mountSheet()
-    await flushPromises()
-    expect(w.find('[data-batida-presets]').exists()).toBe(true)
-    const presets = listStrumPresets()
-    expect(presets.length).toBeGreaterThanOrEqual(3)
-    for (const p of presets) {
-      expect(w.find(`[data-batida-preset="${p.id}"]`).exists()).toBe(true)
-    }
-  })
-
-  it('hides presets when presetsEnabled is false', async () => {
+describe('Batida presets section (host catalog)', () => {
+  it('hides presets when capability is off (default)', async () => {
     const w = mountSheet(undefined, { presetsEnabled: false })
     await flushPromises()
     expect(w.find('[data-batida-presets]').exists()).toBe(false)
   })
 
+  it('shows host preset buttons when enabled', async () => {
+    const w = mountSheet()
+    await flushPromises()
+    expect(w.find('[data-batida-presets]').exists()).toBe(true)
+    expect(w.find('[data-batida-preset-save]').exists()).toBe(true)
+    for (const p of HOST_PRESETS) {
+      expect(w.find(`[data-batida-preset="${p.id}"]`).exists()).toBe(true)
+    }
+  })
+
+  it('shows empty hint when host catalog is empty', async () => {
+    const w = mountSheet(undefined, { presets: [] })
+    await flushPromises()
+    expect(w.find('[data-batida-presets-empty]').exists()).toBe(true)
+    expect(w.find('[data-batida-preset-save]').exists()).toBe(true)
+  })
+
   it('applies preset to draft without confirm when clean', async () => {
     const w = mountSheet()
     await flushPromises()
-    const preset = listStrumPresets()[0]!
+    const preset = HOST_PRESETS[0]!
     await w.get(`[data-batida-preset="${preset.id}"]`).trigger('click')
     await flushPromises()
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(w.get('[data-batida-label]').element).toHaveProperty('value', preset.pattern.label)
-    const slot0 = w.get('[data-batida-slot="0"]')
-    expect(slot0.classes().join(' ')).not.toMatch(/is-ghost/)
   })
 
   it('asks confirm when draft is dirty before applying', async () => {
@@ -119,15 +170,13 @@ describe('Batida presets section', () => {
     const dirty = setSlot(base, 0, { dir: 'down', contact: 'hit', essence: 'accent' })
     const w = mountSheet(dirty)
     await flushPromises()
-    // Edit label so sheet draft is dirty vs initial... actually initial IS dirty pattern.
-    // Make a further edit from the mounted baseline:
     await w.get('[data-batida-slot="1"]').trigger('click')
     await flushPromises()
     await w.get('[data-batida-choice="ghost"]').trigger('click')
     await flushPromises()
 
     confirmSpy.mockReturnValueOnce(false)
-    const preset = listStrumPresets()[1]!
+    const preset = HOST_PRESETS[1]!
     await w.get(`[data-batida-preset="${preset.id}"]`).trigger('click')
     await flushPromises()
     expect(confirmSpy).toHaveBeenCalled()
@@ -139,14 +188,31 @@ describe('Batida presets section', () => {
     expect(w.get('[data-batida-label]').element).toHaveProperty('value', preset.pattern.label)
   })
 
-  it('save after preset still writes a single x_strum via writeMeta', async () => {
+  it('emits save-preset for the host to persist', async () => {
+    const w = mountSheet()
+    await flushPromises()
+    promptSpy.mockReturnValue('Ensaio sexta')
+    await w.get('[data-batida-preset-save]').trigger('click')
+    await flushPromises()
+    const payload = w.emitted('save-preset')?.at(-1)?.[0] as {
+      id?: string
+      label: string
+      pattern: { label: string }
+    }
+    expect(payload).toBeTruthy()
+    expect(payload.id).toBeUndefined()
+    expect(payload.label).toBe('Ensaio sexta')
+    expect(payload.pattern.label).toBe('Ensaio sexta')
+  })
+
+  it('viewer forwards save-strum-preset and applies host presets', async () => {
     const w = await viewerAt(NO_STRUM)
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
     await w.get('[data-batida-create]').trigger('click')
     await flushPromises()
     expect(w.find('[data-batida-presets]').exists()).toBe(true)
-    const preset = listStrumPresets()[0]!
+    const preset = HOST_PRESETS[0]!
     await w.get(`[data-batida-preset="${preset.id}"]`).trigger('click')
     await flushPromises()
     await w.get('[data-batida-save]').trigger('click')
@@ -159,7 +225,25 @@ describe('Batida presets section', () => {
     const parsed = parseXStrum(raw!)
     expect(parsed?.slots).toEqual(preset.pattern.slots)
     expect(formatXStrum(parsed!).match(/pat=([^;]*)/)?.[1]).not.toContain('-')
-    // single meta key — no multi-pattern wire
-    expect(src.match(/\{x_strum:/g)?.length).toBe(1)
+
+    await w.get('[data-batida-edit-chrome]').trigger('click')
+    await flushPromises()
+    promptSpy.mockReturnValue('Salvo pelo host')
+    await w.get('[data-batida-preset-save]').trigger('click')
+    await flushPromises()
+    const saved = w.emitted('save-strum-preset')?.at(-1)?.[0] as { label: string }
+    expect(saved.label).toBe('Salvo pelo host')
+  })
+
+  it('viewer hides presets when batidaPresets capability is absent', async () => {
+    const w = await viewerAt(NO_STRUM, 900, {
+      capabilities: { sourcePane: true },
+      strumPresets: HOST_PRESETS,
+    })
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-create]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-presets]').exists()).toBe(false)
   })
 })

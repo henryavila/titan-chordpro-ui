@@ -127,6 +127,7 @@ const props = withDefaults(
     pdfShouldFail: false,
     slidesShouldFail: false,
     capabilities: () => ({ sourcePane: true }),
+    strumPresets: () => [],
   },
 )
 
@@ -2777,9 +2778,12 @@ defineExpose({
       :active-index="batidaDraftSet?.activeIndex ?? 0"
       :bar-beats="beatsPerBar(meta.time)"
       :can-delete="hasStrum"
+      :presets-enabled="capabilities.batidaPresets === true"
+      :presets="strumPresets"
       @close="closeBatida"
       @save-set="saveBatidaSet"
       @delete="deleteBatida"
+      @save-preset="emit('save-strum-preset', $event)"
     />
 
     <NewChartDialog

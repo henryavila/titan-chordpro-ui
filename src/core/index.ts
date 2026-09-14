@@ -255,5 +255,5 @@ export type {
   StrumPattern,
   StrumSlot,
 } from './strum'
-export { applyStrumPreset, listStrumPresets } from './strum-presets'
-export type { StrumPreset } from './strum-presets'
+export { applyStrumPreset, draftStrumPreset, listStrumPresets } from './strum-presets'
+export type { SaveStrumPresetPayload, StrumPreset } from './strum-presets'
