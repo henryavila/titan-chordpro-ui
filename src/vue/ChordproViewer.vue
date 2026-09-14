@@ -44,7 +44,16 @@ import {
   type StrumPattern,
   type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
-import type { ChartStore, Lens, ReadingCtx, ThemeId, Timeline, TimelineBlock } from '@henryavila/titan-chordpro-ui'
+import type {
+  ChartStore,
+  Lens,
+  ReadingCtx,
+  SaveStrumPresetPayload,
+  StrumPreset,
+  ThemeId,
+  Timeline,
+  TimelineBlock,
+} from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
@@ -79,7 +88,7 @@ import { useMetronome } from './use/useMetronome'
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
-import type { ChordproViewerEmits, ChordproViewerProps, WriteMode } from './public'
+import type { ChordproViewerProps, WriteMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
 import CpvIcon from './icon/CpvIcon.vue'
 import type { CpvIconName } from './icon/paths'
@@ -88,6 +97,8 @@ import './cpv.css'
 const props = withDefaults(
   defineProps<
     ChordproViewerProps & {
+      /** Host batida presets (declared locally so the SFC macro always emits a runtime prop). */
+      strumPresets?: StrumPreset[]
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
@@ -131,7 +142,27 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<ChordproViewerEmits>()
+// Inline emit map so the SFC compiler emits a runtime declaration (imported
+// `ChordproViewerEmits` alone can omit new keys from the runtime emits list).
+const emit = defineEmits<{
+  'update:source': [value: string]
+  'update:theme': [value: ThemeId]
+  'update:mode': [value: 'view' | 'edit']
+  'update:lens': [value: Lens]
+  'update:hideComments': [value: boolean]
+  dirty: [value: boolean]
+  save: [value: string]
+  'save-content': [value: string]
+  'save-strum-preset': [value: SaveStrumPresetPayload]
+  state: [value: Record<string, unknown>]
+}>()
+
+/** Host catalog — explicit computed so the template always binds a real ref. */
+const strumPresetCatalog = computed<StrumPreset[]>(() => props.strumPresets ?? [])
+
+function onSaveStrumPreset(payload: SaveStrumPresetPayload) {
+  emit('save-strum-preset', payload)
+}
 
 /**
  * One object with a stable identity, so the composables can hold it, while a
@@ -2779,11 +2810,11 @@ defineExpose({
       :bar-beats="beatsPerBar(meta.time)"
       :can-delete="hasStrum"
       :presets-enabled="capabilities.batidaPresets === true"
-      :presets="strumPresets"
+      :presets="strumPresetCatalog"
       @close="closeBatida"
       @save-set="saveBatidaSet"
       @delete="deleteBatida"
-      @save-preset="emit('save-strum-preset', $event)"
+      @save-preset="onSaveStrumPreset"
     />
 
     <NewChartDialog
