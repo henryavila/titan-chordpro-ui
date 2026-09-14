@@ -417,6 +417,8 @@ function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
 }
 
 function openBatidaCreate() {
+  // Batida edits the official chart — only inside "Para todos".
+  if (!isContentEdit.value) return
   const tempo = sheetBpm(meta.value.tempo)
   const meter = String(meta.value.time ?? '').trim() || '4/4'
   const p = emptyPattern({
@@ -431,6 +433,7 @@ function openBatidaCreate() {
 }
 
 function openBatidaEdit() {
+  if (!isContentEdit.value) return
   const set = strumSet.value
   if (!set.patterns.length) {
     openBatidaCreate()
@@ -2516,8 +2519,6 @@ defineExpose({
       @toggle-comments="setHideComments(!hideComments)"
       @toggle-met="toggleMetPanel"
       @toggle-strum="toggleStrum"
-      @create-batida="openBatidaCreate"
-      @edit-batida="openBatidaEdit"
       @theme="requestTheme"
       @edit="enterEdit"
       @export="sheet = true"
@@ -2550,7 +2551,6 @@ defineExpose({
       :can-edit="canEditNow"
       :dock-icon-size="dockIconSize"
       :fit-on="fitOn"
-      :has-strum="hasStrum"
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
@@ -2565,7 +2565,6 @@ defineExpose({
       @edit="enterEdit"
       @toggle-fit="toggleFit"
       @more="moreOpen = true"
-      @create-batida="openBatidaCreate"
     />
 
     <button
@@ -2594,6 +2593,7 @@ defineExpose({
       :lint-ok="lint.ok"
       :theme-title="themeTitle"
       :theme-icon="themeIcon(themeMode)"
+      :has-strum="hasStrum"
       @seen-hint="markEditSeen()"
       @drop-clip="bedit.clip.value = null"
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
@@ -2602,6 +2602,8 @@ defineExpose({
       @smaller-type="bias = Math.max(-3, bias - 1)"
       @bigger-type="bias = Math.min(5, bias + 1)"
       @theme="requestTheme"
+      @create-batida="openBatidaCreate"
+      @edit-batida="openBatidaEdit"
     />
 
     <div v-if="isEdit && bedit.placing.value" class="cpv-placing-bar cpv-veil-2" data-placing>
@@ -2713,9 +2715,8 @@ defineExpose({
         :pattern="strumPattern"
         :beat-clock="met.running.value ? met.beatClock.value : -1"
         :bar-beats="met.bar.value"
-        :can-edit="true"
+        :can-edit="false"
         :can-pick="canPickStrum"
-        @edit="openBatidaEdit"
         @pick="cycleStrumPattern"
       />
     </div>
@@ -2769,7 +2770,7 @@ defineExpose({
     />
 
     <BatidaSheet
-      v-if="batidaOpen && batidaDraft && !isEdit"
+      v-if="batidaOpen && batidaDraft && isContentEdit"
       :compact="compact"
       :pattern="batidaDraft"
       :patterns="batidaDraftSet?.patterns"
@@ -2867,8 +2868,6 @@ defineExpose({
       @toggle-comments="setHideComments(!hideComments)"
       @metronome="moreOpen = false; toggleMetPanel()"
       @strum="moreOpen = false; toggleStrum()"
-      @create-batida="moreOpen = false; openBatidaCreate()"
-      @edit-batida="moreOpen = false; openBatidaEdit()"
       @export="moreOpen = false; sheet = true"
       @toggle-original="moreOpen = false; toggleOriginal(!ov.showOriginal.value)"
       @open-my="moreOpen = false; ov.myPanel.value = true"

@@ -141,6 +141,8 @@ describe('Batida presets section', () => {
 
   it('save after preset still writes a single x_strum via writeMeta', async () => {
     const w = await viewerAt(NO_STRUM)
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
     await w.get('[data-batida-create]').trigger('click')
     await flushPromises()
     expect(w.find('[data-batida-presets]').exists()).toBe(true)

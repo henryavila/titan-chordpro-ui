@@ -152,9 +152,9 @@ describe('BatidaSheet multi pattern management', () => {
 
   it('save persists full set via writeStrumPatterns (active drives x_strum)', async () => {
     const w = await viewerAt(MULTI)
-    await w.get('[data-strum-btn]').trigger('click')
+    await w.get('[data-edit]').trigger('click')
     await flushPromises()
-    await w.get('[data-strum-edit]').trigger('click')
+    await w.get('[data-batida-edit-chrome]').trigger('click')
     await flushPromises()
 
     expect(w.find('[data-batida-sheet]').exists()).toBe(true)

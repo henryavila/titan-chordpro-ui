@@ -55,8 +55,6 @@ const emit = defineEmits<{
   toggleComments: []
   toggleMet: []
   toggleStrum: []
-  createBatida: []
-  editBatida: []
   theme: []
   edit: []
   export: []
@@ -217,14 +215,6 @@ const emit = defineEmits<{
         <CpvIcon name="metronome" :size="16" />{{ metRunning ? `${metBpm} BPM` : 'Metrônomo' }}
       </button>
       <button
-        v-if="!hasStrum"
-        data-batida-create
-        title="Criar batida"
-        class="cpv-bar-btn"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;border:1px dashed var(--line);background:transparent;color:var(--text);"
-        @click="emit('createBatida')"
-      ><CpvIcon name="plus" :size="14" />Criar batida</button>
-      <button
         v-if="hasStrum"
         data-strum-btn
         title="Batida"
@@ -233,15 +223,6 @@ const emit = defineEmits<{
         style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('toggleStrum')"
       >↓↑ Batida</button>
-      <button
-        v-if="hasStrum"
-        data-batida-edit-chrome
-        title="Editar batida"
-        class="cpv-ghost"
-        aria-label="Editar batida"
-        style="height:36px;width:36px;border-radius:12px;"
-        @click="emit('editBatida')"
-      ><CpvIcon name="pencil" :size="14" /></button>
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
       <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="emit('theme')">
         <CpvIcon :name="themeIcon" :size="16" />{{ themeLabel }}
