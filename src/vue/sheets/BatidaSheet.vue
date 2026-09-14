@@ -401,11 +401,16 @@ const geom = computed(() =>
               :class="[slotClass(draft.slots[i]!), { 'is-focus': pickIndex === i }]"
               :data-batida-slot="i"
               :aria-label="`tempo ${row.beat}, subdivisão ${(i % slotsPerBeat) + 1}`"
-              style="min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;font:inherit;"
               @click="openPick(i)"
             >
-              <span style="font-size:16px;font-weight:700;line-height:1;">{{ glyph(draft.slots[i]!) }}</span>
-              <span style="font-size:9.5px;color:var(--muted);line-height:1;min-height:10px;">{{ shortTag(draft.slots[i]!) || '\u00a0' }}</span>
+              <span class="batida-slot-gl" aria-hidden="true">
+                {{ glyph(draft.slots[i]!) }}
+                <span
+                  v-if="draft.slots[i]!.contact === 'hit' && draft.slots[i]!.essence === 'mute'"
+                  class="batida-slot-dot"
+                />
+              </span>
+              <span class="batida-slot-tag">{{ shortTag(draft.slots[i]!) || '\u00a0' }}</span>
             </button>
           </div>
         </div>
@@ -442,19 +447,77 @@ const geom = computed(() =>
 </template>
 
 <style scoped>
+.batida-slot {
+  position: relative;
+  min-height: 58px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px 6px;
+  font: inherit;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.batida-slot-gl {
+  position: relative;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+}
+.batida-slot-tag {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1;
+  min-height: 10px;
+  letter-spacing: 0.02em;
+}
+.batida-slot-dot {
+  position: absolute;
+  bottom: -1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text);
+}
+.batida-slot.is-ghost .batida-slot-gl {
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text) 38%, transparent);
+}
 .batida-slot.is-ghost {
-  color: color-mix(in srgb, var(--text) 55%, transparent);
+  border-style: dashed;
+}
+.batida-slot.is-accent .batida-slot-gl {
+  font-size: 26px;
+  color: var(--chord);
 }
 .batida-slot.is-accent {
+  border-color: var(--chord-edge);
+}
+.batida-slot.is-accent .batida-slot-tag {
   color: var(--chord);
-  border-color: var(--chord-edge) !important;
+}
+.batida-slot.is-mute .batida-slot-gl {
+  font-weight: 800;
+}
+.batida-slot.is-muted .batida-slot-gl {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--muted);
 }
 .batida-slot.is-focus {
-  box-shadow: inset 0 0 0 1px var(--chord-edge);
-  background: var(--chord-soft) !important;
-}
-.batida-slot.is-muted {
-  color: var(--muted);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chord) 28%, transparent);
+  border-color: var(--chord-edge);
+  background: var(--chord-soft);
 }
 .batida-pattern-chip.is-active {
   background: var(--chord-soft) !important;
