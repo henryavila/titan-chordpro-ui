@@ -64,6 +64,13 @@ const presetNameOpen = ref(false)
 const presetName = ref('')
 const presetNameErr = ref('')
 const presetNameInput = ref<HTMLInputElement | null>(null)
+/** Pending preset apply when the draft is dirty — UI confirm instead of window.confirm. */
+const pendingPresetId = ref<string | null>(null)
+const pendingPresetLabel = computed(() => {
+  const id = pendingPresetId.value
+  if (!id) return ''
+  return props.presets.find((p) => p.id === id)?.label ?? id
+})
 
 function loadActive(p: StrumPattern) {
   draft.value = clonePattern(p)
@@ -199,17 +206,30 @@ function applyPick(slot: StrumSlot) {
 }
 
 function applyPreset(presetId: string) {
-  if (isDraftDirty() && !window.confirm('Substituir a batida atual por este preset?')) return
+  if (isDraftDirty()) {
+    pendingPresetId.value = presetId
+    return
+  }
+  commitPreset(presetId)
+}
+
+function commitPreset(presetId: string) {
   const next = applyStrumPreset(
     { ...draft.value, label: label.value.trim() || 'Padrão' },
     presetId,
     props.presets,
   )
+  pendingPresetId.value = null
   if (!next) return
   draft.value = next
   label.value = next.label || 'Padrão'
   grid.value = next.grid
   pickIndex.value = -1
+  baselineKey.value = snapshotKey(draft.value, label.value)
+}
+
+function cancelPendingPreset() {
+  pendingPresetId.value = null
 }
 
 function saveAsPreset() {
@@ -488,6 +508,43 @@ const geom = computed(() =>
       @close="pickIndex = -1"
       @pick="applyPick"
     />
+
+    <div
+      v-if="pendingPresetId"
+      class="cpv-sheet"
+      style="z-index:32;"
+      data-batida-preset-replace-dialog
+    >
+      <div class="cpv-scrim" data-batida-preset-replace-scrim @click="cancelPendingPreset" />
+      <div
+        class="cpv-dialog cpv-veil-2"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Substituir batida"
+        style="max-width:380px;gap:12px;"
+      >
+        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Substituir batida</span>
+        <p style="margin:0;font-size:13px;line-height:1.45;color:var(--text);">
+          A batida atual tem alterações. Substituir pelo preset
+          <strong style="color:var(--chord);">{{ pendingPresetLabel }}</strong>?
+        </p>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:2px;">
+          <button
+            type="button"
+            class="cpv-ghost"
+            data-batida-preset-replace-cancel
+            style="height:38px;padding:0 14px;border-radius:11px;color:var(--muted);font-size:13px;font-weight:600;"
+            @click="cancelPendingPreset"
+          >Manter atual</button>
+          <button
+            type="button"
+            data-batida-preset-replace-ok
+            style="height:38px;padding:0 16px;border-radius:11px;border:0;background:var(--chord);color:var(--chord-ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+            @click="commitPreset(pendingPresetId!)"
+          >Substituir</button>
+        </div>
+      </div>
+    </div>
 
     <div
       v-if="presetNameOpen"

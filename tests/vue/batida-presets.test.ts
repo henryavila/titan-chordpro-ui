@@ -24,11 +24,6 @@ class TestRO {
 
 const mounted: ReturnType<typeof mount>[] = []
 let realRO: typeof ResizeObserver
-let confirmSpy: {
-  mockRestore: () => void
-  mockReturnValue: (v: boolean) => unknown
-  mockReturnValueOnce: (v: boolean) => unknown
-}
 const HOST_PRESETS: StrumPreset[] = [
   {
     id: 'basic-down-up',
@@ -59,13 +54,11 @@ beforeEach(() => {
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
-  confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
 afterEach(() => {
   mounted.splice(0).forEach((w) => w.unmount())
   globalThis.ResizeObserver = realRO
   localStorage.clear()
-  confirmSpy.mockRestore()
 })
 
 const NO_STRUM = `{title:Teste}
@@ -149,16 +142,20 @@ describe('Batida presets section (host catalog)', () => {
   })
 
   it('applies preset to draft without confirm when clean', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
     const w = mountSheet()
     await flushPromises()
     const preset = HOST_PRESETS[0]!
     await w.get(`[data-batida-preset="${preset.id}"]`).trigger('click')
     await flushPromises()
     expect(confirmSpy).not.toHaveBeenCalled()
+    expect(w.find('[data-batida-preset-replace-dialog]').exists()).toBe(false)
     expect(w.get('[data-batida-label]').element).toHaveProperty('value', preset.pattern.label)
+    confirmSpy.mockRestore()
   })
 
-  it('asks confirm when draft is dirty before applying', async () => {
+  it('asks UI confirm when draft is dirty before applying', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
     const base = emptyPattern({ bpm: 90, meter: '4/4', grid: 16, label: 'Padrão' })
     const dirty = setSlot(base, 0, { dir: 'down', contact: 'hit', essence: 'accent' })
     const w = mountSheet(dirty)
@@ -168,17 +165,25 @@ describe('Batida presets section (host catalog)', () => {
     await w.get('[data-batida-choice="ghost"]').trigger('click')
     await flushPromises()
 
-    confirmSpy.mockReturnValueOnce(false)
     const preset = HOST_PRESETS[1]!
     await w.get(`[data-batida-preset="${preset.id}"]`).trigger('click')
     await flushPromises()
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(w.find('[data-batida-preset-replace-dialog]').exists()).toBe(true)
     expect(w.get('[data-batida-label]').element).toHaveProperty('value', dirty.label)
 
-    confirmSpy.mockReturnValueOnce(true)
+    await w.get('[data-batida-preset-replace-cancel]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-preset-replace-dialog]').exists()).toBe(false)
+    expect(w.get('[data-batida-label]').element).toHaveProperty('value', dirty.label)
+
     await w.get(`[data-batida-preset="${preset.id}"]`).trigger('click')
     await flushPromises()
+    await w.get('[data-batida-preset-replace-ok]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-preset-replace-dialog]').exists()).toBe(false)
     expect(w.get('[data-batida-label]').element).toHaveProperty('value', preset.pattern.label)
+    confirmSpy.mockRestore()
   })
 
   it('emits save-preset from the in-sheet name dialog (no browser prompt)', async () => {
