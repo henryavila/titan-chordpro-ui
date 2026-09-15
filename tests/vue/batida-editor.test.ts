@@ -249,7 +249,7 @@ describe('Batida editor CTA + sheet', () => {
     await w.get('[data-batida-create]').trigger('click')
     await flushPromises()
     expect(w.get('[data-batida-sheet]').text()).toMatch(/90/)
-    expect(w.get('[data-batida-sheet]').text()).toMatch(/4 por tempo/)
+    expect(w.get('[data-batida-density]').text()).toMatch(/4\s*\/\s*tempo/)
     await w.get('[data-batida-slot="0"]').trigger('click')
     await flushPromises()
     await w.get('[data-batida-choice="hit"]').trigger('click')

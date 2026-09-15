@@ -14,6 +14,7 @@ defineProps<{
   metRunning: boolean
   hasStrum: boolean
   strumOn: boolean
+  ensaioBatida: boolean
   showMine: boolean
   showOriginal: boolean
   mineCount: number
@@ -28,6 +29,7 @@ const emit = defineEmits<{
   toggleComments: []
   metronome: []
   strum: []
+  toggleEnsaioBatida: []
   export: []
   toggleOriginal: []
   openMy: []
@@ -73,6 +75,17 @@ const emit = defineEmits<{
         data-strum-more
         @click="emit('strum')"
       ><span style="font-size:16px;width:18px;text-align:center;">↓↑</span><span class="cpv-more-copy">Batida</span><span>{{ strumOn ? 'visível' : 'mostrar' }}</span></button>
+      <button
+        v-if="hasStrum"
+        class="cpv-surface-btn cpv-more-item"
+        data-ensaio-batida
+        :aria-pressed="ensaioBatida ? 'true' : 'false'"
+        :style="{
+          borderColor: ensaioBatida ? 'var(--chord-edge)' : undefined,
+          background: ensaioBatida ? 'var(--chord-soft)' : undefined,
+        }"
+        @click="emit('toggleEnsaioBatida')"
+      ><CpvIcon name="guitar" :size="18" /><span class="cpv-more-copy">{{ ensaioBatida ? 'Sair do ensaio' : 'Ensaio batida' }}</span><span>{{ ensaioBatida ? 'ativo' : 'praticar batida' }}</span></button>
       <button class="cpv-surface-btn cpv-more-item" @click="emit('export')"><CpvIcon name="download" :size="18" /><span class="cpv-more-copy">Exportar</span><span>ChordPro, PDF ou slides</span></button>
       <template v-if="showMine">
         <button class="cpv-surface-btn cpv-more-item" data-more-original @click="emit('toggleOriginal')">

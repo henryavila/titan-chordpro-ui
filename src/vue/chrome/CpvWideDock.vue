@@ -29,6 +29,8 @@ defineProps<{
   metBpm: number
   hasStrum: boolean
   strumOn: boolean
+  /** Ensaio Batida chrome profile active. */
+  ensaioBatida: boolean
   themeTitle: string
   themeIcon: CpvIconName
   themeLabel: string
@@ -55,6 +57,7 @@ const emit = defineEmits<{
   toggleComments: []
   toggleMet: []
   toggleStrum: []
+  toggleEnsaioBatida: []
   theme: []
   edit: []
   export: []
@@ -223,6 +226,16 @@ const emit = defineEmits<{
         style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('toggleStrum')"
       >↓↑ Batida</button>
+      <button
+        v-if="hasStrum"
+        data-ensaio-batida
+        title="Ensaio batida"
+        class="cpv-bar-btn"
+        :aria-pressed="ensaioBatida ? 'true' : 'false'"
+        :style="{ background: ensaioBatida ? 'var(--chord-fill)' : 'transparent', color: ensaioBatida ? 'var(--chord)' : 'var(--text)', border: `1px solid ${ensaioBatida ? 'var(--chord-edge)' : 'var(--line)'}` }"
+        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        @click="emit('toggleEnsaioBatida')"
+      ><CpvIcon name="guitar" :size="16" />{{ ensaioBatida ? 'Sair do ensaio' : 'Ensaio batida' }}</button>
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
       <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="emit('theme')">
         <CpvIcon :name="themeIcon" :size="16" />{{ themeLabel }}

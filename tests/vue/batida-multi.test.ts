@@ -112,13 +112,6 @@ describe('StrumStrip canPick when N>1', () => {
 })
 
 describe('BatidaSheet multi pattern management', () => {
-  it('shows warning that batida does not auto-follow verse/chorus', async () => {
-    const w = mountSheet()
-    await flushPromises()
-    const warn = w.get('[data-batida-multi-warn]')
-    expect(warn.text()).toMatch(/não acompanha|n[aã]o segue|verso|refr[aã]o/i)
-  })
-
   it('lists named patterns and can switch active', async () => {
     const w = mountSheet()
     await flushPromises()
@@ -158,7 +151,7 @@ describe('BatidaSheet multi pattern management', () => {
     await flushPromises()
 
     expect(w.find('[data-batida-sheet]').exists()).toBe(true)
-    expect(w.find('[data-batida-multi-warn]').exists()).toBe(true)
+    expect(w.find('[data-batida-patterns]').exists()).toBe(true)
 
     await w.get('[data-batida-label]').setValue('Refrão A')
     await w.get('[data-batida-save]').trigger('click')

@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
+import {
+  softClickFromPrefs,
+  sourceFromPrefs,
+  type SoundSource,
+} from '../use/rehearsal-audio'
 
 const props = defineProps<{
   compact: boolean
@@ -24,6 +29,10 @@ const props = defineProps<{
   /** Taps registered in the current tempo measurement. */
   tapCount: number
   time: string | undefined
+  /** Chart has a `{x_strum:}` pattern — guitar one-shots can follow the strip. */
+  hasStrum?: boolean
+  /** Opt-in acoustic strum sound synced to the batida grid. */
+  strumSound?: boolean
 }>()
 const emit = defineEmits<{
   close: []
@@ -31,11 +40,28 @@ const emit = defineEmits<{
   bpm: [delta: number]
   resetBpm: []
   tap: []
-  toggleSound: []
+  /** Set rehearsal sound source (maps to metSound / metStrumSound). */
+  setSource: [source: SoundSource, softClick: boolean]
   togglePulseHead: []
   toggleFollow: []
   toggleCountIn: []
 }>()
+
+const source = computed(() =>
+  sourceFromPrefs(props.sound, !!props.strumSound, !!props.hasStrum),
+)
+const softClick = computed(() =>
+  softClickFromPrefs(props.sound, !!props.strumSound, !!props.hasStrum),
+)
+
+function pickSource(next: SoundSource) {
+  emit('setSource', next, next === 'batida' ? softClick.value : false)
+}
+
+function toggleSoftClick() {
+  if (source.value !== 'batida') return
+  emit('setSource', 'batida', !softClick.value)
+}
 
 const beats = computed(() =>
   Array.from({ length: props.bar }, (_, i) => {
@@ -91,7 +117,9 @@ const countInNote = computed(() =>
   !props.scrollable
     ? 'Sem efeito: a cifra precisa de {duration:} e de papel para rolar.'
     : props.follow
-      ? 'Um compasso de click antes da cifra começar a andar.'
+      ? source.value === 'batida'
+        ? 'Um compasso de entrada (click/visual) — a batida só entra com a cifra.'
+        : 'Um compasso de click antes da cifra começar a andar.'
       : 'Sem efeito enquanto a rolagem estiver independente.',
 )
 
@@ -183,17 +211,55 @@ const geom = computed(() =>
         </span>
       </div>
 
-      <button class="cpv-met-switch" data-met-sound @click="emit('toggleSound')">
-        <span :style="{ background: sound ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-          <span :style="{ left: sound ? '14px' : '2px', background: sound ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-        </span>
-        <span style="display:flex;flex-direction:column;gap:3px;">
-          <span style="font-size:13px;font-weight:600;">{{ sound ? 'Click ligado' : 'Só pulso visual' }}</span>
-          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);">Bip agudo no 1, mais grave nas outras batidas.</span>
-        </span>
-      </button>
+      <div data-met-sound style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Fonte do ensaio</span>
+        <div style="display:flex;gap:6px;">
+          <button
+            v-for="opt in (hasStrum
+              ? ([['mute', 'Mudo'], ['click', 'Click'], ['batida', 'Batida']] as const)
+              : ([['mute', 'Mudo'], ['click', 'Click']] as const))"
+            :key="opt[0]"
+            type="button"
+            :data-met-source="opt[0]"
+            :aria-pressed="source === opt[0] ? 'true' : 'false'"
+            :style="{
+              flex: 1,
+              height: compact ? '40px' : '36px',
+              borderRadius: '11px',
+              border: `1px solid ${source === opt[0] ? 'var(--chord-edge)' : 'var(--line)'}`,
+              background: source === opt[0] ? 'var(--chord-fill)' : 'transparent',
+              color: source === opt[0] ? 'var(--chord)' : 'var(--text)',
+              fontFamily: 'inherit',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }"
+            @click="pickSource(opt[0])"
+          >{{ opt[1] }}</button>
+        </div>
+        <p style="margin:0;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
+          <template v-if="source === 'mute'">Só pulso visual — sem bip nem guitarra.</template>
+          <template v-else-if="source === 'click'">Bip agudo no 1, mais grave nas outras batidas.</template>
+          <template v-else>One-shots da batida no grid. O botão Rolar fora deste painel fica sem som.</template>
+        </p>
+        <button
+          v-if="hasStrum && source === 'batida'"
+          class="cpv-met-switch"
+          data-met-soft-click
+          type="button"
+          @click="toggleSoftClick"
+        >
+          <span :style="{ background: softClick ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
+            <span :style="{ left: softClick ? '14px' : '2px', background: softClick ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
+          </span>
+          <span style="display:flex;flex-direction:column;gap:3px;">
+            <span style="font-size:13px;font-weight:600;">Click suave de reforço</span>
+            <span style="font-size:11.5px;line-height:1.45;color:var(--muted);">Mantém o bip por baixo da batida.</span>
+          </span>
+        </button>
+      </div>
 
-      <button class="cpv-met-switch" @click="emit('toggleFollow')">
+      <button class="cpv-met-switch" data-met-follow @click="emit('toggleFollow')">
         <span :style="{ background: follow ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
           <span :style="{ left: follow ? '14px' : '2px', background: follow ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
         </span>

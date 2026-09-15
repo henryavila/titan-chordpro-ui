@@ -9,7 +9,7 @@
 |---|---|
 | **Problema** | Sem `{x_strum:}` (CC sem batida ou cifra à mão) a faixa/metrônomo de batida não existe; com `{x_strum:}` importado, não dá para criar nem ajustar o mapa. |
 | **In-scope (mapa)** | Criar e editar padrões na UI da cifra; vários padrões nomeados (como CC); presets; mesmo vocabulário (↓↑, toca/passa/pausa, 4 essências); wireframes/UX neste design. |
-| **Out-of-scope** | Amarração batida↔letra/seções da cifra; glyphs além das 4 essências; sync com player de áudio do host; som de raspagem (só click do metrônomo). |
+| **Out-of-scope** | Amarração batida↔letra/seções da cifra; glyphs além das 4 essências; sync com player de áudio do host. (Som da batida: one-shots locais — ver Non-goals.) |
 | **Done-when (design)** | Este doc: decisões + abordagem + UX + gates; critic Approved + aprovação explícita do usuário. |
 | **Stakes** | Formato `{x_strum:}` e modelo `StrumSlot` — não quebrar cifras já importadas/enriquecidas. |
 | **Fontes** | Plano CC/batidas; `src/core/strum.ts`; `StrumStrip.vue`; metrônomo; `MetaDialog.vue`; design do editor E0–E4; `research-digest.md` deste slug. |
@@ -176,7 +176,7 @@ Vue: folha + wiring `writeMeta`; strip inalterado como leitura; import CC descar
 - Amarração automática batida ↔ seções/letra da cifra.
 - Novos glyphs / 24 técnicas do CC além das 4 essências.
 - Sync com player de áudio do host.
-- Som de raspagem (só click do metrônomo existente).
+- ~~Som de raspagem (só click do metrônomo existente).~~ **Revogado:** one-shots acústicos (pack jon_s CC BY 3.0) no clock da batida, toggle “Som da batida” no painel do metrônomo (`metStrumSound`), default off.
 - Mudança do alfabeto `pat=` ou do shape `StrumSlot` no B0.
 - Persistência multi-padrão no B0 (fica no mapa B2).
 - Presets no B0 (mapa B1).
