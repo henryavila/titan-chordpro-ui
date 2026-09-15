@@ -71,6 +71,29 @@ describe('the click and the scroll are one control', () => {
     expect(scrolling.value).toBe(false)
   })
 
+  it('marks runSilent when Rolar starts the linked clock without audio', () => {
+    const { m } = met()
+    m.countInOn.value = false
+    m.sound.value = true
+    m.start({ silent: true })
+    expect(m.runSilent.value).toBe(true)
+    expect(m.running.value).toBe(true)
+    m.stop()
+    expect(m.runSilent.value).toBe(false)
+    // Prefs stay: silence was session-only.
+    expect(m.sound.value).toBe(true)
+  })
+
+  it('panel toggle never starts silent', () => {
+    const { m } = met()
+    m.countInOn.value = false
+    m.start({ silent: true })
+    m.stop()
+    m.toggle()
+    expect(m.runSilent.value).toBe(false)
+    m.stop()
+  })
+
   it('leaves the chart alone when the reader asked for an independent scroll', () => {
     const { m, scrolling, calls } = met()
     m.countInOn.value = false
@@ -529,8 +552,7 @@ describe('Rolar starts the metronome with the chart', () => {
     const w = await viewerWithRoom()
     await w.get('[data-met-btn]').trigger('click')
     await flushPromises()
-    const follow = w.findAll('.cpv-met-switch')[1]!
-    await follow.trigger('click')
+    await w.get('[data-met-follow]').trigger('click')
     await flushPromises()
     await w.get('[aria-label="Fechar"]').trigger('click')
     await flushPromises()
@@ -546,7 +568,7 @@ describe('Rolar starts the metronome with the chart', () => {
     const w = await viewerWithRoom({ storage })
     await w.get('[data-met-btn]').trigger('click')
     await flushPromises()
-    await w.get('[data-met-sound]').trigger('click')
+    await w.get('[data-met-source="click"]').trigger('click')
     await flushPromises()
     expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ metSound: true })
   })

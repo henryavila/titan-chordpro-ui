@@ -1,0 +1,32 @@
+{
+  "down": {
+    "attackMs": 35.0,
+    "durMs": 550.0,
+    "bytes": 24350
+  },
+  "up": {
+    "attackMs": 35.8,
+    "durMs": 420.0,
+    "bytes": 18616
+  },
+  "down-accent": {
+    "attackMs": 35.0,
+    "durMs": 600.0,
+    "bytes": 26554
+  },
+  "up-accent": {
+    "attackMs": 35.8,
+    "durMs": 450.0,
+    "bytes": 19940
+  },
+  "mute": {
+    "attackMs": 26.1,
+    "durMs": 140.0,
+    "bytes": 6268
+  },
+  "palm": {
+    "attackMs": 15.7,
+    "durMs": 180.0,
+    "bytes": 8032
+  }
+}

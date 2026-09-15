@@ -87,10 +87,18 @@ import { useBlockEdit } from './use/useBlockEdit'
 import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
 import { pinWouldFillViewport } from './use/viewportPin'
 import { useMetronome } from './use/useMetronome'
+import { useStrumSound } from './use/useStrumSound'
+import {
+  effectiveChannels,
+  prefsFromSource,
+  shouldRollSilent,
+  strumAudibleDuringRun,
+  type SoundSource,
+} from './use/rehearsal-audio'
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
-import type { ChordproViewerProps, WriteMode } from './public'
+import type { ChordproViewerProps, RehearsalFocus, WriteMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
 import CpvIcon from './icon/CpvIcon.vue'
 import type { CpvIconName } from './icon/paths'
@@ -117,6 +125,7 @@ const props = withDefaults(
     themeControl: 'preference',
     lens: 'none',
     hideComments: false,
+    rehearsalFocus: 'off',
     loading: false,
     autoHide: true,
     fitDefault: true,
@@ -152,6 +161,7 @@ const emit = defineEmits<{
   'update:mode': [value: 'view' | 'edit']
   'update:lens': [value: Lens]
   'update:hideComments': [value: boolean]
+  'update:rehearsalFocus': [value: RehearsalFocus]
   dirty: [value: boolean]
   save: [value: string]
   'save-content': [value: string]
@@ -391,11 +401,6 @@ const countTop = computed(
 const hasDuration = computed(() => hasSongDuration(parsed.value.meta.duration))
 const canScroll = computed(() => hasDuration.value && scrollRoom.value > 1)
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
-const scrollTitle = computed(() => {
-  if (!scrollOff.value) return 'Auto-rolagem (espaço)'
-  if (!hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
-  return 'A cifra inteira cabe na tela — não há o que rolar'
-})
 /**
  * Three tiers, not two. At 320px — the narrowest phone still in use — six
  * controls at 44px plus the type pair overflow the frame by 34px, and what
@@ -423,6 +428,10 @@ const strumPattern = computed(() => {
 })
 const canPickStrum = computed(() => strumSet.value.patterns.length > 1)
 const strumOn = ref(false)
+/** Ensaio Batida chrome profile — not a reading lens. */
+const rehearsalFocus = ref<RehearsalFocus>(props.rehearsalFocus ?? 'off')
+/** Snapshot of sound prefs before entering Ensaio Batida (restore on exit). */
+let focusSoundSnap: { sound: boolean; strum: boolean; strumOn: boolean } | null = null
 const batidaOpen = ref(false)
 const batidaDraft = ref<StrumPattern | null>(null)
 const batidaDraftSet = ref<StrumPatternSet | null>(null)
@@ -432,8 +441,19 @@ let strumRo: ResizeObserver | null = null
 const hasStrum = computed(() => !!strumPattern.value?.slots.length)
 const strumVisible = computed(() => strumOn.value && !!strumPattern.value && !isEdit.value)
 watch(hasStrum, (ok) => {
-  if (!ok) strumOn.value = false
+  if (!ok) {
+    strumOn.value = false
+    exitEnsaioBatida()
+  }
 })
+watch(
+  () => props.rehearsalFocus,
+  (next) => {
+    const v = next ?? 'off'
+    if (v === rehearsalFocus.value) return
+    setRehearsalFocus(v)
+  },
+)
 function toggleStrum() {
   if (!hasStrum.value) return
   strumOn.value = !strumOn.value
@@ -477,9 +497,17 @@ function openBatidaEdit() {
 }
 
 function closeBatida() {
+  strumSound.stopPreview()
   batidaOpen.value = false
   batidaDraft.value = null
   batidaDraftSet.value = null
+}
+
+function onBatidaTogglePreview(payload: { pattern: StrumPattern; barBeats: number }) {
+  const pattern = payload.pattern
+  const bpm = pattern.bpm || sheetBpm(meta.value.tempo) || met.bpm.value
+  // barBeats must be the sheet's grid math (meter × pulse), not a parallel guess.
+  strumSound.togglePreview(pattern, bpm, payload.barBeats)
 }
 
 function publishBatidaSource(next: string) {
@@ -909,6 +937,77 @@ const met = useMetronome({
   onFollowStop: () => stopScroll(),
   onPanelClose: () => (metOpen.value = false),
 })
+const strumSound = useStrumSound()
+const scrollTitle = computed(() => {
+  if (scrollOff.value) {
+    if (!hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
+    return 'A cifra inteira cabe na tela — não há o que rolar'
+  }
+  if (
+    met.follow.value &&
+    rehearsalFocus.value !== 'batida' &&
+    (met.sound.value || strumSound.enabled.value)
+  ) {
+    return 'Rolar · sem som (espaço) — use o metrônomo ou Ensaio batida para ouvir'
+  }
+  if (rehearsalFocus.value === 'batida') return 'Rolar com batida (espaço)'
+  return 'Auto-rolagem (espaço)'
+})
+/** Decode the kit as soon as a chart has batida, or the editor opens to create one. */
+watch(
+  [hasStrum, batidaOpen],
+  ([has, open]) => {
+    if (has || open) void strumSound.preload()
+  },
+  { immediate: true },
+)
+watch(
+  () => met.running.value,
+  (on) => {
+    // Starting the metronome is a user gesture — unlock AudioContext here so
+    // the first strum is not stuck behind a pending resume(). Silent Rolar
+    // must not arm the kit.
+    if (on && !met.runSilent.value && strumSound.enabled.value) void strumSound.arm()
+  },
+)
+watch(
+  [
+    () => met.beatClock.value,
+    () => met.running.value,
+    () => met.bpm.value,
+    () => met.runSilent.value,
+    () => met.countIn.value,
+    strumPattern,
+    () => strumSound.enabled.value,
+    () => met.sound.value,
+  ],
+  () => {
+    if (!met.running.value) {
+      if (!strumSound.previewRunning.value) strumSound.reset()
+      return
+    }
+    const ch = effectiveChannels({
+      sound: met.sound.value,
+      strumSound: strumSound.enabled.value,
+      rollSilent: met.runSilent.value,
+    })
+    // Count-in bar is click/visual only — batida stays mute until the chart joins.
+    if (
+      !strumAudibleDuringRun({
+        strumSound: ch.strum,
+        rollSilent: false,
+        countIn: met.countIn.value,
+      })
+    ) {
+      if (met.countIn.value > 0) strumSound.reset()
+      return
+    }
+    // View playback follows the saved chart pattern (not the draft).
+    // BPM feeds attack lookahead so the strum peak lands on the highlight.
+    strumSound.sync(met.beatClock.value, strumPattern.value, met.bar.value, met.bpm.value)
+  },
+)
+
 
 /**
  * Count-in is already a start: the chart has not moved yet, but Rolar has
@@ -984,11 +1083,12 @@ function persistPrefs() {
     const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
     // Preserve the free theme preference (including older values) while the
     // host controls appearance; other controls must not rewrite that policy.
-    for (const key of ['bias', 'fit', 'metSound', 'metFollow', 'metCountIn', 'metPulseHead', 'lens', 'hideComments']) delete p[key]
+    for (const key of ['bias', 'fit', 'metSound', 'metStrumSound', 'metFollow', 'metCountIn', 'metPulseHead', 'lens', 'hideComments']) delete p[key]
     if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
     if (met.sound.value) p.metSound = true
+    if (strumSound.enabled.value) p.metStrumSound = true
     if (met.pulseHead.value) p.metPulseHead = true
     if (met.follow.value === false) p.metFollow = false
     if (met.countInOn.value === false) p.metCountIn = false
@@ -1270,6 +1370,10 @@ function startScroll() {
  * Linked (the default): Rolar is the same start as the click — count-in, then
  * the chart. Independent: the two stay two controls, and Rolar only rolls.
  * Stopping still goes through `stopScroll`, which silences a linked click.
+ *
+ * Audio: outside Ensaio Batida, linked Rolar always starts silent so practice
+ * Fonte (Batida/Click) does not leak onto the stage. Inside Ensaio Batida,
+ * Rolar inherits Batida sound.
  */
 function toggleScroll() {
   if (scrolling.value || (met.follow.value && met.running.value)) {
@@ -1277,8 +1381,53 @@ function toggleScroll() {
     return
   }
   if (!canScroll.value) return
-  if (met.follow.value) met.start()
-  else startScroll()
+  if (met.follow.value) {
+    const silent = shouldRollSilent(rehearsalFocus.value)
+    if (!silent) {
+      applySoundSource('batida', false)
+      strumOn.value = true
+      if (strumSound.enabled.value) void strumSound.arm()
+    }
+    met.start({ silent })
+  } else startScroll()
+}
+
+function applySoundSource(source: SoundSource, softClick: boolean) {
+  const next = prefsFromSource(source, softClick)
+  met.setSound(next.sound)
+  strumSound.setEnabled(next.strumSound)
+}
+
+function setRehearsalFocus(next: RehearsalFocus) {
+  if (next === rehearsalFocus.value) return
+  if (next === 'batida') {
+    if (!hasStrum.value) return
+    focusSoundSnap = {
+      sound: met.sound.value,
+      strum: strumSound.enabled.value,
+      strumOn: strumOn.value,
+    }
+    rehearsalFocus.value = 'batida'
+    applySoundSource('batida', false)
+    strumOn.value = true
+  } else {
+    rehearsalFocus.value = 'off'
+    if (focusSoundSnap) {
+      met.setSound(focusSoundSnap.sound)
+      strumSound.setEnabled(focusSoundSnap.strum)
+      strumOn.value = focusSoundSnap.strumOn
+      focusSoundSnap = null
+    }
+  }
+  emit('update:rehearsalFocus', rehearsalFocus.value)
+}
+
+function toggleEnsaioBatida() {
+  setRehearsalFocus(rehearsalFocus.value === 'batida' ? 'off' : 'batida')
+}
+
+function exitEnsaioBatida() {
+  if (rehearsalFocus.value === 'batida') setRehearsalFocus('off')
 }
 
 // -------------------------------------------------------------------- controls
@@ -1660,6 +1809,7 @@ function beginEdit(kind: WriteMode) {
   hideComments.value = false
   metOpen.value = false
   met.stop()
+  exitEnsaioBatida()
   sheet.value = false
   capoOpen.value = false
   toneOpen.value = false
@@ -2158,6 +2308,7 @@ function syncHostSource() {
  * the metronome and the timeline all reload exactly as they always did.
  */
 function goSong(i: number) {
+  exitEnsaioBatida()
   setlist.go(i, {
     offset: offset.value,
     capo: capo.value,
@@ -2209,7 +2360,7 @@ function syncHeadH() {
 }
 
 watch(hostSource, syncHostSource)
-watch([theme, bias, fit, lens, hideComments, met.sound, met.pulseHead, met.follow, met.countInOn], persistPrefs)
+watch([theme, bias, fit, lens, hideComments, met.sound, strumSound.enabled, met.pulseHead, met.follow, met.countInOn], persistPrefs)
 watch(lens, (v) => {
   if (v !== 'letra') chordLens.value = v
 })
@@ -2276,6 +2427,7 @@ onMounted(() => {
       bias?: number
       fit?: boolean
       metSound?: boolean
+      metStrumSound?: boolean
       metPulseHead?: boolean
       metFollow?: boolean
       metCountIn?: boolean
@@ -2286,6 +2438,7 @@ onMounted(() => {
     if (typeof p.bias === 'number') bias.value = p.bias
     if (typeof p.fit === 'boolean') fit.value = p.fit
     if (typeof p.metSound === 'boolean') met.sound.value = p.metSound
+    if (typeof p.metStrumSound === 'boolean') strumSound.setEnabled(p.metStrumSound)
     if (typeof p.metPulseHead === 'boolean') met.pulseHead.value = p.metPulseHead
     if (typeof p.metFollow === 'boolean') met.follow.value = p.metFollow
     if (typeof p.metCountIn === 'boolean') met.countInOn.value = p.metCountIn
@@ -2344,6 +2497,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopScroll()
   met.dispose()
+  strumSound.dispose()
   ov.dispose()
   guard.dispose()
   window.clearTimeout(idleT)
@@ -2526,6 +2680,7 @@ defineExpose({
       :met-bpm="met.bpm.value"
       :has-strum="hasStrum"
       :strum-on="strumOn"
+      :ensaio-batida="rehearsalFocus === 'batida'"
       :theme-title="themeTitle"
       :theme-icon="themeIcon(themeMode)"
       :theme-label="themeLabel(themeMode)"
@@ -2549,6 +2704,7 @@ defineExpose({
       @toggle-comments="setHideComments(!hideComments)"
       @toggle-met="toggleMetPanel"
       @toggle-strum="toggleStrum"
+      @toggle-ensaio-batida="toggleEnsaioBatida"
       @theme="requestTheme"
       @edit="enterEdit"
       @export="sheet = true"
@@ -2743,7 +2899,7 @@ defineExpose({
     >
       <StrumStrip
         :pattern="strumPattern"
-        :beat-clock="met.running.value ? met.beatClock.value : -1"
+        :beat-clock="met.running.value && met.countIn.value <= 0 ? met.beatClock.value : -1"
         :bar-beats="met.bar.value"
         :can-edit="false"
         :can-pick="canPickStrum"
@@ -2781,6 +2937,8 @@ defineExpose({
       :chart-bpm="met.chartBpm.value"
       :overridden="met.userBpm.value !== null"
       :sound="met.sound.value"
+      :has-strum="hasStrum"
+      :strum-sound="strumSound.enabled.value"
       :pulse-head="met.pulseHead.value"
       :follow="met.follow.value"
       :count-in-on="met.countInOn.value"
@@ -2793,7 +2951,7 @@ defineExpose({
       @bpm="met.nudgeBpm($event)"
       @reset-bpm="met.resetBpm()"
       @tap="met.tap()"
-      @toggle-sound="met.toggleSound()"
+      @set-source="applySoundSource"
       @toggle-pulse-head="met.togglePulseHead()"
       @toggle-follow="met.follow.value = !met.follow.value"
       @toggle-count-in="met.toggleCountIn()"
@@ -2809,10 +2967,17 @@ defineExpose({
       :can-delete="hasStrum"
       :presets-enabled="capabilities.batidaPresets === true"
       :presets="strumPresetCatalog"
+      :sound-enabled="strumSound.enabled.value"
+      :preview-running="strumSound.previewRunning.value"
+      :preview-clock="strumSound.previewClock.value"
       @close="closeBatida"
       @save-set="saveBatidaSet"
       @delete="deleteBatida"
       @save-preset="onSaveStrumPreset"
+      @toggle-sound="strumSound.toggle()"
+      @toggle-preview="onBatidaTogglePreview"
+      @update-preview="strumSound.updatePreviewPattern($event)"
+      @audition="strumSound.audition($event)"
     />
 
     <NewChartDialog
@@ -2890,6 +3055,7 @@ defineExpose({
       :met-running="met.running.value"
       :has-strum="hasStrum"
       :strum-on="strumOn"
+      :ensaio-batida="rehearsalFocus === 'batida'"
       :show-mine="showMine"
       :show-original="ov.showOriginal.value"
       :mine-count="ov.mineCount.value"
@@ -2901,6 +3067,7 @@ defineExpose({
       @toggle-comments="setHideComments(!hideComments)"
       @metronome="moreOpen = false; toggleMetPanel()"
       @strum="moreOpen = false; toggleStrum()"
+      @toggle-ensaio-batida="moreOpen = false; toggleEnsaioBatida()"
       @export="moreOpen = false; sheet = true"
       @toggle-original="moreOpen = false; toggleOriginal(!ov.showOriginal.value)"
       @open-my="moreOpen = false; ov.myPanel.value = true"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { StrumPattern, StrumSlot } from '@henryavila/titan-chordpro-ui'
+import { slotIndexAtClock } from './use/useStrumSound'
 
 const props = withDefaults(
   defineProps<{
@@ -28,12 +29,14 @@ const slotsPerBeat = computed(() =>
   Math.max(1, Math.round((props.pattern.grid || props.pattern.slots.length) / barBeats.value)),
 )
 
-const activeSlot = computed(() => {
-  if (props.beatClock == null || props.beatClock < 0) return -1
-  const n = props.pattern.slots.length
-  if (!n) return -1
-  return Math.floor(props.beatClock * slotsPerBeat.value) % n
-})
+const activeSlot = computed(() =>
+  slotIndexAtClock(
+    props.beatClock ?? -1,
+    props.pattern.slots.length,
+    props.pattern.grid || props.pattern.slots.length,
+    barBeats.value,
+  ),
+)
 
 function isActive(i: number): boolean {
   return activeSlot.value === i

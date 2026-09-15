@@ -16,6 +16,8 @@ export type ImageChoice = { file: string; label?: string }
 /** How a save lands: on this phone only, or on the chart everyone reads. */
 export type WriteMode = 'local' | 'content'
 export type ModesProp = 'none' | 'local' | 'content' | 'both'
+/** Chrome rehearsal profile — orthogonal to reading `lens`. */
+export type RehearsalFocus = 'off' | 'batida'
 
 export type ViewerCapabilities = {
   sourcePane?: boolean
@@ -50,6 +52,12 @@ export type ChordproViewerProps = {
    * Same lifetime as `lens` — persists across songs in a setlist.
    */
   hideComments?: boolean
+  /**
+   * Rehearsal chrome focus. `'batida'` opens Ensaio Batida (strip + batida
+   * sound on Rolar). Orthogonal to `lens`. Session-scoped by default; song
+   * changes reset to `off` unless the host keeps the prop set.
+   */
+  rehearsalFocus?: RehearsalFocus
   loading?: boolean
   autoHide?: boolean
   /**
@@ -153,6 +161,7 @@ export type ChordproViewerEmits = {
   'update:mode': [value: 'view' | 'edit']
   'update:lens': [value: Lens]
   'update:hideComments': [value: boolean]
+  'update:rehearsalFocus': [value: RehearsalFocus]
   dirty: [value: boolean]
   save: [value: string]
   /** A "for everyone" save: this text is the chart from now on. */

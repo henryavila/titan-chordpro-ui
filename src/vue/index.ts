@@ -8,6 +8,7 @@ export type {
   ImageChoice,
   Lens,
   ModesProp,
+  RehearsalFocus,
   SlideImage,
   ViewerCapabilities,
   WriteMode,

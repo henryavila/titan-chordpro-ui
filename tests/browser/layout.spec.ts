@@ -348,6 +348,7 @@ test('Rolar starts a silent count-in before the chart moves', async ({ page }) =
   await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
 
   await page.locator('[data-met-btn]').click()
+  await expect(page.locator('[data-met-source="mute"]')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('[data-met-sound]')).toContainText('Só pulso visual')
   await page.locator('[aria-label="Fechar"]').click()
 
@@ -371,7 +372,7 @@ test('Rolar goes dead when the chart fits the frame, and comes back when it does
   await expect(roll).toBeEnabled()
   await page.locator('[data-met-btn]').click()
   await expect(page.locator('[data-met-run]')).toContainText('Iniciar com a rolagem')
-  await expect(page.locator('[data-met-sound]')).toContainText('Só pulso visual')
+  await expect(page.locator('[data-met-source="mute"]')).toHaveAttribute('aria-pressed', 'true')
   // One bar of count-in before the chart moves, on a chart that has a scroll.
   await page.locator('[data-met-run]').click()
   await expect(page.locator('[data-met-countin]')).toBeVisible()

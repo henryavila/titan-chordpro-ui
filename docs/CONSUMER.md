@@ -334,11 +334,17 @@ Não há mais um menu chamado “Lentes”.
 |---|---|---|
 | `lens` | `none` \| `letra` \| `nashville` | Projeção. `letra` = só a letra (sem acordes, tab, partitura nem marcas `x///`) |
 | `hideComments` | `boolean` | Esconde `{c:}` de ensaio **só** na leitura |
+| `rehearsalFocus` | `off` \| `batida` | Perfil de chrome **Ensaio Batida** (strip + som da batida no Rolar). Ortogonal a `lens`. Reseta ao trocar de música no setlist, salvo se o host mantiver a prop. |
 
-As duas sobrevivem à troca de música no ensaio (`songs`) e emitem
-`update:lens` / `update:hideComments` (dá para `v-model:lens`). O músico ainda
-pode mudar pelo UI. O `.cho` **não** é reescrito — marcas e comentários
-continuam no arquivo.
+`lens` / `hideComments` sobrevivem à troca de música no ensaio (`songs`) e emitem
+`update:lens` / `update:hideComments` (dá para `v-model:lens`). `rehearsalFocus`
+emite `update:rehearsalFocus`. O músico ainda pode mudar pelo UI. O `.cho`
+**não** é reescrito — marcas e comentários continuam no arquivo.
+
+**Som no ensaio:** no painel Metrônomo a **Fonte** é `Mudo | Click | Batida`
+(prefs `metSound` / `metStrumSound`). O botão **Rolar** fora do Ensaio Batida
+sobe o relógio **sem áudio**, para a Fonte de prática não vazar no palco. Para
+ouvir batida ao rolar: entre em **Ensaio batida** ou inicie pelo metrônomo.
 
 Na lente `letra`, `x///` / `//` / `/_` colados ao acorde **não** vazam na
 letra (`razão.[E]//` → `razão.`). Detalhe e o que **não** se apaga:

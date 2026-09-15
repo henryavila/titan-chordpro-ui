@@ -19,7 +19,7 @@ test('batida editor anchors direction and filters picker choices', async ({ page
   const mid = box!.x + box!.width / 2
   expect(mid).toBeGreaterThan(1280 * 0.35)
   expect(mid).toBeLessThan(1280 * 0.65)
-  await expect(page.locator('[data-batida-density]')).toContainText('por tempo')
+  await expect(page.locator('[data-batida-density]')).toContainText('/ tempo')
   await expect(page.locator('[data-batida-save]')).toBeDisabled()
   await expect(page.locator('[data-batida-slot="0"]')).toContainText(/vazio/i)
 

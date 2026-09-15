@@ -52,6 +52,12 @@ export function useMetronome(opts: MetronomeOpts) {
   /** Off until the panel arms it. Rolar still starts the pulse and the count-in. */
   const sound = ref(false)
   /**
+   * This run plays no click (and the viewer should mute strum too).
+   * Used when Rolar starts a linked clock outside Ensaio Batida so practice
+   * Fonte prefs do not leak onto the stage. Cleared on stop.
+   */
+  const runSilent = ref(false)
+  /**
    * The title strip paints the beat. Off until the metronome panel turns it
    * on — Rolar only brings the left count and the chord pulse.
    */
@@ -145,7 +151,7 @@ export function useMetronome(opts: MetronomeOpts) {
         opts.onFollowStart()
       }
       const b = idx % bar.value
-      if (sound.value) click(b === 0)
+      if (sound.value && !runSilent.value) click(b === 0)
       if (followAt >= 0) countIn.value = followAt - idx
       idx++
       // Schedule from the instant the beat was due, unless we fell a whole
@@ -161,12 +167,13 @@ export function useMetronome(opts: MetronomeOpts) {
     raf = requestAnimationFrame(loop)
   }
 
-  function start() {
+  function start(optsStart?: { silent?: boolean }) {
     if (live) return
     live = true
+    runSilent.value = !!optsStart?.silent
     idx = 0
     nextAt = performance.now()
-    if (sound.value) ensureAudio()
+    if (sound.value && !runSilent.value) ensureAudio()
     running.value = true
     beat.value = 0
     beatClock.value = 0
@@ -193,6 +200,7 @@ export function useMetronome(opts: MetronomeOpts) {
     running.value = false
     beat.value = 0
     beatClock.value = 0
+    runSilent.value = false
     // Guarded on `wasLive`: the scroll stops the click in turn, and without
     // this the two would call each other for as long as the stack allowed.
     if (wasLive && follow.value) opts.onFollowStop()
@@ -200,7 +208,14 @@ export function useMetronome(opts: MetronomeOpts) {
 
   function toggle() {
     if (live) stop()
-    else start()
+    // Panel "Iniciar" always inherits Fonte — never the silent Rolar path.
+    else start({ silent: false })
+  }
+
+  /** Apply Fonte prefs without toggling. */
+  function setSound(on: boolean) {
+    sound.value = on
+    if (on && running.value && !runSilent.value) ensureAudio()
   }
 
   function nudgeBpm(delta: number) {
@@ -277,6 +292,7 @@ export function useMetronome(opts: MetronomeOpts) {
     beat,
     beatClock,
     sound,
+    runSilent,
     pulseHead,
     follow,
     countInOn,
@@ -294,6 +310,7 @@ export function useMetronome(opts: MetronomeOpts) {
     resetBpm,
     tap,
     toggleSound,
+    setSound,
     togglePulseHead,
     toggleCountIn,
     dispose,

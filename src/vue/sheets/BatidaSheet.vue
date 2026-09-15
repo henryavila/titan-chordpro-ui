@@ -27,6 +27,7 @@ import {
 import CpvIcon from '../icon/CpvIcon.vue'
 import BatidaPresets from '../edit/BatidaPresets.vue'
 import BatidaSlotPicker from '../edit/BatidaSlotPicker.vue'
+import { slotIndexAtClock } from '../use/useStrumSound'
 
 const props = withDefaults(
   defineProps<{
@@ -41,8 +42,24 @@ const props = withDefaults(
     presetsEnabled?: boolean
     /** Host-owned catalog (never shipped by the package). */
     presets?: StrumPreset[]
+    /** Acoustic one-shots armed (same flag as the metronome “Som da batida”). */
+    soundEnabled?: boolean
+    /** Editor preview loop is running. */
+    previewRunning?: boolean
+    /**
+     * Absolute beat clock from the editor preview (−1 = none).
+     * Same units as the StrumStrip metronome clock.
+     */
+    previewClock?: number
   }>(),
-  { presetsEnabled: false, activeIndex: 0, presets: () => [] },
+  {
+    presetsEnabled: false,
+    activeIndex: 0,
+    presets: () => [],
+    soundEnabled: false,
+    previewRunning: false,
+    previewClock: -1,
+  },
 )
 
 const emit = defineEmits<{
@@ -55,6 +72,11 @@ const emit = defineEmits<{
   'duplicate-pattern': []
   'remove-pattern': []
   'save-preset': [payload: SaveStrumPresetPayload]
+  'toggle-sound': []
+  /** Pattern + the same bar-beat count the grid is drawn with — audio must share it. */
+  'toggle-preview': [payload: { pattern: StrumPattern; barBeats: number }]
+  'update-preview': [pattern: StrumPattern]
+  audition: [slot: StrumSlot]
 }>()
 
 function initialPatterns(): StrumPattern[] {
@@ -225,12 +247,48 @@ function openPick(i: number) {
   pickIndex.value = i
 }
 
+function snapshotDraft(): StrumPattern {
+  return {
+    ...draft.value,
+    label: label.value.trim() || draft.value.label || 'Padrão',
+    grid: draft.value.slots.length,
+    slots: draft.value.slots.map((s) => ({ ...s })),
+  }
+}
+
 function applyPick(slot: StrumSlot) {
   if (pickIndex.value < 0) return
   draft.value = setSlotCascading(draft.value, pickIndex.value, slot)
   grid.value = draft.value.slots.length
   pickIndex.value = -1
+  if (slot.contact === 'hit') emit('audition', slot)
+  if (props.previewRunning) emit('update-preview', snapshotDraft())
 }
+
+const previewSlot = computed(() =>
+  slotIndexAtClock(
+    props.previewClock ?? -1,
+    draft.value.slots.length,
+    draft.value.grid || draft.value.slots.length,
+    barBeats.value,
+  ),
+)
+
+function isPreviewActive(i: number): boolean {
+  return props.previewRunning === true && previewSlot.value === i
+}
+
+function onTogglePreview() {
+  emit('toggle-preview', { pattern: snapshotDraft(), barBeats: barBeats.value })
+}
+
+watch(
+  draft,
+  () => {
+    if (props.previewRunning) emit('update-preview', snapshotDraft())
+  },
+  { deep: true },
+)
 
 /** Clear slots back to empty so the musician can set a new hand-direction anchor. */
 function restartCreation() {
@@ -391,13 +449,6 @@ function save() {
         </button>
       </div>
 
-      <p
-        data-batida-multi-warn
-        class="batida-sheet-lede"
-      >
-        A batida <b>não acompanha</b> automaticamente verso/refrão — escolha o padrão ativo.
-      </p>
-
       <div data-batida-patterns class="batida-patterns">
         <button
           v-for="(p, i) in draftPatterns"
@@ -412,7 +463,7 @@ function save() {
           type="button"
           data-batida-add
           class="batida-pattern-chip is-ghost"
-          title="Adicionar padrão"
+          title="Adicionar"
           aria-label="Adicionar padrão"
           @click="addPattern"
         >+</button>
@@ -420,7 +471,7 @@ function save() {
           type="button"
           data-batida-dup
           class="batida-pattern-chip is-ghost"
-          title="Duplicar padrão"
+          title="Duplicar"
           aria-label="Duplicar padrão"
           @click="duplicatePattern"
         >Duplicar</button>
@@ -429,7 +480,7 @@ function save() {
           type="button"
           data-batida-remove-pattern
           class="batida-pattern-chip is-ghost"
-          title="Remover padrão"
+          title="Remover"
           aria-label="Remover padrão"
           @click="removePattern"
         >Remover</button>
@@ -454,15 +505,15 @@ function save() {
             class="batida-field-control"
             @change="onDensityChange(($event.target as HTMLSelectElement).value)"
           >
-            <option value="2">2 por tempo ({{ gridFromDensity(draft.meter || '4/4', 2, sixEightPulse) }})</option>
-            <option value="4">4 por tempo ({{ gridFromDensity(draft.meter || '4/4', 4, sixEightPulse) }})</option>
+            <option value="2">2 / tempo</option>
+            <option value="4">4 / tempo</option>
           </select>
         </label>
         <label
           v-if="isSixEight"
           class="batida-field"
         >
-          <span class="batida-field-label">Pulsos 6/8</span>
+          <span class="batida-field-label">6/8</span>
           <select
             data-batida-pulse
             :value="String(sixEightPulse)"
@@ -485,19 +536,41 @@ function save() {
         @save="saveAsPreset"
       />
 
-      <p class="batida-sheet-hint">
-        Clique um <b>marco</b> para escolher o sentido e o toque.
-        Depois da âncora, cada posição só aceita o sentido possível da mão.
-        <template v-if="canRestart">
-          Errou o sentido?
-          <button
-            type="button"
-            data-batida-restart-hint
-            class="batida-inline-link"
-            @click="restartCreation"
-          >Recomeçar</button>
-        </template>
-      </p>
+      <div class="batida-grid-bar" data-batida-sound-row>
+        <button
+          type="button"
+          class="batida-sound-chip"
+          data-batida-sound
+          :aria-pressed="soundEnabled ? 'true' : 'false'"
+          :aria-label="soundEnabled ? 'Som ligado' : 'Som desligado'"
+          @click="emit('toggle-sound')"
+        >
+          <span class="batida-sound-knob" :class="{ 'is-on': soundEnabled }">
+            <span class="batida-sound-thumb" :class="{ 'is-on': soundEnabled }" />
+          </span>
+          <span data-batida-sound-label>{{ soundEnabled ? 'Som' : 'Mudo' }}</span>
+        </button>
+        <button
+          type="button"
+          class="batida-preview-btn"
+          :class="previewRunning ? 'batida-btn-ghost' : 'batida-btn-primary'"
+          data-batida-preview
+          :disabled="!canSave"
+          :aria-disabled="!canSave ? 'true' : 'false'"
+          :aria-pressed="previewRunning ? 'true' : 'false'"
+          :aria-label="previewRunning ? 'Parar' : 'Ouvir'"
+          @click="onTogglePreview"
+        >{{ previewRunning ? 'Parar' : 'Ouvir' }}</button>
+        <span class="batida-grid-bar-spacer" />
+        <button
+          v-if="canRestart"
+          type="button"
+          data-batida-restart
+          class="batida-restart-link"
+          aria-label="Recomeçar"
+          @click="restartCreation"
+        >Recomeçar</button>
+      </div>
 
       <div
         data-batida-beats
@@ -515,7 +588,7 @@ function save() {
               v-for="i in row.indices"
               :key="i"
               type="button"
-              :class="[slotClass(draft.slots[i]!), { 'is-focus': pickIndex === i }]"
+              :class="[slotClass(draft.slots[i]!), { 'is-focus': pickIndex === i, 'is-preview': isPreviewActive(i) }]"
               :data-batida-slot="i"
               :aria-label="`tempo ${row.beat}, subdivisão ${(i % slotsPerBeat) + 1}`"
               @click="openPick(i)"
@@ -541,18 +614,7 @@ function save() {
           class="batida-btn-ghost"
           @click="emit('delete')"
         >Apagar</button>
-        <button
-          v-if="canRestart"
-          type="button"
-          data-batida-restart
-          class="batida-btn-ghost"
-          title="Limpar a grade e definir o sentido de novo"
-          aria-label="Recomeçar batida"
-          @click="restartCreation"
-        >Recomeçar</button>
-        <span class="batida-actions-spacer">
-          <template v-if="!canSave">Defina a âncora para salvar</template>
-        </span>
+        <span class="batida-actions-spacer" />
         <button
           type="button"
           data-batida-save
@@ -717,35 +779,88 @@ function save() {
 .batida-sheet-panel.is-compact .batida-sheet-kicker {
   font-size: 9.5px;
 }
-.batida-sheet-lede,
-.batida-sheet-hint {
+.batida-grid-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 6px 0;
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
+  background: color-mix(in srgb, var(--sheet, var(--surface)) 92%, transparent);
+  backdrop-filter: blur(8px);
 }
-.batida-sheet-lede b,
-.batida-sheet-hint b {
+.batida-grid-bar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+.batida-sound-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
   font-weight: 600;
+  cursor: pointer;
 }
-.batida-sheet-panel.is-compact .batida-sheet-lede,
-.batida-sheet-panel.is-compact .batida-sheet-hint {
-  font-size: 12px;
-  line-height: 1.45;
+.batida-sound-knob {
+  flex: none;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--line);
+  position: relative;
 }
-.batida-inline-link {
-  display: inline;
-  height: auto;
-  padding: 0;
+.batida-sound-knob.is-on {
+  background: var(--chord);
+}
+.batida-sound-thumb {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left 0.16s ease;
+}
+.batida-sound-thumb.is-on {
+  left: 12px;
+  background: var(--chord-ink);
+}
+.batida-preview-btn {
+  min-width: 88px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.batida-preview-btn.batida-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.batida-restart-link {
+  height: 36px;
+  padding: 0 6px;
   border: 0;
   background: transparent;
-  color: var(--chord);
+  color: var(--muted);
   font: inherit;
-  font-size: inherit;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
+}
+.batida-restart-link:hover {
+  color: var(--text);
 }
 .batida-patterns {
   display: flex;
@@ -946,6 +1061,11 @@ function save() {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--chord) 28%, transparent);
   border-color: var(--chord-edge);
   background: var(--chord-soft);
+}
+.batida-slot.is-preview {
+  border-color: var(--chord-edge);
+  background: var(--chord-soft);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chord) 40%, transparent);
 }
 .batida-sheet-actions {
   display: flex;
