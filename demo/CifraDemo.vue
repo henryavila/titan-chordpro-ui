@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
-  memoryStore,
   readMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
@@ -18,15 +17,17 @@ import {
   songsFor,
 } from './host/charts'
 import HostSite from './host/HostSite.vue'
-import { hostTheme, labQuery, palcoHref, writeModes, type Surface } from './host/recipe'
+import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './host/recipe'
 
 const props = defineProps<{ surface: Surface; lista: boolean }>()
 
 const fixtures = ref(bundledFixtures())
 const { images, resolveImage } = bundledImages()
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
-/** Demo is ephemeral: reload clears prefs, overlay, and session edits. */
-const store = memoryStore()
+/**
+ * Device storage (default ChartStore): overlay + suggestion queue survive
+ * navigation so you can suggest on `editMode=local` and review on `persisted`.
+ */
 
 /**
  * Host-owned batida presets (demo stand-in for SDA storage).
@@ -62,7 +63,8 @@ const listaMode = computed(() => {
   if (lab.criar || !props.lista) return 'off' as const
   return lab.carga
 })
-const modes = writeModes(lab)
+const editMode = writeEditMode(lab)
+const actorKey = editMode === 'local' ? 'demo-musico' : undefined
 /** Only the lab `?ensaio=demanda` path asks for charts after open. */
 const lazyLista = computed(() => listaMode.value === 'demanda')
 const songs = computed(() => songsFor(fixtures.value, listaMode.value))
@@ -127,12 +129,12 @@ onMounted(async () => {
       :hide-comments="lab.hideComments"
       :song-id="id"
       :songs="songs"
-      :storage="store"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :fetch-youtube-duration="fetchYoutubeDuration"
       :read-pdf="(file: File) => pdfText(file)"
-      :modes="modes"
+      :edit-mode="editMode"
+      :actor-key="actorKey"
       :resolve-image="resolveImage"
       :images="images"
       :capabilities="{ batidaPresets: true }"
@@ -158,12 +160,12 @@ onMounted(async () => {
       :hide-comments="lab.hideComments"
       :song-id="id"
       :songs="songs"
-      :storage="store"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :fetch-youtube-duration="fetchYoutubeDuration"
       :read-pdf="(file: File) => pdfText(file)"
-      :modes="modes"
+      :edit-mode="editMode"
+      :actor-key="actorKey"
       :resolve-image="resolveImage"
       :images="images"
       :capabilities="{ batidaPresets: true }"

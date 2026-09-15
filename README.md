@@ -321,11 +321,20 @@ chegaria a quem personalizou. Cada ajuste vira uma **operação ancorada na linh
 original** (`src/core/overlay.ts`, framework-free): dá para reverter um trecho
 pelo ponto ao lado dele, reaplicar tudo sobre uma versão nova, e o que o
 responsável aceitou **sai** do overlay em vez de virar conflito com o próprio
-leitor. `modes` é o interruptor do consumer: omitido ou `'local'` = só a edição
-pessoal (salva no aparelho, sem botão de publicar). `'content'` ou `'both'`
-liga a UI **Para todos** — salvar emite `save-content` para o host gravar a
-cifra oficial. Uma sugestão do leitor (`suggestions`) entra na fila do
-responsável (cifras → pedidos → ajustes), aceita item por item.
+leitor.
+
+**`editMode`** (um papel por mount — o host já sabe frontend vs backend):
+
+| Valor | Papel |
+|---|---|
+| `local` (default) | Edição “Só para mim” no aparelho; botão opcional **Sugerir** |
+| `persisted` | Edição “Para todos” (`save-content`) + fila de sugestões (Aceitar/Recusar, lote) |
+| `none` | Sem edição |
+
+Sugestões: emits `suggestion-created` / `suggestion-accepted` / `suggestion-refused`;
+prop `suggestionQueue` (fila completa) para o host sincronizar entre apps.
+Status do músico aparece na **Minha versão**. `modes` / `content` / `both` ficam
+deprecados (ver CONSUMER §10).
 
 ### Auto-rolagem: tempo musical, não px/s
 

@@ -1,7 +1,21 @@
 # Demo público (Cloudflare Pages)
 
-Demo real do `<ChordproViewer>`: hub + standalone + shell + lista.  
-**Sem persistência** (`memoryStore`) — recarregou = estado limpo.
+Demo real do `<ChordproViewer>`: hub + standalone + shell + lista.
+
+**Persistência de lab:** overlay e fila de sugestões usam `localStorage` do
+navegador (mesmo `songId`), para validar **local → sugerir → persisted →
+revisar**. Prefs de tema também sobrevivem ao reload.
+
+**Papéis (`editMode`)**
+
+| URL | Papel |
+|---|---|
+| `/standalone.html` ou `?editMode=local` | Músico — overlay + Sugerir |
+| `?editMode=persisted` | Admin — oficial + fila |
+| `?editMode=none` | Só leitura |
+| `?criar=1` | Cifra nova (`persisted`) |
+
+Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`).
 
 ## O que o proxy faz
 
