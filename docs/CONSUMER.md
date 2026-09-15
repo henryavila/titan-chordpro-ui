@@ -435,12 +435,19 @@ No viewer, as mesmas imagens entram pelas props `coverImage` / `slidesImage`.
 
 ## 10. Edição e persistência
 
-| `modes` | O que existe |
+Um papel por mount — o host já sabe se é frontend ou backend. Prop:
+`editMode` (ortogonal a `mode` view|edit).
+
+| `editMode` | O que existe |
 |---|---|
-| `local` (default) | “Só para mim” neste aparelho |
-| `content` | “Para todos” — emite `save-content` para o host gravar o oficial |
-| `both` | Os dois; o músico escolhe antes de editar |
+| `local` (default) | “Só para mim” neste aparelho; “Sugerir” opcional |
+| `persisted` | “Para todos” — emite `save-content`; fila de sugestões + Aceitar/Recusar |
 | `none` | Sem edição |
+
+**Deprecated:** `modes` (`content` → `persisted`; `both` → `local` + warning).
+
+Sugestões: emit `suggestion-created` / `suggestion-accepted` / `suggestion-refused`;
+prop opcional `suggestionQueue` (fila completa). Status na Minha versão.
 
 `storage` (default `localStorage`) é onde o Titan lembra preferências e a
 versão pessoal. Um host com conta passa o próprio `ChartStore`. Chamadas

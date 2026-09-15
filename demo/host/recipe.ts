@@ -86,7 +86,7 @@ export const DEMOS: readonly DemoEntry[] = [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?modes=none', label: 'Só leitura' },
       { href: '/standalone.html?modes=local', label: 'Só para mim' },
-      { href: '/standalone.html?modes=content', label: 'Para todos' },
+      { href: '/standalone.html?modes=persisted', label: 'Para todos' },
     ],
   },
   {
@@ -138,7 +138,7 @@ export const DEMOS: readonly DemoEntry[] = [
     call: `<ChordproViewer
   source=""
   song-id="vazio"
-  modes="content"
+  edit-mode="persisted"
   :fetch-chart="fetchChart"
   :fetch-youtube-duration="fetchYoutubeDuration"
   :read-pdf="pdfText"
@@ -276,7 +276,11 @@ export function labQuery(search: string): LabQuery {
     carga: p.get('ensaio') === 'demanda' ? 'demanda' : 'juntas',
     criar: p.get('criar') === '1',
     modes:
-      modes === 'none' || modes === 'local' || modes === 'content' || modes === 'both'
+      modes === 'none' ||
+      modes === 'local' ||
+      modes === 'content' ||
+      modes === 'both' ||
+      modes === 'persisted'
         ? modes
         : null,
     accent: p.get('accent'),
@@ -285,10 +289,10 @@ export function labQuery(search: string): LabQuery {
   }
 }
 
-/** Creating a chart is always "for everyone". Otherwise the query, or both. */
+/** Creating a chart is always persisted. Otherwise query, or local default. */
 export function writeModes(lab: LabQuery): ModesProp {
-  if (lab.criar) return 'content'
-  return lab.modes ?? 'both'
+  if (lab.criar) return 'persisted'
+  return lab.modes ?? 'local'
 }
 
 export function hostTheme(surface: Surface, tema: LabQuery['tema']): ThemeId {

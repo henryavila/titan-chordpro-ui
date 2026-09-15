@@ -94,7 +94,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |
-| `modes` | `'local'` | `none` \| `local` \| `content` \| `both`. Default = só local. `content` ou `both` liga **Para todos** (emite `save-content`) |
+| `editMode` | `'local'` | `local` \| `persisted` \| `none`. Um papel por mount (frontend vs backend). Ortogonal a `mode` view\|edit |
+| `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
 | `songId` | título da cifra | Identidade da música, chave da versão pessoal |
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
@@ -109,11 +110,11 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `storage` | `localStorage` | Onde o que o viewer lembra é gravado — ver abaixo |
 | `surfaceGuard` | `true` | Avisa (console + tela) quando o host embute sem dar altura ao pai |
 
-Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `dirty`, `state`.
+Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
 ### Cifra nova: importar ou começar em branco
 
-Música sem cifra não é beco. Com `modes="content"` (e `canEdit`), o estado vazio
+Música sem cifra não é beco. Com `edit-mode="persisted"` (e `canEdit`), o estado vazio
 oferece **Importar** e **Começar em branco**. Na demo: índice → Escrever →
 Cifra nova (`/standalone.html?criar=1`). O importador reconhece sozinho o
 que recebe — ChordPro, OnSong ou acordes sobre a letra — e diz de qual formato
@@ -126,7 +127,7 @@ As duas que dependem do mundo externo são props, não mágica do pacote:
 
 ```vue
 <ChordproViewer
-  modes="content"
+  edit-mode="persisted"
   :fetch-chart="(url) => api.buscarPagina(url)"
   :read-pdf="(file) => pdfText(file)"
 />

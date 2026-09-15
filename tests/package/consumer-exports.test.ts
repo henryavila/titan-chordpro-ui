@@ -4,7 +4,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import * as core from '@henryavila/titan-chordpro-ui'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
-import type { ChordproViewerProps, ImageChoice, ModesProp } from '../../src/vue/public'
+import type { ChordproViewerProps, EditMode, ImageChoice, ModesProp } from '../../src/vue/public'
+import { resolveEditMode } from '../../src/vue/public'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -114,12 +115,16 @@ describe('SPEC §4 public API is importable from the package name', () => {
   })
 
   it('vue prop types are the host contract', () => {
-    const props: ChordproViewerProps = { source: '', modes: 'local' }
+    const props: ChordproViewerProps = { source: '', editMode: 'local' }
     const images: ImageChoice[] = [{ file: 'a.png' }]
     const both: ModesProp = 'both'
-    expect(props.modes).toBe('local')
+    const persisted: EditMode = 'persisted'
+    expect(props.editMode).toBe('local')
     expect(images[0]?.file).toBe('a.png')
     expect(both).toBe('both')
+    expect(resolveEditMode({ modes: 'content' })).toBe('persisted')
+    expect(resolveEditMode({ modes: 'both' })).toBe('local')
+    expect(resolveEditMode({ editMode: persisted })).toBe('persisted')
   })
 })
 

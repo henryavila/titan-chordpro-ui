@@ -320,6 +320,11 @@ export function overlaid(
   return { text: r.text, mine: r.mine, failed: r.failed }
 }
 
+export type SuggestionStatus = 'pending' | 'accepted' | 'refused' | 'partial'
+
+/** An op archived after admin accept/refuse — kept for musician status UI. */
+export type ResolvedOp = OverlayOp & { disposition: 'accepted' | 'refused' }
+
 /** A suggestion sent to whoever owns the official chart. */
 export type Suggestion = {
   id: string
@@ -327,5 +332,12 @@ export type Suggestion = {
   title: string
   at: number
   baseVersion: string
+  /** Still-open ops waiting for review. */
   ops: OverlayOp[]
+  /** Ops already accepted or refused (not deleted). */
+  resolvedOps?: ResolvedOp[]
+  /** Default `pending` on create. */
+  status?: SuggestionStatus
+  /** Opaque host-scoped actor id (no auth in the package). */
+  actorKey?: string
 }

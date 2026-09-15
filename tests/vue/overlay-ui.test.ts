@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { normalizeSource } from '../../src/core/index'
@@ -77,25 +77,20 @@ describe('choosing where a save lands', () => {
     w.unmount()
   })
 
-  it('asks when both are allowed, and never after something was typed', async () => {
+  it('modes="both" is deprecated and opens as local (no ModePick)', async () => {
     const w = mountViewer({ modes: 'both' })
     await flushPromises()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
-    expect(w.find('[data-mode-local]').exists()).toBe(true)
-    expect(w.find('[data-mode-content]').exists()).toBe(true)
-    expect(w.find('[data-edit-badge]').exists()).toBe(false)
-
-    await w.get('[data-mode-local]').trigger('click')
-    await flushPromises()
+    expect(w.find('[data-mode-local]').exists()).toBe(false)
+    expect(w.find('[data-mode-content]').exists()).toBe(false)
     expect(w.get('[data-edit-badge]').text()).toBe('Só para mim')
-    // The phone version has no save button: it is already saved.
     expect(w.find('[data-save]').exists()).toBe(false)
     w.unmount()
   })
 
-  it('modes="content" is how the host activates "Para todos"', async () => {
-    const w = mountViewer({ modes: 'content' })
+  it('editMode="persisted" activates "Para todos"', async () => {
+    const w = mountViewer({ editMode: 'persisted' })
     await flushPromises()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
@@ -126,15 +121,12 @@ describe('choosing where a save lands', () => {
     w.unmount()
   })
 
-  it('modes="both" → Para todos emits save-content for the host to persist', async () => {
-    const w = mountViewer({ modes: 'both' })
+  it('editMode="persisted" emits save-content for the host to persist', async () => {
+    const w = mountViewer({ editMode: 'persisted' })
     await flushPromises()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
-    await w.get('[data-mode-content]').trigger('click')
-    await flushPromises()
     expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
-    // Title lives in the dedicated metadata dialog — not cramped header fields.
     await w.get('[data-meta-open]').trigger('click')
     await flushPromises()
     await w.get('[data-meta-title]').setValue('Oficial agora')
@@ -290,58 +282,76 @@ describe('the official chart moved', () => {
 })
 
 describe('suggesting to whoever owns the chart', () => {
-  it('queues the ops and hands them over one at a time', async () => {
-    // The owner queue is part of the "for everyone" surface.
-    const w = mountViewer({ modes: 'both' })
-    await flushPromises()
-    await personalise(w)
-
-    await w.get('[data-open-my]').trigger('click')
-    await flushPromises()
-    await w.get('[data-suggest]').trigger('click')
-    await flushPromises()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(1)
-    expect(w.get('[data-queue-chip]').text()).toContain('Sugestões · 1')
-
-    await w.get('[data-queue-chip]').trigger('click')
-    await flushPromises()
-    expect(w.findAll('[data-q-song]')).toHaveLength(1)
-    await w.get('[data-q-song]').trigger('click')
-    await flushPromises()
-    await w.get('[data-q-sug]').trigger('click')
-    await flushPromises()
-    expect(w.findAll('[data-q-op]')).toHaveLength(1)
-
-    await w.get('[data-q-accept]').trigger('click')
-    await flushPromises()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
-    // Accepting is publishing: the host is told, and the chart carries it.
-    expect(w.emitted('save-content')?.at(-1)?.[0]).toContain('(meu)')
-    // And it stopped being a personal adjustment — it is the chart now.
-    expect(localStorage.getItem('cpv:my:jesus-1')).toBeNull()
-    w.unmount()
+  beforeEach(() => {
+    vi.stubGlobal('confirm', () => true)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
-  it('refusing drops the request without touching the chart', async () => {
-    const w = mountViewer({ modes: 'both' })
+  it('queues on local; admin persisted reviews and archives (not deletes)', async () => {
+    const local = mountViewer({ editMode: 'local' })
     await flushPromises()
-    await personalise(w)
-    await w.get('[data-open-my]').trigger('click')
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
     await flushPromises()
-    await w.get('[data-suggest]').trigger('click')
+    await local.get('[data-suggest]').trigger('click')
     await flushPromises()
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(1)
+    expect(local.emitted('suggestion-created')).toHaveLength(1)
+    local.unmount()
 
-    await w.get('[data-queue-chip]').trigger('click')
+    const admin = mountViewer({ editMode: 'persisted' })
     await flushPromises()
-    await w.get('[data-q-song]').trigger('click')
+    expect(admin.get('[data-queue-chip]').text()).toContain('Sugestões · 1')
+    await admin.get('[data-queue-chip]').trigger('click')
     await flushPromises()
-    await w.get('[data-q-sug]').trigger('click')
+    expect(admin.findAll('[data-q-song]')).toHaveLength(1)
+    await admin.get('[data-q-song]').trigger('click')
     await flushPromises()
-    await w.get('[data-q-refuse]').trigger('click')
+    await admin.get('[data-q-sug]').trigger('click')
     await flushPromises()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
-    expect(w.emitted('save-content')).toBeUndefined()
-    w.unmount()
+    expect(admin.findAll('[data-q-op]')).toHaveLength(1)
+    expect(admin.find('[data-q-accept-batch]').exists()).toBe(true)
+
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    expect(list).toHaveLength(1)
+    expect(list[0].status).toBe('accepted')
+    expect(list[0].ops).toHaveLength(0)
+    expect(list[0].resolvedOps).toHaveLength(1)
+    expect(admin.emitted('save-content')?.at(-1)?.[0]).toContain('(meu)')
+    expect(admin.emitted('suggestion-accepted')).toHaveLength(1)
+    admin.unmount()
+  })
+
+  it('refusing archives the request without touching the chart', async () => {
+    const local = mountViewer({ editMode: 'local' })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    local.unmount()
+
+    const admin = mountViewer({ editMode: 'persisted' })
+    await flushPromises()
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-song]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-refuse]').trigger('click')
+    await flushPromises()
+    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    expect(list).toHaveLength(1)
+    expect(list[0].status).toBe('refused')
+    expect(admin.emitted('save-content')).toBeUndefined()
+    expect(admin.emitted('suggestion-refused')).toHaveLength(1)
+    admin.unmount()
   })
 
   it('suggestions=false takes the button away, the version stays', async () => {

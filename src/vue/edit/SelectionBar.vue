@@ -23,7 +23,7 @@ const hideTitle = computed(() =>
     ? 'Remover este bloco da sua leitura — reversível pelo botão Reexibir'
     : 'Ocultar este bloco na leitura',
 )
-const canDelete = computed(() => props.wMode === 'content')
+const canDelete = computed(() => props.wMode === 'persisted')
 // The 8.5px caps become noise on a narrow bar: on a phone only the value
 // stays, in a size readable while standing.
 const capShow = computed(() => (props.compact ? 'none' : 'block'))

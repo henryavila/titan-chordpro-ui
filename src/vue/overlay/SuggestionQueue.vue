@@ -11,6 +11,9 @@ defineProps<{
   songs: QueueRow[]
   sugs: QueueRow[]
   ops: QueueOpCard[]
+  /** How many open ops still apply cleanly (level 3). */
+  batchApplies?: number
+  batchConflicts?: number
 }>()
 const emit = defineEmits<{
   back: []
@@ -19,6 +22,8 @@ const emit = defineEmits<{
   pickSug: [key: string]
   accept: [id: string]
   refuse: [id: string]
+  acceptBatch: []
+  refuseBatch: []
 }>()
 </script>
 
@@ -65,6 +70,28 @@ const emit = defineEmits<{
         style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;"
         @click="emit('pickSug', s.key)"
       >{{ s.label }}<span style="font-size:11.5px;font-weight:500;color:var(--muted);">{{ s.hint }}</span></button>
+
+      <div
+        v-if="level === 3 && ops.length"
+        data-q-batch
+        style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--chord-edge);border-radius:13px;background:var(--chord-soft);"
+      >
+        <span style="font-size:12.5px;font-weight:600;color:var(--text);">
+          Preview: {{ batchApplies ?? 0 }} encaixam{{ (batchConflicts ?? 0) > 0 ? ` · ${batchConflicts} conflito(s)` : '' }}
+        </span>
+        <span style="display:flex;gap:6px;">
+          <button
+            data-q-refuse-batch
+            style="height:32px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+            @click="emit('refuseBatch')"
+          >Recusar lote</button>
+          <button
+            data-q-accept-batch
+            style="height:32px;padding:0 12px;border:0;border-radius:10px;background:var(--pill);color:var(--pill-ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+            @click="emit('acceptBatch')"
+          >Aceitar lote</button>
+        </span>
+      </div>
 
       <div
         v-for="op in level === 3 ? ops : []"

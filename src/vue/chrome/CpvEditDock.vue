@@ -36,7 +36,7 @@ const emit = defineEmits<{
   editBatida: []
 }>()
 
-const showBatidaTools = computed(() => props.wMode === 'content')
+const showBatidaTools = computed(() => props.wMode === 'persisted')
 </script>
 
 <template>

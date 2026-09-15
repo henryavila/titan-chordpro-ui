@@ -77,7 +77,7 @@ describe('the catalog', () => {
     expect(hrefs.some((h) => h.includes('accent=') && h.includes('4F46E5'))).toBe(true)
     expect(extra).toContain('/standalone.html?song=013-ele-vive-em-mim')
     expect(extra).toContain('/standalone.html?modes=local')
-    expect(extra).toContain('/standalone.html?modes=content')
+    expect(extra).toContain('/standalone.html?modes=persisted')
     expect(extra).toContain('/standalone.html?modes=none')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
   })
@@ -90,7 +90,7 @@ describe('the catalog', () => {
     expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).toMatch(/:songs="songs"/)
     expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).not.toMatch(/song-id/)
     expect(DEMOS.find((d) => d.id === 'shell-apresentacao')?.call).not.toMatch(/song-id/)
-    expect(DEMOS.find((d) => d.id === 'criar')?.call).toMatch(/modes="content"/)
+    expect(DEMOS.find((d) => d.id === 'criar')?.call).toMatch(/edit-mode="persisted"/)
     expect(DEMOS.find((d) => d.id === 'accent-teal')?.call).toMatch(/accent="teal"/)
     expect(DEMOS.find((d) => d.id === 'accent-hex')?.call).toMatch(/accent="#4F46E5"/)
   })
@@ -194,11 +194,11 @@ describe('labQuery', () => {
 })
 
 describe('writeModes', () => {
-  it('defaults to both, and creating a chart is always for everyone', () => {
-    expect(writeModes(labQuery(''))).toBe('both')
+  it('defaults to local; creating a chart is always persisted', () => {
+    expect(writeModes(labQuery(''))).toBe('local')
     expect(writeModes(labQuery('?modes=local'))).toBe('local')
-    expect(writeModes(labQuery('?criar=1'))).toBe('content')
-    expect(writeModes(labQuery('?criar=1&modes=local'))).toBe('content')
+    expect(writeModes(labQuery('?criar=1'))).toBe('persisted')
+    expect(writeModes(labQuery('?criar=1&modes=local'))).toBe('persisted')
   })
 })
 
@@ -368,7 +368,7 @@ describe('CifraDemo', () => {
       })
       const viewer = w.getComponent({ name: 'ChordproViewer' })
       expect(viewer.props('source')).toBe('')
-      expect(viewer.props('modes')).toBe('content')
+      expect(viewer.props('modes')).toBe('persisted')
       expect(viewer.props('songs')).toBeUndefined()
       expect(viewer.props('songId')).toBe('vazio')
       expect(typeof viewer.props('fetchChart')).toBe('function')
@@ -409,7 +409,7 @@ describe('CifraDemo', () => {
     }
   })
 
-  it('keeps a real chart and both write modes on the ordinary recipes', () => {
+  it('keeps a real chart and local write mode on the ordinary recipes', () => {
     const prev = window.location.search
     window.history.replaceState({}, '', '/')
     try {
@@ -419,7 +419,7 @@ describe('CifraDemo', () => {
       })
       const viewer = w.getComponent({ name: 'ChordproViewer' })
       expect(String(viewer.props('source'))).toMatch(/\{/)
-      expect(viewer.props('modes')).toBe('both')
+      expect(viewer.props('modes')).toBe('local')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 import type { OpCard } from '../use/useOverlay'
 import CpvIcon from '../icon/CpvIcon.vue'
 
@@ -8,6 +9,7 @@ defineProps<{
   ops: OpCard[]
   fixTuneLabel: string
   canSuggest: boolean
+  sentSuggestions?: Suggestion[]
   revertAllLabel: string
   revertAllDanger: boolean
 }>()
@@ -18,6 +20,14 @@ const emit = defineEmits<{
   suggest: []
   revertAll: []
 }>()
+
+function statusLabel(s: Suggestion): string {
+  const st = s.status ?? 'pending'
+  if (st === 'accepted') return 'aceita'
+  if (st === 'refused') return 'recusada'
+  if (st === 'partial') return 'parcial'
+  return 'pendente'
+}
 </script>
 
 <template>
@@ -70,6 +80,23 @@ const emit = defineEmits<{
         style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1px solid var(--chord-edge);border-radius:12px;background:var(--chord-soft);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
         @click="emit('suggest')"
       >Sugerir alteração ao responsável</button>
+
+      <div
+        v-if="sentSuggestions?.length"
+        data-my-sugs
+        style="display:flex;flex-direction:column;gap:6px;padding-top:4px;"
+      >
+        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Sugestões enviadas</span>
+        <div
+          v-for="s in sentSuggestions"
+          :key="s.id"
+          data-my-sug
+          style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid var(--line-soft);border-radius:12px;background:var(--surface);"
+        >
+          <span style="font-size:12px;font-weight:600;color:var(--text);">{{ new Date(s.at).toLocaleDateString('pt-BR') }} · {{ s.ops.length + (s.resolvedOps?.length ?? 0) }} ajuste(s)</span>
+          <span data-my-sug-status style="font-size:11px;font-weight:700;color:var(--chord);text-transform:uppercase;">{{ statusLabel(s) }}</span>
+        </div>
+      </div>
 
       <button
         data-revert-all

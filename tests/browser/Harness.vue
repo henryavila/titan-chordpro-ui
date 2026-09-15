@@ -37,7 +37,7 @@ const capoQ = q.get('capo')
 const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined
 const dualQ = q.get('dual')
 const initialDual = dualQ === '0' ? false : dualQ === '1' ? true : undefined
-const modes = ref<'local' | 'content'>('content')
+const editMode = ref<'local' | 'persisted'>('persisted')
 const fonts = ref('fallback')
 async function loadFonts() {
   await Promise.all([import('@fontsource/figtree/400.css'), import('@fontsource/sora/400.css'), import('@fontsource/space-mono/700.css')])
@@ -107,7 +107,7 @@ const hideComments = q.get('comentarios') === '0'
     >
       <button id="load-fonts" @click="loadFonts">Load fonts</button>
       <span id="fonts-state">{{ fonts }}</span>
-      <select id="host-modes" v-model="modes"><option>content</option><option>local</option></select>
+      <select id="host-modes" v-model="editMode"><option>persisted</option><option>local</option></select>
       <select id="host-theme" v-model="theme"><option>light</option><option>dark</option><option>auto</option></select>
       <select id="host-control" v-model="themeControl"><option>host</option><option>preference</option></select>
     </div>
@@ -125,7 +125,7 @@ const hideComments = q.get('comentarios') === '0'
         :lens="lens"
         :hide-comments="hideComments"
         :auto-hide="autoHide"
-        :modes="modes"
+        :edit-mode="editMode"
         :fit-default="fitDefault"
         :initial-capo="initialCapo"
         :initial-dual="initialDual"
