@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-17
+
 ### Added
 - **Começar de novo (Metadados, Para todos):** confirmação explícita abre Nova cifra (Cifra Club / arquivo / texto / branco). A cifra atual só some ao concluir; cancelar Nova mantém o corpo. Ausente no editar Só para mim.
 - **Editor de batida (B0–B3):** criar/editar `{x_strum:}` na folha Batida em **Só para mim** e **Para todos**, multi `{x_strum_set:}`, conflito enrich Manter/Trazer CC. Local grava overlay e pode sugerir; o merge rotula e aplica `{x_strum:}`.
@@ -90,7 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.4.0
 [0.3.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.3.0
 [0.2.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.2.0
 [0.1.3]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.1.3
