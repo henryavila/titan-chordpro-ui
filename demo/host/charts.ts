@@ -1,14 +1,9 @@
+import defaultCho from '../../fixtures/sda/001-tudo-que-ha-de-bom-em-mim.cho?raw'
 import { readMeta } from '@henryavila/titan-chordpro-ui'
 import type { ChordproViewerProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
 import type { ListaMode } from './recipe'
 
 type DemoSong = NonNullable<ChordproViewerProps['songs']>[number]
-
-const bundledRaw = import.meta.glob('../../fixtures/sda/*.{cho,chordpro,onsong}', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-}) as Record<string, string>
 
 const assetUrls = import.meta.glob('../../fixtures/assets/*.png', {
   eager: true,
@@ -16,23 +11,22 @@ const assetUrls = import.meta.glob('../../fixtures/assets/*.png', {
   import: 'default',
 }) as Record<string, string>
 
-function idFromPath(path: string): string {
-  const base = path.split('/').pop() ?? path
-  return base.replace(/\.(cho|chordpro|onsong)$/i, '')
-}
-
 export const FAIL_ID = 'falha-de-rede'
 
 /** First chart in the production corpus — what a cold demo opens on. */
 export const DEFAULT_SONG_ID = '001-tudo-que-ha-de-bom-em-mim'
 
-export function bundledFixtures(): Record<string, string> {
+/** Enough to open standalone without pulling the 148-chart chunk. */
+export function seedFixtures(): Record<string, string> {
   return {
-    ...Object.fromEntries(
-      Object.entries(bundledRaw).map(([path, src]) => [idFromPath(path), src]),
-    ),
+    [DEFAULT_SONG_ID]: String(defaultCho),
     vazio: '',
   }
+}
+
+export async function loadAllFixtures(): Promise<Record<string, string>> {
+  const { allFixtures } = await import('./charts-all')
+  return allFixtures()
 }
 
 export function bundledImages(): {

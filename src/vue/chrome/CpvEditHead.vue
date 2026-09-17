@@ -49,8 +49,8 @@ const emit = defineEmits<{
         data-edit-badge
         class="cpv-edit-badge"
         :style="{
-          background: wMode === 'content' ? 'var(--danger-soft)' : 'var(--chord-fill)',
-          color: wMode === 'content' ? 'var(--danger)' : 'var(--chord)',
+          background: wMode === 'persisted' ? 'var(--danger-soft)' : 'var(--chord-fill)',
+          color: wMode === 'persisted' ? 'var(--danger)' : 'var(--chord)',
         }"
       >{{ editBadge }}</span>
 

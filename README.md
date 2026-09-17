@@ -1,24 +1,62 @@
 # titan-chordpro-ui
-<img width="1168" height="784" alt="EHoH3" src="https://github.com/user-attachments/assets/4738da56-2e3e-4f26-9160-05f4296741eb" />
-
-
-Viewer **+ editor** de cifra ChordPro (uma camada): core TypeScript + UI Vue + PDF + slides LouvorJA.  
-Repo: **`titan-chordpro-ui`** · npm: **[`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)**.  
-Decisão: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md).
 
 [![npm](https://img.shields.io/npm/v/@henryavila/titan-chordpro-ui)](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)
+[![downloads](https://img.shields.io/npm/dm/@henryavila/titan-chordpro-ui)](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)
+[![types](https://img.shields.io/npm/types/@henryavila/titan-chordpro-ui)](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)
+[![vue](https://img.shields.io/npm/dependency-version/@henryavila/titan-chordpro-ui/peer/vue)](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui)
 [![license](https://img.shields.io/npm/l/@henryavila/titan-chordpro-ui)](LICENSE)
+[![bundle](https://img.shields.io/bundlephobia/minzip/@henryavila/titan-chordpro-ui)](https://bundlephobia.com/package/@henryavila/titan-chordpro-ui)
+
+<img width="1168" height="784" alt="EHoH3" src="https://github.com/user-attachments/assets/4738da56-2e3e-4f26-9160-05f4296741eb" />
+
+**UI de uma cifra ChordPro** — ler no ensaio e editar o arquivo.  
+Não é o site, o login nem a lista de músicas: o host embute `<ChordproViewer>`.
+
+npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui) · Vue 3 + core TypeScript (sem Vue no core)
+
+### Features
+
+**Leitura**
+- Acorde acima da letra; comentários de ensaio
+- Transposição e capotraste
+- **Modo dual (capo)** — o capo muda as *formas*, não o tom que a banda ouve. Sem dual, a cifra vira só as formas (quem toca sozinho). Com dual, cada acorde mostra os dois nomes na mesma linha: forma com capo + o que soa sem capo. Teclado, baixo e voz leem o tom real; o violão lê a forma. A legenda marca as duas cores.
+- Cifra · só letra · Nashville
+- Tema claro / escuro / auto; cor de acento do host
+- Tipografia e ajuste ao espaço
+- Auto-rolagem no relógio da cifra (`{duration:}`, `{tempo:}`, `x///`)
+- Zen / tela cheia; chrome some na rolagem
+
+**Ensaio**
+- Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
+- Batida visual (setas + pulso) e ensaio com som
+- Lista: anterior / próxima, lugar guardado por música
+- Export ChordPro, PDF e slides LouvorJA (`.slja`)
+
+**Edição**
+- No lugar: letra, acorde, bloco (transpor, capo, reordenar)
+- Versão pessoal (overlay) e **Sugerir** (nome obrigatório)
+- Fila do responsável: aceitar / recusar, lote, diff visual da batida
+- **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_strum:}` / `{x_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
+- Partitura `{sos}` / TAB `{sot}`
+- Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco
+- Completar metadados / batida pelo Cifra Club sem substituir o corpo
+
+**Pacote**
+- Entradas `core` / `vue` / `pdf` / `slides` + CLI
+- Persistência do host (`ChartStore`); auth fica fora
+
+Fora: login, multicifra do site, player de áudio, diagramas de braço, collab em tempo real.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
 - **Generator (sibling, repo separado):** **`titan-chordpro-gen`** — audio → `.chordpro`
 - **App Titan:** nenhum por agora (`titan-chordpro` = host futuro)
 - **Consumer:** qualquer host Vue 3 / Nuxt — consome **só** a UI. Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md)
+- Naming: [`docs/NAMING.md`](docs/NAMING.md) · rebrand: [`docs/REBRAND-HANDOFF.md`](docs/REBRAND-HANDOFF.md)
 
 ## Status
 
-Scaffold v0.1: core + Vue `ChordproViewer` + CLI + PDF. Visual SoT: `design-source/` (Titan Chordpro UI v2 + Chordpro Viewer v2).
-Leitura, overlay pessoal, edição por bloco (E1/E2) e editor de partitura (VexFlow) implementados.
+`0.3.0` no npm. Leitura, ensaio, overlay, edição por bloco, partitura e import/export estão no pacote. Nesta branch: editor + revisão visual de batida. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
 
 ```bash
 pnpm install
@@ -94,7 +132,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |
-| `modes` | `'local'` | `none` \| `local` \| `content` \| `both`. Default = só local. `content` ou `both` liga **Para todos** (emite `save-content`) |
+| `editMode` | `'local'` | `local` \| `persisted` \| `none`. Um papel por mount (frontend vs backend). Ortogonal a `mode` view\|edit |
+| `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
 | `songId` | título da cifra | Identidade da música, chave da versão pessoal |
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
@@ -109,11 +148,11 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `storage` | `localStorage` | Onde o que o viewer lembra é gravado — ver abaixo |
 | `surfaceGuard` | `true` | Avisa (console + tela) quando o host embute sem dar altura ao pai |
 
-Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `dirty`, `state`.
+Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
 ### Cifra nova: importar ou começar em branco
 
-Música sem cifra não é beco. Com `modes="content"` (e `canEdit`), o estado vazio
+Música sem cifra não é beco. Com `edit-mode="persisted"` (e `canEdit`), o estado vazio
 oferece **Importar** e **Começar em branco**. Na demo: índice → Escrever →
 Cifra nova (`/standalone.html?criar=1`). O importador reconhece sozinho o
 que recebe — ChordPro, OnSong ou acordes sobre a letra — e diz de qual formato
@@ -126,7 +165,7 @@ As duas que dependem do mundo externo são props, não mágica do pacote:
 
 ```vue
 <ChordproViewer
-  modes="content"
+  edit-mode="persisted"
   :fetch-chart="(url) => api.buscarPagina(url)"
   :read-pdf="(file) => pdfText(file)"
 />
@@ -263,6 +302,7 @@ Todas declaradas em `STORE_KEYS`, para o host rotear ou prefixar:
 | `cpv:bpm` | BPM manual por música | dispositivo **ou** conta |
 | `cpv:my:{songId}` | **a versão pessoal do músico** | conta — ele troca de celular |
 | `cpv:sug` | sugestões pendentes | servidor — atravessa pessoas |
+| `cpv:actor-name` | último nome ao sugerir | dispositivo **ou** conta |
 
 `overlayKey(songId)` monta a quarta. As duas últimas são as que realmente
 pedem um host: mantidas no default, a versão pessoal morre quando o músico
@@ -320,11 +360,20 @@ chegaria a quem personalizou. Cada ajuste vira uma **operação ancorada na linh
 original** (`src/core/overlay.ts`, framework-free): dá para reverter um trecho
 pelo ponto ao lado dele, reaplicar tudo sobre uma versão nova, e o que o
 responsável aceitou **sai** do overlay em vez de virar conflito com o próprio
-leitor. `modes` é o interruptor do consumer: omitido ou `'local'` = só a edição
-pessoal (salva no aparelho, sem botão de publicar). `'content'` ou `'both'`
-liga a UI **Para todos** — salvar emite `save-content` para o host gravar a
-cifra oficial. Uma sugestão do leitor (`suggestions`) entra na fila do
-responsável (cifras → pedidos → ajustes), aceita item por item.
+leitor.
+
+**`editMode`** (um papel por mount — o host já sabe frontend vs backend):
+
+| Valor | Papel |
+|---|---|
+| `local` (default) | Edição “Só para mim” no aparelho; botão opcional **Sugerir** |
+| `persisted` | Edição “Para todos” (`save-content`) + fila de sugestões (Aceitar/Recusar, lote) |
+| `none` | Sem edição |
+
+Sugestões: emits `suggestion-created` / `suggestion-accepted` / `suggestion-refused`;
+prop `suggestionQueue` (fila completa) para o host sincronizar entre apps.
+Status do músico aparece na **Minha versão**. `modes` / `content` / `both` ficam
+deprecados (ver CONSUMER §10).
 
 ### Auto-rolagem: tempo musical, não px/s
 

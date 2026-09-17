@@ -107,12 +107,17 @@ describe('storage seam', () => {
 
     await w.get('[data-open-my]').trigger('click')
     await flushPromises()
+    await w.get('[data-suggest-name]').setValue('Ana Souza')
+    await flushPromises()
+    await w.get('[data-suggest]').trigger('click')
+    await flushPromises()
     await w.get('[data-suggest]').trigger('click')
     await flushPromises()
 
     const list = JSON.parse(store.get(STORE_KEYS.suggestions) ?? '[]')
     expect(list).toHaveLength(1)
     expect(list[0].ops.length).toBeGreaterThan(0)
+    expect(list[0].actorName).toBe('Ana Souza')
     expect(localStorage.getItem(STORE_KEYS.suggestions)).toBeNull()
     w.unmount()
   })

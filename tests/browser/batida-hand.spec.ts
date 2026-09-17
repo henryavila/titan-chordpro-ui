@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test'
 test('batida editor anchors direction and filters picker choices', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await page.locator('#host-modes').selectOption('content')
+  await page.locator('#host-modes').selectOption('persisted')
   await page.locator('[data-edit]').click()
   await expect(page.locator('[data-batida-create]')).toBeVisible()
   await page.locator('[data-batida-create]').click()

@@ -28,6 +28,7 @@ defineProps<{
   canEdit: boolean
   dockIconSize: string
   fitOn: boolean
+  queueCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -142,7 +143,22 @@ const emit = defineEmits<{
           style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
           @click="emit('toggleFit')"
         ><CpvIcon name="scan" :size="16" /></button>
-        <button class="cpv-ghost" aria-label="Mais controles" title="Mais controles" :style="{ width: dockIconSize, height: dockCtrlH }" style="flex:none;border-radius:14px;" @click="emit('more')"><CpvIcon name="ellipsis" :size="16" /></button>
+        <button
+          class="cpv-ghost cpv-more-hit"
+          aria-label="Mais controles"
+          title="Mais controles"
+          data-more
+          :style="{ width: dockIconSize, height: dockCtrlH }"
+          style="flex:none;border-radius:14px;"
+          @click="emit('more')"
+        >
+          <CpvIcon name="ellipsis" :size="16" />
+          <span
+            v-if="(queueCount ?? 0) > 0"
+            class="cpv-dock-queue-badge"
+            data-more-queue-badge
+          >{{ queueCount }}</span>
+        </button>
       </div>
     </div>
   </div>

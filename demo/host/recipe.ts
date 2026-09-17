@@ -1,9 +1,10 @@
 import type { Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
-import type { ModesProp } from '@henryavila/titan-chordpro-ui/vue'
+import type { EditMode, ModesProp } from '@henryavila/titan-chordpro-ui/vue'
+import { resolveEditMode } from '@henryavila/titan-chordpro-ui/vue'
 
 export type Surface = 'standalone' | 'site'
 export type ListaMode = 'off' | 'juntas' | 'demanda'
-export type DemoGroupId = 'incorporar' | 'criar' | 'acento' | 'host'
+export type DemoGroupId = 'incorporar' | 'editar' | 'criar' | 'acento' | 'host'
 
 export type DemoPage = {
   id: 'standalone' | 'standalone-lista' | 'site' | 'site-lista'
@@ -54,9 +55,14 @@ export const GROUPS: readonly DemoGroup[] = [
     lead: 'Standalone = a cifra é a tela. No shell = o consumer envolve. A apresentação é a lista ao vivo (`songs`), não outro componente.',
   },
   {
+    id: 'editar',
+    title: 'Editar',
+    lead: 'Um `editMode` por mount. Frontend = local (overlay + sugerir). Backend = persisted (oficial + fila).',
+  },
+  {
     id: 'criar',
     title: 'Criar',
-    lead: 'Importar ou começar em branco. Vira a cifra do sistema.',
+    lead: 'Importar ou começar em branco. Vira a cifra do sistema (`editMode=persisted`).',
   },
   {
     id: 'acento',
@@ -77,16 +83,14 @@ export const DEMOS: readonly DemoEntry[] = [
     group: 'incorporar',
     kicker: 'Standalone',
     title: 'Uma cifra',
-    blurb: 'A cifra é a página. Rota 100dvh, sem shell.',
+    blurb: 'A cifra é a página. Rota 100dvh, sem shell. Default = editMode local.',
     call: `<ChordproViewer
   :source="cho"
   :song-id="id"
+  edit-mode="local"
 />`,
     extra: [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
-      { href: '/standalone.html?modes=none', label: 'Só leitura' },
-      { href: '/standalone.html?modes=local', label: 'Só para mim' },
-      { href: '/standalone.html?modes=content', label: 'Para todos' },
     ],
   },
   {
@@ -96,7 +100,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Standalone',
     title: 'Apresentação',
     blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Cada item já traz o ChordPro.',
-    call: `<ChordproViewer :songs="songs" />`,
+    call: `<ChordproViewer :songs="songs" edit-mode="local" />`,
     extra: [
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
     ],
@@ -111,6 +115,7 @@ export const DEMOS: readonly DemoEntry[] = [
     call: `<ChordproViewer
   :source="cho"
   :song-id="id"
+  edit-mode="local"
   theme="light"
   theme-control="host"
 />`,
@@ -124,8 +129,51 @@ export const DEMOS: readonly DemoEntry[] = [
     blurb: 'A mesma lista ao vivo, no shell do site. Trocar de música é do Titan.',
     call: `<ChordproViewer
   :songs="songs"
+  edit-mode="local"
   theme="light"
   theme-control="host"
+/>`,
+  },
+  {
+    id: 'edit-local',
+    href: '/standalone.html?editMode=local',
+    group: 'editar',
+    kicker: 'Frontend',
+    title: 'Só para mim + sugerir',
+    blurb:
+      'Overlay no aparelho. Edite uma linha, abra Minha versão → Sugerir. Depois abra “Para todos” (mesmo song) e revise.',
+    call: `<ChordproViewer
+  :source="cho"
+  :song-id="id"
+  edit-mode="local"
+  actor-key="demo-musico"
+/>`,
+  },
+  {
+    id: 'edit-persisted',
+    href: '/standalone.html?editMode=persisted',
+    group: 'editar',
+    kicker: 'Backend / admin',
+    title: 'Para todos + fila',
+    blurb:
+      'Salvar grava o oficial (`save-content`). Menu · Sugestões dos músicos: preview, Aceitar lote / item.',
+    call: `<ChordproViewer
+  :source="cho"
+  :song-id="id"
+  edit-mode="persisted"
+/>`,
+  },
+  {
+    id: 'edit-none',
+    href: '/standalone.html?editMode=none',
+    group: 'editar',
+    kicker: 'Leitura',
+    title: 'Sem edição',
+    blurb: 'Só leitura — sem botão Editar.',
+    call: `<ChordproViewer
+  :source="cho"
+  :song-id="id"
+  edit-mode="none"
 />`,
   },
   {
@@ -138,7 +186,7 @@ export const DEMOS: readonly DemoEntry[] = [
     call: `<ChordproViewer
   source=""
   song-id="vazio"
-  modes="content"
+  edit-mode="persisted"
   :fetch-chart="fetchChart"
   :fetch-youtube-duration="fetchYoutubeDuration"
   :read-pdf="pdfText"
@@ -164,8 +212,8 @@ export const DEMOS: readonly DemoEntry[] = [
     group: 'acento',
     kicker: 'Standalone',
     title: 'Teal',
-    blurb: 'O outro nome. Claro e escuro saem da mesma matiz.',
-    swatch: '#6FD8E4',
+    blurb: 'Segundo nome medido. Soft e borda saem do mesmo matiz.',
+    swatch: '#2DD4BF',
     call: `<ChordproViewer
   :source="cho"
   :song-id="id"
@@ -177,8 +225,8 @@ export const DEMOS: readonly DemoEntry[] = [
     href: '/standalone.html?accent=%234F46E5',
     group: 'acento',
     kicker: 'Standalone',
-    title: 'Cor do host',
-    blurb: 'Qualquer #hex. Light e dark derivam da matiz; o resto é variação.',
+    title: 'Hex do host',
+    blurb: 'Qualquer `#hex` / `rgb()`. O Titan deriva soft, edge e glow.',
     swatch: '#4F46E5',
     call: `<ChordproViewer
   :source="cho"
@@ -221,7 +269,20 @@ export function demosOf(group: DemoGroupId): DemoEntry[] {
   return DEMOS.filter((d) => d.group === group)
 }
 
-const INTENT = new Set(['ficha', 'ensaio', 'song', 'quebrar', 'tema', 'criar', 'modes', 'accent', 'lens', 'comentarios'])
+const INTENT = new Set([
+  'ficha',
+  'ensaio',
+  'song',
+  'quebrar',
+  'tema',
+  'criar',
+  'modes',
+  'editMode',
+  'edit-mode',
+  'accent',
+  'lens',
+  'comentarios',
+])
 
 /** Old `/` + query bookmarks land on the matching named page. */
 export function hubRedirect(search: string): string | null {
@@ -253,8 +314,11 @@ export type LabQuery = {
   tema: 'claro' | 'escuro' | null
   quebrar: boolean
   carga: 'juntas' | 'demanda'
-  /** Empty song + content mode: Importar / Começar em branco. */
+  /** Empty song + persisted mode: Importar / Começar em branco. */
   criar: boolean
+  /** Preferred query: editMode=local|persisted|none */
+  editMode: EditMode | null
+  /** @deprecated query `modes=` — still parsed for old links */
   modes: ModesProp | null
   /** Host primary: named accent or `#hex`. */
   accent: string | null
@@ -264,10 +328,27 @@ export type LabQuery = {
   hideComments: boolean
 }
 
+function parseEditMode(raw: string | null): EditMode | null {
+  if (raw === 'local' || raw === 'persisted' || raw === 'none') return raw
+  return null
+}
+
+function parseModes(raw: string | null): ModesProp | null {
+  if (
+    raw === 'none' ||
+    raw === 'local' ||
+    raw === 'content' ||
+    raw === 'both' ||
+    raw === 'persisted'
+  ) {
+    return raw
+  }
+  return null
+}
+
 export function labQuery(search: string): LabQuery {
   const p = new URLSearchParams(search)
   const tema = p.get('tema')
-  const modes = p.get('modes')
   const lens = p.get('lens')
   return {
     song: p.get('song'),
@@ -275,20 +356,23 @@ export function labQuery(search: string): LabQuery {
     quebrar: p.get('quebrar') === '1',
     carga: p.get('ensaio') === 'demanda' ? 'demanda' : 'juntas',
     criar: p.get('criar') === '1',
-    modes:
-      modes === 'none' || modes === 'local' || modes === 'content' || modes === 'both'
-        ? modes
-        : null,
+    editMode: parseEditMode(p.get('editMode') ?? p.get('edit-mode')),
+    modes: parseModes(p.get('modes')),
     accent: p.get('accent'),
     lens: lens === 'none' || lens === 'letra' || lens === 'nashville' ? lens : null,
     hideComments: p.get('comentarios') === '0',
   }
 }
 
-/** Creating a chart is always "for everyone". Otherwise the query, or both. */
+/** Creating a chart is always persisted. Otherwise editMode / modes query, or local. */
+export function writeEditMode(lab: LabQuery): EditMode {
+  if (lab.criar) return 'persisted'
+  return resolveEditMode({ editMode: lab.editMode ?? undefined, modes: lab.modes ?? undefined })
+}
+
+/** @deprecated use writeEditMode */
 export function writeModes(lab: LabQuery): ModesProp {
-  if (lab.criar) return 'content'
-  return lab.modes ?? 'both'
+  return writeEditMode(lab)
 }
 
 export function hostTheme(surface: Surface, tema: LabQuery['tema']): ThemeId {

@@ -7,6 +7,9 @@
  * can be reverted one by one, and reapplied on top of a new version.
  */
 
+import { readStrumPatterns } from './import-chordpro'
+import type { StrumPattern, StrumSlot } from './strum'
+
 export type ReadingCtx = {
   /** Semitones the reader was transposed by when the edit was made. */
   transpose: number
@@ -224,8 +227,88 @@ export function tuneText(op: TuneOp): string {
   return bits.join(' · ') || 'tom escrito'
 }
 
+function isStrumDirective(line: string): boolean {
+  return /^\s*\{\s*x_strum(?:_set)?\s*:/i.test(line)
+}
+
+function isDirectiveLine(line: string): boolean {
+  return /^\s*\{[^}]+\}\s*$/.test(line)
+}
+
+export type StrumReview = {
+  previous: StrumPattern[]
+  proposed: StrumPattern[]
+}
+
+export type StrumSlotMark = 'same' | 'changed' | 'added' | 'removed'
+
+export function slotsLookSame(a: StrumSlot, b: StrumSlot): boolean {
+  return a.dir === b.dir && a.contact === b.contact && (a.essence ?? null) === (b.essence ?? null)
+}
+
+/**
+ * Slot-level visual diff for the batida strip. Displays the proposed
+ * pattern (or the previous one when it was removed) with a mark per cell.
+ */
+export function diffStrumPattern(
+  previous: StrumPattern | null | undefined,
+  proposed: StrumPattern | null | undefined,
+): { pattern: StrumPattern; marks: StrumSlotMark[]; was: Array<StrumSlot | null> } | null {
+  if (!proposed && !previous) return null
+  if (!proposed && previous) {
+    return {
+      pattern: previous,
+      marks: previous.slots.map(() => 'removed'),
+      was: previous.slots.map(() => null),
+    }
+  }
+  const next = proposed!
+  const prevSlots = previous?.slots ?? []
+  const marks: StrumSlotMark[] = []
+  const was: Array<StrumSlot | null> = []
+  for (let i = 0; i < next.slots.length; i++) {
+    const before = prevSlots[i]
+    const after = next.slots[i]!
+    if (!previous || before == null) {
+      marks.push('added')
+      was.push(null)
+      continue
+    }
+    if (slotsLookSame(before, after)) {
+      marks.push('same')
+      was.push(null)
+      continue
+    }
+    marks.push('changed')
+    was.push(before)
+  }
+  return { pattern: next, marks, was }
+}
+
+function patternsFromLines(lines: string[]): StrumPattern[] {
+  const set = readStrumPatterns(lines.filter(isStrumDirective).join('\n'))
+  return set.patterns
+}
+
+/** Visual review payload for a batida op — empty when the hunk has no strum. */
+export function strumReviewFromOp(op: OverlayOp): StrumReview | null {
+  if (isTuneOp(op)) return null
+  const previous = op.type === 'insert' ? [] : patternsFromLines(op.before)
+  const proposed = op.type === 'delete' ? [] : patternsFromLines(op.after)
+  if (!previous.length && !proposed.length) return null
+  return { previous, proposed }
+}
+
 export function opLabel(op: OverlayOp): string {
   if (isTuneOp(op)) return 'Tom e capo fixos'
+  const hunk = op.type === 'delete' ? op.before : [...op.before, ...op.after]
+  const meaningful = hunk.filter((t) => String(t).trim())
+  const hasBatida = meaningful.some(isStrumDirective)
+  if (hasBatida && meaningful.every((l) => isDirectiveLine(l) || isStrumDirective(l))) {
+    if (op.type === 'insert') return 'Batida nova'
+    if (op.type === 'delete') return 'Batida removida'
+    return 'Batida alterada'
+  }
   const src = op.type === 'delete' ? op.before : op.after
   const first = src.filter((t) => String(t).trim())[0] ?? ''
   const txt = String(first)
@@ -234,6 +317,7 @@ export function opLabel(op: OverlayOp): string {
     .trim()
   const kind =
     op.type === 'insert' ? 'Trecho novo' : op.type === 'delete' ? 'Trecho removido' : 'Trecho alterado'
+  if (hasBatida) return `${kind} · Batida`
   return kind + (txt ? ` · ${txt.slice(0, 32)}` : '')
 }
 
@@ -320,6 +404,11 @@ export function overlaid(
   return { text: r.text, mine: r.mine, failed: r.failed }
 }
 
+export type SuggestionStatus = 'pending' | 'accepted' | 'refused' | 'partial'
+
+/** An op archived after admin accept/refuse — kept for musician status UI. */
+export type ResolvedOp = OverlayOp & { disposition: 'accepted' | 'refused' }
+
 /** A suggestion sent to whoever owns the official chart. */
 export type Suggestion = {
   id: string
@@ -327,5 +416,14 @@ export type Suggestion = {
   title: string
   at: number
   baseVersion: string
+  /** Still-open ops waiting for review. */
   ops: OverlayOp[]
+  /** Ops already accepted or refused (not deleted). */
+  resolvedOps?: ResolvedOp[]
+  /** Default `pending` on create. */
+  status?: SuggestionStatus
+  /** Opaque host-scoped actor id (no auth in the package). */
+  actorKey?: string
+  /** Display name the musician typed when sending — shown on the review screen. */
+  actorName?: string
 }

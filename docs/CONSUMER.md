@@ -17,10 +17,10 @@ a chamada resumida.
 | `/site.html` | Vue no shell do consumer (conteúdo acima e abaixo) |
 | `/site-lista.html` | Shell com apresentação |
 
-Query nas mesmas páginas: `criar=1`, `modes` (local / content / none),
+Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`.
+(oculta `{c:}` de ensaio), `quebrar=1`. Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
@@ -96,7 +96,7 @@ defineProps<{ source: string; songId: string }>()
 
 <template>
   <div class="cifra-live">
-    <ChordproViewer :source="source" :song-id="songId" modes="local" />
+    <ChordproViewer :source="source" :song-id="songId" edit-mode="local" />
   </div>
 </template>
 
@@ -123,7 +123,7 @@ const { data: song } = await useFetch(`/api/songs/${route.params.id}`)
         v-if="song"
         :source="song.chordpro"
         :song-id="song.id"
-        modes="local"
+        edit-mode="local"
       />
     </div>
   </ClientOnly>
@@ -169,7 +169,7 @@ const liveTo = computed(() => `/cifras/${props.songId}`)
 
     <div class="cifra-frame">
       <ClientOnly>
-        <ChordproViewer :source="source" :song-id="songId" modes="local" />
+        <ChordproViewer :source="source" :song-id="songId" edit-mode="local" />
       </ClientOnly>
     </div>
 
@@ -251,7 +251,7 @@ música. Com uma, ou nenhuma, o viewer é a cifra única de sempre.
 <ChordproViewer
   :songs="repertorio"
   :load-song="buscarCifra"
-  modes="local"
+  edit-mode="local"
 />
 ```
 
@@ -371,7 +371,7 @@ const lens = computed(() =>
         :source="song.chordpro"
         :song-id="song.id"
         :lens="lens"
-        modes="none"
+        edit-mode="none"
       />
     </div>
   </ClientOnly>
@@ -435,19 +435,67 @@ No viewer, as mesmas imagens entram pelas props `coverImage` / `slidesImage`.
 
 ## 10. Edição e persistência
 
-| `modes` | O que existe |
+Um papel por mount — o host já sabe se é frontend ou backend. Prop:
+`editMode` (ortogonal a `mode` view|edit).
+
+| `editMode` | O que existe |
 |---|---|
-| `local` (default) | “Só para mim” neste aparelho |
-| `content` | “Para todos” — emite `save-content` para o host gravar o oficial |
-| `both` | Os dois; o músico escolhe antes de editar |
+| `local` (default) | “Só para mim” neste aparelho; “Sugerir” opcional. Criar/editar batida grava overlay e pode ir na sugestão. |
+| `persisted` | “Para todos” — emite `save-content`; fila de sugestões + Aceitar/Recusar. Criar/editar batida grava o oficial. |
 | `none` | Sem edição |
+
+```vue
+<!-- App do músico (frontend) -->
+<ChordproViewer
+  edit-mode="local"
+  :source="cho"
+  :song-id="id"
+  :actor-key="userId"
+  :actor-name="displayName"
+  @suggestion-created="onSug"
+/>
+
+<!-- Admin / PDP (backend) -->
+<ChordproViewer
+  edit-mode="persisted"
+  :source="cho"
+  :song-id="id"
+  :suggestion-queue="queue"
+  @save-content="persistOfficial"
+  @suggestion-accepted="onAccepted"
+  @suggestion-refused="onRefused"
+  @update:suggestionQueue="queue = $event"
+/>
+```
+
+**Fluxo sugerir → revisar**
+
+1. Músico edita em `local` (overlay no device).
+2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve → emit `suggestion-created` (`actorName` + `actorKey` opcional) + fila.
+3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, preview da batida (faixa) e encaixa / conflito → Aceitar lote ou item a item.
+4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save).
+5. Status (`pendente` / `aceita` / `recusada` / `parcial`) aparece na Minha versão do músico na próxima visita (host devolve a fila).
+
+**Deprecated:** `modes` (`content` → `persisted`; `both` → `local` + warning no console).
 
 `storage` (default `localStorage`) é onde o Titan lembra preferências e a
 versão pessoal. Um host com conta passa o próprio `ChartStore`. Chamadas
-síncronas: o host responde do cache e grava atrás.
+síncronas: o host responde do cache e grava atrás. Cross-app (músico → admin)
+precisa de `ChartStore` compartilhado **ou** `suggestionQueue` + emits.
 
 Identidade da música = `songId` (ou o `id` da entrada do ensaio). Overlays
 antigos sob outro id **não** migram.
+
+### Demo neste repo
+
+| URL | Papel |
+|---|---|
+| `/standalone.html` ou `?editMode=local` | Músico — overlay + sugerir |
+| `/standalone.html?editMode=persisted` | Admin — oficial + fila |
+| `/standalone.html?editMode=none` | Só leitura |
+| `/standalone.html?criar=1` | Cifra nova (`persisted`) |
+
+Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e revise.
 
 ---
 

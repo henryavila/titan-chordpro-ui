@@ -4,6 +4,7 @@ import {
   emptyPattern,
   formatXStrum,
   memoryStore,
+  parseXStrum,
   readMeta,
   readStrumPatterns,
   writeStrumPatterns,
@@ -164,5 +165,17 @@ describe('BatidaSheet multi pattern management', () => {
     expect(readMeta(src).x_strum).toContain('Refrão A')
     expect(readMeta(src).x_strum_set).toBeTruthy()
     expect(formatXStrum(set.patterns[set.activeIndex]!)).toBe(readMeta(src).x_strum)
+  })
+
+  it('does not save while a sibling pattern is still empty', async () => {
+    const done = parseXStrum('bpm=90; meter=4/4; grid=8; label=Parte 1; pat=DuDu DuDU')!
+    const blank = emptyPattern({ bpm: 90, meter: '4/4', grid: 8, label: 'Parte 2' })
+    expect(done).not.toBeNull()
+    const w = mountSheet([done!, blank], 0)
+    await flushPromises()
+    expect((w.get('[data-batida-save]').element as HTMLButtonElement).disabled).toBe(true)
+    await w.get('[data-batida-save]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-set')).toBeUndefined()
   })
 })

@@ -26,6 +26,7 @@ import {
   emptyPattern,
   gridFromDensity,
   parse,
+  isCompleteStrumPattern,
   repairStrumPattern,
   playheadAtScroll,
   readMeta,
@@ -69,7 +70,6 @@ import ImagePicker from './edit/ImagePicker.vue'
 import ScoreEditor from './edit/ScoreEditor.vue'
 import NewChartDialog from './edit/NewChartDialog.vue'
 import MetaDialog from './edit/MetaDialog.vue'
-import ModePickDialog from './overlay/ModePickDialog.vue'
 import MyVersionPanel from './overlay/MyVersionPanel.vue'
 import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
@@ -98,7 +98,8 @@ import {
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
-import type { ChordproViewerProps, RehearsalFocus, WriteMode } from './public'
+import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
+import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
 import CpvIcon from './icon/CpvIcon.vue'
 import type { CpvIconName } from './icon/paths'
@@ -135,8 +136,12 @@ const props = withDefaults(
     accent: 'verde',
     accentStrength: 1,
     surfaceGuard: true,
-    modes: 'local',
+    editMode: undefined,
+    modes: undefined,
     suggestions: true,
+    actorKey: undefined,
+    actorName: undefined,
+    suggestionQueue: undefined,
     songId: '',
     songs: undefined,
     loadSong: undefined,
@@ -165,6 +170,25 @@ const emit = defineEmits<{
   dirty: [value: boolean]
   save: [value: string]
   'save-content': [value: string]
+  'suggestion-created': [import('@henryavila/titan-chordpro-ui').Suggestion]
+  'suggestion-accepted': [
+    {
+      id: string
+      songId: string
+      opIds: string[]
+      status: import('@henryavila/titan-chordpro-ui').SuggestionStatus
+      officialText: string
+    },
+  ]
+  'suggestion-refused': [
+    {
+      id: string
+      songId: string
+      opIds: string[]
+      status: import('@henryavila/titan-chordpro-ui').SuggestionStatus
+    },
+  ]
+  'update:suggestionQueue': [import('@henryavila/titan-chordpro-ui').Suggestion[]]
   'save-strum-preset': [value: SaveStrumPresetPayload]
   state: [value: Record<string, unknown>]
 }>()
@@ -233,7 +257,6 @@ const srcOpen = ref(false)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
 const wMode = ref<WriteMode | null>(null)
-const modePick = ref(false)
 const confirmDiscard = ref(false)
 const metaOpen = ref(false)
 
@@ -261,7 +284,7 @@ function touch() {
  * new chart. `lastSrc` is the same guard `save()` uses.
  */
 function publishContentSource() {
-  if (!isEdit.value || wMode.value !== 'content') return
+  if (!isEdit.value || wMode.value !== 'persisted') return
   const cur = session.getSource()
   lastSrc = cur
   emit('update:source', cur)
@@ -467,8 +490,7 @@ function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
 }
 
 function openBatidaCreate() {
-  // Batida edits the official chart — only inside "Para todos".
-  if (!isContentEdit.value) return
+  if (!canEditBatida.value) return
   const tempo = sheetBpm(meta.value.tempo)
   const meter = String(meta.value.time ?? '').trim() || '4/4'
   const p = emptyPattern({
@@ -483,7 +505,7 @@ function openBatidaCreate() {
 }
 
 function openBatidaEdit() {
-  if (!isContentEdit.value) return
+  if (!canEditBatida.value) return
   const set = strumSet.value
   if (!set.patterns.length) {
     openBatidaCreate()
@@ -512,8 +534,12 @@ function onBatidaTogglePreview(payload: { pattern: StrumPattern; barBeats: numbe
 
 function publishBatidaSource(next: string) {
   session.replace(next)
-  lastSrc = next
-  emit('update:source', next)
+  // Local edit is overlay-only — the official chart changes when the musician
+  // suggests and the owner accepts. Persisted (and view cycle) write through.
+  if (wMode.value !== 'local') {
+    lastSrc = next
+    emit('update:source', next)
+  }
   touch()
 }
 
@@ -528,6 +554,7 @@ function cycleStrumPattern() {
 }
 
 function saveBatidaSet(set: StrumPatternSet) {
+  if (!set.patterns.every(isCompleteStrumPattern)) return
   const patterns = set.patterns.map(normalizeBatidaPattern)
   const activeIndex = Math.max(0, Math.min(set.activeIndex, Math.max(0, patterns.length - 1)))
   publishBatidaSource(writeStrumPatterns(liveSource.value, { activeIndex, patterns }))
@@ -596,15 +623,17 @@ const strumDockStyle = computed(() => {
 })
 
 /**
- * Which saves this host allows. Default is local-only: "Para todos" is a
- * host capability (`content` / `both`), not something a public embed gets
- * unless the consumer turns it on.
+ * Single write role for this mount. Host picks via `editMode` (or deprecated
+ * `modes`). No ModePick — one role per instance.
  */
+const editModeResolved = computed<EditMode>(() =>
+  resolveEditMode({ editMode: props.editMode, modes: props.modes }),
+)
+/** @deprecated internal alias — prefer editModeResolved */
 const modes = computed<WriteMode[]>(() => {
-  const m = props.modes ?? 'local'
+  const m = editModeResolved.value
   if (m === 'none') return []
-  if (m === 'local' || m === 'content') return [m]
-  return ['local', 'content']
+  return [m]
 })
 const guard = useSurfaceGuard({
   root,
@@ -660,6 +689,9 @@ const ov = useOverlay({
   hostSource: computed(() => normalizeSource(hostSource.value)),
   title: computed(() => meta.value.title ?? ''),
   suggestions: computed(() => props.suggestions !== false),
+  actorKey: computed(() => props.actorKey),
+  actorName: computed(() => props.actorName),
+  suggestionQueue: computed(() => props.suggestionQueue),
   store,
   toast: (m) => toastMsg(m),
   // While an edit is in flight the draft is the truth; anything else that
@@ -668,6 +700,10 @@ const ov = useOverlay({
     if (!isEdit.value) forceBase()
   },
   onSaveContent: (text) => emit('save-content', text),
+  onSuggestionCreated: (s) => emit('suggestion-created', s),
+  onSuggestionAccepted: (p) => emit('suggestion-accepted', p),
+  onSuggestionRefused: (p) => emit('suggestion-refused', p),
+  onSuggestionQueue: (q) => emit('update:suggestionQueue', q),
 })
 
 const phoneSub = computed(
@@ -842,9 +878,11 @@ const queueEntry = computed(
   () =>
     !isEdit.value &&
     isPopulated.value &&
-    modes.value.includes('content') &&
-    ov.pendingCount.value > 0 &&
-    !phone.value,
+    modes.value.includes('persisted') &&
+    ov.pendingCount.value > 0,
+)
+const queueCount = computed(() =>
+  modes.value.includes('persisted') ? ov.pendingCount.value : 0,
 )
 const showMine = computed(() => !isEdit.value && isPopulated.value && ov.hasOverlay.value)
 const fixTuneLabel = computed(() =>
@@ -852,7 +890,7 @@ const fixTuneLabel = computed(() =>
     ? 'Fixar o tom atual nesta cifra'
     : 'Tom fixo: nenhum (ajuste o tom para fixar)',
 )
-const editBadge = computed(() => (wMode.value === 'content' ? 'Para todos' : 'Só para mim'))
+const editBadge = computed(() => (wMode.value === 'persisted' ? 'Para todos' : 'Só para mim'))
 const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}ª casa`))
 /** Fallback copy when there are no chord tokens to chip. */
 const capoHint = computed(() => {
@@ -897,7 +935,11 @@ const nashvilleHint = computed(() => {
  * personal overlay (suggestion submit comes later). songId is pinned to the
  * host identity so a local title change cannot orphan the overlay key.
  */
-const isContentEdit = computed(() => isEdit.value && wMode.value === 'content')
+const isContentEdit = computed(() => isEdit.value && wMode.value === 'persisted')
+/** Batida create/edit follows the write role: local (overlay + suggest) or persisted. */
+const canEditBatida = computed(
+  () => isEdit.value && (wMode.value === 'local' || wMode.value === 'persisted'),
+)
 
 const dirty = computed(() => {
   rev.value
@@ -1381,6 +1423,8 @@ function toggleScroll() {
     return
   }
   if (!canScroll.value) return
+  // Count-in delays startScroll; the leftover "Fim da música" must leave now.
+  setlist.dismissEnd()
   if (met.follow.value) {
     const silent = shouldRollSilent(rehearsalFocus.value)
     if (!silent) {
@@ -1754,7 +1798,7 @@ const canStartNew = computed(
     !setlist.failing.value &&
     !listEmpty.value &&
     (props.canEdit ?? true) &&
-    modes.value.includes('content'),
+    modes.value.includes('persisted'),
 )
 function commitNewChart(src: string) {
   novaOpen.value = false
@@ -1763,7 +1807,7 @@ function commitNewChart(src: string) {
   lastSrc = src
   ov.setOfficial(src)
   forceBase()
-  beginEdit('content')
+  beginEdit('persisted')
 }
 
 /**
@@ -1779,15 +1823,9 @@ function restartFromMeta() {
 
 function enterEdit() {
   if (!canEditNow.value) return
-  const ms = modes.value
-  if (ms.length > 1) {
-    modePick.value = true
-    sheet.value = false
-    capoOpen.value = false
-    ov.myPanel.value = false
-    return
-  }
-  beginEdit(ms[0] as WriteMode)
+  const role = editModeResolved.value
+  if (role === 'none') return
+  beginEdit(role)
 }
 
 function beginEdit(kind: WriteMode) {
@@ -1815,7 +1853,6 @@ function beginEdit(kind: WriteMode) {
   toneOpen.value = false
   moreOpen.value = false
   metaOpen.value = false
-  modePick.value = false
   closeBatida()
   ov.myPanel.value = false
   ov.showOriginal.value = false
@@ -1870,15 +1907,9 @@ function toggleOriginal(orig: boolean) {
   forceBase()
 }
 
-function pickMode(kind: WriteMode) {
-  if (!modes.value.includes(kind)) return
-  beginEdit(kind)
-}
-
 watch(
-  () => props.modes,
+  () => [props.editMode, props.modes] as const,
   () => {
-    if (modePick.value && modes.value.length <= 1) modePick.value = false
     if (wMode.value && !modes.value.includes(wMode.value)) exitEdit()
   },
 )
@@ -2162,8 +2193,7 @@ function onKey(e: KeyboardEvent) {
   else if (k === 'a' || k === 'A') toggleFit()
   else if (k === 'c' || k === 'C') capoOpen.value = !capoOpen.value
   else if (k === 'Escape') {
-    if (modePick.value) modePick.value = false
-    else if (ov.myPanel.value) ov.closeMy()
+    if (ov.myPanel.value) ov.closeMy()
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
@@ -2245,7 +2275,6 @@ function syncHostSource() {
   metaOpen.value = false
   confirmDiscard.value = false
   wMode.value = null
-  modePick.value = false
   const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
   capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
   stopScroll()
@@ -2737,6 +2766,7 @@ defineExpose({
       :can-edit="canEditNow"
       :dock-icon-size="dockIconSize"
       :fit-on="fitOn"
+      :queue-count="queueCount"
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
@@ -2755,14 +2785,16 @@ defineExpose({
 
     <button
       v-if="queueEntry"
-      class="cpv-queue-chip cpv-veil"
-      :class="{ 'is-hidden': chromeHidden }"
+      class="cpv-queue-chip"
+      :class="{ 'is-compact': compact, 'is-alone': chromeHidden }"
       data-queue-chip
+      :aria-label="`Sugestões dos músicos, ${ov.pendingCount.value} ${ov.pendingCount.value === 1 ? 'pendente' : 'pendentes'}`"
       title="Sugestões dos músicos"
-      :style="{ bottom: '128px', opacity: chromeHidden ? '0' : '1', transition: 'opacity .35s ease' }"
       @click="ov.openQueue"
     >
-      <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />Sugestões · {{ ov.pendingCount.value }}
+      <span class="cpv-queue-chip-dot" aria-hidden="true" />
+      <span class="cpv-queue-chip-copy">Sugestões</span>
+      <span class="cpv-queue-chip-count" data-queue-count>{{ ov.pendingCount.value }}</span>
     </button>
 
     <CpvEditDock
@@ -2958,7 +2990,7 @@ defineExpose({
     />
 
     <BatidaSheet
-      v-if="batidaOpen && batidaDraft && isContentEdit"
+      v-if="batidaOpen && batidaDraft && canEditBatida"
       :compact="compact"
       :pattern="batidaDraft"
       :patterns="batidaDraftSet?.patterns"
@@ -3059,7 +3091,7 @@ defineExpose({
       :show-mine="showMine"
       :show-original="ov.showOriginal.value"
       :mine-count="ov.mineCount.value"
-      :show-queue="modes.includes('content') && ov.pendingCount.value > 0"
+      :show-queue="modes.includes('persisted') && ov.pendingCount.value > 0"
       :pending-count="ov.pendingCount.value"
       @close="moreOpen = false"
       @theme="requestTheme"
@@ -3074,15 +3106,6 @@ defineExpose({
       @open-queue="moreOpen = false; ov.openQueue()"
     />
 
-    <ModePickDialog
-      v-if="modePick"
-      :allow-local="modes.includes('local')"
-      :allow-content="modes.includes('content')"
-      @close="modePick = false"
-      @local="pickMode('local')"
-      @content="pickMode('content')"
-    />
-
     <MyVersionPanel
       v-if="ov.myPanel.value"
       :compact="compact"
@@ -3090,12 +3113,17 @@ defineExpose({
       :ops="ov.opList.value"
       :fix-tune-label="fixTuneLabel"
       :can-suggest="ov.canSuggest.value"
+      :suggest-label="ov.suggestLabel.value"
+      :actor-name="ov.actorName.value"
+      :name-error="ov.nameNeeded.value"
+      :sent-suggestions="ov.mySuggestions.value"
       :revert-all-label="ov.revertAllLabel.value"
       :revert-all-danger="ov.revertAllLabel.value !== 'Voltar ao original'"
       @close="ov.closeMy"
       @revert="ov.revertOp"
       @fix-tune="onFixTune"
       @suggest="ov.suggest"
+      @update:actor-name="ov.actorName.value = $event"
       @revert-all="ov.revertAll"
     />
 
@@ -3117,12 +3145,19 @@ defineExpose({
       :songs="ov.qSongs.value"
       :sugs="ov.qSugs.value"
       :ops="ov.qOps.value"
+      :actor-name="ov.qActorName.value"
+      :preview-strum="ov.qPreviewStrum.value"
+      :official-strum="ov.qOfficialStrum.value"
+      :batch-applies="ov.qBatchPreview.value?.count ?? 0"
+      :batch-conflicts="ov.qBatchPreview.value?.conflicts ?? 0"
       @back="ov.qBack"
       @close="ov.closeQueue"
       @pick-song="(k) => (ov.qSong.value = k)"
       @pick-sug="(k) => (ov.qSug.value = k)"
       @accept="ov.acceptOp"
       @refuse="ov.refuseOp"
+      @accept-batch="ov.acceptBatch"
+      @refuse-batch="ov.refuseBatch"
     />
 
     <SourcePane

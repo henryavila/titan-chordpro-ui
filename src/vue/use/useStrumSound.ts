@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { StrumPattern, StrumSlot } from '@henryavila/titan-chordpro-ui'
-import { STRUM_ATTACK_MS, STRUM_SAMPLE_B64, type StrumSampleId } from './strum-sample-data'
+import { STRUM_ATTACK_MS, STRUM_SAMPLE_IDS, type StrumSampleId } from './strum-kit'
 
 function b64ToArrayBuffer(b64: string): ArrayBuffer {
   const bin = atob(b64)
@@ -94,9 +94,10 @@ export function useStrumSound() {
     const c = actx
     if (!c) return
     loading = (async () => {
+      const { STRUM_SAMPLE_B64 } = await import('./strum-sample-data')
       const next: Partial<Record<StrumSampleId, AudioBuffer>> = {}
       await Promise.all(
-        (Object.keys(STRUM_SAMPLE_B64) as StrumSampleId[]).map(async (id) => {
+        STRUM_SAMPLE_IDS.map(async (id) => {
           try {
             const raw = b64ToArrayBuffer(STRUM_SAMPLE_B64[id])
             next[id] = await c.decodeAudioData(raw.slice(0))

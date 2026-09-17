@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test'
 test('create sheet and metronome both drive Som da batida', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await page.locator('#host-modes').selectOption('content')
+  await page.locator('#host-modes').selectOption('persisted')
   await page.locator('[data-edit]').click()
   await page.locator('[data-batida-create]').click()
   await expect(page.locator('[data-batida-sheet]')).toBeVisible()

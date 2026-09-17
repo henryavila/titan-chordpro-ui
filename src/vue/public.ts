@@ -4,6 +4,8 @@ import type {
   Lens,
   SaveStrumPresetPayload,
   StrumPreset,
+  Suggestion,
+  SuggestionStatus,
   ThemeId,
 } from '@henryavila/titan-chordpro-ui'
 import type { LoadSong, SetlistSong } from './use/useSetlist'
@@ -13,11 +15,43 @@ export type { LoadSong, SetlistSong, Lens, SaveStrumPresetPayload, StrumPreset }
 /** A score the host already has on file, offered when inserting `{image:}`. */
 export type ImageChoice = { file: string; label?: string }
 
-/** How a save lands: on this phone only, or on the chart everyone reads. */
-export type WriteMode = 'local' | 'content'
-export type ModesProp = 'none' | 'local' | 'content' | 'both'
+/**
+ * Active write role while editing: personal overlay on this device, or the
+ * official chart the host persists (`save-content`).
+ */
+export type WriteMode = 'local' | 'persisted'
+/** Host mount role — one value per instance. Orthogonal to chrome `mode` (view|edit). */
+export type EditMode = 'local' | 'persisted' | 'none'
+/**
+ * @deprecated Use `editMode`. `content` → `persisted`; `both` warns and maps to `local`.
+ */
+export type ModesProp = 'none' | 'local' | 'content' | 'both' | 'persisted'
+
 /** Chrome rehearsal profile — orthogonal to reading `lens`. */
 export type RehearsalFocus = 'off' | 'batida'
+
+let bothWarned = false
+
+/** Resolve the single write role for this mount (editMode wins over deprecated modes). */
+export function resolveEditMode(props: {
+  editMode?: EditMode
+  modes?: ModesProp
+}): EditMode {
+  if (props.editMode) return props.editMode
+  const m = props.modes ?? 'local'
+  if (m === 'none') return 'none'
+  if (m === 'persisted' || m === 'content') return 'persisted'
+  if (m === 'both') {
+    if (!bothWarned && typeof console !== 'undefined') {
+      bothWarned = true
+      console.warn(
+        '[titan-chordpro-ui] modes="both" is deprecated; use editMode="local" or editMode="persisted". Treating as local.',
+      )
+    }
+    return 'local'
+  }
+  return 'local'
+}
 
 export type ViewerCapabilities = {
   sourcePane?: boolean
@@ -71,13 +105,32 @@ export type ChordproViewerProps = {
   /** Maps a `{image:}` reference to a URL the host can serve. */
   resolveImage?: (src: string) => string
   /**
-   * Which edit surfaces this host turns on.
-   * Default `local`: only "Só para mim". `content` / `both` is how the host
-   * activates "Para todos" (emits `save-content` for the consumer to persist).
+   * Write role for this mount. One value — the host already knows frontend vs
+   * backend. Default `local`. `persisted` enables official saves + suggestion queue.
+   * Orthogonal to chrome `mode` (`view` | `edit`).
+   */
+  editMode?: EditMode
+  /**
+   * @deprecated Use `editMode`. `content` maps to `persisted`; `both` → `local` + warning.
    */
   modes?: ModesProp
   /** Whether a reader may send their adjustments to whoever owns the chart. */
   suggestions?: boolean
+  /**
+   * Opaque id stamped on suggestions from this mount (host-scoped). Used to
+   * filter “minhas sugestões” without auth inside the package.
+   */
+  actorKey?: string
+  /**
+   * Optional display name prefilled on “Sugerir”. The musician can edit it;
+   * the typed name is stamped on the suggestion and shown to the reviewer.
+   */
+  actorName?: string
+  /**
+   * Full suggestion queue mirror (all statuses). When set, wins over ChartStore
+   * for reads; mutations emit `update:suggestionQueue` for the host to persist.
+   */
+  suggestionQueue?: Suggestion[]
   /** Identity of the chart, so a personal version follows the right song. */
   songId?: string
   /**
@@ -154,6 +207,8 @@ export type ChordproViewerProps = {
   slidesImage?: SlideImage
 }
 
+export type { SuggestionStatus }
+
 export type ChordproViewerEmits = {
   'update:source': [value: string]
   /** Request only in host mode: the host accepts by updating its theme prop. */
@@ -164,8 +219,27 @@ export type ChordproViewerEmits = {
   'update:rehearsalFocus': [value: RehearsalFocus]
   dirty: [value: boolean]
   save: [value: string]
-  /** A "for everyone" save: this text is the chart from now on. */
+  /** Official chart save (`editMode="persisted"`). */
   'save-content': [value: string]
+  'suggestion-created': [Suggestion]
+  'suggestion-accepted': [
+    {
+      id: string
+      songId: string
+      opIds: string[]
+      status: SuggestionStatus
+      officialText: string
+    },
+  ]
+  'suggestion-refused': [
+    {
+      id: string
+      songId: string
+      opIds: string[]
+      status: SuggestionStatus
+    },
+  ]
+  'update:suggestionQueue': [Suggestion[]]
   /**
    * Musician asked to persist the current batida draft as a preset.
    * Host assigns `id` (if omitted), stores it, and refreshes `strumPresets`.

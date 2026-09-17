@@ -536,9 +536,20 @@ describe('the end-of-song offer does not fire mid-chart', () => {
     await flushPromises()
     await w.get('[data-met-btn]').trigger('click')
     await flushPromises()
-    await w.findAll('.cpv-met-switch')[1]!.trigger('click')
+    await w.get('[data-met-follow]').trigger('click')
     await flushPromises()
     await w.get('[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+    return { w, el }
+  }
+
+  /** Default prefs: rolagem vinculada + contagem. The leftover offer must still die on Rolar. */
+  async function rehearsalLinked(list: SetlistSong[] = tinySongs(2)) {
+    const w = viewer({ source: '', songs: list, autoHide: false })
+    await flushPromises()
+    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    fakePaper(el)
+    observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
     await flushPromises()
     return { w, el }
   }
@@ -579,6 +590,19 @@ describe('the end-of-song offer does not fire mid-chart', () => {
 
   it('clears a leftover offer when the musician hits Rolar again', async () => {
     const { w, el } = await rehearsalWithRoom(tinySongs(2))
+    el.scrollTop = 3499
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await waitOffer(w, true)
+
+    el.scrollTop = 900
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-end-offer]').exists(), 'Rolar must dismiss the leftover fim-da-música badge').toBe(false)
+  })
+
+  it('clears a leftover offer on Rolar with rolagem vinculada and count-in', async () => {
+    const { w, el } = await rehearsalLinked()
     el.scrollTop = 3499
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()

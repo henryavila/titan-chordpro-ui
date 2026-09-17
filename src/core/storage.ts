@@ -32,6 +32,8 @@ export const STORE_KEYS = {
   bpm: 'cpv:bpm',
   /** Suggestions waiting for whoever owns the chart. */
   suggestions: 'cpv:sug',
+  /** Last display name typed when sending a suggestion. */
+  actorName: 'cpv:actor-name',
   /** Prefix of the reader's personal version: `cpv:my:{songId}`. */
   overlayPrefix: 'cpv:my:',
 } as const

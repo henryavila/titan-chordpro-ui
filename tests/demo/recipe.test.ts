@@ -1,8 +1,8 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import {
   DEMOS,
   GROUPS,
@@ -12,6 +12,7 @@ import {
   hostTheme,
   labQuery,
   palcoHref,
+  writeEditMode,
   writeModes,
 } from '../../demo/host/recipe'
 import { defaultSongId, songsFor } from '../../demo/host/charts'
@@ -47,11 +48,28 @@ describe('the four HTML mounts', () => {
       expect(existsSync(file), file).toBe(true)
     }
   })
+
+  it('paints a boot shell before the JS graph arrives', () => {
+    const pages = [
+      'standalone.html',
+      'standalone-lista.html',
+      'site.html',
+      'site-lista.html',
+      'index.html',
+    ]
+    for (const name of pages) {
+      const html = readFileSync(join(root, 'demo', name), 'utf8')
+      expect(html, name).toContain('data-boot-shell')
+      expect(html, name).toContain('boot-shell.css')
+      expect(html, name).toMatch(/Preparando/)
+      expect(html, name).toContain('media="print"')
+    }
+  })
 })
 
 describe('the catalog', () => {
-  it('is the 2×2 of incorporating, plus create, accent and a bad host', () => {
-    expect(GROUPS.map((g) => g.id)).toEqual(['incorporar', 'criar', 'acento', 'host'])
+  it('is the 2×2 of incorporating, plus edit roles, create, accent and a bad host', () => {
+    expect(GROUPS.map((g) => g.id)).toEqual(['incorporar', 'editar', 'criar', 'acento', 'host'])
     expect(DEMOS.every((d) => GROUPS.some((g) => g.id === d.group))).toBe(true)
     expect(DEMOS.map((d) => d.id).length).toBe(new Set(DEMOS.map((d) => d.id)).size)
     expect(demosOf('incorporar').map((d) => d.id)).toEqual([
@@ -60,6 +78,7 @@ describe('the catalog', () => {
       'shell',
       'shell-apresentacao',
     ])
+    expect(demosOf('editar').map((d) => d.id)).toEqual(['edit-local', 'edit-persisted', 'edit-none'])
   })
 
   it('keeps the four states and the extras on those cells, not as sibling types', () => {
@@ -72,13 +91,13 @@ describe('the catalog', () => {
     expect(hrefs).toContain('/standalone.html?criar=1')
     expect(hrefs).not.toContain('/site.html?criar=1')
     expect(hrefs).toContain('/standalone.html?quebrar=1')
+    expect(hrefs).toContain('/standalone.html?editMode=local')
+    expect(hrefs).toContain('/standalone.html?editMode=persisted')
+    expect(hrefs).toContain('/standalone.html?editMode=none')
     expect(hrefs).toContain('/standalone.html?accent=verde')
     expect(hrefs).toContain('/standalone.html?accent=teal')
     expect(hrefs.some((h) => h.includes('accent=') && h.includes('4F46E5'))).toBe(true)
     expect(extra).toContain('/standalone.html?song=013-ele-vive-em-mim')
-    expect(extra).toContain('/standalone.html?modes=local')
-    expect(extra).toContain('/standalone.html?modes=content')
-    expect(extra).toContain('/standalone.html?modes=none')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
   })
 
@@ -90,7 +109,7 @@ describe('the catalog', () => {
     expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).toMatch(/:songs="songs"/)
     expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).not.toMatch(/song-id/)
     expect(DEMOS.find((d) => d.id === 'shell-apresentacao')?.call).not.toMatch(/song-id/)
-    expect(DEMOS.find((d) => d.id === 'criar')?.call).toMatch(/modes="content"/)
+    expect(DEMOS.find((d) => d.id === 'criar')?.call).toMatch(/edit-mode="persisted"/)
     expect(DEMOS.find((d) => d.id === 'accent-teal')?.call).toMatch(/accent="teal"/)
     expect(DEMOS.find((d) => d.id === 'accent-hex')?.call).toMatch(/accent="#4F46E5"/)
   })
@@ -145,6 +164,7 @@ describe('labQuery', () => {
       quebrar: false,
       carga: 'juntas',
       criar: false,
+      editMode: null,
       modes: null,
       accent: null,
       lens: null,
@@ -156,6 +176,7 @@ describe('labQuery', () => {
       quebrar: true,
       carga: 'demanda',
       criar: false,
+      editMode: null,
       modes: null,
       accent: null,
       lens: null,
@@ -179,7 +200,9 @@ describe('labQuery', () => {
     })
   })
 
-  it('reads write modes from the query', () => {
+  it('reads editMode and legacy modes from the query', () => {
+    expect(labQuery('?editMode=persisted').editMode).toBe('persisted')
+    expect(labQuery('?edit-mode=none').editMode).toBe('none')
     expect(labQuery('?modes=local').modes).toBe('local')
     expect(labQuery('?modes=content').modes).toBe('content')
     expect(labQuery('?modes=none').modes).toBe('none')
@@ -193,12 +216,13 @@ describe('labQuery', () => {
   })
 })
 
-describe('writeModes', () => {
-  it('defaults to both, and creating a chart is always for everyone', () => {
-    expect(writeModes(labQuery(''))).toBe('both')
+describe('writeEditMode', () => {
+  it('defaults to local; creating a chart is always persisted', () => {
+    expect(writeEditMode(labQuery(''))).toBe('local')
+    expect(writeEditMode(labQuery('?editMode=persisted'))).toBe('persisted')
     expect(writeModes(labQuery('?modes=local'))).toBe('local')
-    expect(writeModes(labQuery('?criar=1'))).toBe('content')
-    expect(writeModes(labQuery('?criar=1&modes=local'))).toBe('content')
+    expect(writeEditMode(labQuery('?criar=1'))).toBe('persisted')
+    expect(writeEditMode(labQuery('?criar=1&modes=local'))).toBe('persisted')
   })
 })
 
@@ -279,6 +303,17 @@ describe('Hub', () => {
 describe('CifraDemo', () => {
   const stub = { ChordproViewer: true }
 
+  async function mountReady(
+    props: { surface: 'standalone' | 'site'; lista: boolean },
+  ) {
+    const w = mount(CifraDemo, { props, global: { stubs: stub } })
+    if (w.find('[data-boot-shell]').exists()) {
+      await flushPromises()
+      await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists())
+    }
+    return w
+  }
+
   it('does not pass songs when the recipe has no list', () => {
     const w = mount(CifraDemo, {
       props: { surface: 'standalone', lista: false },
@@ -287,54 +322,38 @@ describe('CifraDemo', () => {
     expect(w.getComponent({ name: 'ChordproViewer' }).props('songs')).toBeUndefined()
   })
 
-  it('uses memoryStore so a reload forgets prefs and overlays', () => {
+  it('uses default device storage so overlay/suggestions survive navigation', () => {
     const w = mount(CifraDemo, {
       props: { surface: 'standalone', lista: false },
       global: { stubs: stub },
     })
-    const storage = w.getComponent({ name: 'ChordproViewer' }).props('storage') as {
-      get: (k: string) => string | null
-      set: (k: string, v: string) => void
-    }
-    expect(storage).toBeTruthy()
-    storage.set('cpv:prefs', '{"theme":"dark"}')
-    expect(storage.get('cpv:prefs')).toBe('{"theme":"dark"}')
-    // A fresh mount is a new Map — nothing survives like localStorage would.
-    const again = mount(CifraDemo, {
-      props: { surface: 'standalone', lista: false },
-      global: { stubs: stub },
-    })
-    const next = again.getComponent({ name: 'ChordproViewer' }).props('storage') as {
-      get: (k: string) => string | null
-    }
-    expect(next.get('cpv:prefs')).toBeNull()
+    // Omitted `storage` → package default (localStorage) for local→persisted lab.
+    expect(w.getComponent({ name: 'ChordproViewer' }).props('storage')).toBeUndefined()
+    expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('local')
     w.unmount()
-    again.unmount()
   })
 
-  it('passes a rehearsal list when the recipe has one', () => {
+  it('passes a rehearsal list when the recipe has one', async () => {
     const w = mount(CifraDemo, {
       props: { surface: 'standalone', lista: true },
       global: { stubs: stub },
     })
+    expect(w.find('[data-boot-shell]').exists()).toBe(true)
+    await flushPromises()
+    await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists())
     const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
+    w.unmount()
   })
 
-  it('wires loadSong only for the demanda lab, not the juntas recipe', () => {
-    const juntas = mount(CifraDemo, {
-      props: { surface: 'standalone', lista: true },
-      global: { stubs: stub },
-    })
+  it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
+    const juntas = await mountReady({ surface: 'standalone', lista: true })
     expect(juntas.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBeUndefined()
 
     const prev = window.location.search
     window.history.replaceState({}, '', '?ensaio=demanda')
     try {
-      const demanda = mount(CifraDemo, {
-        props: { surface: 'standalone', lista: true },
-        global: { stubs: stub },
-      })
+      const demanda = await mountReady({ surface: 'standalone', lista: true })
       expect(typeof demanda.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBe(
         'function',
       )
@@ -368,7 +387,7 @@ describe('CifraDemo', () => {
       })
       const viewer = w.getComponent({ name: 'ChordproViewer' })
       expect(viewer.props('source')).toBe('')
-      expect(viewer.props('modes')).toBe('content')
+      expect(viewer.props('editMode')).toBe('persisted')
       expect(viewer.props('songs')).toBeUndefined()
       expect(viewer.props('songId')).toBe('vazio')
       expect(typeof viewer.props('fetchChart')).toBe('function')
@@ -394,22 +413,22 @@ describe('CifraDemo', () => {
     }
   })
 
-  it('honours ?modes= on an ordinary chart', () => {
+  it('honours ?editMode= on an ordinary chart', () => {
     const prev = window.location.search
-    window.history.replaceState({}, '', '?modes=local')
+    window.history.replaceState({}, '', '?editMode=persisted')
     try {
       const w = mount(CifraDemo, {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      expect(w.getComponent({ name: 'ChordproViewer' }).props('modes')).toBe('local')
+      expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('persisted')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
     }
   })
 
-  it('keeps a real chart and both write modes on the ordinary recipes', () => {
+  it('keeps a real chart and local editMode on the ordinary recipes', () => {
     const prev = window.location.search
     window.history.replaceState({}, '', '/')
     try {
@@ -419,7 +438,8 @@ describe('CifraDemo', () => {
       })
       const viewer = w.getComponent({ name: 'ChordproViewer' })
       expect(String(viewer.props('source'))).toMatch(/\{/)
-      expect(viewer.props('modes')).toBe('both')
+      expect(viewer.props('editMode')).toBe('local')
+      expect(viewer.props('actorKey')).toBe('demo-musico')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')

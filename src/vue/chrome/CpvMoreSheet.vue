@@ -95,7 +95,7 @@ const emit = defineEmits<{
       </template>
       <button
         v-if="showQueue"
-        class="cpv-surface-btn cpv-more-item"
+        class="cpv-surface-btn cpv-more-item is-queue"
         data-more-queue
         @click="emit('openQueue')"
       ><CpvIcon name="msgQuote" :size="18" /><span class="cpv-more-copy">Sugestões dos músicos</span><span>{{ pendingCount }} {{ pendingCount === 1 ? 'pendente' : 'pendentes' }}</span></button>

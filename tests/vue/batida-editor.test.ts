@@ -74,7 +74,6 @@ async function viewerAt(
   return w
 }
 
-/** Batida create/edit lives only in content ("Para todos") edit mode. */
 async function enterContentEdit(w: Awaited<ReturnType<typeof viewerAt>>) {
   await w.get('[data-edit]').trigger('click')
   await flushPromises()
@@ -92,10 +91,20 @@ describe('Batida editor CTA + sheet', () => {
     expect(w.find('[data-batida-create]').exists()).toBe(false)
   })
 
-  it('hides + Criar batida in Só para mim edit', async () => {
+  it('shows + Criar batida in Só para mim edit and opens BatidaSheet', async () => {
     const w = await viewerAt(NO_STRUM, 900, 'local')
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
+    const create = w.get('[data-batida-create]')
+    expect(create.text()).toMatch(/Criar batida/i)
+    await create.trigger('click')
+    await flushPromises()
+    expect(w.find('[data-batida-sheet]').exists()).toBe(true)
+  })
+
+  it('hides batida create/edit when editMode is none', async () => {
+    const w = await viewerAt(NO_STRUM, 900, 'none')
+    expect(w.find('[data-edit]').exists()).toBe(false)
     expect(w.find('[data-batida-create]').exists()).toBe(false)
     expect(w.find('[data-batida-sheet]').exists()).toBe(false)
   })
@@ -258,6 +267,27 @@ describe('Batida editor CTA + sheet', () => {
     await flushPromises()
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''
     expect(readMeta(src).x_strum).toContain('bpm=90')
+  })
+
+  it('Só para mim: save writes overlay, not the official source', async () => {
+    const w = await viewerAt(NO_STRUM, 900, 'local')
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-create]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-slot="0"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-choice="hit"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-batida-save]').trigger('click')
+    await flushPromises()
+    const officialWrites = (w.emitted('update:source') ?? []).map((e) => String(e[0] ?? ''))
+    expect(officialWrites.some((s) => s.includes('x_strum'))).toBe(false)
+    expect(w.emitted('save-content')).toBeUndefined()
+    expect(w.find('[data-batida-edit-chrome]').exists()).toBe(true)
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-strum-btn]').exists()).toBe(true)
   })
 
   it('strip stays read-only in view; edit opens from Para todos chrome', async () => {

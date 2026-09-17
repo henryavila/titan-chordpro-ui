@@ -1,20 +1,9 @@
 /**
  * Trimmed one-shots from Freesound pack 33427 (jon_s).
  * License: CC BY 3.0 — see NOTICE in assets/strum/.
- * Natural pick entrance preserved; ATTACK_MS is the peak offset for lookahead.
+ * Loaded only from useStrumSound.preload() — keep off the first paint.
  */
-
-export type StrumSampleId = 'down' | 'up' | 'downAccent' | 'upAccent' | 'mute' | 'palm'
-
-/** Milliseconds from buffer start to perceived attack (peak). */
-export const STRUM_ATTACK_MS: Record<StrumSampleId, number> = {
-  down: 35.0,
-  up: 35.8,
-  downAccent: 35.0,
-  upAccent: 35.8,
-  mute: 26.1,
-  palm: 15.7,
-}
+import type { StrumSampleId } from './strum-kit'
 
 export const STRUM_SAMPLE_B64: Record<StrumSampleId, string> = {
   down:

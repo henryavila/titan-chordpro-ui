@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { bundledFixtures } from '../../demo/host/charts'
+import { allFixtures } from '../../demo/host/charts-all'
 import { parse, songDurationSec } from '../../src/core/index'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -45,7 +45,7 @@ describe('fixtures/sda — corpus de produção para validar a aplicação', () 
   })
 
   it('é a única lista do demo — cifras antigas ficam de fora', () => {
-    const f = bundledFixtures()
+    const f = allFixtures()
     const ids = Object.keys(f).filter((k) => k !== 'vazio')
     expect(ids).toHaveLength(148)
     expect(f['001-tudo-que-ha-de-bom-em-mim']).toContain('{duration: 03:03}')

@@ -1,32 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
-  memoryStore,
   readMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
 } from '@henryavila/titan-chordpro-ui'
-import { pdfText } from '@henryavila/titan-chordpro-ui/pdf'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
   FAIL_ID,
-  bundledFixtures,
   bundledImages,
   defaultSongId,
+  loadAllFixtures,
   mergeCatalog,
+  seedFixtures,
   songsFor,
 } from './host/charts'
+import BootShell from './BootShell.vue'
 import HostSite from './host/HostSite.vue'
-import { hostTheme, labQuery, palcoHref, writeModes, type Surface } from './host/recipe'
+import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './host/recipe'
 
 const props = defineProps<{ surface: Surface; lista: boolean }>()
 
-const fixtures = ref(bundledFixtures())
+const fixtures = ref(seedFixtures())
 const { images, resolveImage } = bundledImages()
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
-/** Demo is ephemeral: reload clears prefs, overlay, and session edits. */
-const store = memoryStore()
+/**
+ * Device storage (default ChartStore): overlay + suggestion queue survive
+ * navigation so you can suggest on `editMode=local` and review on `persisted`.
+ */
 
 /**
  * Host-owned batida presets (demo stand-in for SDA storage).
@@ -62,7 +64,8 @@ const listaMode = computed(() => {
   if (lab.criar || !props.lista) return 'off' as const
   return lab.carga
 })
-const modes = writeModes(lab)
+const editMode = writeEditMode(lab)
+const actorKey = editMode === 'local' ? 'demo-musico' : undefined
 /** Only the lab `?ensaio=demanda` path asks for charts after open. */
 const lazyLista = computed(() => listaMode.value === 'demanda')
 const songs = computed(() => songsFor(fixtures.value, listaMode.value))
@@ -71,6 +74,9 @@ const liveHref = computed(() =>
   palcoHref(props.lista, typeof location === 'undefined' ? '' : location.search),
 )
 const meta = computed(() => readMeta(source.value))
+
+const needsCorpus = !lab.criar && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
+const boot = ref(needsCorpus)
 
 /**
  * Pretends an external API: a few seconds of wait so the skeleton and the
@@ -97,7 +103,24 @@ const fetchYoutubeDuration = async (videoId: string) => {
   return r.text()
 }
 
+const readPdf = async (file: File) => {
+  const { pdfText } = await import('@henryavila/titan-chordpro-ui/pdf')
+  return pdfText(file)
+}
+
 onMounted(async () => {
+  try {
+    if (needsCorpus) {
+      fixtures.value = mergeCatalog(fixtures.value, await loadAllFixtures())
+      if (!lab.criar) {
+        const next =
+          lab.song && lab.song in fixtures.value ? lab.song : defaultSongId(fixtures.value)
+        pick(next)
+      }
+    }
+  } finally {
+    boot.value = false
+  }
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
   fixtures.value = mergeCatalog(fixtures.value, catalogToFixtures(catalog))
@@ -110,8 +133,10 @@ onMounted(async () => {
 </script>
 
 <template>
+  <BootShell v-if="boot" :variant="surface" />
+
   <HostSite
-    v-if="surface === 'site'"
+    v-else-if="surface === 'site'"
     :title="meta.title || 'Cifra'"
     :subtitle="meta.subtitle ?? ''"
     :song-key="meta.key ?? ''"
@@ -127,12 +152,12 @@ onMounted(async () => {
       :hide-comments="lab.hideComments"
       :song-id="id"
       :songs="songs"
-      :storage="store"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :fetch-youtube-duration="fetchYoutubeDuration"
-      :read-pdf="(file: File) => pdfText(file)"
-      :modes="modes"
+      :read-pdf="readPdf"
+      :edit-mode="editMode"
+      :actor-key="actorKey"
       :resolve-image="resolveImage"
       :images="images"
       :capabilities="{ batidaPresets: true }"
@@ -158,12 +183,12 @@ onMounted(async () => {
       :hide-comments="lab.hideComments"
       :song-id="id"
       :songs="songs"
-      :storage="store"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
       :fetch-youtube-duration="fetchYoutubeDuration"
-      :read-pdf="(file: File) => pdfText(file)"
-      :modes="modes"
+      :read-pdf="readPdf"
+      :edit-mode="editMode"
+      :actor-key="actorKey"
       :resolve-image="resolveImage"
       :images="images"
       :capabilities="{ batidaPresets: true }"
