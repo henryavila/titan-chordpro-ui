@@ -107,7 +107,18 @@ const pendingPresetLabel = computed(() => {
   if (!id) return ''
   return props.presets.find((p) => p.id === id)?.label ?? id
 })
-const canSave = computed(() => isCompleteStrumPattern(draft.value))
+function snapshotActive(): StrumPattern {
+  return {
+    ...draft.value,
+    label: label.value.trim() || draft.value.label || 'Padrão',
+    grid: draft.value.slots.length,
+  }
+}
+
+const canSave = computed(() => {
+  const list = draftPatterns.value.map((p, i) => (i === draftActive.value ? snapshotActive() : p))
+  return list.length > 0 && list.every(isCompleteStrumPattern)
+})
 const isSixEight = computed(() => String(draft.value.meter || '').trim() === '6/8')
 const density = computed<StrumDensity>(() => {
   const d = densityFromGrid(draft.value.meter, grid.value, sixEightPulse.value)
@@ -417,9 +428,9 @@ function removePattern() {
 }
 
 function save() {
-  if (!isCompleteStrumPattern(draft.value)) return
+  if (!canSave.value) return
   const next = commitActiveToList()
-  if (!isCompleteStrumPattern(next)) return
+  if (!draftPatterns.value.every(isCompleteStrumPattern)) return
   emit('save', next)
   emit('save-set', { activeIndex: draftActive.value, patterns: draftPatterns.value.map(clonePattern) })
 }

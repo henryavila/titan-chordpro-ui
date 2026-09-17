@@ -19,7 +19,7 @@ const props = defineProps<{
   lintOk: boolean
   themeTitle: string
   themeIcon: CpvIconName
-  /** Batida create/edit is content-only ("Para todos"). */
+  /** Batida create/edit is available in local and persisted edit. */
   hasStrum: boolean
 }>()
 
@@ -36,7 +36,7 @@ const emit = defineEmits<{
   editBatida: []
 }>()
 
-const showBatidaTools = computed(() => props.wMode === 'persisted')
+const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode === 'persisted')
 </script>
 
 <template>

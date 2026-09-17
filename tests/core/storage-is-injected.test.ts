@@ -39,7 +39,7 @@ describe('storage goes through the host seam', () => {
 
     const used = new Set<string>()
     for (const f of walk(srcDir)) {
-      for (const m of readFileSync(f, 'utf8').matchAll(/['"`](cpv:[a-zA-Z:]*)/g)) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/['"`](cpv:[a-zA-Z0-9:-]*)/g)) {
         if (m[1]) used.add(m[1])
       }
     }

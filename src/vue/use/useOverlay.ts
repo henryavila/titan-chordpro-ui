@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import {
   absorbInto,
   applyOps,
@@ -10,7 +10,9 @@ import {
   overlaid,
   overlayKey,
   STORE_KEYS,
+  strumReviewFromOp,
   tuneText,
+  readStrumPatterns,
   readStoredJson as readStored,
   writeStoredJson as writeStored,
 } from '@henryavila/titan-chordpro-ui'
@@ -20,6 +22,7 @@ import type {
   OverlayOp,
   ReadingCtx,
   ResolvedOp,
+  StrumReview,
   Suggestion,
   SuggestionStatus,
   TuneOp,
@@ -37,6 +40,8 @@ export type OverlayOpts = {
   /** Sending suggestions is a host capability, not a reader preference. */
   suggestions: Ref<boolean>
   actorKey?: Ref<string | undefined>
+  /** Optional host-prefilled display name for suggestions. */
+  actorName?: Ref<string | undefined>
   /** Full queue mirror from the host; when set, wins over ChartStore for reads. */
   suggestionQueue?: Ref<Suggestion[] | undefined>
   toast: (msg: string) => void
@@ -80,8 +85,8 @@ export type UpdCard = {
   theirs: string
 }
 
-export type QueueRow = { key: string; label: string; hint: string }
-export type QueueOpCard = OpCard & { fits: boolean; warn: string }
+export type QueueRow = { key: string; label: string; hint: string; actor?: string }
+export type QueueOpCard = OpCard & { fits: boolean; warn: string; strum: StrumReview | null }
 
 type UpdatePlan = NonNullable<ReturnType<typeof checkUpdate>>
 
@@ -106,10 +111,20 @@ export function useOverlay(opts: OverlayOpts) {
   const officialV = ref<string | null>(null)
   const exportOrig = ref(false)
   const confirmRevert = ref(false)
+  const confirmSuggest = ref(false)
+  const nameNeeded = ref(false)
+  const actorName = ref(
+    String(opts.actorName?.value ?? '').trim() ||
+      String(readJson<string>(STORE_KEYS.actorName, '') || '').trim(),
+  )
+  watch(actorName, (v) => {
+    if (String(v).trim()) nameNeeded.value = false
+  })
   const route = ref<'song' | 'queue'>('song')
   const qSong = ref<string | null>(null)
   const qSug = ref<string | null>(null)
   let revertT = 0
+  let suggestT = 0
 
   // Official = what the consumer's database holds: the host source until a
   // "for everyone" save takes over from here on.
@@ -243,6 +258,8 @@ export function useOverlay(opts: OverlayOpts) {
 
   function closeMy() {
     confirmRevert.value = false
+    confirmSuggest.value = false
+    nameNeeded.value = false
     myPanel.value = false
   }
 
@@ -372,21 +389,30 @@ export function useOverlay(opts: OverlayOpts) {
     })
   })
 
+  const suggestLabel = computed(() =>
+    confirmSuggest.value ? 'Confirmar — enviar' : 'Sugerir alteração ao responsável',
+  )
+
   function suggest() {
     const ov = overlay.value
     if (!ov?.ops.length) return
-    try {
-      // Only cancel when confirm explicitly returns false (jsdom may no-op/undefined).
-      if (
-        typeof window !== 'undefined' &&
-        typeof window.confirm === 'function' &&
-        window.confirm('Enviar sugestão ao responsável?') === false
-      ) {
-        return
-      }
-    } catch {
-      /* dialog unavailable — treat as confirmed */
+    const name = actorName.value.trim()
+    if (!name) {
+      nameNeeded.value = true
+      confirmSuggest.value = false
+      opts.toast('O nome é obrigatório para enviar')
+      return
     }
+    nameNeeded.value = false
+    if (!confirmSuggest.value) {
+      confirmSuggest.value = true
+      window.clearTimeout(suggestT)
+      suggestT = window.setTimeout(() => (confirmSuggest.value = false), 4000)
+      return
+    }
+    window.clearTimeout(suggestT)
+    confirmSuggest.value = false
+    writeStored(opts.store, STORE_KEYS.actorName, name)
     const created: Suggestion = {
       id: `s${Date.now()}`,
       songId: opts.songId.value,
@@ -397,6 +423,7 @@ export function useOverlay(opts: OverlayOpts) {
       resolvedOps: [],
       status: 'pending',
       actorKey: opts.actorKey?.value,
+      actorName: name,
     }
     writeSug([...allSug(), created])
     try {
@@ -450,15 +477,22 @@ export function useOverlay(opts: OverlayOpts) {
     if (!id) return []
     return openSugs.value
       .filter((s) => s.songId === id)
-      .map((s) => ({
-        key: s.id,
-        label: new Date(s.at).toLocaleDateString('pt-BR', {
+      .map((s) => {
+        const when = new Date(s.at).toLocaleDateString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
-        }),
-        hint: `${s.ops.length} ${s.ops.length === 1 ? 'ajuste' : 'ajustes'} · base ${s.baseVersion}`,
-      }))
+        })
+        const who = String(s.actorName ?? '').trim()
+        return {
+          key: s.id,
+          label: who || when,
+          hint: who
+            ? `${when} · ${s.ops.length} ${s.ops.length === 1 ? 'ajuste' : 'ajustes'}`
+            : `${s.ops.length} ${s.ops.length === 1 ? 'ajuste' : 'ajustes'} · base ${s.baseVersion}`,
+          actor: who || undefined,
+        }
+      })
   })
 
   const qOps = computed<QueueOpCard[]>(() => {
@@ -479,8 +513,26 @@ export function useOverlay(opts: OverlayOpts) {
             : op.after.join(' / ').slice(0, 90),
         fits,
         warn: fits ? '' : 'Não encaixa mais na cifra atual',
+        strum: strumReviewFromOp(op),
       }
     })
+  })
+
+  const qActorName = computed(() => {
+    const s = allSug().find((x) => x.id === qSug.value)
+    return String(s?.actorName ?? '').trim()
+  })
+
+  const qPreviewStrum = computed(() => {
+    const text = qBatchPreview.value?.text
+    if (!text) return null
+    const set = readStrumPatterns(text)
+    return set.patterns.length ? set.patterns : null
+  })
+
+  const qOfficialStrum = computed(() => {
+    const set = readStrumPatterns(official.value)
+    return set.patterns
   })
 
   const qBatchPreview = computed(() => {
@@ -496,9 +548,12 @@ export function useOverlay(opts: OverlayOpts) {
     }
   })
 
-  const qTitle = computed(() =>
-    qSug.value ? 'Ajustes do pedido' : qSong.value ? 'Pedidos desta cifra' : 'Cifras com pedidos',
-  )
+  const qTitle = computed(() => {
+    if (qSug.value) {
+      return qActorName.value ? `Pedido de ${qActorName.value}` : 'Ajustes do pedido'
+    }
+    return qSong.value ? 'Pedidos desta cifra' : 'Cifras com pedidos'
+  })
 
   function patchSug(sugId: string, next: Suggestion) {
     const status = sugStatus(next)
@@ -655,11 +710,13 @@ export function useOverlay(opts: OverlayOpts) {
     myPanel.value = false
     exportOrig.value = false
     confirmRevert.value = false
+    confirmSuggest.value = false
     closeQueue()
   }
 
   function dispose() {
     window.clearTimeout(revertT)
+    window.clearTimeout(suggestT)
   }
 
   return {
@@ -693,6 +750,12 @@ export function useOverlay(opts: OverlayOpts) {
     updAdopt,
     canSuggest,
     suggest,
+    suggestLabel,
+    actorName,
+    nameNeeded,
+    qActorName,
+    qPreviewStrum,
+    qOfficialStrum,
     mySuggestions,
     pendingCount,
     queueOpen,

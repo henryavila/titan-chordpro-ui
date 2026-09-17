@@ -99,6 +99,9 @@ export {
   opCtxNote,
   opLabel,
   overlaid,
+  strumReviewFromOp,
+  diffStrumPattern,
+  slotsLookSame,
   tuneText,
 } from './overlay'
 export type {
@@ -108,6 +111,8 @@ export type {
   OverlayOp,
   ReadingCtx,
   ResolvedOp,
+  StrumReview,
+  StrumSlotMark,
   Suggestion,
   SuggestionStatus,
   TextOp,

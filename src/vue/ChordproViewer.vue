@@ -26,6 +26,7 @@ import {
   emptyPattern,
   gridFromDensity,
   parse,
+  isCompleteStrumPattern,
   repairStrumPattern,
   playheadAtScroll,
   readMeta,
@@ -139,6 +140,7 @@ const props = withDefaults(
     modes: undefined,
     suggestions: true,
     actorKey: undefined,
+    actorName: undefined,
     suggestionQueue: undefined,
     songId: '',
     songs: undefined,
@@ -255,7 +257,6 @@ const srcOpen = ref(false)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
 const wMode = ref<WriteMode | null>(null)
-const modePick = ref(false)
 const confirmDiscard = ref(false)
 const metaOpen = ref(false)
 
@@ -489,8 +490,7 @@ function normalizeBatidaPattern(p: StrumPattern): StrumPattern {
 }
 
 function openBatidaCreate() {
-  // Batida edits the official chart — only inside "Para todos".
-  if (!isContentEdit.value) return
+  if (!canEditBatida.value) return
   const tempo = sheetBpm(meta.value.tempo)
   const meter = String(meta.value.time ?? '').trim() || '4/4'
   const p = emptyPattern({
@@ -505,7 +505,7 @@ function openBatidaCreate() {
 }
 
 function openBatidaEdit() {
-  if (!isContentEdit.value) return
+  if (!canEditBatida.value) return
   const set = strumSet.value
   if (!set.patterns.length) {
     openBatidaCreate()
@@ -534,8 +534,12 @@ function onBatidaTogglePreview(payload: { pattern: StrumPattern; barBeats: numbe
 
 function publishBatidaSource(next: string) {
   session.replace(next)
-  lastSrc = next
-  emit('update:source', next)
+  // Local edit is overlay-only — the official chart changes when the musician
+  // suggests and the owner accepts. Persisted (and view cycle) write through.
+  if (wMode.value !== 'local') {
+    lastSrc = next
+    emit('update:source', next)
+  }
   touch()
 }
 
@@ -550,6 +554,7 @@ function cycleStrumPattern() {
 }
 
 function saveBatidaSet(set: StrumPatternSet) {
+  if (!set.patterns.every(isCompleteStrumPattern)) return
   const patterns = set.patterns.map(normalizeBatidaPattern)
   const activeIndex = Math.max(0, Math.min(set.activeIndex, Math.max(0, patterns.length - 1)))
   publishBatidaSource(writeStrumPatterns(liveSource.value, { activeIndex, patterns }))
@@ -685,6 +690,7 @@ const ov = useOverlay({
   title: computed(() => meta.value.title ?? ''),
   suggestions: computed(() => props.suggestions !== false),
   actorKey: computed(() => props.actorKey),
+  actorName: computed(() => props.actorName),
   suggestionQueue: computed(() => props.suggestionQueue),
   store,
   toast: (m) => toastMsg(m),
@@ -873,8 +879,10 @@ const queueEntry = computed(
     !isEdit.value &&
     isPopulated.value &&
     modes.value.includes('persisted') &&
-    ov.pendingCount.value > 0 &&
-    !phone.value,
+    ov.pendingCount.value > 0,
+)
+const queueCount = computed(() =>
+  modes.value.includes('persisted') ? ov.pendingCount.value : 0,
 )
 const showMine = computed(() => !isEdit.value && isPopulated.value && ov.hasOverlay.value)
 const fixTuneLabel = computed(() =>
@@ -928,6 +936,10 @@ const nashvilleHint = computed(() => {
  * host identity so a local title change cannot orphan the overlay key.
  */
 const isContentEdit = computed(() => isEdit.value && wMode.value === 'persisted')
+/** Batida create/edit follows the write role: local (overlay + suggest) or persisted. */
+const canEditBatida = computed(
+  () => isEdit.value && (wMode.value === 'local' || wMode.value === 'persisted'),
+)
 
 const dirty = computed(() => {
   rev.value
@@ -1411,6 +1423,8 @@ function toggleScroll() {
     return
   }
   if (!canScroll.value) return
+  // Count-in delays startScroll; the leftover "Fim da música" must leave now.
+  setlist.dismissEnd()
   if (met.follow.value) {
     const silent = shouldRollSilent(rehearsalFocus.value)
     if (!silent) {
@@ -1839,7 +1853,6 @@ function beginEdit(kind: WriteMode) {
   toneOpen.value = false
   moreOpen.value = false
   metaOpen.value = false
-  modePick.value = false
   closeBatida()
   ov.myPanel.value = false
   ov.showOriginal.value = false
@@ -1897,7 +1910,6 @@ function toggleOriginal(orig: boolean) {
 watch(
   () => [props.editMode, props.modes] as const,
   () => {
-    modePick.value = false
     if (wMode.value && !modes.value.includes(wMode.value)) exitEdit()
   },
 )
@@ -2181,8 +2193,7 @@ function onKey(e: KeyboardEvent) {
   else if (k === 'a' || k === 'A') toggleFit()
   else if (k === 'c' || k === 'C') capoOpen.value = !capoOpen.value
   else if (k === 'Escape') {
-    if (modePick.value) modePick.value = false
-    else if (ov.myPanel.value) ov.closeMy()
+    if (ov.myPanel.value) ov.closeMy()
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
@@ -2264,7 +2275,6 @@ function syncHostSource() {
   metaOpen.value = false
   confirmDiscard.value = false
   wMode.value = null
-  modePick.value = false
   const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
   capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
   stopScroll()
@@ -2756,6 +2766,7 @@ defineExpose({
       :can-edit="canEditNow"
       :dock-icon-size="dockIconSize"
       :fit-on="fitOn"
+      :queue-count="queueCount"
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
@@ -2774,14 +2785,16 @@ defineExpose({
 
     <button
       v-if="queueEntry"
-      class="cpv-queue-chip cpv-veil"
-      :class="{ 'is-hidden': chromeHidden }"
+      class="cpv-queue-chip"
+      :class="{ 'is-compact': compact, 'is-alone': chromeHidden }"
       data-queue-chip
+      :aria-label="`Sugestões dos músicos, ${ov.pendingCount.value} ${ov.pendingCount.value === 1 ? 'pendente' : 'pendentes'}`"
       title="Sugestões dos músicos"
-      :style="{ bottom: '128px', opacity: chromeHidden ? '0' : '1', transition: 'opacity .35s ease' }"
       @click="ov.openQueue"
     >
-      <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />Sugestões · {{ ov.pendingCount.value }}
+      <span class="cpv-queue-chip-dot" aria-hidden="true" />
+      <span class="cpv-queue-chip-copy">Sugestões</span>
+      <span class="cpv-queue-chip-count" data-queue-count>{{ ov.pendingCount.value }}</span>
     </button>
 
     <CpvEditDock
@@ -2977,7 +2990,7 @@ defineExpose({
     />
 
     <BatidaSheet
-      v-if="batidaOpen && batidaDraft && isContentEdit"
+      v-if="batidaOpen && batidaDraft && canEditBatida"
       :compact="compact"
       :pattern="batidaDraft"
       :patterns="batidaDraftSet?.patterns"
@@ -3100,6 +3113,9 @@ defineExpose({
       :ops="ov.opList.value"
       :fix-tune-label="fixTuneLabel"
       :can-suggest="ov.canSuggest.value"
+      :suggest-label="ov.suggestLabel.value"
+      :actor-name="ov.actorName.value"
+      :name-error="ov.nameNeeded.value"
       :sent-suggestions="ov.mySuggestions.value"
       :revert-all-label="ov.revertAllLabel.value"
       :revert-all-danger="ov.revertAllLabel.value !== 'Voltar ao original'"
@@ -3107,6 +3123,7 @@ defineExpose({
       @revert="ov.revertOp"
       @fix-tune="onFixTune"
       @suggest="ov.suggest"
+      @update:actor-name="ov.actorName.value = $event"
       @revert-all="ov.revertAll"
     />
 
@@ -3128,6 +3145,9 @@ defineExpose({
       :songs="ov.qSongs.value"
       :sugs="ov.qSugs.value"
       :ops="ov.qOps.value"
+      :actor-name="ov.qActorName.value"
+      :preview-strum="ov.qPreviewStrum.value"
+      :official-strum="ov.qOfficialStrum.value"
       :batch-applies="ov.qBatchPreview.value?.count ?? 0"
       :batch-conflicts="ov.qBatchPreview.value?.conflicts ?? 0"
       @back="ov.qBack"

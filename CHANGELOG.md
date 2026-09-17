@@ -9,12 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Começar de novo (Metadados, Para todos):** confirmação explícita abre Nova cifra (Cifra Club / arquivo / texto / branco). A cifra atual só some ao concluir; cancelar Nova mantém o corpo. Ausente no editar Só para mim.
-- **Editor de batida (B0–B3):** criar/editar `{x_strum:}` na folha Batida (só **Para todos**), multi `{x_strum_set:}`, conflito enrich Manter/Trazer CC.
+- **Editor de batida (B0–B3):** criar/editar `{x_strum:}` na folha Batida em **Só para mim** e **Para todos**, multi `{x_strum_set:}`, conflito enrich Manter/Trazer CC. Local grava overlay e pode sugerir; o merge rotula e aplica `{x_strum:}`.
 - **Presets de batida (host-owned):** prop `strumPresets`, capability `batidaPresets`, evento `save-strum-preset` (`{ id?, label, pattern }`). O pacote não embute nem persiste catálogo — o consumer gerencia.
 
 ### Changed
+- **Demo boot:** o HTML pinta o chrome na hora com “Preparando a cifra…”; Vue, corpus, PDF e samples de batida entram depois. `standalone.html` deixa de ficar preto até o grafo inteiro.
 - **Batida de leitura no desktop:** a faixa (`StrumStrip`) preenche a largura da cifra com setas maiores para acompanhar o pulso; no celular permanece compacta.
 - **Enrich Cifra Club — batida keep-local:** se a cifra já tem `{x_strum:}`, `proposeCifraClubEnrich` não sobrescreve a batida local; só preenche quando a chave está ausente.
+- **Sugerir alteração:** segundo toque confirma (“Confirmar — enviar”); sem `window.confirm`.
+- **Batida em Só para mim:** criar/editar fica no dock local; salvar não emite o oficial — vai para overlay + Sugerir. A máscara de merge nomeia “Batida nova/alterada/removida” em vez de um trecho vazio.
+- **Revisão de sugestão:** o responsável vê o nome de quem enviou e a batida em faixa visual (não só `{x_strum:}`). Enviar exige identificação.
+- **Preview da batida:** a faixa cabe na coluna (sem barra horizontal em tela larga); as setas encolhem antes de rolar.
+- **Diff visual da batida:** numa alteração, o visualizador marca o que mudou (destaque + seta riscada do que era), em vez de duas faixas cruas.
+- **Badge de sugestões:** pílula verde com contador, pulso e fica à vista no celular e no zen — não some com o chrome.
+
+### Fixed
+- **Sugerir sem nome:** o campo marca erro (“O nome é obrigatório”) em vez de virar “Confirmar — enviar” e parecer travado. O toast sobe acima do painel.
+- **Rolar com metrônomo vinculado:** o badge “Fim da música” some no segundo Rolar, mesmo durante a contagem de entrada.
+- **Folha Batida multi:** Salvar fica desligado enquanto algum padrão do conjunto ainda está vazio.
 
 ## [0.3.0] - 2026-09-13
 

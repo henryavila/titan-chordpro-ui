@@ -1,8 +1,8 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import {
   DEMOS,
   GROUPS,
@@ -46,6 +46,23 @@ describe('the four HTML mounts', () => {
     for (const page of PAGES) {
       const file = join(root, 'demo', page.href.replace(/^\//, ''))
       expect(existsSync(file), file).toBe(true)
+    }
+  })
+
+  it('paints a boot shell before the JS graph arrives', () => {
+    const pages = [
+      'standalone.html',
+      'standalone-lista.html',
+      'site.html',
+      'site-lista.html',
+      'index.html',
+    ]
+    for (const name of pages) {
+      const html = readFileSync(join(root, 'demo', name), 'utf8')
+      expect(html, name).toContain('data-boot-shell')
+      expect(html, name).toContain('boot-shell.css')
+      expect(html, name).toMatch(/Preparando/)
+      expect(html, name).toContain('media="print"')
     }
   })
 })
@@ -286,6 +303,17 @@ describe('Hub', () => {
 describe('CifraDemo', () => {
   const stub = { ChordproViewer: true }
 
+  async function mountReady(
+    props: { surface: 'standalone' | 'site'; lista: boolean },
+  ) {
+    const w = mount(CifraDemo, { props, global: { stubs: stub } })
+    if (w.find('[data-boot-shell]').exists()) {
+      await flushPromises()
+      await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists())
+    }
+    return w
+  }
+
   it('does not pass songs when the recipe has no list', () => {
     const w = mount(CifraDemo, {
       props: { surface: 'standalone', lista: false },
@@ -305,29 +333,27 @@ describe('CifraDemo', () => {
     w.unmount()
   })
 
-  it('passes a rehearsal list when the recipe has one', () => {
+  it('passes a rehearsal list when the recipe has one', async () => {
     const w = mount(CifraDemo, {
       props: { surface: 'standalone', lista: true },
       global: { stubs: stub },
     })
+    expect(w.find('[data-boot-shell]').exists()).toBe(true)
+    await flushPromises()
+    await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists())
     const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
+    w.unmount()
   })
 
-  it('wires loadSong only for the demanda lab, not the juntas recipe', () => {
-    const juntas = mount(CifraDemo, {
-      props: { surface: 'standalone', lista: true },
-      global: { stubs: stub },
-    })
+  it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
+    const juntas = await mountReady({ surface: 'standalone', lista: true })
     expect(juntas.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBeUndefined()
 
     const prev = window.location.search
     window.history.replaceState({}, '', '?ensaio=demanda')
     try {
-      const demanda = mount(CifraDemo, {
-        props: { surface: 'standalone', lista: true },
-        global: { stubs: stub },
-      })
+      const demanda = await mountReady({ surface: 'standalone', lista: true })
       expect(typeof demanda.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBe(
         'function',
       )

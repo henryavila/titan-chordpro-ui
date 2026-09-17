@@ -9,7 +9,16 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <link rel="stylesheet" href="./boot-shell.css" />
     <style>
       *, *::before, *::after { box-sizing: border-box; }
       html {
@@ -32,7 +41,18 @@
     </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="cpv-boot" data-boot-theme="standalone" data-boot-shell role="status" aria-busy="true" aria-live="polite">
+        <div class="cpv-boot-head">
+          <span class="cpv-boot-kicker">titan-chordpro-ui</span>
+          <span class="cpv-boot-title">Demos</span>
+        </div>
+        <div class="cpv-boot-page">
+          <div class="cpv-boot-spin" aria-hidden="true"></div>
+          <p class="cpv-boot-msg">Preparando…</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="./hub.ts"></script>
   </body>
 </html>

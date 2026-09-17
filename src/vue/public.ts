@@ -122,6 +122,11 @@ export type ChordproViewerProps = {
    */
   actorKey?: string
   /**
+   * Optional display name prefilled on “Sugerir”. The musician can edit it;
+   * the typed name is stamped on the suggestion and shown to the reviewer.
+   */
+  actorName?: string
+  /**
    * Full suggestion queue mirror (all statuses). When set, wins over ChartStore
    * for reads; mutations emit `update:suggestionQueue` for the host to persist.
    */

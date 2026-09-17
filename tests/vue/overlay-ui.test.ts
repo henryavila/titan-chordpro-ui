@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { normalizeSource } from '../../src/core/index'
@@ -281,12 +281,66 @@ describe('the official chart moved', () => {
   })
 })
 
+async function identify(w: ReturnType<typeof mountViewer>, name = 'Ana Souza') {
+  await w.get('[data-suggest-name]').setValue(name)
+  await flushPromises()
+}
+
+async function confirmSuggest(w: ReturnType<typeof mountViewer>, name = 'Ana Souza') {
+  await identify(w, name)
+  await w.get('[data-suggest]').trigger('click')
+  await flushPromises()
+  expect(w.get('[data-suggest]').text()).toMatch(/Confirmar/i)
+  await w.get('[data-suggest]').trigger('click')
+  await flushPromises()
+}
+
 describe('suggesting to whoever owns the chart', () => {
-  beforeEach(() => {
-    vi.stubGlobal('confirm', () => true)
+  it('does not queue without a name', async () => {
+    const local = mountViewer({ editMode: 'local' })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(local.get('[data-suggest]').text()).not.toMatch(/Confirmar/i)
+    expect(local.get('[data-suggest-name]').attributes('aria-invalid')).toBe('true')
+    expect(local.get('[data-suggest-name-error]').text()).toMatch(/obrigatório/i)
+    expect(local.get('.cpv-toast').text()).toMatch(/obrigatório|nome/i)
+    local.unmount()
   })
-  afterEach(() => {
-    vi.unstubAllGlobals()
+
+  it('clears the name error as soon as the field is filled', async () => {
+    const local = mountViewer({ editMode: 'local' })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    expect(local.find('[data-suggest-name-error]').exists()).toBe(true)
+    await identify(local)
+    expect(local.find('[data-suggest-name-error]').exists()).toBe(false)
+    expect(local.get('[data-suggest-name]').attributes('aria-invalid')).toBe('false')
+    local.unmount()
+  })
+
+  it('asks twice before sending — first tap does not queue', async () => {
+    const local = mountViewer({ editMode: 'local' })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await identify(local)
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(local.get('[data-suggest]').text()).toMatch(/Confirmar/i)
+    local.unmount()
   })
 
   it('queues on local; admin persisted reviews and archives (not deletes)', async () => {
@@ -295,22 +349,24 @@ describe('suggesting to whoever owns the chart', () => {
     await personalise(local)
     await local.get('[data-open-my]').trigger('click')
     await flushPromises()
-    await local.get('[data-suggest]').trigger('click')
-    await flushPromises()
+    await confirmSuggest(local)
     expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(1)
     expect(local.emitted('suggestion-created')).toHaveLength(1)
     local.unmount()
 
     const admin = mountViewer({ editMode: 'persisted' })
     await flushPromises()
-    expect(admin.get('[data-queue-chip]').text()).toContain('Sugestões · 1')
+    expect(admin.get('[data-queue-chip]').text()).toMatch(/Sugestões/)
+    expect(admin.get('[data-queue-count]').text()).toBe('1')
     await admin.get('[data-queue-chip]').trigger('click')
     await flushPromises()
     expect(admin.findAll('[data-q-song]')).toHaveLength(1)
     await admin.get('[data-q-song]').trigger('click')
     await flushPromises()
+    expect(admin.get('[data-q-actor]').text()).toMatch(/Ana Souza/)
     await admin.get('[data-q-sug]').trigger('click')
     await flushPromises()
+    expect(admin.get('[data-q-reviewer-actor]').text()).toMatch(/Ana Souza/)
     expect(admin.findAll('[data-q-op]')).toHaveLength(1)
     expect(admin.find('[data-q-accept-batch]').exists()).toBe(true)
 
@@ -332,8 +388,7 @@ describe('suggesting to whoever owns the chart', () => {
     await personalise(local)
     await local.get('[data-open-my]').trigger('click')
     await flushPromises()
-    await local.get('[data-suggest]').trigger('click')
-    await flushPromises()
+    await confirmSuggest(local)
     local.unmount()
 
     const admin = mountViewer({ editMode: 'persisted' })
@@ -352,6 +407,40 @@ describe('suggesting to whoever owns the chart', () => {
     expect(admin.emitted('save-content')).toBeUndefined()
     expect(admin.emitted('suggestion-refused')).toHaveLength(1)
     admin.unmount()
+  })
+
+  it('keeps the suggestion badge on a phone and on Mais', async () => {
+    const observers: ((entries: unknown[]) => void)[] = []
+    class TestRO {
+      constructor(cb: (entries: unknown[]) => void) {
+        observers.push(cb)
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    const realRO = globalThis.ResizeObserver
+    globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
+    try {
+      const local = mountViewer({ editMode: 'local' })
+      await flushPromises()
+      await personalise(local)
+      await local.get('[data-open-my]').trigger('click')
+      await flushPromises()
+      await confirmSuggest(local)
+      local.unmount()
+
+      const admin = mountViewer({ editMode: 'persisted' })
+      await flushPromises()
+      observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
+      await flushPromises()
+      expect(admin.get('[data-queue-chip]').classes()).not.toContain('is-hidden')
+      expect(admin.get('[data-queue-count]').text()).toBe('1')
+      expect(admin.get('[data-more-queue-badge]').text()).toBe('1')
+      admin.unmount()
+    } finally {
+      globalThis.ResizeObserver = realRO
+    }
   })
 
   it('suggestions=false takes the button away, the version stays', async () => {

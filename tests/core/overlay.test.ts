@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
+import { parseXStrum, writeStrumPatterns } from '../../src/core'
 import {
   absorbInto,
   absorbedOp,
   applyOps,
   checkUpdate,
   diffOps,
+  diffStrumPattern,
   lcsHunks,
   opCtxNote,
   opLabel,
   overlaid,
+  strumReviewFromOp,
   tuneText,
 } from '../../src/core/overlay'
 import type { Overlay, TuneOp } from '../../src/core/overlay'
@@ -158,5 +161,84 @@ describe('labels', () => {
     expect(tuneText({ id: 'tune', type: 'tune', transpose: 0, capo: 0, dual: false, ctx: CTX })).toBe(
       'tom escrito',
     )
+  })
+})
+
+const STRUM_CHART = ['{title:T}', '{key:G}', '{c:V}', '[G]oi'].join('\n')
+const STRUM = parseXStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU')!
+
+describe('merge mask includes batida', () => {
+  it('diffs a new {x_strum:} as an insert the admin can apply', () => {
+    const mine = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
+    const ops = diffOps(STRUM_CHART, mine, CTX)
+    expect(ops.some((op) => op.after.some((l) => l.includes('{x_strum:')))).toBe(true)
+    const r = applyOps(STRUM_CHART, ops)
+    expect(r.failed).toHaveLength(0)
+    expect(r.text).toContain('{x_strum:')
+    expect(r.text).toContain('[G]oi')
+    expect(opLabel(ops[0]!)).toBe('Batida nova')
+  })
+
+  it('applies a batida insert after the official header grew above the anchor', () => {
+    const mine = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
+    const ops = diffOps(STRUM_CHART, mine, CTX)
+    const shifted = STRUM_CHART.replace('{key:G}', '{key:G}\n{tempo:90}')
+    const r = applyOps(shifted, ops)
+    expect(r.failed).toHaveLength(0)
+    expect(r.text).toContain('{x_strum:')
+    expect(r.text).toContain('{tempo:90}')
+  })
+
+  it('labels replace and delete of {x_strum:} as batida, not an empty trecho', () => {
+    const withStrum = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
+    const other = parseXStrum('bpm=100; meter=4/4; grid=8; label=Outro; pat=Dudu Dudu')!
+    const changed = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [other] })
+    const replaceOp = diffOps(withStrum, changed, CTX)[0]!
+    expect(opLabel(replaceOp)).toBe('Batida alterada')
+
+    const cleared = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [] })
+    const deleteOp = diffOps(withStrum, cleared, CTX)[0]!
+    expect(opLabel(deleteOp)).toBe('Batida removida')
+  })
+
+  it('keeps the lyric label when the hunk is not a batida directive', () => {
+    const mine = official.replace('[C]linha dois', '[Am]linha dois')
+    expect(opLabel(diffOps(official, mine, CTX)[0]!)).toBe('Trecho alterado · linha dois')
+  })
+
+  it('exposes a visual review of proposed vs previous patterns', () => {
+    const mine = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
+    const insert = diffOps(STRUM_CHART, mine, CTX)[0]!
+    const inserted = strumReviewFromOp(insert)
+    expect(inserted?.previous).toEqual([])
+    expect(inserted?.proposed[0]?.slots.length).toBe(STRUM.slots.length)
+    expect(inserted?.proposed[0]?.label).toBe('Padrão')
+
+    const lyric = diffOps(official, official.replace('[C]linha dois', '[Am]linha dois'), CTX)[0]!
+    expect(strumReviewFromOp(lyric)).toBeNull()
+  })
+
+  it('marks changed slots on the proposed pattern for the visualizer', () => {
+    const withStrum = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
+    const other = parseXStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=Dudu Dudu')!
+    const changed = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [other] })
+    const review = strumReviewFromOp(diffOps(withStrum, changed, CTX)[0]!)
+    const d = diffStrumPattern(review?.previous[0], review?.proposed[0])
+    expect(d?.pattern.slots.length).toBe(8)
+    expect(d?.marks.some((m) => m === 'changed')).toBe(true)
+    expect(d?.marks.some((m) => m === 'same')).toBe(true)
+    expect(d?.was.some((s) => s != null)).toBe(true)
+  })
+
+  it('marks a new batida as added and a removed one as removed', () => {
+    const mine = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
+    const insert = strumReviewFromOp(diffOps(STRUM_CHART, mine, CTX)[0]!)
+    const added = diffStrumPattern(insert?.previous[0], insert?.proposed[0])
+    expect(added?.marks.every((m) => m === 'added')).toBe(true)
+
+    const cleared = writeStrumPatterns(mine, { activeIndex: 0, patterns: [] })
+    const del = strumReviewFromOp(diffOps(mine, cleared, CTX)[0]!)
+    const gone = diffStrumPattern(del?.previous[0], del?.proposed[0])
+    expect(gone?.marks.every((m) => m === 'removed')).toBe(true)
   })
 })

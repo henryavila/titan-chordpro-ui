@@ -9,17 +9,37 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <!--
       Ficha do consumer: a página rola; o Titan é um bloco 100dvh no fluxo.
       Não é iframe. O overflow hidden fica no frame, não na cifra.
     -->
+    <link rel="stylesheet" href="./boot-shell.css" />
     <style>
       html, body, #app { margin: 0; height: 100%; background: #F7F1E8; overflow: hidden; }
     </style>
   </head>
   <body>
-    <div id="app" data-surface="site" data-lista="0"></div>
+    <div id="app" data-surface="site" data-lista="0">
+      <div class="cpv-boot" data-boot-theme="site" data-boot-shell role="status" aria-busy="true" aria-live="polite">
+        <div class="cpv-boot-head">
+          <span class="cpv-boot-kicker">titan-chordpro-ui</span>
+          <span class="cpv-boot-title">Cifra</span>
+        </div>
+        <div class="cpv-boot-page">
+          <div class="cpv-boot-spin" aria-hidden="true"></div>
+          <p class="cpv-boot-msg">Preparando a cifra…</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="./cifra.ts"></script>
   </body>
 </html>

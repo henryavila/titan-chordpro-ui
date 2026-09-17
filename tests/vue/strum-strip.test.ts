@@ -28,6 +28,16 @@ describe('StrumStrip', () => {
     expect(w.find('[data-strum-i="0"]').classes()).not.toContain('strum-active')
   })
 
+  it('marks changed slots on the visualizer when comparing two patterns', () => {
+    const previous = patternFromCc([7, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'A')
+    const proposed = patternFromCc([19, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'B')
+    const w = mount(StrumStrip, { props: { pattern: proposed, compare: previous } })
+    expect(w.get('[data-strum-i="0"]').attributes('data-strum-diff')).toBe('changed')
+    expect(w.get('[data-strum-was]').text()).toBe('↓')
+    expect(w.get('[data-strum-i="1"]').attributes('data-strum-diff')).toBe('same')
+    w.unmount()
+  })
+
   it('exposes a full-width row so slots can fill the reading column', () => {
     const pattern = patternFromCc([7, 23, 19, 7], ['1', 'x', '2', 'x'], 120, 'Padrão')
     const w = mount(StrumStrip, { props: { pattern } })

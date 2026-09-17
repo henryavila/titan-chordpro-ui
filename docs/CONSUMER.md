@@ -17,10 +17,10 @@ a chamada resumida.
 | `/site.html` | Vue no shell do consumer (conteúdo acima e abaixo) |
 | `/site-lista.html` | Shell com apresentação |
 
-Query nas mesmas páginas: `criar=1`, `modes` (local / content / none),
+Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`.
+(oculta `{c:}` de ensaio), `quebrar=1`. Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
@@ -440,8 +440,8 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
 
 | `editMode` | O que existe |
 |---|---|
-| `local` (default) | “Só para mim” neste aparelho; “Sugerir” opcional |
-| `persisted` | “Para todos” — emite `save-content`; fila de sugestões + Aceitar/Recusar |
+| `local` (default) | “Só para mim” neste aparelho; “Sugerir” opcional. Criar/editar batida grava overlay e pode ir na sugestão. |
+| `persisted` | “Para todos” — emite `save-content`; fila de sugestões + Aceitar/Recusar. Criar/editar batida grava o oficial. |
 | `none` | Sem edição |
 
 ```vue
@@ -451,6 +451,7 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
   :source="cho"
   :song-id="id"
   :actor-key="userId"
+  :actor-name="displayName"
   @suggestion-created="onSug"
 />
 
@@ -470,8 +471,8 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
 **Fluxo sugerir → revisar**
 
 1. Músico edita em `local` (overlay no device).
-2. **Sugerir alteração** (confirmação leve) → emit `suggestion-created` + fila.
-3. Admin em `persisted` abre **Sugestões dos músicos** → preview (encaixa / conflito) → Aceitar lote ou item a item.
+2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve → emit `suggestion-created` (`actorName` + `actorKey` opcional) + fila.
+3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, preview da batida (faixa) e encaixa / conflito → Aceitar lote ou item a item.
 4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save).
 5. Status (`pendente` / `aceita` / `recusada` / `parcial`) aparece na Minha versão do músico na próxima visita (host devolve a fila).
 

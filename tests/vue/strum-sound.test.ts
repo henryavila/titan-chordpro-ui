@@ -107,7 +107,8 @@ describe('useStrumSound sync', () => {
   })
 
   async function flushAudio() {
-    // preload decode + resume()
+    // Kit is a separate chunk now — settle the dynamic import, then decode/resume.
+    await import('../../src/vue/use/strum-sample-data')
     await Promise.resolve()
     await Promise.resolve()
     await Promise.resolve()
