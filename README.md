@@ -58,7 +58,7 @@ Fora: login, multicifra do site, player de áudio, diagramas de braço, collab e
 
 ## Status
 
-`0.5.0` — leitura, ensaio (lista, swipe, tela ligada), overlay, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
+`0.6.0` — leitura, ensaio (lista, swipe nas bordas, tela ligada), overlay, `persistSuggestion`, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
 
 ```bash
 pnpm install
@@ -616,4 +616,4 @@ Instalar:
 pnpm add @henryavila/titan-chordpro-ui
 ```
 
-Pre-1.0: `~0.5.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.6.0`, não `0.5.1`).
+Pre-1.0: `~0.6.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.6.0`, não `0.5.1`).
