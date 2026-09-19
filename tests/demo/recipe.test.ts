@@ -169,6 +169,7 @@ describe('labQuery', () => {
       accent: null,
       lens: null,
       hideComments: false,
+      zonas: false,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
@@ -181,7 +182,9 @@ describe('labQuery', () => {
       accent: null,
       lens: null,
       hideComments: false,
+      zonas: false,
     })
+    expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
   })
 
   it('reads the reading lens and comment filter', () => {

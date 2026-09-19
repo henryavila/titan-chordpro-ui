@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Swipe no ensaio:** o centro da cifra só rola. Troca de música é deslize na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). Sem flick de velocidade, sem carimbo Tinder, sem a cifra deslizando 38%. Autoscroll pausa no peek.
+
 ### Security
 - **jsPDF 4.2.1** (antes 2.5.2): fecha os CVEs do Dependabot na geração de PDF. Fontes continuam em VFS; o export da cifra não muda de API.
 - **vitest 4.1.11** (antes 3.2.7): fecha CVE-2026-84373 no `@vitest/mocker` (dev-only).

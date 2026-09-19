@@ -60,6 +60,11 @@ export type ViewerCapabilities = {
    * Off by default — pass `true` and feed `strumPresets`.
    */
   batidaPresets?: boolean
+  /**
+   * Paint the rehearsal swipe rails (Safari dead / prev / centre / next).
+   * Off by default. Demo: `?zonas=1`.
+   */
+  debugSwipe?: boolean
 }
 
 /** Cover or lyric-slide background the host wants in the `.slja`. */

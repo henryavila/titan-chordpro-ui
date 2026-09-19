@@ -134,6 +134,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |
+| `capabilities.debugSwipe` | `false` | `true` pinta as zonas do swipe no ensaio (Safari / anterior / rolar / próxima). Demo: `?zonas=1` |
 | `editMode` | `'local'` | `local` \| `persisted` \| `none`. Um papel por mount (frontend vs backend). Ortogonal a `mode` view\|edit |
 | `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
@@ -200,9 +201,10 @@ trocar de música num ensaio não pode esperar rede. Uma que não chega vira pai
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**
 daquela cifra. **Cifra | Letra** (e Nashville / comentários) são do ensaio —
-prop `lens` / `hideComments` — **não** resetam ao mudar de música. No celular, um swipe
-horizontal na cifra mostra um fade + chevron (próxima/anterior) e só troca de música se o
-gesto cruzar o limiar; rolar para baixo não troca. No fim da auto-rolagem o viewer
+prop `lens` / `hideComments` — **não** resetam ao mudar de música. No celular, um deslize
+**na borda** da cifra (trilho 64px no celular, 128px no tablet; esquerda depois dos 24px do voltar do Safari)
+mostra um fade + chevron (próxima/anterior) e só troca de música se o gesto cruzar o
+limiar; o centro da cifra só rola. No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
 
 **Página instantânea, cifras chegando depois.** É o formato normal: mande a lista
