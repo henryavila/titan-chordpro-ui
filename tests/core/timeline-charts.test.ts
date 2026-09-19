@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ANCHOR_RATIO,
   anchorPx,
   barsAtPx,
   buildTimeline,
@@ -101,6 +102,32 @@ describe('the clock on real charts', () => {
     expect(inter).toBeGreaterThan(0)
     expect(blocks[inter - 1]?.kind).toBe('comment')
     expect(span(inter, inter - 1)).toBeCloseTo(16 * (60 / 72), 2)
+  })
+
+  it('reads {tempo:65 BPM} as 65, not the 100 fallback', () => {
+    const { clock } = timelineOf('sda/100-nasce-em-mim.cho')
+    expect(clock.bpm).toBe(65)
+  })
+
+  it('holds Nasce em Mim still through the 32-beat intro so the first lyric does not climb off', () => {
+    const PHONE = 844
+    const { t, run, measured, clock, blocks } = timelineOf('sda/100-nasce-em-mim.cho', {
+      topPad: 96,
+      viewport: PHONE,
+      width: 390,
+    })
+    expect(clock.bpm).toBe(65)
+    const intro = blocks.findIndex((b) => b.music.beats === 32)
+    expect(intro).toBeGreaterThan(0)
+    const sung = measured.find((b, i) => i > intro && b.music.rows > 0)
+    expect(sung).toBeDefined()
+    const introEnd = barsAtPx(t, sung!.top)
+    expect(introEnd).toBeCloseTo(32 * (60 / 65), 2)
+    expect(scrollAtPlayhead(t, 0, PHONE)).toBe(0)
+    expect(scrollAtPlayhead(t, (introEnd * 0.5) / run, PHONE)).toBe(0)
+    const rest = Math.round(ANCHOR_RATIO * PHONE)
+    const atEnd = scrollAtPlayhead(t, introEnd / run, PHONE)
+    expect(sung!.top - atEnd).toBeGreaterThanOrEqual(Math.min(sung!.top, rest) - 2)
   })
 
   /**
@@ -285,24 +312,23 @@ describe('where the page is', () => {
     'sda/001-tudo-que-ha-de-bom-em-mim.cho',
   ]
 
-  it('never freezes the chart at the start — every chart is moving inside a second', () => {
+  it('stays still through a compact intro, then moves — never freezes a chart that has already started singing', () => {
     for (const rel of CORPUS) {
-      const p = pageAt(rel)
-      // A chart shorter than the frame has nothing to scroll, and saying so is
-      // the honest answer; every other chart must be visibly alive at once.
-      if (p.max < 1) continue
-      expect(p.at(1), rel).toBeGreaterThan(0)
-    }
-  })
-
-  it('has covered a readable distance by the time the intro is over', () => {
-    for (const rel of CORPUS) {
-      const p = pageAt(rel)
-      if (p.max < 1) continue
-      // 30s in — past the intro of every chart in the corpus — the page has
-      // moved a line of chart, or all the paper the chart has, whichever comes
-      // first: `088-minha-ofertinha` is 29px taller than the frame in total.
-      expect(p.at(30), rel).toBeGreaterThanOrEqual(Math.min(40, p.max))
+      const { t, run, measured } = timelineOf(rel, { viewport: PHONE })
+      const max = Math.max(0, t.doc - PHONE)
+      if (max < 1) continue
+      expect(scrollAtPlayhead(t, 0, PHONE), rel).toBe(0)
+      const u1 = Math.min(1, 1 / Math.max(run, 1))
+      const px1 = pxAtBars(t, u1 * t.bars)
+      const scroll1 = scrollAtPlayhead(t, u1, PHONE)
+      if (px1 <= t.hold + 1) expect(scroll1, `${rel} still in intro`).toBe(0)
+      else expect(scroll1, `${rel} past hold`).toBeGreaterThan(0)
+      const firstSung = measured.find((b) => b.music.rows > 0)
+      if (!firstSung) continue
+      const sungU = barsAtPx(t, firstSung.top) / t.bars
+      const after = scrollAtPlayhead(t, Math.min(1, sungU + 0.05), PHONE)
+      if (after >= max - 1) continue
+      expect(after, `${rel} after first lyric`).toBeGreaterThan(0)
     }
   })
 

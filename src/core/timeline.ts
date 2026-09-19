@@ -4,11 +4,12 @@ import type { BlockMusic, ChordProView } from './types'
  * Auto-scroll in musical time.
  *
  * A px/s speed taken from the BPM has no relation to the real duration, and
- * the page starts moving on the first frame — the intro leaves the screen
- * before it is played. Instead a reading playhead walks the chart in the time
- * of the music: every block gets a musical weight and its pixel height is
- * crossed in the time of that weight. The page only moves once the playhead
- * passes the reading line, so intro and ending stay still on screen.
+ * a compact intro (many chords, no lyric) would leave the screen before it is
+ * played if the page followed those few pixels. Instead a reading playhead
+ * walks the chart in the time of the music: every block gets a musical weight
+ * and its pixel height is crossed in the time of that weight. The page stays
+ * still through a voiceless lead, then the ramp starts at the first sung line
+ * (or at the reading line when that intro is taller than a third of the screen).
  *
  * The weight is built in two layers, and the difference between them is the
  * whole point:
@@ -54,7 +55,14 @@ export const ANCHOR_RATIO = 0.34
  * and half of `088-minha-ofertinha`, a chart with 29px of scrolling in it. The
  * page pays it gradually instead: it runs at `1 - ANCHOR_RAMP` of the music's
  * pace while the music drifts down to its resting place, and at the music's
- * pace from there. Nothing is ever frozen.
+ * pace from there.
+ *
+ * Compact voiceless intro is the exception. Many chords and no lyric occupy a
+ * few lines at the top; the clock already spends their `x///` at the BPM, but
+ * feeding those pixels into the ramp pulled the first verse to the top before
+ * anyone sang it. The ramp starts at the first sung line, or at the reading
+ * line when that intro is taller than a third of the screen (a tab, five
+ * lines of chords). A `{c:INTRODUÇÃO}` with no played line is not an intro.
  */
 export const ANCHOR_RAMP = 0.5
 
@@ -234,10 +242,15 @@ export function marksPerBeat(time: string | null | undefined): number {
   return compound(n, d) ? 3 : 1
 }
 
-/** `{tempo:}` when it is a usable BPM. */
+/** `{tempo:}` when it is a usable BPM. Accepts `65`, `"65"` and `"65 BPM"`. */
 export function sheetBpm(tempo: string | number | null | undefined): number | null {
-  const t = Number(tempo)
-  return t >= 30 && t <= 300 ? Math.round(t) : null
+  if (typeof tempo === 'number') {
+    return tempo >= 30 && tempo <= 300 && Number.isFinite(tempo) ? Math.round(tempo) : null
+  }
+  const m = String(tempo ?? '').trim().match(/^(\d{2,3})(?:\s*bpm)?$/i)
+  if (!m) return null
+  const t = Number(m[1])
+  return t >= 30 && t <= 300 ? t : null
 }
 
 export type TimelineBlock = {
@@ -301,10 +314,55 @@ export type Timeline = {
   /** True when the counted time already exceeds the declared duration. */
   over: boolean
   counted: boolean
+  /**
+   * Document y where the scroll ramp starts. First sung line when a compact
+   * voiceless intro leads the chart; the reading line when that intro is
+   * taller than a third of the viewport. Equal to {@link contentOrigin} when
+   * there is no played intro to wait for.
+   */
+  hold: number
 }
 
 /** Paper that is not music — folded into the next (or last) musical block. */
 const SILENT_KIND = new Set(['comment', 'note', 'image'])
+
+function isPlayedLead(b: TimelineBlock): boolean {
+  if (b.kind === 'tab' || b.kind === 'score') return true
+  if (b.kind !== 'stanza' && b.kind !== 'chorus') return false
+  if (b.music.rows > 0) return false
+  return b.music.beats > 0 || b.music.chords > 0 || b.music.bars > 0
+}
+
+/**
+ * Where the ramp should start, in document y.
+ *
+ * A compact intro (played, not sung) must not consume the ramp: the first
+ * lyric stays on screen until it is time to sing it. A tall intro (tab, a
+ * screen of chords) still has to move once the playhead crosses the reading
+ * line — otherwise the musician loses the notes they are playing.
+ */
+function scrollHoldPx(blocks: TimelineBlock[], content: number, viewport: number): number {
+  let i = 0
+  let played = false
+  while (i < blocks.length) {
+    const b = blocks[i]
+    if (!b) break
+    if (SILENT_KIND.has(b.kind)) {
+      i++
+      continue
+    }
+    if (isPlayedLead(b)) {
+      played = true
+      i++
+      continue
+    }
+    break
+  }
+  const sung = blocks[i]
+  if (!played || sung == null) return content
+  const rest = Math.round(ANCHOR_RATIO * Math.max(0, viewport))
+  return Math.min(sung.top, Math.max(content, rest))
+}
 
 type RawSeg = { top: number; h: number; fx: number; es: number; kind: string }
 
@@ -459,6 +517,7 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
     bars = b
   }
 
+  const content = segs[0]?.top ?? 0
   return {
     segs,
     bars,
@@ -469,6 +528,7 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
     k,
     over,
     counted: exact > 0,
+    hold: scrollHoldPx(blocks, content, opts.viewport),
   }
 }
 
@@ -539,9 +599,11 @@ export function anchorPx(viewportHeight: number, docHeight = Infinity): number {
 /**
  * Where the page sits when the music has reached `px` of the document.
  *
- * `origin` is the first musical pixel ({@link contentOrigin}). Chrome above it
- * must not consume the ramp: at t=0 the playhead is already at `origin` and
- * the page is at scroll 0. With `origin = 0` this is the original formula.
+ * `origin` is where the ramp starts ({@link Timeline.hold}, falling back to
+ * {@link contentOrigin}). Chrome and a compact voiceless intro above it must
+ * not consume the ramp: at t=0 the playhead is already at the first musical
+ * pixel and the page is at scroll 0. With `origin = 0` this is the original
+ * formula.
  */
 export function scrollAtPx(px: number, anchor: number, origin = 0): number {
   const rel = Math.max(0, px - origin)
@@ -563,7 +625,7 @@ export function pxAtScroll(scroll: number, anchor: number, origin = 0): number {
 /** Scroll offset the RAF writes at musical fraction `u` (0 at the first note). */
 export function scrollAtPlayhead(t: Timeline | null, u: number, viewport: number): number {
   if (!t) return 0
-  const origin = contentOrigin(t)
+  const origin = t.hold ?? contentOrigin(t)
   const anchor = anchorPx(viewport, t.doc)
   const max = Math.max(0, t.doc - viewport)
   const px = pxAtBars(t, Math.max(0, Math.min(1, u)) * t.bars)
@@ -573,7 +635,8 @@ export function scrollAtPlayhead(t: Timeline | null, u: number, viewport: number
 /** Musical fraction shown at a scroll offset — inverse of {@link scrollAtPlayhead}. */
 export function playheadAtScroll(t: Timeline | null, scroll: number, viewport: number): number {
   if (!t) return 0
-  const origin = contentOrigin(t)
+  if (scroll <= 0) return 0
+  const origin = t.hold ?? contentOrigin(t)
   const anchor = anchorPx(viewport, t.doc)
   const bars = t.bars || 1
   return barsAtPx(t, pxAtScroll(scroll, anchor, origin)) / bars

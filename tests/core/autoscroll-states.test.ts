@@ -276,9 +276,11 @@ describe('the clock is the same music on every UI surface', () => {
         expect(scrollAtPlayhead(t, 0, surface.viewport), label).toBe(0)
         expect(scrollAtPlayhead(t, 1, surface.viewport), label).toBeCloseTo(max, 0)
         if (max < 1) continue
-        expect(scrollAtPlayhead(t, Math.min(1, 1 / Math.max(run, 1)), surface.viewport), `${label} at 1s`).toBeGreaterThan(
-          0,
-        )
+        const u1 = Math.min(1, 1 / Math.max(run, 1))
+        const px1 = pxAtBars(t, u1 * t.bars)
+        const at1 = scrollAtPlayhead(t, u1, surface.viewport)
+        if (px1 <= t.hold + 1) expect(at1, `${label} at 1s still in intro`).toBe(0)
+        else expect(at1, `${label} at 1s`).toBeGreaterThan(0)
         let prev = -1
         for (let i = 0; i <= 80; i++) {
           const now = scrollAtPlayhead(t, i / 80, surface.viewport)
@@ -307,6 +309,12 @@ describe('the clock is the same music on every UI surface', () => {
         // A chart shorter than its song hits the end of the paper before u=1;
         // the inverse of that clamp is "the end", not the fraction we asked.
         if (s >= max - 0.5) continue
+        // Compact intro: many playhead fractions map to scroll 0. The inverse
+        // of that hold is the start of the song, not the fraction we asked.
+        if (s <= 0) {
+          expect(playheadAtScroll(t, 0, surface.viewport), chart.rel).toBeCloseTo(0, 3)
+          continue
+        }
         expect(playheadAtScroll(t, s, surface.viewport), `${chart.rel} u=${u}`).toBeCloseTo(u, 2)
       }
     }

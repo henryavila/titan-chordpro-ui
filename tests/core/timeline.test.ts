@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ANCHOR_RATIO,
   barsAtPx,
   beatsPerBar,
   BEATS_PER_ROW,
   buildTimeline,
+  contentOrigin,
   etaSec,
   formatEta,
   hasSongDuration,
@@ -12,8 +14,10 @@ import {
   marksPerBeat,
   maskDurationMmSs,
   normalizeDurationMmSs,
+  playheadAtScroll,
   pxAtBars,
   runSec,
+  scrollAtPlayhead,
   sheetBpm,
   songDurationSec,
 } from '../../src/core/timeline'
@@ -123,6 +127,14 @@ describe('song clock helpers', () => {
     expect(sheetBpm('72')).toBe(72)
     expect(sheetBpm(5)).toBeNull()
     expect(sheetBpm(undefined)).toBeNull()
+    // Charts write `{tempo:65 BPM}`; Number("65 BPM") is NaN and used to
+    // fall through to the 100 default, which stole a third of Nasce em Mim's intro.
+    expect(sheetBpm('65 BPM')).toBe(65)
+    expect(sheetBpm('65 bpm')).toBe(65)
+    expect(sheetBpm('97 BPM')).toBe(97)
+    expect(sheetBpm('65BPM')).toBe(65)
+    expect(sheetBpm(' 71 BPM ')).toBe(71)
+    expect(sheetBpm('BPM 65')).toBeNull()
   })
 
   /**
@@ -444,5 +456,71 @@ describe('buildTimeline', () => {
     expect(etaSec(t, 200, 0.5, 1)).toBeCloseTo(100, 0)
     expect(etaSec(t, 200, 0.5, 2)).toBeCloseTo(50, 0)
     expect(etaSec(t, 200, 1, 1)).toBe(0)
+  })
+})
+
+/**
+ * Compact voiceless intro: many beats, little height. The clock still spends
+ * those beats at the chart BPM; the page stays at scroll 0 so the first lyric
+ * does not climb to the top while the intro is played.
+ */
+describe('scroll hold on a compact intro', () => {
+  const viewport = 800
+  const rest = Math.round(ANCHOR_RATIO * viewport)
+  const compact: TimelineBlock[] = [
+    { top: 80, h: 30, kind: 'comment', music: music() },
+    { top: 120, h: 80, kind: 'stanza', music: music({ beats: 32, chords: 8 }) },
+    { top: 220, h: 400, kind: 'stanza', music: music({ rows: 4, chords: 8 }) },
+  ]
+  const opts = {
+    bpm: 65,
+    beatsPerBar: 4,
+    marksPerBeat: 1,
+    durationSec: 161,
+    barPx: 44,
+    doc: 2200,
+    viewport,
+  }
+
+  it('does not move the page while the playhead is still in the intro', () => {
+    const t = buildTimeline(compact, opts)
+    const introEnd = barsAtPx(t, 220)
+    expect(introEnd).toBeCloseTo(32 * (60 / 65), 2)
+    expect(scrollAtPlayhead(t, 0, viewport)).toBe(0)
+    // Halfway through the 32-beat intro the first lyric is still where it was.
+    expect(scrollAtPlayhead(t, (introEnd / 2) / t.bars, viewport)).toBe(0)
+    expect(playheadAtScroll(t, 0, viewport)).toBeCloseTo(0, 5)
+  })
+
+  it('keeps the first lyric at or below the reading line when the intro ends', () => {
+    const t = buildTimeline(compact, opts)
+    const introEnd = barsAtPx(t, 220)
+    const scroll = scrollAtPlayhead(t, introEnd / t.bars, viewport)
+    expect(220 - scroll).toBeGreaterThanOrEqual(Math.min(220, rest) - 1)
+  })
+
+  it('does not hold a comment-only lead — there is no intro to wait for', () => {
+    const labeled: TimelineBlock[] = [
+      { top: 80, h: 40, kind: 'comment', music: music() },
+      { top: 140, h: 400, kind: 'stanza', music: music({ rows: 4, chords: 8 }) },
+    ]
+    const t = buildTimeline(labeled, { ...opts, doc: 2200 })
+    expect(contentOrigin(t)).toBe(80)
+    expect(t.hold).toBe(80)
+    expect(scrollAtPlayhead(t, 1 / t.bars, viewport)).toBeGreaterThan(0)
+  })
+
+  it('starts moving once a tall intro crosses the reading line', () => {
+    const tall: TimelineBlock[] = [
+      { top: 40, h: 500, kind: 'tab', music: music({ bars: 8 }) },
+      { top: 560, h: 80, kind: 'stanza', music: music({ beats: 16, chords: 4 }) },
+      { top: 660, h: 400, kind: 'stanza', music: music({ rows: 4, chords: 8 }) },
+    ]
+    const t = buildTimeline(tall, { ...opts, doc: 660 + 400 + 140 })
+    expect(t.hold).toBe(rest)
+    expect(t.hold).toBeLessThan(560)
+    expect(scrollAtPlayhead(t, 0, viewport)).toBe(0)
+    const atRest = barsAtPx(t, rest)
+    expect(scrollAtPlayhead(t, Math.min(0.99, (atRest + 1) / t.bars), viewport)).toBeGreaterThan(0)
   })
 })
