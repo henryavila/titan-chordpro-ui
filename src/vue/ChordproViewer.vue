@@ -99,7 +99,7 @@ import {
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSongSwipe } from './use/useSongSwipe'
-import { SWIPE_IN_MS, SWIPE_OUT_MS } from './use/song-swipe'
+import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
@@ -1369,6 +1369,11 @@ function startScroll() {
   const dur = clockOf(parsed.value).durationSec
   const step = (now: number) => {
     if (!scrolling.value) return
+    if (swipePeekHold) {
+      prev = now
+      raf = requestAnimationFrame(step)
+      return
+    }
     // One timeline per frame: each call may re-measure every block in the DOM,
     // and asking four times over lands four full layouts in the same frame.
     const t = timelineFor()
@@ -2359,8 +2364,9 @@ const endNext = () => {
   goNext()
 }
 
-const swipeFx = ref('')
+const swipeBusy = ref(false)
 let swipeGen = 0
+let swipePeekHold = false
 
 const swipeBlocked = computed(
   () =>
@@ -2378,16 +2384,8 @@ const swipeBlocked = computed(
     ov.queueOpen.value ||
     srcOpen.value ||
     confirmDiscard.value ||
-    !!swipeFx.value,
+    swipeBusy.value,
 )
-
-function prefersReduceMotion() {
-  try {
-    return !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-  } catch {
-    return false
-  }
-}
 
 function waitMs(ms: number) {
   return new Promise<void>((resolve) => {
@@ -2397,28 +2395,13 @@ function waitMs(ms: number) {
 
 async function playSwipeCommit(intent: 'next' | 'prev') {
   const gen = ++swipeGen
-  if (prefersReduceMotion()) {
-    songSwipe.clear()
-    if (intent === 'next') goNext()
-    else goPrev()
-    return
-  }
-  swipeFx.value = `out-${intent}`
-  await waitMs(SWIPE_OUT_MS)
-  if (gen !== swipeGen) return
-  songSwipe.clear()
+  swipeBusy.value = true
   if (intent === 'next') goNext()
   else goPrev()
-  swipeFx.value = `in-${intent}`
-  await nextTick()
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  })
+  await waitMs(SWIPE_FADE_MS)
   if (gen !== swipeGen) return
-  swipeFx.value = `settle-${intent}`
-  await waitMs(SWIPE_IN_MS)
-  if (gen !== swipeGen) return
-  swipeFx.value = ''
+  songSwipe.clear()
+  swipeBusy.value = false
 }
 
 const songSwipe = useSongSwipe({
@@ -2430,8 +2413,14 @@ const songSwipe = useSongSwipe({
   onCommit: (intent) => {
     void playSwipeCommit(intent)
   },
+  onPeek: (peeking) => {
+    swipePeekHold = peeking
+  },
 })
 const swipeView = songSwipe.view
+const swipeDebug = computed(
+  () => setlist.on.value && props.capabilities?.debugSwipe === true,
+)
 
 function bindPage(el: unknown) {
   const node = el as HTMLElement | null
@@ -2607,6 +2596,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   swipeGen += 1
+  swipeBusy.value = false
+  swipePeekHold = false
   wakeLock.stop()
   songSwipe.detach()
   stopScroll()
@@ -2652,9 +2643,12 @@ defineExpose({
     data-cpv-root
     :data-theme="effTheme"
     :data-cpv-lens="activeLens"
-    :class="[rootHitClass, { 'is-setlist': setlist.on.value }]"
-    :style="{ '--cpv-met-hit': metHitMs }"
-    :data-swipe="swipeFx || undefined"
+    :class="[rootHitClass, { 'is-setlist': setlist.on.value, 'is-swipe-debug': swipeDebug }]"
+    :style="{
+      '--cpv-met-hit': metHitMs,
+      '--cpv-swipe-edge': `${SWIPE_EDGE_PX}px`,
+      '--cpv-swipe-rail': `${swipeRailPx(width)}px`,
+    }"
     @pointerdown="songSwipe.onDown"
   >
     <div class="cpv-glow" />
@@ -2703,6 +2697,29 @@ defineExpose({
       @prev="goPrev"
       @next="goNext"
       @start="startNew"
+    />
+    <div
+      v-if="swipeDebug"
+      class="cpv-swipe-debug"
+      aria-hidden="true"
+    >
+      <div class="cpv-swipe-debug-dead">Safari</div>
+      <div class="cpv-swipe-debug-center">rolar</div>
+      <div class="cpv-swipe-debug-legend">
+        cinza = Safari · verde = rolar · azul = anterior · laranja = próxima
+      </div>
+    </div>
+    <div
+      v-if="setlist.on.value"
+      class="cpv-swipe-rail"
+      data-swipe-rail="prev"
+      aria-hidden="true"
+    />
+    <div
+      v-if="setlist.on.value"
+      class="cpv-swipe-rail"
+      data-swipe-rail="next"
+      aria-hidden="true"
     />
     <CpvSwipeVeil
       :view="swipeView"

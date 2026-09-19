@@ -1,12 +1,17 @@
 import { expect, test } from '@playwright/test'
 
-/** Finger sequence on the chart. Mouse drag must not count — only touch. */
-async function swipe(page: import('@playwright/test').Page, dx: number, dy: number) {
+/** Finger on the right rail. Centre starts must not count. */
+async function swipeFrom(
+  page: import('@playwright/test').Page,
+  dx: number,
+  dy: number,
+  along: number,
+) {
   await page.evaluate(
-    ({ dx, dy }) => {
-      const el = document.querySelector('[data-cpv-scroll]') as HTMLElement
+    ({ dx, dy, along }) => {
+      const el = document.querySelector('[data-cpv-root]') as HTMLElement
       const r = el.getBoundingClientRect()
-      const x = r.left + r.width * 0.72
+      const x = r.left + r.width * along
       const y = r.top + r.height * 0.4
       const down = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', isPrimary: true }
       el.dispatchEvent(new PointerEvent('pointerdown', { ...down, clientX: x, clientY: y }))
@@ -15,16 +20,21 @@ async function swipe(page: import('@playwright/test').Page, dx: number, dy: numb
       )
       window.dispatchEvent(new PointerEvent('pointermove', { ...down, clientX: x + dx, clientY: y + dy }))
     },
-    { dx, dy },
+    { dx, dy, along },
   )
 }
 
-async function lift(page: import('@playwright/test').Page, dx: number, dy: number) {
+async function liftFrom(
+  page: import('@playwright/test').Page,
+  dx: number,
+  dy: number,
+  along: number,
+) {
   await page.evaluate(
-    ({ dx, dy }) => {
-      const el = document.querySelector('[data-cpv-scroll]') as HTMLElement
+    ({ dx, dy, along }) => {
+      const el = document.querySelector('[data-cpv-root]') as HTMLElement
       const r = el.getBoundingClientRect()
-      const x = r.left + r.width * 0.72
+      const x = r.left + r.width * along
       const y = r.top + r.height * 0.4
       window.dispatchEvent(
         new PointerEvent('pointerup', {
@@ -38,38 +48,49 @@ async function lift(page: import('@playwright/test').Page, dx: number, dy: numbe
         }),
       )
     },
-    { dx, dy },
+    { dx, dy, along },
   )
 }
 
-test('swipe left paints the next stamp and commits past the line', async ({ page }) => {
+test('swipe left from the right rail paints the next stamp and commits past the line', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?lista=1')
   await page.locator('[data-setlist-open]').first().waitFor()
   await expect(page.locator('[data-chart-title]').first()).toContainText(/Rei/i)
 
-  await swipe(page, -160, 8)
+  await swipeFrom(page, -160, 8, 0.95)
   const veil = page.locator('[data-song-swipe]')
   await expect(veil).toBeVisible()
   await expect(veil).toHaveAttribute('data-intent', 'next')
   await expect(veil).toHaveAttribute('data-armed', '1')
   await expect(veil).toContainText(/Solte para ir/i)
 
-  await lift(page, -160, 8)
-  await expect(page.locator('[data-cpv-root]')).toHaveAttribute('data-swipe', /out-next|in-next|settle-next/)
+  await liftFrom(page, -160, 8, 0.95)
   await expect(page.locator('[data-chart-title]').first()).toContainText(/Jesus/i)
   await expect(page.locator('[data-song-swipe]')).toHaveCount(0)
   await expect(page.locator('[data-cpv-root]')).not.toHaveAttribute('data-swipe')
 })
 
-test('scrolling the chart down does not change song', async ({ page }) => {
+test('a horizontal drag from the centre of the chart does not change song', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?lista=1')
   await page.locator('[data-setlist-open]').first().waitFor()
   await expect(page.locator('[data-chart-title]').first()).toContainText(/Rei/i)
 
-  await swipe(page, 18, 180)
+  await swipeFrom(page, -160, 8, 0.5)
   await expect(page.locator('[data-song-swipe]')).toHaveCount(0)
-  await lift(page, 18, 180)
+  await liftFrom(page, -160, 8, 0.5)
+  await expect(page.locator('[data-chart-title]').first()).toContainText(/Rei/i)
+})
+
+test('scrolling the chart down from the centre does not change song', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1')
+  await page.locator('[data-setlist-open]').first().waitFor()
+  await expect(page.locator('[data-chart-title]').first()).toContainText(/Rei/i)
+
+  await swipeFrom(page, 18, 180, 0.5)
+  await expect(page.locator('[data-song-swipe]')).toHaveCount(0)
+  await liftFrom(page, 18, 180, 0.5)
   await expect(page.locator('[data-chart-title]').first()).toContainText(/Rei/i)
 })

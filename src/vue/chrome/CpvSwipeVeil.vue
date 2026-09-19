@@ -22,8 +22,8 @@ defineProps<{
     <div class="cpv-swipe-stamp">
       <CpvIcon
         :name="view.intent === 'prev' ? 'chevronLeft' : 'chevronRight'"
-        :size="64"
-        :weight="2.4"
+        :size="40"
+        :weight="2.2"
       />
       <span class="cpv-swipe-kicker">{{
         view.armed ? 'Solte para ir' : view.intent === 'prev' ? 'Anterior' : 'Próxima'

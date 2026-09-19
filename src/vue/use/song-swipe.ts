@@ -1,25 +1,45 @@
 /**
  * Horizontal song-change gesture for a rehearsal list.
  *
- * Vertical scroll is the default on the chart. A swipe only exists after the
- * first ~12px lock as clearly horizontal, and it only commits on release past
- * a threshold — the Tinder-style fade is the confirmation, not a second tap.
+ * Ownership is the pixel of pointerdown. The centre of the chart never
+ * becomes a swipe. Left/right rails own song change; Safari's back edge
+ * stays dead. Commit is release past a threshold — no velocity.
  */
 
-export const SWIPE_LOCK_PX = 12
-/** |dx| must beat this many times |dy| to count as horizontal. ~27°. */
-export const SWIPE_RATIO = 2
 /** Ignore a touch that starts on the viewport's left edge (Safari back). */
 export const SWIPE_EDGE_PX = 24
+/**
+ * Exclusive rail width per viewer breakpoint. Same cuts as ChordproViewer `bp`:
+ * xs <400, sm <640, md <900, lg <1280, xl. Phone (xs/sm) keeps the 64px that
+ * worked on the handset; tablet+ (md/lg/xl) keeps the 128px that worked there.
+ */
+export const SWIPE_RAIL_PX = {
+  xs: 64,
+  sm: 64,
+  md: 128,
+  lg: 128,
+  xl: 128,
+} as const
+
+export type SwipeBp = keyof typeof SWIPE_RAIL_PX
+
+export function swipeBp(width: number): SwipeBp {
+  const w = Number.isFinite(width) && width > 0 ? width : 390
+  return w < 400 ? 'xs' : w < 640 ? 'sm' : w < 900 ? 'md' : w < 1280 ? 'lg' : 'xl'
+}
+
+export function swipeRailPx(width: number): number {
+  return SWIPE_RAIL_PX[swipeBp(width)]
+}
 /** Below this, the gesture is still a tap (zen), not a peek. */
 export const SWIPE_TAP_PX = 10
-/** Chart slides out, then the neighbour slides in. */
-export const SWIPE_OUT_MS = 200
-export const SWIPE_IN_MS = 260
+/** Veil fade after an immediate song swap. */
+export const SWIPE_FADE_MS = 180
 
 export type SwipeAxis = 'undecided' | 'vertical' | 'horizontal' | 'ignored'
 export type SwipeIntent = 'none' | 'next' | 'prev'
 export type SwipePointerKind = 'touch' | 'pen' | 'mouse' | 'other'
+export type SwipeZone = 'dead' | 'prev-rail' | 'next-rail' | 'center'
 
 export type SongSwipeView = {
   axis: SwipeAxis
@@ -69,16 +89,25 @@ export function pointerKindOf(type: string | undefined): SwipePointerKind {
   return 'other'
 }
 
+export function swipeZone(x: number, width: number): SwipeZone {
+  const w = Number.isFinite(width) && width > 0 ? width : 390
+  const rail = swipeRailPx(w)
+  if (x < SWIPE_EDGE_PX) return 'dead'
+  if (x < SWIPE_EDGE_PX + rail) return 'prev-rail'
+  if (x >= w - rail) return 'next-rail'
+  return 'center'
+}
+
 export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
   const threshold = swipeThreshold(opts.width)
   const x0 = opts.x
   const y0 = opts.y
+  const zone = swipeZone(opts.x, opts.width)
+  const touch = opts.pointerKind === 'touch' || opts.pointerKind === 'pen'
+  const railIntent: SwipeIntent =
+    zone === 'prev-rail' ? 'prev' : zone === 'next-rail' ? 'next' : 'none'
   let axis: SwipeAxis =
-    opts.pointerKind === 'touch' || opts.pointerKind === 'pen'
-      ? opts.x < SWIPE_EDGE_PX
-        ? 'ignored'
-        : 'undecided'
-      : 'ignored'
+    touch && (zone === 'prev-rail' || zone === 'next-rail') ? 'horizontal' : 'ignored'
   let dx = 0
   let dy = 0
   let done = false
@@ -87,13 +116,15 @@ export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
     if (axis === 'ignored' || axis === 'vertical' || axis === 'undecided') {
       return { ...IDLE, axis, dx, dy }
     }
-    const intent: SwipeIntent = dx < 0 ? 'next' : dx > 0 ? 'prev' : 'none'
+    const along =
+      railIntent === 'next' ? -dx : railIntent === 'prev' ? dx : 0
+    const going = along > 0
+    const intent: SwipeIntent = going ? railIntent : 'none'
     const allowed =
       intent === 'next' ? opts.canNext : intent === 'prev' ? opts.canPrev : false
-    const raw = Math.abs(dx) / threshold
-    // End of the list: the fade still appears, but it never arms.
+    const raw = going ? along / threshold : 0
     const progress = allowed ? Math.min(1, raw) : Math.min(0.45, raw * 0.4)
-    const peeking = Math.abs(dx) > SWIPE_TAP_PX
+    const peeking = going && along > SWIPE_TAP_PX
     return {
       axis,
       dx,
@@ -110,13 +141,6 @@ export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
       if (done || axis === 'ignored') return snap()
       dx = x - x0
       dy = y - y0
-      if (axis === 'undecided') {
-        const adx = Math.abs(dx)
-        const ady = Math.abs(dy)
-        if (Math.max(adx, ady) >= SWIPE_LOCK_PX) {
-          axis = adx > SWIPE_RATIO * ady ? 'horizontal' : 'vertical'
-        }
-      }
       return snap()
     },
     release() {

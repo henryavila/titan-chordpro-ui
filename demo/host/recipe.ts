@@ -326,6 +326,8 @@ export type LabQuery = {
   lens: Lens | null
   /** Hide rehearsal comments in the reading projection. */
   hideComments: boolean
+  /** Paint swipe rails in the rehearsal chart. */
+  zonas: boolean
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -361,6 +363,7 @@ export function labQuery(search: string): LabQuery {
     accent: p.get('accent'),
     lens: lens === 'none' || lens === 'letra' || lens === 'nashville' ? lens : null,
     hideComments: p.get('comentarios') === '0',
+    zonas: p.get('zonas') === '1',
   }
 }
 
