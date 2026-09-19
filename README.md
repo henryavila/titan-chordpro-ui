@@ -25,6 +25,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Tipografia e ajuste ao espaço
 - Auto-rolagem no relógio da cifra (`{duration:}`, `{tempo:}`, `x///`)
 - Zen / tela cheia; chrome some na rolagem
+- Tela ligada (Wake Lock) enquanto o viewer está aberto — o aparelho não apaga no ensaio
 
 **Ensaio**
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Swipe no ensaio:** no celular, arrastar a cifra para a esquerda (próxima) ou direita (anterior) pinta um fade colorido com chevron. No limiar o selo vira **Solte para ir** (anel na cor do acorde). Soltar confirma e a cifra desliza; soltar antes volta. Rolar para baixo não troca.
+- **Tela ligada:** enquanto o viewer está aberto, pede Screen Wake Lock para o aparelho não apagar no ensaio. Sempre ativo, sem botão; rearma quando a aba volta a ficar visível. HTTPS. Sem a API, não faz nada.
 
 ## [0.4.0] - 2026-09-17
 

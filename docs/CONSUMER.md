@@ -240,6 +240,12 @@ Safari no iPhone **não tem** Fullscreen API para elemento (só `<video>`; flag
 experimental na 17.2, desligada). Os ~110px de chrome do Safari não são de
 ninguém. PWA `display: standalone` é o único caminho, e é do host.
 
+**Tela ligada.** Enquanto o `<ChordproViewer>` está montado, o pacote pede
+`navigator.wakeLock` (`screen`) para o aparelho não apagar no ensaio. Sem
+botão, sem PWA, sem prop do host. Precisa de HTTPS e da página visível; ao
+voltar para a aba, o pedido se repete. Sem a API (Safari antigo) ou com o
+pedido recusado, é no-op. O consumer não implementa isso.
+
 ---
 
 ## 6. Ensaio (lista)
