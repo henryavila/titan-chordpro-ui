@@ -25,12 +25,13 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Tipografia e ajuste ao espaço
 - Auto-rolagem no relógio da cifra (`{duration:}`, `{tempo:}`, `x///`)
 - Zen / tela cheia; chrome some na rolagem
-- Tela ligada (Wake Lock) enquanto o viewer está aberto — o aparelho não apaga no ensaio
+- **Tela ligada** enquanto o viewer está aberto (Screen Wake Lock) — o aparelho não apaga no ensaio. Sem botão; HTTPS. Sem a API, no-op
 
 **Ensaio**
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
 - Lista: anterior / próxima, lugar guardado por música
+- **Swipe horizontal** no celular: fade + chevron; no limiar vira *Solte para ir*; soltar confirma e a cifra desliza. Rolar para baixo não troca
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
 
 **Edição**
@@ -57,7 +58,7 @@ Fora: login, multicifra do site, player de áudio, diagramas de braço, collab e
 
 ## Status
 
-`0.3.0` no npm. Leitura, ensaio, overlay, edição por bloco, partitura e import/export estão no pacote. Nesta branch: editor + revisão visual de batida. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
+`0.5.0` — leitura, ensaio (lista, swipe, tela ligada), overlay, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
 
 ```bash
 pnpm install
@@ -74,7 +75,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
