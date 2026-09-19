@@ -276,7 +276,9 @@ chega vira painel *Não carregou*.
 
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
 música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
-**não** resetam ao mudar de cifra. No fim da auto-rolagem o viewer
+**não** resetam ao mudar de cifra. No celular, swipe horizontal na cifra pinta
+um fade + chevron e só confirma ao soltar depois do limiar — rolar para baixo não
+troca de música. No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
 
 ---

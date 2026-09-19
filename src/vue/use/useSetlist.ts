@@ -232,6 +232,7 @@ export function useSetlist(opts: SetlistOpts) {
   const noPrev = computed(() => si.value <= 0)
   const noNext = computed(() => si.value >= list.value.length - 1)
   const nextTitle = computed(() => list.value[si.value + 1]?.title ?? '')
+  const prevTitle = computed(() => list.value[si.value - 1]?.title ?? '')
   const nextChip = computed(() => (nextTitle.value ? `Próxima · ${nextTitle.value}` : 'Última da lista'))
   const nextChipShort = computed(() => (nextTitle.value ? `Próx. ${nextTitle.value}` : 'Última'))
   const headLabel = computed(() => `${list.value.length} músicas`)
@@ -260,7 +261,7 @@ export function useSetlist(opts: SetlistOpts) {
     list, on, si, current, currentSource, failing,
     listOpen, query, endOffer,
     items, noHit, showSearch,
-    posLabel, noPrev, noNext, nextTitle, nextChip, nextChipShort, headLabel, seenLabel,
+    posLabel, noPrev, noNext, nextTitle, prevTitle, nextChip, nextChipShort, headLabel, seenLabel,
     go, prefetch, retry, takeRestore, open, close, offerNext, dismissEnd,
   }
 }

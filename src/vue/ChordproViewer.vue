@@ -83,6 +83,7 @@ import CpvPhoneDock from './chrome/CpvPhoneDock.vue'
 import CpvMoreSheet from './chrome/CpvMoreSheet.vue'
 import CpvEditDock from './chrome/CpvEditDock.vue'
 import CpvEndOffer from './chrome/CpvEndOffer.vue'
+import CpvSwipeVeil from './chrome/CpvSwipeVeil.vue'
 import { useBlockEdit } from './use/useBlockEdit'
 import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
 import { pinWouldFillViewport } from './use/viewportPin'
@@ -97,6 +98,8 @@ import {
 } from './use/rehearsal-audio'
 import { useOverlay } from './use/useOverlay'
 import { useSetlist, type SongSpot } from './use/useSetlist'
+import { useSongSwipe } from './use/useSongSwipe'
+import { SWIPE_IN_MS, SWIPE_OUT_MS } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
@@ -1602,6 +1605,7 @@ function setChromeGone(on: boolean) {
  * does not ask them to hit a 44px button in the middle of a chorus.
  */
 function onSurfaceTap(e: MouseEvent) {
+  if (songSwipe.eatClick()) return
   if (isEdit.value) return
   const t = e.target as HTMLElement | null
   if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure")) return
@@ -2353,6 +2357,80 @@ const endNext = () => {
   goNext()
 }
 
+const swipeFx = ref('')
+let swipeGen = 0
+
+const swipeBlocked = computed(
+  () =>
+    isEdit.value ||
+    sheet.value ||
+    moreOpen.value ||
+    setlist.listOpen.value ||
+    !!scoreEd.value ||
+    metaOpen.value ||
+    toneOpen.value ||
+    metOpen.value ||
+    batidaOpen.value ||
+    capoOpen.value ||
+    ov.myPanel.value ||
+    ov.queueOpen.value ||
+    srcOpen.value ||
+    confirmDiscard.value ||
+    !!swipeFx.value,
+)
+
+function prefersReduceMotion() {
+  try {
+    return !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+  } catch {
+    return false
+  }
+}
+
+function waitMs(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+async function playSwipeCommit(intent: 'next' | 'prev') {
+  const gen = ++swipeGen
+  if (prefersReduceMotion()) {
+    songSwipe.clear()
+    if (intent === 'next') goNext()
+    else goPrev()
+    return
+  }
+  swipeFx.value = `out-${intent}`
+  await waitMs(SWIPE_OUT_MS)
+  if (gen !== swipeGen) return
+  songSwipe.clear()
+  if (intent === 'next') goNext()
+  else goPrev()
+  swipeFx.value = `in-${intent}`
+  await nextTick()
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
+  if (gen !== swipeGen) return
+  swipeFx.value = `settle-${intent}`
+  await waitMs(SWIPE_IN_MS)
+  if (gen !== swipeGen) return
+  swipeFx.value = ''
+}
+
+const songSwipe = useSongSwipe({
+  enabled: () => setlist.on.value,
+  blocked: () => swipeBlocked.value,
+  canPrev: () => !setlist.noPrev.value,
+  canNext: () => !setlist.noNext.value,
+  width: () => width.value || root.value?.getBoundingClientRect().width || 390,
+  onCommit: (intent) => {
+    void playSwipeCommit(intent)
+  },
+})
+const swipeView = songSwipe.view
+
 function bindPage(el: unknown) {
   const node = el as HTMLElement | null
   pageRo?.disconnect()
@@ -2521,9 +2599,12 @@ onMounted(() => {
   setlist.prefetch()
   syncHostSource()
   guard.start()
+  songSwipe.attach()
 })
 
 onUnmounted(() => {
+  swipeGen += 1
+  songSwipe.detach()
   stopScroll()
   met.dispose()
   strumSound.dispose()
@@ -2567,11 +2648,14 @@ defineExpose({
     data-cpv-root
     :data-theme="effTheme"
     :data-cpv-lens="activeLens"
-    :class="rootHitClass"
+    :class="[rootHitClass, { 'is-setlist': setlist.on.value }]"
     :style="{ '--cpv-met-hit': metHitMs }"
+    :data-swipe="swipeFx || undefined"
+    @pointerdown="songSwipe.onDown"
   >
     <div class="cpv-glow" />
 
+    <div class="cpv-stage">
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
       <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
         <div :style="{ padding: pageBodyPad }">
@@ -2616,6 +2700,12 @@ defineExpose({
       @next="goNext"
       @start="startNew"
     />
+    <CpvSwipeVeil
+      :view="swipeView"
+      :next-title="setlist.nextTitle.value"
+      :prev-title="setlist.prevTitle.value"
+    />
+    </div>
     <div class="cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
     <!-- Identity card — fades with zen. A plain name takes the same band while chrome is gone. -->

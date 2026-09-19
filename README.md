@@ -198,7 +198,9 @@ trocar de música num ensaio não pode esperar rede. Uma que não chega vira pai
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**
 daquela cifra. **Cifra | Letra** (e Nashville / comentários) são do ensaio —
-prop `lens` / `hideComments` — **não** resetam ao mudar de música. No fim da auto-rolagem o viewer
+prop `lens` / `hideComments` — **não** resetam ao mudar de música. No celular, um swipe
+horizontal na cifra mostra um fade + chevron (próxima/anterior) e só troca de música se o
+gesto cruzar o limiar; rolar para baixo não troca. No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
 
 **Página instantânea, cifras chegando depois.** É o formato normal: mande a lista

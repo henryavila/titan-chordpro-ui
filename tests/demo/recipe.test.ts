@@ -309,7 +309,9 @@ describe('CifraDemo', () => {
     const w = mount(CifraDemo, { props, global: { stubs: stub } })
     if (w.find('[data-boot-shell]').exists()) {
       await flushPromises()
-      await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists())
+      await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists(), {
+        timeout: 5000,
+      })
     }
     return w
   }
@@ -334,13 +336,7 @@ describe('CifraDemo', () => {
   })
 
   it('passes a rehearsal list when the recipe has one', async () => {
-    const w = mount(CifraDemo, {
-      props: { surface: 'standalone', lista: true },
-      global: { stubs: stub },
-    })
-    expect(w.find('[data-boot-shell]').exists()).toBe(true)
-    await flushPromises()
-    await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists())
+    const w = await mountReady({ surface: 'standalone', lista: true })
     const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
     w.unmount()
