@@ -170,6 +170,7 @@ describe('labQuery', () => {
       lens: null,
       hideComments: false,
       zonas: false,
+      audio: false,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
@@ -183,8 +184,10 @@ describe('labQuery', () => {
       lens: null,
       hideComments: false,
       zonas: false,
+      audio: false,
     })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
+    expect(labQuery('?audio=1')).toMatchObject({ audio: true })
   })
 
   it('reads the reading lens and comment filter', () => {
