@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - **jsPDF 4.2.1** (antes 2.5.2): fecha os CVEs do Dependabot na geração de PDF. Fontes continuam em VFS; o export da cifra não muda de API.
+- **vitest 4.1.11** (antes 3.2.7): fecha CVE-2026-84373 no `@vitest/mocker` (dev-only).
+- **esbuild ≥ 0.28.1** (`pnpm-workspace.yaml` overrides; tsup puxava 0.27.7): fecha GHSA-g7r4-m6w7-qqqr no serve Windows, que este repo não usa.
 
 ## [0.5.0] - 2026-09-18
 
