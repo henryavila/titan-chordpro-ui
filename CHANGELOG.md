@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **jsPDF 4.2.1** (antes 2.5.2): fecha os CVEs do Dependabot na geração de PDF. Fontes continuam em VFS; o export da cifra não muda de API.
+
 ## [0.5.0] - 2026-09-18
 
 ### Added
