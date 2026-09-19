@@ -11,6 +11,7 @@ const props = defineProps<{
   fixTuneLabel: string
   canSuggest: boolean
   suggestLabel: string
+  suggesting?: boolean
   actorName: string
   nameError?: boolean
   sentSuggestions?: Suggestion[]
@@ -75,6 +76,8 @@ function statusLabel(s: Suggestion): string {
         </span>
         <button
           data-revert
+          type="button"
+          :disabled="suggesting"
           title="Voltar este trecho ao original"
           style="flex:none;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
           @click="emit('revert', op.id)"
@@ -124,6 +127,9 @@ function statusLabel(s: Suggestion): string {
       <button
         v-if="canSuggest"
         data-suggest
+        type="button"
+        :disabled="suggesting"
+        :aria-busy="suggesting ? 'true' : 'false'"
         style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1px solid var(--chord-edge);border-radius:12px;background:var(--chord-soft);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
         @click="emit('suggest')"
       >{{ suggestLabel }}</button>
@@ -147,7 +153,9 @@ function statusLabel(s: Suggestion): string {
 
       <button
         data-revert-all
+        type="button"
         class="cpv-surface-btn"
+        :disabled="suggesting"
         :style="{ color: revertAllDanger ? 'var(--danger)' : 'var(--text)' }"
         style="display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;border:0;border-radius:12px;font-size:12.5px;"
         @click="emit('revertAll')"

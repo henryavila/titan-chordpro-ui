@@ -136,6 +136,14 @@ export type ChordproViewerProps = {
    * for reads; mutations emit `update:suggestionQueue` for the host to persist.
    */
   suggestionQueue?: Suggestion[]
+  /**
+   * Host persist for a musician suggestion. Read at send time. When set, Titan waits:
+   * resolve → enqueue + toast “Sugestão enviada” and emit `suggestion-created`;
+   * reject or a void return → keep Minha versão, toast retry, nothing queued.
+   * The POST lives here (`return` the Promise). `suggestion-created` is notify-after-ack.
+   * Omit for local-only (demo / no backend).
+   */
+  persistSuggestion?: (suggestion: Suggestion) => Promise<void>
   /** Identity of the chart, so a personal version follows the right song. */
   songId?: string
   /**

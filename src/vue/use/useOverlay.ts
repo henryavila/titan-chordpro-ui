@@ -51,6 +51,12 @@ export type OverlayOpts = {
   onBaseChange: () => void
   onSaveContent?: (text: string) => void
   onSuggestionCreated?: (s: Suggestion) => void
+  /**
+   * Host persist, read at send time. Must return the POST Promise:
+   * resolve → enqueue + toast enviada + emit;
+   * reject or a void return → keep the overlay, toast retry, nothing queued.
+   */
+  persistSuggestion?: Ref<((s: Suggestion) => Promise<void>) | undefined>
   onSuggestionAccepted?: (p: {
     id: string
     songId: string
@@ -112,6 +118,7 @@ export function useOverlay(opts: OverlayOpts) {
   const exportOrig = ref(false)
   const confirmRevert = ref(false)
   const confirmSuggest = ref(false)
+  const sending = ref(false)
   const nameNeeded = ref(false)
   const actorName = ref(
     String(opts.actorName?.value ?? '').trim() ||
@@ -225,6 +232,7 @@ export function useOverlay(opts: OverlayOpts) {
   )
 
   function revertOp(id: string) {
+    if (sending.value) return
     if (!overlay.value) return
     const ops = overlay.value.ops.filter((o) => o.id !== id)
     saveOverlay({ baseVersion: officialVersion.value, ops, at: Date.now() })
@@ -242,6 +250,7 @@ export function useOverlay(opts: OverlayOpts) {
   )
 
   function revertAll() {
+    if (sending.value) return
     if (!confirmRevert.value) {
       confirmRevert.value = true
       window.clearTimeout(revertT)
@@ -390,10 +399,15 @@ export function useOverlay(opts: OverlayOpts) {
   })
 
   const suggestLabel = computed(() =>
-    confirmSuggest.value ? 'Confirmar — enviar' : 'Sugerir alteração ao responsável',
+    sending.value
+      ? 'Enviando…'
+      : confirmSuggest.value
+        ? 'Confirmar — enviar'
+        : 'Sugerir alteração ao responsável',
   )
 
-  function suggest() {
+  async function suggest() {
+    if (sending.value) return
     const ov = overlay.value
     if (!ov?.ops.length) return
     const name = actorName.value.trim()
@@ -425,14 +439,45 @@ export function useOverlay(opts: OverlayOpts) {
       actorKey: opts.actorKey?.value,
       actorName: name,
     }
-    writeSug([...allSug(), created])
-    try {
-      opts.onSuggestionCreated?.(created)
-    } catch {
-      /* host failure */
+    const persist = opts.persistSuggestion?.value
+    if (!persist) {
+      writeSug([...allSug(), created])
+      try {
+        opts.onSuggestionCreated?.(created)
+      } catch {
+        /* host notify */
+      }
+      myPanel.value = false
+      opts.toast('Sugestão enviada')
+      return
     }
-    myPanel.value = false
-    opts.toast('Sugestão enviada')
+    sending.value = true
+    try {
+      const result: unknown = persist(created)
+      if (
+        result == null ||
+        typeof result !== 'object' ||
+        typeof (result as { then?: unknown }).then !== 'function'
+      ) {
+        console.error(
+          '[titan-chordpro-ui] persistSuggestion must return a Promise (return the POST). A void return is not an ack.',
+        )
+        throw new Error('persistSuggestion must return a Promise')
+      }
+      await result
+      writeSug([...allSug(), created])
+      try {
+        opts.onSuggestionCreated?.(created)
+      } catch {
+        /* host notify */
+      }
+      myPanel.value = false
+      opts.toast('Sugestão enviada')
+    } catch {
+      opts.toast('Não foi possível enviar. Tente de novo.')
+    } finally {
+      sending.value = false
+    }
   }
 
   // ----------------------------- the owner's queue: songs → requests → ops
@@ -751,6 +796,7 @@ export function useOverlay(opts: OverlayOpts) {
     canSuggest,
     suggest,
     suggestLabel,
+    sending,
     actorName,
     nameNeeded,
     qActorName,

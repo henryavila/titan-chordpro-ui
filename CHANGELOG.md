@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`persistSuggestion`:** o consumer confirma o POST da sugestão (`return` da Promise), lida na hora do envio. Resolve → enfileira + “Sugestão enviada” + emit `suggestion-created` (notify, não o save). Reject ou `void` (sem Promise) → nada na fila, mantém Minha versão, “Não foi possível enviar. Tente de novo.” Reverter fica bloqueado enquanto envia. Sem a prop, o fluxo local continua otimista.
+
 ### Changed
 - **Swipe no ensaio:** o centro da cifra só rola. Troca de música é deslize na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). Sem flick de velocidade, sem carimbo Tinder, sem a cifra deslizando 38%. Autoscroll pausa no peek.
 
