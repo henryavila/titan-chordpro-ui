@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-19
+
 ### Added
 - **`persistSuggestion`:** o consumer confirma o POST da sugestão (`return` da Promise), lida na hora do envio. Resolve → enfileira + “Sugestão enviada” + emit `suggestion-created` (notify, não o save). Reject ou `void` (sem Promise) → nada na fila, mantém Minha versão, “Não foi possível enviar. Tente de novo.” Reverter fica bloqueado enquanto envia. Sem a prop, o fluxo local continua otimista.
 
@@ -109,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.6.0
 [0.5.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.5.0
 [0.4.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.4.0
 [0.3.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.3.0
