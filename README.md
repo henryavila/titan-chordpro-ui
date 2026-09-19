@@ -31,12 +31,12 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
 - Lista: anterior / próxima, lugar guardado por música
-- **Swipe horizontal** no celular: fade + chevron; no limiar vira *Solte para ir*; soltar confirma e a cifra desliza. Rolar para baixo não troca
+- **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
 
 **Edição**
 - No lugar: letra, acorde, bloco (transpor, capo, reordenar)
-- Versão pessoal (overlay) e **Sugerir** (nome obrigatório)
+- Versão pessoal (overlay) e **Sugerir** (nome obrigatório). O host confirma o POST com `persistSuggestion`; sem ack, não tosta “enviada”
 - Fila do responsável: aceitar / recusar, lote, diff visual da batida
 - **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_strum:}` / `{x_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
 - Partitura `{sos}` / TAB `{sot}`
@@ -138,6 +138,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `editMode` | `'local'` | `local` \| `persisted` \| `none`. Um papel por mount (frontend vs backend). Ortogonal a `mode` view\|edit |
 | `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
+| `persistSuggestion` | — | `(s) => Promise<void>` — o host confirma o POST (`return` da Promise), lida na hora do envio. reject ou sem Promise = nada na fila, retry. Fila só depois do ack. `@suggestion-created` é notify depois do ack, não o save |
 | `songId` | título da cifra | Identidade da música, chave da versão pessoal |
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
@@ -287,11 +288,13 @@ const storage: ChartStore = {
 <ChordproViewer :source="cifra" :song-id="id" :storage="storage" />
 ```
 
-As chamadas são **síncronas de propósito**. A leitura não pode travar esperando
-rede no meio de um ensaio, então um host que persiste no servidor responde do
-próprio cache e dispara a gravação por trás do `set`. Vale para a sugestão
-também: o SPEC define o envio como *fire-and-forget* — o músico vê
-“Sugestão enviada” e nada mais, sem status e sem aviso de aceite.
+As chamadas do `ChartStore` são **síncronas de propósito**. A leitura não pode
+travar esperando rede no meio de um ensaio, então um host que persiste no
+servidor responde do próprio cache e dispara a gravação por trás do `set`.
+
+A sugestão **não** é fire-and-forget quando o host passa `persistSuggestion`:
+Titan espera a Promise, só então enfileira e tosta “Sugestão enviada”. Sem a
+prop, o toast é otimista neste aparelho (demo).
 
 Falhar em silêncio é o contrato: `localStorage` negado numa janela anônima ou
 num iframe bloqueado custa uma conveniência, nunca uma mensagem de erro ao
@@ -376,8 +379,11 @@ leitor.
 | `persisted` | Edição “Para todos” (`save-content`) + fila de sugestões (Aceitar/Recusar, lote) |
 | `none` | Sem edição |
 
-Sugestões: emits `suggestion-created` / `suggestion-accepted` / `suggestion-refused`;
-prop `suggestionQueue` (fila completa) para o host sincronizar entre apps.
+Sugestões: o POST do músico é a prop `persistSuggestion` (`return` da Promise),
+lida na hora do envio. Fila e emit `suggestion-created` só depois do ack
+(notify, não o save);
+`suggestion-accepted` / `suggestion-refused` na revisão.
+Prop `suggestionQueue` (fila completa) para o host sincronizar entre apps.
 Status do músico aparece na **Minha versão**. `modes` / `content` / `both` ficam
 deprecados (ver CONSUMER §10).
 
@@ -517,27 +523,27 @@ escorregou e é descartado **antes** da média — depois dela um toque duplo j�
 está dentro de qualquer faixa tocável e puxaria o andamento sem deixar rastro.
 Pausa acima de 2,4 s começa medição nova.
 
-## Mental model
+## Modelo mental
 
 ```
-.cho | .chordpro | .onsong | string (ChordPro, OnSong, or mixed)
-  → parse() → ChordProView          // engine normalizes formats
+.cho | .chordpro | .onsong | string (ChordPro, OnSong ou misto)
+  → parse() → ChordProView          // a engine normaliza o formato
   → createViewerController / transpose
   → renderHtml({ theme: 'light' | 'dark' | 'print' })
-  → Vue <ChordproViewer>  // UI completa 1 cifra (format-agnostic)
-  → renderPdf()           // entry …/pdf
-  → exportLyrics(source)  // letra plaintext (cadastrar sem o viewer)
-  → exportSlja(source)    // entry …/slides — .slja sem montar o viewer
+  → Vue <ChordproViewer>  // UI completa de 1 cifra
+  → renderPdf()           // entrada …/pdf
+  → exportLyrics(source)  // letra plaintext (cadastro sem o viewer)
+  → exportSlja(source)    // entrada …/slides — .slja sem montar o viewer
   → renderSlja(view)      // o mesmo ZIP, a partir do ViewModel
 ```
 
-OnSong details: `docs/research-onsong-format.md`. Expansion later: `@…/react` or CE — not a fork, not a plugin registry.
+OnSong: `docs/research-onsong-format.md`. Expansão depois: `@…/react` ou CE — não é fork, não é registry de plugin.
 
 ## Fixtures
 
-Real ChordPro de produção: `fixtures/sda/` (lista do demo). Extra de partitura/imagem: `fixtures/013-ele-vive-em-mim-partitura.cho`.
+ChordPro real de produção: `fixtures/sda/` (lista do demo, ~148 `.cho`). Extra de partitura/imagem: `fixtures/013-ele-vive-em-mim-partitura.cho`.
 
-### Tema e tipografia
+## Tema e tipografia
 
 `<ChordproViewer :theme="hostTheme" theme-control="host" />` torna a prop
 imediatamente autoritativa, mesmo com preferência antiga. O default
@@ -562,69 +568,52 @@ letra/controles e Space Mono para acordes, com fallback de sistema.
 [Testes de navegador](docs/SDA-VIEWER-VALIDATION.md):
 `pnpm exec playwright install chromium webkit` e `pnpm test:browser`.
 
-## Publish (npm)
+## Publicar (npm)
 
-Follows the 2026 npm model ([bypass2FA deprecation + staged publishing](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)):
+Modelo 2026 ([bypass2FA + staged publishing](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)):
 
-- **Do not** create Granular Access Tokens with **Bypass 2FA** (deprecated).
-- **Stage-only** tokens cannot `npm publish` — they upload with `npm stage publish`, then a maintainer promotes with 2FA (`npm stage approve`).
-- A **new package name** cannot be staged: the package must exist first. Create `0.1.0` once with an interactive session + 2FA.
+- **Não** crie Granular Access Token com **Bypass 2FA** (deprecado).
+- Token só de stage **não** faz `npm publish` — o GitHub Release sobe o tarball com OIDC; um maintainer aprova com 2FA na UI.
+- Nome de pacote novo não entra em stage: o `0.1.0` já existe.
 
-Same overall pattern as [`@henryavila/mdprobe`](https://www.npmjs.com/package/@henryavila/mdprobe).
+Mesmo padrão de [`@henryavila/mdprobe`](https://www.npmjs.com/package/@henryavila/mdprobe).
 
-### First publish (interactive, once)
+### Trusted Publisher (já ligado)
 
-```sh
-pnpm run publish:npm
-# script builds + tests, then walks you through:
-#   npm login
-#   npx npm@11.19.1 publish --access public   # prompts for 2FA
-```
+npmjs.com → pacote → **Access** → **Trusted Publisher**
 
-Or run those two commands yourself after `pnpm build && pnpm test`.  
-A `404` on a token-based `PUT` is npm masking auth/permission failure — not “create the package somehow else”. Interactive publish with 2FA is the supported create path without bypass2FA.
+- GitHub repo `henryavila/titan-chordpro-ui`
+- workflow `publish.yml`
+- **Allowed actions:** só `npm stage publish` (não `npm publish` direto)
+- **Publishing access:** exigir 2FA e recusar tokens
 
-Script: [`scripts/publish-npm.sh`](scripts/publish-npm.sh).
+### Releases
 
-### Wire Trusted Publishing (after `0.1.0` exists)
-
-1. npmjs.com → package → **Access** → **Trusted Publisher**  
-   - GitHub repo `henryavila/titan-chordpro-ui`  
-   - workflow `publish.yml`  
-   - **Allowed actions:** `npm stage publish` only (do **not** allow direct `npm publish`)
-2. **Publishing access** → “Require two-factor authentication and disallow tokens”
-3. Delete any old Bypass-2FA tokens on the account
-
-### Later releases
-
-Chooser (feature = MINOR, not patch): [`scripts/release.ts`](scripts/release.ts) · skill [`.grok/skills/release/SKILL.md`](.grok/skills/release/SKILL.md).
+Chooser (feature = MINOR, não patch): [`scripts/release.ts`](scripts/release.ts) · skill [`.grok/skills/release/SKILL.md`](.grok/skills/release/SKILL.md).
 
 ```sh
-pnpm release                       # prints next version; do not guess
+pnpm release                       # imprime a próxima versão; não chute
 pnpm test && pnpm typecheck
 pnpm release:apply                 # package.json + CHANGELOG.md
-# commit, then:
-pnpm release:ship                  # tag + GitHub Release
+# commit chore: release X.Y.Z, PR, merge, árvore limpa:
+pnpm release:ship                  # tag anotada + GitHub Release
 ```
 
-1. `--apply` writes `version` and moves `CHANGELOG.md` `[Unreleased]` into `X.Y.Z`.
-2. `--ship` pushes an annotated tag `vX.Y.Z` and creates the GitHub Release (must match `package.json`).
-3. Workflow [`.github/workflows/publish.yml`](.github/workflows/publish.yml) stages the tarball (OIDC, no token).
-4. **You** promote it (2FA) — OIDC cannot approve:
+1. `--apply` grava `version` e move `CHANGELOG.md` `[Unreleased]` para `X.Y.Z`.
+2. `--ship` empurra a tag `vX.Y.Z` e cria o GitHub Release (tem de bater com `package.json`). A árvore precisa estar limpa — rascunhos (PDF de teste, design-gates) ficam de fora.
+3. O workflow [`.github/workflows/publish.yml`](.github/workflows/publish.yml) faz stage do tarball (OIDC, sem token).
+4. **Você** aprova na UI (2FA) — OIDC não aprova:
 
-```sh
-npx npm@11.19.1 stage list @henryavila/titan-chordpro-ui
-npx npm@11.19.1 stage approve <stage-id>
-```
+[https://www.npmjs.com/package/@henryavila/titan-chordpro-ui?activeTab=versions](https://www.npmjs.com/package/@henryavila/titan-chordpro-ui?activeTab=versions)
 
-Or approve under **Staged packages** on the npm package page.
+Não use `npm stage approve` no CLI. Não rode `npm publish` / `pnpm publish` para uma versão que vai ter GitHub Release.
 
-Emergency / local re-stage of an existing package: `./scripts/publish-npm.sh` (optional `NPM_KEY` = stage-only GAT, **no** bypass2FA).
+Re-stage de emergência (pacote que já existe): `./scripts/publish-npm.sh` (opcional `NPM_KEY` = GAT só de stage, **sem** bypass2FA).
 
-Consumer install:
+Instalar:
 
 ```sh
 pnpm add @henryavila/titan-chordpro-ui
 ```
 
-Pre-1.0: prefer `~0.2.0` (patch-only) if the host cannot absorb minor breaks. Feature releases bump MINOR (`0.2.0`, not `0.1.4`).
+Pre-1.0: `~0.5.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.6.0`, não `0.5.1`).

@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { normalizeSource } from '../../src/core/index'
@@ -452,5 +452,135 @@ describe('suggesting to whoever owns the chart', () => {
     expect(w.find('[data-suggest]').exists()).toBe(false)
     expect(w.findAll('[data-my-op]')).toHaveLength(1)
     w.unmount()
+  })
+})
+
+describe('host persistSuggestion ack', () => {
+  it('does not toast enviada until persistSuggestion resolves', async () => {
+    let resolve!: () => void
+    const persist = vi.fn(
+      () =>
+        new Promise<void>((r) => {
+          resolve = r
+        }),
+    )
+    const local = mountViewer({ persistSuggestion: persist })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await confirmSuggest(local)
+    expect(persist).toHaveBeenCalledTimes(1)
+    expect(local.get('[data-suggest]').text()).toMatch(/Enviando/i)
+    expect(local.get('[data-suggest]').attributes('aria-busy')).toBe('true')
+    expect(local.get('.cpv-toast').text()).not.toMatch(/enviada/i)
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(local.find('[data-my-sugs]').exists()).toBe(false)
+    expect(local.get('[data-revert]').attributes('disabled')).toBeDefined()
+    expect(local.get('[data-revert-all]').attributes('disabled')).toBeDefined()
+    await local.get('[data-revert-all]').trigger('click')
+    await local.get('[data-revert-all]').trigger('click')
+    await flushPromises()
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
+    resolve()
+    await flushPromises()
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(1)
+    expect(local.get('.cpv-toast').text()).toMatch(/enviada/i)
+    expect(local.emitted('suggestion-created')).toHaveLength(1)
+    expect(local.find('[data-suggest]').exists()).toBe(false)
+    local.unmount()
+  })
+
+  it('picks up persistSuggestion bound after mount', async () => {
+    let resolve!: () => void
+    const persist = vi.fn(
+      () =>
+        new Promise<void>((r) => {
+          resolve = r
+        }),
+    )
+    const local = mountViewer()
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await identify(local)
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    await local.setProps({ persistSuggestion: persist })
+    await flushPromises()
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    expect(persist).toHaveBeenCalledTimes(1)
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(local.get('[data-suggest]').text()).toMatch(/Enviando/i)
+    resolve()
+    await flushPromises()
+    expect(local.emitted('suggestion-created')).toHaveLength(1)
+    local.unmount()
+  })
+
+  it('does not emit update:suggestionQueue until persistSuggestion resolves', async () => {
+    let resolve!: () => void
+    const persist = vi.fn(
+      () =>
+        new Promise<void>((r) => {
+          resolve = r
+        }),
+    )
+    const local = mountViewer({ persistSuggestion: persist, suggestionQueue: [] })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await confirmSuggest(local)
+    expect(local.emitted('update:suggestionQueue')).toBeUndefined()
+    expect(local.find('[data-my-sugs]').exists()).toBe(false)
+    resolve()
+    await flushPromises()
+    expect(local.emitted('update:suggestionQueue')?.at(-1)?.[0]).toHaveLength(1)
+    local.unmount()
+  })
+
+  it('rolls the queue back and keeps Minha versão when persistSuggestion rejects', async () => {
+    const persist = vi.fn(() => Promise.reject(new Error('offline')))
+    const local = mountViewer({ persistSuggestion: persist, suggestionQueue: [] })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await confirmSuggest(local)
+    await flushPromises()
+    expect(persist).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(local.emitted('update:suggestionQueue')).toBeUndefined()
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(local.get('.cpv-toast').text()).toMatch(/não foi possível enviar|tente de novo/i)
+    expect(local.find('[data-suggest]').exists()).toBe(true)
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
+    expect(local.get('[data-suggest]').text()).not.toMatch(/Enviando/i)
+    local.unmount()
+  })
+
+  it('treats a void persistSuggestion as a failed ack, not enviada', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const persist = vi.fn(() => undefined)
+    const local = mountViewer({ persistSuggestion: persist })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await confirmSuggest(local)
+    await flushPromises()
+    expect(persist).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(local.get('.cpv-toast').text()).toMatch(/não foi possível enviar|tente de novo/i)
+    expect(local.find('[data-suggest]').exists()).toBe(true)
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
+    expect(String(err.mock.calls.at(0))).toMatch(/Promise|return/i)
+    err.mockRestore()
+    local.unmount()
   })
 })

@@ -461,7 +461,8 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
   :song-id="id"
   :actor-key="userId"
   :actor-name="displayName"
-  @suggestion-created="onSug"
+  :persist-suggestion="persistSuggestion"
+  @suggestion-created="onSuggestionAck"
 />
 
 <!-- Admin / PDP (backend) -->
@@ -477,10 +478,24 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
 />
 ```
 
+```ts
+import type { Suggestion } from '@henryavila/titan-chordpro-ui'
+
+function persistSuggestion(s: Suggestion) {
+  return api.post('/suggestions', s)
+}
+
+function onSuggestionAck(_s: Suggestion) {
+  // depois do ack — analytics / refresh. O POST não é aqui.
+}
+```
+
+O POST é `persistSuggestion` (`return` da Promise), lida na hora do envio. `@suggestion-created` dispara **depois** do ack — não é o save. Se o POST ainda está no handler do evento, mova. Sem `return`, o Titan pede retry e **não** enfileira; não tosta “enviada”. A fila (e `update:suggestionQueue`, se o host injeta) só muda depois do ack.
+
 **Fluxo sugerir → revisar**
 
 1. Músico edita em `local` (overlay no device).
-2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve → emit `suggestion-created` (`actorName` + `actorKey` opcional) + fila.
+2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve. Titan **espera** `persistSuggestion`: resolve → enfileira + emit `suggestion-created` (`actorName` + `actorKey` opcional) + toast “Sugestão enviada”; reject ou `void` (sem Promise) → nada na fila, mantém Minha versão, “Não foi possível enviar. Tente de novo.” Sem a prop, o toast “enviada” é otimista (só neste aparelho). Reverter fica bloqueado enquanto envia.
 3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, preview da batida (faixa) e encaixa / conflito → Aceitar lote ou item a item.
 4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save).
 5. Status (`pendente` / `aceita` / `recusada` / `parcial`) aparece na Minha versão do músico na próxima visita (host devolve a fila).

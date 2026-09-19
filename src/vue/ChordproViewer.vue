@@ -114,6 +114,9 @@ const props = withDefaults(
     ChordproViewerProps & {
       /** Host batida presets (declared locally so the SFC macro always emits a runtime prop). */
       strumPresets?: StrumPreset[]
+      persistSuggestion?: (
+        suggestion: import('@henryavila/titan-chordpro-ui').Suggestion,
+      ) => Promise<void>
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
@@ -146,6 +149,7 @@ const props = withDefaults(
     actorKey: undefined,
     actorName: undefined,
     suggestionQueue: undefined,
+    persistSuggestion: undefined,
     songId: '',
     songs: undefined,
     loadSong: undefined,
@@ -704,6 +708,7 @@ const ov = useOverlay({
     if (!isEdit.value) forceBase()
   },
   onSaveContent: (text) => emit('save-content', text),
+  persistSuggestion: computed(() => props.persistSuggestion),
   onSuggestionCreated: (s) => emit('suggestion-created', s),
   onSuggestionAccepted: (p) => emit('suggestion-accepted', p),
   onSuggestionRefused: (p) => emit('suggestion-refused', p),
@@ -3225,6 +3230,7 @@ defineExpose({
       :fix-tune-label="fixTuneLabel"
       :can-suggest="ov.canSuggest.value"
       :suggest-label="ov.suggestLabel.value"
+      :suggesting="ov.sending.value"
       :actor-name="ov.actorName.value"
       :name-error="ov.nameNeeded.value"
       :sent-suggestions="ov.mySuggestions.value"
