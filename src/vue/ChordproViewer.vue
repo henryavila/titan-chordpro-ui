@@ -42,6 +42,7 @@ import {
   viewerMulStep,
   writeMeta,
   writeStrumPatterns,
+  audioUrlOf,
   STORE_KEYS,
   browserStore,
   type StrumPattern,
@@ -80,6 +81,7 @@ import CpvViewerStates from './chrome/CpvViewerStates.vue'
 import CpvEditHead from './chrome/CpvEditHead.vue'
 import CpvWideDock from './chrome/CpvWideDock.vue'
 import CpvPhoneDock from './chrome/CpvPhoneDock.vue'
+import CpvAudioRef from './chrome/CpvAudioRef.vue'
 import CpvMoreSheet from './chrome/CpvMoreSheet.vue'
 import CpvEditDock from './chrome/CpvEditDock.vue'
 import CpvEndOffer from './chrome/CpvEndOffer.vue'
@@ -102,6 +104,7 @@ import { useSongSwipe } from './use/useSongSwipe'
 import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
+import { useAudioRef } from './use/useAudioRef'
 import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
@@ -356,6 +359,8 @@ const effTheme = computed<'light' | 'dark'>(() =>
       : 'light',
 )
 const liveSource = computed(() => working.value)
+const audioUrl = computed(() => (isEdit.value ? null : audioUrlOf(liveSource.value)))
+const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
 const fatal = computed(() => {
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
@@ -1069,7 +1074,11 @@ const rollLive = computed(
   () => scrolling.value || (met.follow.value && met.running.value && canScroll.value),
 )
 const chromeHidden = computed(
-  () => (zen.value || (rollLive.value && idle.value)) && !sheet.value && !isEdit.value,
+  () =>
+    (zen.value || (rollLive.value && idle.value)) &&
+    !sheet.value &&
+    !isEdit.value &&
+    !audio.playing.value,
 )
 watch(chromeHidden, (gone) => {
   if (gone && !zen.value && !idleSeen) {
@@ -2853,7 +2862,18 @@ defineExpose({
       @theme="requestTheme"
       @edit="enterEdit"
       @export="sheet = true"
-    />
+    >
+      <CpvAudioRef
+        v-if="audioUrl"
+        :playing="audio.playing.value"
+        :current="audio.current.value"
+        :duration="audio.duration.value"
+        :error="audio.error.value"
+        @toggle="audio.toggle"
+        @skip="audio.skip"
+        @seek="audio.seek"
+      />
+    </CpvWideDock>
 
     <CpvPhoneDock
       v-if="!isEdit && phone && isPopulated"
@@ -2897,7 +2917,18 @@ defineExpose({
       @edit="enterEdit"
       @toggle-fit="toggleFit"
       @more="moreOpen = true"
-    />
+    >
+      <CpvAudioRef
+        v-if="audioUrl"
+        :playing="audio.playing.value"
+        :current="audio.current.value"
+        :duration="audio.duration.value"
+        :error="audio.error.value"
+        @toggle="audio.toggle"
+        @skip="audio.skip"
+        @seek="audio.seek"
+      />
+    </CpvPhoneDock>
 
     <button
       v-if="queueEntry"

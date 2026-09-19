@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Áudio de referência no ensaio:** o consumer grava `{x_audio:}` no ChordPro (`setAudioUrl` / `audioUrlOf`). Player próprio (play/pause, ±10s, seek) — não sincroniza letra nem `{duration:}`. Arquivo direto ou GET de stream; YouTube recusado. Cache no aparelho keyed pela URL (hash na query = arquivo novo).
+
 ### Fixed
 - **Auto-rolagem, intro compacta:** a página não anda enquanto a introdução tocada (acordes + `x///`, sem letra) está no topo. A rampa começa na primeira linha cantada, ou na linha de leitura se a intro for mais alta que um terço da tela (TAB). Em *Nasce em Mim* a letra deixava de subir no começo. Relógio e metrônomo seguem no tempo da cifra.
 - **`{tempo:65 BPM}`:** o relógio lê 65, não o default 100.

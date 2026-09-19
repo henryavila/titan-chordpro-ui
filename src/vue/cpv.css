@@ -2833,3 +2833,109 @@ div.cpv-head-id {
   white-space: pre;
   overflow-wrap: normal;
 }
+
+/* Reference audio — independent of Rolar. Play triangle is reserved for this. */
+.cpv-audio-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 12px 12px;
+  border-radius: 20px;
+  background: var(--veil);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.cpv-audio-ref-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cpv-audio-ref-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.cpv-audio-ref-clock {
+  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cpv-audio-ref-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.cpv-audio-ref-play {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--chord);
+  color: var(--chord-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.cpv-audio-ref-play:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.cpv-audio-ref-skip {
+  flex: none;
+  min-width: 44px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cpv-audio-ref-seek {
+  position: relative;
+  height: 22px;
+  cursor: pointer;
+  touch-action: none;
+}
+.cpv-audio-ref-seek::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--line);
+}
+.cpv-audio-ref-seek-fill {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--chord);
+  pointer-events: none;
+}
+.cpv-audio-ref-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+  text-align: center;
+}

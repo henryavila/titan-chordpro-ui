@@ -20,7 +20,8 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`. Alias legado: `modes` (`content`→`persisted`).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava `{x_audio:}` na demo).
+Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
@@ -63,7 +64,7 @@ export default defineNuxtConfig({
 |---|---|
 | Um SFC: `<ChordproViewer>` | Um `<iframe src="…">` |
 | Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio) | Shell do app (login, nav, lista de músicas do site, player) |
+| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, áudio de referência) | Shell do app (login, nav, lista de músicas do site, player **sincronizado**) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -287,6 +288,35 @@ um fade + chevron e só confirma ao soltar depois do limiar — o centro só rol
 troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`
 pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
+
+### Áudio de referência
+
+O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
+com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
+
+```ts
+import { setAudioUrl, audioUrlOf } from '@henryavila/titan-chordpro-ui'
+
+const next = setAudioUrl(cho, 'https://cdn.example/nasce-em-mim.m4a?h=a1b2')
+// persiste `next` — o viewer lê `{x_audio:}` sozinho
+audioUrlOf(next) // a url, ou null
+setAudioUrl(cho, null) // remove a diretiva
+```
+
+`writeMeta` substitui o header inteiro: use `setAudioUrl`, que faz o merge.
+YouTube, Spotify, `javascript:` e `data:` são recusados (throw). Sem a
+diretiva, o player não aparece.
+
+Troca de faixa = **outra URL** (hash na query). O Titan guarda o arquivo no
+Cache Storage keyed pela URL completa; a 1ª vez toca em stream e preenche o
+cache atrás (CORS no GET). Sem CORS, toca e o cache vira no-op. Teto ~100 MB
+LRU; arquivo > 20 MB toca e não guarda.
+
+O GET precisa de `Access-Control-Allow-Origin` e, na 1ª vez, `Accept-Ranges:
+bytes` para o seek. URL assinada que muda de token a cada hora destrói o
+cache — o hash só muda quando o áudio muda.
+
+Demo: `/standalone.html?audio=1`.
 
 ---
 

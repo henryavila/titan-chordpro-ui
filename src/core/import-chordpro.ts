@@ -352,6 +352,7 @@ export const META_KEYS = [
   'capo',
   'x_origem',
   'x_youtube',
+  'x_audio',
   'x_strum',
   'x_strum_set',
 ] as const

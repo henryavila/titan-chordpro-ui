@@ -91,6 +91,7 @@ export const DEMOS: readonly DemoEntry[] = [
 />`,
     extra: [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
+      { href: '/standalone.html?audio=1', label: 'Áudio de referência' },
     ],
   },
   {
@@ -328,6 +329,8 @@ export type LabQuery = {
   hideComments: boolean
   /** Paint swipe rails in the rehearsal chart. */
   zonas: boolean
+  /** Stamp `{x_audio:}` on the demo chart so the reference player shows. */
+  audio: boolean
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -364,6 +367,7 @@ export function labQuery(search: string): LabQuery {
     lens: lens === 'none' || lens === 'letra' || lens === 'nashville' ? lens : null,
     hideComments: p.get('comentarios') === '0',
     zonas: p.get('zonas') === '1',
+    audio: p.get('audio') === '1',
   }
 }
 

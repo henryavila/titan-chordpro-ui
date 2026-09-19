@@ -219,6 +219,19 @@ export {
   youtubeEmbedUrl,
   youtubeWatchUrl,
 } from './import-chordpro'
+export {
+  audioUrlOf,
+  formatAudioClock,
+  playableAudioUrl,
+  setAudioUrl,
+} from './audio-url'
+export {
+  AUDIO_CACHE_MAX_BYTES,
+  AUDIO_CACHE_MAX_FILE,
+  evictToFit,
+  shouldCacheFile,
+} from './audio-cache'
+export type { AudioCacheEntry } from './audio-cache'
 export type {
   CcStrumChoice,
   ChartMeta,
