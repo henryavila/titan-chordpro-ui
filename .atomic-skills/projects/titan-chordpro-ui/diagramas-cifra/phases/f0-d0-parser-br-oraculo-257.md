@@ -4,15 +4,17 @@ slug: diagramas-cifra-f0-d0-parser-br-oraculo-257
 title: D0 Parser BR + oráculo 257
 summary: Classificar os 257 nomes do corpus SDA e parsear o dialeto BR.
 goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
-  parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9, `4`/`sus`→sus4,
-  `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11; `7+`, quote junk,
-  and `m(3b)` are AMBIGUOUS/UNPARSED; oracle columns are parse-class only; no Vue
-  in core."
+  parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9,
+  `4`/`sus`→sus4, `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11;
+  `7+`, quote junk, and `m(3b)` are AMBIGUOUS/UNPARSED; oracle columns are
+  parse-class only; no Vue in core."
 status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: "Run `/atomic-skills:project flow` on `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify, then re-run `/atomic-skills:implement`."
+nextAction: Run `/atomic-skills:project flow` on
+  `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify,
+  then re-run `/atomic-skills:implement`.
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -33,6 +35,8 @@ tasksDone: 0
 tasksTotal: 2
 gatesMet: 0
 gatesTotal: 2
+weightDone: 0
+weightTotal: 5
 exitGates:
   - id: F0-G1
     description: Oracle table exists and parseChordToken tests green on the 257
@@ -44,6 +48,7 @@ exitGates:
       command: pnpm exec vitest run tests/core/parse-chord-token.test.ts
         tests/core/chord-oracle.test.ts
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/core/parse-chord-token.test.ts t…"
   - id: F0-G2
     description: No Vue imports in src/core.
     status: pending
@@ -51,6 +56,7 @@ exitGates:
       kind: shell
       command: pnpm exec vitest run tests/core/no-vue-in-core.test.ts
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/core/no-vue-in-core.test.ts"
 stack:
   - id: 1
     title: D0 Parser BR + oráculo 257
@@ -92,8 +98,8 @@ tasks:
       - No Vue; no fret/key diagrams; no {define} parser; do not treat 7+ as aug
         or maj7.
     acceptance:
-      - parseChordToken("C7M") quality is maj7; parseChordToken("C7M(9)") is maj9;
-        parseChordToken("C4") and parseChordToken("Csus") are sus4;
+      - parseChordToken("C7M") quality is maj7; parseChordToken("C7M(9)") is
+        maj9; parseChordToken("C4") and parseChordToken("Csus") are sus4;
         parseChordToken("C9") is add9; parseChordToken("G2") is sus2;
         parseChordToken("C6(9)") is 6add9; parseChordToken("C7(9)") is 9;
         parseChordToken("Cm7(11)") is m11; parseChordToken("C7+") is AMBIGUOUS;
@@ -112,6 +118,9 @@ tasks:
         path: tests/core/parse-chord-token.test.ts
 parked: []
 emerged: []
+planTitle: Diagramas de cifra — `titan-chordpro-ui`
+planActive: true
+current: true
 ---
 
 # Narrative / notes
@@ -131,4 +140,4 @@ _(plan doc, external refs)_
 - **Decision log:** Durable stamp `executionMode: automate` (operator AskUserQuestion y) recorded in `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` id `57fd581e-f164-480c-b015-e915e5c78186`. Commit all dirty files including batida-editor wrapping. Rebase `plan/diagramas-cifra` onto main `e48b07f`.
 - **Single nextAction:** Run `/atomic-skills:project flow` on `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify, then re-run `/atomic-skills:implement`.
 - **Verbatim state:** `node "$(cat "$HOME/.atomic-skills/package-root" 2>/dev/null || echo .)/scripts/find-missing-flow.js" .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md --strict` → `find-missing-flow: FAIL` / missing L1 `.../diagramas-cifra/flow/flow.json` / missing L2 `.../diagramas-cifra/flow/flow.html`. Ground-truth detector exit 0. `git symbolic-ref --short HEAD` = `plan/diagramas-cifra`. `git rev-parse HEAD` = `485a87f5f5a854dc0044f545c85c2ec9137b81e9`.
-- **Uncommitted changes:** clean tree after `485a87f chore(project): checkpoint diagramas-cifra F0 handoff` (this block refresh is the next checkpoint).
+- **Uncommitted changes:** clean tree after refresh-state rollups; `.atomic-skills/.aideck/` and `.atomic-skills/focus.json` gitignored.

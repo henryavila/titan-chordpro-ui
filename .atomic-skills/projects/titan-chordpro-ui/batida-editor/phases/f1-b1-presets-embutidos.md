@@ -23,6 +23,8 @@ tasksDone: 2
 tasksTotal: 2
 gatesMet: 1
 gatesTotal: 1
+weightDone: 4
+weightTotal: 4
 exitGates:
   - id: F1-G1
     description: Preset catalog + Vue apply tests green.
@@ -33,6 +35,8 @@ exitGates:
         tests/vue/batida-presets.test.ts
       expectExitCode: 0
     metAt: 2026-09-13T22:59:50.372Z
+    verifierLabel: "shell: pnpm exec vitest run tests/core/strum-presets.test.ts tests…"
+    evidenceSummary: met · 2026-09-13
 tasks:
   - id: T-001
     title: Core preset catalog
@@ -86,6 +90,7 @@ tasks:
 parked: []
 emerged: []
 stack: []
+planTitle: Editor de batida — `titan-chordpro-ui`
 ---
 
 # Narrative / notes

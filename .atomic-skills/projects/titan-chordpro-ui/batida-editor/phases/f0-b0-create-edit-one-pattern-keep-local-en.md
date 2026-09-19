@@ -2,7 +2,7 @@
 schemaVersion: "0.1"
 slug: batida-editor-f0-b0-create-edit-one-pattern-keep-local-en
 title: B0 Create/edit one pattern + keep-local enrich
-summary: "Criar/editar um {x_strum:} na folha Batida + enrich keep-local."
+summary: Criar/editar um {x_strum:} na folha Batida + enrich keep-local.
 goal: Musician can create and edit a single `{x_strum:}` pattern from the chart
   UI (CTA without batida, sheet with 1-beat-per-row on phone, slot→list picker);
   enrich no longer clobbers local batida; fixture + tests green; wire format
@@ -11,7 +11,7 @@ status: done
 branch: plan/batida-editor
 started: 2026-09-13T21:25:51.418Z
 lastUpdated: 2026-09-13T21:25:51.418Z
-nextAction: "F0 complete; advance to F1 presets"
+nextAction: F0 complete; advance to F1 presets
 parentPlan: batida-editor
 phaseId: F0
 businessIntent:
@@ -29,8 +29,10 @@ businessIntent:
     verdes; Vue batida-editor + strum-strip verdes; zero import Vue em src/core.
 tasksDone: 3
 tasksTotal: 3
-gatesMet: 2
+gatesMet: 0
 gatesTotal: 2
+weightDone: 9
+weightTotal: 9
 exitGates:
   - id: F0-G1
     description: Core strum edit helpers and keep-local enrich tests green; fixture
@@ -42,6 +44,7 @@ exitGates:
         tests/core/strum-edit.test.ts tests/core/cifraclub-enrich.test.ts && rg
         -n '\{x_strum:' fixtures/sda/005-tua-vontade.cho
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/core/strum.test.ts tests/core/st…"
   - id: F0-G2
     description: Vue Batida sheet/picker and CTA tests green; no Vue imports in src/core.
     status: pending
@@ -50,6 +53,7 @@ exitGates:
       command: pnpm exec vitest run tests/vue/batida-editor.test.ts
         tests/vue/strum-strip.test.ts && ! rg -n "from ['\"]vue['\"]" src/core
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/vue/batida-editor.test.ts tests/…"
 stack:
   - id: 1
     title: B0 Create/edit one pattern + keep-local enrich
@@ -58,7 +62,7 @@ stack:
 tasks:
   - id: T-001
     title: Fixture with x_strum + enrich keep-local
-    summary: "Meta {x_strum:} na fixture 005 + enrich keep-local (inverte prefer-cc)."
+    summary: Meta {x_strum:} na fixture 005 + enrich keep-local (inverte prefer-cc).
     weight: 2
     status: done
     lastUpdated: 2026-09-13T21:25:51.418Z
@@ -66,12 +70,13 @@ tasks:
       - Do not invent lyric body; do not change strum token alphabet; do not add
         multi-pattern persistence; do not build Vue editor UI here.
     acceptance:
-      - Hand-add a minimal `{x_strum:}` meta line to fixtures/sda/005-tua-vontade.cho
-        (do not invent lyrics; do not rely on enrich from TUA no-strum CC HTML);
-        proposeCifraClubEnrich omits x_strum from patch when local already has
-        x_strum; when local lacks x_strum and CC has strum, patch still includes
-        x_strum; the old prefer-cc overwrite test is rewritten to assert keep-local;
-        CHANGELOG notes enrich keep-local for batida
+      - Hand-add a minimal `{x_strum:}` meta line to
+        fixtures/sda/005-tua-vontade.cho (do not invent lyrics; do not rely on
+        enrich from TUA no-strum CC HTML); proposeCifraClubEnrich omits x_strum
+        from patch when local already has x_strum; when local lacks x_strum and
+        CC has strum, patch still includes x_strum; the old prefer-cc overwrite
+        test is rewritten to assert keep-local; CHANGELOG notes enrich
+        keep-local for batida
     verifier:
       kind: shell
       command: pnpm exec vitest run tests/core/cifraclub-enrich.test.ts && rg -n
@@ -101,9 +106,9 @@ tasks:
       - listSlotChoices returns 8 hit composites + 2 ghost and zero rest;
         slotEquals compares StrumSlots for picker current-state; setSlot/
         resizePattern/emptyPattern are immutable and round-trip via
-        formatXStrum/parseXStrum; emptyPattern slots are ghost not rest and
-        copy bpm from chart tempo when provided; writeMeta/format identity
-        rewrite without slot edits preserves canonical x_strum string; existing
+        formatXStrum/parseXStrum; emptyPattern slots are ghost not rest and copy
+        bpm from chart tempo when provided; writeMeta/format identity rewrite
+        without slot edits preserves canonical x_strum string; existing
         strum.test.ts still green
     verifier:
       kind: shell
@@ -133,12 +138,12 @@ tasks:
       - Without x_strum, view shows + Criar batida and opens BatidaSheet; sheet
         lays out one beat per row on narrow; tapping a slot opens picker with 8
         hit + 2 ghost choices and no pausa (narrow=bottom sheet, wide=popover);
-        current choice marked via slotEquals; save writes {x_strum:} via writeMeta
-        and hasStrum becomes true; Apagar removes x_strum and restores + Criar;
-        legacy pat `-` displays/edits as passa and save does not write new `-`;
-        create path mirrors {tempo:} into pattern bpm; edit existing via strip
-        pencil in view (strip stays hidden in chart edit mode; chrome chip/lápis
-        still opens sheet); strip remains read-only projection
+        current choice marked via slotEquals; save writes {x_strum:} via
+        writeMeta and hasStrum becomes true; Apagar removes x_strum and restores
+        + Criar; legacy pat `-` displays/edits as passa and save does not write
+        new `-`; create path mirrors {tempo:} into pattern bpm; edit existing
+        via strip pencil in view (strip stays hidden in chart edit mode; chrome
+        chip/lápis still opens sheet); strip remains read-only projection
     verifier:
       kind: shell
       command: pnpm exec vitest run tests/vue/batida-editor.test.ts
@@ -167,6 +172,7 @@ tasks:
         path: tests/vue/strum-strip.test.ts
 parked: []
 emerged: []
+planTitle: Editor de batida — `titan-chordpro-ui`
 ---
 
 # Narrative / notes

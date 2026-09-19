@@ -23,6 +23,8 @@ tasksDone: 2
 tasksTotal: 2
 gatesMet: 1
 gatesTotal: 1
+weightDone: 6
+weightTotal: 6
 exitGates:
   - id: F2-G1
     description: Multi-pattern parse/format + selector tests green; legacy single
@@ -34,6 +36,8 @@ exitGates:
         tests/vue/batida-multi.test.ts tests/core/strum.test.ts
       expectExitCode: 0
     metAt: 2026-09-13T23:05:05.978Z
+    verifierLabel: "shell: pnpm exec vitest run tests/core/strum-multi.test.ts tests/v…"
+    evidenceSummary: met · 2026-09-13
 tasks:
   - id: T-001
     title: Multi-pattern wire format + import keep-all
@@ -94,6 +98,7 @@ tasks:
 parked: []
 emerged: []
 stack: []
+planTitle: Editor de batida — `titan-chordpro-ui`
 ---
 
 # F2 multi-pattern

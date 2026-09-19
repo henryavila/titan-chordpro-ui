@@ -24,6 +24,8 @@ tasksDone: 1
 tasksTotal: 1
 gatesMet: 1
 gatesTotal: 1
+weightDone: 3
+weightTotal: 3
 exitGates:
   - id: F3-G1
     description: Enrich conflict UI/tests green for explicit CC batida replace vs
@@ -35,6 +37,8 @@ exitGates:
         tests/core/cifraclub-enrich.test.ts
       expectExitCode: 0
     metAt: 2026-09-13T23:12:56.998Z
+    verifierLabel: "shell: pnpm exec vitest run tests/vue/meta-dialog.test.ts tests/co…"
+    evidenceSummary: met · 2026-09-13
 tasks:
   - id: T-001
     title: Explicit CC batida conflict UI
@@ -66,6 +70,7 @@ tasks:
 parked: []
 emerged: []
 stack: []
+planTitle: Editor de batida — `titan-chordpro-ui`
 ---
 
 # F3 enrich conflict

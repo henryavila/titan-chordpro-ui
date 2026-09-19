@@ -63,10 +63,11 @@ phases:
     title: D0 Parser BR + oráculo 257
     summary: Classificar os 257 nomes do corpus SDA e parsear o dialeto BR.
     goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
-      parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9, `4`/`sus`→sus4,
-      `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11; `7+`, quote junk,
-      and `m(3b)` are AMBIGUOUS/UNPARSED; zero invented voicings; no Vue in core.
-      Oracle columns are parse-class only (Claude F-001)."
+      parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9,
+      `4`/`sus`→sus4, `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11;
+      `7+`, quote junk, and `m(3b)` are AMBIGUOUS/UNPARSED; zero invented
+      voicings; no Vue in core. Oracle columns are parse-class only (Claude
+      F-001)."
     dependsOn: []
     subPhaseCount: 2
     exitGate:
@@ -112,8 +113,8 @@ phases:
     summary: Round-trip de {define} no arquivo, sem dropar no writeMeta.
     goal: "`{define}`, `{define-guitar}`, `{define-ukulele}` round-trip in
       parse/write; hyphenated keys are not eaten by DIR; writeMeta does not drop
-      defines; parse() exposes `defines` on ChordProView; bare `{define:}` infers
-      piano from keys, guitar from 6 frets, ukulele from 4, else miss;
+      defines; parse() exposes `defines` on ChordProView; bare `{define:}`
+      infers piano from keys, guitar from 6 frets, ukulele from 4, else miss;
       exportCho keeps define lines and transposes define names with the same
       semitone/capo rewrite as the body (Claude F-002); fixture is a new file
       outside fixtures/sda; D4 must not write defines until this gate is green."
@@ -125,9 +126,9 @@ phases:
       criteria:
         - id: F1-G1
           description: Define parse/serialize and exportCho tests green. FAILS when
-            writeMeta strips {define-guitar:}, when exportCho({semitones:2}) leaves
-            a define that no longer matches the transposed shapeName, or when
-            parse(src).defines is missing.
+            writeMeta strips {define-guitar:}, when exportCho({semitones:2})
+            leaves a define that no longer matches the transposed shapeName, or
+            when parse(src).defines is missing.
           status: pending
           verifier:
             kind: shell
@@ -140,12 +141,12 @@ phases:
     title: D2 resolveDiagram + BD + draw with capo
     summary: Resolver a forma e desenhar violão/ukulele/piano com capo.
     goal: Layout segs expose concert, shapeName, capoFret computed from block/song
-      capo even when editing or Nashville (display() and shapeCapo stay as today;
-      Claude F-003); resolveDiagram hits dictionary or file override; core returns
-      a draw *model* (dots, mute, barre, capo bar, Capo n, lit keys) and Vue
-      renders SVG; piano model ignores capoFret; F2 ships the voicing dictionary
-      with license and fails if a parse-class name has no guitar entry unless it
-      is on the known-miss list.
+      capo even when editing or Nashville (display() and shapeCapo stay as
+      today; Claude F-003); resolveDiagram hits dictionary or file override;
+      core returns a draw *model* (dots, mute, barre, capo bar, Capo n, lit
+      keys) and Vue renders SVG; piano model ignores capoFret; F2 ships the
+      voicing dictionary with license and fails if a parse-class name has no
+      guitar entry unless it is on the known-miss list.
     dependsOn:
       - F1
     subPhaseCount: 0
@@ -153,11 +154,11 @@ phases:
       summary: 1 criterion to meet
       criteria:
         - id: F2-G1
-          description: Layout fields, resolveDiagram, draw-model, and dictionary
-            coverage tests green. FAILS when editing or nashville leaves capoFret 0
-            while source has capo 2, when guitar draw model uses concert voicing
-            under capo 2, or when a parse-class name lacks a guitar dict entry and
-            is not on the known-miss list.
+          description: Layout fields, resolveDiagram, draw-model, and dictionary coverage
+            tests green. FAILS when editing or nashville leaves capoFret 0 while
+            source has capo 2, when guitar draw model uses concert voicing under
+            capo 2, or when a parse-class name lacks a guitar dict entry and is
+            not on the known-miss list.
           status: pending
           verifier:
             kind: shell
@@ -184,9 +185,9 @@ phases:
       criteria:
         - id: F3-G1
           description: Vue modal, prefs, and pause tests green. FAILS when tap leaves
-            auto-scroll running, when close starts scroll/metro that were off, when
-            a chord tap toggles zen, when a rail touch swallows the chord tap, or
-            when lens letra still opens the modal.
+            auto-scroll running, when close starts scroll/metro that were off,
+            when a chord tap toggles zen, when a rail touch swallows the chord
+            tap, or when lens letra still opens the modal.
           status: pending
           verifier:
             kind: shell
@@ -220,6 +221,8 @@ phases:
             expectExitCode: 0
     status: pending
 references: []
+planActive: true
+planTitle: Diagramas de cifra — `titan-chordpro-ui`
 ---
 
 # Diagramas de cifra — `titan-chordpro-ui`
