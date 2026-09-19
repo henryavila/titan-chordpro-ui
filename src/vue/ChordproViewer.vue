@@ -101,6 +101,7 @@ import { useSetlist, type SongSpot } from './use/useSetlist'
 import { useSongSwipe } from './use/useSongSwipe'
 import { SWIPE_IN_MS, SWIPE_OUT_MS } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
+import { useWakeLock } from './use/useWakeLock'
 import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
@@ -1709,6 +1710,7 @@ const nativeFs = useFullscreen({
     if (!active && fs.value) setImmersive(false)
   },
 })
+const wakeLock = useWakeLock()
 /**
  * Fixed once the root exists: whether this document may go fullscreen is a
  * property of the page it was loaded in, not of the moment.
@@ -2600,10 +2602,12 @@ onMounted(() => {
   syncHostSource()
   guard.start()
   songSwipe.attach()
+  wakeLock.start()
 })
 
 onUnmounted(() => {
   swipeGen += 1
+  wakeLock.stop()
   songSwipe.detach()
   stopScroll()
   met.dispose()

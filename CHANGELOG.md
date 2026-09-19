@@ -7,10 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-09-18
-
 ### Added
 - **Swipe no ensaio:** no celular, arrastar a cifra para a esquerda (próxima) ou direita (anterior) pinta um fade colorido com chevron. No limiar o selo vira **Solte para ir** (anel na cor do acorde). Soltar confirma e a cifra desliza; soltar antes volta. Rolar para baixo não troca.
+- **Tela ligada:** enquanto o viewer está aberto, pede Screen Wake Lock para o aparelho não apagar no ensaio. Sempre ativo, sem botão; rearma quando a aba volta a ficar visível. HTTPS. Sem a API, não faz nada.
 
 ## [0.4.0] - 2026-09-17
 
@@ -97,8 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.5.0...HEAD
-[0.5.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.5.0
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.4.0
 [0.3.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.3.0
 [0.2.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.2.0
