@@ -440,7 +440,7 @@ exatamente ele — se os dois divergirem, **todo** segmento toca na razão entre
 eles, inclusive os compassos contados. Matemática em `src/core/timeline.ts`
 (framework-free); o RAF e a medição do DOM ficam no binding Vue.
 
-#### Onde a página fica: âncora com rampa, nunca congelada
+#### Onde a página fica: âncora com rampa; intro compacta fica quieta
 
 Na primeira nota a música está obrigatoriamente no topo do papel — não há nada
 acima dela para rolar. A âncora define onde a música **descansa** na tela
@@ -454,7 +454,7 @@ era de **25 a 96 segundos** de página morta em toda cifra — um terço de
 Meia tela de papel não é a introdução: é a introdução mais quase toda a primeira
 estrofe.
 
-Duas correções:
+Três correções:
 
 1. `anchorPx(viewport, doc)` é limitado pela rolagem que a cifra **tem** para
    dar (`min(viewport, doc − viewport)`). Uma cifra que mal passa da moldura não
@@ -462,11 +462,17 @@ Duas correções:
    quase a música inteira por causa de algumas dezenas de pixels.
 2. `scrollAtPx()` paga a dívida em rampa: a página anda a `1 − ANCHOR_RAMP` do
    passo da música enquanto a música desce até o lugar de descanso, e no passo
-   da música dali em diante. Nada congela — no corpus, toda cifra está andando
-   em **0,1 a 0,5 s**.
+   da música dali em diante.
+3. Introdução **tocada e não cantada** (acordes + `x///`, TAB) no topo não
+   entra na rampa. A página fica em 0 até a primeira linha cantada — ou até a
+   linha de leitura, se essa intro for mais alta que um terço da tela. Sem
+   isso, *Nasce em Mim* (8 acordes / 2 linhas / 32 pulsos) mandava a letra ao
+   topo durante a intro. Um `{c:INTRODUÇÃO}` sozinho não segura a página. O
+   relógio e o metrônomo **não** pausam: só o `scrollTop`.
 
 `pxAtScroll()` é a inversa, e é ela que lê de volta a posição quando o músico
-arrasta a cifra com o dedo.
+arrasta a cifra com o dedo. `{tempo:65 BPM}` é 65 — o sufixo não cai no
+default 100.
 
 #### Movimento contínuo: o meio pixel vai no compositor
 
