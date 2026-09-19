@@ -1,0 +1,41 @@
+{
+  "actor": "Músico",
+  "scenario": "Ver como se toca o acorde da cifra sem poluir a leitura; no edit, gravar override só naquele arquivo.",
+  "decisions": [
+    {
+      "id": "leituraPermiteForma",
+      "question": "Esta leitura mostra forma?",
+      "outcomes": ["Mostra forma", "Sem forma nesta leitura"]
+    },
+    {
+      "id": "resolveHit",
+      "question": "Tem forma neste instrumento?",
+      "outcomes": ["Tem forma", "Sem forma neste instrumento"]
+    },
+    {
+      "id": "trocaInstrumento",
+      "question": "Troca o instrumento da forma?",
+      "outcomes": ["Troca instrumento", "Mantém instrumento"]
+    },
+    {
+      "id": "ensaioOuEdit",
+      "question": "Ensaio ou edit?",
+      "outcomes": ["Ensaio", "Edit"]
+    },
+    {
+      "id": "gravaOverride",
+      "question": "Grava override neste arquivo?",
+      "outcomes": ["Grava neste arquivo", "Fecha sem gravar"]
+    }
+  ],
+  "stateChanges": [
+    {
+      "id": "forma",
+      "states": ["fechada", "aberta", "miss"]
+    },
+    {
+      "id": "override",
+      "states": ["ausente", "gravado_neste_arquivo"]
+    }
+  ]
+}

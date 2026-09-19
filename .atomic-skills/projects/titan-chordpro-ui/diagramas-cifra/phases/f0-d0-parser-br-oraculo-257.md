@@ -12,9 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: Run `/atomic-skills:project flow` on
-  `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify,
-  then re-run `/atomic-skills:implement`.
+nextAction: Run `/atomic-skills:implement` (flow ratified).
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -136,8 +134,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** First `implement` on `plan/diagramas-cifra` bound this worktree (HEAD `485a87f` on top of main `e48b07f`). Operator stamped `executionMode: automate`, committed the plan snapshot (including batida-editor wrapping), and rebased onto main. Spawn is blocked: `find-missing-flow.js --strict` exit 1 — missing `flow/flow.json` and `flow/flow.html`. F0 is materialized (T-001, T-002 pending); no phase writer was spawned.
-- **Decision log:** Durable stamp `executionMode: automate` (operator AskUserQuestion y) recorded in `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` id `57fd581e-f164-480c-b015-e915e5c78186`. Commit all dirty files including batida-editor wrapping. Rebase `plan/diagramas-cifra` onto main `e48b07f`.
-- **Single nextAction:** Run `/atomic-skills:project flow` on `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify, then re-run `/atomic-skills:implement`.
-- **Verbatim state:** `node "$(cat "$HOME/.atomic-skills/package-root" 2>/dev/null || echo .)/scripts/find-missing-flow.js" .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md --strict` → `find-missing-flow: FAIL` / missing L1 `.../diagramas-cifra/flow/flow.json` / missing L2 `.../diagramas-cifra/flow/flow.html`. Ground-truth detector exit 0. `git symbolic-ref --short HEAD` = `plan/diagramas-cifra`. `git rev-parse HEAD` = `485a87f5f5a854dc0044f545c85c2ec9137b81e9`.
-- **Uncommitted changes:** clean tree after refresh-state rollups; `.atomic-skills/.aideck/` and `.atomic-skills/focus.json` gitignored.
+- **Narrative:** Flow de `diagramas-cifra` foi gerado, mostrado em `http://127.0.0.1:53714/flow.html` e travado pelo operador (Sim, é isso). `find-missing-flow.js --strict` exit 0. F0 continua materializada (T-001, T-002 pending); nenhum phase writer foi spawned. Automate continua carimbado.
+- **Decision log:** Flow ratificado via `buildFlowRatification` (`ratifiedBy: operator`, `ratifiedAt: 2026-09-19T22:24:20.169Z`, `ratifiedGraphSha: 0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8`). Stamp automate anterior permanece.
+- **Single nextAction:** Run `/atomic-skills:implement`.
+- **Verbatim state:** `node "$(cat "$HOME/.atomic-skills/package-root" 2>/dev/null || echo .)/scripts/find-missing-flow.js" .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md --strict` → `find-missing-flow: 1 plan(s) OK`. L1 `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/flow/flow.json`. L2 `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/flow/flow.html`. `FLOW_URL=http://127.0.0.1:53714/flow.html`.
+- **Uncommitted changes:** flow L1/L2/brief + este handoff (próximo checkpoint).
