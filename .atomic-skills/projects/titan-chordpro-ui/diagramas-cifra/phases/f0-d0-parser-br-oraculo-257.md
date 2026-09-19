@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: "Start T-001: Oracle table from fixtures/sda"
+nextAction: "Run `/atomic-skills:project flow` on `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify, then re-run `/atomic-skills:implement`."
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -125,3 +125,10 @@ _(record decisions here as they are made)_
 ## Links
 
 _(plan doc, external refs)_
+
+## Session handoff
+- **Narrative:** First `implement` on `plan/diagramas-cifra` bound this worktree (HEAD `3ec8246` on top of main `e48b07f`). Operator stamped `executionMode: automate`, committed the plan snapshot (including batida-editor wrapping), and rebased onto main. Spawn is blocked: `find-missing-flow.js --strict` exit 1 — missing `flow/flow.json` and `flow/flow.html`. F0 is materialized (T-001, T-002 pending); no phase writer was spawned.
+- **Decision log:** Durable stamp `executionMode: automate` (operator AskUserQuestion y) recorded in `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` id `57fd581e-f164-480c-b015-e915e5c78186`. Commit all dirty files including batida-editor wrapping. Rebase `plan/diagramas-cifra` onto main `e48b07f`.
+- **Single nextAction:** Run `/atomic-skills:project flow` on `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md`, ratify, then re-run `/atomic-skills:implement`.
+- **Verbatim state:** `node "$(cat "$HOME/.atomic-skills/package-root" 2>/dev/null || echo .)/scripts/find-missing-flow.js" .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md --strict` → `find-missing-flow: FAIL` / missing L1 `.../diagramas-cifra/flow/flow.json` / missing L2 `.../diagramas-cifra/flow/flow.html`. Ground-truth detector exit 0. `git symbolic-ref --short HEAD` = `plan/diagramas-cifra`. `git rev-parse HEAD` = `3ec8246` (after handoff commit this hash will move).
+- **Uncommitted changes:** clean tree after snapshot `3ec8246` + rebase onto `e48b07f` (this handoff edit is the only pending snapshot).
