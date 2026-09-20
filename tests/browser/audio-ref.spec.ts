@@ -6,6 +6,22 @@ test('reference player is a music transport, not Rolar', async ({ page }) => {
   const player = page.locator('[data-audio-ref]')
   await player.waitFor()
   await expect(player.locator('[data-audio-open]')).toBeVisible()
+  const paint = await player.evaluate((el) => {
+    const s = getComputedStyle(el)
+    return {
+      bg: s.backgroundColor,
+      filter: s.backdropFilter || (s as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter || '',
+      radius: s.borderRadius,
+    }
+  })
+  const alpha = (() => {
+    const m = paint.bg.match(/rgba?\(([^)]+)\)/)
+    if (!m?.[1]) return 1
+    const parts = m[1].split(',').map((p) => p.trim())
+    return parts.length === 4 ? Number(parts[3]) : 1
+  })()
+  expect(alpha, `closed chip must be opaque, got ${paint.bg}`).toBeGreaterThanOrEqual(0.95)
+  expect(paint.filter === 'none' || paint.filter === '').toBe(true)
   const chip = await player.boundingBox()
   expect(chip, 'chip missing box').toBeTruthy()
   const chipMid = (chip?.x ?? 0) + (chip?.width ?? 0) / 2

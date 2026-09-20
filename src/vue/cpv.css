@@ -2839,7 +2839,8 @@ div.cpv-head-id {
   overflow-wrap: normal;
 }
 
-/* Reference now-playing — independent of Rolar. Play triangle is reserved for this. */
+/* Reference now-playing — independent of Rolar. Play triangle is reserved for this.
+   Solid canvas (not --veil): the chip sits on the chart and must stay readable. */
 .cpv-audio-ref {
   position: relative;
   display: grid;
@@ -2849,14 +2850,6 @@ div.cpv-head-id {
     'art id play'
     'art seek seek'
     'art times times';
-}
-.cpv-audio-ref.has-kinds {
-  grid-template-areas:
-    'art id close'
-    'art id play'
-    'kind kind kind'
-    'seek seek seek'
-    'times times times';
   column-gap: 12px;
   row-gap: 2px;
   align-self: center;
@@ -2865,18 +2858,26 @@ div.cpv-head-id {
   margin-inline: auto;
   padding: 10px 10px 8px 10px;
   border-radius: 18px;
-  background: var(--veil);
+  background: var(--canvas);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.cpv-audio-ref.has-kinds {
+  grid-template-areas:
+    'art id close'
+    'art id play'
+    'kind kind kind'
+    'seek seek seek'
+    'times times times';
 }
 .cpv-audio-ref.is-closed {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 320px;
-  padding: 6px 6px 6px 6px;
+  width: auto;
+  max-width: min(320px, 100%);
+  padding: 5px 6px 5px 5px;
+  border-radius: 999px;
 }
 .cpv-audio-ref-art {
   grid-area: art;
