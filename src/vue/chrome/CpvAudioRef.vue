@@ -19,6 +19,7 @@ const emit = defineEmits<{
   seek: [t: number]
 }>()
 
+const open = ref(false)
 const artBroken = ref(false)
 watch(
   () => props.art,
@@ -54,74 +55,124 @@ function onSeek(e: PointerEvent) {
 <template>
   <div
     class="cpv-hit cpv-audio-ref"
-    :class="{ 'is-playing': playing }"
+    :class="{ 'is-playing': playing, 'is-closed': !open }"
     data-audio-ref
     role="region"
     aria-label="Áudio de referência"
+    :aria-expanded="open ? 'true' : 'false'"
     @pointerdown.stop
   >
-    <div class="cpv-audio-ref-art" data-audio-art :class="{ 'is-empty': !artSrc }">
-      <img
-        v-if="artSrc"
-        :src="artSrc"
-        alt=""
-        draggable="false"
-        @error="artBroken = true"
-      />
-      <CpvIcon v-else name="music2" :size="22" />
-    </div>
-
-    <div class="cpv-audio-ref-id">
-      <p data-audio-title class="cpv-audio-ref-title">{{ title }}</p>
-      <p data-audio-artist class="cpv-audio-ref-artist">{{ artist }}</p>
-    </div>
-
-    <button
-      type="button"
-      class="cpv-audio-ref-play"
-      data-audio-play
-      :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
-      :title="playing ? 'Pausar referência' : 'Tocar referência'"
-      @click="emit('toggle')"
-    >
-      <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
-    </button>
-
-    <p v-if="error" class="cpv-audio-ref-error">Não foi possível tocar</p>
+    <template v-if="!open">
+      <button
+        type="button"
+        class="cpv-audio-ref-launch"
+        data-audio-open
+        aria-label="Abrir referência"
+        title="Abrir referência"
+        @click="open = true"
+      >
+        <span class="cpv-audio-ref-art is-chip" data-audio-art :class="{ 'is-empty': !artSrc }">
+          <img
+            v-if="artSrc"
+            :src="artSrc"
+            alt=""
+            draggable="false"
+            @error="artBroken = true"
+          />
+          <CpvIcon v-else name="music2" :size="16" />
+        </span>
+        <span class="cpv-audio-ref-launch-copy">
+          <span class="cpv-audio-ref-kicker">Referência</span>
+          <span class="cpv-audio-ref-launch-title">{{ title }}</span>
+        </span>
+      </button>
+      <button
+        type="button"
+        class="cpv-audio-ref-play"
+        data-audio-play
+        :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
+        :title="playing ? 'Pausar referência' : 'Tocar referência'"
+        @click="emit('toggle')"
+      >
+        <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
+      </button>
+    </template>
 
     <template v-else>
-      <div class="cpv-audio-ref-transport">
-        <button
-          type="button"
-          class="cpv-audio-ref-skip"
-          data-audio-skip="-1"
-          aria-label="Recuar 10 segundos"
-          @click="emit('skip', -1)"
-        >−10</button>
-        <div
-          class="cpv-audio-ref-seek"
-          data-audio-seek
-          role="slider"
-          :aria-valuemin="0"
-          :aria-valuemax="Math.round(duration || 0)"
-          :aria-valuenow="Math.round(current)"
-          :aria-label="`Posição da referência, ${clock}`"
-          @pointerdown="onSeek"
-        >
-          <span class="cpv-audio-ref-seek-fill" :style="{ width: `${played * 100}%` }" />
+      <div class="cpv-audio-ref-art" data-audio-art :class="{ 'is-empty': !artSrc }">
+        <img
+          v-if="artSrc"
+          :src="artSrc"
+          alt=""
+          draggable="false"
+          @error="artBroken = true"
+        />
+        <CpvIcon v-else name="music2" :size="22" />
+      </div>
+
+      <div class="cpv-audio-ref-id">
+        <p data-audio-title class="cpv-audio-ref-title">{{ title }}</p>
+        <p data-audio-artist class="cpv-audio-ref-artist">{{ artist }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="cpv-audio-ref-close"
+        data-audio-close
+        aria-label="Fechar referência"
+        title="Fechar referência"
+        @click="open = false"
+      >
+        <CpvIcon name="x" :size="14" />
+      </button>
+
+      <button
+        type="button"
+        class="cpv-audio-ref-play"
+        data-audio-play
+        :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
+        :title="playing ? 'Pausar referência' : 'Tocar referência'"
+        @click="emit('toggle')"
+      >
+        <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
+      </button>
+
+      <p v-if="error" class="cpv-audio-ref-error">Não foi possível tocar</p>
+
+      <template v-else>
+        <div class="cpv-audio-ref-transport">
+          <button
+            type="button"
+            class="cpv-audio-ref-skip"
+            data-audio-skip="-1"
+            aria-label="Recuar 10 segundos"
+            @click="emit('skip', -1)"
+          >−10</button>
+          <div
+            class="cpv-audio-ref-seek"
+            data-audio-seek
+            role="slider"
+            :aria-valuemin="0"
+            :aria-valuemax="Math.round(duration || 0)"
+            :aria-valuenow="Math.round(current)"
+            :aria-label="`Posição da referência, ${clock}`"
+            @pointerdown="onSeek"
+          >
+            <span class="cpv-audio-ref-seek-fill" :style="{ width: `${played * 100}%` }" />
+          </div>
+          <button
+            type="button"
+            class="cpv-audio-ref-skip"
+            data-audio-skip="1"
+            aria-label="Avançar 10 segundos"
+            @click="emit('skip', 1)"
+          >+10</button>
         </div>
-        <button
-          type="button"
-          class="cpv-audio-ref-skip"
-          data-audio-skip="1"
-          aria-label="Avançar 10 segundos"
-          @click="emit('skip', 1)"
-        >+10</button>
-      </div>
-      <div class="cpv-audio-ref-times">
-        <span data-audio-clock>{{ elapsed }}</span>
-        <span data-audio-total>{{ total }}</span>
-      </div>
+        <div class="cpv-audio-ref-times">
+          <span data-audio-clock>{{ elapsed }}</span>
+          <span data-audio-total>{{ total }}</span>
+        </div>
+      </template>
     </template>
   </div>
 </template>

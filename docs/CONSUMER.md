@@ -311,7 +311,8 @@ const next = setAudioArt(cho, 'https://cdn.example/nasce.jpg?h=a1b2')
 
 O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
 ou `{subtitle:}`, e a capa. Sem arte, um placeholder. Sem `{x_audio:}`, o
-chrome não muda.
+chrome não muda. O dock nasce com o chip **Referência**; o card abre por ele
+e fecha no X (fechar não para o áudio).
 
 `writeMeta` substitui o header inteiro: use `setAudioUrl` / `setAudioArt`.
 YouTube, Spotify, `javascript:` e `data:` são recusados (throw).

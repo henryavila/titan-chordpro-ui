@@ -2871,6 +2871,7 @@ defineExpose({
     >
       <CpvAudioRef
         v-if="audioUrl"
+        :key="audioUrl"
         :playing="audio.playing.value"
         :current="audio.current.value"
         :duration="audio.duration.value"
@@ -2929,6 +2930,7 @@ defineExpose({
     >
       <CpvAudioRef
         v-if="audioUrl"
+        :key="audioUrl"
         :playing="audio.playing.value"
         :current="audio.current.value"
         :duration="audio.duration.value"
