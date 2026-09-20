@@ -132,17 +132,6 @@ function onSeek(e: PointerEvent) {
         <CpvIcon name="x" :size="14" />
       </button>
 
-      <button
-        type="button"
-        class="cpv-audio-ref-play"
-        data-audio-play
-        :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
-        :title="playing ? 'Pausar referência' : 'Tocar referência'"
-        @click="emit('toggle')"
-      >
-        <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
-      </button>
-
       <div
         v-if="canSwitch"
         class="cpv-audio-kind"
@@ -172,18 +161,16 @@ function onSeek(e: PointerEvent) {
             aria-label="Recuar 10 segundos"
             @click="emit('skip', -1)"
           >−10</button>
-          <div
-            class="cpv-audio-ref-seek"
-            data-audio-seek
-            role="slider"
-            :aria-valuemin="0"
-            :aria-valuemax="Math.round(duration || 0)"
-            :aria-valuenow="Math.round(current)"
-            :aria-label="`Posição da referência, ${clock}`"
-            @pointerdown="onSeek"
+          <button
+            type="button"
+            class="cpv-audio-ref-play"
+            data-audio-play
+            :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
+            :title="playing ? 'Pausar referência' : 'Tocar referência'"
+            @click="emit('toggle')"
           >
-            <span class="cpv-audio-ref-seek-fill" :style="{ width: `${played * 100}%` }" />
-          </div>
+            <CpvIcon :name="playing ? 'pause' : 'play'" :size="18" />
+          </button>
           <button
             type="button"
             class="cpv-audio-ref-skip"
@@ -191,6 +178,18 @@ function onSeek(e: PointerEvent) {
             aria-label="Avançar 10 segundos"
             @click="emit('skip', 1)"
           >+10</button>
+        </div>
+        <div
+          class="cpv-audio-ref-seek"
+          data-audio-seek
+          role="slider"
+          :aria-valuemin="0"
+          :aria-valuemax="Math.round(duration || 0)"
+          :aria-valuenow="Math.round(current)"
+          :aria-label="`Posição da referência, ${clock}`"
+          @pointerdown="onSeek"
+        >
+          <span class="cpv-audio-ref-seek-fill" :style="{ width: `${played * 100}%` }" />
         </div>
         <div class="cpv-audio-ref-times">
           <span data-audio-clock>{{ elapsed }}</span>
