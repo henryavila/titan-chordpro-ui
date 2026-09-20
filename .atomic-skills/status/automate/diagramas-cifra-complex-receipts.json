@@ -1,8 +1,14 @@
 {
+  "T-001": {
+    "mode": "both-claude",
+    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-claude.md",
+    "disposition": "fix",
+    "reason": "critical exportCho name-only transpose fixed in 871ff98; local majors piano keys + mixed define + rewriteToKey addressed in same commit"
+  },
   "T-002": {
     "mode": "both-claude",
-    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-phase-both.md",
+    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-claude.md",
     "disposition": "fix",
-    "reason": "operator: slash always bass (accept A); m(3b) parses as m (fix B); generator follows parser (fix C); landed c39296e + 9e55b85"
+    "reason": "critical exportCho name-only transpose fixed in 871ff98"
   }
 }

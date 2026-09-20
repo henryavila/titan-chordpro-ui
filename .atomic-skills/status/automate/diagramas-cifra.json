@@ -1,7 +1,20 @@
 {
-  "step": "H",
+  "step": "E",
   "phaseId": "F1",
-  "redispatchCount": 2,
-  "updatedAt": "2026-09-20T15:01:13.043Z",
-  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json"
+  "redispatchCount": 3,
+  "updatedAt": "2026-09-20T15:52:18.223Z",
+  "operatorOverrides": [
+    {
+      "at": "2026-09-20T15:41:34.379Z",
+      "reason": "F1 critical: exportCho renames define without transposing shape; operator continue F1",
+      "priorCount": 2,
+      "gate": "spawn"
+    }
+  ],
+  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json",
+  "lastAssert": {
+    "gate": "done",
+    "ok": true,
+    "at": "2026-09-20T15:52:18.223Z"
+  }
 }

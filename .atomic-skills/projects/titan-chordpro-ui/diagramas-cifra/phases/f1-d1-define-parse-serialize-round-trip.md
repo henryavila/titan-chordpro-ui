@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T15:12:51.416Z
 lastUpdated: 2026-09-20T15:12:51.416Z
-nextAction: "Start T-001: Parse and serialize define directives"
+nextAction: Run `phase-done`
 parentPlan: diagramas-cifra
 phaseId: F1
 businessIntent:
@@ -32,11 +32,11 @@ businessIntent:
     passam; parse(src).defines existe; writeMeta e exportCho mantem
     {define-guitar:}; exportCho com semitones 2 deixa o nome da define alinhado
     ao shapeName transposto.
-tasksDone: 0
+tasksDone: 2
 tasksTotal: 2
 gatesMet: 0
 gatesTotal: 1
-weightDone: 0
+weightDone: 6
 weightTotal: 6
 exitGates:
   - id: F1-G1
@@ -59,8 +59,16 @@ tasks:
     title: Parse and serialize define directives
     summary: Parse e serialize {define} hifenizado com inferencia de instrumento.
     weight: 3
-    status: pending
-    lastUpdated: 2026-09-20T15:12:51.416Z
+    status: done
+    closedAt: 2026-09-20T15:52:00.000Z
+    lastUpdated: 2026-09-20T15:52:00.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T15:51:52.000Z
+      verifiedCommit: 3d4b6f930a7bd520b338ea3ceaf7c424a1d81a9f
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/define-directive.test.ts (25 tests) 6ms
     scopeBoundary:
       - No Vue editor; no dictionary lookup; do not add define to META_KEYS as
         an x_ key; do not implement the diagram SVG.
@@ -86,8 +94,17 @@ tasks:
     title: writeDefines + fixture + exportCho keep
     summary: writeDefines, writeMeta e exportCho preservam define; fixture fora de sda.
     weight: 3
-    status: pending
-    lastUpdated: 2026-09-20T15:12:51.416Z
+    status: done
+    closedAt: 2026-09-20T15:52:00.000Z
+    lastUpdated: 2026-09-20T15:52:00.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T15:51:52.000Z
+      verifiedCommit: 3d4b6f930a7bd520b338ea3ceaf7c424a1d81a9f
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ define-directive 25 + export-cho 6; 32 tests exit 0
+        (open-string define dropped on transpose)
     scopeBoundary:
       - Do not invent lyrics; only add define lines to an existing fixture; do
         not build the shape editor UI; do not change strum meta keys.
