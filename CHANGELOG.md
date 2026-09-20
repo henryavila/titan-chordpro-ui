@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Diretivas custom em inglês:** `{x_source:}` (antes `{x_origem:}`), `{x_audio_sung:}` (antes `{x_audio_cantado:}`). Leitura aceita as chaves antigas; a próxima gravação reescreve. UI em português (Origem, Cantado, Playback).
 
 ### Fixed
+- **Reescrever no tom:** `{key:}` é o tom. Some o palpite pela moda dos acordes (e o primeiro acorde da intro). O botão só aparece no editor, e só no capo falso (corpo N trastes abaixo do `{key:}`). Na leitura, 091 em A deixa de pedir “Reescrever em A”.
 - **Cantado / Playback:** no card, um rótulo discreto (não tabs), com mais espaço sob o título. Sem capa do host, o player usa uma arte padrão. Com uma faixa só, o rótulo continua mostrando o que está tocando.
 - **Play da referência:** no card aberto o play é o centro do transporte; −10 / +10 ficam mais suaves.
 - **Chip da referência:** sólido sobre a cifra (canvas, sem véu). Mini-player flutuante; toque abre o card.

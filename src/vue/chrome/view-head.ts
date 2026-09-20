@@ -22,8 +22,6 @@ export type ViewHeadModel = {
   capoShapes: string[]
   mapOn: boolean
   twin: boolean
-  canRewrite: boolean
-  metaKey: string
   metaTempo: string | number | undefined
   metaTime: string | undefined
   metaDuration: string | undefined

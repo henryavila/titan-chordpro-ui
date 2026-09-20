@@ -13,10 +13,7 @@ import {
   exportCho,
   formatEta,
   hasSongDuration,
-  inferWrittenKey,
   isParseFatal,
-  keyIndex,
-  keyRootOf,
   layoutChartFull,
   maxPlainChars,
   missingOf,
@@ -31,7 +28,6 @@ import {
   playheadAtScroll,
   readMeta,
   readStrumPatterns,
-  rewriteToKey,
   runSec,
   scrollAtPlayhead,
   sheetBpm,
@@ -783,19 +779,8 @@ const fileTranspose = computed(() => {
   const n = Number(meta.value.transpose)
   return Number.isFinite(n) ? n : 0
 })
-const writtenKey = computed(() => inferWrittenKey(liveSource.value))
-const writtenMatchesKey = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a === b
-})
-const keyMismatch = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a !== b
-})
 const viewSemis = computed(() =>
-  isEdit.value ? 0 : offset.value + (writtenMatchesKey.value ? fileTranspose.value : 0),
+  isEdit.value ? 0 : offset.value + fileTranspose.value,
 )
 const shownKey = computed(() => (meta.value.key ? transposeToken(meta.value.key, offset.value, flats.value) : ''))
 const playingKey = computed(() =>
@@ -912,7 +897,6 @@ const hasReset = computed(() => hasOffset.value || hasCapo.value)
 const canEditNow = computed(
   () => !isEdit.value && isPopulated.value && props.canEdit && modes.value.length > 0,
 )
-const canRewrite = computed(() => !!props.canEdit && keyMismatch.value && !!meta.value.key && !!writtenKey.value)
 /** The owner's entry into the queue: only where a chart can be changed at all. */
 const queueEntry = computed(
   () =>
@@ -1541,24 +1525,6 @@ function resetTone() {
   capo.value = 0
 }
 
-function rewriteToDeclared() {
-  const target = String(meta.value.key ?? '').trim()
-  if (!target) return
-  const r = rewriteToKey(liveSource.value, target)
-  if (!r?.changed) return
-  session.replace(r.source)
-  capo.value = Number(readMeta(r.source).capo) || 0
-  offset.value = 0
-  touch()
-  const n = r.transpose
-  toastMsg(
-    n
-      ? `Cifra reescrita em ${r.to} · tocando em ${r.from} (transpose ${n > 0 ? '+' : ''}${n})`
-      : `Cifra reescrita em ${r.to}`,
-  )
-  toneOpen.value = false
-}
-
 function setCapo(n: number) {
   capo.value = Math.max(0, Math.min(9, n))
 }
@@ -1812,8 +1778,6 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   capoShapes: capoShapes.value,
   mapOn: mapOn.value,
   twin: twin.value,
-  canRewrite: canRewrite.value,
-  metaKey: meta.value.key || '',
   metaTempo: meta.value.tempo,
   metaTime: meta.value.time,
   metaDuration: meta.value.duration,
@@ -2786,7 +2750,6 @@ defineExpose({
         @toggle-fs="toggleFs"
         @shift="shift"
         @reset-tone="resetTone"
-        @rewrite="rewriteToDeclared"
         @capo-nudge="(n) => setCapo(capo + n)"
         @toggle-map="toggleMap"
         @capo-zero="setCapo(0)"
@@ -3252,9 +3215,6 @@ defineExpose({
       :has-capo="hasCapo"
       :has-reset="hasReset"
       :dual="twin"
-      :can-rewrite="canRewrite"
-      :written-key="writtenKey || ''"
-      :declared-key="meta.key || ''"
       @dual="toggleMap"
       @close="toneOpen = false"
       @down="shift(-1)"
@@ -3262,7 +3222,6 @@ defineExpose({
       @capo-down="setCapo(capo - 1)"
       @capo-up="setCapo(capo + 1)"
       @reset="resetTone"
-      @rewrite="rewriteToDeclared"
     />
 
     <CpvMoreSheet

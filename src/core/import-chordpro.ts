@@ -25,7 +25,14 @@ import {
   type StrumPatternSet,
 } from './strum-multi'
 import { hasSongDuration } from './timeline'
-import { keyIndex, keyRootOf, signedSemitoneDelta, transposeTextChords, usesFlats } from './transpose'
+import {
+  keyIndex,
+  keyRootOf,
+  signedSemitoneDelta,
+  transposeTextChords,
+  transposeToken,
+  usesFlats,
+} from './transpose'
 
 const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
@@ -460,12 +467,13 @@ export function writeMeta(source: string, meta: ChartMeta): string {
 }
 
 /**
- * The key the chords actually spell — most frequent root in the body, tabs
- * and scores skipped. `{key:}` is the declared tom; when they disagree, the
- * chart was already transposed on the page.
+ * How many body chords share `root` (tabs and scores skipped). `{key:}` is the
+ * tom — this is only a presence count for the fake-capo check, not a guess.
  */
-export function inferWrittenKey(source: string): string | null {
-  const counts = new Map<string, number>()
+function countRootHits(source: string, root: string): number {
+  const want = keyIndex(keyRootOf(root))
+  if (want == null) return 0
+  let n = 0
   let tab = false
   let score = false
   for (const raw of String(source ?? '').split('\n')) {
@@ -488,41 +496,33 @@ export function inferWrittenKey(source: string): string | null {
       continue
     }
     if (tab || score || d) continue
-    for (const m of raw.matchAll(/\[([A-G](?:#|b)?)(m)?/g)) {
-      const tok = (m[1] ?? '') + (m[2] ?? '')
-      if (!tok) continue
-      counts.set(tok, (counts.get(tok) ?? 0) + 1)
+    for (const m of raw.matchAll(/\[([A-G](?:#|b)?)/g)) {
+      if (keyIndex(m[1] ?? '') === want) n++
     }
   }
-  let best: string | null = null
-  let n = 0
-  for (const [tok, c] of counts) {
-    if (c > n) {
-      best = tok
-      n = c
-    }
-  }
-  return best
+  return n
 }
 
 /**
- * Fake-capo pattern: `{key:}` is not the written chords, and `{capo:}` is
- * exactly that gap. Import surfaces this for confirmation; the rewrite itself
- * is always `rewriteToKey`.
+ * Fake-capo pattern: `{key:}` is the tom; `{capo:N}` is the interval the body
+ * is written below that tom (shapes, not a guitar capo). The written key is
+ * `{key:}` transposed down N — not the most frequent chord, not the first
+ * chord of the intro. Real capo (body already in `{key:}`) stays.
  */
 export function detectKeyRewrite(source: string): KeyRewriteOffer | null {
   const src = String(source ?? '')
   if (!src.trim()) return null
   const meta = readMeta(src)
   const declaredKey = (meta.key ?? '').trim()
-  const writtenKey = inferWrittenKey(src)
-  const kr = keyRootOf(declaredKey)
-  const wr = keyRootOf(writtenKey)
-  if (!kr || !wr || keyIndex(kr) === keyIndex(wr)) return null
   const capo = Number(meta.capo) || 0
-  const gap = Math.abs(signedSemitoneDelta(wr, kr))
-  if (!capo || capo !== gap) return null
-  return { declaredKey, writtenKey: writtenKey!, capo }
+  if (!declaredKey || !capo) return null
+  const kr = keyRootOf(declaredKey)
+  if (keyIndex(kr) == null) return null
+  const writtenKey = transposeToken(declaredKey, -capo, usesFlats(declaredKey))
+  const wr = keyRootOf(writtenKey)
+  if (!wr || keyIndex(kr) === keyIndex(wr)) return null
+  if (countRootHits(src, wr) <= countRootHits(src, kr)) return null
+  return { declaredKey, writtenKey, capo }
 }
 
 export type RewriteToKeyResult = {
@@ -543,8 +543,9 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
   const to = targetKey.trim()
   if (!/^[A-G](?:#|b)?m?$/.test(to)) return null
   const meta = readMeta(src)
-  const written = inferWrittenKey(src)
-  const fromRoot = keyRootOf(written) || keyRootOf(meta.key)
+  const offer = detectKeyRewrite(src)
+  const fromKey = (offer?.writtenKey || (meta.key ?? '').trim() || to).trim()
+  const fromRoot = keyRootOf(fromKey)
   const toRoot = keyRootOf(to)
   if (!fromRoot || !toRoot || keyIndex(fromRoot) === null || keyIndex(toRoot) === null) return null
 
@@ -561,7 +562,7 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
   const out = writeMeta(moved, next)
   return {
     source: out,
-    from: written || fromRoot,
+    from: fromKey,
     to,
     transpose: playing,
     changed: out !== src,

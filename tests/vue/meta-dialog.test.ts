@@ -77,6 +77,11 @@ describe('MetaDialog', () => {
     expect(next).toContain('O Rei vem')
   })
 
+  it('does not offer rewrite when {key:} is already the tom (V outnumbers I, no capo)', () => {
+    const w = dialog(loadFixture('sda/091-o-melhor-lugar-do-mundo.cho'))
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
+  })
+
   it('loads every known header field into the form', () => {
     const w = dialog()
     expect((w.get('[data-meta-title]').element as HTMLInputElement).value).toBe('Uma')
@@ -120,15 +125,36 @@ describe('MetaDialog', () => {
 })
 
 describe('rewrite of a registered mismatch', () => {
-  it('rewrites from the tom pill and drops the fake capo', async () => {
+  it('does not offer rewrite in view, even for fake capo', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
     const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
     await flushPromises()
-    expect(w.find('[data-rewrite-go]').exists()).toBe(true)
-    await w.get('[data-rewrite-go]').trigger('click')
+    expect(w.find('[data-rewrite-go]').exists()).toBe(false)
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('does not offer rewrite in view when V outnumbers the tonic', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: loadFixture('sda/091-o-melhor-lugar-do-mundo.cho') })
     await flushPromises()
-    expect(w.get('[data-display-key]').text()).toBe('G')
-    expect(w.get('[data-tone-shift]').text()).toBe('Ab · − ½ tom')
+    expect(w.find('[data-rewrite-go]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('rewrites fake capo from metadata while editing', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
+    await enterContent(w)
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(true)
+    await w.get('[data-meta-rewrite-go]').trigger('click')
+    await flushPromises()
+    const src = (w.vm as { getSource: () => string }).getSource()
+    expect(src).toMatch(/\{transpose:-1\}/)
+    expect(src).not.toMatch(/\{capo:/)
+    expect(src).toContain('[Ab]')
     w.unmount()
   })
 })

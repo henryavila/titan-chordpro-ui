@@ -12,9 +12,7 @@ import {
   proposeCifraClubEnrich,
   readMeta,
   rewriteToKey,
-  inferWrittenKey,
-  keyIndex,
-  keyRootOf,
+  detectKeyRewrite,
   trazerCcStrumChoice,
   writeMeta,
   youtubeEmbedUrl,
@@ -83,12 +81,7 @@ const edge = (k: string) => {
 const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
 const minor = computed(() => /m$/.test(String(meta.value.key ?? '')))
 const showKeyPad = computed(() => keyEdit.value || !keyRoot.value)
-const writtenKey = computed(() => inferWrittenKey(props.source))
-const keyMismatch = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a !== b
-})
+const keyRewrite = computed(() => detectKeyRewrite(props.source))
 
 const wide = computed(
   () => enrichPhase.value === 'youtube' || enrichPhase.value === 'preview',
@@ -674,13 +667,13 @@ onMounted(() => {
           <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
         </template>
         <div
-          v-if="keyMismatch && writtenKey && meta.key"
+          v-if="keyRewrite && meta.key"
           data-meta-rewrite
           style="display:flex;flex-direction:column;gap:8px;padding:10px 0 0;border-top:1px solid var(--line);"
         >
           <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
-            Os acordes estão em <strong style="color:var(--text);">{{ writtenKey }}</strong>, o tom declarado é
-            <strong style="color:var(--text);">{{ meta.key }}</strong>. Reescrever grava a cifra em {{ meta.key }} e guarda o transpose para continuar soando {{ writtenKey }}.
+            Os acordes estão em <strong style="color:var(--text);">{{ keyRewrite.writtenKey }}</strong>, o tom declarado é
+            <strong style="color:var(--text);">{{ meta.key }}</strong>. Reescrever grava a cifra em {{ meta.key }} e guarda o transpose para continuar soando {{ keyRewrite.writtenKey }}.
           </span>
           <button
             type="button"

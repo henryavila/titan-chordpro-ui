@@ -13,9 +13,6 @@ defineProps<{
   hasReset: boolean
   /** The chart is showing both chords (capo shape + real). */
   dual: boolean
-  canRewrite?: boolean
-  writtenKey?: string
-  declaredKey?: string
 }>()
 const emit = defineEmits<{
   close: []
@@ -25,7 +22,6 @@ const emit = defineEmits<{
   capoUp: []
   reset: []
   dual: []
-  rewrite: []
 }>()
 </script>
 
@@ -77,21 +73,6 @@ const emit = defineEmits<{
           <span style="font-size:11.5px;line-height:1.4;color:var(--muted);text-wrap:pretty;min-height:32px;">{{ hasCapo ? (dual ? 'Duas cifras na mesma linha: quem está com capo e quem não está.' : 'Desligado, a cifra vira as formas do capo — quem toca sozinho.') : 'Liga com o capotraste: duas cifras, ou só as formas.' }}</span>
         </span>
       </button>
-      <div
-        v-if="canRewrite && writtenKey && declaredKey"
-        data-rewrite-key
-        style="display:flex;flex-direction:column;gap:8px;padding-top:4px;border-top:1px solid var(--line);"
-      >
-        <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
-          Os acordes estão em <strong style="color:var(--text);">{{ writtenKey }}</strong>, o tom é
-          <strong style="color:var(--text);">{{ declaredKey }}</strong>. Reescrever grava a cifra em {{ declaredKey }} e guarda o transpose para continuar soando {{ writtenKey }}.
-        </span>
-        <button
-          data-rewrite-go
-          style="height:48px;border:0;border-radius:14px;background:var(--chord-fill);color:var(--chord);font-size:13.5px;font-weight:600;cursor:pointer;"
-          @click="emit('rewrite')"
-        >Reescrever em {{ declaredKey }}</button>
-      </div>
       <button
         data-tone-reset
         :disabled="!hasReset"
