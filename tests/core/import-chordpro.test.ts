@@ -9,7 +9,6 @@ import {
   fromCifraClubHtml,
   fromPlain,
   hostOk,
-  inferWrittenKey,
   isChord,
   isChordLine,
   looksLikeCifraClubHtml,
@@ -385,6 +384,8 @@ describe('Cifra Club chords and HTML', () => {
     expect(r.source).toContain('[Em]')
     expect(r.source).not.toContain('[F#m]')
     expect(r.source).toMatch(/\{capo:2\}/)
+    expect(r.keyRewrite).toBeUndefined()
+    expect(detectKeyRewrite(r.source)).toBeNull()
   })
 
   it('offers a key rewrite on import and does not apply it until confirmed', () => {
@@ -404,7 +405,7 @@ O Rei vem vindo
     expect(page.body).toContain('G')
 
     const r = convert(html)
-    expect(r.keyRewrite).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1 })
+    expect(r.keyRewrite).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1, k: -1 })
     expect(r.source).toContain('[G]')
     expect(r.source).not.toContain('[Ab]')
     expect(r.source).toMatch(/\{capo:1\}/)
@@ -418,10 +419,9 @@ O Rei vem vindo
 
   it('import of a mismatched ChordPro offers the same rewrite as the button', () => {
     const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
-    expect(inferWrittenKey(src)).toBe('G')
     const imported = convert(src)
     expect(imported.changed).toBe(false)
-    expect(imported.keyRewrite).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1 })
+    expect(imported.keyRewrite).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1, k: -1 })
     expect(imported.source).toContain('[G]')
     expect(detectKeyRewrite(imported.source)).toEqual(imported.keyRewrite)
     const confirmed = rewriteToKey(imported.source, imported.keyRewrite!.declaredKey)
@@ -431,7 +431,7 @@ O Rei vem vindo
     expect(confirmed!.source.trim()).toBe(button!.source.trim())
   })
 
-  it('rewrites a registered chart into the declared key and keeps the playing index', () => {
+  it('rewrites a fake-capo chart into the declared key and drops the capo', () => {
     const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
     const r = rewriteToKey(src, 'Ab')
     expect(r).not.toBeNull()
@@ -446,7 +446,54 @@ O Rei vem vindo
     expect(r!.source).toContain('[Db]')
     expect(r!.source).not.toMatch(/\[G\]/)
     expect(r!.source).toContain('O Rei vem')
-    expect(inferWrittenKey(r!.source)).toBe('Ab')
+    expect(detectKeyRewrite(r!.source)).toBeNull()
+  })
+
+  it('does not rewrite a chart whose {key:} is already the tom, even if V outnumbers I', () => {
+    const src = loadFixture('sda/091-o-melhor-lugar-do-mundo.cho')
+    expect(detectKeyRewrite(src)).toBeNull()
+    const r = rewriteToKey(src, 'A')
+    expect(r).not.toBeNull()
+    expect(r!.from).toBe('A')
+    expect(r!.to).toBe('A')
+    expect(r!.transpose).toBe(0)
+    expect(readMeta(r!.source).transpose).toBeUndefined()
+    expect(r!.source).toContain('[A] No mundo')
+    expect(r!.source).toMatch(/\[E\]x\/\/\//)
+  })
+
+  it('takes the written key from capo vs {key:}, not the first chord and not the most frequent root', () => {
+    const src = `{title:X}
+{key:Ab}
+{capo:1}
+
+{c:INTRODUÇÃO}
+[D]x/// [D]x/// [D]x/// [D]x///
+[G]x///
+letra [G]aqui
+`
+    expect(detectKeyRewrite(src)).toEqual({ declaredKey: 'Ab', writtenKey: 'G', capo: 1, k: -1 })
+    const r = rewriteToKey(src, 'Ab')
+    expect(r!.from).toBe('G')
+    expect(r!.transpose).toBe(-1)
+    expect(readMeta(r!.source).transpose).toBe('-1')
+    expect(r!.source).toContain('[Ab]')
+    expect(r!.source).toContain('[Eb]')
+    expect(r!.source).not.toMatch(/\{capo:/)
+  })
+
+  it('does not offer rewrite for a real capo whose body is already in {key:}', () => {
+    const src = `{title:X}
+{key:G}
+{capo:2}
+
+[G]linha [C]do [D]verso
+`
+    expect(detectKeyRewrite(src)).toBeNull()
+    const r = rewriteToKey(src, 'G')
+    expect(r!.transpose).toBe(0)
+    expect(r!.source).toContain('[G]linha')
+    expect(r!.source).toMatch(/\{capo:2\}/)
   })
 
   it('keeps every strumming section and maps abafada (code 0)', () => {

@@ -270,8 +270,7 @@ function rounded(doc: jsPDF, x: number, y: number, w: number, h: number, r: numb
 
 export async function renderPdf(view: ChordProView, opts: PdfOptions = {}): Promise<Uint8Array> {
   const meta = view.meta
-  const capo = Number(meta.capo) || 0
-  const { blocks, legend } = layoutChartFull(view, { capo })
+  const { blocks, legend } = layoutChartFull(view, { capo: 0 })
   const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true })
   registerPdfFonts(doc)
   const INK = paperInk(opts.accent)

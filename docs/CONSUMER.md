@@ -281,6 +281,12 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 `loadSong`. A atual e as duas vizinhas são buscadas na frente. Uma que não
 chega vira painel *Não carregou*.
 
+`{key:}` no `.cho` é o tom original. `{transpose:N}` hidrata o −/+ ao abrir
+(não soma com o overlay). `{capo:}` no arquivo é dica de arranjo — o capotraste
+ao vivo começa em 0, a não ser que o músico (setlist, overlay, `initialCapo`)
+já tenha ligado. Reescrever (import e ficha) é pergunta; o corpo só muda depois
+do Sim.
+
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
 música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
 **não** resetam ao mudar de cifra. No celular, deslize **na borda** da cifra pinta

@@ -18,7 +18,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 
 **Leitura**
 - Acorde acima da letra; comentários de ensaio
-- Transposição e capotraste
+- Transposição e capotraste. `{key:}` é o tom original; `{transpose:}` é a leitura. `{capo:}` no arquivo é dica — o capotraste ao vivo começa em 0
 - **Modo dual (capo)** — o capo muda as *formas*, não o tom que a banda ouve. Sem dual, a cifra vira só as formas (quem toca sozinho). Com dual, cada acorde mostra os dois nomes na mesma linha: forma com capo + o que soa sem capo. Teclado, baixo e voz leem o tom real; o violão lê a forma. A legenda marca as duas cores.
 - Cifra · só letra · Nashville
 - Tema claro / escuro / auto; cor de acento do host
@@ -45,8 +45,8 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Fila do responsável: aceitar / recusar, lote, diff visual da batida
 - **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_strum:}` / `{x_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
 - Partitura `{sos}` / TAB `{sot}`
-- Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco
-- Completar metadados / batida pelo Cifra Club sem substituir o corpo
+- Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco. Se `{key:}` não bate com o corpo (capo-truque do Cifra Club), pergunta **Reescrever** — grava o original e `{transpose:}` para continuar tocando onde estava
+- Completar metadados / batida pelo Cifra Club sem substituir o corpo. Cifras já cadastradas: **Reescrever** na ficha. Uma reescrita uniforme vira um trecho só na sugestão
 
 **Pacote**
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
@@ -169,7 +169,9 @@ Cifra nova (`/standalone.html?criar=1`). O importador reconhece sozinho o
 que recebe — ChordPro, OnSong ou acordes sobre a letra — e diz de qual formato
 converteu. Depois vem a ficha (nome, artista, tom, andamento com **tap-tempo**,
 compasso, referência); o que falta é dito, mas não bloqueia — é cobrado de novo
-ao salvar para todos.
+ao salvar para todos. Se o tom declarado e os acordes não batem (corpo em G,
+`{key:Ab}`), o import **pergunta** antes de gravar: reescrever no original e
+guardar `{transpose:}`, ou manter como veio.
 
 Três origens: **link**, **arquivo** (arrastar ou escolher) e **texto colado**.
 As duas que dependem do mundo externo são props, não mágica do pacote:

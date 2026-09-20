@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import {
   applyCifraClubEnrich,
+  detectKeyRewrite,
   durationFromYoutubeHtml,
   hostOk,
   maskDurationMmSs,
@@ -12,9 +13,6 @@ import {
   proposeCifraClubEnrich,
   readMeta,
   rewriteToKey,
-  inferWrittenKey,
-  keyIndex,
-  keyRootOf,
   trazerCcStrumChoice,
   writeMeta,
   youtubeEmbedUrl,
@@ -83,12 +81,10 @@ const edge = (k: string) => {
 const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
 const minor = computed(() => /m$/.test(String(meta.value.key ?? '')))
 const showKeyPad = computed(() => keyEdit.value || !keyRoot.value)
-const writtenKey = computed(() => inferWrittenKey(props.source))
-const keyMismatch = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a !== b
-})
+const liveSource = computed(() => writeMeta(props.source, meta.value))
+const keyRewrite = computed(() => detectKeyRewrite(liveSource.value))
+const fileCapo = computed(() => Math.max(0, Number(meta.value.capo) || 0))
+const enrichRewrite = ref<'go' | 'keep' | null>(null)
 
 const wide = computed(
   () => enrichPhase.value === 'youtube' || enrichPhase.value === 'preview',
@@ -177,10 +173,12 @@ function apply() {
 }
 
 function rewriteDeclared() {
+  const offer = keyRewrite.value
   const target = String(meta.value.key ?? '').trim()
-  if (!target) return
-  const r = rewriteToKey(props.source, target)
+  if (!offer || !target) return
+  const r = rewriteToKey(liveSource.value, target)
   if (!r?.changed) return
+  meta.value = { ...readMeta(r.source) }
   emit('apply', r.source)
 }
 
@@ -191,6 +189,7 @@ function resetEnrich() {
   proposal.value = null
   ytPick.value = ''
   strumPick.value = 'keep'
+  enrichRewrite.value = null
 }
 
 const strumConflictNote = computed(() => {
@@ -309,6 +308,11 @@ async function commitEnrich() {
   let m = readMeta(next)
   if (youtubeId) m = await fillDuration(youtubeId, m)
   next = writeMeta(next, m)
+  if (p.keyRewrite && enrichRewrite.value === 'go') {
+    const done = rewriteToKey(next, p.keyRewrite.declaredKey)
+    if (done?.changed) next = done.source
+    m = readMeta(next)
+  }
   meta.value = { ...m }
   keyEdit.value = !String(m.key ?? '').trim()
   emit('apply', next)
@@ -516,6 +520,30 @@ onMounted(() => {
             style="font-size:11.5px;line-height:1.45;color:var(--muted);"
           >Mantido local: {{ MISSING_LABEL[c.key] ?? c.key }} {{ c.local }} (CC {{ c.remote }})</span>
           <span v-if="enrichNote || proposal.capoWarning" data-meta-enrich-capo style="font-size:11.5px;line-height:1.45;color:var(--muted);">{{ enrichNote || proposal.capoWarning }}</span>
+          <div
+            v-if="proposal.keyRewrite"
+            data-meta-enrich-rewrite
+            style="display:flex;flex-direction:column;gap:8px;padding:8px 0 0;"
+          >
+            <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
+              Declarado: <strong style="color:var(--text);">{{ proposal.keyRewrite.declaredKey }}</strong>.
+              Escrito: <strong style="color:var(--text);">{{ proposal.keyRewrite.writtenKey }}</strong>.
+            </span>
+            <button
+              type="button"
+              data-meta-enrich-rewrite-go
+              :style="chip(enrichRewrite === 'go')"
+              style="height:34px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
+              @click="enrichRewrite = 'go'"
+            >Reescrever em {{ proposal.keyRewrite.declaredKey }}</button>
+            <button
+              type="button"
+              data-meta-enrich-rewrite-keep
+              :style="chip(enrichRewrite === 'keep')"
+              style="height:32px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+              @click="enrichRewrite = 'keep'"
+            >Manter</button>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;">
             <button
               data-meta-enrich-apply
@@ -673,21 +701,27 @@ onMounted(() => {
           </div>
           <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
         </template>
+        <span
+          v-if="fileCapo"
+          data-meta-capo-hint
+          style="font-size:11.5px;line-height:1.45;color:var(--muted);"
+        >Cifra sugere capo {{ fileCapo }}</span>
         <div
-          v-if="keyMismatch && writtenKey && meta.key"
+          v-if="keyRewrite"
           data-meta-rewrite
           style="display:flex;flex-direction:column;gap:8px;padding:10px 0 0;border-top:1px solid var(--line);"
         >
           <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
-            Os acordes estão em <strong style="color:var(--text);">{{ writtenKey }}</strong>, o tom declarado é
-            <strong style="color:var(--text);">{{ meta.key }}</strong>. Reescrever grava a cifra em {{ meta.key }} e guarda o transpose para continuar soando {{ writtenKey }}.
+            Declarado: <strong style="color:var(--text);">{{ keyRewrite.declaredKey }}</strong>.
+            Escrito: <strong style="color:var(--text);">{{ keyRewrite.writtenKey }}</strong>.
+            Reescrever guarda o original ({{ keyRewrite.declaredKey }}) e continua tocando em {{ keyRewrite.writtenKey }}.
           </span>
           <button
             type="button"
             data-meta-rewrite-go
             style="height:36px;border:0;border-radius:11px;background:var(--chord-fill);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
             @click="rewriteDeclared"
-          >Reescrever em {{ meta.key }}</button>
+          >Reescrever em {{ keyRewrite.declaredKey }}</button>
         </div>
       </div>
 

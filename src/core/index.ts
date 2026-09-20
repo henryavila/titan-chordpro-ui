@@ -199,7 +199,6 @@ export {
   fromOnSong,
   fromPlain,
   hostOk,
-  inferWrittenKey,
   isChord,
   isChordLine,
   looksLikeCifraClubHtml,

@@ -13,10 +13,7 @@ import {
   exportCho,
   formatEta,
   hasSongDuration,
-  inferWrittenKey,
   isParseFatal,
-  keyIndex,
-  keyRootOf,
   layoutChartFull,
   maxPlainChars,
   missingOf,
@@ -26,17 +23,16 @@ import {
   emptyPattern,
   gridFromDensity,
   parse,
+  transpose,
   isCompleteStrumPattern,
   repairStrumPattern,
   playheadAtScroll,
   readMeta,
   readStrumPatterns,
-  rewriteToKey,
   runSec,
   scrollAtPlayhead,
   sheetBpm,
   transposeToken,
-  formatToneShift,
   typeScale,
   usesFlats,
   viewerMulStep,
@@ -129,7 +125,7 @@ const props = withDefaults(
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
-      /** Test harness: start with this capo instead of the file's `{capo:}`. */
+      /** Test harness: start with this live capo. File `{capo:}` does not. */
       initialCapo?: number
       /** Test harness: start with dual on/off. Default on when there is a capo. */
       initialDual?: boolean
@@ -779,41 +775,27 @@ const metaGapLabel = computed(() => {
 })
 const hasKey = computed(() => !!meta.value.key)
 const flats = computed(() => usesFlats(meta.value.key))
-const fileTranspose = computed(() => {
-  const n = Number(meta.value.transpose)
-  return Number.isFinite(n) ? n : 0
-})
-const writtenKey = computed(() => inferWrittenKey(liveSource.value))
-const writtenMatchesKey = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a === b
-})
-const keyMismatch = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a !== b
-})
-const viewSemis = computed(() =>
-  isEdit.value ? 0 : offset.value + (writtenMatchesKey.value ? fileTranspose.value : 0),
+const viewSemis = computed(() => (isEdit.value ? 0 : offset.value))
+const originalKey = computed(() => meta.value.key || '')
+const shownKey = computed(() =>
+  originalKey.value ? transposeToken(originalKey.value, offset.value, flats.value) : '',
 )
-const shownKey = computed(() => (meta.value.key ? transposeToken(meta.value.key, offset.value, flats.value) : ''))
 const playingKey = computed(() =>
-  meta.value.key ? transposeToken(meta.value.key, viewSemis.value, flats.value) : '',
+  originalKey.value ? transposeToken(originalKey.value, viewSemis.value, flats.value) : '',
 )
 const toneLabel = computed(() => {
-  if (!meta.value.key) return ''
-  const id = fileTranspose.value ? meta.value.key : shownKey.value
-  const bits = [id]
-  if (fileTranspose.value && playingKey.value && playingKey.value !== id) bits.push(`tocando em ${playingKey.value}`)
+  if (!originalKey.value) return ''
+  const bits = [originalKey.value]
+  if (offset.value && playingKey.value && playingKey.value !== originalKey.value) {
+    bits.push(`tocando em ${playingKey.value}`)
+  }
   if (hasCapo.value) bits.push(`capo ${capo.value}`)
   return bits.join(' · ')
 })
 const songKeyCaption = computed(() => {
-  const written = meta.value.key
-  const shift = formatToneShift(viewSemis.value)
-  if (!written || !shift) return ''
-  return `${written} · ${shift}`
+  if (!originalKey.value || !offset.value || !playingKey.value) return ''
+  if (playingKey.value === originalKey.value) return ''
+  return `tocando em ${playingKey.value}`
 })
 /** The shapes a capo player frets: `capo` frets below what sounds. */
 const shapeKey = computed(() => transposeToken(meta.value.key || '', viewSemis.value - capo.value, flats.value))
@@ -908,11 +890,11 @@ const hintFit = computed(
 )
 const hasOffset = computed(() => offset.value !== 0)
 const hasCapo = computed(() => capo.value > 0)
-const hasReset = computed(() => hasOffset.value || hasCapo.value)
+const hasReset = computed(() => hasOffset.value)
+const fileCapo = computed(() => Math.max(0, Number(meta.value.capo) || 0))
 const canEditNow = computed(
   () => !isEdit.value && isPopulated.value && props.canEdit && modes.value.length > 0,
 )
-const canRewrite = computed(() => !!props.canEdit && keyMismatch.value && !!meta.value.key && !!writtenKey.value)
 /** The owner's entry into the queue: only where a chart can be changed at all. */
 const queueEntry = computed(
   () =>
@@ -934,7 +916,9 @@ const editBadge = computed(() => (wMode.value === 'persisted' ? 'Para todos' : '
 const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}ª casa`))
 /** Fallback copy when there are no chord tokens to chip. */
 const capoHint = computed(() => {
-  if (capo.value === 0) return 'A cifra fica no tom real.'
+  if (capo.value === 0) {
+    return fileCapo.value ? `Cifra sugere capo ${fileCapo.value}` : 'A cifra fica no tom real.'
+  }
   if (!capoPairs.value.length) return `Formas de ${shapeKey.value}`
   return ''
 })
@@ -1538,25 +1522,6 @@ function shift(n: number) {
 function resetTone() {
   stopScroll()
   offset.value = 0
-  capo.value = 0
-}
-
-function rewriteToDeclared() {
-  const target = String(meta.value.key ?? '').trim()
-  if (!target) return
-  const r = rewriteToKey(liveSource.value, target)
-  if (!r?.changed) return
-  session.replace(r.source)
-  capo.value = Number(readMeta(r.source).capo) || 0
-  offset.value = 0
-  touch()
-  const n = r.transpose
-  toastMsg(
-    n
-      ? `Cifra reescrita em ${r.to} · tocando em ${r.from} (transpose ${n > 0 ? '+' : ''}${n})`
-      : `Cifra reescrita em ${r.to}`,
-  )
-  toneOpen.value = false
 }
 
 function setCapo(n: number) {
@@ -1803,7 +1768,7 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   hasKey: hasKey.value,
   hasReset: hasReset.value,
   toneLabel: toneLabel.value,
-  playingKey: playingKey.value,
+  playingKey: originalKey.value,
   songKeyCaption: songKeyCaption.value,
   hasCapo: hasCapo.value,
   capoBtnLabel: capoBtnLabel.value,
@@ -1812,8 +1777,6 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   capoShapes: capoShapes.value,
   mapOn: mapOn.value,
   twin: twin.value,
-  canRewrite: canRewrite.value,
-  metaKey: meta.value.key || '',
   metaTempo: meta.value.tempo,
   metaTime: meta.value.time,
   metaDuration: meta.value.duration,
@@ -1933,6 +1896,9 @@ function exitEdit() {
   // The local draft has already become the overlay; a "for everyone" draft
   // that was never saved stays on screen, so it cannot be lost by leaving.
   if (local || !session.dirty()) forceBase()
+  offset.value = enterCtx.transpose
+  capo.value = enterCtx.capo
+  capoMap.value = !!enterCtx.dual
   emit('update:mode', 'view')
 }
 
@@ -2103,7 +2069,7 @@ async function doExportPdf() {
     if (props.pdfShouldFail) throw new Error('simulado')
     const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
     // The PDF always uses the default scale: fit mode serves the screen, not paper.
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = transpose(parse(exportSource()), offset.value)
     // A personal version leaves marked on paper too: it must not circulate as
     // the team's chart.
     const bytes = await renderPdf(view, {
@@ -2138,7 +2104,7 @@ async function doExportSlides() {
   try {
     if (props.slidesShouldFail) throw new Error('simulado')
     const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = transpose(parse(exportSource()), offset.value)
     const bytes = await renderSlja(view, {
       title: meta.value.title ?? 'cifra',
       coverImage: await imageBytes(props.coverImage),
@@ -2310,8 +2276,9 @@ function onMq() {
 }
 
 /**
- * A new source (host or fixture) stops the scroll, resets tone and position and
- * adopts the `{capo:}` declared in the file, when there is one.
+ * A new source (host or fixture) stops the scroll and resets tone and position.
+ * File `{capo:}` is not the live capo — that starts at 0 unless the musician
+ * already pinned one (setlist spot, host initialCapo, personal overlay).
  */
 function syncHostSource() {
   const raw = hostSource.value
@@ -2326,10 +2293,10 @@ function syncHostSource() {
   metaOpen.value = false
   confirmDiscard.value = false
   wMode.value = null
-  const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
-  capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
+  capo.value = 0
   stopScroll()
-  offset.value = 0
+  const fileT = Number(readMeta(src).transpose)
+  offset.value = Number.isFinite(fileT) ? fileT : 0
   mul.value = 1
   // Coming back to a song already rehearsed: tone, capo and speed are picked
   // back up. A tone the reader pinned still wins, just below.
@@ -2786,7 +2753,6 @@ defineExpose({
         @toggle-fs="toggleFs"
         @shift="shift"
         @reset-tone="resetTone"
-        @rewrite="rewriteToDeclared"
         @capo-nudge="(n) => setCapo(capo + n)"
         @toggle-map="toggleMap"
         @capo-zero="setCapo(0)"
@@ -3252,9 +3218,6 @@ defineExpose({
       :has-capo="hasCapo"
       :has-reset="hasReset"
       :dual="twin"
-      :can-rewrite="canRewrite"
-      :written-key="writtenKey || ''"
-      :declared-key="meta.key || ''"
       @dual="toggleMap"
       @close="toneOpen = false"
       @down="shift(-1)"
@@ -3262,7 +3225,6 @@ defineExpose({
       @capo-down="setCapo(capo - 1)"
       @capo-up="setCapo(capo + 1)"
       @reset="resetTone"
-      @rewrite="rewriteToDeclared"
     />
 
     <CpvMoreSheet

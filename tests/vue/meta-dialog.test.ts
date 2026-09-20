@@ -63,18 +63,27 @@ async function enterContent(w: ReturnType<typeof viewer>) {
 }
 
 describe('MetaDialog', () => {
-  it('offers rewrite when the declared key is not what the chords spell', async () => {
-    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
-    const w = dialog(src)
+  it('offers rewrite for a registered fake-capo chart', () => {
+    const w = dialog(loadFixture('sda/082-o-rei-vem-vindo.cho'))
     expect(w.find('[data-meta-rewrite]').exists()).toBe(true)
-    expect(w.text()).toMatch(/acordes estão em G/i)
+    expect(w.text()).toMatch(/Declarado/)
+    expect(w.text()).toMatch(/Escrito/)
+    expect(w.get('[data-meta-capo-hint]').text()).toMatch(/sugere capo 1/)
+  })
+
+  it('rewriting 082 stores {transpose:-1} and the body in Ab', async () => {
+    const w = dialog(loadFixture('sda/082-o-rei-vem-vindo.cho'))
     await w.get('[data-meta-rewrite-go]').trigger('click')
-    const next = String(w.emitted('apply')?.at(-1)?.[0] ?? '')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
     expect(next).toMatch(/\{key:Ab\}/)
     expect(next).toMatch(/\{transpose:-1\}/)
     expect(next).toContain('[Ab]')
     expect(next).not.toMatch(/\{capo:/)
-    expect(next).toContain('O Rei vem')
+  })
+
+  it('does not offer rewrite when {key:} is already the tom (V outnumbers I, no capo)', () => {
+    const w = dialog(loadFixture('sda/091-o-melhor-lugar-do-mundo.cho'))
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
   })
 
   it('loads every known header field into the form', () => {
@@ -120,15 +129,32 @@ describe('MetaDialog', () => {
 })
 
 describe('rewrite of a registered mismatch', () => {
-  it('rewrites from the tom pill and drops the fake capo', async () => {
+  it('does not offer rewrite in view, even for fake capo', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
     const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
     await flushPromises()
-    expect(w.find('[data-rewrite-go]').exists()).toBe(true)
-    await w.get('[data-rewrite-go]').trigger('click')
+    expect(w.find('[data-rewrite-go]').exists()).toBe(false)
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('does not offer rewrite in view when V outnumbers the tonic', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: loadFixture('sda/091-o-melhor-lugar-do-mundo.cho') })
     await flushPromises()
-    expect(w.get('[data-display-key]').text()).toBe('G')
-    expect(w.get('[data-tone-shift]').text()).toBe('Ab · − ½ tom')
+    expect(w.find('[data-rewrite-go]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('does not turn on capo from {capo:} in the file, and keeps the written chords', async () => {
+    localStorage.setItem('cpv:fitSeen', '1')
+    const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
+    await flushPromises()
+    expect(w.get('[data-display-key]').text()).toBe('Ab')
+    expect(w.get('[data-capo]').text()).toMatch(/^Capo$/i)
+    expect(w.findAll('.cpv-chord').map((n) => n.text()).filter(Boolean)[0]).toBe('D')
+    expect(w.findAll('.cpv-chord').map((n) => n.text())).toContain('G')
+    expect(w.findAll('.cpv-chord').map((n) => n.text())).not.toContain('Db')
     w.unmount()
   })
 })
