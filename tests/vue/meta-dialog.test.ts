@@ -91,12 +91,12 @@ describe('MetaDialog', () => {
     const w = dialog('{title: Só}\n[G]a\n')
     await w.get('[data-meta-duration]').setValue('345')
     await w.get('[data-meta-time="6/8"]').trigger('click')
-    await w.get('[data-meta-source]').setValue('https://youtu.be/abc')
+    await w.get('[data-meta-origem]').setValue('https://youtu.be/abc')
     await w.get('[data-meta-apply]').trigger('click')
     const next = w.emitted('apply')?.at(-1)?.[0] as string
     expect(next).toMatch(/\{duration:03:45\}/)
     expect(next).toMatch(/\{time:6\/8\}/)
-    expect(next).toMatch(/\{x_source:https:\/\/youtu\.be\/abc\}/)
+    expect(next).toMatch(/\{x_origem:https:\/\/youtu\.be\/abc\}/)
     expect(next).toContain('[G]a')
   })
 
@@ -232,7 +232,7 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     // keep-local: SDA already has x_strum — enrich must not overwrite batida
     expect(next).toMatch(/\{x_strum:[^}]*bpm=75/)
     expect(next).not.toMatch(/\{x_strum:[^}]*bpm=71/)
-    expect(next).toContain(`{x_source:${url}}`)
+    expect(next).toContain(`{x_origem:${url}}`)
     expect(next).toMatch(/\{tempo:75\}/)
   })
 

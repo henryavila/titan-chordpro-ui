@@ -99,7 +99,7 @@ php artisan chordpro:enrich-cifraclub \
 | Campo | Política |
 |-------|----------|
 | corpo ChordPro | **nunca** altera |
-| `x_source` | URL do mapa (`{x_origem:}` legado ainda lê) |
+| `x_origem` | URL do mapa |
 | `x_strum` / `x_strum_set` | **keep-local**: só preenche quando a cifra **não tem** batida; se o CC trouxer N>1 padrões, grava o conjunto completo (ver schema abaixo). No mapa SDA: 0 páginas com batida local |
 | `tempo` / `time` / `key` / título… | fill-empty |
 | `capo` | não aplica |

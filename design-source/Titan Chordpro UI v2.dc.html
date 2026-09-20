@@ -3121,7 +3121,7 @@ class Component extends DCLogic {
     if (!this._impReq) this._impReq = import(new URL("./importar.js", location.href).href).then(m => { this.IMP = m; return m; });
     return this._impReq;
   }
-  emptyMeta() { return { title: "", subtitle: "", key: "", tempo: "", time: "", x_source: "" }; }
+  emptyMeta() { return { title: "", subtitle: "", key: "", tempo: "", time: "", x_origem: "" }; }
   setNovaState(patch) { this.setState(s => ({ nova: Object.assign({}, s.nova || {}, patch) })); }
   novaFail(err, hint) { this.setNovaState({ err, errHint: hint || "", busy: false }); }
   missText(miss) {
@@ -3169,7 +3169,7 @@ class Component extends DCLogic {
         const demo = db["ele-vive"] || db[Object.keys(db)[0]] || "";
         const r = m.convert(m.toPlain(demo));
         const guess = m.titleFromUrl(url);
-        const meta = Object.assign(this.emptyMeta(), m.readMeta(r.source), { x_source: url });
+        const meta = Object.assign(this.emptyMeta(), m.readMeta(r.source), { x_origem: url });
         if (!meta.title) meta.title = guess.title;
         if (!meta.subtitle) meta.subtitle = guess.subtitle;
         this.setState({ novaSrc: r.source, novaMeta: meta,
@@ -3215,7 +3215,7 @@ class Component extends DCLogic {
   setTitle = e => this.setNovaMeta("title", e.target.value);
   setArtist = e => this.setNovaMeta("subtitle", e.target.value);
   setTempo = e => this.setNovaMeta("tempo", e.target.value.replace(/[^\d]/g, "").slice(0, 3));
-  setUrl = e => this.setNovaMeta("x_source", e.target.value);
+  setUrl = e => this.setNovaMeta("x_origem", e.target.value);
   bpmStep = d => {
     const cur = parseInt((this.state.novaMeta || {}).tempo, 10);
     const n = Math.max(30, Math.min(260, (isNaN(cur) ? 90 : cur) + d));
@@ -3320,7 +3320,7 @@ class Component extends DCLogic {
       mTitle: nm.title || "", setTitle: this.setTitle,
       mArtist: nm.subtitle || "", setArtist: this.setArtist,
       mTempo: nm.tempo || "", setTempo: this.setTempo,
-      mUrl: nm.x_source || "", setUrl: this.setUrl,
+      mUrl: nm.x_origem || "", setUrl: this.setUrl,
       novaBpmUp: this.bpmUp, novaBpmDown: this.bpmDown, tapTempo: this.tapTempo,
       tapLabel: taps > 1 ? "batendo… " + taps : "bater no ritmo",
       keyChips: SHARP.map(r => Object.assign({ label: r, pick: () => this.pickKey(r) }, chip(keyRoot === r))),
