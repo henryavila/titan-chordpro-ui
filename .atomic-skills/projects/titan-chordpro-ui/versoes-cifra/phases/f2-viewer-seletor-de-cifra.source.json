@@ -1,0 +1,116 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F2",
+  "slug": "versoes-cifra-f2-viewer-seletor-de-cifra",
+  "title": "Viewer: seletor de cifra",
+  "goal": "With N>1, a compact control on the title shows the active chart label and switches chartId without goSong; N=1 hides it; swipe/dock/setlist still change songs; live capo/offset/scroll persist per (songId, chartId); timeline and rehearsal audio reload from the new chart document.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Title chip and chartId prop",
+      "scopeBoundary": [
+        "Do not reuse SetlistSheet or CpvEndOffer; do not add editor add-chart; do not change swipe rail widths."
+      ],
+      "acceptance": [
+        "two-chart source shows a control next to the title with the active x_chart_label; choosing the other chart emits update:chartId and re-parses that chart only; prop chartId selects the initial chart; one-chart source has no chart control in the DOM"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-switcher.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/public.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/chrome/CpvViewHead.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/chart-switcher.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Switch is not a song change",
+      "scopeBoundary": [
+        "Do not alter SWIPE_RAIL_PX; do not reset lens or hideComments on chart switch; do not migrate host loadSong."
+      ],
+      "acceptance": [
+        "chart switch does not call setlist go and does not change songId; overlay of the sibling chart remains in storage; live transpose/capo/scroll restore per chartId; setlist next song still uses goSong and still resets as today"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-switcher.test.ts tests/vue/setlist.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/use/useSetlist.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/chart-switcher.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/setlist.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-003",
+      "title": "Timeline and audio follow the chart",
+      "scopeBoundary": [
+        "Do not add synced audio; do not change {duration:} math for one-chart files; do not prefetch setlist audio."
+      ],
+      "acceptance": [
+        "switching to a chart with duration 03:00 rebuilds the timeline from that chart document; x_audio_* of the new chart (or inherited song-level audio when the chart omits tracks) is what the reference player reads; the previous chart playhead does not continue"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-switcher.test.ts tests/vue/audio-ref.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/chart-switcher.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/audio-ref.test.ts"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F2-G1",
+      "description": "Chart switcher tests green. FAILS when switching chart calls setlist go, or when N=1 still shows the chip, or when swipe on the rail changes chartId.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-switcher.test.ts tests/vue/setlist.test.ts tests/vue/song-swipe.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}
