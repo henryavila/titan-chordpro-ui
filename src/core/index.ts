@@ -34,6 +34,8 @@ export {
 } from './storage'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
+export { parseChordToken } from './parse-chord'
+export type { ChordParseClass, ChordTokenMiss, ChordTokenParse, ChordTokenResult } from './parse-chord'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
