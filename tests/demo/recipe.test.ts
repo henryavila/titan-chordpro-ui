@@ -188,8 +188,8 @@ describe('labQuery', () => {
     })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
     expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos' })
-    expect(labQuery('?audio=sung')).toMatchObject({ audio: 'sung' })
-    expect(labQuery('?audio=cantado')).toMatchObject({ audio: 'sung' })
+    expect(labQuery('?audio=cantado')).toMatchObject({ audio: 'cantado' })
+    expect(labQuery('?audio=sung')).toMatchObject({ audio: 'cantado' })
     expect(labQuery('?audio=playback')).toMatchObject({ audio: 'playback' })
   })
 

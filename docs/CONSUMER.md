@@ -20,7 +20,7 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava sung+playback na demo; `audio=sung` / `audio=playback` só um; `audio=cantado` é alias de `sung`).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava cantado+playback na demo; `audio=cantado` / `audio=playback` só um).
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
