@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { AUDIO_KIND_LABEL, formatAudioClock, type AudioKind } from '@henryavila/titan-chordpro-ui'
+import defaultArt from '../assets/audio-ref-default.jpg'
 import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
@@ -33,10 +34,9 @@ watch(
     artBroken.value = false
   },
 )
-const artSrc = computed(() => {
-  if (artBroken.value) return ''
-  return String(props.art ?? '').trim()
-})
+const hostArt = computed(() => String(props.art ?? '').trim())
+const usingDefaultArt = computed(() => artBroken.value || !hostArt.value)
+const artSrc = computed(() => (usingDefaultArt.value ? defaultArt : hostArt.value))
 
 const elapsed = computed(() => formatAudioClock(props.current))
 const total = computed(() => (props.duration ? formatAudioClock(props.duration) : '–:––'))
@@ -48,6 +48,10 @@ const played = computed(() => {
   if (!props.duration) return 0
   return Math.max(0, Math.min(1, props.current / props.duration))
 })
+
+function onArtError() {
+  if (!usingDefaultArt.value) artBroken.value = true
+}
 
 function onSeek(e: PointerEvent) {
   const el = e.currentTarget as HTMLElement
@@ -77,15 +81,14 @@ function onSeek(e: PointerEvent) {
         title="Abrir referência"
         @click="open = true"
       >
-        <span class="cpv-audio-ref-art is-chip" data-audio-art :class="{ 'is-empty': !artSrc }">
+        <span class="cpv-audio-ref-art is-chip" data-audio-art>
           <img
-            v-if="artSrc"
             :src="artSrc"
             alt=""
             draggable="false"
-            @error="artBroken = true"
+            :data-audio-art-default="usingDefaultArt ? '' : undefined"
+            @error="onArtError"
           />
-          <CpvIcon v-else name="music2" :size="16" />
         </span>
         <span class="cpv-audio-ref-launch-copy">
           <span class="cpv-audio-ref-kicker">{{ kindLabel }}</span>
@@ -105,15 +108,14 @@ function onSeek(e: PointerEvent) {
     </template>
 
     <template v-else>
-      <div class="cpv-audio-ref-art" data-audio-art :class="{ 'is-empty': !artSrc }">
+      <div class="cpv-audio-ref-art" data-audio-art>
         <img
-          v-if="artSrc"
           :src="artSrc"
           alt=""
           draggable="false"
-          @error="artBroken = true"
+          :data-audio-art-default="usingDefaultArt ? '' : undefined"
+          @error="onArtError"
         />
-        <CpvIcon v-else name="music2" :size="22" />
       </div>
 
       <div class="cpv-audio-ref-id">
