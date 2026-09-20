@@ -38,6 +38,15 @@ export { parseDefineDirective, serializeDefine, writeDefines } from './define'
 export type { ChordDefine, DefineDirective, DefineInstrument, DefineResult } from './define'
 export { parseChordToken } from './parse-chord'
 export type { ChordParseClass, ChordTokenMiss, ChordTokenParse, ChordTokenResult } from './parse-chord'
+export { resolveDiagram } from './resolve-diagram'
+export type {
+  DiagramHit,
+  DiagramInstrument,
+  DiagramMiss,
+  DiagramResolve,
+  DiagramVoicing,
+  ResolveDiagramOpts,
+} from './resolve-diagram'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
