@@ -1,6 +1,13 @@
 {
-  "step": "C",
+  "step": "E",
   "phaseId": "F0",
   "redispatchCount": 0,
-  "updatedAt": "2026-09-20T11:11:01.326Z"
+  "updatedAt": "2026-09-20T11:30:57.618Z",
+  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json",
+  "lastAssert": {
+    "gate": "done",
+    "ok": false,
+    "at": "2026-09-20T11:30:57.618Z",
+    "reason": "blocked: complex task requires durable review receipt mode both (or operator disposition skip) before done"
+  }
 }

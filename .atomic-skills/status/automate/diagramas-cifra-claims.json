@@ -1,0 +1,39 @@
+{
+  "planSlug": "diagramas-cifra",
+  "phaseId": "F0",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-writer",
+  "writerBranch": "impl/diagramas-cifra-F0-writer",
+  "finishedAt": "2026-09-20T11:26:59.152Z",
+  "tasks": [
+    {
+      "taskId": "T-001",
+      "status": "claimed-pass",
+      "commitShas": ["3b173f541dbbdc161571db521473895400f7e354"],
+      "base": "649f82957a90287f505a51a60e9c184bc9d844b2",
+      "head": "3b173f541dbbdc161571db521473895400f7e354",
+      "paths": [
+        "tests/core/chord-oracle.table.json",
+        "tests/core/chord-oracle.test.ts",
+        "scripts/build-chord-oracle.mjs"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/chord-oracle.test.ts",
+      "exitCode": 0,
+      "transcript": " RUN  v4.1.11 /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-writer\n\n ✓ tests/core/chord-oracle.test.ts (3 tests) 17ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  08:26:31\n   Duration  372ms (transform 24ms, setup 20ms, import 9ms, tests 17ms, environment 257ms)"
+    },
+    {
+      "taskId": "T-002",
+      "status": "claimed-pass",
+      "commitShas": ["e24582abea35e61217e207c716f67edc6a2f90e8"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/parse-chord.ts",
+        "src/core/index.ts",
+        "tests/core/parse-chord-token.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/parse-chord-token.test.ts",
+      "exitCode": 0,
+      "transcript": " RUN  v4.1.11 /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-writer\n\n ✓ tests/core/parse-chord-token.test.ts (9 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  08:26:45\n   Duration  468ms (transform 107ms, setup 20ms, import 111ms, tests 3ms, environment 265ms)"
+    }
+  ]
+}
