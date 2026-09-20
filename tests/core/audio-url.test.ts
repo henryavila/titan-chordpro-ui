@@ -11,6 +11,7 @@ import {
   playableAudioUrl,
   setAudioArt,
   setAudioUrl,
+  setRehearsalAudio,
   writeMeta,
 } from '../../src/core/index'
 
@@ -128,17 +129,43 @@ describe('setAudioUrl / audioUrlOf', () => {
 describe('setAudioArt / identity', () => {
   const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_audio:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
 
-  it('writes {x_audio_art:} beside the audio URL', () => {
-    const next = setAudioArt(cho, 'https://cdn.sda/a.jpg?h=9')
+  it('writes cover URL plus pixel size for the host-optimized file', () => {
+    const next = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 512, height: 512 })
     expect(next).toContain('{x_audio_art:https://cdn.sda/a.jpg?h=9}')
+    expect(next).toContain('{x_audio_art_w:512}')
+    expect(next).toContain('{x_audio_art_h:512}')
     expect(next).toContain('{x_audio_sung:https://cdn.sda/a.m4a?h=1}')
-    expect(audioArtOf(next)).toBe('https://cdn.sda/a.jpg?h=9')
+    expect(audioArtOf(next)).toEqual({
+      url: 'https://cdn.sda/a.jpg?h=9',
+      width: 512,
+      height: 512,
+    })
+  })
+
+  it('rejects cover without a usable size', () => {
+    expect(() =>
+      setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 0, height: 512 }),
+    ).toThrow(/width and height/)
   })
 
   it('clears the cover', () => {
-    const next = setAudioArt(setAudioArt(cho, 'https://cdn.sda/a.jpg?h=9'), null)
+    const withArt = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 256, height: 256 })
+    const next = setAudioArt(withArt, null)
     expect(next).not.toContain('x_audio_art')
     expect(audioArtOf(next)).toBeNull()
+  })
+
+  it('writes sung, playback and art in one shot', () => {
+    const next = setRehearsalAudio(cho, {
+      sung: 'https://cdn.sda/voz.m4a?h=1',
+      playback: 'https://cdn.sda/pb.m4a?h=2',
+      art: { url: 'https://cdn.sda/a.jpg?h=9', width: 320, height: 320 },
+    })
+    expect(audioTracksOf(next)).toEqual({
+      sung: 'https://cdn.sda/voz.m4a?h=1',
+      playback: 'https://cdn.sda/pb.m4a?h=2',
+    })
+    expect(audioArtOf(next)?.width).toBe(320)
   })
 
   it('strips a hinário catalog prefix from the title', () => {

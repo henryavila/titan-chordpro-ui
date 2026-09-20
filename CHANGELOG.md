@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Áudio de referência no ensaio:** o consumer grava `{x_audio_sung:}` e/ou `{x_audio_playback:}` (`setAudioUrl(cho, url, kind)`). Qualquer combinação, inclusive nenhuma. Player próprio (play/pause, ±10s, seek, troca de faixa) — não sincroniza letra nem `{duration:}`. Arquivo direto ou GET de stream; YouTube recusado. Cache keyed pela URL. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung.
 - **Diretivas custom em inglês:** `{x_source:}` (antes `{x_origem:}`), `{x_audio_sung:}` (antes `{x_audio_cantado:}`). Leitura aceita as chaves antigas; a próxima gravação reescreve.
-- **Capa no player de referência:** `{x_audio_art:}` (`setAudioArt`). O card mostra capa, título e artista (`{artist:}` / `{subtitle:}`).
+- **Capa no player de referência:** `{x_audio_art:}` + `{x_audio_art_w:}` / `{x_audio_art_h:}` — o host manda o arquivo já no tamanho certo. Sem capa, arte genérica 512×512. API: `setRehearsalAudio`.
 - **Abrir / fechar a referência:** chip **Cantado** / **Playback** no dock; o card now-playing abre por ele e fecha no X. Fechar não para o áudio.
 
 ### Changed

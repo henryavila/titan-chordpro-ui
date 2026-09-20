@@ -356,6 +356,8 @@ export const META_KEYS = [
   'x_audio_sung',
   'x_audio_playback',
   'x_audio_art',
+  'x_audio_art_w',
+  'x_audio_art_h',
   'x_strum',
   'x_strum_set',
 ] as const

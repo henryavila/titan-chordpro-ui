@@ -10,6 +10,20 @@ export const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
 
 export type AudioTracks = { sung: string | null; playback: string | null }
 
+/** Cover the consumer already resized. Pass the file’s real pixel size. */
+export type AudioArt = { url: string; width: number; height: number }
+
+/** Pixel size of the packaged fallback cover. */
+export const AUDIO_ART_DEFAULT_PX = 512
+
+const ART_DIM_MAX = 4096
+
+export type RehearsalAudioPatch = {
+  sung?: string | null
+  playback?: string | null
+  art?: AudioArt | null
+}
+
 /**
  * Direct audio the rehearsal player will fetch. YouTube/Spotify/data/file
  * are not playable here — the consumer hosts a file or a streaming GET.
@@ -95,26 +109,66 @@ export function audioKindsOf(tracks: AudioTracks): AudioKind[] {
   return AUDIO_KINDS.filter((k) => tracks[k])
 }
 
+function artDim(raw: string | undefined): number | null {
+  const n = Number(raw)
+  if (!Number.isInteger(n) || n < 1 || n > ART_DIM_MAX) return null
+  return n
+}
+
 /**
- * Cover art URL for the reference player. Same hosting rules as the audio
- * file — a hash in the query is a new image.
+ * Cover for the reference player. The consumer serves an already-optimized
+ * file and must pass that file’s width/height (square 256–512 is enough).
  */
-export function setAudioArt(source: string, url: string | null): string {
+export function setAudioArt(source: string, art: AudioArt | null): string {
   const cur: ChartMeta = { ...readMeta(source) }
-  if (url == null || !String(url).trim()) {
+  if (art == null) {
     delete cur.x_audio_art
+    delete cur.x_audio_art_w
+    delete cur.x_audio_art_h
     return writeMeta(source, cur)
   }
-  const ok = playableAudioUrl(url)
+  const ok = playableAudioUrl(art.url)
   if (!ok) {
     throw new Error('x_audio_art must be an http(s) image URL (not YouTube)')
   }
+  const w = artDim(String(art.width))
+  const h = artDim(String(art.height))
+  if (!w || !h) {
+    throw new Error('x_audio_art requires integer width and height (1–4096)')
+  }
   cur.x_audio_art = ok
+  cur.x_audio_art_w = String(w)
+  cur.x_audio_art_h = String(h)
   return writeMeta(source, cur)
 }
 
-export function audioArtOf(source: string): string | null {
-  return playableAudioUrl(readMeta(source).x_audio_art)
+export function audioArtOf(source: string): AudioArt | null {
+  const m = readMeta(source)
+  const url = playableAudioUrl(m.x_audio_art)
+  if (!url) return null
+  return {
+    url,
+    width: artDim(m.x_audio_art_w) ?? AUDIO_ART_DEFAULT_PX,
+    height: artDim(m.x_audio_art_h) ?? AUDIO_ART_DEFAULT_PX,
+  }
+}
+
+/**
+ * One write for the rehearsal media the host actually has.
+ * Omitted keys stay; `null` clears that key.
+ */
+export function setRehearsalAudio(source: string, patch: RehearsalAudioPatch): string {
+  let next = source
+  if (Object.prototype.hasOwnProperty.call(patch, 'sung')) {
+    next = setAudioUrl(next, patch.sung ?? null, 'sung')
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'playback')) {
+    next = setAudioUrl(next, patch.playback ?? null, 'playback')
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'art')) {
+    next = setAudioArt(next, patch.art ?? null)
+  }
+  return next
 }
 
 /** Strip a hinário catalog prefix (`001 - `) so the player can show the name. */

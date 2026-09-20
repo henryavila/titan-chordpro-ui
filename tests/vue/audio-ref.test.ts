@@ -274,6 +274,7 @@ describe('CpvAudioRef', () => {
     })
     expect(w.find('[data-audio-art] img').exists()).toBe(true)
     expect(w.find('[data-audio-art] img').attributes('data-audio-art-default')).toBeDefined()
+    expect(w.find('[data-audio-art] img').attributes('width')).toBe('512')
     await w.get('[data-audio-open]').trigger('click')
     expect(w.find('[data-audio-art] img').attributes('data-audio-art-default')).toBeDefined()
     w.unmount()

@@ -46,7 +46,7 @@ const source = (() => {
   if (mode === '1' || mode === 'ambos' || mode === 'playback') {
     next = setAudioUrl(next, refPlayback, 'playback')
   }
-  return setAudioArt(next, refArt)
+  return setAudioArt(next, { url: refArt, width: 512, height: 512 })
 })()
 const fitDefault = q.get('fit') !== '0'
 const capoQ = q.get('capo')

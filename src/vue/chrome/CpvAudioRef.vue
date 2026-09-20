@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { AUDIO_KIND_LABEL, formatAudioClock, type AudioKind } from '@henryavila/titan-chordpro-ui'
+import {
+  AUDIO_ART_DEFAULT_PX,
+  AUDIO_KIND_LABEL,
+  formatAudioClock,
+  type AudioKind,
+} from '@henryavila/titan-chordpro-ui'
 import defaultArt from '../assets/audio-ref-default.jpg'
 import CpvIcon from '../icon/CpvIcon.vue'
 
@@ -12,6 +17,8 @@ const props = defineProps<{
   title: string
   artist: string
   art?: string | null
+  artWidth?: number
+  artHeight?: number
   kind: AudioKind
   kinds: AudioKind[]
 }>()
@@ -37,6 +44,12 @@ watch(
 const hostArt = computed(() => String(props.art ?? '').trim())
 const usingDefaultArt = computed(() => artBroken.value || !hostArt.value)
 const artSrc = computed(() => (usingDefaultArt.value ? defaultArt : hostArt.value))
+const artW = computed(() =>
+  usingDefaultArt.value ? AUDIO_ART_DEFAULT_PX : (props.artWidth || AUDIO_ART_DEFAULT_PX),
+)
+const artH = computed(() =>
+  usingDefaultArt.value ? AUDIO_ART_DEFAULT_PX : (props.artHeight || AUDIO_ART_DEFAULT_PX),
+)
 
 const elapsed = computed(() => formatAudioClock(props.current))
 const total = computed(() => (props.duration ? formatAudioClock(props.duration) : '–:––'))
@@ -86,6 +99,8 @@ function onSeek(e: PointerEvent) {
             :src="artSrc"
             alt=""
             draggable="false"
+            :width="artW"
+            :height="artH"
             :data-audio-art-default="usingDefaultArt ? '' : undefined"
             @error="onArtError"
           />
@@ -113,6 +128,8 @@ function onSeek(e: PointerEvent) {
           :src="artSrc"
           alt=""
           draggable="false"
+          :width="artW"
+          :height="artH"
           :data-audio-art-default="usingDefaultArt ? '' : undefined"
           @error="onArtError"
         />

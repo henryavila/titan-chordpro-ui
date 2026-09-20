@@ -294,37 +294,34 @@ pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
 com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
 
-```ts
-import { setAudioUrl, audioUrlOf, audioTracksOf, setAudioArt } from '@henryavila/titan-chordpro-ui'
-
-let next = setAudioUrl(cho, 'https://cdn.example/nasce-voz.m4a?h=a1', 'sung')
-next = setAudioUrl(next, 'https://cdn.example/nasce-pb.m4a?h=b2', 'playback')
-audioTracksOf(next) // { sung, playback } — cada um string | null
-setAudioUrl(next, null, 'playback') // tira só o playback
-```
-
-Dois tipos, independentes: **sung** (`{x_audio_sung:}`) e **playback**
-(`{x_audio_playback:}`). Qualquer combinação vale — os dois, só um, ou
-nenhum. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung. Sem nenhuma
-faixa, o chrome não muda. Com as duas, o card troca Cantado / Playback em rótulos discretos (não tabs).
-Com uma só, o mesmo rótulo indica o que está tocando.
-
-Capa opcional (mesma regra de URL):
+O consumer informa o que tem. Uma chamada:
 
 ```ts
-const next = setAudioArt(cho, 'https://cdn.example/nasce.jpg?h=a1b2')
+import { setRehearsalAudio, audioTracksOf, audioArtOf } from '@henryavila/titan-chordpro-ui'
+
+const next = setRehearsalAudio(cho, {
+  sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
+  playback: 'https://cdn.example/nasce-pb.m4a?h=b2',
+  art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
+})
 ```
+
+Chave omitida não mexe; `null` apaga. Qualquer combinação vale (os dois, só um, ou nenhum). Sem faixa, o chrome não muda.
+
+**Capa:** o host já entrega o arquivo no tamanho certo (quadrado **256–512 px** basta; o card mostra 56 px). Passe `width` e `height` **desse arquivo**, não do original de 3000 px. Sem `{x_audio_art:}`, o Titan usa uma arte genérica 512×512.
+
+Diretivas: `{x_audio_sung:}`, `{x_audio_playback:}`, `{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung.
 
 O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
-ou `{subtitle:}`, e a capa. Sem `{x_audio_art:}`, usa uma arte padrão. O dock nasce com o
-chip **Cantado** ou **Playback**; o card abre por ele e fecha no X (fechar
-não para o áudio).
+ou `{subtitle:}`, e a capa. Com as duas faixas, Cantado / Playback são
+pílulas clicáveis; com uma só, só o rótulo. Chip no dock abre o card; X fecha
+(sem parar o áudio).
 
 A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
 ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
 **Referência**.
 
-`writeMeta` substitui o header inteiro: use `setAudioUrl` / `setAudioArt`.
+`writeMeta` substitui o header inteiro: use `setRehearsalAudio`.
 YouTube, Spotify, `javascript:` e `data:` são recusados (throw).
 
 Troca de faixa = **outra URL** (hash na query). O Titan guarda o arquivo no

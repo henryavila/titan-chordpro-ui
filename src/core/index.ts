@@ -220,6 +220,7 @@ export {
   youtubeWatchUrl,
 } from './import-chordpro'
 export {
+  AUDIO_ART_DEFAULT_PX,
   AUDIO_KIND_LABEL,
   AUDIO_KINDS,
   audioArtOf,
@@ -233,8 +234,9 @@ export {
   playableAudioUrl,
   setAudioArt,
   setAudioUrl,
+  setRehearsalAudio,
 } from './audio-url'
-export type { AudioKind, AudioTracks } from './audio-url'
+export type { AudioArt, AudioKind, AudioTracks, RehearsalAudioPatch } from './audio-url'
 export {
   AUDIO_CACHE_MAX_BYTES,
   AUDIO_CACHE_MAX_FILE,

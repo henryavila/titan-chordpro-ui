@@ -2,8 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   readMeta,
-  setAudioArt,
-  setAudioUrl,
+  setRehearsalAudio,
   writeMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
@@ -60,14 +59,15 @@ const id = ref(
 )
 function withAudio(cho: string) {
   if (!lab.audio || !cho.trim()) return cho
-  let next = cho
-  if (lab.audio === 'cantado' || lab.audio === 'ambos') {
-    next = setAudioUrl(next, refAudioUrl, 'sung')
-  }
-  if (lab.audio === 'playback' || lab.audio === 'ambos') {
-    next = setAudioUrl(next, refPlaybackUrl, 'playback')
-  }
-  next = setAudioArt(next, refArtUrl)
+  let next = setRehearsalAudio(cho, {
+    ...(lab.audio === 'cantado' || lab.audio === 'ambos'
+      ? { sung: refAudioUrl }
+      : {}),
+    ...(lab.audio === 'playback' || lab.audio === 'ambos'
+      ? { playback: refPlaybackUrl }
+      : {}),
+    art: { url: refArtUrl, width: 512, height: 512 },
+  })
   const m = readMeta(next)
   if (!m.artist && !m.subtitle) {
     next = writeMeta(next, { ...m, artist: 'Hinário Adventista' })
