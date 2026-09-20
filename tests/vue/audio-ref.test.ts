@@ -265,14 +265,14 @@ describe('CpvAudioRef', () => {
     fail.unmount()
   })
 
-  it('shows a music mark when there is no cover', async () => {
+  it('shows default cover art when the host did not provide one', async () => {
     const w = mount(CpvAudioRef, {
       props: { ...base, current: 0, duration: 0, art: null },
     })
-    expect(w.find('[data-audio-art] img').exists()).toBe(false)
-    expect(w.find('[data-audio-art] [data-icon=music2]').exists()).toBe(true)
+    expect(w.find('[data-audio-art] img').exists()).toBe(true)
+    expect(w.find('[data-audio-art] img').attributes('data-audio-art-default')).toBeDefined()
     await w.get('[data-audio-open]').trigger('click')
-    expect(w.find('[data-audio-art] [data-icon=music2]').exists()).toBe(true)
+    expect(w.find('[data-audio-art] img').attributes('data-audio-art-default')).toBeDefined()
     w.unmount()
   })
 })

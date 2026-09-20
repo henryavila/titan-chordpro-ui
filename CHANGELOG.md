@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Nomenclatura:** README, CONSUMER, NAMING e o SoT de enrich ensinam as chaves em inglês (`{x_source:}`, `{x_audio_sung:}`). A UI continua em português (Origem, Cantado).
 
 ### Fixed
-- **Cantado / Playback:** no card, um rótulo discreto (não tabs). Com uma faixa só, o rótulo continua mostrando o que está tocando.
+- **Cantado / Playback:** no card, um rótulo discreto (não tabs), com mais espaço sob o título. Sem capa do host, o player usa uma arte padrão. Com uma faixa só, o rótulo continua mostrando o que está tocando.
 - **Play da referência:** no card aberto o play é o centro do transporte; −10 / +10 ficam mais suaves.
 - **Chip da referência:** sólido sobre a cifra (canvas, sem véu). Mini-player flutuante; toque abre o card.
 - **Player de referência no celular:** o chip e o card ficam no centro do dock, não colados à esquerda.

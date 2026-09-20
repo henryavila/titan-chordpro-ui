@@ -316,7 +316,7 @@ const next = setAudioArt(cho, 'https://cdn.example/nasce.jpg?h=a1b2')
 ```
 
 O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
-ou `{subtitle:}`, e a capa. Sem arte, um placeholder. O dock nasce com o
+ou `{subtitle:}`, e a capa. Sem `{x_audio_art:}`, usa uma arte padrão. O dock nasce com o
 chip **Cantado** ou **Playback**; o card abre por ele e fecha no X (fechar
 não para o áudio).
 
