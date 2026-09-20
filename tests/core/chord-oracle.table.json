@@ -1,0 +1,1341 @@
+[
+  {
+    "name": "A",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "A'",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "A’",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "A/B",
+    "class": "parse",
+    "quality": "major",
+    "bass": "B"
+  },
+  {
+    "name": "A/C#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "C#"
+  },
+  {
+    "name": "A/D",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D"
+  },
+  {
+    "name": "A/Db",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Db"
+  },
+  {
+    "name": "A/E",
+    "class": "parse",
+    "quality": "major",
+    "bass": "E"
+  },
+  {
+    "name": "A/F",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F"
+  },
+  {
+    "name": "A/G",
+    "class": "parse",
+    "quality": "major",
+    "bass": "G"
+  },
+  {
+    "name": "A/G#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "G#"
+  },
+  {
+    "name": "A#",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "A#/D",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D"
+  },
+  {
+    "name": "A#7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "A#9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "A#m",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "A#m7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "A2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "A2/E",
+    "class": "parse",
+    "quality": "sus2",
+    "bass": "E"
+  },
+  {
+    "name": "A4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "A4\"",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "A4/E",
+    "class": "parse",
+    "quality": "sus4",
+    "bass": "E"
+  },
+  {
+    "name": "A7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "A7/C#",
+    "class": "parse",
+    "quality": "7",
+    "bass": "C#"
+  },
+  {
+    "name": "A7sus4",
+    "class": "parse",
+    "quality": "7sus4"
+  },
+  {
+    "name": "A9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "A9'",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "A9/C#",
+    "class": "parse",
+    "quality": "add9",
+    "bass": "C#"
+  },
+  {
+    "name": "A9/G#",
+    "class": "parse",
+    "quality": "add9",
+    "bass": "G#"
+  },
+  {
+    "name": "Ab",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "Ab/C",
+    "class": "parse",
+    "quality": "major",
+    "bass": "C"
+  },
+  {
+    "name": "Ab7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "Ab7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "Ab7M(9)",
+    "class": "parse",
+    "quality": "maj9"
+  },
+  {
+    "name": "Ab9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Abm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Abm6",
+    "class": "parse",
+    "quality": "m6"
+  },
+  {
+    "name": "Abm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Absus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Am",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "AM",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "Am\"",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "Am/F#",
+    "class": "parse",
+    "quality": "m",
+    "bass": "F#"
+  },
+  {
+    "name": "Am/G",
+    "class": "parse",
+    "quality": "m",
+    "bass": "G"
+  },
+  {
+    "name": "Am6/B",
+    "class": "parse",
+    "quality": "m6",
+    "bass": "B"
+  },
+  {
+    "name": "Am7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Am9",
+    "class": "parse",
+    "quality": "m9"
+  },
+  {
+    "name": "Asus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Asus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "B",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "B/D#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D#"
+  },
+  {
+    "name": "B/Db",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Db"
+  },
+  {
+    "name": "B/E",
+    "class": "parse",
+    "quality": "major",
+    "bass": "E"
+  },
+  {
+    "name": "B/F#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F#"
+  },
+  {
+    "name": "B4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "B4/D#",
+    "class": "parse",
+    "quality": "sus4",
+    "bass": "D#"
+  },
+  {
+    "name": "B7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "B7+",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "B7sus4",
+    "class": "parse",
+    "quality": "7sus4"
+  },
+  {
+    "name": "B9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Bb",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "Bb/C",
+    "class": "parse",
+    "quality": "major",
+    "bass": "C"
+  },
+  {
+    "name": "Bb/D",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D"
+  },
+  {
+    "name": "Bb/F",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F"
+  },
+  {
+    "name": "Bb2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "Bb7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "Bb7/F",
+    "class": "parse",
+    "quality": "7",
+    "bass": "F"
+  },
+  {
+    "name": "Bb7+",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "Bb7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "Bb9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Bbm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "BbM/F",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F"
+  },
+  {
+    "name": "Bbm6/Db",
+    "class": "parse",
+    "quality": "m6",
+    "bass": "Db"
+  },
+  {
+    "name": "Bbm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "BbM7",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "Bbsus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Bm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Bm\"",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "Bm6/D",
+    "class": "parse",
+    "quality": "m6",
+    "bass": "D"
+  },
+  {
+    "name": "Bm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Bm7'''",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "Bsus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Bsus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "C",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "C’",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "C\"",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "C/D",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D"
+  },
+  {
+    "name": "C/E",
+    "class": "parse",
+    "quality": "major",
+    "bass": "E"
+  },
+  {
+    "name": "C/F",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F"
+  },
+  {
+    "name": "C/G",
+    "class": "parse",
+    "quality": "major",
+    "bass": "G"
+  },
+  {
+    "name": "C#",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "C#4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "C#7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "C#7/F",
+    "class": "parse",
+    "quality": "7",
+    "bass": "F"
+  },
+  {
+    "name": "C#9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "C#m",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "C#m7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "C2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "C4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "C7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "C7/G",
+    "class": "parse",
+    "quality": "7",
+    "bass": "G"
+  },
+  {
+    "name": "C7+",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "C7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "C7M(9)",
+    "class": "parse",
+    "quality": "maj9"
+  },
+  {
+    "name": "C7M/E",
+    "class": "parse",
+    "quality": "maj7",
+    "bass": "E"
+  },
+  {
+    "name": "C9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Cm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Cm/Bb",
+    "class": "parse",
+    "quality": "m",
+    "bass": "Bb"
+  },
+  {
+    "name": "Cm/G",
+    "class": "parse",
+    "quality": "m",
+    "bass": "G"
+  },
+  {
+    "name": "Cm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Csus2/E",
+    "class": "parse",
+    "quality": "sus2",
+    "bass": "E"
+  },
+  {
+    "name": "Csus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Cx",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "D",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "D'",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "D’",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "D/A",
+    "class": "parse",
+    "quality": "major",
+    "bass": "A"
+  },
+  {
+    "name": "D/E",
+    "class": "parse",
+    "quality": "major",
+    "bass": "E"
+  },
+  {
+    "name": "D/F#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F#"
+  },
+  {
+    "name": "D/Gb",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Gb"
+  },
+  {
+    "name": "D#",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "D#7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "D#9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "D#m",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "D#m7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "D2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "D4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "D4/F#",
+    "class": "parse",
+    "quality": "sus4",
+    "bass": "F#"
+  },
+  {
+    "name": "D7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "D7’",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "D7/A",
+    "class": "parse",
+    "quality": "7",
+    "bass": "A"
+  },
+  {
+    "name": "D7/F#",
+    "class": "parse",
+    "quality": "7",
+    "bass": "F#"
+  },
+  {
+    "name": "D7+",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "D7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "D7M(9)",
+    "class": "parse",
+    "quality": "maj9"
+  },
+  {
+    "name": "D9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "D9/4",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "D9/A",
+    "class": "parse",
+    "quality": "add9",
+    "bass": "A"
+  },
+  {
+    "name": "D9/B",
+    "class": "parse",
+    "quality": "add9",
+    "bass": "B"
+  },
+  {
+    "name": "D9/F#",
+    "class": "parse",
+    "quality": "add9",
+    "bass": "F#"
+  },
+  {
+    "name": "Db",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "Db/B",
+    "class": "parse",
+    "quality": "major",
+    "bass": "B"
+  },
+  {
+    "name": "Db/Bb",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Bb"
+  },
+  {
+    "name": "Db/F",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F"
+  },
+  {
+    "name": "Db6",
+    "class": "parse",
+    "quality": "6"
+  },
+  {
+    "name": "Db6(9)",
+    "class": "parse",
+    "quality": "6add9"
+  },
+  {
+    "name": "Db7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "Db7+",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "Db7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "Db9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Db9/F",
+    "class": "parse",
+    "quality": "add9",
+    "bass": "F"
+  },
+  {
+    "name": "Dbm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Dbº",
+    "class": "parse",
+    "quality": "dim"
+  },
+  {
+    "name": "Dm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Dm\"",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "Dm(3b)/F#",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "Dm/C",
+    "class": "parse",
+    "quality": "m",
+    "bass": "C"
+  },
+  {
+    "name": "Dm/F",
+    "class": "parse",
+    "quality": "m",
+    "bass": "F"
+  },
+  {
+    "name": "Dm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Dsus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Dsus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Dx",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "E",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "E'",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "E/Ab",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Ab"
+  },
+  {
+    "name": "E/B",
+    "class": "parse",
+    "quality": "major",
+    "bass": "B"
+  },
+  {
+    "name": "E/D",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D"
+  },
+  {
+    "name": "E/F#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F#"
+  },
+  {
+    "name": "E/G#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "G#"
+  },
+  {
+    "name": "E4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "E6",
+    "class": "parse",
+    "quality": "6"
+  },
+  {
+    "name": "E7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "E7M/B",
+    "class": "parse",
+    "quality": "maj7",
+    "bass": "B"
+  },
+  {
+    "name": "E9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Eb",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "Eb/C",
+    "class": "parse",
+    "quality": "major",
+    "bass": "C"
+  },
+  {
+    "name": "Eb/G",
+    "class": "parse",
+    "quality": "major",
+    "bass": "G"
+  },
+  {
+    "name": "Eb4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Eb4/G",
+    "class": "parse",
+    "quality": "sus4",
+    "bass": "G"
+  },
+  {
+    "name": "Eb7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "Ebm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Ebm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Ebsus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Em",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Em/C#",
+    "class": "parse",
+    "quality": "m",
+    "bass": "C#"
+  },
+  {
+    "name": "Em/D",
+    "class": "parse",
+    "quality": "m",
+    "bass": "D"
+  },
+  {
+    "name": "Em/G",
+    "class": "parse",
+    "quality": "m",
+    "bass": "G"
+  },
+  {
+    "name": "Em7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Em7/D",
+    "class": "parse",
+    "quality": "m7",
+    "bass": "D"
+  },
+  {
+    "name": "Esus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Esus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "F",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "F/A",
+    "class": "parse",
+    "quality": "major",
+    "bass": "A"
+  },
+  {
+    "name": "F/C",
+    "class": "parse",
+    "quality": "major",
+    "bass": "C"
+  },
+  {
+    "name": "F/G",
+    "class": "parse",
+    "quality": "major",
+    "bass": "G"
+  },
+  {
+    "name": "F#",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "F#/A#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "A#"
+  },
+  {
+    "name": "F#/B",
+    "class": "parse",
+    "quality": "major",
+    "bass": "B"
+  },
+  {
+    "name": "F#5",
+    "class": "parse",
+    "quality": "5"
+  },
+  {
+    "name": "F#7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "F#m",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "F#m'",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "F#m/A",
+    "class": "parse",
+    "quality": "m",
+    "bass": "A"
+  },
+  {
+    "name": "F#m/E",
+    "class": "parse",
+    "quality": "m",
+    "bass": "E"
+  },
+  {
+    "name": "F#m7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "F#sus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "F2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "F4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "F7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "F7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "F9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "Fm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Fm/G",
+    "class": "parse",
+    "quality": "m",
+    "bass": "G"
+  },
+  {
+    "name": "Fm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Fsus2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "Fsus4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "G",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "G ",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "G\"",
+    "class": "UNPARSED"
+  },
+  {
+    "name": "G/A",
+    "class": "parse",
+    "quality": "major",
+    "bass": "A"
+  },
+  {
+    "name": "G/B",
+    "class": "parse",
+    "quality": "major",
+    "bass": "B"
+  },
+  {
+    "name": "G/D",
+    "class": "parse",
+    "quality": "major",
+    "bass": "D"
+  },
+  {
+    "name": "G/F",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F"
+  },
+  {
+    "name": "G/F#",
+    "class": "parse",
+    "quality": "major",
+    "bass": "F#"
+  },
+  {
+    "name": "G#",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "G#7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "G#m",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "G#m7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "G2",
+    "class": "parse",
+    "quality": "sus2"
+  },
+  {
+    "name": "G4",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "G6",
+    "class": "parse",
+    "quality": "6"
+  },
+  {
+    "name": "G7",
+    "class": "parse",
+    "quality": "7"
+  },
+  {
+    "name": "G7(9)",
+    "class": "parse",
+    "quality": "9"
+  },
+  {
+    "name": "G7/B",
+    "class": "parse",
+    "quality": "7",
+    "bass": "B"
+  },
+  {
+    "name": "G7/D",
+    "class": "parse",
+    "quality": "7",
+    "bass": "D"
+  },
+  {
+    "name": "G7M",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "G9",
+    "class": "parse",
+    "quality": "add9"
+  },
+  {
+    "name": "G9/4",
+    "class": "AMBIGUOUS"
+  },
+  {
+    "name": "Gb",
+    "class": "parse",
+    "quality": "major"
+  },
+  {
+    "name": "Gb/Bb",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Bb"
+  },
+  {
+    "name": "Gb/Db",
+    "class": "parse",
+    "quality": "major",
+    "bass": "Db"
+  },
+  {
+    "name": "Gbdim",
+    "class": "parse",
+    "quality": "dim"
+  },
+  {
+    "name": "Gbm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Gbm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Gdim",
+    "class": "parse",
+    "quality": "dim"
+  },
+  {
+    "name": "Gm",
+    "class": "parse",
+    "quality": "m"
+  },
+  {
+    "name": "Gm/A",
+    "class": "parse",
+    "quality": "m",
+    "bass": "A"
+  },
+  {
+    "name": "Gm/Bb",
+    "class": "parse",
+    "quality": "m",
+    "bass": "Bb"
+  },
+  {
+    "name": "Gm/D",
+    "class": "parse",
+    "quality": "m",
+    "bass": "D"
+  },
+  {
+    "name": "Gm6/A",
+    "class": "parse",
+    "quality": "m6",
+    "bass": "A"
+  },
+  {
+    "name": "Gm7",
+    "class": "parse",
+    "quality": "m7"
+  },
+  {
+    "name": "Gm7(11)",
+    "class": "parse",
+    "quality": "m11"
+  },
+  {
+    "name": "Gmaj7",
+    "class": "parse",
+    "quality": "maj7"
+  },
+  {
+    "name": "Gsus",
+    "class": "parse",
+    "quality": "sus4"
+  },
+  {
+    "name": "Gsus4",
+    "class": "parse",
+    "quality": "sus4"
+  }
+]
