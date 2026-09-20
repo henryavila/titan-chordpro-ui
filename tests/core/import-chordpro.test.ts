@@ -143,20 +143,6 @@ describe('the chart\'s own details', () => {
     })
   })
 
-  it('maps Portuguese aliases to English keys and rewrites them', () => {
-    const src = '{title:T}\n{x_origem:https://cifraclub.com.br/a}\n{x_audio_cantado:https://cdn/a.m4a?h=1}\n[G]a\n'
-    expect(readMeta(src)).toMatchObject({
-      title: 'T',
-      x_source: 'https://cifraclub.com.br/a',
-      x_audio_sung: 'https://cdn/a.m4a?h=1',
-    })
-    const out = writeMeta(src, readMeta(src))
-    expect(out).toContain('{x_source:https://cifraclub.com.br/a}')
-    expect(out).toContain('{x_audio_sung:https://cdn/a.m4a?h=1}')
-    expect(out).not.toContain('x_origem')
-    expect(out).not.toContain('x_audio_cantado')
-  })
-
   it('rewrites the header instead of stacking a second one', () => {
     const out = writeMeta('{key:C}\n{title:Velho}\n[G]Letra', { title: 'Novo', key: 'G' })
     expect(out.match(/\{key:/g)).toHaveLength(1)

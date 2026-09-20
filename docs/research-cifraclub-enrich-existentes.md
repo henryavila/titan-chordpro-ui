@@ -21,11 +21,11 @@ Cifras **já no catálogo** têm corpo curado (`x///`, partitura, tabs). O que f
 | `tempo` / `time` / `duration` | ~138–145 | Já preenchidos na maioria |
 | `key` / `title` | ~106–116 | Bom, mas não 100% |
 | `capo` | 3 | Raro |
-| `x_source` | **0** | Nenhuma amarra ao CC (`{x_origem:}` legado ainda lê) |
+| `x_origem` | **0** | Nenhuma amarra ao CC |
 | `x_youtube` | **0** | Sem clipe |
 | `x_strum` | **0** | Sem batida importada |
 
-Ganho real: `x_youtube`, `x_strum`, `x_source` (+ fill-empty em buracos). Corpo local **nunca** tocado.
+Ganho real: `x_youtube`, `x_strum`, `x_origem` (+ fill-empty em buracos). Corpo local **nunca** tocado.
 
 ---
 
@@ -43,7 +43,7 @@ Usar `fromCifraClubHtml` **apenas** pelos campos de meta / strum / youtube. **Ig
 | `metadata.youtubeID` | `x_youtube` | **ask sempre** se houver candidato CC (ver §6) |
 | `strummings[]` | `x_strum` | **prefer-cc** (sobrescreve local; hoje local não existe) |
 | watch YT | `duration` | fill-empty após youtube escolhido |
-| URL usada | `x_source` | sempre setar (`{x_origem:}` legado ainda lê) |
+| URL usada | `x_origem` | sempre setar |
 
 API CC v3 → 401. Busca por nome → não no v1. Discovery = colar URL.
 
@@ -115,7 +115,7 @@ Fluxo para cifra já cadastrada:
 1. Abrir **Metadados** na cifra atual  
 2. **Completar com Cifra Club** → colar URL  
 3. Host `fetchChart` → core extrai **só meta** (sem `convert`)  
-4. Preview do que vai entrar (`x_strum`, buracos fill-empty, `x_source`)  
+4. Preview do que vai entrar (`x_strum`, buracos fill-empty, `x_origem`)  
 5. YouTube: **ask** com nome + links + página/embed dos dois vídeos → usuário escolhe  
 6. Confirmar → `writeMeta` no source atual (corpo intacto)
 
@@ -128,7 +128,7 @@ O consumer **não** precisa montar essa confirmação: só injeta `fetchChart` /
 Ordem obrigatória:
 
 1. **Fixtures** — HTML CC em `tests/helpers/cifraclub-*.html` + `.cho` SDA sem `x_*`
-2. Assert: corpo idêntico; `x_strum` / `x_source` aplicados; fluxo YT ask não grava sem escolha
+2. Assert: corpo idêntico; `x_strum` / `x_origem` aplicados; fluxo YT ask não grava sem escolha
 3. Demo / página de comparação YT exercitada com fixtures (ou IDs conhecidos)
 4. **Só então** rodar enrich em produção / catálogo real
 
@@ -186,7 +186,7 @@ Página de validação YT: artefato de demo/host (HTML estático ou rota Vite) a
 
 - [x] Corpo da fixture SDA idêntico antes/depois do enrich
 - [x] Não passa por `convert` / não escreve acordes do CC
-- [x] `x_strum` do CC sobrescreve; `x_source` gravado
+- [x] `x_strum` do CC sobrescreve; `x_origem` gravado
 - [x] `x_youtube` só após escolha explícita; página com nome + links + embeds
 - [x] Capo CC não altera source
 - [x] Suite de fixtures verde **antes** de qualquer corrida em produção

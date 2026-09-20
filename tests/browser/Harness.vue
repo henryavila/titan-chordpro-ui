@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { setAudioArt, setAudioUrl } from '../../src/core'
 import type { Lens } from '../../src/vue'
 import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
-import refAudio from '../../demo/ref-audio.wav?url'
-import refArt from '../../demo/ref-audio-art.jpg?url'
 import oRei from '../../fixtures/sda/082-o-rei-vem-vindo.cho?raw'
 import jesus from '../../fixtures/sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho?raw'
 
@@ -34,19 +31,7 @@ function pickSource(): string {
   /** Scroll is gated on `{duration:}`. The default fixture has none; the harness adds one so layout tests can still roll. */
   return `{duration: 04:26}\n${raw}`
 }
-const source = (() => {
-  const rawCho = pickSource()
-  const mode = q.get('audio')
-  if (!mode) return rawCho
-  let next = rawCho
-  if (mode === '1' || mode === 'ambos' || mode === 'cantado' || mode === 'sung') {
-    next = setAudioUrl(next, refAudio, 'sung')
-  }
-  if (mode === '1' || mode === 'ambos' || mode === 'playback') {
-    next = setAudioUrl(next, refAudio, 'playback')
-  }
-  return setAudioArt(next, refArt)
-})()
+const source = pickSource()
 const fitDefault = q.get('fit') !== '0'
 const capoQ = q.get('capo')
 const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined

@@ -20,8 +20,7 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava cantado+playback na demo; `audio=cantado` / `audio=playback` só um).
-Alias legado: `modes` (`content`→`persisted`).
+(oculta `{c:}` de ensaio), `quebrar=1`. Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
@@ -64,7 +63,7 @@ export default defineNuxtConfig({
 |---|---|
 | Um SFC: `<ChordproViewer>` | Um `<iframe src="…">` |
 | Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, áudio de referência) | Shell do app (login, nav, lista de músicas do site, player **sincronizado**) |
+| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio) | Shell do app (login, nav, lista de músicas do site, player) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -288,55 +287,6 @@ um fade + chevron e só confirma ao soltar depois do limiar — o centro só rol
 troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`
 pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
-
-### Áudio de referência
-
-O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
-com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
-
-```ts
-import { setAudioUrl, audioUrlOf, audioTracksOf, setAudioArt } from '@henryavila/titan-chordpro-ui'
-
-let next = setAudioUrl(cho, 'https://cdn.example/nasce-voz.m4a?h=a1', 'sung')
-next = setAudioUrl(next, 'https://cdn.example/nasce-pb.m4a?h=b2', 'playback')
-audioTracksOf(next) // { sung, playback } — cada um string | null
-setAudioUrl(next, null, 'playback') // tira só o playback
-```
-
-Dois tipos, independentes: **sung** (`{x_audio_sung:}`) e **playback**
-(`{x_audio_playback:}`). Qualquer combinação vale — os dois, só um, ou
-nenhum. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung. Sem nenhuma
-faixa, o chrome não muda. Com as duas, o card troca Cantado / Playback em rótulos discretos (não tabs).
-Com uma só, o mesmo rótulo indica o que está tocando.
-
-Capa opcional (mesma regra de URL):
-
-```ts
-const next = setAudioArt(cho, 'https://cdn.example/nasce.jpg?h=a1b2')
-```
-
-O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
-ou `{subtitle:}`, e a capa. Sem `{x_audio_art:}`, usa uma arte padrão. O dock nasce com o
-chip **Cantado** ou **Playback**; o card abre por ele e fecha no X (fechar
-não para o áudio).
-
-A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
-ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
-**Referência**.
-
-`writeMeta` substitui o header inteiro: use `setAudioUrl` / `setAudioArt`.
-YouTube, Spotify, `javascript:` e `data:` são recusados (throw).
-
-Troca de faixa = **outra URL** (hash na query). O Titan guarda o arquivo no
-Cache Storage keyed pela URL completa; a 1ª vez toca em stream e preenche o
-cache atrás (CORS no GET). Sem CORS, toca e o cache vira no-op. Teto ~100 MB
-LRU; arquivo > 20 MB toca e não guarda.
-
-O GET precisa de `Access-Control-Allow-Origin` e, na 1ª vez, `Accept-Ranges:
-bytes` para o seek. URL assinada que muda de token a cada hora destrói o
-cache — o hash só muda quando o áudio muda.
-
-Demo: `/standalone.html?audio=1`.
 
 ---
 

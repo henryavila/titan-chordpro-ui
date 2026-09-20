@@ -45,7 +45,7 @@ describe('proposeCifraClubEnrich — meta only, no convert', () => {
 
     expect(chartBody(applied)).toBe(chartBody(TUA))
     expect(applied).not.toContain('[Bm7]') // CC body never imported
-    expect(readMeta(applied).x_source).toBe(url)
+    expect(readMeta(applied).x_origem).toBe(url)
     // local already has x_strum — keep-local omits batida from the patch
     expect(proposal.patch.x_strum).toBeUndefined()
     expect(readMeta(applied).x_strum).toContain('bpm=75')
