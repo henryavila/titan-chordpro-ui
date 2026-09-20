@@ -257,8 +257,8 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 **Status:** complete
 **Codebase class:** populated
 **Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,overlay,transpose}.ts` (25 core `.ts`); `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog,edit/ScoreEditor,sheets/BatidaSheet,sheets/ToneSheet,chrome/CpvMoreSheet}.vue`; `src/vue/use/{useMetronome,useSongSwipe,useOverlay}.ts`; `tests/core/{layout-capo,no-vue-in-core}.test.ts`; `fixtures/sda` (148 `.cho`) + `013-ele-vive-em-mim.cho`; glob absent (F0/F1/F3 create): `src/core/parse-chord.ts`, `src/vue/overlay/DiagramModal.vue`, `tests/core/{chord-oracle,parse-chord-token,define-directive,export-cho}.test.ts` → ~40 product files read + 148 fixtures counted.
-**Commit:** 55e551d
-**At:** 2026-09-20T08:51:06Z
+**Commit:** 4b479b8
+**At:** 2026-09-20T11:12:12Z
 
 ### A — Plan premises vs code
 
@@ -271,7 +271,7 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 | 5 | `STORE_KEYS.prefs` + ChartStore exist | ok | storage.ts:24–26 `prefs: 'cpv:prefs'` |
 | 6 | `ChartBody.vue` chords are spans (not `role=button`) | ok | ChartBody.vue:440–444 `<span class="cpv-chord">` |
 | 7 | `ChordDialog.vue` edits the chord name only (no Forma) | ok | ChordDialog.vue:59–82 input `Nome do acorde`; no Forma control |
-| 8 | `fixtures/sda` has 148 `.cho`, `013-ele-vive-em-mim.cho` exists, 257 unique `[…]` tokens, zero `{define}` | ok | `ls fixtures/sda/*.cho` → 148; file present; node extract 257 unique; grep `{define` → 0 |
+| 8 | `fixtures/sda` has 148 `.cho`, `013-ele-vive-em-mim.cho` exists, unique chord names for the oracle, zero `{define}` | ok | `ls fixtures/sda/*.cho` → 148; file present; grep `{define` → 0; research-digest 257; T-001 table is SoT (balanced `[…]` 255; naive nested regex 258 includes malformed ` Je[A` in `h441-vencendo-vem-jesus.cho:14`) |
 | 9 | `tests/core/layout-capo.test.ts` and `tests/core/no-vue-in-core.test.ts` exist | ok | layout-capo.test.ts:1; no-vue-in-core.test.ts:19 `A14 no Vue in core` |
 | 10 | `src/core/index.ts` exports `parse`, not `parseChordToken` | ok | index.ts:36 `export { parse, normalizeSource, setKey, transpose } from './parse'` |
 | 11 | `parse()` exists; `ChordProView` has no `defines` | ok | parse.ts:300; types.ts:1–20 (meta/source/sections/eocOf only) |
@@ -300,5 +300,5 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=8fc3f0167221 | premises=17 | impacts=8 @ 55e551d (2026-09-20T08:51:06Z)
+- ground-truth: complete | mode=ground-truth | fp=4470a34a21d8 | premises=17 | impacts=8 @ 4b479b8 (2026-09-20T11:12:12Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md
