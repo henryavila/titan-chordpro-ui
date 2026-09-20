@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: sync-wait F0 phase writer then validate claims
+nextAction: operator disposition T-002 majors (accept|defer|fix) then assert done
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -134,8 +134,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F0 phase writer code-only está em voo no worktree irmão. `assert-automate-gate --gate spawn` exit 0. `automate-phase-run prepare` ok. T-001 e T-002 ainda pending no plano; o writer não fecha estado. Host-thin: sem editar fonte de produto.
-- **Decision log:** Ratify `0b905ce6-0ee8-4c14-8bb5-764ed279946d`. Ground-truth restamp `fp=4470a34a21d8` @ 4b479b8 (commit recibo `649f829`). Writer branch `impl/diagramas-cifra-F0-writer` baseRef `649f82957a90287f505a51a60e9c184bc9d844b2`.
-- **Single nextAction:** sync-wait F0 phase writer then validate claims
-- **Verbatim state:** `assert-automate-gate --plan diagramas-cifra --project titan-chordpro-ui --gate spawn` → `ok`. Writer cwd `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-writer`. Sealed brief `.atomic-skills/status/automate/diagramas-cifra-F0-sealed-brief.md`. Claim report esperado `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`. Cursor `step: C` `phaseId: F0`. subagent_id `01a0be88-d486-76d0-a1c9-2d5a50d7fe52`.
-- **Uncommitted changes:** prepare artifacts + este handoff (checkpoint imediato).
+- **Narrative:** Writer F0 mergeou em `plan/diagramas-cifra` (`a47aa02`). Verifiers pós-merge T-001 e T-002 exit 0 na árvore mesclada. T-002 é complex (weight 3). Review both-claude: 0 blocker/critical, majors abertos. `assert --gate done` blocked até disposition. Lease limpo (`missing`). Cursor E. T-001/T-002 ainda pending no YAML.
+- **Decision log:** Merge `impl/diagramas-cifra-F0-writer`. Codex pass-1 falhou (usage limit). Claude 2.1.263 pass-1 `needs_changes`. Local grok: 1 major (QUALITY prototype). Majors não auto-fechados.
+- **Single nextAction:** operator disposition T-002 majors (accept|defer|fix) then assert done
+- **Verbatim state:** `pnpm exec vitest run tests/core/chord-oracle.test.ts` → 3 passed, exit 0. `pnpm exec vitest run tests/core/parse-chord-token.test.ts` → 9 passed, exit 0. HEAD `a47aa0222692179a81278cb5ec912d8a56ce19fe`. `assert-automate-gate --gate done` → `blocked: complex task requires durable review receipt mode both (or operator disposition skip) before done`. Reviews: `.atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-T-002-both.md`. Cursor `step: E`.
+- **Uncommitted changes:** reviews T-002 + decisions + este handoff (checkpoint imediato).
