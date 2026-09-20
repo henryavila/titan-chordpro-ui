@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: present phase-start package for F0 validate-only
+nextAction: spawn fresh writer after ratify
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -134,8 +134,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Implement automate (pure maestro) entrou no worktree `plan/diagramas-cifra`. Resume gate limpo; lease `missing`; ground-truth e flow `--strict` exit 0. Cursor do maestro em B (pacote de início da F0). T-001 e T-002 pending; nenhum phase writer spawned.
-- **Decision log:** `executionMode: automate` já carimbado. Flow ratificado `ratifiedBy: operator`, `ratifiedAt: 2026-09-19T22:24:20.169Z`, `ratifiedGraphSha: 0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8`. F0 materializada com spine `businessIntent` completo. Host-thin: esta sessão não edita fonte de produto.
-- **Single nextAction:** present phase-start package for F0 validate-only
-- **Verbatim state:** `find-plans-missing-ground-truth.js` → `find-plans-missing-ground-truth: every plan carries a ground-truth review receipt ✓`. `find-missing-flow.js --strict` → `find-missing-flow: 1 plan(s) OK`. Cursor `.atomic-skills/status/automate/diagramas-cifra.json` `step: B` `phaseId: F0`. `git symbolic-ref --short HEAD` → `plan/diagramas-cifra`. HEAD `e062173`. main à frente: `e76d5b2` `aa99a8c` `63101bd` `37f8f7d` (áudio de referência; fora do escopo F0).
-- **Uncommitted changes:** `?? .atomic-skills/status/automate/` + este handoff (checkpoint imediato).
+- **Narrative:** Pacote de início da F0 ratificado pelo operador (AskUserQuestion: Ratificar pacote). F0 já materializada; sem rewrite de BI. Cursor avança para C; próximo passo é `assert-automate-gate --gate spawn` e `automate-phase-run prepare`, depois um phase writer code-only. T-001 e T-002 pending.
+- **Decision log:** Ratify `0b905ce6-0ee8-4c14-8bb5-764ed279946d` em `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` (`category: ratify`, `at: 2026-09-20T11:10:17.845Z`). `executionMode: automate`. Flow `ratifiedGraphSha: 0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8`.
+- **Single nextAction:** spawn fresh writer after ratify
+- **Verbatim state:** Cursor `.atomic-skills/status/automate/diagramas-cifra.json` `step: C` `phaseId: F0` (após advance). `assert-automate-gate --plan diagramas-cifra --gate spawn` ainda não rodou neste checkpoint. HEAD pré-advance `58773ab`.
+- **Uncommitted changes:** `M .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` + este handoff + cursor C (checkpoint imediato).
