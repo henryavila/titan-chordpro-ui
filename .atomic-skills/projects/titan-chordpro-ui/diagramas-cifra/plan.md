@@ -5,7 +5,7 @@ title: Diagramas de cifra — `titan-chordpro-ui`
 version: "1.0"
 status: active
 started: 2026-09-19T08:49:13.733Z
-lastUpdated: 2026-09-20T16:36:00.000Z
+lastUpdated: 2026-09-20T20:56:39.000Z
 branch: plan/diagramas-cifra
 executionMode: automate
 currentPhase: F2
@@ -248,7 +248,7 @@ phases:
       guitar entry unless it is on the known-miss list.
     dependsOn:
       - F1
-    subPhaseCount: 0
+    subPhaseCount: 3
     exitGate:
       summary: 1 criterion to meet
       criteria:
@@ -264,7 +264,13 @@ phases:
             command: pnpm exec vitest run tests/core/layout-capo.test.ts
               tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts
             expectExitCode: 0
-    status: pending
+    status: active
+    businessIntent:
+      value: O musico precisa ver a forma da mao sob o capo no violao e no ukulele, e as teclas de concert no piano. Buscar a voicing de concert no capo 2 enquanto a cifra diz Bm mente no ensaio.
+      workflow: Layout expoe concert, shapeName e capoFret mesmo em edit ou Nashville; resolveDiagram prefere o {define} do arquivo ao dicionario do pacote; guitarra usa shapeName, piano usa concert; o core devolve o modelo de desenho (pontos, mute, barre, barra de capo, rotulo Capo n, teclas). Modal Vue e validacao visual ficam na F3.
+      rules: capo 2 dual em Bm gera concert Bm, shapeName Am e capoFret 2; capo-solo ainda tem capoFret 2; C7M acerta voicing maj7; C7+ e miss; uma voicing por nome (open mais grave); QUALITY com Object.hasOwn (L-002); zero import Vue no core; nao pausar Rolar nem metronomo nesta fase.
+      outOfScope: Modal Vue DiagramModal, prefs diagramInstrument, editor D4, pausa de Rolar e metronomo, baritono, swipe e zen, validacao grafica do look no telefone (isso e F3).
+      doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha voicing de concert; piano ignora capoFret.
   - id: F3
     slug: diagramas-cifra-f3-d3-modal-view-instrument-prefs
     title: D3 Modal view + instrument prefs
@@ -355,15 +361,15 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 
 **Status:** complete
 **Codebase class:** populated
-**Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,overlay,transpose}.ts` (25 core `.ts`); `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog,edit/ScoreEditor,sheets/BatidaSheet,sheets/ToneSheet,chrome/CpvMoreSheet}.vue`; `src/vue/use/{useMetronome,useSongSwipe,useOverlay}.ts`; `tests/core/{layout-capo,no-vue-in-core}.test.ts`; `fixtures/sda` (148 `.cho`) + `013-ele-vive-em-mim.cho`; glob absent (F0/F1/F3 create): `src/core/parse-chord.ts`, `src/vue/overlay/DiagramModal.vue`, `tests/core/{chord-oracle,parse-chord-token,define-directive,export-cho}.test.ts` → ~40 product files read + 148 fixtures counted.
-**Commit:** 0221767
-**At:** 2026-09-20T13:56:00Z
+**Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,overlay,transpose,parse-chord,define}.ts`; `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog}.vue`; `tests/core/{layout-capo,no-vue-in-core,define-directive,export-cho,chord-oracle,parse-chord-token}.test.ts`; `fixtures/sda` (148 `.cho`) + `fixtures/define-roundtrip.cho`; glob absent (F2/F3 create): `src/core/chord-dict.ts`, `src/core/diagram-draw.ts`, `src/vue/overlay/DiagramModal.vue`.
+**Commit:** 9b8033a
+**At:** 2026-09-20T17:05:00Z
 
 ### A — Plan premises vs code
 
 | # | Premise | Result | Evidence |
 |---|---------|--------|----------|
-| 1 | `src/core/parse.ts` DIR drops hyphenated `{define-guitar:}` | ok | parse.ts:28 `DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/` |
+| 1 | Hyphenated `{define-guitar:}` is a full DIR key after F1 | ok | define.ts:8 `DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/` |
 | 2 | `layout.ts` `display()` capo-solo returns shape as `name`; `shapeCapo` is 0 | ok | layout.ts:475 `if (!read.dual) return { name: shape, shape: '' }`; layout.ts:489 `shapeCapo = read.dual ? read.fret : 0` |
 | 3 | `capoReadOf` returns fret 0 while editing or Nashville (`display()`/`shapeCapo` stay as today; F2 adds `capoFret`) | ok | layout.ts:457–458 `if (editing \|\| nash) return { fret: 0, dual: false }` |
 | 4 | `META_KEYS` / `writeMeta` do not model `define` | ok | import-chordpro.ts:344–357 no `define`; writeMeta:425–437 filters only META_KEYS/`t`/`st` |
@@ -373,13 +379,13 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 | 8 | `fixtures/sda` has 148 `.cho`, `013-ele-vive-em-mim.cho` exists, unique chord names for the oracle, zero `{define}` | ok | `ls fixtures/sda/*.cho` → 148; file present; grep `{define` → 0; research-digest 257; T-001 table is SoT (balanced `[…]` 255; naive nested regex 258 includes malformed ` Je[A` in `h441-vencendo-vem-jesus.cho:14`) |
 | 9 | `tests/core/layout-capo.test.ts` and `tests/core/no-vue-in-core.test.ts` exist | ok | layout-capo.test.ts:1; no-vue-in-core.test.ts:19 `A14 no Vue in core` |
 | 10 | `src/core/index.ts` exports `parse` and F0 `parseChordToken` | ok | index.ts:36 parse; index.ts:37 `export { parseChordToken } from './parse-chord'` |
-| 11 | `parse()` exists; `ChordProView` has no `defines` | ok | parse.ts:300; types.ts:1–20 (meta/source/sections/eocOf only) |
-| 12 | `exportCho` exists in core; `tests/core/export-cho.test.ts` is F1 create (not present) | ok | export-cho.ts:3; glob test file absent |
+| 11 | `parse()` exposes `defines` on ChordProView (F1 delivered) | ok | types.ts:23 `defines: ChordDefine[]` |
+| 12 | `exportCho` + `tests/core/export-cho.test.ts` exist (F1 delivered) | ok | export-cho.ts:3; export-cho.test.ts present |
 | 13 | `onSurfaceTap` and `useSongSwipe` already skip `[role='button']` | ok | ChordproViewer.vue:1622; useSongSwipe.ts:81–86 |
 | 14 | `ViewerCapabilities` exists (no `diagrams` field yet) | ok | public.ts:56–68 `sourcePane` / `batidaPresets` / `debugSwipe` |
 | 15 | `transposeToken` transposes the root only; suffix is opaque | ok | transpose.ts:32–42 `^([A-G](?:#\|b)?)(.*)$` |
 | 16 | SoT `projects/titan-chordpro-ui/diagramas-cifra/design.md` exists | ok | file present |
-| 17 | `parse-chord.ts` exists (F0 T-002); `DiagramModal.vue` still F3 create | ok / n/a | parse-chord.ts:55 `export function parseChordToken`; DiagramModal.vue glob absent |
+| 17 | `parse-chord.ts` exists (F0); `chord-dict.ts` / `diagram-draw.ts` still F2 create; `DiagramModal.vue` still F3 create | ok / n/a | parse-chord.ts present; glob chord-dict.ts/diagram-draw.ts/DiagramModal.vue absent |
 
 ### B — Code present, plan silent (impact candidates)
 
@@ -399,5 +405,5 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=8649291bc0bd | premises=17 | impacts=8 @ d78c227 (2026-09-20T15:12:00Z)
+- ground-truth: complete | mode=ground-truth | fp=c11e55060e85 | premises=17 | impacts=8 @ uncommitted (2026-09-20T17:05:00Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md
