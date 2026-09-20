@@ -6,6 +6,16 @@ test('reference player is a music transport, not Rolar', async ({ page }) => {
   const player = page.locator('[data-audio-ref]')
   await player.waitFor()
   await expect(player.locator('[data-audio-open]')).toBeVisible()
+  const chip = await player.boundingBox()
+  expect(chip, 'chip missing box').toBeTruthy()
+  const chipMid = (chip?.x ?? 0) + (chip?.width ?? 0) / 2
+  expect(Math.abs(chipMid - 195), 'closed chip not centered on phone').toBeLessThan(12)
+  await player.locator('[data-audio-open]').click()
+  const card = await player.boundingBox()
+  const cardMid = (card?.x ?? 0) + (card?.width ?? 0) / 2
+  expect(Math.abs(cardMid - 195), 'open card not centered on phone').toBeLessThan(12)
+  await player.locator('[data-audio-close]').click()
+  await expect(player.locator('[data-audio-open]')).toBeVisible()
   await expect(player.locator('[data-audio-title]')).toHaveCount(0)
   await player.locator('[data-audio-open]').click()
   await expect(player.locator('[data-audio-title]')).not.toHaveText('')
