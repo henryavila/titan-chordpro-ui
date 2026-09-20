@@ -559,67 +559,48 @@
   }
 }
 .cpv-note {
-  margin: 0 0 30px;
-  padding: 15px 18px 16px;
-  border-radius: 15px;
-  background: var(--veil);
-  border: 1px solid var(--line-soft);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* Same paper as a rehearsal comment: bold gray, no card. Chorus/tab keep theirs. */
+  margin: 0 16px 14px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 4px;
 }
 .cpv-note-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.cpv-note-rule {
-  width: 14px;
-  height: 1.5px;
-  background: var(--chord);
-  opacity: 0.8;
-}
-.cpv-note-label {
-  font-size: 9.5px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--muted);
+  display: none;
 }
 .cpv-note-item {
   font-family: inherit;
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
-  line-height: 1.4;
-  color: var(--text);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--muted);
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 .cpv-comment {
-  /* In flow: autoscroll measures this height into the next musical block.
-     No card — the chorus already owns the rounded green wash. */
+  /* In flow: autoscroll measures this height into the next musical block. */
   display: flex;
   align-items: flex-start;
-  gap: 8px;
   margin: 0 16px 12px;
   padding: 0;
   max-width: calc(100% - 32px);
+  background: none;
+  border: 0;
 }
 .cpv-comment-dot {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  margin-top: 0.48em;
-  border-radius: 50%;
-  background: var(--capo);
+  display: none;
 }
 .cpv-comment-text {
   flex: 1 1 auto;
   min-width: 0;
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--lyric);
+  color: var(--muted);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -707,8 +688,8 @@
   padding: 4px 8px 6px;
 }
 .cpv-root[data-cpv-lens='letra'] .cpv-note {
-  margin: 0 0 12px;
-  padding: 10px 12px 11px;
+  margin: 0 16px 8px;
+  padding: 0;
 }
 .cpv-root[data-cpv-lens='letra'] .cpv-comment {
   margin: 0 16px 8px;
