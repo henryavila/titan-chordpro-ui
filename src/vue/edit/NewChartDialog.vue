@@ -212,7 +212,7 @@ async function runUrl() {
     const r = convert(text)
     if (!r.source.trim()) throw new Error('vazio')
     const guess = titleFromUrl(u)
-    let m: ChartMeta = { ...readMeta(r.source), x_origem: u }
+    let m: ChartMeta = { ...readMeta(r.source), x_source: u }
     if (!m.title) m.title = guess.title
     if (!m.subtitle) m.subtitle = guess.subtitle
     m = await fillDurationFromYoutube(m)
@@ -347,7 +347,7 @@ function acceptKeyRewrite() {
     tempo: user.tempo,
     time: user.time,
     duration: user.duration,
-    x_origem: user.x_origem,
+    x_source: user.x_source,
   }
   keyRewrite.value = null
 }
@@ -622,7 +622,7 @@ onMounted(() => {
 
         <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
-          <input :value="meta.x_origem ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_origem', ($event.target as HTMLInputElement).value)" />
+          <input :value="meta.x_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_source', ($event.target as HTMLInputElement).value)" />
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">

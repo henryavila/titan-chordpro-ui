@@ -55,6 +55,7 @@ const emit = defineEmits<{
     :class="{ 'is-hidden': hidden }"
     style="position:absolute;bottom:0;left:0;right:0;z-index:13;padding:0 10px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:stretch;gap:8px;"
   >
+    <slot />
     <div v-if="hintFit" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:cpv-rise .25s ease-out;">
       <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
       <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);" @click="emit('dismissHint')"><CpvIcon name="x" :size="14" /></button>

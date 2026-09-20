@@ -2,9 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   readMeta,
+  setRehearsalAudio,
+  writeMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
 } from '@henryavila/titan-chordpro-ui'
+import refAudioUrl from './ref-nasce-cantado.m4a?url'
+import refPlaybackUrl from './ref-nasce-playback.m4a?url'
+import refArtUrl from './ref-audio-art.jpg?url'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
@@ -52,11 +57,29 @@ const id = ref(
       ? lab.song
       : defaultSongId(fixtures.value),
 )
-const source = ref(lab.criar ? '' : (fixtures.value[id.value] ?? ''))
+function withAudio(cho: string) {
+  if (!lab.audio || !cho.trim()) return cho
+  let next = setRehearsalAudio(cho, {
+    ...(lab.audio === 'cantado' || lab.audio === 'ambos'
+      ? { sung: refAudioUrl }
+      : {}),
+    ...(lab.audio === 'playback' || lab.audio === 'ambos'
+      ? { playback: refPlaybackUrl }
+      : {}),
+    ...(lab.capa ? { art: { url: refArtUrl, width: 512, height: 512 } } : {}),
+  })
+  const m = readMeta(next)
+  if (!m.artist && !m.subtitle) {
+    next = writeMeta(next, { ...m, artist: 'Hinário Adventista' })
+  }
+  return next
+}
+
+const source = ref(lab.criar ? '' : withAudio(fixtures.value[id.value] ?? ''))
 
 function pick(next: string) {
   id.value = next
-  source.value = fixtures.value[next] ?? ''
+  source.value = withAudio(fixtures.value[next] ?? '')
 }
 
 const listaMode = computed(() => {
@@ -68,7 +91,14 @@ const editMode = writeEditMode(lab)
 const actorKey = editMode === 'local' ? 'demo-musico' : undefined
 /** Only the lab `?ensaio=demanda` path asks for charts after open. */
 const lazyLista = computed(() => listaMode.value === 'demanda')
-const songs = computed(() => songsFor(fixtures.value, listaMode.value))
+const songs = computed(() => {
+  const list = songsFor(fixtures.value, listaMode.value)
+  if (!list || !lab.audio) return list
+  return list.map((s) => ({
+    ...s,
+    source: s.source ? withAudio(s.source) : s.source,
+  }))
+})
 const theme = computed(() => hostTheme(props.surface, lab.tema))
 const liveHref = computed(() =>
   palcoHref(props.lista, typeof location === 'undefined' ? '' : location.search),
@@ -87,7 +117,7 @@ const loadSong = (songId: string) =>
     const ms = 2200 + Math.floor(Math.random() * 1400)
     setTimeout(() => {
       if (songId === FAIL_ID) reject(new Error('rede'))
-      else resolve(fixtures.value[songId] ?? '')
+      else resolve(withAudio(fixtures.value[songId] ?? ''))
     }, ms)
   })
 

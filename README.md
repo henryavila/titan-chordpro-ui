@@ -30,6 +30,11 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 **Ensaio**
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
+- **Áudio de referência** — não sincroniza com a letra nem `{duration:}`:
+  - Chip flutuante no dock; toque abre o card (capa, título, artista, play, seek, ±10 s)
+  - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
+  - Capa do host com `{ url, width, height }` (quadrado 256–512 px); sem capa, arte genérica
+  - API: `setRehearsalAudio` — [`docs/CONSUMER.md`](docs/CONSUMER.md)
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
@@ -47,7 +52,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
-Fora: login, multicifra do site, player de áudio, diagramas de braço, collab em tempo real.
+Fora: login, multicifra do site, player de áudio **sincronizado**, collab em tempo real.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
@@ -58,7 +63,7 @@ Fora: login, multicifra do site, player de áudio, diagramas de braço, collab e
 
 ## Status
 
-`0.6.0` — leitura, ensaio (lista, swipe nas bordas, tela ligada), overlay, `persistSuggestion`, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
+`0.6.0` — leitura, ensaio (lista, swipe nas bordas, tela ligada, áudio de referência), overlay, `persistSuggestion`, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
 
 ```bash
 pnpm install
@@ -75,7 +80,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -183,7 +188,7 @@ e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.
 
 Os conversores são públicos no core, se o host quiser usá-los direto:
 `detect`, `convert`, `fromPlain`, `fromOnSong`, `readMeta`, `writeMeta`,
-`missingOf`, `toPlain`.
+`setAudioUrl`, `audioUrlOf`, `setRehearsalAudio`, `setAudioArt`, `audioArtOf`, `missingOf`, `toPlain`.
 
 ### Modo ensaio: uma lista, não uma cifra por vez
 
