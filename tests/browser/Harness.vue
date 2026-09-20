@@ -5,6 +5,7 @@ import type { Lens } from '../../src/vue'
 import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
 import refAudio from '../../demo/ref-audio.wav?url'
+import refPlayback from '../../demo/ref-audio-playback.wav?url'
 import refArt from '../../demo/ref-audio-art.jpg?url'
 import oRei from '../../fixtures/sda/082-o-rei-vem-vindo.cho?raw'
 import jesus from '../../fixtures/sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho?raw'
@@ -43,7 +44,7 @@ const source = (() => {
     next = setAudioUrl(next, refAudio, 'sung')
   }
   if (mode === '1' || mode === 'ambos' || mode === 'playback') {
-    next = setAudioUrl(next, refAudio, 'playback')
+    next = setAudioUrl(next, refPlayback, 'playback')
   }
   return setAudioArt(next, refArt)
 })()

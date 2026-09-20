@@ -91,7 +91,7 @@ export const DEMOS: readonly DemoEntry[] = [
 />`,
     extra: [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
-      { href: '/standalone.html?audio=1', label: 'Áudio de referência' },
+      { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
     ],
   },
   {

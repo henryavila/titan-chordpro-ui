@@ -9,6 +9,7 @@ import {
   type StrumPreset,
 } from '@henryavila/titan-chordpro-ui'
 import refAudioUrl from './ref-audio.wav?url'
+import refPlaybackUrl from './ref-audio-playback.wav?url'
 import refArtUrl from './ref-audio-art.jpg?url'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
@@ -64,7 +65,7 @@ function withAudio(cho: string) {
     next = setAudioUrl(next, refAudioUrl, 'sung')
   }
   if (lab.audio === 'playback' || lab.audio === 'ambos') {
-    next = setAudioUrl(next, refAudioUrl, 'playback')
+    next = setAudioUrl(next, refPlaybackUrl, 'playback')
   }
   next = setAudioArt(next, refArtUrl)
   const m = readMeta(next)
