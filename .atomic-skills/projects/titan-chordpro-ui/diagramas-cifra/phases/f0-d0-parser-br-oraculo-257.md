@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: Run `/atomic-skills:implement` (flow ratified).
+nextAction: present phase-start package for F0 validate-only
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -134,8 +134,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Flow de `diagramas-cifra` foi gerado, mostrado em `http://127.0.0.1:53714/flow.html` e travado pelo operador (Sim, é isso). `find-missing-flow.js --strict` exit 0. F0 continua materializada (T-001, T-002 pending); nenhum phase writer foi spawned. Automate continua carimbado.
-- **Decision log:** Flow ratificado via `buildFlowRatification` (`ratifiedBy: operator`, `ratifiedAt: 2026-09-19T22:24:20.169Z`, `ratifiedGraphSha: 0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8`). Stamp automate anterior permanece.
-- **Single nextAction:** Run `/atomic-skills:implement`.
-- **Verbatim state:** `node "$(cat "$HOME/.atomic-skills/package-root" 2>/dev/null || echo .)/scripts/find-missing-flow.js" .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/plan.md --strict` → `find-missing-flow: 1 plan(s) OK`. L1 `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/flow/flow.json`. L2 `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/flow/flow.html`. `FLOW_URL=http://127.0.0.1:53714/flow.html`.
-- **Uncommitted changes:** flow L1/L2/brief + este handoff (próximo checkpoint).
+- **Narrative:** Implement automate (pure maestro) entrou no worktree `plan/diagramas-cifra`. Resume gate limpo; lease `missing`; ground-truth e flow `--strict` exit 0. Cursor do maestro em B (pacote de início da F0). T-001 e T-002 pending; nenhum phase writer spawned.
+- **Decision log:** `executionMode: automate` já carimbado. Flow ratificado `ratifiedBy: operator`, `ratifiedAt: 2026-09-19T22:24:20.169Z`, `ratifiedGraphSha: 0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8`. F0 materializada com spine `businessIntent` completo. Host-thin: esta sessão não edita fonte de produto.
+- **Single nextAction:** present phase-start package for F0 validate-only
+- **Verbatim state:** `find-plans-missing-ground-truth.js` → `find-plans-missing-ground-truth: every plan carries a ground-truth review receipt ✓`. `find-missing-flow.js --strict` → `find-missing-flow: 1 plan(s) OK`. Cursor `.atomic-skills/status/automate/diagramas-cifra.json` `step: B` `phaseId: F0`. `git symbolic-ref --short HEAD` → `plan/diagramas-cifra`. HEAD `e062173`. main à frente: `e76d5b2` `aa99a8c` `63101bd` `37f8f7d` (áudio de referência; fora do escopo F0).
+- **Uncommitted changes:** `?? .atomic-skills/status/automate/` + este handoff (checkpoint imediato).
