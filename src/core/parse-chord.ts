@@ -62,15 +62,17 @@ export function parseChordToken(raw: string): ChordTokenResult {
   if (slash >= 0) {
     chord = token.slice(0, slash)
     bass = token.slice(slash + 1)
-    if (!BASS.test(bass)) return { class: 'AMBIGUOUS' }
   }
 
   const m = chord.match(ROOT)
   if (!m || m[1] === undefined || m[2] === undefined) return { class: 'UNPARSED' }
   const suffix = m[2]
   if (AMBIGUOUS_SUFFIX.has(suffix) || suffix.includes('+')) return { class: 'AMBIGUOUS' }
+  if (!Object.hasOwn(QUALITY, suffix)) return { class: 'UNPARSED' }
   const quality = QUALITY[suffix]
   if (quality === undefined) return { class: 'UNPARSED' }
+
+  if (slash >= 0 && !BASS.test(bass ?? '')) return { class: 'AMBIGUOUS' }
 
   const parsed: ChordTokenParse = { class: 'parse', root: m[1], quality }
   if (bass) parsed.bass = bass

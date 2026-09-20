@@ -9,6 +9,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 type OracleRow = {
   name: string
   class: 'parse' | 'UNPARSED' | 'AMBIGUOUS'
+  quality?: string
+  root?: string
+  bass?: string
+}
+
+function expectedRoot(name: string): string | undefined {
+  const body = name.split('/')[0] ?? ''
+  return body.match(/^([A-G](?:#|b)?)/)?.[1]
 }
 
 function qualityOf(token: string): string | undefined {
@@ -60,15 +68,68 @@ describe('parseChordToken BR aliases', () => {
   })
 })
 
+describe('parseChordToken miss honesty', () => {
+  it('does not inherit Object.prototype as quality', () => {
+    for (const token of ['CtoString', 'Cconstructor']) {
+      const r = parseChordToken(token)
+      expect(r.class, token).toBe('UNPARSED')
+      expect(r, token).not.toHaveProperty('quality')
+    }
+  })
+
+  it('treats slash with a non-chord body as UNPARSED', () => {
+    for (const token of ['vocal/violão', 'foo/bar']) {
+      const r = parseChordToken(token)
+      expect(r.class, token).toBe('UNPARSED')
+      expect(r, token).not.toHaveProperty('quality')
+    }
+  })
+
+  it('keeps valid body and invalid bass as AMBIGUOUS', () => {
+    const r = parseChordToken('C7/xyz')
+    expect(r.class).toBe('AMBIGUOUS')
+    expect(r).not.toHaveProperty('quality')
+  })
+
+  it('treats empty bass as AMBIGUOUS', () => {
+    const r = parseChordToken('C/')
+    expect(r.class).toBe('AMBIGUOUS')
+    expect(r).not.toHaveProperty('quality')
+  })
+})
+
 describe('parseChordToken vs SDA oracle', () => {
-  it('matches the oracle class for every fixtures/sda name', () => {
+  it('matches the oracle class, quality, root, and bass for every fixtures/sda name', () => {
     const table = JSON.parse(
       readFileSync(join(root, 'tests/core/chord-oracle.table.json'), 'utf8'),
     ) as OracleRow[]
     const mismatches: string[] = []
     for (const row of table) {
-      const got = parseChordToken(row.name).class
-      if (got !== row.class) mismatches.push(`${row.name}: oracle ${row.class} parser ${got}`)
+      const got = parseChordToken(row.name)
+      if (got.class !== row.class) {
+        mismatches.push(`${row.name}: oracle ${row.class} parser ${got.class}`)
+      }
+      if (row.class === 'parse') {
+        if (got.class === 'parse') {
+          if (got.quality !== row.quality) {
+            mismatches.push(`${row.name}: quality oracle ${row.quality} parser ${got.quality}`)
+          }
+          const wantRoot = row.root ?? expectedRoot(row.name)
+          if (got.root !== wantRoot) {
+            mismatches.push(`${row.name}: root oracle ${wantRoot} parser ${got.root}`)
+          }
+          if (got.bass !== row.bass) {
+            mismatches.push(`${row.name}: bass oracle ${row.bass} parser ${got.bass}`)
+          }
+        }
+      } else {
+        if (row.quality !== undefined) {
+          mismatches.push(`${row.name}: miss row must not have quality`)
+        }
+        if ('quality' in got) {
+          mismatches.push(`${row.name}: miss parser result has quality`)
+        }
+      }
     }
     expect(mismatches).toEqual([])
   })
