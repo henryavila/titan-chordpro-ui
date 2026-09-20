@@ -330,7 +330,7 @@ export type LabQuery = {
   /** Paint swipe rails in the rehearsal chart. */
   zonas: boolean
   /** Stamp rehearsal audio on the demo chart: one track, both, or none. */
-  audio: false | 'cantado' | 'playback' | 'ambos'
+  audio: false | 'sung' | 'playback' | 'ambos'
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -373,7 +373,8 @@ export function labQuery(search: string): LabQuery {
 
 function parseDemoAudio(raw: string | null): LabQuery['audio'] {
   if (raw === '1' || raw === 'ambos') return 'ambos'
-  if (raw === 'cantado' || raw === 'playback') return raw
+  if (raw === 'sung' || raw === 'cantado') return 'sung'
+  if (raw === 'playback') return 'playback'
   return false
 }
 

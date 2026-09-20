@@ -60,8 +60,8 @@ const id = ref(
 function withAudio(cho: string) {
   if (!lab.audio || !cho.trim()) return cho
   let next = cho
-  if (lab.audio === 'cantado' || lab.audio === 'ambos') {
-    next = setAudioUrl(next, refAudioUrl, 'cantado')
+  if (lab.audio === 'sung' || lab.audio === 'ambos') {
+    next = setAudioUrl(next, refAudioUrl, 'sung')
   }
   if (lab.audio === 'playback' || lab.audio === 'ambos') {
     next = setAudioUrl(next, refAudioUrl, 'playback')

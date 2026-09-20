@@ -39,8 +39,8 @@ const source = (() => {
   const mode = q.get('audio')
   if (!mode) return rawCho
   let next = rawCho
-  if (mode === '1' || mode === 'ambos' || mode === 'cantado') {
-    next = setAudioUrl(next, refAudio, 'cantado')
+  if (mode === '1' || mode === 'ambos' || mode === 'sung' || mode === 'cantado') {
+    next = setAudioUrl(next, refAudio, 'sung')
   }
   if (mode === '1' || mode === 'ambos' || mode === 'playback') {
     next = setAudioUrl(next, refAudio, 'playback')

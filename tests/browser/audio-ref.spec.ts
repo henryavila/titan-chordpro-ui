@@ -18,7 +18,7 @@ test('reference player is a music transport, not Rolar', async ({ page }) => {
   await expect(player.locator('[data-audio-open]')).toBeVisible()
   await expect(player.locator('[data-audio-title]')).toHaveCount(0)
   await player.locator('[data-audio-open]').click()
-  await expect(player.locator('[data-audio-kind=cantado]')).toBeVisible()
+  await expect(player.locator('[data-audio-kind=sung]')).toBeVisible()
   await expect(player.locator('[data-audio-kind=playback]')).toBeVisible()
   await player.locator('[data-audio-kind=playback]').click()
   await expect(player.locator('[data-audio-kind=playback]')).toHaveAttribute('aria-pressed', 'true')
