@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: spawn fresh writer after ratify
+nextAction: sync-wait F0 phase writer then validate claims
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -134,8 +134,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Pacote de início da F0 ratificado pelo operador (AskUserQuestion: Ratificar pacote). F0 já materializada; sem rewrite de BI. Cursor avança para C; próximo passo é `assert-automate-gate --gate spawn` e `automate-phase-run prepare`, depois um phase writer code-only. T-001 e T-002 pending.
-- **Decision log:** Ratify `0b905ce6-0ee8-4c14-8bb5-764ed279946d` em `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` (`category: ratify`, `at: 2026-09-20T11:10:17.845Z`). `executionMode: automate`. Flow `ratifiedGraphSha: 0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8`.
-- **Single nextAction:** spawn fresh writer after ratify
-- **Verbatim state:** Cursor `.atomic-skills/status/automate/diagramas-cifra.json` `step: C` `phaseId: F0` (após advance). `assert-automate-gate --plan diagramas-cifra --gate spawn` ainda não rodou neste checkpoint. HEAD pré-advance `58773ab`.
-- **Uncommitted changes:** `M .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl` + este handoff + cursor C (checkpoint imediato).
+- **Narrative:** F0 phase writer code-only está em voo no worktree irmão. `assert-automate-gate --gate spawn` exit 0. `automate-phase-run prepare` ok. T-001 e T-002 ainda pending no plano; o writer não fecha estado. Host-thin: sem editar fonte de produto.
+- **Decision log:** Ratify `0b905ce6-0ee8-4c14-8bb5-764ed279946d`. Ground-truth restamp `fp=4470a34a21d8` @ 4b479b8 (commit recibo `649f829`). Writer branch `impl/diagramas-cifra-F0-writer` baseRef `649f82957a90287f505a51a60e9c184bc9d844b2`.
+- **Single nextAction:** sync-wait F0 phase writer then validate claims
+- **Verbatim state:** `assert-automate-gate --plan diagramas-cifra --project titan-chordpro-ui --gate spawn` → `ok`. Writer cwd `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-writer`. Sealed brief `.atomic-skills/status/automate/diagramas-cifra-F0-sealed-brief.md`. Claim report esperado `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`. Cursor `step: C` `phaseId: F0`. subagent_id `01a0be88-d486-76d0-a1c9-2d5a50d7fe52`.
+- **Uncommitted changes:** prepare artifacts + este handoff (checkpoint imediato).

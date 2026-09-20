@@ -1,0 +1,10 @@
+{
+  "planSlug": "diagramas-cifra",
+  "phaseId": "F0",
+  "startedAt": "2026-09-20T11:13:48.419Z",
+  "hostId": "host-local",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-writer",
+  "status": "active",
+  "writerBranch": "impl/diagramas-cifra-F0-writer",
+  "tokenHash": "14a04792d673410b8d1f4ea38321d5aa3357f1a205642f725053fe1380d3ecbb"
+}
