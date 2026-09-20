@@ -250,40 +250,55 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 - **G2 soft-language**: 0 hedges (should/probably/maybe) in Decisions of the source plan; principles and gates use imperative FAIL-when wording.
 - **G6 reference-or-strike**: principles carry verified_by; F0 businessIntent doneWhen names test files.
 - **G10 gate-must-be-able-to-fail**: each exit criterion states FAILS when … or a concrete command that can exit non-zero. Criteria without a stateable failure: none.
+- Ground-truth (Flow E 2026-09-20): Status=complete; mode=ground-truth in Reviews line; detector exit 0. G1: every A row cites file:line. Initiative-depth 14–20 N/A in this mode (discovery 1/5: F0 only).
 
 ## Ground-truth review
 
-Status: complete
-
-**Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,scroll}.ts`, `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog}.vue`, `src/vue/use/useMetronome.ts`, `tests/core/{layout-capo,export-cho,no-vue-in-core}.test.ts`, `fixtures/sda/013-ele-vive-em-mim.cho`, glob `src/core/parse-chord.ts` / `src/vue/overlay/DiagramModal.vue` (absent — F0/F3 create them).
+**Status:** complete
+**Codebase class:** populated
+**Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,overlay,transpose}.ts` (25 core `.ts`); `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog,edit/ScoreEditor,sheets/BatidaSheet,sheets/ToneSheet,chrome/CpvMoreSheet}.vue`; `src/vue/use/{useMetronome,useSongSwipe,useOverlay}.ts`; `tests/core/{layout-capo,no-vue-in-core}.test.ts`; `fixtures/sda` (148 `.cho`) + `013-ele-vive-em-mim.cho`; glob absent (F0/F1/F3 create): `src/core/parse-chord.ts`, `src/vue/overlay/DiagramModal.vue`, `tests/core/{chord-oracle,parse-chord-token,define-directive,export-cho}.test.ts` → ~40 product files read + 148 fixtures counted.
+**Commit:** 55e551d
+**At:** 2026-09-20T08:51:06Z
 
 ### A — Plan premises vs code
 
-| Premise | Result | Evidence |
-|---|---|---|
-| `src/core/parse.ts` DIR drops hyphenated `{define-guitar:}` | ok | parse.ts:28 `DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/` |
-| `layout.ts` `display()` capo-solo returns shape as `name` and `shapeCapo` 0 | ok | layout.ts:467–476, 489 |
-| `META_KEYS` / `writeMeta` do not model `define` | ok | import-chordpro.ts:344–357, 425–437 |
-| `STORE_KEYS.prefs` + ChartStore exist | ok | storage.ts:24–51 |
-| `ChartBody.vue` chords are spans; `ChordDialog.vue` edits name | ok | ChartBody.vue chord span; ChordDialog.vue |
-| `fixtures/sda` and `013-ele-vive-em-mim.cho` exist | ok | fixtures/sda/013-ele-vive-em-mim.cho |
-| `tests/core/layout-capo.test.ts`, `export-cho.test.ts`, `no-vue-in-core.test.ts` exist | ok | files present |
-| `parse-chord.ts` / `DiagramModal.vue` exist | n/a (create) | glob absent; F0 T-002 / F3 T-002 create them |
+| # | Premise | Result | Evidence |
+|---|---------|--------|----------|
+| 1 | `src/core/parse.ts` DIR drops hyphenated `{define-guitar:}` | ok | parse.ts:28 `DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/` |
+| 2 | `layout.ts` `display()` capo-solo returns shape as `name`; `shapeCapo` is 0 | ok | layout.ts:475 `if (!read.dual) return { name: shape, shape: '' }`; layout.ts:489 `shapeCapo = read.dual ? read.fret : 0` |
+| 3 | `capoReadOf` returns fret 0 while editing or Nashville (`display()`/`shapeCapo` stay as today; F2 adds `capoFret`) | ok | layout.ts:457–458 `if (editing \|\| nash) return { fret: 0, dual: false }` |
+| 4 | `META_KEYS` / `writeMeta` do not model `define` | ok | import-chordpro.ts:344–357 no `define`; writeMeta:425–437 filters only META_KEYS/`t`/`st` |
+| 5 | `STORE_KEYS.prefs` + ChartStore exist | ok | storage.ts:24–26 `prefs: 'cpv:prefs'` |
+| 6 | `ChartBody.vue` chords are spans (not `role=button`) | ok | ChartBody.vue:440–444 `<span class="cpv-chord">` |
+| 7 | `ChordDialog.vue` edits the chord name only (no Forma) | ok | ChordDialog.vue:59–82 input `Nome do acorde`; no Forma control |
+| 8 | `fixtures/sda` has 148 `.cho`, `013-ele-vive-em-mim.cho` exists, 257 unique `[…]` tokens, zero `{define}` | ok | `ls fixtures/sda/*.cho` → 148; file present; node extract 257 unique; grep `{define` → 0 |
+| 9 | `tests/core/layout-capo.test.ts` and `tests/core/no-vue-in-core.test.ts` exist | ok | layout-capo.test.ts:1; no-vue-in-core.test.ts:19 `A14 no Vue in core` |
+| 10 | `src/core/index.ts` exports `parse`, not `parseChordToken` | ok | index.ts:36 `export { parse, normalizeSource, setKey, transpose } from './parse'` |
+| 11 | `parse()` exists; `ChordProView` has no `defines` | ok | parse.ts:300; types.ts:1–20 (meta/source/sections/eocOf only) |
+| 12 | `exportCho` exists in core; `tests/core/export-cho.test.ts` is F1 create (not present) | ok | export-cho.ts:3; glob test file absent |
+| 13 | `onSurfaceTap` and `useSongSwipe` already skip `[role='button']` | ok | ChordproViewer.vue:1622; useSongSwipe.ts:81–86 |
+| 14 | `ViewerCapabilities` exists (no `diagrams` field yet) | ok | public.ts:56–68 `sourcePane` / `batidaPresets` / `debugSwipe` |
+| 15 | `transposeToken` transposes the root only; suffix is opaque | ok | transpose.ts:32–42 `^([A-G](?:#\|b)?)(.*)$` |
+| 16 | SoT `projects/titan-chordpro-ui/diagramas-cifra/design.md` exists | ok | file present |
+| 17 | `parse-chord.ts` / `DiagramModal.vue` exist | n/a (create) | glob absent; F0 T-002 / F3 create them |
 
-### B — Code present, plan silent
+### B — Code present, plan silent (impact candidates)
 
-| Code | Impact | Disposition |
-|---|---|---|
-| `useMetronome.ts` + auto-scroll in ChordproViewer | Direct — F3 tap must pause both | Covered by F3-G1 / T-002 |
-| `score.ts` / ScoreEditor guitar\|piano | Indirect — melody vs chord diagram | Non-goal in design; P3/P4 |
-| `overlay.ts` personal edits | Indirect — view tap is new hit-target | F3 scope: overlay modal, not overlay ops |
-| BatidaSheet | Indirect — similar sheet chrome | F4 uses the same DiagramModal, not BatidaSheet |
-| `onSurfaceTap` zen + `useSongSwipe` rails | Direct — chord tap stolen | F3-G1: role=button; rail/zen criteria (Claude F-004) |
+| # | Finding | Location | Impact | Disposition |
+|---|---------|----------|--------|-------------|
+| 1 | `useMetronome` + `startScroll` / `rollLive` | useMetronome.ts:43; ChordproViewer.vue:1340 | direct | F3-G1: tap pauses auto-scroll and metronome; close resumes only what was running |
+| 2 | `score.ts` / ScoreEditor guitar\|piano (melody vs chord diagram) | src/core/score.ts; src/vue/edit/ScoreEditor.vue | indirect | oos — P3/P4; design non-goal |
+| 3 | `overlay.ts` personal ops + `persistSuggestion` host ack | overlay.ts; useOverlay.ts:59; public.ts:146 | indirect | F3 overlay modal, not overlay ops; persistSuggestion stays host suggestion path |
+| 4 | BatidaSheet similar sheet chrome | src/vue/sheets/BatidaSheet.vue | indirect | F4 uses the same DiagramModal, not BatidaSheet |
+| 5 | `onSurfaceTap` zen + `useSongSwipe` rails steal a chord *span* tap today | ChordproViewer.vue:1618–1635; useSongSwipe.ts:81–86 | direct | F3-G1: chord hit-target `role=button` (both hooks already ignore that role) |
+| 6 | `ViewerCapabilities` has no `diagrams` flag | public.ts:56–68 | direct | F3-G1: diagrams on unless `capabilities.diagrams === false` |
+| 7 | `persistPrefs` whitelist has no `diagramInstrument` | ChordproViewer.vue:1128–1150 | direct | F3 persists `diagramInstrument` on `STORE_KEYS.prefs` without wiping other keys |
+| 8 | ToneSheet / CpvMoreSheet have no instrument picker | ToneSheet.vue; CpvMoreSheet.vue (grep instrument/ukulele/violão → 0) | none | accepted — P1: switch lives on the diagram modal |
 
-**Counts:** premises=8 (7 ok, 1 create-n/a) · impacts=5 (2 direct covered, 3 oos/indirect)
+**Counts:** premises=17 (missing=0, false=0, ok=16, create-n/a=1); impacts=8 (direct=4, indirect=3, none=1)
 
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=52472ebbc6f4 | premises=8 | impacts=5 @ uncommitted (2026-09-19T09:20:00Z)
+- ground-truth: complete | mode=ground-truth | fp=8fc3f0167221 | premises=17 | impacts=8 @ 55e551d (2026-09-20T08:51:06Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md
