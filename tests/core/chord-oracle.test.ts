@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { classifyOracleName } from '../../scripts/build-chord-oracle'
+import { parseChordToken } from '../../src/core/index'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const dir = join(root, 'fixtures/sda')
@@ -70,5 +72,55 @@ describe('chord oracle from fixtures/sda', () => {
     for (const row of junk) {
       expect(['AMBIGUOUS', 'UNPARSED'], row.name).toContain(row.class)
     }
+  })
+})
+
+describe('classifyOracleName follows parseChordToken', () => {
+  const cases = [
+    ['foo/bar', 'UNPARSED'],
+    ['C7/xyz', 'AMBIGUOUS'],
+    ['C/', 'AMBIGUOUS'],
+    ['G/B', 'parse'],
+    ['Dm(3b)/F#', 'parse'],
+    ['D9/4', 'AMBIGUOUS'],
+  ] as const
+
+  it.each(cases)('%s class is %s and matches the parser', (name, cls) => {
+    const oracle = classifyOracleName(name)
+    const parsed = parseChordToken(name)
+    expect(oracle.class, name).toBe(cls)
+    expect(oracle.class, name).toBe(parsed.class)
+    if (parsed.class === 'parse') {
+      expect(oracle.quality, name).toBe(parsed.quality)
+      expect(oracle.bass, name).toBe(parsed.bass)
+    } else {
+      expect(oracle).not.toHaveProperty('quality')
+      expect(oracle).not.toHaveProperty('bass')
+    }
+  })
+})
+
+describe('oracle table matches parseChordToken', () => {
+  it('class, quality, and bass agree for every row', () => {
+    const mismatches: string[] = []
+    for (const row of loadTable()) {
+      const got = parseChordToken(row.name)
+      const classified = classifyOracleName(row.name)
+      if (got.class !== row.class) {
+        mismatches.push(`${row.name}: table ${row.class} parser ${got.class}`)
+      }
+      if (classified.class !== row.class || classified.quality !== row.quality || classified.bass !== row.bass) {
+        mismatches.push(`${row.name}: table diverges from classifyOracleName`)
+      }
+      if (row.class === 'parse' && got.class === 'parse') {
+        if (got.quality !== row.quality) {
+          mismatches.push(`${row.name}: quality table ${row.quality} parser ${got.quality}`)
+        }
+        if (got.bass !== row.bass) {
+          mismatches.push(`${row.name}: bass table ${row.bass} parser ${got.bass}`)
+        }
+      }
+    }
+    expect(mismatches).toEqual([])
   })
 })
