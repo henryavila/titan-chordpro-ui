@@ -94,6 +94,27 @@ test.describe('rehearsal comments on the reading surface', () => {
     expect(pair.commentPx).toBeLessThan(pair.lyricPx - 2)
   })
 
+  test('a comment sits against the block it labels, not in the section gap', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
+    await page.locator('.cpv-comment').first().waitFor()
+    const gaps = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.cpv-blockrow')] as HTMLElement[]
+      const out: number[] = []
+      for (let i = 0; i < rows.length - 1; i++) {
+        if (!rows[i]!.querySelector('.cpv-comment, .cpv-note')) continue
+        const next = rows[i + 1]!.querySelector('.cpv-block, .cpv-tab') as HTMLElement | null
+        if (!next) continue
+        const a = rows[i]!.getBoundingClientRect()
+        const b = next.getBoundingClientRect()
+        out.push(b.top - a.bottom)
+      }
+      return out
+    })
+    expect(gaps.length).toBeGreaterThan(0)
+    for (const g of gaps) expect(g, `gap ${g}`).toBeLessThanOrEqual(8)
+  })
+
   test('execução notes wrap and read as body text, not tiny mono', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/?chart=${NOTES.replace(/^sda\//, '')}&fit=0`)

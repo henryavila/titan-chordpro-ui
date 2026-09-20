@@ -42,6 +42,7 @@ describe('rehearsal comments are readable stage directions', () => {
     expect(note).toMatch(/border:\s*0/)
     expect(note).not.toMatch(/border-radius:/)
     expect(rule('.cpv-comment-dot')).toMatch(/display:\s*none/)
+    expect(box).toMatch(/margin:\s*0 16px 4px/)
   })
 
   it('the hairline does not steal the row from a long comment', () => {

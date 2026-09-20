@@ -560,7 +560,7 @@
 }
 .cpv-note {
   /* Same paper as a rehearsal comment: bold gray, no card. Chorus/tab keep theirs. */
-  margin: 0 16px 14px;
+  margin: 0 16px 4px;
   padding: 0;
   background: none;
   border: 0;
@@ -589,14 +589,18 @@
   content: ')';
 }
 .cpv-comment {
-  /* In flow: autoscroll measures this height into the next musical block. */
+  /* Labels the block below — sit in the section gap, flush to what follows. */
   display: flex;
   align-items: flex-start;
-  margin: 0 16px 12px;
+  margin: 0 16px 4px;
   padding: 0;
   max-width: calc(100% - 32px);
   background: none;
   border: 0;
+}
+.cpv-blockrow:has(.cpv-comment) + .cpv-blockrow .cpv-block,
+.cpv-blockrow:has(.cpv-note) + .cpv-blockrow .cpv-block {
+  padding-top: 4px;
 }
 .cpv-comment-dot {
   display: none;
@@ -704,11 +708,11 @@
   padding: 4px 8px 6px;
 }
 .cpv-root[data-cpv-lens='letra'] .cpv-note {
-  margin: 0 16px 8px;
+  margin: 0 16px 2px;
   padding: 0;
 }
 .cpv-root[data-cpv-lens='letra'] .cpv-comment {
-  margin: 0 16px 8px;
+  margin: 0 16px 2px;
 }
 .cpv-chorus::before {
   content: '';
@@ -2048,7 +2052,7 @@ div.cpv-head-id {
   line-height: 1.4;
 }
 .cpv-row-input--comment {
-  margin: 0 16px 14px;
+  margin: 0 16px 4px;
   max-width: calc(100% - 32px);
   padding: 8px 12px;
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
