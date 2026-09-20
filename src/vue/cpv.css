@@ -2851,8 +2851,10 @@ div.cpv-head-id {
     'art times times';
   column-gap: 12px;
   row-gap: 2px;
+  align-self: center;
   width: 100%;
   max-width: 520px;
+  margin-inline: auto;
   padding: 10px 10px 8px 10px;
   border-radius: 18px;
   background: var(--veil);
