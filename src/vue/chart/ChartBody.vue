@@ -230,7 +230,7 @@ watch(
 </script>
 
 <template>
-  <div ref="bodyEl">
+  <div ref="bodyEl" class="cpv-chart" :style="{ '--cpv-lyric-px': lyricPx }">
     <template v-for="(block, i) in blocks" :key="i">
       <div :data-block="i" class="cpv-blockrow">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
