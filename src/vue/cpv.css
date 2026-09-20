@@ -590,28 +590,28 @@
 .cpv-note-item {
   font-family: inherit;
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
-  font-weight: 500;
   line-height: 1.4;
   color: var(--text);
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 .cpv-comment {
-  /* In flow: autoscroll measures this height into the next musical block. */
+  /* In flow: autoscroll measures this height into the next musical block.
+     No card — the chorus already owns the rounded green wash. */
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  width: fit-content;
+  gap: 8px;
+  margin: 0 16px 12px;
+  padding: 0;
   max-width: calc(100% - 32px);
-  margin: 0 16px 14px;
-  padding: 8px 14px 8px 12px;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
-  border-left: 3px solid var(--chord);
 }
 .cpv-comment-dot {
-  display: none;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.48em;
+  border-radius: 50%;
+  background: var(--capo);
 }
 .cpv-comment-text {
   flex: 1 1 auto;
@@ -619,7 +619,7 @@
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: var(--text);
+  color: var(--lyric);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -2063,7 +2063,6 @@ div.cpv-head-id {
   border-radius: 9px;
   font-family: inherit;
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
-  font-weight: 500;
   line-height: 1.4;
 }
 .cpv-comment.is-editable,
