@@ -12,6 +12,7 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
+import { DIR } from './define'
 import {
   isLegalStrumPattern,
   parseXStrum,
@@ -363,7 +364,7 @@ export function readMeta(source: string): ChartMeta {
   String(source ?? '')
     .split('\n')
     .forEach((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*([^}]*)\}\s*$/)
+      const d = l.match(DIR)
       if (!d) return
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
@@ -426,7 +427,7 @@ export function writeMeta(source: string, meta: ChartMeta): string {
   const body = String(source ?? '')
     .split('\n')
     .filter((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
+      const d = l.match(DIR)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
       return !((META_KEYS as readonly string[]).includes(k) || k === 't' || k === 'st')
@@ -905,7 +906,7 @@ export function toPlain(source: string): string {
   String(source ?? '')
     .split('\n')
     .forEach((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/)
+      const d = l.match(DIR)
       if (d) {
         const k = (d[1] ?? '').toLowerCase()
         const v = (d[2] ?? '').trim()
@@ -955,7 +956,7 @@ export function chartBody(source: string): string {
   return String(source ?? '')
     .split('\n')
     .filter((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
+      const d = l.match(DIR)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
       return !((META_KEYS as readonly string[]).includes(k) || k === 't' || k === 'st')

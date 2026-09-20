@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  META_KEYS,
   parse,
   parseDefineDirective,
   serializeDefine,
+  writeDefines,
+  writeMeta,
 } from '../../src/core/index'
 import { DIR } from '../../src/core/define'
+import { loadFixture } from '../helpers/load-fixture'
 
 const GUITAR_AM =
   '{define-guitar: Am base-fret 1 frets x 0 2 2 1 0 fingers x 0 2 3 1 0}'
@@ -132,5 +136,56 @@ describe('parse() exposes defines', () => {
   it('is exported from src/core/index.ts', () => {
     expect(typeof parseDefineDirective).toBe('function')
     expect(typeof serializeDefine).toBe('function')
+  })
+})
+
+describe('writeDefines', () => {
+  it('places the define block after META_KEYS header and before lyrics', () => {
+    const r = parseDefineDirective(GUITAR_AM)
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    const src = '{title:X}\n{key:G}\n\n[G]letra\n{c:(nota)}'
+    const out = writeDefines(src, [r])
+    const lines = out.split('\n')
+    const keyAt = lines.findIndex((l) => l.startsWith('{key:'))
+    const defAt = lines.findIndex((l) => l.startsWith('{define-guitar:'))
+    const lyricAt = lines.findIndex((l) => l.includes('[G]letra'))
+    expect(defAt).toBeGreaterThan(keyAt)
+    expect(lyricAt).toBeGreaterThan(defAt)
+    expect(out).toContain('{title:X}')
+    expect(out.match(/\{define-guitar:/g)).toHaveLength(1)
+  })
+
+  it('replaces existing define lines instead of stacking them', () => {
+    const r = parseDefineDirective(GUITAR_AM)
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    const src = `{title:X}\n${UKE_C}\n[G]letra`
+    const out = writeDefines(src, [r])
+    expect(out).toContain('{define-guitar:')
+    expect(out).not.toContain('{define-ukulele:')
+  })
+})
+
+describe('writeMeta keeps defines', () => {
+  it('leaves define lines in place and does not list them in META_KEYS', () => {
+    const src = `{title:X}\n{key:G}\n${GUITAR_AM}\n[Am]oi`
+    const out = writeMeta(src, { title: 'Y', key: 'G' })
+    expect(out).toContain('{define-guitar:')
+    expect(out).toContain('Am')
+    expect(out).toContain('[Am]oi')
+    expect(out).toContain('{title:Y}')
+    expect(META_KEYS as readonly string[]).not.toContain('define')
+    expect(META_KEYS as readonly string[]).not.toContain('define-guitar')
+    expect(META_KEYS as readonly string[]).not.toContain('define-ukulele')
+  })
+})
+
+describe('fixtures/define-roundtrip.cho', () => {
+  it('has at least one {define-guitar:} used in tests', () => {
+    const src = loadFixture('define-roundtrip.cho')
+    expect(src).toMatch(/\{define-guitar:/)
+    const view = parse(src)
+    expect(view.defines.some((d) => d.instrument === 'guitar')).toBe(true)
   })
 })

@@ -175,3 +175,50 @@ export function asChordDefine(r: DefineResult): ChordDefine | null {
   const { class: _c, ...def } = r
   return def
 }
+
+/** Header keys the define block sits after — META_KEYS plus t/st/artist. */
+const DEFINE_HEADER = new Set([
+  'title',
+  't',
+  'subtitle',
+  'st',
+  'artist',
+  'composer',
+  'key',
+  'transpose',
+  'tempo',
+  'time',
+  'duration',
+  'capo',
+  'x_origem',
+  'x_youtube',
+  'x_strum',
+  'x_strum_set',
+])
+
+/**
+ * Rewrite `{define…}` lines: drop the old ones and land the block immediately
+ * after the META_KEYS header, before the first lyric or comment.
+ */
+export function writeDefines(source: string, defines: ChordDefine[]): string {
+  const lines = String(source ?? '')
+    .split('\n')
+    .filter((l) => {
+      const m = l.match(DIR)
+      return !(m && isDefineKey(m[1] ?? ''))
+    })
+  let lastMeta = -1
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
+    if (!line.trim()) continue
+    const m = line.match(DIR)
+    const k = (m?.[1] ?? '').toLowerCase()
+    if (m && DEFINE_HEADER.has(k)) {
+      lastMeta = i
+      continue
+    }
+    break
+  }
+  lines.splice(lastMeta + 1, 0, ...defines.map(serializeDefine))
+  return lines.join('\n')
+}

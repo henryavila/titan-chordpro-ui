@@ -34,7 +34,7 @@ export {
 } from './storage'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
-export { parseDefineDirective, serializeDefine } from './define'
+export { parseDefineDirective, serializeDefine, writeDefines } from './define'
 export type { ChordDefine, DefineDirective, DefineInstrument, DefineResult } from './define'
 export { parseChordToken } from './parse-chord'
 export type { ChordParseClass, ChordTokenMiss, ChordTokenParse, ChordTokenResult } from './parse-chord'
