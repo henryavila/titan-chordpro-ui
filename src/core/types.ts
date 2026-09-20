@@ -1,3 +1,5 @@
+import type { ChordDefine } from './define'
+
 export type ChordProView = {
   meta: {
     title?: string
@@ -17,6 +19,8 @@ export type ChordProView = {
   sections: ChordProSection[]
   /** `{soc}` line → its `{eoc}`: what makes a chorus move with its envelope. */
   eocOf: Record<number, number>
+  /** `{define}` / `{define-guitar}` / `{define-ukulele}` overrides in this file. */
+  defines: ChordDefine[]
 }
 
 export type SectionKind =
