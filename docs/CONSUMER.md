@@ -20,7 +20,7 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava cantado+playback na demo; `audio=cantado` / `audio=playback` só um).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (cantado+playback na demo; `audio=cantado` / `audio=playback` só um; `capa=0` = arte genérica).
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
@@ -292,9 +292,8 @@ pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 ### Áudio de referência
 
 O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
-com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
-
-O consumer informa o que tem. Uma chamada:
+com a letra, o Rolar ou o `{duration:}`. O consumer informa o que tem, numa
+chamada:
 
 ```ts
 import { setRehearsalAudio, audioTracksOf, audioArtOf } from '@henryavila/titan-chordpro-ui'

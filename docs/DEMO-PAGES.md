@@ -17,6 +17,15 @@ revisar**. Prefs de tema também sobrevivem ao reload.
 
 Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`).
 
+**Áudio de referência (lab)**
+
+| URL | O que mostra |
+|---|---|
+| `?audio=1` | Cantado + playback (demo 2:41 / 65 BPM) |
+| `?audio=cantado` / `?audio=playback` | Só uma faixa |
+| `?audio=1&capa=0` | Sem capa do host — arte genérica do pacote |
+| `?song=100-nasce-em-mim&audio=1` | *Nasce em Mim* + as duas faixas |
+
 ## O que o proxy faz
 
 O navegador **não** consegue buscar `cifraclub.com.br` / YouTube direto (CORS).  

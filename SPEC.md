@@ -72,7 +72,8 @@ Ship:
 | Auto-scroll **RAF** / scrollTop | optional `attachScroll` helper on controller | ✅ wires + controls | |
 | Cifra toolbar (tom, fonte, tema, export, scroll) | ❌ | ✅ | |
 | Multi-cifra which string is active | ❌ | ❌ | ✅ |
-| Login, shell, player, i18n catalogs | ❌ | ❌ | ✅ |
+| Login, shell, synced audio player, i18n catalogs | ❌ | ❌ | ✅ |
+| Rehearsal reference audio (unsynced) | `setRehearsalAudio` | ✅ player | URLs + cover |
 
 **Auto-rolagem:** in product scope. Core: speed math (+ optional attach helper). Vue package: controls + RAF against `[data-cpv-scroll]`.
 
