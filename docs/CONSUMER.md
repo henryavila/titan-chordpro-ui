@@ -20,7 +20,7 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava cantado+playback na demo; `audio=cantado` / `audio=playback` só um).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava sung+playback na demo; `audio=sung` / `audio=playback` só um).
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
@@ -297,16 +297,16 @@ com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
 ```ts
 import { setAudioUrl, audioUrlOf, audioTracksOf, setAudioArt } from '@henryavila/titan-chordpro-ui'
 
-let next = setAudioUrl(cho, 'https://cdn.example/nasce-voz.m4a?h=a1', 'cantado')
+let next = setAudioUrl(cho, 'https://cdn.example/nasce-voz.m4a?h=a1', 'sung')
 next = setAudioUrl(next, 'https://cdn.example/nasce-pb.m4a?h=b2', 'playback')
-audioTracksOf(next) // { cantado, playback } — cada um string | null
+audioTracksOf(next) // { sung, playback } — cada um string | null
 setAudioUrl(next, null, 'playback') // tira só o playback
 ```
 
-Dois tipos, independentes: **cantado** (`{x_audio_cantado:}`) e **playback**
+Dois tipos, independentes: **sung** (`{x_audio_sung:}`) e **playback**
 (`{x_audio_playback:}`). Qualquer combinação vale — os dois, só um, ou
-nenhum. `{x_audio:}` legado lê como cantado. Sem nenhuma faixa, o chrome
-não muda. Com as duas, o card troca Cantado | Playback.
+nenhum. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung. Sem nenhuma
+faixa, o chrome não muda. Com as duas, o card troca Cantado | Playback.
 
 Capa opcional (mesma regra de URL):
 

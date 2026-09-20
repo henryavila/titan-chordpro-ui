@@ -367,11 +367,11 @@ const effTheme = computed<'light' | 'dark'>(() =>
 const liveSource = computed(() => working.value)
 const audioTracks = computed(() =>
   isEdit.value
-    ? { cantado: null, playback: null }
+    ? { sung: null, playback: null }
     : audioTracksOf(liveSource.value),
 )
 const audioKinds = computed(() => audioKindsOf(audioTracks.value))
-const audioKind = ref<AudioKind>('cantado')
+const audioKind = ref<AudioKind>('sung')
 watch(
   audioTracks,
   (t) => {
@@ -382,7 +382,7 @@ watch(
   { immediate: true },
 )
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
-const audioKey = computed(() => `${audioTracks.value.cantado ?? ''}|${audioTracks.value.playback ?? ''}`)
+const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
 const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
 const audioArt = computed(() => (isEdit.value ? null : audioArtOf(liveSource.value)))

@@ -166,8 +166,8 @@ describe('CpvAudioRef', () => {
     title: 'Nasce em Mim',
     artist: 'Adoradores',
     art: 'https://cdn.sda/a.jpg?h=1',
-    kind: 'cantado' as const,
-    kinds: ['cantado'] as ('cantado' | 'playback')[],
+    kind: 'sung' as const,
+    kinds: ['sung'] as ('sung' | 'playback')[],
   }
 
   it('starts closed: a Referência chip, not the full card', () => {
@@ -203,10 +203,10 @@ describe('CpvAudioRef', () => {
     one.unmount()
 
     const w = mount(CpvAudioRef, {
-      props: { ...base, kinds: ['cantado', 'playback'] },
+      props: { ...base, kinds: ['sung', 'playback'] },
     })
     await w.get('[data-audio-open]').trigger('click')
-    expect(w.get('[data-audio-kind=cantado]').text()).toBe('Cantado')
+    expect(w.get('[data-audio-kind=sung]').text()).toBe('Cantado')
     expect(w.get('[data-audio-kind=playback]').text()).toBe('Playback')
     await w.get('[data-audio-kind=playback]').trigger('click')
     expect(w.emitted('kind')?.[0]).toEqual(['playback'])
@@ -271,7 +271,7 @@ describe('viewer referência chrome', () => {
   })
 
   it('shows the player from a cantado track and keeps Rolar as chevrons', async () => {
-    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'cantado')
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
     const w = await viewerAt(390, { source })
     expect(w.find('[data-audio-ref]').exists()).toBe(true)
     expect(w.find('[data-audio-open]').exists()).toBe(true)
@@ -290,10 +290,10 @@ describe('viewer referência chrome', () => {
     expect(pb.get('[data-audio-open]').text()).toContain('Playback')
     pb.unmount()
 
-    const both = setAudioUrl(onlyPb, 'https://cdn.sda/voz.m4a?h=2', 'cantado')
+    const both = setAudioUrl(onlyPb, 'https://cdn.sda/voz.m4a?h=2', 'sung')
     const w = await viewerAt(390, { source: both })
     await w.get('[data-audio-open]').trigger('click')
-    expect(w.find('[data-audio-kind=cantado]').exists()).toBe(true)
+    expect(w.find('[data-audio-kind=sung]').exists()).toBe(true)
     expect(w.find('[data-audio-kind=playback]').exists()).toBe(true)
     await w.get('[data-audio-kind=playback]').trigger('click')
     expect(w.get('[data-audio-kind=playback]').attributes('aria-pressed')).toBe('true')

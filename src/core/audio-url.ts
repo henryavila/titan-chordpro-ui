@@ -1,14 +1,14 @@
 import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 
-export const AUDIO_KINDS = ['cantado', 'playback'] as const
+export const AUDIO_KINDS = ['sung', 'playback'] as const
 export type AudioKind = (typeof AUDIO_KINDS)[number]
 
 export const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
-  cantado: 'Cantado',
+  sung: 'Cantado',
   playback: 'Playback',
 }
 
-export type AudioTracks = { cantado: string | null; playback: string | null }
+export type AudioTracks = { sung: string | null; playback: string | null }
 
 /**
  * Direct audio the rehearsal player will fetch. YouTube/Spotify/data/file
@@ -40,22 +40,24 @@ function blockedHost(host: string): boolean {
   return false
 }
 
-function kindKey(kind: AudioKind): 'x_audio_cantado' | 'x_audio_playback' {
-  return kind === 'playback' ? 'x_audio_playback' : 'x_audio_cantado'
+function kindKey(kind: AudioKind): 'x_audio_sung' | 'x_audio_playback' {
+  return kind === 'playback' ? 'x_audio_playback' : 'x_audio_sung'
 }
 
 /**
- * Write or clear one rehearsal track. `cantado` also drops the legacy
- * `{x_audio:}` so a chart does not carry two sung URLs.
+ * Write or clear one rehearsal track. `sung` also drops legacy
+ * `{x_audio:}` / `{x_audio_cantado:}` so a chart does not carry two sung URLs.
  */
 export function setAudioUrl(
   source: string,
   url: string | null,
-  kind: AudioKind = 'cantado',
+  kind: AudioKind = 'sung',
 ): string {
   const cur: ChartMeta = { ...readMeta(source) }
   const key = kindKey(kind)
-  if (kind === 'cantado') delete cur.x_audio
+  if (kind === 'sung') {
+    delete cur.x_audio_sung
+  }
   if (url == null || !String(url).trim()) {
     delete cur[key]
     return writeMeta(source, cur)
@@ -68,11 +70,11 @@ export function setAudioUrl(
   return writeMeta(source, cur)
 }
 
-/** Both tracks. Legacy `{x_audio:}` fills cantado when the typed key is empty. */
+/** Both tracks. Legacy `{x_audio:}` / `{x_audio_cantado:}` already fold into sung via readMeta. */
 export function audioTracksOf(source: string): AudioTracks {
   const m = readMeta(source)
   return {
-    cantado: playableAudioUrl(m.x_audio_cantado) ?? playableAudioUrl(m.x_audio),
+    sung: playableAudioUrl(m.x_audio_sung),
     playback: playableAudioUrl(m.x_audio_playback),
   }
 }
@@ -80,11 +82,11 @@ export function audioTracksOf(source: string): AudioTracks {
 export function audioUrlOf(source: string, kind?: AudioKind): string | null {
   const t = audioTracksOf(source)
   if (kind) return t[kind]
-  return t.cantado ?? t.playback
+  return t.sung ?? t.playback
 }
 
 export function defaultAudioKind(tracks: AudioTracks): AudioKind | null {
-  if (tracks.cantado) return 'cantado'
+  if (tracks.sung) return 'sung'
   if (tracks.playback) return 'playback'
   return null
 }
