@@ -8,7 +8,7 @@ started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
 branch: plan/diagramas-cifra
 executionMode: automate
-currentPhase: F0
+currentPhase: F1
 parallelismAllowed: false
 principles:
   - id: P1
@@ -79,7 +79,15 @@ phases:
             names (parse/UNPARSED/AMBIGUOUS only). FAILS when a token is guessed
             as a quality instead of UNPARSED or AMBIGUOUS, or when the table
             claims hit/miss per instrument in F0.
-          status: pending
+          status: met
+          metAt: 2026-09-20T14:21:51.000Z
+          evidence:
+            verifierKind: shell
+            verifiedAt: 2026-09-20T14:21:51.000Z
+            verifiedCommit: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
+            passed: true
+            exitCode: 0
+            outputSummary: "✓ parse-chord-token (15) + chord-oracle (10); Tests 25 passed"
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/parse-chord-token.test.ts
@@ -87,28 +95,47 @@ phases:
             expectExitCode: 0
         - id: F0-G2
           description: No Vue imports in src/core.
-          status: pending
+          status: met
+          metAt: 2026-09-20T14:21:51.000Z
+          evidence:
+            verifierKind: shell
+            verifiedAt: 2026-09-20T14:21:51.000Z
+            verifiedCommit: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
+            passed: true
+            exitCode: 0
+            outputSummary: "✓ tests/core/no-vue-in-core.test.ts (1 test)"
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/no-vue-in-core.test.ts
             expectExitCode: 0
-    status: active
+    status: done
     evaluationGate:
       status: passed
       verdict: pass
       reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F0.md
-      at: d430a5a
-      verifiedAt: 2026-09-20T12:01:00.000Z
+      at: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
+      verifiedAt: 2026-09-20T14:32:00.000Z
     lessonsState: recorded
     lessonsPath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/lessons/diagramas-cifra-f0-d0-parser-br-oraculo-257.md
     reviewGate:
       status: passed
-      mode: both-claude
-      at: dacb2b15f84534a9c0837bd5f47a989c525420e5
-      reviewFile: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-phase-both.md
-      localReceiptPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-phase-local.md
-      codexReceiptPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-phase-claude.md
-      verifiedAt: 2026-09-20T12:20:00.000Z
+      mode: both
+      at: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
+      reviewFile: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-close-both.md
+      localReceiptPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-close-local.md
+      codexReceiptPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-close-claude.md
+      verifiedAt: 2026-09-20T14:32:00.000Z
+    decisionReview:
+      status: passed
+      verifiedAt: 2026-09-20T14:32:00.000Z
+      packagePath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-decision-package.md
+      packagePresentedAt: 2026-09-20T14:32:00.000Z
+      evidencePath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl
+    deliveryAuditGate:
+      status: passed
+      verdict: CLOSED
+      reportPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-delivery-audit.md
+      verifiedAt: 2026-09-20T14:32:00.000Z
     businessIntent:
       value: O músico precisa que o core reconheça o nome brasileiro do acorde (7M, 4,
         9, 2, slash) sem inventar forma. Um C7M desenhado como C7 mente no

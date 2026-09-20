@@ -8,11 +8,11 @@ goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
   `4`/`sus`→sus4, `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11; `7+`
   and quote junk are AMBIGUOUS/UNPARSED; `m(3b)` parses as `m`; slash after `/`
   is always bass; oracle columns are parse-class only; no Vue in core."
-status: active
+status: done
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-20T11:54:19.571Z
-nextAction: Run `phase-done`
+nextAction: present phase-start package for F1 validate-only
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -32,7 +32,7 @@ businessIntent:
     unicos de fixtures/sda.
 tasksDone: 2
 tasksTotal: 2
-gatesMet: 0
+gatesMet: 2
 gatesTotal: 2
 weightDone: 5
 weightTotal: 5
@@ -41,21 +41,39 @@ exitGates:
     description: Oracle table exists and parseChordToken tests green on the 257
       names. FAILS when a token is guessed as a quality instead of UNPARSED or
       AMBIGUOUS.
-    status: pending
+    status: met
+    metAt: 2026-09-20T14:21:51.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T14:21:51.000Z
+      verifiedCommit: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ parse-chord-token (15) + chord-oracle (10); Tests 25 passed
     verifier:
       kind: shell
       command: pnpm exec vitest run tests/core/parse-chord-token.test.ts
         tests/core/chord-oracle.test.ts
       expectExitCode: 0
     verifierLabel: "shell: pnpm exec vitest run tests/core/parse-chord-token.test.ts t…"
+    evidenceSummary: passed · 2026-09-20
   - id: F0-G2
     description: No Vue imports in src/core.
-    status: pending
+    status: met
+    metAt: 2026-09-20T14:21:51.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T14:21:51.000Z
+      verifiedCommit: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/no-vue-in-core.test.ts (1 test)
     verifier:
       kind: shell
       command: pnpm exec vitest run tests/core/no-vue-in-core.test.ts
       expectExitCode: 0
     verifierLabel: "shell: pnpm exec vitest run tests/core/no-vue-in-core.test.ts"
+    evidenceSummary: passed · 2026-09-20
 stack:
   - id: 1
     title: D0 Parser BR + oráculo 257
@@ -154,8 +172,14 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Operator A/B/C landed in fix2 merge `23c8900`. T-001 e T-002 `done` de novo com verifiers 26 testes exit 0. phase-done ainda falta re-evaluation + reviewGate.at refresh + decision-review + audit-delivery.
-- **Decision log:** A slash=baixo (D9/4 AMBIGUOUS). B m(3b)→m. C gerador importa parseChordToken. lastAssert done ok.
-- **Single nextAction:** Run `phase-done`
-- **Verbatim state:** `pnpm exec vitest run tests/core/parse-chord-token.test.ts tests/core/chord-oracle.test.ts tests/core/no-vue-in-core.test.ts` → 26 passed, exit 0, HEAD `23c8900e9d9a1c04b7334d4950dd15e27887bde1`. parseChordToken Dm(3b) `{class:parse,root:D,quality:m}`; Dm(3b)/F# bass F#; D9/4 AMBIGUOUS; foo/bar UNPARSED.
-- **Uncommitted changes:** close T-001/T-002 + claims (checkpoint imediato).
+- **Narrative:** F0 phase-done. T-001/T-002 done; F0-G1/G2 met; evaluation pass; lessons recorded; review both; decision-review PASS (fecha a F0); delivery audit CLOSED. currentPhase aponta F1 pending até package ratify. Cursor awaiting-operator-advance.
+- **Decision log:** A slash=baixo; B m(3b)→m; C gerador=parser. Claude close majors defer F2.
+- **Single nextAction:** present phase-start package for F1 validate-only
+- **Verbatim state:** `assert-automate-gate --gate phase-done` → `ok`. lastAssert `{gate:phase-done,ok:true,at:2026-09-20T14:35:47.353Z}`. HEAD fingerprint `3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c`. F0-G1/G2 verifiedCommit same SHA. 26 tests exit 0.
+- **Uncommitted changes:** phase-done state + archive (checkpoint imediato).
+
+## Self-review
+- G1 read-before-claim: applied — each closed task links verifier run; F0-G1/G2 evidence verifiedCommit 3fdb7b8
+- G2 soft-language: applied — completion claims are passed:true evidence
+- G6 reference-or-strike: applied — handoff literals are verbatim paths/commands
+- CROSS-MODEL REVIEW: both (local grok + claude) at 3fdb7b8; Codex usage-limited
