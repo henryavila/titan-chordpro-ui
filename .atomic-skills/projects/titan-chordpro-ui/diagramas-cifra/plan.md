@@ -5,7 +5,7 @@ title: Diagramas de cifra — `titan-chordpro-ui`
 version: "1.0"
 status: active
 started: 2026-09-19T08:49:13.733Z
-lastUpdated: 2026-09-19T08:49:13.733Z
+lastUpdated: 2026-09-20T15:12:51.416Z
 branch: plan/diagramas-cifra
 executionMode: automate
 currentPhase: F1
@@ -65,8 +65,8 @@ phases:
     goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
       parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9,
       `4`/`sus`→sus4, `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11;
-      `7+` and quote junk are AMBIGUOUS/UNPARSED; `m(3b)` parses as `m`;
-      slash after `/` is always bass; generator follows parser; zero invented
+      `7+` and quote junk are AMBIGUOUS/UNPARSED; `m(3b)` parses as `m`; slash
+      after `/` is always bass; generator follows parser; zero invented
       voicings; no Vue in core. Oracle columns are parse-class only (Claude
       F-001)."
     dependsOn: []
@@ -87,7 +87,7 @@ phases:
             verifiedCommit: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
             passed: true
             exitCode: 0
-            outputSummary: "✓ parse-chord-token (15) + chord-oracle (10); Tests 25 passed"
+            outputSummary: ✓ parse-chord-token (15) + chord-oracle (10); Tests 25 passed
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/parse-chord-token.test.ts
@@ -103,7 +103,7 @@ phases:
             verifiedCommit: 3fdb7b8dfc24c5c8cd8d1aca81771e83cc80647c
             passed: true
             exitCode: 0
-            outputSummary: "✓ tests/core/no-vue-in-core.test.ts (1 test)"
+            outputSummary: ✓ tests/core/no-vue-in-core.test.ts (1 test)
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/no-vue-in-core.test.ts
@@ -144,9 +144,9 @@ phases:
         parseChordToken com aliases; testes em tests/core/chord-oracle.test.ts e
         tests/core/parse-chord-token.test.ts; exportar pelo index do core.
       rules: 7M vira maj7; 4 e sus viram sus4; 9 vira add9; 2 vira sus2; 7+ e aspas no
-        nome sao AMBIGUOUS ou UNPARSED; m(3b) parseia como m; o que vem depois de /
-        e sempre baixo; gerador segue o parser; nao chutar voicing; zero import Vue
-        em src/core.
+        nome sao AMBIGUOUS ou UNPARSED; m(3b) parseia como m; o que vem depois
+        de / e sempre baixo; gerador segue o parser; nao chutar voicing; zero
+        import Vue em src/core.
       outOfScope: Modal de forma, SVG de braço/teclado, dicionario de voicings, parser
         de {define}, folha de editor, prefs de instrumento.
       doneWhen: tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts
@@ -165,7 +165,7 @@ phases:
       outside fixtures/sda; D4 must not write defines until this gate is green."
     dependsOn:
       - F0
-    subPhaseCount: 0
+    subPhaseCount: 2
     exitGate:
       summary: 1 criterion to meet
       criteria:
@@ -180,7 +180,26 @@ phases:
             command: pnpm exec vitest run tests/core/define-directive.test.ts
               tests/core/export-cho.test.ts
             expectExitCode: 0
-    status: pending
+    status: active
+    businessIntent:
+      value: O musico grava uma forma so naquele arquivo ChordPro. Se writeMeta ou
+        exportCho dropa {define-guitar:}, a forma some na proxima abertura e o
+        ensaio toca a forma errada.
+      workflow: Parse {define}, {define-guitar} e {define-ukulele} com DIR hifenizado;
+        serialize round-trip; writeDefines depois do header META_KEYS e antes da
+        letra; parse() expoe defines; exportCho preserva e transpoe o nome da
+        define com o mesmo semitone do corpo; fixture nova fora de fixtures/sda.
+      rules: DIR aceita define-guitar e define-ukulele como chave inteira; writeMeta
+        nao apaga linhas define; {define:} nu infere guitarra (6 trastes),
+        ukulele (4) ou piano (keys); aridade desconhecida e miss;
+        exportCho({semitones:2}) reescreve o nome da define para bater com o
+        shapeName transposto; D4 nao escreve define ate F1-G1 verde.
+      outOfScope: Editor Vue, SVG de braco/teclado, dicionario de voicings, chaves x_
+        em META_KEYS, meta de batida, folha D4 de editor.
+      doneWhen: tests/core/define-directive.test.ts e tests/core/export-cho.test.ts
+        passam; parse(src).defines existe; writeMeta e exportCho mantem
+        {define-guitar:}; exportCho com semitones 2 deixa o nome da define
+        alinhado ao shapeName transposto.
   - id: F2
     slug: diagramas-cifra-f2-d2-resolvediagram-bd-draw-with-capo
     title: D2 resolveDiagram + BD + draw with capo
@@ -345,5 +364,5 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=f421da84ce7c | premises=17 | impacts=8 @ a3cd793 (2026-09-20T13:57:00Z)
+- ground-truth: complete | mode=ground-truth | fp=8649291bc0bd | premises=17 | impacts=8 @ d78c227 (2026-09-20T15:12:00Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md

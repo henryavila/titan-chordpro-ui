@@ -1,7 +1,7 @@
 {
-  "step": "awaiting-operator-advance",
-  "phaseId": "F0",
+  "step": "H",
+  "phaseId": "F1",
   "redispatchCount": 2,
-  "updatedAt": "2026-09-20T14:38:14.333Z",
+  "updatedAt": "2026-09-20T15:01:13.043Z",
   "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json"
 }

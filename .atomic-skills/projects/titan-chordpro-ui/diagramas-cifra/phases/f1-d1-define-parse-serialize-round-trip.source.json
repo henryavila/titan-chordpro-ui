@@ -45,7 +45,7 @@
         "Do not invent lyrics; only add define lines to an existing fixture; do not build the shape editor UI; do not change strum meta keys."
       ],
       "acceptance": [
-        "writeDefines places the define block after META_KEYS header and before lyrics; writeMeta leaves define lines in place; exportCho of a source with {define-guitar:} still contains that directive; fixture 013-ele-vive-em-mim.cho has at least one {define-guitar:} used in tests"
+        "writeDefines places the define block after META_KEYS header and before lyrics; writeMeta leaves define lines in place; exportCho of a source with {define-guitar:} still contains that directive; fixture fixtures/define-roundtrip.cho (outside fixtures/sda) has at least one {define-guitar:} used in tests; exportCho({semitones:2}) rewrites define names with the same transpose as the body"
       ],
       "verifier": {
         "kind": "shell",
@@ -75,7 +75,7 @@
         },
         {
           "kind": "file",
-          "path": "fixtures/sda/013-ele-vive-em-mim.cho"
+          "path": "fixtures/define-roundtrip.cho"
         }
       ]
     }
