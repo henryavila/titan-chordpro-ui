@@ -695,7 +695,7 @@ onMounted(() => {
         <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
         <input
           :value="meta.x_source ?? ''"
-          data-meta-origem
+          data-meta-source
           placeholder="Link de onde veio, ou vídeo de referência"
           spellcheck="false"
           style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;"

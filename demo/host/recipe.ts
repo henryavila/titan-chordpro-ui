@@ -373,6 +373,7 @@ export function labQuery(search: string): LabQuery {
 
 function parseDemoAudio(raw: string | null): LabQuery['audio'] {
   if (raw === '1' || raw === 'ambos') return 'ambos'
+  // `cantado` is a leftover query alias; canonical is `sung`.
   if (raw === 'sung' || raw === 'cantado') return 'sung'
   if (raw === 'playback') return 'playback'
   return false

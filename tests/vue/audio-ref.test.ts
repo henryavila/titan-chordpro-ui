@@ -264,13 +264,13 @@ describe('CpvAudioRef', () => {
 })
 
 describe('viewer referência chrome', () => {
-  it('hides the player when the chart has no x_audio', async () => {
+  it('hides the player when the chart has no sung or playback track', async () => {
     const w = await viewerAt(390)
     expect(w.find('[data-audio-ref]').exists()).toBe(false)
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
   })
 
-  it('shows the player from a cantado track and keeps Rolar as chevrons', async () => {
+  it('shows the player from a sung track and keeps Rolar as chevrons', async () => {
     const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
     const w = await viewerAt(390, { source })
     expect(w.find('[data-audio-ref]').exists()).toBe(true)

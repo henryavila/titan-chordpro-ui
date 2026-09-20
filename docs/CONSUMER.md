@@ -20,7 +20,7 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava sung+playback na demo; `audio=sung` / `audio=playback` só um).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava sung+playback na demo; `audio=sung` / `audio=playback` só um; `audio=cantado` é alias de `sung`).
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
@@ -318,6 +318,10 @@ O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
 ou `{subtitle:}`, e a capa. Sem arte, um placeholder. O dock nasce com o
 chip **Cantado** ou **Playback**; o card abre por ele e fecha no X (fechar
 não para o áudio).
+
+A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
+ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
+**Referência**.
 
 `writeMeta` substitui o header inteiro: use `setAudioUrl` / `setAudioArt`.
 YouTube, Spotify, `javascript:` e `data:` são recusados (throw).
