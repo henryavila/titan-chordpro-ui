@@ -1,8 +1,8 @@
 {
   "T-002": {
     "mode": "both-claude",
-    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-T-002-both.md",
+    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-phase-both.md",
     "disposition": "fix",
-    "reason": "operator token fix; QUALITY Object.hasOwn, slash body UNPARSED, oracle quality/root/bass compare landed in 64d51834fbd72782a53bdda3f84c302a443ec2d6"
+    "reason": "operator: slash always bass (accept A); m(3b) parses as m (fix B); generator follows parser (fix C); landed c39296e + 9e55b85"
   }
 }

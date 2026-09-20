@@ -1,35 +1,39 @@
 {
   "planSlug": "diagramas-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-fix1",
-  "writerBranch": "impl/diagramas-cifra-F0-fix1",
-  "finishedAt": "2026-09-20T11:53:13.000Z",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-fix2",
+  "writerBranch": "impl/diagramas-cifra-F0-fix2",
+  "finishedAt": "2026-09-20T14:07:37.000Z",
   "tasks": [
     {
       "taskId": "T-001",
       "status": "claimed-pass",
-      "commitShas": ["3b173f541dbbdc161571db521473895400f7e354"],
+      "commitShas": ["9e55b85f2125e8b67cdeddf791817f62461e43bd"],
+      "base": null,
+      "head": null,
       "paths": [
+        "scripts/build-chord-oracle.ts",
+        "scripts/build-chord-oracle.mjs",
         "tests/core/chord-oracle.table.json",
-        "tests/core/chord-oracle.test.ts",
-        "scripts/build-chord-oracle.mjs"
+        "tests/core/chord-oracle.test.ts"
       ],
       "verifierCommand": "pnpm exec vitest run tests/core/chord-oracle.test.ts",
       "exitCode": 0,
-      "transcript": "RUN v4.1.11 merged tree HEAD f168726\n✓ tests/core/chord-oracle.test.ts (3 tests) 22ms\nTest Files  1 passed (1)\nTests  3 passed (3)"
+      "transcript": "replaced scripts/build-chord-oracle.mjs with scripts/build-chord-oracle.ts; classifyOracleName imports parseChordToken (no second QUALITY/AMBIGUOUS copy); regenerated table (255 names; Dm(3b)/F# parse quality m bass F#).\nRUN v4.1.11 HEAD 9e55b85\n✓ tests/core/chord-oracle.test.ts (10 tests) 21ms\nTest Files  1 passed (1)\nTests  10 passed (10)\ncombined: pnpm exec vitest run tests/core/parse-chord-token.test.ts tests/core/chord-oracle.test.ts tests/core/no-vue-in-core.test.ts → 3 files / 26 tests passed, exit 0"
     },
     {
       "taskId": "T-002",
       "status": "claimed-pass",
-      "commitShas": ["64d51834fbd72782a53bdda3f84c302a443ec2d6"],
+      "commitShas": ["c39296ede9358c8ccd387d326f8e09f2cf9f09da"],
+      "base": "fd14989abc09fab6e9a026cd70df5fa47a46cb7f",
+      "head": "c39296ede9358c8ccd387d326f8e09f2cf9f09da",
       "paths": [
         "src/core/parse-chord.ts",
-        "src/core/index.ts",
         "tests/core/parse-chord-token.test.ts"
       ],
       "verifierCommand": "pnpm exec vitest run tests/core/parse-chord-token.test.ts",
       "exitCode": 0,
-      "transcript": "RUN v4.1.11 merged tree HEAD f168726\n✓ tests/core/parse-chord-token.test.ts (13 tests) 3ms\nTest Files  1 passed (1)\nTests  13 passed (13)"
+      "transcript": "QUALITY['m(3b)']='m'; removed m(3b) from AMBIGUOUS_SUFFIX; 7+ stays AMBIGUOUS; slash remains bass. Tests: Dm(3b) quality m; Dm(3b)/F# parse root D quality m bass F#; D9/4 AMBIGUOUS; foo/bar UNPARSED; G/B parse bass B.\nRUN v4.1.11 HEAD c39296e then 9e55b85\n✓ tests/core/parse-chord-token.test.ts (15 tests) 3ms\nTest Files  1 passed (1)\nTests  15 passed (15)"
     }
   ]
 }

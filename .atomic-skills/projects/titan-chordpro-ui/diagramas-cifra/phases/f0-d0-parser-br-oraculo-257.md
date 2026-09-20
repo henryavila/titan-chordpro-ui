@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-20T11:54:19.571Z
-nextAction: spawn F0-fix2 writer for m(3b)→m and generator-follows-parser
+nextAction: Run `phase-done`
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -30,11 +30,11 @@ businessIntent:
   doneWhen: tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts
     passam; tests/core/no-vue-in-core.test.ts passa; a tabela cobre os nomes
     unicos de fixtures/sda.
-tasksDone: 0
+tasksDone: 2
 tasksTotal: 2
 gatesMet: 0
 gatesTotal: 2
-weightDone: 0
+weightDone: 5
 weightTotal: 5
 exitGates:
   - id: F0-G1
@@ -66,8 +66,17 @@ tasks:
     title: Oracle table from fixtures/sda
     summary: Gerar a tabela dos nomes únicos de fixtures/sda.
     weight: 2
-    status: active
-    lastUpdated: 2026-09-20T13:57:00.000Z
+    status: done
+    closedAt: 2026-09-20T14:09:22.000Z
+    lastUpdated: 2026-09-20T14:09:22.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T14:09:22.000Z
+      verifiedCommit: 23c8900e9d9a1c04b7334d4950dd15e27887bde1
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/chord-oracle.test.ts (10 tests) 18ms; Test Files 1
+        passed; Tests 10 passed
     scopeBoundary:
       - Do not invent chart lyrics; do not implement parseChordToken here; do
         not add Vue; do not ship a voicing dictionary.
@@ -86,13 +95,22 @@ tasks:
       - kind: file
         path: tests/core/chord-oracle.test.ts
       - kind: file
-        path: scripts/build-chord-oracle.mjs
+        path: scripts/build-chord-oracle.ts
   - id: T-002
     title: parseChordToken + BR aliases
     summary: Parser canônico BR com aliases e miss honesto.
     weight: 3
-    status: active
-    lastUpdated: 2026-09-20T13:57:00.000Z
+    status: done
+    closedAt: 2026-09-20T14:09:22.000Z
+    lastUpdated: 2026-09-20T14:09:22.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T14:09:22.000Z
+      verifiedCommit: 23c8900e9d9a1c04b7334d4950dd15e27887bde1
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/parse-chord-token.test.ts (15 tests) 3ms; Test Files
+        1 passed; Tests 15 passed
     scopeBoundary:
       - No Vue; no fret/key diagrams; no {define} parser; do not treat 7+ as aug
         or maj7.
@@ -136,8 +154,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Última tarefa da F0 fechada. T-001 e T-002 `done` com evidence.passed true. phase-done NÃO auto-roda: falta evaluation + lessons + review + decision-review + audit-delivery + assert phase-done.
-- **Decision log:** T-002 closed after fix1 `64d5183` and both-claude receipt with operator disposition fix. lastAssert done ok.
+- **Narrative:** Operator A/B/C landed in fix2 merge `23c8900`. T-001 e T-002 `done` de novo com verifiers 26 testes exit 0. phase-done ainda falta re-evaluation + reviewGate.at refresh + decision-review + audit-delivery.
+- **Decision log:** A slash=baixo (D9/4 AMBIGUOUS). B m(3b)→m. C gerador importa parseChordToken. lastAssert done ok.
 - **Single nextAction:** Run `phase-done`
-- **Verbatim state:** `pnpm exec vitest run tests/core/parse-chord-token.test.ts` → 13 passed, exit 0, HEAD `e7d4bb34d7ceda025beb65f7779183085e73ed4d`. `assert-automate-gate --gate done` → `ok`. lastAssert `{ gate: done, ok: true, at: 2026-09-20T11:54:19.571Z }`.
-- **Uncommitted changes:** este close T-002 (checkpoint imediato).
+- **Verbatim state:** `pnpm exec vitest run tests/core/parse-chord-token.test.ts tests/core/chord-oracle.test.ts tests/core/no-vue-in-core.test.ts` → 26 passed, exit 0, HEAD `23c8900e9d9a1c04b7334d4950dd15e27887bde1`. parseChordToken Dm(3b) `{class:parse,root:D,quality:m}`; Dm(3b)/F# bass F#; D9/4 AMBIGUOUS; foo/bar UNPARSED.
+- **Uncommitted changes:** close T-001/T-002 + claims (checkpoint imediato).
