@@ -233,6 +233,10 @@ export const ICONS = {
   ],
   check: [{ tag: 'path', attrs: { d: 'M6.4 12.3 10.2 16.5 17.6 7.8' } }],
   play: [{ tag: 'polygon', attrs: { points: '6 3 20 12 6 21 6 3', fill: 'currentColor', stroke: 'none' } }],
+  pause: [
+    { tag: 'rect', attrs: { x: '6', y: '4', width: '4', height: '16', rx: '1', fill: 'currentColor', stroke: 'none' } },
+    { tag: 'rect', attrs: { x: '14', y: '4', width: '4', height: '16', rx: '1', fill: 'currentColor', stroke: 'none' } },
+  ],
   layers: [
     {
       tag: 'path',
@@ -302,4 +306,6 @@ export const PICKED_ICONS = [
   'filePlus',
   'alertTri',
   'check',
+  'play',
+  'pause',
 ] as const satisfies readonly CpvIconName[]

@@ -70,6 +70,7 @@ const emit = defineEmits<{
     :class="{ 'is-hidden': hidden }"
     style="position:absolute;bottom:0;left:0;right:0;z-index:13;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px 18px;"
   >
+    <slot />
     <div v-if="showMine" class="cpv-hit cpv-veil-2 cpv-mine-switch" data-mine-switch>
       <button
         data-read-mine

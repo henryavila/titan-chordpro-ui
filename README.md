@@ -30,6 +30,11 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 **Ensaio**
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
+- **Áudio de referência** — arquivo no ensaio, **sem** sync com letra / Rolar / `{duration:}`:
+  - Chip flutuante no dock; toque abre o card (capa, título, artista, play, seek, ±10 s); X fecha sem parar
+  - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
+  - Capa do host (quadrado 256–512 px + `width`/`height`); sem capa, arte genérica 512×512
+  - O host grava no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
@@ -47,7 +52,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
-Fora: login, multicifra do site, player de áudio, diagramas de braço, collab em tempo real.
+Fora: login, multicifra do site, player de áudio **sincronizado**, diagramas de braço, collab em tempo real.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
@@ -58,7 +63,7 @@ Fora: login, multicifra do site, player de áudio, diagramas de braço, collab e
 
 ## Status
 
-`0.6.0` — leitura, ensaio (lista, swipe nas bordas, tela ligada), overlay, `persistSuggestion`, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
+`0.6.0` — leitura, ensaio (lista, swipe nas bordas, tela ligada, áudio de referência), overlay, `persistSuggestion`, edição por bloco, batida, partitura e import/export. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
 
 ```bash
 pnpm install
@@ -75,7 +80,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -154,6 +159,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 
 Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
+Não há prop de áudio. Cantado, playback e capa vão no texto ChordPro (`setRehearsalAudio`) e entram em `source`. Guia: [Áudio de referência](#áudio-de-referência-no-ensaio) e [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
+
 ### Cifra nova: importar ou começar em branco
 
 Música sem cifra não é beco. Com `edit-mode="persisted"` (e `canEdit`), o estado vazio
@@ -183,7 +190,7 @@ e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.
 
 Os conversores são públicos no core, se o host quiser usá-los direto:
 `detect`, `convert`, `fromPlain`, `fromOnSong`, `readMeta`, `writeMeta`,
-`missingOf`, `toPlain`.
+`setAudioUrl`, `audioUrlOf`, `setRehearsalAudio`, `setAudioArt`, `audioArtOf`, `missingOf`, `toPlain`.
 
 ### Modo ensaio: uma lista, não uma cifra por vez
 
@@ -229,6 +236,35 @@ lista, se quiser o spinner.
 > Overlays gravados antes sob outra identidade (`songId` ou título) **não são
 > migrados**. Se o host já tinha leitores com versão pessoal, escolha os `id`
 > iguais ao `songId` que usava antes.
+
+### Áudio de referência no ensaio
+
+O viewer **não** recebe URL de áudio por prop. O host escreve as faixas no
+`.cho` e passa o texto em `source`. Qualquer combinação vale (cantado, playback,
+os dois, ou nenhum). Sem faixa, o chip não aparece.
+
+```ts
+import { setRehearsalAudio } from '@henryavila/titan-chordpro-ui'
+
+cho = setRehearsalAudio(cho, {
+  sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
+  playback: 'https://cdn.example/nasce-pb.m4a?h=b2', // opcional
+  art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
+})
+```
+
+```vue
+<ChordproViewer :source="cho" :song-id="id" />
+```
+
+Chave omitida não mexe; `null` apaga. Também vale caminho same-origin
+(`/audio/nasce.m4a`). YouTube, Spotify, `javascript:` e `data:` são recusados.
+O GET precisa de CORS (`Access-Control-Allow-Origin` + `Accept-Ranges: bytes`)
+para o cache e o seek; sem CORS o arquivo toca na rede e o cache vira no-op.
+Persistir é o fluxo de sempre: `update:source` / `save-content`.
+
+Diretivas: `{x_audio_sung:}`, `{x_audio_playback:}`, `{x_audio_art:}` (+ w/h).
+UI em português (Cantado, Playback). Contrato completo: [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
 
 ### O host dá a altura
 

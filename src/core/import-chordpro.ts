@@ -344,19 +344,40 @@ export function convert(text: string): ImportResult {
 export const META_KEYS = [
   'title',
   'subtitle',
+  'artist',
   'key',
   'transpose',
   'tempo',
   'time',
   'duration',
   'capo',
-  'x_origem',
+  'x_source',
   'x_youtube',
+  'x_audio_sung',
+  'x_audio_playback',
+  'x_audio_art',
+  'x_audio_art_w',
+  'x_audio_art_h',
   'x_strum',
   'x_strum_set',
 ] as const
 export type MetaKey = (typeof META_KEYS)[number]
 export type ChartMeta = Partial<Record<MetaKey, string>>
+
+/** Portuguese / short names still in files. Canonical key wins when both exist. */
+const META_ALIAS: Record<string, MetaKey> = {
+  t: 'title',
+  st: 'subtitle',
+  x_origem: 'x_source',
+  x_audio: 'x_audio_sung',
+  x_audio_cantado: 'x_audio_sung',
+}
+
+export function canonicalMetaKey(k: string): MetaKey | null {
+  const lower = k.toLowerCase()
+  if ((META_KEYS as readonly string[]).includes(lower)) return lower as MetaKey
+  return META_ALIAS[lower] ?? null
+}
 
 export function readMeta(source: string): ChartMeta {
   const meta: ChartMeta = {}
@@ -367,9 +388,10 @@ export function readMeta(source: string): ChartMeta {
       if (!d) return
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
-      if (k === 't') meta.title = v
-      else if (k === 'st') meta.subtitle = v
-      else if ((META_KEYS as readonly string[]).includes(k)) meta[k as MetaKey] = v
+      const canon = canonicalMetaKey(k)
+      if (!canon) return
+      const exact = (META_KEYS as readonly string[]).includes(k)
+      if (exact || meta[canon] === undefined) meta[canon] = v
     })
   return meta
 }
@@ -429,7 +451,7 @@ export function writeMeta(source: string, meta: ChartMeta): string {
       const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
-      return !((META_KEYS as readonly string[]).includes(k) || k === 't' || k === 'st')
+      return canonicalMetaKey(k) === null
     })
   const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
     (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
@@ -958,7 +980,7 @@ export function chartBody(source: string): string {
       const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
-      return !((META_KEYS as readonly string[]).includes(k) || k === 't' || k === 'st')
+      return canonicalMetaKey(k) === null
     })
     .join('\n')
     .replace(/^\n+/, '')
@@ -998,7 +1020,7 @@ export type CcStrumChoice = 'keep' | 'replace' | 'replace-with-local-copy'
  */
 export type EnrichProposal = {
   proposed: ChartMeta
-  /** Auto fields: fill-empty + x_strum (keep-local) + x_origem. No youtube/capo. */
+  /** Auto fields: fill-empty + x_strum (keep-local) + x_source. No youtube/capo. */
   patch: ChartMeta
   conflicts: EnrichConflict[]
   youtube: EnrichYoutube | null
@@ -1069,7 +1091,7 @@ export function proposeCifraClubEnrich(
     ...(page.time ? { time: page.time } : {}),
     ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
     ...strumMeta,
-    ...(opts?.url?.trim() ? { x_origem: opts.url.trim() } : {}),
+    ...(opts?.url?.trim() ? { x_source: opts.url.trim() } : {}),
   }
 
   const patch: ChartMeta = {}
@@ -1088,7 +1110,7 @@ export function proposeCifraClubEnrich(
     patch.x_strum = proposed.x_strum
     if (proposed.x_strum_set) patch.x_strum_set = proposed.x_strum_set
   }
-  if (proposed.x_origem) patch.x_origem = proposed.x_origem
+  if (proposed.x_source) patch.x_source = proposed.x_source
 
   const strumConflict: EnrichStrumConflict | null =
     localHasBatida && remoteSet
