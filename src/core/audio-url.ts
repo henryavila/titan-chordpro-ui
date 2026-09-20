@@ -13,7 +13,7 @@ export type AudioTracks = { sung: string | null; playback: string | null }
 /**
  * Direct audio the rehearsal player will fetch. YouTube/Spotify/data/file
  * are not playable here — the consumer hosts a file or a streaming GET.
- * A `}` would break the `{x_audio:…}` line.
+ * A `}` would break the `{x_audio_sung:…}` / `{x_audio_playback:…}` line.
  */
 export function playableAudioUrl(raw: string | null | undefined): string | null {
   const s = String(raw ?? '').trim()
@@ -64,7 +64,7 @@ export function setAudioUrl(
   }
   const ok = playableAudioUrl(url)
   if (!ok) {
-    throw new Error('x_audio must be an http(s) audio file URL (not YouTube)')
+    throw new Error('x_audio_sung / x_audio_playback must be an http(s) audio file URL (not YouTube)')
   }
   cur[key] = ok
   return writeMeta(source, cur)

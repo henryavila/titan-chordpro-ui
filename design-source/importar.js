@@ -143,7 +143,7 @@ export function convert(text) {
 }
 
 // ——— metadados ———
-export const META_KEYS = ["title", "subtitle", "key", "tempo", "time", "x_origem"];
+export const META_KEYS = ["title", "subtitle", "key", "tempo", "time", "x_source"];
 export function readMeta(source) {
   const meta = {};
   String(source || "").split("\n").forEach(l => {

@@ -76,7 +76,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio_sung:}` / `{x_audio_playback:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 

@@ -47,6 +47,14 @@ O pacote UI continua **autossuficiente na cifra** (1 string ChordPro in → supe
 
 `viewer` undersells the product once the **editor** lives in the same layer. **ui** = the musician-facing surface for one chart (view + edit). The future **`titan-chordpro`** app is the *host*, not a rename of this package.
 
+## Custom ChordPro tags (`x_*`)
+
+Directive **names** in the file are English (`x_source`, `x_audio_sung`,
+`x_audio_playback`, `x_youtube`, `x_strum`, `x_strum_set`, `x_audio_art`).
+Portuguese belongs in the **UI** (Origem, Cantado, Playback). Legacy
+`{x_origem:}` / `{x_audio_cantado:}` / `{x_audio:}` still **read**; the next
+`writeMeta` emits the English key.
+
 ## Non-goals of this decision
 
 - Do not merge generator into the UI repo.
