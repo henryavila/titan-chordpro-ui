@@ -2844,12 +2844,12 @@ div.cpv-head-id {
 .cpv-audio-ref {
   position: relative;
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 40px;
+  grid-template-columns: 56px minmax(0, 1fr) 32px;
   grid-template-areas:
     'art id close'
-    'art id play'
-    'art seek seek'
-    'art times times';
+    'ctrl ctrl ctrl'
+    'seek seek seek'
+    'times times times';
   column-gap: 12px;
   row-gap: 2px;
   align-self: center;
@@ -2865,8 +2865,8 @@ div.cpv-head-id {
 .cpv-audio-ref.has-kinds {
   grid-template-areas:
     'art id close'
-    'art id play'
     'kind kind kind'
+    'ctrl ctrl ctrl'
     'seek seek seek'
     'times times times';
 }
@@ -3025,12 +3025,9 @@ div.cpv-head-id {
   color: var(--chord);
 }
 .cpv-audio-ref-play {
-  grid-area: play;
-  align-self: center;
-  justify-self: end;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 0;
   border-radius: 50%;
   background: var(--chord);
@@ -3040,40 +3037,53 @@ div.cpv-head-id {
   justify-content: center;
   cursor: pointer;
 }
+.cpv-audio-ref:not(.is-playing) .cpv-audio-ref-play :deep(svg) {
+  /* Play triangle sits optically left in the circle. */
+  transform: translateX(1px);
+}
+.cpv-audio-ref:not(.is-closed) .cpv-audio-ref-play {
+  width: 52px;
+  height: 52px;
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--chord) 70%, transparent);
+}
 .cpv-audio-ref-play:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .cpv-audio-ref-transport {
-  grid-area: seek;
+  grid-area: ctrl;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 22px;
   min-width: 0;
+  padding: 6px 0 2px;
 }
 .cpv-audio-ref-skip {
   flex: none;
-  min-width: 32px;
+  min-width: 28px;
   height: 28px;
-  padding: 0 4px;
+  padding: 0;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   cursor: pointer;
 }
 .cpv-audio-ref-skip:hover {
-  color: var(--text);
-  background: var(--hover);
+  color: var(--muted);
+  background: transparent;
 }
 .cpv-audio-ref-seek {
+  grid-area: seek;
   position: relative;
-  flex: 1;
   min-width: 0;
   height: 22px;
+  margin: 0 8px;
   cursor: pointer;
   touch-action: none;
 }
@@ -3100,7 +3110,7 @@ div.cpv-head-id {
   grid-area: times;
   display: flex;
   justify-content: space-between;
-  padding: 0 38px 0 38px;
+  padding: 0 10px;
   font-family: var(--cpv-font-chords, 'Space Mono', monospace);
   font-size: 10px;
   font-weight: 700;
@@ -3108,7 +3118,7 @@ div.cpv-head-id {
   letter-spacing: 0.02em;
 }
 .cpv-audio-ref-error {
-  grid-area: seek;
+  grid-area: ctrl;
   margin: 0;
   font-size: 12px;
   color: var(--danger);

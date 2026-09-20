@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Nomenclatura:** README, CONSUMER, NAMING e o SoT de enrich ensinam as chaves em inglês (`{x_source:}`, `{x_audio_sung:}`). A UI continua em português (Origem, Cantado).
 
 ### Fixed
+- **Play da referência:** no card aberto o play é o centro do transporte; −10 / +10 ficam mais suaves.
 - **Chip da referência:** sólido sobre a cifra (canvas, sem véu). Mini-player flutuante; toque abre o card.
 - **Player de referência no celular:** o chip e o card ficam no centro do dock, não colados à esquerda.
 - **Comentários de ensaio:** no celular o rótulo de 11px em caixa-alta + tracking cortava o texto. Agora o comentário (e o painel Execução) usa o tamanho da letra × 0,85, quebra de linha e `--text` — destaque de rubrica, sem competir com acorde/refrão. Continuam papel no auto-scroll, não relógio.
