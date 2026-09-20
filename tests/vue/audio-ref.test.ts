@@ -165,13 +165,19 @@ describe('CpvAudioRef', () => {
         current: 12,
         duration: 90,
         error: false,
+        title: 'Nasce em Mim',
+        artist: 'Adoradores',
+        art: 'https://cdn.sda/a.jpg?h=1',
       },
     })
     expect(w.get('[data-audio-ref]').classes()).toContain('cpv-hit')
-    expect(w.get('[data-audio-ref]').text()).toContain('Referência')
+    expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
+    expect(w.get('[data-audio-artist]').text()).toBe('Adoradores')
+    expect(w.get('[data-audio-art] img').attributes('src')).toBe('https://cdn.sda/a.jpg?h=1')
     expect(w.find('[data-icon=play]').exists()).toBe(true)
     expect(w.find('[data-icon=chevronsDown]').exists()).toBe(false)
-    expect(w.get('[data-audio-clock]').text()).toBe('0:12 / 1:30')
+    expect(w.get('[data-audio-clock]').text()).toBe('0:12')
+    expect(w.get('[data-audio-total]').text()).toBe('1:30')
     await w.get('[data-audio-play]').trigger('click')
     expect(w.emitted('toggle')).toHaveLength(1)
     await w.get('[data-audio-skip="-1"]').trigger('click')
@@ -183,17 +189,47 @@ describe('CpvAudioRef', () => {
 
   it('shows pause while playing and an error copy on failure', async () => {
     const live = mount(CpvAudioRef, {
-      props: { playing: true, current: 0, duration: 10, error: false },
+      props: {
+        playing: true,
+        current: 0,
+        duration: 10,
+        error: false,
+        title: 'Nasce',
+        artist: 'Referência',
+      },
     })
     expect(live.find('[data-icon=pause]').exists()).toBe(true)
     expect(live.get('[data-audio-play]').attributes('aria-label')).toBe('Pausar referência')
     live.unmount()
 
     const fail = mount(CpvAudioRef, {
-      props: { playing: false, current: 0, duration: 0, error: true },
+      props: {
+        playing: false,
+        current: 0,
+        duration: 0,
+        error: true,
+        title: 'Nasce',
+        artist: 'Referência',
+      },
     })
     expect(fail.text()).toContain('Não foi possível tocar')
     fail.unmount()
+  })
+
+  it('shows a music mark when there is no cover', () => {
+    const w = mount(CpvAudioRef, {
+      props: {
+        playing: false,
+        current: 0,
+        duration: 0,
+        error: false,
+        title: 'Nasce em Mim',
+        artist: 'Adoradores',
+      },
+    })
+    expect(w.find('[data-audio-art] img').exists()).toBe(false)
+    expect(w.find('[data-audio-art] [data-icon=music2]').exists()).toBe(true)
+    w.unmount()
   })
 })
 
@@ -208,6 +244,7 @@ describe('viewer referência chrome', () => {
     const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1')
     const w = await viewerAt(390, { source })
     expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    expect(w.get('[data-audio-title]').text().length).toBeGreaterThan(0)
     expect(w.find('[data-audio-ref] [data-icon=play]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=play]').exists()).toBe(false)

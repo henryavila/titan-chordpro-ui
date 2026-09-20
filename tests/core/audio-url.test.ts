@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  audioArtOf,
+  audioArtistOf,
   audioUrlOf,
+  displaySongTitle,
   formatAudioClock,
   playableAudioUrl,
+  setAudioArt,
   setAudioUrl,
   writeMeta,
 } from '../../src/core/index'
@@ -81,6 +85,37 @@ describe('setAudioUrl / audioUrlOf', () => {
     })
     expect(sneaky).toContain('{x_audio:')
     expect(audioUrlOf(sneaky)).toBeNull()
+  })
+})
+
+describe('setAudioArt / identity', () => {
+  const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_audio:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
+
+  it('writes {x_audio_art:} beside the audio URL', () => {
+    const next = setAudioArt(cho, 'https://cdn.sda/a.jpg?h=9')
+    expect(next).toContain('{x_audio_art:https://cdn.sda/a.jpg?h=9}')
+    expect(next).toContain('{x_audio:https://cdn.sda/a.m4a?h=1}')
+    expect(audioArtOf(next)).toBe('https://cdn.sda/a.jpg?h=9')
+  })
+
+  it('clears the cover', () => {
+    const next = setAudioArt(setAudioArt(cho, 'https://cdn.sda/a.jpg?h=9'), null)
+    expect(next).not.toContain('x_audio_art')
+    expect(audioArtOf(next)).toBeNull()
+  })
+
+  it('strips a hinário catalog prefix from the title', () => {
+    expect(displaySongTitle('001 - Tudo que há de bom em mim')).toBe(
+      'Tudo que há de bom em mim',
+    )
+    expect(displaySongTitle('Nasce em Mim')).toBe('Nasce em Mim')
+    expect(displaySongTitle('')).toBe('Sem título')
+  })
+
+  it('prefers artist, then subtitle, then Referência', () => {
+    expect(audioArtistOf({ artist: 'Adoradores', subtitle: 'SDA' })).toBe('Adoradores')
+    expect(audioArtistOf({ subtitle: 'Ministério Jovem' })).toBe('Ministério Jovem')
+    expect(audioArtistOf({})).toBe('Referência')
   })
 })
 

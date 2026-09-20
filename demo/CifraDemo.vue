@@ -2,11 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   readMeta,
+  setAudioArt,
   setAudioUrl,
+  writeMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
 } from '@henryavila/titan-chordpro-ui'
 import refAudioUrl from './ref-audio.wav?url'
+import refArtUrl from './ref-audio-art.jpg?url'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
@@ -56,7 +59,13 @@ const id = ref(
 )
 function withAudio(cho: string) {
   if (!lab.audio || !cho.trim()) return cho
-  return setAudioUrl(cho, refAudioUrl)
+  let next = setAudioUrl(cho, refAudioUrl)
+  next = setAudioArt(next, refArtUrl)
+  const m = readMeta(next)
+  if (!m.artist && !m.subtitle) {
+    next = writeMeta(next, { ...m, artist: 'Hinário Adventista' })
+  }
+  return next
 }
 
 const source = ref(lab.criar ? '' : withAudio(fixtures.value[id.value] ?? ''))

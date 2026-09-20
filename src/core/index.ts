@@ -220,9 +220,13 @@ export {
   youtubeWatchUrl,
 } from './import-chordpro'
 export {
+  audioArtOf,
+  audioArtistOf,
   audioUrlOf,
+  displaySongTitle,
   formatAudioClock,
   playableAudioUrl,
+  setAudioArt,
   setAudioUrl,
 } from './audio-url'
 export {

@@ -344,6 +344,7 @@ export function convert(text: string): ImportResult {
 export const META_KEYS = [
   'title',
   'subtitle',
+  'artist',
   'key',
   'transpose',
   'tempo',
@@ -353,6 +354,7 @@ export const META_KEYS = [
   'x_origem',
   'x_youtube',
   'x_audio',
+  'x_audio_art',
   'x_strum',
   'x_strum_set',
 ] as const

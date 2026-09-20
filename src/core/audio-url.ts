@@ -54,6 +54,46 @@ export function audioUrlOf(source: string): string | null {
   return playableAudioUrl(readMeta(source).x_audio)
 }
 
+/**
+ * Cover art URL for the reference player. Same hosting rules as the audio
+ * file — a hash in the query is a new image.
+ */
+export function setAudioArt(source: string, url: string | null): string {
+  const cur: ChartMeta = { ...readMeta(source) }
+  if (url == null || !String(url).trim()) {
+    delete cur.x_audio_art
+    return writeMeta(source, cur)
+  }
+  const ok = playableAudioUrl(url)
+  if (!ok) {
+    throw new Error('x_audio_art must be an http(s) image URL (not YouTube)')
+  }
+  cur.x_audio_art = ok
+  return writeMeta(source, cur)
+}
+
+export function audioArtOf(source: string): string | null {
+  return playableAudioUrl(readMeta(source).x_audio_art)
+}
+
+/** Strip a hinário catalog prefix (`001 - `) so the player can show the name. */
+export function displaySongTitle(raw: string | null | undefined): string {
+  const s = String(raw ?? '').trim()
+  if (!s) return 'Sem título'
+  return s.replace(/^\d+\s*[-–—.]\s*/, '')
+}
+
+export function audioArtistOf(meta: {
+  artist?: string
+  subtitle?: string
+}): string {
+  const a = String(meta.artist ?? '').trim()
+  if (a) return a
+  const sub = String(meta.subtitle ?? '').trim()
+  if (sub) return sub
+  return 'Referência'
+}
+
 /** Clock label on the reference player: `1:12`. */
 export function formatAudioClock(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0:00'
