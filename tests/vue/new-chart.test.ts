@@ -83,7 +83,7 @@ describe('bringing a chart in', () => {
     await w.get('[data-nova-go]').trigger('click')
     const committed = String(w.emitted('commit')?.[0]?.[0] ?? '')
     expect(committed).toContain('[Ab]')
-    expect(committed).toMatch(/\{transpose:-1\}/)
+    expect(committed).not.toMatch(/\{transpose:/)
     expect(committed).not.toMatch(/\{capo:/)
   })
 

@@ -125,7 +125,7 @@ const props = withDefaults(
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
-      /** Test harness: start with this capo instead of the file's `{capo:}`. */
+      /** Test harness: start with this live capo. File `{capo:}` does not. */
       initialCapo?: number
       /** Test harness: start with dual on/off. Default on when there is a capo. */
       initialDual?: boolean
@@ -2274,8 +2274,9 @@ function onMq() {
 }
 
 /**
- * A new source (host or fixture) stops the scroll, resets tone and position and
- * adopts the `{capo:}` declared in the file, when there is one.
+ * A new source (host or fixture) stops the scroll and resets tone and position.
+ * File `{capo:}` is not the live capo — that starts at 0 unless the musician
+ * already pinned one (setlist spot, host initialCapo, personal overlay).
  */
 function syncHostSource() {
   const raw = hostSource.value
@@ -2290,8 +2291,7 @@ function syncHostSource() {
   metaOpen.value = false
   confirmDiscard.value = false
   wMode.value = null
-  const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
-  capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
+  capo.value = 0
   stopScroll()
   offset.value = 0
   mul.value = 1

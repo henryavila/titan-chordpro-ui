@@ -527,7 +527,8 @@ onMounted(() => {
           <span style="font-size:13px;line-height:1.5;color:var(--text);text-wrap:pretty;">
             Tom declarado <strong>{{ keyRewrite.declaredKey }}</strong>, cifra escrita em
             <strong>{{ keyRewrite.writtenKey }}</strong>, capo {{ keyRewrite.capo }}.
-            Isso parece transposição de banda, não capo de violão.
+            Reescrever grava a cifra em {{ keyRewrite.declaredKey }} e tira o capo.
+            Quem quiser as formas de {{ keyRewrite.writtenKey }} liga o capo na leitura.
           </span>
           <div style="display:flex;flex-direction:column;gap:7px;">
             <button

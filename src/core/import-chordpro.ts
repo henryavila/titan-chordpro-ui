@@ -534,9 +534,9 @@ export type RewriteToKeyResult = {
 }
 
 /**
- * Move the written chords to `targetKey` and store `{transpose:N}` so the
- * sounding/playing pitch stays where it was. A `{capo:}` that only encoded
- * that same gap is dropped. Does not invent chords — semitone rewrite only.
+ * Move the written chords to `targetKey`. A `{capo:}` that only encoded that
+ * gap is dropped. Does not store `{transpose:}` — the body is now the declared
+ * tom. Playing in another key is the live transpose control.
  */
 export function rewriteToKey(source: string, targetKey: string): RewriteToKeyResult | null {
   const src = String(source ?? '')
@@ -552,19 +552,15 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
   const delta = signedSemitoneDelta(fromRoot, toRoot)
   const moved = delta ? transposeTextChords(src, delta, usesFlats(to)) : src
   const next: ChartMeta = { ...readMeta(moved), key: to }
-  const playing = signedSemitoneDelta(toRoot, fromRoot)
-  if (playing) next.transpose = String(playing)
-  else delete next.transpose
-
-  const capoN = Number(meta.capo) || Number(next.capo) || 0
-  if (capoN && capoN === Math.abs(delta)) delete next.capo
+  delete next.transpose
+  if (offer) delete next.capo
 
   const out = writeMeta(moved, next)
   return {
     source: out,
     from: fromKey,
     to,
-    transpose: playing,
+    transpose: 0,
     changed: out !== src,
   }
 }

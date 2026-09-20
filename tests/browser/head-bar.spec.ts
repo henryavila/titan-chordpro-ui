@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test'
  */
 test('setlist + capo keeps a readable title on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/?lista=1')
+  await page.goto('/?lista=1&capo=1')
   await page.locator('[data-chart-title]').waitFor()
   await expect(page.locator('[data-setlist-open]').first()).toContainText('1/2')
   await expect(page.locator('[data-cpv-head] [data-icon=listMusic]')).toHaveCount(0)
@@ -26,7 +26,7 @@ test('setlist + capo keeps a readable title on a phone', async ({ page }) => {
 
 test('wrapped phone head pins tom left and tela cheia right', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/?lista=1')
+  await page.goto('/?lista=1&capo=1')
   const head = page.locator('[data-cpv-head]')
   await head.waitFor()
   await expect(page.locator('[data-fs]')).toBeVisible()
@@ -115,7 +115,7 @@ test('edit head is a floating card and keeps Metadados with the actions', async 
 
 test('wide floating head may grow past the reading column when capo is on', async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 900 })
-  await page.goto('/?lista=1')
+  await page.goto('/?lista=1&capo=1')
   const head = page.locator('[data-cpv-head]')
   await head.waitFor()
   await expect(page.locator('[data-chart-title]')).toContainText('O Rei vem vindo')

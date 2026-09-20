@@ -1,7 +1,6 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
-import { rewriteToKey } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 describe('ChordproViewer', () => {
@@ -24,7 +23,7 @@ describe('ChordproViewer', () => {
   })
 
   it('applies a saved {transpose:} on the transpose control', async () => {
-    const src = rewriteToKey(loadFixture('sda/082-o-rei-vem-vindo.cho'), 'Ab')!.source
+    const src = '{title: Uma}\n{key:Ab}\n{transpose:-1}\n\n[Ab]hey\n'
     const w = mount(ChordproViewer, {
       props: { source: src, theme: 'dark', autoHide: false },
       attachTo: document.body,

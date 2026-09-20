@@ -63,18 +63,9 @@ async function enterContent(w: ReturnType<typeof viewer>) {
 }
 
 describe('MetaDialog', () => {
-  it('offers rewrite when the declared key is not what the chords spell', async () => {
-    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
-    const w = dialog(src)
-    expect(w.find('[data-meta-rewrite]').exists()).toBe(true)
-    expect(w.text()).toMatch(/acordes estão em G/i)
-    await w.get('[data-meta-rewrite-go]').trigger('click')
-    const next = String(w.emitted('apply')?.at(-1)?.[0] ?? '')
-    expect(next).toMatch(/\{key:Ab\}/)
-    expect(next).toMatch(/\{transpose:-1\}/)
-    expect(next).toContain('[Ab]')
-    expect(next).not.toMatch(/\{capo:/)
-    expect(next).toContain('O Rei vem')
+  it('does not offer rewrite in metadata — that question is import-only', () => {
+    const w = dialog(loadFixture('sda/082-o-rei-vem-vindo.cho'))
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
   })
 
   it('does not offer rewrite when {key:} is already the tom (V outnumbers I, no capo)', () => {
@@ -142,19 +133,15 @@ describe('rewrite of a registered mismatch', () => {
     w.unmount()
   })
 
-  it('rewrites fake capo from metadata while editing', async () => {
+  it('does not turn on capo from {capo:} in the file, and keeps the written chords', async () => {
     localStorage.setItem('cpv:fitSeen', '1')
     const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
-    await enterContent(w)
-    await w.get('[data-meta-open]').trigger('click')
     await flushPromises()
-    expect(w.find('[data-meta-rewrite]').exists()).toBe(true)
-    await w.get('[data-meta-rewrite-go]').trigger('click')
-    await flushPromises()
-    const src = (w.vm as { getSource: () => string }).getSource()
-    expect(src).toMatch(/\{transpose:-1\}/)
-    expect(src).not.toMatch(/\{capo:/)
-    expect(src).toContain('[Ab]')
+    expect(w.get('[data-display-key]').text()).toBe('Ab')
+    expect(w.get('[data-capo]').text()).toMatch(/^Capo$/i)
+    expect(w.findAll('.cpv-chord').map((n) => n.text()).filter(Boolean)[0]).toBe('D')
+    expect(w.findAll('.cpv-chord').map((n) => n.text())).toContain('G')
+    expect(w.findAll('.cpv-chord').map((n) => n.text())).not.toContain('Db')
     w.unmount()
   })
 })

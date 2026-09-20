@@ -73,7 +73,7 @@ export function createViewerController(opts: { source: string; theme?: ThemeId }
         case 'setSource':
           source = action.source
           transposeSemitones = 0
-          capo = parse(source).meta.capo ?? 0
+          capo = 0
           break
         case 'setMode':
           mode = action.mode
