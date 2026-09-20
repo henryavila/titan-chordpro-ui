@@ -158,18 +158,45 @@ describe('useAudioRef', () => {
 })
 
 describe('CpvAudioRef', () => {
+  const base = {
+    playing: false,
+    current: 12,
+    duration: 90,
+    error: false,
+    title: 'Nasce em Mim',
+    artist: 'Adoradores',
+    art: 'https://cdn.sda/a.jpg?h=1',
+  }
+
+  it('starts closed: a Referência chip, not the full card', () => {
+    const w = mount(CpvAudioRef, { props: base })
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
+    expect(w.get('[data-audio-open]').text()).toContain('Referência')
+    expect(w.get('[data-audio-open]').text()).toContain('Nasce em Mim')
+    expect(w.find('[data-audio-title]').exists()).toBe(false)
+    expect(w.find('[data-audio-seek]').exists()).toBe(false)
+    expect(w.find('[data-audio-close]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('opens the now-playing card and closes it without stopping', async () => {
+    const w = mount(CpvAudioRef, { props: { ...base, playing: true } })
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.get('[data-audio-ref]').classes()).not.toContain('is-closed')
+    expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
+    expect(w.get('[data-audio-artist]').text()).toBe('Adoradores')
+    expect(w.get('[data-audio-close]').exists()).toBe(true)
+    expect(w.find('[data-icon=pause]').exists()).toBe(true)
+    await w.get('[data-audio-close]').trigger('click')
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
+    expect(w.find('[data-audio-open]').exists()).toBe(true)
+    expect(w.emitted('toggle')).toBeUndefined()
+    w.unmount()
+  })
+
   it('is a music transport, not the Rolar chevron', async () => {
-    const w = mount(CpvAudioRef, {
-      props: {
-        playing: false,
-        current: 12,
-        duration: 90,
-        error: false,
-        title: 'Nasce em Mim',
-        artist: 'Adoradores',
-        art: 'https://cdn.sda/a.jpg?h=1',
-      },
-    })
+    const w = mount(CpvAudioRef, { props: base })
+    await w.get('[data-audio-open]').trigger('click')
     expect(w.get('[data-audio-ref]').classes()).toContain('cpv-hit')
     expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
     expect(w.get('[data-audio-artist]').text()).toBe('Adoradores')
@@ -200,6 +227,8 @@ describe('CpvAudioRef', () => {
     })
     expect(live.find('[data-icon=pause]').exists()).toBe(true)
     expect(live.get('[data-audio-play]').attributes('aria-label')).toBe('Pausar referência')
+    await live.get('[data-audio-open]').trigger('click')
+    expect(live.find('[data-icon=pause]').exists()).toBe(true)
     live.unmount()
 
     const fail = mount(CpvAudioRef, {
@@ -212,11 +241,12 @@ describe('CpvAudioRef', () => {
         artist: 'Referência',
       },
     })
+    await fail.get('[data-audio-open]').trigger('click')
     expect(fail.text()).toContain('Não foi possível tocar')
     fail.unmount()
   })
 
-  it('shows a music mark when there is no cover', () => {
+  it('shows a music mark when there is no cover', async () => {
     const w = mount(CpvAudioRef, {
       props: {
         playing: false,
@@ -228,6 +258,8 @@ describe('CpvAudioRef', () => {
       },
     })
     expect(w.find('[data-audio-art] img').exists()).toBe(false)
+    expect(w.find('[data-audio-art] [data-icon=music2]').exists()).toBe(true)
+    await w.get('[data-audio-open]').trigger('click')
     expect(w.find('[data-audio-art] [data-icon=music2]').exists()).toBe(true)
     w.unmount()
   })
@@ -244,6 +276,9 @@ describe('viewer referência chrome', () => {
     const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1')
     const w = await viewerAt(390, { source })
     expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    expect(w.find('[data-audio-open]').exists()).toBe(true)
+    expect(w.find('[data-audio-title]').exists()).toBe(false)
+    await w.get('[data-audio-open]').trigger('click')
     expect(w.get('[data-audio-title]').text().length).toBeGreaterThan(0)
     expect(w.find('[data-audio-ref] [data-icon=play]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
