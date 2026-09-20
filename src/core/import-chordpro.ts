@@ -12,7 +12,7 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
-import { DIR } from './define'
+import { DIR, rewriteDefineLines } from './define'
 import {
   isLegalStrumPattern,
   parseXStrum,
@@ -528,7 +528,9 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
   if (!fromRoot || !toRoot || keyIndex(fromRoot) === null || keyIndex(toRoot) === null) return null
 
   const delta = signedSemitoneDelta(fromRoot, toRoot)
-  const moved = delta ? transposeTextChords(src, delta, usesFlats(to)) : src
+  const flats = usesFlats(to)
+  const movedChords = delta ? transposeTextChords(src, delta, flats) : src
+  const moved = rewriteDefineLines(movedChords, delta, flats)
   const next: ChartMeta = { ...readMeta(moved), key: to }
   const playing = signedSemitoneDelta(toRoot, fromRoot)
   if (playing) next.transpose = String(playing)

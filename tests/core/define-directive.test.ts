@@ -3,11 +3,14 @@ import {
   META_KEYS,
   parse,
   parseDefineDirective,
+  rewriteToKey,
   serializeDefine,
+  setKey,
+  transpose,
   writeDefines,
   writeMeta,
 } from '../../src/core/index'
-import { DIR } from '../../src/core/define'
+import { DIR, transposeDefine } from '../../src/core/define'
 import { loadFixture } from '../helpers/load-fixture'
 
 const GUITAR_AM =
@@ -82,6 +85,23 @@ describe('parseDefineDirective', () => {
     if (r.class !== 'parse') return
     expect(r.instrument).toBe('ukulele')
     expect(r.frets).toHaveLength(4)
+  })
+
+  it('keeps keys and guitar voicing on a mixed generic define', () => {
+    const raw = '{define: C base-fret 1 frets 3 2 0 0 0 3 keys 0 4 7}'
+    const r = parseDefineDirective(raw)
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(r.instrument).toBe('piano')
+    expect(r.directive).toBe('define')
+    expect(r.frets).toEqual([3, 2, 0, 0, 0, 3])
+    expect(r.baseFret).toBe(1)
+    expect(r.keys).toEqual([0, 4, 7])
+    const out = serializeDefine(r)
+    expect(out).toContain('frets 3 2 0 0 0 3')
+    expect(out).toContain('keys 0 4 7')
+    expect(out).toContain('base-fret 1')
+    expect(parseDefineDirective(out).class).toBe('parse')
   })
 
   it('treats unknown fret arity as miss', () => {
@@ -189,3 +209,79 @@ describe('fixtures/define-roundtrip.cho', () => {
     expect(view.defines.some((d) => d.instrument === 'guitar')).toBe(true)
   })
 })
+
+describe('transposeDefine', () => {
+  it('returns null when any guitar fret is open', () => {
+    const r = parseDefineDirective(GENERIC_GUITAR)
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, 2, false)).toBeNull()
+  })
+
+  it('bumps base-fret when every slot is fretted or muted', () => {
+    const r = parseDefineDirective('{define-guitar: F base-fret 1 frets 1 3 3 2 1 1}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, 2, false)).toMatchObject({
+      name: 'G',
+      baseFret: 3,
+      frets: [1, 3, 3, 2, 1, 1],
+    })
+  })
+
+  it('drops a barred guitar define whose base-fret would fall below 1', () => {
+    const r = parseDefineDirective('{define-guitar: F base-fret 1 frets 1 3 3 2 1 1}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, -1, false)).toBeNull()
+  })
+
+  it('shifts piano keys and wraps pitch-classes 0–11', () => {
+    const r = parseDefineDirective(PIANO_C)
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'D', keys: [2, 6, 9] })
+    const b = parseDefineDirective('{define: B keys 11 3 6}')
+    expect(b.class).toBe('parse')
+    if (b.class !== 'parse') return
+    expect(transposeDefine(b, 1, false)).toMatchObject({ name: 'C', keys: [0, 4, 7] })
+  })
+
+  it('adds n without wrapping keys outside 0–11', () => {
+    const r = parseDefineDirective('{define: C keys 48 52 55}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'D', keys: [50, 54, 57] })
+  })
+})
+
+describe('transpose/setKey apply the same define rewrite as export', () => {
+  it('drops the open-G override from view.defines', () => {
+    const src = loadFixture('define-roundtrip.cho')
+    const view = parse(src)
+    expect(view.defines).toHaveLength(1)
+    expect(transpose(view, 2).defines).toEqual([])
+    expect(setKey(view, 'A').defines).toEqual([])
+  })
+})
+
+describe('rewriteToKey rewrites define lines before writeMeta', () => {
+  it('omits an open-string guitar define', () => {
+    const src = '{title:X}\n{key:G}\n{define-guitar: G base-fret 1 frets 3 2 0 0 0 3}\n[G]oi'
+    const r = rewriteToKey(src, 'A')
+    expect(r).not.toBeNull()
+    expect(r!.source).not.toMatch(/\{define-guitar:/)
+    expect(r!.source).toMatch(/\[A\]/)
+    expect(r!.source).toMatch(/\{key:A\}/)
+  })
+
+  it('bumps a barred guitar define with the same delta as the body', () => {
+    const src = '{title:X}\n{key:C}\n{define-guitar: F base-fret 1 frets 1 3 3 2 1 1}\n[F]oi'
+    const r = rewriteToKey(src, 'G')
+    expect(r).not.toBeNull()
+    expect(r!.source).toMatch(/\{define-guitar:\s*G\b/)
+    expect(r!.source).toContain('base-fret 3')
+    expect(r!.source).toMatch(/\[G\]/)
+  })
+})
+
