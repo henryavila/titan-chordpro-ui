@@ -65,7 +65,8 @@ phases:
     goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
       parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9,
       `4`/`sus`→sus4, `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11;
-      `7+`, quote junk, and `m(3b)` are AMBIGUOUS/UNPARSED; zero invented
+      `7+` and quote junk are AMBIGUOUS/UNPARSED; `m(3b)` parses as `m`;
+      slash after `/` is always bass; generator follows parser; zero invented
       voicings; no Vue in core. Oracle columns are parse-class only (Claude
       F-001)."
     dependsOn: []
@@ -116,8 +117,9 @@ phases:
         parseChordToken com aliases; testes em tests/core/chord-oracle.test.ts e
         tests/core/parse-chord-token.test.ts; exportar pelo index do core.
       rules: 7M vira maj7; 4 e sus viram sus4; 9 vira add9; 2 vira sus2; 7+ e aspas no
-        nome sao AMBIGUOUS ou UNPARSED; nao chutar voicing; zero import Vue em
-        src/core.
+        nome sao AMBIGUOUS ou UNPARSED; m(3b) parseia como m; o que vem depois de /
+        e sempre baixo; gerador segue o parser; nao chutar voicing; zero import Vue
+        em src/core.
       outOfScope: Modal de forma, SVG de braço/teclado, dicionario de voicings, parser
         de {define}, folha de editor, prefs de instrumento.
       doneWhen: tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts
@@ -273,8 +275,8 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 **Status:** complete
 **Codebase class:** populated
 **Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,overlay,transpose}.ts` (25 core `.ts`); `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog,edit/ScoreEditor,sheets/BatidaSheet,sheets/ToneSheet,chrome/CpvMoreSheet}.vue`; `src/vue/use/{useMetronome,useSongSwipe,useOverlay}.ts`; `tests/core/{layout-capo,no-vue-in-core}.test.ts`; `fixtures/sda` (148 `.cho`) + `013-ele-vive-em-mim.cho`; glob absent (F0/F1/F3 create): `src/core/parse-chord.ts`, `src/vue/overlay/DiagramModal.vue`, `tests/core/{chord-oracle,parse-chord-token,define-directive,export-cho}.test.ts` → ~40 product files read + 148 fixtures counted.
-**Commit:** 5f494e5
-**At:** 2026-09-20T11:45:00Z
+**Commit:** 0221767
+**At:** 2026-09-20T13:56:00Z
 
 ### A — Plan premises vs code
 
@@ -316,5 +318,5 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=d4d7ec6f9500 | premises=17 | impacts=8 @ 5f494e5 (2026-09-20T11:45:00Z)
+- ground-truth: complete | mode=ground-truth | fp=e7af332e5c66 | premises=17 | impacts=8 @ 0221767 (2026-09-20T13:56:00Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md

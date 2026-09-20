@@ -6,8 +6,9 @@ summary: Classificar os 257 nomes do corpus SDA e parsear o dialeto BR.
 goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
   parse, UNPARSED, or AMBIGUOUS; aliases `7M`→maj7, `7M(9)`→maj9,
   `4`/`sus`→sus4, `9`→add9, `2`→sus2, `6(9)`→6add9, `7(9)`→9, `m7(11)`→m11;
-  `7+`, quote junk, and `m(3b)` are AMBIGUOUS/UNPARSED; oracle columns are
-  parse-class only; no Vue in core."
+  `7+` and quote junk are AMBIGUOUS/UNPARSED; `m(3b)` parses as `m`; slash
+  after `/` is always bass; oracle columns are parse-class only; no Vue in
+  core."
 status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
@@ -22,8 +23,9 @@ businessIntent:
     parseChordToken com aliases; testes em tests/core/chord-oracle.test.ts e
     tests/core/parse-chord-token.test.ts; exportar pelo index do core.
   rules: 7M vira maj7; 4 e sus viram sus4; 9 vira add9; 2 vira sus2; 7+ e aspas no
-    nome sao AMBIGUOUS ou UNPARSED; nao chutar voicing; zero import Vue em
-    src/core.
+    nome sao AMBIGUOUS ou UNPARSED; m(3b) parseia como m (menor; 3b e redundante);
+    o que vem depois de / e sempre baixo; gerador da tabela segue o parser;
+    nao chutar voicing; zero import Vue em src/core.
   outOfScope: Modal de forma, SVG de braço/teclado, dicionario de voicings, parser
     de {define}, folha de editor, prefs de instrumento.
   doneWhen: tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts
@@ -119,8 +121,9 @@ tasks:
         parseChordToken("C9") is add9; parseChordToken("G2") is sus2;
         parseChordToken("C6(9)") is 6add9; parseChordToken("C7(9)") is 9;
         parseChordToken("Cm7(11)") is m11; parseChordToken("C7+") is AMBIGUOUS;
-        parseChordToken("A4\"") is UNPARSED; slash bass G/B sets bass; function
-        is exported from src/core/index.ts
+        parseChordToken("A4\"") is UNPARSED; parseChordToken("Dm(3b)") quality
+        is m; parseChordToken("Dm(3b)/F#") is m with bass F#; slash after /
+        is always bass; function is exported from src/core/index.ts
     verifier:
       kind: shell
       command: pnpm exec vitest run tests/core/parse-chord-token.test.ts
