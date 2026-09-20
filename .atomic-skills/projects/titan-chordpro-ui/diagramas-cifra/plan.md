@@ -257,8 +257,8 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 **Status:** complete
 **Codebase class:** populated
 **Scanned:** `src/core/{parse,layout,import-chordpro,export-cho,storage,types,index,score,overlay,transpose}.ts` (25 core `.ts`); `src/vue/{ChordproViewer,public,chart/ChartBody,edit/ChordDialog,edit/ScoreEditor,sheets/BatidaSheet,sheets/ToneSheet,chrome/CpvMoreSheet}.vue`; `src/vue/use/{useMetronome,useSongSwipe,useOverlay}.ts`; `tests/core/{layout-capo,no-vue-in-core}.test.ts`; `fixtures/sda` (148 `.cho`) + `013-ele-vive-em-mim.cho`; glob absent (F0/F1/F3 create): `src/core/parse-chord.ts`, `src/vue/overlay/DiagramModal.vue`, `tests/core/{chord-oracle,parse-chord-token,define-directive,export-cho}.test.ts` → ~40 product files read + 148 fixtures counted.
-**Commit:** 4b479b8
-**At:** 2026-09-20T11:12:12Z
+**Commit:** 5f494e5
+**At:** 2026-09-20T11:45:00Z
 
 ### A — Plan premises vs code
 
@@ -273,14 +273,14 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 | 7 | `ChordDialog.vue` edits the chord name only (no Forma) | ok | ChordDialog.vue:59–82 input `Nome do acorde`; no Forma control |
 | 8 | `fixtures/sda` has 148 `.cho`, `013-ele-vive-em-mim.cho` exists, unique chord names for the oracle, zero `{define}` | ok | `ls fixtures/sda/*.cho` → 148; file present; grep `{define` → 0; research-digest 257; T-001 table is SoT (balanced `[…]` 255; naive nested regex 258 includes malformed ` Je[A` in `h441-vencendo-vem-jesus.cho:14`) |
 | 9 | `tests/core/layout-capo.test.ts` and `tests/core/no-vue-in-core.test.ts` exist | ok | layout-capo.test.ts:1; no-vue-in-core.test.ts:19 `A14 no Vue in core` |
-| 10 | `src/core/index.ts` exports `parse`, not `parseChordToken` | ok | index.ts:36 `export { parse, normalizeSource, setKey, transpose } from './parse'` |
+| 10 | `src/core/index.ts` exports `parse` and F0 `parseChordToken` | ok | index.ts:36 parse; index.ts:37 `export { parseChordToken } from './parse-chord'` |
 | 11 | `parse()` exists; `ChordProView` has no `defines` | ok | parse.ts:300; types.ts:1–20 (meta/source/sections/eocOf only) |
 | 12 | `exportCho` exists in core; `tests/core/export-cho.test.ts` is F1 create (not present) | ok | export-cho.ts:3; glob test file absent |
 | 13 | `onSurfaceTap` and `useSongSwipe` already skip `[role='button']` | ok | ChordproViewer.vue:1622; useSongSwipe.ts:81–86 |
 | 14 | `ViewerCapabilities` exists (no `diagrams` field yet) | ok | public.ts:56–68 `sourcePane` / `batidaPresets` / `debugSwipe` |
 | 15 | `transposeToken` transposes the root only; suffix is opaque | ok | transpose.ts:32–42 `^([A-G](?:#\|b)?)(.*)$` |
 | 16 | SoT `projects/titan-chordpro-ui/diagramas-cifra/design.md` exists | ok | file present |
-| 17 | `parse-chord.ts` / `DiagramModal.vue` exist | n/a (create) | glob absent; F0 T-002 / F3 create them |
+| 17 | `parse-chord.ts` exists (F0 T-002); `DiagramModal.vue` still F3 create | ok / n/a | parse-chord.ts:55 `export function parseChordToken`; DiagramModal.vue glob absent |
 
 ### B — Code present, plan silent (impact candidates)
 
@@ -300,5 +300,5 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=4470a34a21d8 | premises=17 | impacts=8 @ 4b479b8 (2026-09-20T11:12:12Z)
+- ground-truth: complete | mode=ground-truth | fp=d4d7ec6f9500 | premises=17 | impacts=8 @ 5f494e5 (2026-09-20T11:45:00Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md
