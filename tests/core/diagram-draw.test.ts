@@ -1,9 +1,44 @@
 import { describe, expect, it } from 'vitest'
-import { drawDiagram, resolveDiagram } from '../../src/core/index'
+import { drawDiagram, resolveDiagram, type DiagramDraw, type FretDraw } from '../../src/core/index'
 
 const AM_FRETS = ['x', 0, 2, 2, 1, 0] as const
 const AM_FINGERS = ['x', 0, 2, 3, 1, 0] as const
 const UKE_C = [0, 0, 0, 3] as const
+
+function asFrets(d: DiagramDraw): FretDraw {
+  expect(d.kind).toBe('frets')
+  if (d.kind !== 'frets') throw new Error('expected frets draw')
+  return d
+}
+
+function diagramDotCys(svg: string): number[] {
+  return [...svg.matchAll(/class="diagram-dot"[^>]*\bcy="([\d.]+)"/g)].map((m) => Number(m[1]))
+}
+
+function stringYRange(svg: string): { y0: number; yMax: number } {
+  const m = svg.match(/class="diagram-string"[^>]*y1="([\d.]+)"[^>]*y2="([\d.]+)"/)
+  if (!m || m[1] === undefined || m[2] === undefined) throw new Error('missing string line')
+  return { y0: Number(m[1]), yMax: Number(m[2]) }
+}
+
+/** Dots sit in one coordinate space: cy between yOf(0) and yOf(maxFret). */
+function expectDotsOnFretboard(d: FretDraw): void {
+  const maxFret = Math.max(4, d.capoFret, ...d.dots.map((x) => x.fret))
+  const { y0, yMax } = stringYRange(d.svg)
+  const padY = 28
+  const fretH = 18
+  const yOf = (fret: number) => padY + fret * fretH
+  expect(y0).toBe(yOf(0))
+  expect(yMax).toBe(yOf(maxFret))
+  const cys = diagramDotCys(d.svg)
+  expect(cys).toHaveLength(d.dots.length)
+  for (const cy of cys) {
+    expect(cy).toBeGreaterThanOrEqual(yOf(0))
+    expect(cy).toBeLessThanOrEqual(yOf(maxFret))
+    expect(cy).toBeGreaterThanOrEqual(y0)
+    expect(cy).toBeLessThanOrEqual(yMax)
+  }
+}
 
 describe('drawDiagram', () => {
   it('is exported from src/core/index.ts', () => {
@@ -130,5 +165,58 @@ describe('drawDiagram', () => {
     expect(withFingers.svg).toMatch(/>3</)
     expect(dotsOnly.svg).not.toMatch(/>1</)
     expect(dotsOnly.svg).not.toMatch(/>2</)
+  })
+
+  it('keeps every diagram-dot cy between yOf(0) and yOf(maxFret) for capo 0/2, uke C capo 2, and baseFret>1', () => {
+    const cases: Array<{ token?: string; instrument: 'guitar' | 'ukulele'; voicing: { baseFret?: number; frets: Array<number | 'x'> }; capoFret: number }> = []
+    for (const token of ['C', 'F', 'G'] as const) {
+      for (const capoFret of [0, 2] as const) {
+        const hit = resolveDiagram({ token, instrument: 'guitar' })
+        expect(hit.class, token).toBe('hit')
+        if (hit.class !== 'hit' || !hit.voicing.frets) continue
+        cases.push({ token, instrument: 'guitar', voicing: { baseFret: hit.voicing.baseFret, frets: hit.voicing.frets }, capoFret })
+      }
+    }
+    cases.push({ instrument: 'ukulele', voicing: { baseFret: 1, frets: [...UKE_C] }, capoFret: 2 })
+    cases.push({
+      instrument: 'guitar',
+      voicing: { baseFret: 5, frets: ['x', 1, 3, 3, 2, 1] },
+      capoFret: 0,
+    })
+    expect(cases.length).toBeGreaterThanOrEqual(8)
+    for (const c of cases) {
+      const d = asFrets(drawDiagram({ instrument: c.instrument, voicing: c.voicing, capoFret: c.capoFret }))
+      expectDotsOnFretboard(d)
+    }
+  })
+
+  it('piano capoFret field is 0 even when a capo is set', () => {
+    const hit = resolveDiagram({ token: 'Bm', instrument: 'piano' })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const d = drawDiagram({
+      instrument: 'piano',
+      voicing: hit.voicing,
+      capoFret: 2,
+      token: 'Bm',
+    })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.capoFret).toBe(0)
+    expect(d.hasCapoBar).toBe(false)
+    expect(d.lit).toEqual([11, 2, 6])
+  })
+
+  it('does not default piano root to C when token is missing', () => {
+    const d = drawDiagram({
+      instrument: 'piano',
+      voicing: { keys: [0, 4, 7] },
+      capoFret: 2,
+    })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.capoFret).toBe(0)
+    expect(d.lit).toEqual([])
+    expect(d.litNotes).toEqual([])
   })
 })
