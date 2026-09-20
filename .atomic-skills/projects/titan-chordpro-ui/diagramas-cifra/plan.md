@@ -5,10 +5,10 @@ title: Diagramas de cifra — `titan-chordpro-ui`
 version: "1.0"
 status: active
 started: 2026-09-19T08:49:13.733Z
-lastUpdated: 2026-09-20T15:12:51.416Z
+lastUpdated: 2026-09-20T16:36:00.000Z
 branch: plan/diagramas-cifra
 executionMode: automate
-currentPhase: F1
+currentPhase: F2
 parallelismAllowed: false
 principles:
   - id: P1
@@ -174,19 +174,48 @@ phases:
             writeMeta strips {define-guitar:}, when exportCho({semitones:2})
             leaves a define that no longer matches the transposed shapeName, or
             when parse(src).defines is missing.
-          status: pending
+          status: met
+          metAt: 2026-09-20T16:35:00.000Z
+          evidence:
+            verifierKind: shell
+            verifiedAt: 2026-09-20T16:35:00.000Z
+            verifiedCommit: c1dad342cd163c55cabe5a3dc548c8743f2d5ab4
+            passed: true
+            exitCode: 0
+            outputSummary: ✓ define-directive (25) + export-cho (6); Tests 31 passed
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/define-directive.test.ts
               tests/core/export-cho.test.ts
             expectExitCode: 0
-    status: active
+    status: done
     evaluationGate:
       status: passed
       verdict: pass
       reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F1.md
       at: d6591d612ac250a8f4fc7e051c1919cb6a7e5fe3
       verifiedAt: 2026-09-20T16:10:54.000Z
+    lessonsState: recorded
+    lessonsPath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/lessons/diagramas-cifra-f1-d1-define-parse-serialize-round-trip.md
+    reviewGate:
+      status: passed
+      mode: both
+      at: c1dad342cd163c55cabe5a3dc548c8743f2d5ab4
+      reviewFile: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-close-both.md
+      localReceiptPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-close-local.md
+      codexReceiptPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-close-claude.md
+      verifiedAt: 2026-09-20T16:30:00.000Z
+    decisionReview:
+      status: passed
+      verifiedAt: 2026-09-20T16:35:00.000Z
+      packagePath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-decision-package.md
+      packagePresentedAt: 2026-09-20T16:32:00.000Z
+      evidencePath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F1.jsonl
+    deliveryAuditGate:
+      status: passed
+      verdict: CLOSED
+      reportPath: .atomic-skills/reviews/2026-09-20-diagramas-cifra-F1-delivery-audit.md
+      verifiedAt: 2026-09-20T16:35:00.000Z
     businessIntent:
       value: O musico grava uma forma so naquele arquivo ChordPro. Se writeMeta ou
         exportCho dropa {define-guitar:}, a forma some na proxima abertura e o
