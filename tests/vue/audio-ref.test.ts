@@ -81,12 +81,18 @@ function hookOf(url: ReturnType<typeof ref<string | null>>, opts: AudioRefOpts) 
 
 function fakeAudio() {
   const listeners = new Map<string, Set<() => void>>()
+  const attrs: Record<string, string | null> = {}
   const el = {
-    src: '',
     currentTime: 0,
     duration: 90,
     paused: true,
     preload: 'metadata',
+    get src() {
+      return attrs.src ?? ''
+    },
+    set src(v: string) {
+      attrs.src = v
+    },
     play: vi.fn(async () => {
       el.paused = false
       listeners.get('play')?.forEach((fn) => fn())
@@ -95,8 +101,17 @@ function fakeAudio() {
       el.paused = true
       listeners.get('pause')?.forEach((fn) => fn())
     }),
-    load: vi.fn(),
-    removeAttribute: vi.fn(),
+    load: vi.fn(() => {
+      if (!attrs.src) {
+        queueMicrotask(() => {
+          listeners.get('error')?.forEach((fn) => fn())
+        })
+      }
+    }),
+    removeAttribute: vi.fn((name: string) => {
+      attrs[name] = null
+    }),
+    getAttribute: (name: string) => attrs[name] ?? null,
     addEventListener: (type: string, fn: () => void) => {
       const set = listeners.get(type) ?? new Set<() => void>()
       set.add(fn)
@@ -104,6 +119,9 @@ function fakeAudio() {
     },
     removeEventListener: (type: string, fn: () => void) => {
       listeners.get(type)?.delete(fn)
+    },
+    emit(type: string) {
+      listeners.get(type)?.forEach((fn) => fn())
     },
   }
   return el
@@ -154,6 +172,78 @@ describe('useAudioRef', () => {
     expect(el.src).toBe('blob:test')
     expect(audio.fromCache.value).toBe(true)
     create.mockRestore()
+  })
+
+  it('does not treat a paused kind/song reload as a hard failure', async () => {
+    const url = ref<string | null>('https://cdn.sda/a.m4a?h=1')
+    const el = fakeAudio()
+    let release!: () => void
+    const gate = new Promise<void>((r) => {
+      release = r
+    })
+    let waits = 0
+    const audio = hookOf(url, {
+      createAudio: () => el as unknown as HTMLAudioElement,
+      cacheMatch: async () => {
+        waits += 1
+        if (waits === 1) return null
+        await gate
+        return null
+      },
+      cacheFill: async () => {},
+    })
+    await flushPromises()
+    expect(el.src).toBe('https://cdn.sda/a.m4a?h=1')
+    expect(audio.error.value).toBe(false)
+
+    url.value = 'https://cdn.sda/b.m4a?h=2'
+    await flushPromises()
+    expect(audio.error.value).toBe(false)
+
+    release()
+    await flushPromises()
+    expect(el.src).toBe('https://cdn.sda/b.m4a?h=2')
+    expect(audio.error.value).toBe(false)
+    expect(el.getAttribute('src')).toBe('https://cdn.sda/b.m4a?h=2')
+  })
+
+  it('ignores AbortError from an interrupted play()', async () => {
+    const url = ref<string | null>('https://cdn.sda/a.m4a?h=1')
+    const el = fakeAudio()
+    const audio = hookOf(url, {
+      createAudio: () => el as unknown as HTMLAudioElement,
+      cacheMatch: async () => null,
+      cacheFill: async () => {},
+    })
+    await flushPromises()
+    el.play.mockImplementation(async () => {
+      throw new DOMException('The play() request was interrupted', 'AbortError')
+    })
+    await audio.play()
+    expect(audio.error.value).toBe(false)
+    expect(audio.playing.value).toBe(false)
+  })
+
+  it('sets error when the current source cannot play', async () => {
+    const url = ref<string | null>('https://cdn.sda/a.m4a?h=1')
+    const el = fakeAudio()
+    const audio = hookOf(url, {
+      createAudio: () => el as unknown as HTMLAudioElement,
+      cacheMatch: async () => null,
+      cacheFill: async () => {},
+    })
+    await flushPromises()
+    el.play.mockImplementation(async () => {
+      throw new DOMException('Failed to load', 'NotSupportedError')
+    })
+    await audio.play()
+    expect(audio.error.value).toBe(true)
+
+    url.value = 'https://cdn.sda/b.m4a?h=2'
+    await flushPromises()
+    expect(audio.error.value).toBe(false)
+    el.emit('error')
+    expect(audio.error.value).toBe(true)
   })
 })
 

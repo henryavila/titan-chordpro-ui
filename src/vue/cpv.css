@@ -2839,8 +2839,7 @@ div.cpv-head-id {
   overflow-wrap: normal;
 }
 
-/* Reference now-playing — independent of Rolar. Play triangle is reserved for this.
-   Solid canvas (not --veil): the chip sits on the chart and must stay readable. */
+/* Solid --canvas: the chip sits on the chart and must stay opaque. */
 .cpv-audio-ref {
   position: relative;
   display: grid;

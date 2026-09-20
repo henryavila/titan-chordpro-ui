@@ -3,6 +3,10 @@ import { fillAudioCache, matchAudio } from './audio-cache'
 
 export const AUDIO_SKIP_SEC = 10
 
+function isAbortError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'name' in err && err.name === 'AbortError'
+}
+
 export type AudioRefOpts = {
   createAudio?: () => HTMLAudioElement
   cacheMatch?: (url: string) => Promise<Blob | null>
@@ -23,6 +27,7 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
   let el: HTMLAudioElement | null = null
   let blobUrl: string | null = null
   let generation = 0
+  let srcGen = 0
 
   const cacheMatch = opts.cacheMatch ?? matchAudio
   const cacheFill = opts.cacheFill ?? fillAudioCache
@@ -52,6 +57,8 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
       playing.value = false
     })
     node.addEventListener('error', () => {
+      if (srcGen !== generation) return
+      if (!node.getAttribute('src')) return
       error.value = true
       playing.value = false
     })
@@ -92,14 +99,19 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
       audio.src = next
       void cacheFill(next)
     }
+    srcGen = gen
+    error.value = false
     if (resume && gen === generation) void play()
   }
 
   async function play() {
     if (!el || !url.value) return
+    const gen = generation
     try {
       await el.play()
-    } catch {
+    } catch (err) {
+      if (gen !== generation) return
+      if (isAbortError(err)) return
       error.value = true
     }
   }

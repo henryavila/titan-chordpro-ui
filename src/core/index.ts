@@ -221,7 +221,6 @@ export {
 } from './import-chordpro'
 export {
   AUDIO_ART_DEFAULT_PX,
-  AUDIO_KIND_LABEL,
   AUDIO_KINDS,
   audioArtOf,
   audioArtistOf,

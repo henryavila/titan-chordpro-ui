@@ -3,11 +3,6 @@ import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 export const AUDIO_KINDS = ['sung', 'playback'] as const
 export type AudioKind = (typeof AUDIO_KINDS)[number]
 
-export const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
-  sung: 'Cantado',
-  playback: 'Playback',
-}
-
 export type AudioTracks = { sung: string | null; playback: string | null }
 
 /** Cover the consumer already resized. Pass the file’s real pixel size. */

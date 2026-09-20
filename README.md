@@ -52,7 +52,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
-Fora: login, multicifra do site, player de áudio **sincronizado**, collab em tempo real.
+Fora: login, multicifra do site, player de áudio **sincronizado**, diagramas de braço, collab em tempo real.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9

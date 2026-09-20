@@ -2,12 +2,16 @@
 import { computed, ref, watch } from 'vue'
 import {
   AUDIO_ART_DEFAULT_PX,
-  AUDIO_KIND_LABEL,
   formatAudioClock,
   type AudioKind,
 } from '@henryavila/titan-chordpro-ui'
 import defaultArt from '../assets/audio-ref-default.jpg'
 import CpvIcon from '../icon/CpvIcon.vue'
+
+const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
+  sung: 'Cantado',
+  playback: 'Playback',
+}
 
 const props = defineProps<{
   playing: boolean
