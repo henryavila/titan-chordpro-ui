@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: operator disposition T-002 majors (accept|defer|fix) then assert done
+nextAction: sync-wait F0 T-002 fix agent then validate claims
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -134,8 +134,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Writer F0 mergeou em `plan/diagramas-cifra` (`a47aa02`). Verifiers pós-merge T-001 e T-002 exit 0 na árvore mesclada. T-002 é complex (weight 3). Review both-claude: 0 blocker/critical, majors abertos. `assert --gate done` blocked até disposition. Lease limpo (`missing`). Cursor E. T-001/T-002 ainda pending no YAML.
-- **Decision log:** Merge `impl/diagramas-cifra-F0-writer`. Codex pass-1 falhou (usage limit). Claude 2.1.263 pass-1 `needs_changes`. Local grok: 1 major (QUALITY prototype). Majors não auto-fechados.
-- **Single nextAction:** operator disposition T-002 majors (accept|defer|fix) then assert done
-- **Verbatim state:** `pnpm exec vitest run tests/core/chord-oracle.test.ts` → 3 passed, exit 0. `pnpm exec vitest run tests/core/parse-chord-token.test.ts` → 9 passed, exit 0. HEAD `a47aa0222692179a81278cb5ec912d8a56ce19fe`. `assert-automate-gate --gate done` → `blocked: complex task requires durable review receipt mode both (or operator disposition skip) before done`. Reviews: `.atomic-skills/reviews/2026-09-20-diagramas-cifra-F0-T-002-both.md`. Cursor `step: E`.
-- **Uncommitted changes:** reviews T-002 + decisions + este handoff (checkpoint imediato).
+- **Narrative:** Operador escolheu Corrigir nos majors T-002. Redispatch 1: fix agent em `impl/diagramas-cifra-F0-fix1`. Cursor C, redispatchCount 1. T-001/T-002 ainda pending no YAML. Host-thin.
+- **Decision log:** disposition `fix` (AskUserQuestion). QUALITY prototype + oracle full-row + slash body UNPARSED. Codex quota fail; Claude was the external leg.
+- **Single nextAction:** sync-wait F0 T-002 fix agent then validate claims
+- **Verbatim state:** subagent `01a0bea4-39e6-7e51-a4b0-784e11f8b492`. cwd `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-fix1`. baseRef `17e4f1fe1118e484f41aef9949bf0fc6bccd453a`. `assert-automate-gate --gate spawn` → `ok`. Cursor `step: C` `redispatchCount: 1`.
+- **Uncommitted changes:** prepare fix1 + este handoff (checkpoint imediato).
