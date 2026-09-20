@@ -1,0 +1,545 @@
+{
+  "schemaVersion": "1.0",
+  "planSlug": "versoes-cifra",
+  "title": "Cifras nomeadas da mesma música",
+  "description": "Um arquivo é uma música. N cifras nomeadas no envelope; o músico troca cifra sem sair da setlist; overlay e edição no documento da cifra; persistência é o arquivo inteiro.",
+  "actor": "Músico",
+  "scenario": "Trocar cifras nomeadas da mesma música no mesmo arquivo, sem sair do item da setlist; gravar o arquivo inteiro.",
+  "audience": "both",
+  "actors": [
+    {
+      "id": "M",
+      "label": "Músico",
+      "kind": "actor"
+    },
+    {
+      "id": "V",
+      "label": "Visualizador",
+      "kind": "participant"
+    },
+    {
+      "id": "C",
+      "label": "Core",
+      "kind": "participant"
+    },
+    {
+      "id": "H",
+      "label": "Host",
+      "kind": "participant"
+    }
+  ],
+  "graph": {
+    "entry": "S1",
+    "nodes": {
+      "S1": {
+        "type": "activity",
+        "title": "Abrir a música",
+        "label": "Abrir a música",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Abre o .cho da música (um songId, um item da setlist)",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "C",
+            "text": "Pede listCharts do arquivo",
+            "async": false
+          },
+          {
+            "from": "C",
+            "to": "V",
+            "text": "Devolve as cifras: implícita default se não há envelope, ou as nomeadas na ordem do arquivo",
+            "async": true
+          }
+        ],
+        "next": "arquivoNomeado"
+      },
+      "arquivoNomeado": {
+        "type": "xor",
+        "title": "Arquivo tem cifras nomeadas",
+        "label": "O arquivo tem cifras nomeadas?",
+        "who": "Core",
+        "question": "O arquivo tem cifras nomeadas?",
+        "branches": [
+          {
+            "id": "arquivoNomeado.implicita",
+            "when": "so_a_implicita",
+            "label": "Só a implícita",
+            "next": "S2"
+          },
+          {
+            "id": "arquivoNomeado.nomeadas",
+            "when": "tem_nomeadas",
+            "label": "Tem nomeadas",
+            "next": "S3"
+          }
+        ]
+      },
+      "S2": {
+        "type": "activity",
+        "title": "Ler a cifra implícita",
+        "label": "Ler a cifra implícita",
+        "who": "Visualizador",
+        "messages": [
+          {
+            "from": "C",
+            "to": "V",
+            "text": "parse sem opts usa a cifra default; o texto atual continua válido",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Mostra a cifra; o seletor de cifra não aparece",
+            "async": true
+          }
+        ],
+        "next": "trocaMusica"
+      },
+      "S3": {
+        "type": "activity",
+        "title": "Ler a cifra nomeada ativa",
+        "label": "Ler a cifra nomeada ativa",
+        "who": "Visualizador",
+        "messages": [
+          {
+            "from": "C",
+            "to": "V",
+            "text": "parse fatiado devolve só o documento da cifra (header da música + meta e corpo dela, sem irmãs)",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Mostra o rótulo da cifra ativa colado no título; setlist e trilho de borda continuam música",
+            "async": true
+          }
+        ],
+        "next": "trocaCifra"
+      },
+      "trocaCifra": {
+        "type": "xor",
+        "title": "Troca de cifra",
+        "label": "Troca de cifra nesta música?",
+        "who": "Músico",
+        "question": "Troca de cifra nesta música?",
+        "branches": [
+          {
+            "id": "trocaCifra.sim",
+            "when": "troca_cifra",
+            "label": "Troca cifra",
+            "next": "S4"
+          },
+          {
+            "id": "trocaCifra.nao",
+            "when": "fica_nesta_cifra",
+            "label": "Fica nesta cifra",
+            "next": "trocaMusica"
+          }
+        ]
+      },
+      "S4": {
+        "type": "activity",
+        "title": "Trocar de cifra na mesma música",
+        "label": "Trocar de cifra na mesma música",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Escolhe outro rótulo no seletor do título (não usa dock nem trilho de borda)",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "C",
+            "text": "Pede o documento da cifra nova; songId permanece",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Recarrega duração, áudio e relógio desta cifra; tom/capo/speed/rolagem ficam por (música, cifra)",
+            "async": true
+          }
+        ],
+        "next": "trocaMusica"
+      },
+      "trocaMusica": {
+        "type": "xor",
+        "title": "Troca de música",
+        "label": "Troca de música na setlist?",
+        "who": "Músico",
+        "question": "Troca de música na setlist?",
+        "branches": [
+          {
+            "id": "trocaMusica.sim",
+            "when": "troca_musica",
+            "label": "Troca música",
+            "next": "S5"
+          },
+          {
+            "id": "trocaMusica.nao",
+            "when": "fica_nesta_musica",
+            "label": "Fica nesta música",
+            "next": "ensaioOuEdit"
+          }
+        ]
+      },
+      "S5": {
+        "type": "activity",
+        "title": "Trocar de música na setlist",
+        "label": "Trocar de música na setlist",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Usa dock, lista ou trilho de borda — próximo item da setlist",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Troca songId; cifra da música anterior não vai junto",
+            "async": true
+          }
+        ],
+        "next": "end_musica"
+      },
+      "end_musica": {
+        "type": "end",
+        "title": "Fim · outra música",
+        "label": "Fim · outra música"
+      },
+      "ensaioOuEdit": {
+        "type": "xor",
+        "title": "Ensaio ou edit",
+        "label": "Ensaio ou edit?",
+        "who": "Músico",
+        "question": "Ensaio ou edit?",
+        "branches": [
+          {
+            "id": "ensaioOuEdit.ensaio",
+            "when": "ensaio",
+            "label": "Ensaio",
+            "next": "S6"
+          },
+          {
+            "id": "ensaioOuEdit.edit",
+            "when": "edit",
+            "label": "Edit",
+            "next": "S7"
+          }
+        ]
+      },
+      "S6": {
+        "type": "activity",
+        "title": "Ensaio no documento da cifra",
+        "label": "Ensaio no documento da cifra",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "V",
+            "to": "C",
+            "text": "Lê overlay em cpv:my:{songId}:{chartId}; chave antiga sem cifra vira a default",
+            "async": false
+          },
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Edita Minha versão e envia sugestão desta cifra",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "H",
+            "text": "Sugestão carrega chartId; aceitar aplica no documento da cifra e devolve o arquivo inteiro",
+            "async": true
+          }
+        ],
+        "next": "levaArquivoOuCifra"
+      },
+      "S7": {
+        "type": "activity",
+        "title": "Editar o documento da cifra",
+        "label": "Editar o documento da cifra",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Edita o corpo da cifra ativa; pode adicionar, renomear rótulo ou apagar cifra (a última volta a arquivo sem envelope)",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "C",
+            "text": "replaceChart reconstitui o .cho; writer de envelope N>1 só depois do leitor existir",
+            "async": false
+          }
+        ],
+        "next": "levaArquivoOuCifra"
+      },
+      "levaArquivoOuCifra": {
+        "type": "xor",
+        "title": "Arquivo ou esta cifra",
+        "label": "Leva o arquivo ou só esta cifra?",
+        "who": "Músico",
+        "question": "Leva o arquivo ou só esta cifra?",
+        "branches": [
+          {
+            "id": "levaArquivoOuCifra.arquivo",
+            "when": "arquivo_inteiro",
+            "label": "Arquivo inteiro",
+            "next": "S8"
+          },
+          {
+            "id": "levaArquivoOuCifra.cifra",
+            "when": "so_esta_cifra",
+            "label": "Só esta cifra",
+            "next": "S9"
+          }
+        ]
+      },
+      "S8": {
+        "type": "activity",
+        "title": "Persistir o arquivo inteiro",
+        "label": "Persistir o arquivo inteiro",
+        "who": "Host",
+        "messages": [
+          {
+            "from": "V",
+            "to": "H",
+            "text": "save-content e update:source emitem o envelope completo, nunca só a cifra visível",
+            "async": false
+          },
+          {
+            "from": "H",
+            "to": "M",
+            "text": "O host guarda um .cho; as irmãs não desaparecem",
+            "async": true
+          }
+        ],
+        "next": "end_arquivo"
+      },
+      "end_arquivo": {
+        "type": "end",
+        "title": "Fim · arquivo gravado",
+        "label": "Fim · arquivo gravado"
+      },
+      "S9": {
+        "type": "activity",
+        "title": "Levar só esta cifra",
+        "label": "Levar só esta cifra",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Pede PDF, slides ou baixar esta cifra",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Exporta o documento da cifra ativa; o nome do arquivo inclui o chartId quando há irmãs",
+            "async": true
+          }
+        ],
+        "next": "end_cifra"
+      },
+      "end_cifra": {
+        "type": "end",
+        "title": "Fim · esta cifra exportada",
+        "label": "Fim · esta cifra exportada"
+      }
+    }
+  },
+  "machines": [
+    {
+      "id": "envelope",
+      "label": "Envelope no arquivo",
+      "entry": "sem_bloco",
+      "nodes": {
+        "sem_bloco": {
+          "label": "Sem bloco · cifra implícita"
+        },
+        "com_blocos": {
+          "label": "Com blocos nomeados"
+        }
+      },
+      "transitions": [
+        {
+          "id": "T_le_implicita",
+          "from": "sem_bloco",
+          "to": "sem_bloco",
+          "when": "so_a_implicita",
+          "label": "Arquivo antigo · uma cifra default",
+          "via": "arquivoNomeado.implicita",
+          "effects": []
+        },
+        {
+          "id": "T_le_nomeadas",
+          "from": "sem_bloco",
+          "to": "com_blocos",
+          "when": "tem_nomeadas",
+          "label": "Arquivo com envelope · N cifras",
+          "via": "arquivoNomeado.nomeadas",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Mostra o rótulo da cifra ativa no título",
+              "target": "M"
+            }
+          ]
+        },
+        {
+          "id": "T_escreve_n",
+          "from": "sem_bloco",
+          "to": "com_blocos",
+          "when": "edit",
+          "label": "Edit adiciona cifra · passa a envelope",
+          "via": "ensaioOuEdit.edit",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "Grava start_of_x_chart só depois do leitor existir",
+              "target": "arquivo"
+            }
+          ]
+        },
+        {
+          "id": "T_apaga_ultima",
+          "from": "com_blocos",
+          "to": "sem_bloco",
+          "when": "edit",
+          "label": "Apaga a última nomeada · volta a arquivo sem envelope",
+          "via": "ensaioOuEdit.edit",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "Reconstitui .cho sem start_of_x_chart",
+              "target": "arquivo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cifraAtiva",
+      "label": "Cifra na leitura",
+      "entry": "implicita_default",
+      "nodes": {
+        "implicita_default": {
+          "label": "Cifra implícita default"
+        },
+        "nomeada": {
+          "label": "Cifra nomeada ativa"
+        }
+      },
+      "transitions": [
+        {
+          "id": "T_fica_implicita",
+          "from": "implicita_default",
+          "to": "implicita_default",
+          "when": "so_a_implicita",
+          "label": "Sem envelope · seletor oculto",
+          "via": "arquivoNomeado.implicita",
+          "effects": []
+        },
+        {
+          "id": "T_abre_nomeada",
+          "from": "implicita_default",
+          "to": "nomeada",
+          "when": "tem_nomeadas",
+          "label": "Abre na default do arquivo",
+          "via": "arquivoNomeado.nomeadas",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Mostra rótulo da cifra default",
+              "target": "M"
+            }
+          ]
+        },
+        {
+          "id": "T_troca_cifra",
+          "from": "nomeada",
+          "to": "nomeada",
+          "when": "troca_cifra",
+          "label": "Troca chartId · songId intacto",
+          "via": "trocaCifra.sim",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "Persiste tom/capo/speed/rolagem por (songId, chartId)",
+              "target": "sessao"
+            }
+          ]
+        },
+        {
+          "id": "T_fica_cifra",
+          "from": "nomeada",
+          "to": "nomeada",
+          "when": "fica_nesta_cifra",
+          "label": "Continua na cifra ativa",
+          "via": "trocaCifra.nao",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "overlay",
+      "label": "Minha versão por cifra",
+      "entry": "legado_song",
+      "nodes": {
+        "legado_song": {
+          "label": "Chave antiga só da música"
+        },
+        "por_cifra": {
+          "label": "Chave música+cifra"
+        }
+      },
+      "transitions": [
+        {
+          "id": "T_migra_legado",
+          "from": "legado_song",
+          "to": "por_cifra",
+          "when": "ensaio",
+          "label": "Lê legado como default e grava a chave nova",
+          "via": "ensaioOuEdit.ensaio",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "cpv:my:{songId} passa a cpv:my:{songId}:default",
+              "target": "overlay"
+            }
+          ]
+        },
+        {
+          "id": "T_ops_cifra",
+          "from": "por_cifra",
+          "to": "por_cifra",
+          "when": "ensaio",
+          "label": "Ops e sugestão no documento da cifra",
+          "via": "ensaioOuEdit.ensaio",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Fila agrupa por título e rótulo da cifra",
+              "target": "H"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "ratifiedAt": "2026-09-20T18:47:26.240Z",
+  "ratifiedGraphSha": "fc1ef06b484e34cb6580c90b678824e5c2d3f180c9fbc41661a9f3c510b4ba61",
+  "ratifiedBy": "operator"
+}
