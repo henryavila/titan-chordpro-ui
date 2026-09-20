@@ -178,6 +178,7 @@ describe('CpvAudioRef', () => {
     expect(w.find('[data-audio-title]').exists()).toBe(false)
     expect(w.find('[data-audio-seek]').exists()).toBe(false)
     expect(w.find('[data-audio-close]').exists()).toBe(false)
+    expect(w.get('[data-audio-ref]').classes()).toContain('cpv-audio-ref')
     w.unmount()
   })
 
