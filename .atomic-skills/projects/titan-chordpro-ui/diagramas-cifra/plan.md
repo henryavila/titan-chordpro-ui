@@ -98,6 +98,8 @@ phases:
       reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F0.md
       at: d430a5a
       verifiedAt: 2026-09-20T12:01:00.000Z
+    lessonsState: recorded
+    lessonsPath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/lessons/diagramas-cifra-f0-d0-parser-br-oraculo-257.md
     businessIntent:
       value: O músico precisa que o core reconheça o nome brasileiro do acorde (7M, 4,
         9, 2, slash) sem inventar forma. Um C7M desenhado como C7 mente no
