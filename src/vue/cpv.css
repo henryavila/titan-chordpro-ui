@@ -2992,7 +2992,7 @@ div.cpv-head-id {
 .cpv-audio-ref-kind {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
   margin-top: 12px;
 }
@@ -3010,14 +3010,26 @@ div.cpv-head-id {
   color: var(--muted);
   line-height: 1.2;
 }
-.cpv-audio-ref-kind > button {
-  cursor: pointer;
-}
 .cpv-audio-ref-kind > .is-on {
   color: var(--chord);
 }
-.cpv-audio-ref-kind.is-switch > button:not(.is-on) {
-  color: color-mix(in srgb, var(--muted) 78%, transparent);
+/* Choice: look tappable. Solo: just the type label. */
+.cpv-audio-ref-kind.is-switch > button {
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.cpv-audio-ref-kind.is-switch > button.is-on {
+  border-color: var(--chord-edge);
+  background: var(--chord-fill);
+  color: var(--chord);
+}
+.cpv-audio-ref-kind.is-switch > button:not(.is-on):hover {
+  border-color: var(--sel-line);
+  color: var(--text);
 }
 .cpv-audio-ref-play {
   flex: none;

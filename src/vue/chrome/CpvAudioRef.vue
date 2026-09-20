@@ -136,6 +136,7 @@ function onSeek(e: PointerEvent) {
               :data-audio-kind="k"
               :aria-pressed="kind === k ? 'true' : 'false'"
               :class="{ 'is-on': kind === k }"
+              :title="`Ouvir ${AUDIO_KIND_LABEL[k]}`"
               @click="emit('kind', k)"
             >{{ AUDIO_KIND_LABEL[k] }}</button>
           </template>
