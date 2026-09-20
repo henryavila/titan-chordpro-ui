@@ -7,8 +7,9 @@
  * can be reverted one by one, and reapplied on top of a new version.
  */
 
-import { readStrumPatterns } from './import-chordpro'
+import { canonicalMetaKey, readMeta, readStrumPatterns } from './import-chordpro'
 import type { StrumPattern, StrumSlot } from './strum'
+import { keyRootOf, signedSemitoneDelta } from './transpose'
 
 export type ReadingCtx = {
   /** Semitones the reader was transposed by when the edit was made. */
@@ -110,10 +111,74 @@ export function lcsHunks(a: string[], b: string[]): Hunk[] {
   return hunks
 }
 
+function chordsOf(src: string): string[] {
+  return [...String(src).matchAll(/\[([^\]]+)\]/g)].map((m) => m[1] ?? '').filter(Boolean)
+}
+
+function tokenDelta(from: string, to: string): number | null {
+  const a = from.split('/')
+  const b = to.split('/')
+  if (a.length !== b.length) return null
+  let k: number | null = null
+  for (let i = 0; i < a.length; i++) {
+    const ra = keyRootOf(a[i])
+    const rb = keyRootOf(b[i])
+    if (!ra || !rb) return null
+    if ((a[i] ?? '').slice(ra.length) !== (b[i] ?? '').slice(rb.length)) return null
+    const d = signedSemitoneDelta(ra, rb)
+    if (k == null) k = d
+    else if (k !== d) return null
+  }
+  return k
+}
+
+function isHeaderMetaLine(line: string): boolean {
+  const d = String(line).match(/^\s*\{\s*([a-zA-Z_]+)\s*:/)
+  if (!d) return false
+  return canonicalMetaKey(d[1] ?? '') != null
+}
+
+/** Body identity ignoring header meta and the pitch of chord tokens. */
+function bodyMask(src: string): string {
+  return String(src)
+    .split('\n')
+    .filter((l) => !isHeaderMetaLine(l) && l.trim() !== '')
+    .map((l) => l.replace(/\[[^\]]*\]/g, '[]'))
+    .join('\n')
+}
+
+function uniformChordDelta(oldSrc: string, newSrc: string): number | null {
+  const a = chordsOf(oldSrc)
+  const b = chordsOf(newSrc)
+  if (a.length < 2 || a.length !== b.length) return null
+  let k: number | null = null
+  for (let i = 0; i < a.length; i++) {
+    const d = tokenDelta(a[i] ?? '', b[i] ?? '')
+    if (d == null) return null
+    if (k == null) k = d
+    else if (k !== d) return null
+  }
+  return k
+}
+
+/**
+ * A whole-chart rewrite (fake-capo / transpose every token by the same k,
+ * lyrics untouched) is one suggestion, not one op per sung line. Comments
+ * and blank lines would otherwise split the LCS into N trechos.
+ */
+function isUniformChartRewrite(oldSrc: string, newSrc: string): boolean {
+  if (bodyMask(oldSrc) !== bodyMask(newSrc)) return false
+  const k = uniformChordDelta(oldSrc, newSrc)
+  return k != null && k !== 0
+}
+
 export function diffOps(oldSrc: string, newSrc: string, ctx: ReadingCtx): TextOp[] {
   const a = String(oldSrc).split('\n')
   const b = String(newSrc).split('\n')
-  return lcsHunks(a, b).map((h, k) => {
+  const hunks = isUniformChartRewrite(oldSrc, newSrc)
+    ? [{ ai: 0, aj: a.length, bi: 0, bj: b.length }]
+    : lcsHunks(a, b)
+  return hunks.map((h, k) => {
     const before = a.slice(h.ai, h.aj)
     const after = b.slice(h.bi, h.bj)
     const anchor = h.ai > 0 ? (a[h.ai - 1] ?? '') : ''
@@ -301,6 +366,14 @@ export function strumReviewFromOp(op: OverlayOp): StrumReview | null {
 
 export function opLabel(op: OverlayOp): string {
   if (isTuneOp(op)) return 'Tom e capo fixos'
+  if (
+    !isTuneOp(op) &&
+    op.type === 'replace' &&
+    isUniformChartRewrite(op.before.join('\n'), op.after.join('\n'))
+  ) {
+    const key = (readMeta(op.after.join('\n')).key ?? '').trim()
+    return key ? `Cifra reescrita no tom ${key}` : 'Cifra reescrita'
+  }
   const hunk = op.type === 'delete' ? op.before : [...op.before, ...op.after]
   const meaningful = hunk.filter((t) => String(t).trim())
   const hasBatida = meaningful.some(isStrumDirective)

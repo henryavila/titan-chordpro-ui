@@ -23,6 +23,7 @@ import {
   emptyPattern,
   gridFromDensity,
   parse,
+  transpose,
   isCompleteStrumPattern,
   repairStrumPattern,
   playheadAtScroll,
@@ -32,7 +33,6 @@ import {
   scrollAtPlayhead,
   sheetBpm,
   transposeToken,
-  formatToneShift,
   typeScale,
   usesFlats,
   viewerMulStep,
@@ -775,30 +775,27 @@ const metaGapLabel = computed(() => {
 })
 const hasKey = computed(() => !!meta.value.key)
 const flats = computed(() => usesFlats(meta.value.key))
-const fileTranspose = computed(() => {
-  const n = Number(meta.value.transpose)
-  return Number.isFinite(n) ? n : 0
-})
-const viewSemis = computed(() =>
-  isEdit.value ? 0 : offset.value + fileTranspose.value,
+const viewSemis = computed(() => (isEdit.value ? 0 : offset.value))
+const originalKey = computed(() => meta.value.key || '')
+const shownKey = computed(() =>
+  originalKey.value ? transposeToken(originalKey.value, offset.value, flats.value) : '',
 )
-const shownKey = computed(() => (meta.value.key ? transposeToken(meta.value.key, offset.value, flats.value) : ''))
 const playingKey = computed(() =>
-  meta.value.key ? transposeToken(meta.value.key, viewSemis.value, flats.value) : '',
+  originalKey.value ? transposeToken(originalKey.value, viewSemis.value, flats.value) : '',
 )
 const toneLabel = computed(() => {
-  if (!meta.value.key) return ''
-  const id = fileTranspose.value ? meta.value.key : shownKey.value
-  const bits = [id]
-  if (fileTranspose.value && playingKey.value && playingKey.value !== id) bits.push(`tocando em ${playingKey.value}`)
+  if (!originalKey.value) return ''
+  const bits = [originalKey.value]
+  if (offset.value && playingKey.value && playingKey.value !== originalKey.value) {
+    bits.push(`tocando em ${playingKey.value}`)
+  }
   if (hasCapo.value) bits.push(`capo ${capo.value}`)
   return bits.join(' · ')
 })
 const songKeyCaption = computed(() => {
-  const written = meta.value.key
-  const shift = formatToneShift(viewSemis.value)
-  if (!written || !shift) return ''
-  return `${written} · ${shift}`
+  if (!originalKey.value || !offset.value || !playingKey.value) return ''
+  if (playingKey.value === originalKey.value) return ''
+  return `tocando em ${playingKey.value}`
 })
 /** The shapes a capo player frets: `capo` frets below what sounds. */
 const shapeKey = computed(() => transposeToken(meta.value.key || '', viewSemis.value - capo.value, flats.value))
@@ -893,7 +890,8 @@ const hintFit = computed(
 )
 const hasOffset = computed(() => offset.value !== 0)
 const hasCapo = computed(() => capo.value > 0)
-const hasReset = computed(() => hasOffset.value || hasCapo.value)
+const hasReset = computed(() => hasOffset.value)
+const fileCapo = computed(() => Math.max(0, Number(meta.value.capo) || 0))
 const canEditNow = computed(
   () => !isEdit.value && isPopulated.value && props.canEdit && modes.value.length > 0,
 )
@@ -918,7 +916,9 @@ const editBadge = computed(() => (wMode.value === 'persisted' ? 'Para todos' : '
 const capoLabel = computed(() => (capo.value === 0 ? 'Sem capo' : `${capo.value}ª casa`))
 /** Fallback copy when there are no chord tokens to chip. */
 const capoHint = computed(() => {
-  if (capo.value === 0) return 'A cifra fica no tom real.'
+  if (capo.value === 0) {
+    return fileCapo.value ? `Cifra sugere capo ${fileCapo.value}` : 'A cifra fica no tom real.'
+  }
   if (!capoPairs.value.length) return `Formas de ${shapeKey.value}`
   return ''
 })
@@ -1522,7 +1522,6 @@ function shift(n: number) {
 function resetTone() {
   stopScroll()
   offset.value = 0
-  capo.value = 0
 }
 
 function setCapo(n: number) {
@@ -1769,7 +1768,7 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   hasKey: hasKey.value,
   hasReset: hasReset.value,
   toneLabel: toneLabel.value,
-  playingKey: playingKey.value,
+  playingKey: originalKey.value,
   songKeyCaption: songKeyCaption.value,
   hasCapo: hasCapo.value,
   capoBtnLabel: capoBtnLabel.value,
@@ -1897,6 +1896,9 @@ function exitEdit() {
   // The local draft has already become the overlay; a "for everyone" draft
   // that was never saved stays on screen, so it cannot be lost by leaving.
   if (local || !session.dirty()) forceBase()
+  offset.value = enterCtx.transpose
+  capo.value = enterCtx.capo
+  capoMap.value = !!enterCtx.dual
   emit('update:mode', 'view')
 }
 
@@ -2067,7 +2069,7 @@ async function doExportPdf() {
     if (props.pdfShouldFail) throw new Error('simulado')
     const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
     // The PDF always uses the default scale: fit mode serves the screen, not paper.
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = transpose(parse(exportSource()), offset.value)
     // A personal version leaves marked on paper too: it must not circulate as
     // the team's chart.
     const bytes = await renderPdf(view, {
@@ -2102,7 +2104,7 @@ async function doExportSlides() {
   try {
     if (props.slidesShouldFail) throw new Error('simulado')
     const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = transpose(parse(exportSource()), offset.value)
     const bytes = await renderSlja(view, {
       title: meta.value.title ?? 'cifra',
       coverImage: await imageBytes(props.coverImage),
@@ -2293,7 +2295,8 @@ function syncHostSource() {
   wMode.value = null
   capo.value = 0
   stopScroll()
-  offset.value = 0
+  const fileT = Number(readMeta(src).transpose)
+  offset.value = Number.isFinite(fileT) ? fileT : 0
   mul.value = 1
   // Coming back to a song already rehearsed: tone, capo and speed are picked
   // back up. A tone the reader pinned still wins, just below.

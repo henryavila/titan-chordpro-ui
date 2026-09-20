@@ -1,5 +1,3 @@
-import { transposeToken, usesFlats } from './transpose'
-
 export function exportCho(
   source: string,
   opts?: { key?: string | null; semitones?: number; capo?: number },
@@ -7,15 +5,15 @@ export function exportCho(
   const n = opts?.semitones ?? 0
   const capo = opts?.capo ?? 0
   let out = source
-  const keyMatch = source.match(/\{\s*key\s*:\s*([^}]*)\}/i)
-  const sourceKey = keyMatch?.[1]?.trim() ?? opts?.key ?? null
-  const flats = usesFlats(sourceKey)
+  out = out.replace(/\{\s*transpose\s*:[^}]*\}[ \t]*\n?/gi, '')
   if (n) {
-    out = out
-      .replace(/\[([^\]]*)\]/g, (_, c: string) => `[${transposeToken(c, n, flats)}]`)
-      .replace(/^(\s*\{\s*key\s*:\s*)([^}]*)\}/gim, (_, a: string, k: string) => {
-        return `${a}${transposeToken(k.trim(), n, flats)}}`
-      })
+    const keyLine = out.match(/^\s*\{\s*key\s*:[^}]*\}[ \t]*\n?/im)
+    if (keyLine && keyLine.index != null) {
+      const at = keyLine.index + keyLine[0].length
+      out = `${out.slice(0, at)}{transpose:${n}}\n${out.slice(at)}`
+    } else {
+      out = `{transpose:${n}}\n${out}`
+    }
   }
   if (capo) {
     out = out.replace(/\{\s*capo\s*:[^}]*\}[ \t]*\n?/gi, '')

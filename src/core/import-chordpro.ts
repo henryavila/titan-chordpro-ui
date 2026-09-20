@@ -290,6 +290,8 @@ export type KeyRewriteOffer = {
   declaredKey: string
   writtenKey: string
   capo: number
+  /** `signedSemitoneDelta(declared, written)` — stored as `{transpose:}`. */
+  k: number
 }
 
 export type ImportResult = {
@@ -466,14 +468,20 @@ export function writeMeta(source: string, meta: ChartMeta): string {
   return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
 }
 
-/**
- * How many body chords share `root` (tabs and scores skipped). `{key:}` is the
- * tom — this is only a presence count for the fake-capo check, not a guess.
- */
-function countRootHits(source: string, root: string): number {
-  const want = keyIndex(keyRootOf(root))
-  if (want == null) return 0
-  let n = 0
+/** Lyric-bearing line: not a directive, not a clock/chord-only intro. */
+function isSungLine(raw: string): boolean {
+  const t = String(raw ?? '').trim()
+  if (!t || /^\s*\{/.test(t)) return false
+  let s = t.replace(/\[[^\]]*\]/g, ' ')
+  s = s.replace(/\b[xX]\/+/g, ' ')
+  s = s.replace(/\/{2,}/g, ' ')
+  s = s.replace(/\b[xX]\b/g, ' ')
+  s = s.replace(/\/[_-]/g, ' ')
+  return /[A-Za-zÀ-ÿ]/.test(s)
+}
+
+function sungRootIndexes(source: string): number[] {
+  const idx: number[] = []
   let tab = false
   let score = false
   for (const raw of String(source ?? '').split('\n')) {
@@ -495,34 +503,80 @@ function countRootHits(source: string, root: string): number {
       score = false
       continue
     }
-    if (tab || score || d) continue
+    if (tab || score) continue
+    if (!isSungLine(raw)) continue
     for (const m of raw.matchAll(/\[([A-G](?:#|b)?)/g)) {
-      if (keyIndex(m[1] ?? '') === want) n++
+      const i = keyIndex(m[1] ?? '')
+      if (i != null) idx.push(i)
     }
   }
-  return n
+  return idx
+}
+
+function rootHits(indexes: number[], root: string): number {
+  const want = keyIndex(keyRootOf(root))
+  if (want == null) return 0
+  return indexes.filter((i) => i === want).length
+}
+
+/** I, IV and V roots of `key` all appear in the sung indexes. */
+function hasOneFourFive(indexes: number[], key: string): boolean {
+  const i = keyIndex(keyRootOf(key))
+  if (i == null) return false
+  const set = new Set(indexes)
+  return set.has(i) && set.has((i + 5) % 12) && set.has((i + 7) % 12)
+}
+
+function rewriteOffer(declaredKey: string, writtenKey: string, capo: number): KeyRewriteOffer {
+  return {
+    declaredKey,
+    writtenKey,
+    capo,
+    k: signedSemitoneDelta(declaredKey, writtenKey),
+  }
 }
 
 /**
- * Fake-capo pattern: `{key:}` is the tom; `{capo:N}` is the interval the body
- * is written below that tom (shapes, not a guitar capo). The written key is
- * `{key:}` transposed down N — not the most frequent chord, not the first
- * chord of the intro. Real capo (body already in `{key:}`) stays.
+ * Written key vs `{key:}`. With `{capo:N}`, N is the interval (not a live
+ * capo). Without capo, a unique k ∈ {±1, ±2} on the sung body (not the intro
+ * clock, not the first chord, not chord frequency). Real capo (body already
+ * in `{key:}`) stays.
  */
 export function detectKeyRewrite(source: string): KeyRewriteOffer | null {
   const src = String(source ?? '')
   if (!src.trim()) return null
   const meta = readMeta(src)
   const declaredKey = (meta.key ?? '').trim()
-  const capo = Number(meta.capo) || 0
-  if (!declaredKey || !capo) return null
+  if (!declaredKey) return null
   const kr = keyRootOf(declaredKey)
   if (keyIndex(kr) == null) return null
-  const writtenKey = transposeToken(declaredKey, -capo, usesFlats(declaredKey))
-  const wr = keyRootOf(writtenKey)
-  if (!wr || keyIndex(kr) === keyIndex(wr)) return null
-  if (countRootHits(src, wr) <= countRootHits(src, kr)) return null
-  return { declaredKey, writtenKey, capo }
+  const capo = Number(meta.capo) || 0
+  const sung = sungRootIndexes(src)
+  const declaredHits = rootHits(sung, declaredKey)
+
+  if (capo) {
+    const writtenKey = transposeToken(declaredKey, -capo, usesFlats(declaredKey))
+    const wr = keyRootOf(writtenKey)
+    if (!wr || keyIndex(kr) === keyIndex(wr)) return null
+    const writtenHits = rootHits(sung, writtenKey)
+    if (writtenHits <= 0) return null
+    if (writtenHits <= declaredHits) return null
+    return rewriteOffer(declaredKey, writtenKey, capo)
+  }
+
+  if (declaredHits > 0 && hasOneFourFive(sung, declaredKey)) return null
+
+  const found: KeyRewriteOffer[] = []
+  for (const step of [-2, -1, 1, 2] as const) {
+    const writtenKey = transposeToken(declaredKey, step, usesFlats(declaredKey))
+    if (keyIndex(keyRootOf(writtenKey)) === keyIndex(kr)) continue
+    const writtenHits = rootHits(sung, writtenKey)
+    if (writtenHits <= 0) continue
+    if (declaredHits > 0 && writtenHits <= declaredHits) continue
+    if (!hasOneFourFive(sung, writtenKey)) continue
+    found.push(rewriteOffer(declaredKey, writtenKey, 0))
+  }
+  return found.length === 1 ? (found[0] ?? null) : null
 }
 
 export type RewriteToKeyResult = {
@@ -534,9 +588,9 @@ export type RewriteToKeyResult = {
 }
 
 /**
- * Move the written chords to `targetKey`. A `{capo:}` that only encoded that
- * gap is dropped. Does not store `{transpose:}` — the body is now the declared
- * tom. Playing in another key is the live transpose control.
+ * Move the written chords to `targetKey` and store `{transpose:k}` so the
+ * reading stays where it was. A `{capo:}` that only encoded that gap is
+ * dropped. Body delta is −k; k is `signedSemitoneDelta(declared, written)`.
  */
 export function rewriteToKey(source: string, targetKey: string): RewriteToKeyResult | null {
   const src = String(source ?? '')
@@ -549,18 +603,20 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
   const toRoot = keyRootOf(to)
   if (!fromRoot || !toRoot || keyIndex(fromRoot) === null || keyIndex(toRoot) === null) return null
 
-  const delta = signedSemitoneDelta(fromRoot, toRoot)
-  const moved = delta ? transposeTextChords(src, delta, usesFlats(to)) : src
+  const bodyDelta = signedSemitoneDelta(fromRoot, toRoot)
+  const playing = signedSemitoneDelta(toRoot, fromRoot)
+  const moved = bodyDelta ? transposeTextChords(src, bodyDelta, usesFlats(to)) : src
   const next: ChartMeta = { ...readMeta(moved), key: to }
-  delete next.transpose
-  if (offer) delete next.capo
+  if (playing) next.transpose = String(playing)
+  else delete next.transpose
+  if (offer && offer.capo) delete next.capo
 
   const out = writeMeta(moved, next)
   return {
     source: out,
     from: fromKey,
     to,
-    transpose: 0,
+    transpose: playing,
     changed: out !== src,
   }
 }
@@ -1022,6 +1078,8 @@ export type EnrichProposal = {
   conflicts: EnrichConflict[]
   youtube: EnrichYoutube | null
   capoWarning: string | null
+  /** Same rewrite card as import, when the probe (local body + CC tom/capo) mismatches. */
+  keyRewrite: KeyRewriteOffer | null
   /** True when the CC page has no `strummings` payload (toolbar “Batidas” may still show). */
   strumMissing: boolean
   /**
@@ -1131,8 +1189,15 @@ export function proposeCifraClubEnrich(
   const capoN = Math.max(0, Math.min(9, Number(page.capo) || 0))
   const capoWarning =
     capoN > 0
-      ? `Cifra Club usa capo ${capoN} (formas no site). A cifra local não foi alterada.`
+      ? `Cifra sugere capo ${capoN}`
       : null
+  const probeMeta: ChartMeta = {
+    ...local,
+    ...(page.key ? { key: page.key } : {}),
+    ...(capoN > 0 ? { capo: String(capoN) } : {}),
+  }
+  const keyRewrite =
+    detectKeyRewrite(source) ?? detectKeyRewrite(writeMeta(source, probeMeta))
 
   return {
     proposed,
@@ -1140,6 +1205,7 @@ export function proposeCifraClubEnrich(
     conflicts,
     youtube,
     capoWarning,
+    keyRewrite,
     strumMissing: page.strums.length === 0,
     strumConflict,
   }

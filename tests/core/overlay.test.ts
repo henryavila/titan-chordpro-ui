@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseXStrum, writeStrumPatterns } from '../../src/core'
+import { parseXStrum, readMeta, rewriteToKey, writeStrumPatterns } from '../../src/core'
 import {
   absorbInto,
   absorbedOp,
@@ -15,6 +15,7 @@ import {
   tuneText,
 } from '../../src/core/overlay'
 import type { Overlay, TuneOp } from '../../src/core/overlay'
+import { loadFixture } from '../helpers/load-fixture'
 
 const CTX = { transpose: 0, capo: 0 }
 const official = ['{title: T}', '{key: G}', '', '[G]linha um', '[C]linha dois', '[D]linha três'].join(
@@ -49,6 +50,34 @@ describe('diffOps', () => {
     expect(diffOps(official, added, CTX)[0]?.type).toBe('insert')
     const removed = official.split('\n').filter((l) => l !== '[C]linha dois').join('\n')
     expect(diffOps(official, removed, CTX)[0]?.type).toBe('delete')
+  })
+
+  it('keeps two distant one-chord edits as two ops', () => {
+    const src = [
+      '{title: T}',
+      '{key: G}',
+      '',
+      '[G]um',
+      '[C]dois',
+      '[D]três',
+      '[G]quatro',
+      '[C]cinco',
+      '[D]seis',
+    ].join('\n')
+    const mine = src.replace('[G]um', '[A]um').replace('[D]seis', '[E]seis')
+    expect(diffOps(src, mine, CTX)).toHaveLength(2)
+  })
+
+  it('collapses a full key rewrite into one suggestion op', () => {
+    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
+    const done = rewriteToKey(src, 'Ab')!
+    const ops = diffOps(src, done.source, CTX)
+    expect(ops).toHaveLength(1)
+    expect(ops[0]?.type).toBe('replace')
+    expect(applyOps(src, ops).text).toBe(done.source)
+    expect(applyOps(src, ops).failed).toHaveLength(0)
+    expect(opLabel(ops[0]!)).toBe('Cifra reescrita no tom Ab')
+    expect(readMeta(ops[0]!.after.join('\n')).transpose).toBe('-1')
   })
 })
 

@@ -63,9 +63,22 @@ async function enterContent(w: ReturnType<typeof viewer>) {
 }
 
 describe('MetaDialog', () => {
-  it('does not offer rewrite in metadata — that question is import-only', () => {
+  it('offers rewrite for a registered fake-capo chart', () => {
     const w = dialog(loadFixture('sda/082-o-rei-vem-vindo.cho'))
-    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(true)
+    expect(w.text()).toMatch(/Declarado/)
+    expect(w.text()).toMatch(/Escrito/)
+    expect(w.get('[data-meta-capo-hint]').text()).toMatch(/sugere capo 1/)
+  })
+
+  it('rewriting 082 stores {transpose:-1} and the body in Ab', async () => {
+    const w = dialog(loadFixture('sda/082-o-rei-vem-vindo.cho'))
+    await w.get('[data-meta-rewrite-go]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toMatch(/\{key:Ab\}/)
+    expect(next).toMatch(/\{transpose:-1\}/)
+    expect(next).toContain('[Ab]')
+    expect(next).not.toMatch(/\{capo:/)
   })
 
   it('does not offer rewrite when {key:} is already the tom (V outnumbers I, no capo)', () => {

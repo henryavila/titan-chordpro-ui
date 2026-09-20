@@ -83,7 +83,7 @@ const emit = defineEmits<{
         style="height:48px;border:0;border-radius:14px;background:var(--chord-fill);color:var(--chord);font-size:13.5px;font-weight:600;"
         @click="hasReset && $emit('reset')"
       >
-        Voltar ao tom original, sem capo
+        Voltar ao tom original
       </button>
     </div>
   </div>
