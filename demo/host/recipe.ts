@@ -92,6 +92,7 @@ export const DEMOS: readonly DemoEntry[] = [
     extra: [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
+      { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
     ],
   },
   {
@@ -331,6 +332,8 @@ export type LabQuery = {
   zonas: boolean
   /** Stamp rehearsal audio on the demo chart: one track, both, or none. */
   audio: false | 'cantado' | 'playback' | 'ambos'
+  /** When false (`capa=0`), skip cover so the packaged generic art shows. */
+  capa: boolean
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -368,6 +371,7 @@ export function labQuery(search: string): LabQuery {
     hideComments: p.get('comentarios') === '0',
     zonas: p.get('zonas') === '1',
     audio: parseDemoAudio(p.get('audio')),
+    capa: p.get('capa') !== '0',
   }
 }
 

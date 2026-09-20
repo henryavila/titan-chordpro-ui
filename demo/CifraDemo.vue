@@ -66,7 +66,7 @@ function withAudio(cho: string) {
     ...(lab.audio === 'playback' || lab.audio === 'ambos'
       ? { playback: refPlaybackUrl }
       : {}),
-    art: { url: refArtUrl, width: 512, height: 512 },
+    ...(lab.capa ? { art: { url: refArtUrl, width: 512, height: 512 } } : {}),
   })
   const m = readMeta(next)
   if (!m.artist && !m.subtitle) {

@@ -171,6 +171,7 @@ describe('labQuery', () => {
       hideComments: false,
       zonas: false,
       audio: false,
+      capa: true,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
@@ -185,9 +186,11 @@ describe('labQuery', () => {
       hideComments: false,
       zonas: false,
       audio: false,
+      capa: true,
     })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
-    expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos' })
+    expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos', capa: true })
+    expect(labQuery('?audio=1&capa=0')).toMatchObject({ audio: 'ambos', capa: false })
     expect(labQuery('?audio=cantado')).toMatchObject({ audio: 'cantado' })
     expect(labQuery('?audio=sung')).toMatchObject({ audio: 'cantado' })
     expect(labQuery('?audio=playback')).toMatchObject({ audio: 'playback' })
