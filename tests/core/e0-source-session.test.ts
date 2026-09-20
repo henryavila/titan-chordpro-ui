@@ -14,10 +14,10 @@ describe('E0 source session', () => {
 
   it('setMeta also writes duration, time and reference', () => {
     const s = createSourceSession({ source: '{title: T}\n[G]a\n' })
-    s.setMeta({ duration: '04:26', time: '6/8', x_origem: 'https://youtu.be/x' })
+    s.setMeta({ duration: '04:26', time: '6/8', x_source: 'https://youtu.be/x' })
     expect(s.getSource()).toMatch(/\{duration:04:26\}/)
     expect(s.getSource()).toMatch(/\{time:6\/8\}/)
-    expect(s.getSource()).toMatch(/\{x_origem:https:\/\/youtu\.be\/x\}/)
+    expect(s.getSource()).toMatch(/\{x_source:https:\/\/youtu\.be\/x\}/)
     expect(s.getView().meta.duration).toBe('04:26')
     expect(s.getView().meta.time).toBe('6/8')
   })

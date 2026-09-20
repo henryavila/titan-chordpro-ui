@@ -91,6 +91,7 @@ export const DEMOS: readonly DemoEntry[] = [
 />`,
     extra: [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
+      { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
     ],
   },
   {
@@ -328,6 +329,8 @@ export type LabQuery = {
   hideComments: boolean
   /** Paint swipe rails in the rehearsal chart. */
   zonas: boolean
+  /** Stamp rehearsal audio on the demo chart: one track, both, or none. */
+  audio: false | 'cantado' | 'playback' | 'ambos'
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -364,7 +367,15 @@ export function labQuery(search: string): LabQuery {
     lens: lens === 'none' || lens === 'letra' || lens === 'nashville' ? lens : null,
     hideComments: p.get('comentarios') === '0',
     zonas: p.get('zonas') === '1',
+    audio: parseDemoAudio(p.get('audio')),
   }
+}
+
+function parseDemoAudio(raw: string | null): LabQuery['audio'] {
+  if (raw === '1' || raw === 'ambos') return 'ambos'
+  if (raw === 'cantado' || raw === 'sung') return 'cantado'
+  if (raw === 'playback') return 'playback'
+  return false
 }
 
 /** Creating a chart is always persisted. Otherwise editMode / modes query, or local. */
