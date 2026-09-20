@@ -56,7 +56,7 @@ em 360px exige rolagem horizontal. Aceitável ou precisa encolher?
   recalculada só quando a música ou a altura do conteúdo muda.
 - **Erro de leitura grave**: fonte não-ChordPro ou sem linhas legíveis mostra tela de erro
   (prop `forceParseError` força o estado para revisão).
-- **`{capo:}` do arquivo** é lido e pré-carrega o controle; export não duplica a diretiva.
+- **`{capo:}` do arquivo** é dica de arranjo; **não** pré-carrega o capotraste ao vivo (começa em 0). Export de leitura grava `{transpose:}` e não reescreve `{key:}`.
 - **Acordes dentro de comentários** agora são transpostos junto.
 - **Acorde no meio de palavra** sai do fluxo (largura zero) para não abrir buraco na letra.
 - **Alvos de toque** do transpose: 40×34px dentro de uma pílula de 38px.
