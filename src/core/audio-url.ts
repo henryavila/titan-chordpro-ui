@@ -1,5 +1,15 @@
 import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 
+export const AUDIO_KINDS = ['cantado', 'playback'] as const
+export type AudioKind = (typeof AUDIO_KINDS)[number]
+
+export const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
+  cantado: 'Cantado',
+  playback: 'Playback',
+}
+
+export type AudioTracks = { cantado: string | null; playback: string | null }
+
 /**
  * Direct audio the rehearsal player will fetch. YouTube/Spotify/data/file
  * are not playable here — the consumer hosts a file or a streaming GET.
@@ -30,28 +40,57 @@ function blockedHost(host: string): boolean {
   return false
 }
 
+function kindKey(kind: AudioKind): 'x_audio_cantado' | 'x_audio_playback' {
+  return kind === 'playback' ? 'x_audio_playback' : 'x_audio_cantado'
+}
+
 /**
- * Write or clear `{x_audio:}` on a chart. Merges with the existing header so
- * title / youtube / batida stay put. Invalid URLs throw — the viewer never
- * writes this; the consumer does, before persist.
+ * Write or clear one rehearsal track. `cantado` also drops the legacy
+ * `{x_audio:}` so a chart does not carry two sung URLs.
  */
-export function setAudioUrl(source: string, url: string | null): string {
+export function setAudioUrl(
+  source: string,
+  url: string | null,
+  kind: AudioKind = 'cantado',
+): string {
   const cur: ChartMeta = { ...readMeta(source) }
+  const key = kindKey(kind)
+  if (kind === 'cantado') delete cur.x_audio
   if (url == null || !String(url).trim()) {
-    delete cur.x_audio
+    delete cur[key]
     return writeMeta(source, cur)
   }
   const ok = playableAudioUrl(url)
   if (!ok) {
     throw new Error('x_audio must be an http(s) audio file URL (not YouTube)')
   }
-  cur.x_audio = ok
+  cur[key] = ok
   return writeMeta(source, cur)
 }
 
-/** Playable `{x_audio:}` or null (missing, empty, or a blocked host). */
-export function audioUrlOf(source: string): string | null {
-  return playableAudioUrl(readMeta(source).x_audio)
+/** Both tracks. Legacy `{x_audio:}` fills cantado when the typed key is empty. */
+export function audioTracksOf(source: string): AudioTracks {
+  const m = readMeta(source)
+  return {
+    cantado: playableAudioUrl(m.x_audio_cantado) ?? playableAudioUrl(m.x_audio),
+    playback: playableAudioUrl(m.x_audio_playback),
+  }
+}
+
+export function audioUrlOf(source: string, kind?: AudioKind): string | null {
+  const t = audioTracksOf(source)
+  if (kind) return t[kind]
+  return t.cantado ?? t.playback
+}
+
+export function defaultAudioKind(tracks: AudioTracks): AudioKind | null {
+  if (tracks.cantado) return 'cantado'
+  if (tracks.playback) return 'playback'
+  return null
+}
+
+export function audioKindsOf(tracks: AudioTracks): AudioKind[] {
+  return AUDIO_KINDS.filter((k) => tracks[k])
 }
 
 /**

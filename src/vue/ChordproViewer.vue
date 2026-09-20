@@ -44,8 +44,11 @@ import {
   writeStrumPatterns,
   audioArtOf,
   audioArtistOf,
-  audioUrlOf,
+  audioKindsOf,
+  audioTracksOf,
+  defaultAudioKind,
   displaySongTitle,
+  type AudioKind,
   STORE_KEYS,
   browserStore,
   type StrumPattern,
@@ -362,7 +365,24 @@ const effTheme = computed<'light' | 'dark'>(() =>
       : 'light',
 )
 const liveSource = computed(() => working.value)
-const audioUrl = computed(() => (isEdit.value ? null : audioUrlOf(liveSource.value)))
+const audioTracks = computed(() =>
+  isEdit.value
+    ? { cantado: null, playback: null }
+    : audioTracksOf(liveSource.value),
+)
+const audioKinds = computed(() => audioKindsOf(audioTracks.value))
+const audioKind = ref<AudioKind>('cantado')
+watch(
+  audioTracks,
+  (t) => {
+    const fallback = defaultAudioKind(t)
+    if (!fallback) return
+    if (!t[audioKind.value]) audioKind.value = fallback
+  },
+  { immediate: true },
+)
+const audioUrl = computed(() => audioTracks.value[audioKind.value])
+const audioKey = computed(() => `${audioTracks.value.cantado ?? ''}|${audioTracks.value.playback ?? ''}`)
 const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
 const audioArt = computed(() => (isEdit.value ? null : audioArtOf(liveSource.value)))
@@ -2871,7 +2891,7 @@ defineExpose({
     >
       <CpvAudioRef
         v-if="audioUrl"
-        :key="audioUrl"
+        :key="audioKey"
         :playing="audio.playing.value"
         :current="audio.current.value"
         :duration="audio.duration.value"
@@ -2879,9 +2899,12 @@ defineExpose({
         :title="audioTitle"
         :artist="audioArtist"
         :art="audioArt"
+        :kind="audioKind"
+        :kinds="audioKinds"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"
+        @kind="audioKind = $event"
       />
     </CpvWideDock>
 
@@ -2930,7 +2953,7 @@ defineExpose({
     >
       <CpvAudioRef
         v-if="audioUrl"
-        :key="audioUrl"
+        :key="audioKey"
         :playing="audio.playing.value"
         :current="audio.current.value"
         :duration="audio.duration.value"
@@ -2938,9 +2961,12 @@ defineExpose({
         :title="audioTitle"
         :artist="audioArtist"
         :art="audioArt"
+        :kind="audioKind"
+        :kinds="audioKinds"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"
+        @kind="audioKind = $event"
       />
     </CpvPhoneDock>
 

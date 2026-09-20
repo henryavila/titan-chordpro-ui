@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { formatAudioClock } from '@henryavila/titan-chordpro-ui'
+import { AUDIO_KIND_LABEL, formatAudioClock, type AudioKind } from '@henryavila/titan-chordpro-ui'
 import CpvIcon from '../icon/CpvIcon.vue'
 
 const props = defineProps<{
@@ -11,13 +11,19 @@ const props = defineProps<{
   title: string
   artist: string
   art?: string | null
+  kind: AudioKind
+  kinds: AudioKind[]
 }>()
 
 const emit = defineEmits<{
   toggle: []
   skip: [dir: -1 | 1]
   seek: [t: number]
+  kind: [kind: AudioKind]
 }>()
+
+const kindLabel = computed(() => AUDIO_KIND_LABEL[props.kind])
+const canSwitch = computed(() => props.kinds.length > 1)
 
 const open = ref(false)
 const artBroken = ref(false)
@@ -55,7 +61,7 @@ function onSeek(e: PointerEvent) {
 <template>
   <div
     class="cpv-hit cpv-audio-ref"
-    :class="{ 'is-playing': playing, 'is-closed': !open }"
+    :class="{ 'is-playing': playing, 'is-closed': !open, 'has-kinds': open && canSwitch }"
     data-audio-ref
     role="region"
     aria-label="Áudio de referência"
@@ -82,7 +88,7 @@ function onSeek(e: PointerEvent) {
           <CpvIcon v-else name="music2" :size="16" />
         </span>
         <span class="cpv-audio-ref-launch-copy">
-          <span class="cpv-audio-ref-kicker">Referência</span>
+          <span class="cpv-audio-ref-kicker">{{ kindLabel }}</span>
           <span class="cpv-audio-ref-launch-title">{{ title }}</span>
         </span>
       </button>
@@ -136,6 +142,24 @@ function onSeek(e: PointerEvent) {
       >
         <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
       </button>
+
+      <div
+        v-if="canSwitch"
+        class="cpv-audio-kind"
+        data-audio-kind
+        role="group"
+        aria-label="Tipo de áudio"
+      >
+        <button
+          v-for="k in kinds"
+          :key="k"
+          type="button"
+          :data-audio-kind="k"
+          :aria-pressed="kind === k ? 'true' : 'false'"
+          :class="{ 'is-on': kind === k }"
+          @click="emit('kind', k)"
+        >{{ AUDIO_KIND_LABEL[k] }}</button>
+      </div>
 
       <p v-if="error" class="cpv-audio-ref-error">Não foi possível tocar</p>
 

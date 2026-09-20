@@ -2849,6 +2849,14 @@ div.cpv-head-id {
     'art id play'
     'art seek seek'
     'art times times';
+}
+.cpv-audio-ref.has-kinds {
+  grid-template-areas:
+    'art id close'
+    'art id play'
+    'kind kind kind'
+    'seek seek seek'
+    'times times times';
   column-gap: 12px;
   row-gap: 2px;
   align-self: center;
@@ -2987,6 +2995,33 @@ div.cpv-head-id {
 .cpv-audio-ref-close:hover {
   color: var(--text);
   background: var(--hover);
+}
+.cpv-audio-kind {
+  grid-area: kind;
+  display: flex;
+  gap: 3px;
+  margin: 4px 0 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.cpv-audio-kind > button {
+  flex: 1;
+  margin: 0;
+  height: 28px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cpv-audio-kind > button.is-on {
+  background: var(--chord-fill);
+  color: var(--chord);
 }
 .cpv-audio-ref-play {
   grid-area: play;

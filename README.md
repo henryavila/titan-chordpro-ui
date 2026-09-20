@@ -30,7 +30,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 **Ensaio**
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
-- **Referência:** `{x_audio:}` no `.cho` — o consumer grava a URL (`setAudioUrl`); o ensaio toca o arquivo (play, ±10s, seek), sem amarrar na letra. Cache no aparelho; URL nova (hash) = arquivo novo. Nunca YouTube.
+- **Referência:** `{x_audio_cantado:}` e `{x_audio_playback:}` — o consumer grava cada URL (`setAudioUrl(cho, url, 'cantado'|'playback')`). Qualquer combinação. Play, ±10s, seek, sem amarrar na letra. Cache no aparelho. Nunca YouTube.
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)

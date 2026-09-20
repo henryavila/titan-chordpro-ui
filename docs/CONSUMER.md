@@ -20,7 +20,7 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava `{x_audio:}` na demo).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (grava cantado+playback na demo; `audio=cantado` / `audio=playback` só um).
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
@@ -295,13 +295,18 @@ O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
 com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
 
 ```ts
-import { setAudioUrl, audioUrlOf, setAudioArt } from '@henryavila/titan-chordpro-ui'
+import { setAudioUrl, audioUrlOf, audioTracksOf, setAudioArt } from '@henryavila/titan-chordpro-ui'
 
-const next = setAudioUrl(cho, 'https://cdn.example/nasce-em-mim.m4a?h=a1b2')
-// persiste `next` — o viewer lê `{x_audio:}` sozinho
-audioUrlOf(next) // a url, ou null
-setAudioUrl(cho, null) // remove a diretiva
+let next = setAudioUrl(cho, 'https://cdn.example/nasce-voz.m4a?h=a1', 'cantado')
+next = setAudioUrl(next, 'https://cdn.example/nasce-pb.m4a?h=b2', 'playback')
+audioTracksOf(next) // { cantado, playback } — cada um string | null
+setAudioUrl(next, null, 'playback') // tira só o playback
 ```
+
+Dois tipos, independentes: **cantado** (`{x_audio_cantado:}`) e **playback**
+(`{x_audio_playback:}`). Qualquer combinação vale — os dois, só um, ou
+nenhum. `{x_audio:}` legado lê como cantado. Sem nenhuma faixa, o chrome
+não muda. Com as duas, o card troca Cantado | Playback.
 
 Capa opcional (mesma regra de URL):
 
@@ -310,9 +315,9 @@ const next = setAudioArt(cho, 'https://cdn.example/nasce.jpg?h=a1b2')
 ```
 
 O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
-ou `{subtitle:}`, e a capa. Sem arte, um placeholder. Sem `{x_audio:}`, o
-chrome não muda. O dock nasce com o chip **Referência**; o card abre por ele
-e fecha no X (fechar não para o áudio).
+ou `{subtitle:}`, e a capa. Sem arte, um placeholder. O dock nasce com o
+chip **Cantado** ou **Playback**; o card abre por ele e fecha no X (fechar
+não para o áudio).
 
 `writeMeta` substitui o header inteiro: use `setAudioUrl` / `setAudioArt`.
 YouTube, Spotify, `javascript:` e `data:` são recusados (throw).

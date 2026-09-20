@@ -66,6 +66,7 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
   }
 
   async function load(next: string | null) {
+    const resume = playing.value && !!next
     const gen = ++generation
     const node = el
     if (node) {
@@ -87,10 +88,11 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
       blobUrl = URL.createObjectURL(blob)
       audio.src = blobUrl
       fromCache.value = true
-      return
+    } else {
+      audio.src = next
+      void cacheFill(next)
     }
-    audio.src = next
-    void cacheFill(next)
+    if (resume && gen === generation) void play()
   }
 
   async function play() {

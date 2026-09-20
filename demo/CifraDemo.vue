@@ -59,7 +59,13 @@ const id = ref(
 )
 function withAudio(cho: string) {
   if (!lab.audio || !cho.trim()) return cho
-  let next = setAudioUrl(cho, refAudioUrl)
+  let next = cho
+  if (lab.audio === 'cantado' || lab.audio === 'ambos') {
+    next = setAudioUrl(next, refAudioUrl, 'cantado')
+  }
+  if (lab.audio === 'playback' || lab.audio === 'ambos') {
+    next = setAudioUrl(next, refAudioUrl, 'playback')
+  }
   next = setAudioArt(next, refArtUrl)
   const m = readMeta(next)
   if (!m.artist && !m.subtitle) {

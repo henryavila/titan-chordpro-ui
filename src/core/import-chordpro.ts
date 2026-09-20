@@ -354,6 +354,8 @@ export const META_KEYS = [
   'x_origem',
   'x_youtube',
   'x_audio',
+  'x_audio_cantado',
+  'x_audio_playback',
   'x_audio_art',
   'x_strum',
   'x_strum_set',

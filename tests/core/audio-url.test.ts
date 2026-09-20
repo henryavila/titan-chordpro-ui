@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   audioArtOf,
   audioArtistOf,
+  audioKindsOf,
+  audioTracksOf,
   audioUrlOf,
+  defaultAudioKind,
   displaySongTitle,
   formatAudioClock,
   playableAudioUrl,
@@ -48,26 +51,58 @@ describe('playableAudioUrl', () => {
 describe('setAudioUrl / audioUrlOf', () => {
   const cho = '{title:Nasce}\n{key:A}\n{x_youtube:abcdefghijk}\n[A]x///\n'
 
-  it('writes {x_audio:} without wiping the rest of the header', () => {
+  it('writes {x_audio_cantado:} without wiping the rest of the header', () => {
     const next = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
-    expect(next).toContain('{x_audio:https://cdn.sda/nasce.m4a?h=a1}')
+    expect(next).toContain('{x_audio_cantado:https://cdn.sda/nasce.m4a?h=a1}')
+    expect(next).not.toContain('{x_audio:')
     expect(next).toContain('{title:Nasce}')
     expect(next).toContain('{x_youtube:abcdefghijk}')
     expect(next).toContain('[A]x///')
     expect(audioUrlOf(next)).toBe('https://cdn.sda/nasce.m4a?h=a1')
+    expect(audioUrlOf(next, 'cantado')).toBe('https://cdn.sda/nasce.m4a?h=a1')
+    expect(audioUrlOf(next, 'playback')).toBeNull()
+  })
+
+  it('keeps cantado and playback independent, including only-one and none', () => {
+    const sung = setAudioUrl(cho, 'https://cdn.sda/voz.m4a?h=1', 'cantado')
+    const both = setAudioUrl(sung, 'https://cdn.sda/pb.m4a?h=2', 'playback')
+    expect(audioTracksOf(both)).toEqual({
+      cantado: 'https://cdn.sda/voz.m4a?h=1',
+      playback: 'https://cdn.sda/pb.m4a?h=2',
+    })
+    expect(audioKindsOf(audioTracksOf(both))).toEqual(['cantado', 'playback'])
+    const onlyPb = setAudioUrl(both, null, 'cantado')
+    expect(audioTracksOf(onlyPb)).toEqual({
+      cantado: null,
+      playback: 'https://cdn.sda/pb.m4a?h=2',
+    })
+    expect(defaultAudioKind(audioTracksOf(onlyPb))).toBe('playback')
+    expect(audioUrlOf(onlyPb)).toBe('https://cdn.sda/pb.m4a?h=2')
+    const none = setAudioUrl(onlyPb, null, 'playback')
+    expect(audioTracksOf(none)).toEqual({ cantado: null, playback: null })
+    expect(defaultAudioKind(audioTracksOf(none))).toBeNull()
+    expect(audioUrlOf(none)).toBeNull()
+  })
+
+  it('reads legacy {x_audio:} as cantado until rewritten', () => {
+    const legacy = '{title:Nasce}\n{x_audio:https://cdn.sda/old.m4a?h=1}\n[A]x\n'
+    expect(audioTracksOf(legacy).cantado).toBe('https://cdn.sda/old.m4a?h=1')
+    const next = setAudioUrl(legacy, 'https://cdn.sda/new.m4a?h=2', 'cantado')
+    expect(next).toContain('{x_audio_cantado:https://cdn.sda/new.m4a?h=2}')
+    expect(next).not.toMatch(/\{x_audio:/)
   })
 
   it('replaces the URL in place when the hash changes', () => {
     const a = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
     const b = setAudioUrl(a, 'https://cdn.sda/nasce.m4a?h=b2')
-    expect(b.match(/\{x_audio:/g)).toHaveLength(1)
-    expect(audioUrlOf(b)).toBe('https://cdn.sda/nasce.m4a?h=b2')
+    expect(b.match(/\{x_audio_cantado:/g)).toHaveLength(1)
+    expect(audioUrlOf(b, 'cantado')).toBe('https://cdn.sda/nasce.m4a?h=b2')
   })
 
   it('removes the directive when the URL is cleared', () => {
     const a = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
     const b = setAudioUrl(a, null)
-    expect(b).not.toContain('x_audio')
+    expect(b).not.toContain('x_audio_cantado')
     expect(audioUrlOf(b)).toBeNull()
   })
 
@@ -81,10 +116,10 @@ describe('setAudioUrl / audioUrlOf', () => {
       title: 'Nasce',
       key: 'A',
       x_youtube: 'abcdefghijk',
-      x_audio: 'https://youtube.com/watch?v=nope',
+      x_audio_cantado: 'https://youtube.com/watch?v=nope',
     })
-    expect(sneaky).toContain('{x_audio:')
-    expect(audioUrlOf(sneaky)).toBeNull()
+    expect(sneaky).toContain('{x_audio_cantado:')
+    expect(audioUrlOf(sneaky, 'cantado')).toBeNull()
   })
 })
 
