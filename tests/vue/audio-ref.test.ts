@@ -197,16 +197,29 @@ describe('CpvAudioRef', () => {
     w.unmount()
   })
 
-  it('offers Cantado | Playback only when both tracks exist', async () => {
+  it('shows what is playing even when only one track exists', async () => {
     const one = mount(CpvAudioRef, { props: base })
     await one.get('[data-audio-open]').trigger('click')
-    expect(one.find('[data-audio-kind]').exists()).toBe(false)
+    expect(one.get('[data-audio-kind=sung]').text()).toBe('Cantado')
+    expect(one.get('[data-audio-kind=sung]').classes()).toContain('is-solo')
+    expect(one.find('[data-audio-kind=playback]').exists()).toBe(false)
     one.unmount()
 
+    const pb = mount(CpvAudioRef, {
+      props: { ...base, kind: 'playback', kinds: ['playback'] },
+    })
+    await pb.get('[data-audio-open]').trigger('click')
+    expect(pb.get('[data-audio-kind=playback]').text()).toBe('Playback')
+    expect(pb.find('button[data-audio-kind]').exists()).toBe(false)
+    pb.unmount()
+  })
+
+  it('switches sung and playback as quiet labels, not tabs', async () => {
     const w = mount(CpvAudioRef, {
       props: { ...base, kinds: ['sung', 'playback'] },
     })
     await w.get('[data-audio-open]').trigger('click')
+    expect(w.get('[data-audio-kind]').classes()).toContain('is-switch')
     expect(w.get('[data-audio-kind=sung]').text()).toBe('Cantado')
     expect(w.get('[data-audio-kind=playback]').text()).toBe('Playback')
     await w.get('[data-audio-kind=playback]').trigger('click')
@@ -282,13 +295,17 @@ describe('viewer referência chrome', () => {
     expect(w.find('[data-audio-ref] [data-icon=play]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=play]').exists()).toBe(false)
-    expect(w.find('[data-audio-kind]').exists()).toBe(false)
+    expect(w.get('[data-audio-kind=sung]').text()).toBe('Cantado')
+    expect(w.find('button[data-audio-kind]').exists()).toBe(false)
   })
 
   it('shows playback-only and a switcher when both tracks exist', async () => {
     const onlyPb = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/pb.m4a?h=1', 'playback')
     const pb = await viewerAt(390, { source: onlyPb })
     expect(pb.get('[data-audio-open]').text()).toContain('Playback')
+    await pb.get('[data-audio-open]').trigger('click')
+    expect(pb.get('[data-audio-kind=playback]').text()).toBe('Playback')
+    expect(pb.find('button[data-audio-kind]').exists()).toBe(false)
     pb.unmount()
 
     const both = setAudioUrl(onlyPb, 'https://cdn.sda/voz.m4a?h=2', 'sung')
