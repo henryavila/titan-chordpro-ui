@@ -7,8 +7,8 @@ import {
   type SaveStrumPresetPayload,
   type StrumPreset,
 } from '@henryavila/titan-chordpro-ui'
-import refAudioUrl from './ref-audio.wav?url'
-import refPlaybackUrl from './ref-audio-playback.wav?url'
+import refAudioUrl from './ref-nasce-cantado.m4a?url'
+import refPlaybackUrl from './ref-nasce-playback.m4a?url'
 import refArtUrl from './ref-audio-art.jpg?url'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'

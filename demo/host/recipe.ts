@@ -93,6 +93,7 @@ export const DEMOS: readonly DemoEntry[] = [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
       { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
+      { href: '/standalone.html?song=100-nasce-em-mim&audio=1', label: 'Nasce em Mim (65 BPM, 2:41)' },
     ],
   },
   {

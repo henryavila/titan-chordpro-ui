@@ -333,7 +333,7 @@ O GET precisa de `Access-Control-Allow-Origin` e, na 1ª vez, `Accept-Ranges:
 bytes` para o seek. URL assinada que muda de token a cada hora destrói o
 cache — o hash só muda quando o áudio muda.
 
-Demo: `/standalone.html?audio=1`. Arte genérica: `/standalone.html?audio=1&capa=0`.
+Demo: `/standalone.html?song=100-nasce-em-mim&audio=1` (cantado + playback a 65 BPM, 2:41). Arte genérica: `&capa=0`.
 
 ---
 
