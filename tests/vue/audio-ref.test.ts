@@ -135,7 +135,7 @@ describe('useAudioRef', () => {
     await flushPromises()
     expect(el.pause).toHaveBeenCalled()
     expect(el.src).toBe('https://cdn.sda/a.m4a?h=2')
-    expect(audio.playing.value).toBe(false)
+    expect(audio.playing.value).toBe(true)
     expect(audio.current.value).toBe(0)
   })
 
@@ -166,12 +166,14 @@ describe('CpvAudioRef', () => {
     title: 'Nasce em Mim',
     artist: 'Adoradores',
     art: 'https://cdn.sda/a.jpg?h=1',
+    kind: 'cantado' as const,
+    kinds: ['cantado'] as ('cantado' | 'playback')[],
   }
 
   it('starts closed: a Referência chip, not the full card', () => {
     const w = mount(CpvAudioRef, { props: base })
     expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
-    expect(w.get('[data-audio-open]').text()).toContain('Referência')
+    expect(w.get('[data-audio-open]').text()).toContain('Cantado')
     expect(w.get('[data-audio-open]').text()).toContain('Nasce em Mim')
     expect(w.find('[data-audio-title]').exists()).toBe(false)
     expect(w.find('[data-audio-seek]').exists()).toBe(false)
@@ -191,6 +193,23 @@ describe('CpvAudioRef', () => {
     expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
     expect(w.find('[data-audio-open]').exists()).toBe(true)
     expect(w.emitted('toggle')).toBeUndefined()
+    w.unmount()
+  })
+
+  it('offers Cantado | Playback only when both tracks exist', async () => {
+    const one = mount(CpvAudioRef, { props: base })
+    await one.get('[data-audio-open]').trigger('click')
+    expect(one.find('[data-audio-kind]').exists()).toBe(false)
+    one.unmount()
+
+    const w = mount(CpvAudioRef, {
+      props: { ...base, kinds: ['cantado', 'playback'] },
+    })
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.get('[data-audio-kind=cantado]').text()).toBe('Cantado')
+    expect(w.get('[data-audio-kind=playback]').text()).toBe('Playback')
+    await w.get('[data-audio-kind=playback]').trigger('click')
+    expect(w.emitted('kind')?.[0]).toEqual(['playback'])
     w.unmount()
   })
 
@@ -216,14 +235,7 @@ describe('CpvAudioRef', () => {
 
   it('shows pause while playing and an error copy on failure', async () => {
     const live = mount(CpvAudioRef, {
-      props: {
-        playing: true,
-        current: 0,
-        duration: 10,
-        error: false,
-        title: 'Nasce',
-        artist: 'Referência',
-      },
+      props: { ...base, playing: true, current: 0, duration: 10, title: 'Nasce' },
     })
     expect(live.find('[data-icon=pause]').exists()).toBe(true)
     expect(live.get('[data-audio-play]').attributes('aria-label')).toBe('Pausar referência')
@@ -232,14 +244,7 @@ describe('CpvAudioRef', () => {
     live.unmount()
 
     const fail = mount(CpvAudioRef, {
-      props: {
-        playing: false,
-        current: 0,
-        duration: 0,
-        error: true,
-        title: 'Nasce',
-        artist: 'Referência',
-      },
+      props: { ...base, current: 0, duration: 0, error: true, title: 'Nasce' },
     })
     await fail.get('[data-audio-open]').trigger('click')
     expect(fail.text()).toContain('Não foi possível tocar')
@@ -248,14 +253,7 @@ describe('CpvAudioRef', () => {
 
   it('shows a music mark when there is no cover', async () => {
     const w = mount(CpvAudioRef, {
-      props: {
-        playing: false,
-        current: 0,
-        duration: 0,
-        error: false,
-        title: 'Nasce em Mim',
-        artist: 'Adoradores',
-      },
+      props: { ...base, current: 0, duration: 0, art: null },
     })
     expect(w.find('[data-audio-art] img').exists()).toBe(false)
     expect(w.find('[data-audio-art] [data-icon=music2]').exists()).toBe(true)
@@ -272,8 +270,8 @@ describe('viewer referência chrome', () => {
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
   })
 
-  it('shows the player from {x_audio:} and keeps Rolar as chevrons', async () => {
-    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1')
+  it('shows the player from a cantado track and keeps Rolar as chevrons', async () => {
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'cantado')
     const w = await viewerAt(390, { source })
     expect(w.find('[data-audio-ref]').exists()).toBe(true)
     expect(w.find('[data-audio-open]').exists()).toBe(true)
@@ -283,6 +281,22 @@ describe('viewer referência chrome', () => {
     expect(w.find('[data-audio-ref] [data-icon=play]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
     expect(w.find('[data-scroll] [data-icon=play]').exists()).toBe(false)
+    expect(w.find('[data-audio-kind]').exists()).toBe(false)
+  })
+
+  it('shows playback-only and a switcher when both tracks exist', async () => {
+    const onlyPb = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/pb.m4a?h=1', 'playback')
+    const pb = await viewerAt(390, { source: onlyPb })
+    expect(pb.get('[data-audio-open]').text()).toContain('Playback')
+    pb.unmount()
+
+    const both = setAudioUrl(onlyPb, 'https://cdn.sda/voz.m4a?h=2', 'cantado')
+    const w = await viewerAt(390, { source: both })
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.find('[data-audio-kind=cantado]').exists()).toBe(true)
+    expect(w.find('[data-audio-kind=playback]').exists()).toBe(true)
+    await w.get('[data-audio-kind=playback]').trigger('click')
+    expect(w.get('[data-audio-kind=playback]').attributes('aria-pressed')).toBe('true')
   })
 
   it('does not show the player in edit', async () => {

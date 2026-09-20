@@ -34,10 +34,19 @@ function pickSource(): string {
   /** Scroll is gated on `{duration:}`. The default fixture has none; the harness adds one so layout tests can still roll. */
   return `{duration: 04:26}\n${raw}`
 }
-const source =
-  q.get('audio') === '1'
-    ? setAudioArt(setAudioUrl(pickSource(), refAudio), refArt)
-    : pickSource()
+const source = (() => {
+  const rawCho = pickSource()
+  const mode = q.get('audio')
+  if (!mode) return rawCho
+  let next = rawCho
+  if (mode === '1' || mode === 'ambos' || mode === 'cantado') {
+    next = setAudioUrl(next, refAudio, 'cantado')
+  }
+  if (mode === '1' || mode === 'ambos' || mode === 'playback') {
+    next = setAudioUrl(next, refAudio, 'playback')
+  }
+  return setAudioArt(next, refArt)
+})()
 const fitDefault = q.get('fit') !== '0'
 const capoQ = q.get('capo')
 const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined
