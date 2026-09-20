@@ -711,7 +711,9 @@
   },
   {
     "name": "D9/4",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "add9",
+    "bass": "G"
   },
   {
     "name": "D9/A",
@@ -1247,7 +1249,9 @@
   },
   {
     "name": "G9/4",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "add9",
+    "bass": "C"
   },
   {
     "name": "Gb",

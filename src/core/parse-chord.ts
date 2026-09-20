@@ -1,6 +1,8 @@
 /**
  * Brazilian chord names (7M, 4, 9, 2, slash). `7+` is not aug or maj7.
+ * Slash after `/` is bass: a pitch (G/B) or a degree of the chord tonic (D9/4 → G).
  */
+import { noteAtSemitones } from './transpose'
 
 export type ChordParseClass = 'parse' | 'UNPARSED' | 'AMBIGUOUS'
 
@@ -51,7 +53,19 @@ const QUALITY: Record<string, string> = {
 const AMBIGUOUS_SUFFIX = new Set(['7+'])
 
 const ROOT = /^([A-G](?:#|b)?)(.*)$/
-const BASS = /^[A-G](?:#|b)?$/
+const BASS_PITCH = /^[A-G](?:#|b)?$/
+/** Slash degree relative to the chord tonic — `/4` on D is G, not song key. */
+const BASS_DEGREE = /^(?:[1-7]|9)$/
+const DEGREE_SEMIS: Record<string, number> = {
+  '1': 0,
+  '2': 2,
+  '3': 4,
+  '4': 5,
+  '5': 7,
+  '6': 9,
+  '7': 11,
+  '9': 14,
+}
 
 export function parseChordToken(raw: string): ChordTokenResult {
   const token = String(raw ?? '').trim()
@@ -73,9 +87,21 @@ export function parseChordToken(raw: string): ChordTokenResult {
   const quality = QUALITY[suffix]
   if (quality === undefined) return { class: 'UNPARSED' }
 
-  if (slash >= 0 && !BASS.test(bass ?? '')) return { class: 'AMBIGUOUS' }
+  let resolvedBass = bass
+  if (slash >= 0) {
+    const rawBass = bass ?? ''
+    if (BASS_PITCH.test(rawBass)) {
+      resolvedBass = rawBass
+    } else if (BASS_DEGREE.test(rawBass)) {
+      const note = noteAtSemitones(m[1], DEGREE_SEMIS[rawBass] ?? 0)
+      if (!note) return { class: 'AMBIGUOUS' }
+      resolvedBass = note
+    } else {
+      return { class: 'AMBIGUOUS' }
+    }
+  }
 
   const parsed: ChordTokenParse = { class: 'parse', root: m[1], quality }
-  if (bass) parsed.bass = bass
+  if (resolvedBass) parsed.bass = resolvedBass
   return parsed
 }

@@ -79,10 +79,13 @@ describe('parseChordToken miss honesty', () => {
     expect(r).not.toHaveProperty('quality')
   })
 
-  it('treats invalid numeric bass as AMBIGUOUS, not a quality', () => {
-    const r = parseChordToken('D9/4')
-    expect(r.class).toBe('AMBIGUOUS')
-    expect(r).not.toHaveProperty('quality')
+  it('reads slash degree as bass of the chord tonic, not the song key', () => {
+    const d = parseChordToken('D9/4')
+    expect(d.class).toBe('parse')
+    expect(d).toMatchObject({ root: 'D', quality: 'add9', bass: 'G' })
+    const g = parseChordToken('G9/4')
+    expect(g.class).toBe('parse')
+    expect(g).toMatchObject({ root: 'G', quality: 'add9', bass: 'C' })
   })
 })
 

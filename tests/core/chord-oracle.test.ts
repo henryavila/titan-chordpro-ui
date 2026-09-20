@@ -82,7 +82,7 @@ describe('classifyOracleName follows parseChordToken', () => {
     ['C/', 'AMBIGUOUS'],
     ['G/B', 'parse'],
     ['Dm(3b)/F#', 'parse'],
-    ['D9/4', 'AMBIGUOUS'],
+    ['D9/4', 'parse'],
   ] as const
 
   it.each(cases)('%s class is %s and matches the parser', (name, cls) => {
