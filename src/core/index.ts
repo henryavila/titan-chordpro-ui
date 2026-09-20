@@ -47,6 +47,8 @@ export type {
   DiagramVoicing,
   ResolveDiagramOpts,
 } from './resolve-diagram'
+export { drawDiagram } from './diagram-draw'
+export type { DiagramDraw, DrawDiagramOpts, FretDot, FretDraw, PianoDraw } from './diagram-draw'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
