@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Áudio de referência no ensaio:** o consumer grava `{x_audio:}` no ChordPro (`setAudioUrl` / `audioUrlOf`). Player próprio (play/pause, ±10s, seek) — não sincroniza letra nem `{duration:}`. Arquivo direto ou GET de stream; YouTube recusado. Cache no aparelho keyed pela URL (hash na query = arquivo novo).
+- **Capa no player de referência:** `{x_audio_art:}` (`setAudioArt`). O card mostra capa, título e artista (`{artist:}` / `{subtitle:}`).
 
 ### Fixed
+- **Comentários de ensaio:** no celular o rótulo de 11px em caixa-alta + tracking cortava o texto. Agora o comentário (e o painel Execução) usa o tamanho da letra × 0,85, quebra de linha e `--text` — destaque de rubrica, sem competir com acorde/refrão. Continuam papel no auto-scroll, não relógio.
 - **Auto-rolagem, intro compacta:** a página não anda enquanto a introdução tocada (acordes + `x///`, sem letra) está no topo. A rampa começa na primeira linha cantada, ou na linha de leitura se a intro for mais alta que um terço da tela (TAB). Em *Nasce em Mim* a letra deixava de subir no começo. Relógio e metrônomo seguem no tempo da cifra.
 - **`{tempo:65 BPM}`:** o relógio lê 65, não o default 100.
 

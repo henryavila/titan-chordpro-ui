@@ -295,7 +295,7 @@ O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
 com a letra, o Rolar ou o `{duration:}`. A URL mora no ChordPro:
 
 ```ts
-import { setAudioUrl, audioUrlOf } from '@henryavila/titan-chordpro-ui'
+import { setAudioUrl, audioUrlOf, setAudioArt } from '@henryavila/titan-chordpro-ui'
 
 const next = setAudioUrl(cho, 'https://cdn.example/nasce-em-mim.m4a?h=a1b2')
 // persiste `next` — o viewer lê `{x_audio:}` sozinho
@@ -303,9 +303,18 @@ audioUrlOf(next) // a url, ou null
 setAudioUrl(cho, null) // remove a diretiva
 ```
 
-`writeMeta` substitui o header inteiro: use `setAudioUrl`, que faz o merge.
-YouTube, Spotify, `javascript:` e `data:` são recusados (throw). Sem a
-diretiva, o player não aparece.
+Capa opcional (mesma regra de URL):
+
+```ts
+const next = setAudioArt(cho, 'https://cdn.example/nasce.jpg?h=a1b2')
+```
+
+O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
+ou `{subtitle:}`, e a capa. Sem arte, um placeholder. Sem `{x_audio:}`, o
+chrome não muda.
+
+`writeMeta` substitui o header inteiro: use `setAudioUrl` / `setAudioArt`.
+YouTube, Spotify, `javascript:` e `data:` são recusados (throw).
 
 Troca de faixa = **outra URL** (hash na query). O Titan guarda o arquivo no
 Cache Storage keyed pela URL completa; a 1ª vez toca em stream e preenche o

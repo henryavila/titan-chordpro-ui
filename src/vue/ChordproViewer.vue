@@ -42,7 +42,10 @@ import {
   viewerMulStep,
   writeMeta,
   writeStrumPatterns,
+  audioArtOf,
+  audioArtistOf,
   audioUrlOf,
+  displaySongTitle,
   STORE_KEYS,
   browserStore,
   type StrumPattern,
@@ -362,6 +365,9 @@ const liveSource = computed(() => working.value)
 const audioUrl = computed(() => (isEdit.value ? null : audioUrlOf(liveSource.value)))
 const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
+const audioArt = computed(() => (isEdit.value ? null : audioArtOf(liveSource.value)))
+const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
+const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
   return isParseFatal(liveSource.value, parsed.value)
@@ -2869,6 +2875,9 @@ defineExpose({
         :current="audio.current.value"
         :duration="audio.duration.value"
         :error="audio.error.value"
+        :title="audioTitle"
+        :artist="audioArtist"
+        :art="audioArt"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"
@@ -2924,6 +2933,9 @@ defineExpose({
         :current="audio.current.value"
         :duration="audio.duration.value"
         :error="audio.error.value"
+        :title="audioTitle"
+        :artist="audioArtist"
+        :art="audioArt"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"

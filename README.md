@@ -184,7 +184,7 @@ e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.
 
 Os conversores são públicos no core, se o host quiser usá-los direto:
 `detect`, `convert`, `fromPlain`, `fromOnSong`, `readMeta`, `writeMeta`,
-`setAudioUrl`, `audioUrlOf`, `missingOf`, `toPlain`.
+`setAudioUrl`, `audioUrlOf`, `setAudioArt`, `audioArtOf`, `missingOf`, `toPlain`.
 
 ### Modo ensaio: uma lista, não uma cifra por vez
 
