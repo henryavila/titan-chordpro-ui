@@ -291,25 +291,40 @@ pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 
 ### Áudio de referência
 
-O ensaio pode tocar um arquivo (ou um GET que faz stream) **sem** sincronizar
-com a letra, o Rolar ou o `{duration:}`. O consumer informa o que tem, numa
-chamada:
+Não é prop do `<ChordproViewer>` (não existe `audioUrl`). O host grava cantado,
+playback e capa **no `.cho`** e passa o texto em `source`. O player aparece
+sozinho quando há pelo menos uma faixa playable. Não sincroniza com a letra,
+o Rolar nem `{duration:}` — player sincronizado continua sendo do host.
 
 ```ts
 import { setRehearsalAudio, audioTracksOf, audioArtOf } from '@henryavila/titan-chordpro-ui'
 
-const next = setRehearsalAudio(cho, {
+cho = setRehearsalAudio(cho, {
   sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
-  playback: 'https://cdn.example/nasce-pb.m4a?h=b2',
+  playback: 'https://cdn.example/nasce-pb.m4a?h=b2', // opcional
   art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
 })
 ```
 
-Chave omitida não mexe; `null` apaga. Qualquer combinação vale (os dois, só um, ou nenhum). Sem faixa, o chrome não muda.
+```vue
+<ChordproViewer :source="cho" :song-id="id" @update:source="cho = $event" />
+```
 
-**Capa:** o host já entrega o arquivo no tamanho certo (quadrado **256–512 px** basta; o card mostra 56 px). Passe `width` e `height` **desse arquivo**, não do original de 3000 px. Sem `{x_audio_art:}`, o Titan usa uma arte genérica 512×512.
+Chave omitida não mexe; `null` apaga. Qualquer combinação vale (os dois, só um,
+ou nenhum). Sem faixa, o chrome não muda. Caminho same-origin (`/audio/nasce.m4a`)
+também vale. Uma faixa só: `setAudioUrl(cho, url, 'sung' | 'playback')`.
 
-Diretivas: `{x_audio_sung:}`, `{x_audio_playback:}`, `{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung.
+Persistir é o fluxo de sempre (`update:source` / `save-content`). Não chame
+`writeMeta(cho, { x_audio_sung })` sozinho — `writeMeta` substitui o header
+inteiro; use `setRehearsalAudio`.
+
+**Capa:** o host já entrega o arquivo no tamanho certo (quadrado **256–512 px**
+basta; o card mostra 56 px). Passe `width` e `height` **desse arquivo**, não do
+original de 3000 px. Sem `{x_audio_art:}`, o Titan usa uma arte genérica 512×512.
+
+Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
+`{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` /
+`{x_audio_cantado:}` legado lê como sung. UI: Cantado / Playback.
 
 O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
 ou `{subtitle:}`, e a capa. Com as duas faixas, Cantado / Playback são
@@ -320,13 +335,12 @@ A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
 ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
 **Referência**.
 
-`writeMeta` substitui o header inteiro: use `setRehearsalAudio`.
-YouTube, Spotify, `javascript:` e `data:` são recusados (throw).
+YouTube, Spotify, Apple Music, `javascript:` e `data:` são recusados (throw).
 
 Troca de faixa = **outra URL** (hash na query). O Titan guarda o arquivo no
 Cache Storage keyed pela URL completa; a 1ª vez toca em stream e preenche o
 cache atrás (CORS no GET). Sem CORS, toca e o cache vira no-op. Teto ~100 MB
-LRU; arquivo > 20 MB toca e não guarda.
+LRU; arquivo > 20 MB toca e não guarda. Não usa `ChartStore` / `localStorage`.
 
 O GET precisa de `Access-Control-Allow-Origin` e, na 1ª vez, `Accept-Ranges:
 bytes` para o seek. URL assinada que muda de token a cada hora destrói o
@@ -580,5 +594,6 @@ Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e rev
 - [ ] Palco: rota própria + “Tocar ao vivo”
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
+- [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek
 
 Props, emits e o resto da API: [README](../README.md).
