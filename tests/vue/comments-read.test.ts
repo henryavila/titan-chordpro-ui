@@ -18,10 +18,13 @@ describe('rehearsal comments are readable stage directions', () => {
     expect(text, 'still the 11px canvas label').not.toMatch(/font-size:\s*11px/)
     expect(text).not.toMatch(/text-transform:\s*uppercase/)
     expect(text).not.toMatch(/letter-spacing:\s*0\.14em/)
-    expect(text).toMatch(/color:\s*var\(--muted\)/)
-    expect(text).toMatch(/font-weight:\s*700/)
+    expect(text).toMatch(/color:\s*color-mix\(in srgb,\s*var\(--muted\)/)
+    expect(text).toMatch(/font-weight:\s*600/)
+    expect(text).toMatch(/font-style:\s*italic/)
     expect(text).toMatch(/overflow-wrap:\s*anywhere/)
-    expect(text).toMatch(/font-size:\s*calc\(\s*var\(--cpv-lyric-px/)
+    expect(text).toMatch(/font-size:\s*max\(\s*14px,\s*calc\(\s*var\(--cpv-lyric-px/)
+    expect(css).toMatch(/\.cpv-comment-text::before\s*\{[^}]*content:\s*'\('/)
+    expect(css).toMatch(/\.cpv-comment-text::after\s*\{[^}]*content:\s*'\)'/)
   })
 
   it('does not compete with chords or the chorus card', () => {
@@ -47,8 +50,9 @@ describe('rehearsal comments are readable stage directions', () => {
   it('execução items are readable prose, not tiny muted mono', () => {
     const item = rule('.cpv-note-item')
     expect(item).not.toMatch(/font-size:\s*11\.5px/)
-    expect(item).toMatch(/color:\s*var\(--muted\)/)
-    expect(item).toMatch(/font-weight:\s*700/)
+    expect(item).toMatch(/color:\s*color-mix\(in srgb,\s*var\(--muted\)/)
+    expect(item).toMatch(/font-weight:\s*600/)
+    expect(item).toMatch(/font-style:\s*italic/)
     expect(item).not.toMatch(/font-family:\s*'Space Mono'/)
     expect(item).toMatch(/overflow-wrap:\s*anywhere/)
   })

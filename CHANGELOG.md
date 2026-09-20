@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Play da referência:** no card aberto o play é o centro do transporte; −10 / +10 ficam mais suaves.
 - **Chip da referência:** sólido sobre a cifra (canvas, sem véu). Mini-player flutuante; toque abre o card.
 - **Player de referência no celular:** o chip e o card ficam no centro do dock, não colados à esquerda.
-- **Comentários de ensaio:** no celular o rótulo de 11px em caixa-alta + tracking cortava o texto. Agora o comentário (e o painel Execução) é negrito cinza (`--muted` claro/escuro), tamanho da letra × 0,85, quebra de linha — sem card, sem borda. Refrão/TAB mantêm as caixas. Continuam papel no auto-scroll, não relógio.
+- **Comentários de ensaio:** rubrica entre parênteses, itálico, cinza um passo acima do `--muted` (claro e escuro). Sem card, sem borda. Não usa a cor do acorde nem da letra. Refrão/TAB mantêm as caixas. Continuam papel no auto-scroll, não relógio.
 - **Auto-rolagem, intro compacta:** a página não anda enquanto a introdução tocada (acordes + `x///`, sem letra) está no topo. A rampa começa na primeira linha cantada, ou na linha de leitura se a intro for mais alta que um terço da tela (TAB). Em *Nasce em Mim* a letra deixava de subir no começo. Relógio e metrônomo seguem no tempo da cifra.
 - **`{tempo:65 BPM}`:** o relógio lê 65, não o default 100.
 

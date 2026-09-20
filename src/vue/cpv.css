@@ -574,12 +574,19 @@
 }
 .cpv-note-item {
   font-family: inherit;
-  font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
-  font-weight: 700;
+  font-size: max(14px, calc(var(--cpv-lyric-px, 18px) * 0.92));
+  font-weight: 600;
+  font-style: italic;
   line-height: 1.35;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 68%, var(--text));
   overflow-wrap: anywhere;
   text-wrap: pretty;
+}
+.cpv-note-item::before {
+  content: '(';
+}
+.cpv-note-item::after {
+  content: ')';
 }
 .cpv-comment {
   /* In flow: autoscroll measures this height into the next musical block. */
@@ -597,12 +604,19 @@
 .cpv-comment-text {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
-  font-weight: 700;
+  font-size: max(14px, calc(var(--cpv-lyric-px, 18px) * 0.92));
+  font-weight: 600;
+  font-style: italic;
   letter-spacing: 0.01em;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 68%, var(--text));
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+.cpv-comment-text::before {
+  content: '(';
+}
+.cpv-comment-text::after {
+  content: ')';
 }
 .cpv-comment-line {
   display: none;
