@@ -574,11 +574,11 @@
 }
 .cpv-note-item {
   font-family: inherit;
-  font-size: max(14px, calc(var(--cpv-lyric-px, 18px) * 0.92));
+  font-size: max(11px, calc(var(--cpv-lyric-px, 18px) * 0.72));
   font-weight: 600;
   font-style: italic;
   line-height: 1.35;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 62%, var(--canvas));
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
@@ -602,13 +602,15 @@
   display: none;
 }
 .cpv-comment-text {
+  /* Aside, not a lyric: smaller and mixed toward the paper so --lyric
+     (the song) stays the ink. No card — chorus already owns that. */
   flex: 1 1 auto;
   min-width: 0;
-  font-size: max(14px, calc(var(--cpv-lyric-px, 18px) * 0.92));
+  font-size: max(11px, calc(var(--cpv-lyric-px, 18px) * 0.72));
   font-weight: 600;
   font-style: italic;
-  letter-spacing: 0.01em;
-  color: var(--muted);
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--muted) 62%, var(--canvas));
   line-height: 1.35;
   overflow-wrap: anywhere;
 }

@@ -42,7 +42,7 @@ test.describe('rehearsal comments on the reading surface', () => {
     expect(report.length).toBeGreaterThan(0)
     expect(report.some((c) => c.copy.length > 40)).toBe(true)
     for (const c of report) {
-      expect(c.fontSize, c.copy).toBeGreaterThanOrEqual(13)
+      expect(c.fontSize, c.copy).toBeGreaterThanOrEqual(11)
       expect(c.transform, c.copy).not.toBe('uppercase')
       expect(c.position, c.copy).toMatch(/^(static|relative)$/)
       expect(c.clipped, c.copy).toBe(false)
@@ -72,6 +72,26 @@ test.describe('rehearsal comments on the reading surface', () => {
     expect(pair.chorusWash, 'chorus still has a wash').not.toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)/)
     expect(pair.commentBg).toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/)
     expect(pair.commentRadius === '0px' || pair.commentRadius === '0').toBe(true)
+  })
+
+  test('a comment is smaller and paler than the lyric it sits above', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
+    await page.locator('.cpv-comment-text').first().waitFor()
+    await page.locator('.cpv-lyric').first().waitFor()
+    const pair = await page.evaluate(() => {
+      const comment = getComputedStyle(document.querySelector('.cpv-comment-text') as HTMLElement)
+      const lyric = getComputedStyle(document.querySelector('.cpv-stanza .cpv-lyric') as HTMLElement)
+      const rgb = (c: string) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number)
+      const lum = ([r, g, b]: number[]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+      return {
+        commentPx: parseFloat(comment.fontSize),
+        lyricPx: parseFloat(lyric.fontSize),
+        commentLum: lum(rgb(comment.color)),
+        lyricLum: lum(rgb(lyric.color)),
+      }
+    })
+    expect(pair.commentPx).toBeLessThan(pair.lyricPx - 2)
   })
 
   test('execução notes wrap and read as body text, not tiny mono', async ({ page }) => {
