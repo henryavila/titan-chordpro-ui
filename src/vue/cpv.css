@@ -603,7 +603,12 @@
   padding-top: 4px;
 }
 .cpv-comment-dot {
-  display: none;
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--chord);
+  opacity: 0.75;
 }
 .cpv-comment-text {
   /* Aside, not a lyric: smaller and mixed toward the paper so --lyric
@@ -625,7 +630,9 @@
   content: ')';
 }
 .cpv-comment-line {
-  display: none;
+  flex: 1;
+  height: 1px;
+  background: var(--line-soft);
 }
 .cpv-tab {
   margin: 18px 0 26px;
@@ -2057,7 +2064,6 @@ div.cpv-head-id {
   padding: 8px 12px;
   font-size: calc(var(--cpv-lyric-px, 18px) * 0.85);
   font-weight: 600;
-  letter-spacing: 0.01em;
 }
 .cpv-row-input--note {
   padding: 4px 8px;
@@ -2837,296 +2843,4 @@ div.cpv-head-id {
 .cpv-reading-word .cpv-lyric {
   white-space: pre;
   overflow-wrap: normal;
-}
-
-/* Reference now-playing — independent of Rolar. Play triangle is reserved for this.
-   Solid canvas (not --veil): the chip sits on the chart and must stay readable. */
-.cpv-audio-ref {
-  position: relative;
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 32px;
-  grid-template-areas:
-    'art id close'
-    'ctrl ctrl ctrl'
-    'seek seek seek'
-    'times times times';
-  column-gap: 12px;
-  row-gap: 2px;
-  align-self: center;
-  width: 100%;
-  max-width: 520px;
-  margin-inline: auto;
-  padding: 10px 10px 8px 10px;
-  border-radius: 18px;
-  background: var(--canvas);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-}
-.cpv-audio-ref.is-closed {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: auto;
-  max-width: min(320px, 100%);
-  padding: 5px 6px 5px 5px;
-  border-radius: 999px;
-}
-.cpv-audio-ref-art {
-  grid-area: art;
-  align-self: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: linear-gradient(145deg, var(--chord-fill), var(--surface));
-  color: var(--chord);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 0 0 1px var(--chord-edge);
-}
-.cpv-audio-ref.is-playing .cpv-audio-ref-art {
-  box-shadow: inset 0 0 0 1px var(--chord), 0 0 0 1px color-mix(in srgb, var(--chord) 35%, transparent);
-}
-.cpv-audio-ref-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.cpv-audio-ref-id {
-  grid-area: id;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  padding-top: 1px;
-}
-.cpv-audio-ref-title,
-.cpv-audio-ref-artist {
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cpv-audio-ref-title {
-  font-family: var(--cpv-font-lyrics, Sora, system-ui, sans-serif);
-  font-size: 13.5px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--text);
-}
-.cpv-audio-ref-artist {
-  font-size: 11.5px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--muted);
-}
-.cpv-audio-ref-launch {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 2px 4px 2px 2px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.cpv-audio-ref-art.is-chip {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  flex: none;
-}
-.cpv-audio-ref-launch-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.cpv-audio-ref-kicker {
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--muted);
-}
-.cpv-audio-ref-launch-title {
-  font-family: var(--cpv-font-lyrics, Sora, system-ui, sans-serif);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cpv-audio-ref-close {
-  grid-area: close;
-  justify-self: end;
-  align-self: start;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.cpv-audio-ref-close:hover {
-  color: var(--text);
-  background: var(--hover);
-}
-.cpv-audio-ref-kind {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  margin-top: 12px;
-}
-.cpv-audio-ref-kind > button,
-.cpv-audio-ref-kind > span {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--muted);
-  line-height: 1.2;
-}
-.cpv-audio-ref-kind > .is-on {
-  color: var(--chord);
-}
-/* Choice: look tappable. Solo: just the type label. */
-.cpv-audio-ref-kind.is-switch > button {
-  height: 28px;
-  padding: 0 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-}
-.cpv-audio-ref-kind.is-switch > button.is-on {
-  border-color: var(--chord-edge);
-  background: var(--chord-fill);
-  color: var(--chord);
-}
-.cpv-audio-ref-kind.is-switch > button:not(.is-on):hover {
-  border-color: var(--sel-line);
-  color: var(--text);
-}
-.cpv-audio-ref-play {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--chord);
-  color: var(--chord-ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.cpv-audio-ref:not(.is-playing) .cpv-audio-ref-play :deep(svg) {
-  /* Play triangle sits optically left in the circle. */
-  transform: translateX(1px);
-}
-.cpv-audio-ref:not(.is-closed) .cpv-audio-ref-play {
-  width: 52px;
-  height: 52px;
-  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--chord) 70%, transparent);
-}
-.cpv-audio-ref-play:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-.cpv-audio-ref-transport {
-  grid-area: ctrl;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  min-width: 0;
-  padding: 6px 0 2px;
-}
-.cpv-audio-ref-skip {
-  flex: none;
-  min-width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: color-mix(in srgb, var(--muted) 72%, transparent);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-}
-.cpv-audio-ref-skip:hover {
-  color: var(--muted);
-  background: transparent;
-}
-.cpv-audio-ref-seek {
-  grid-area: seek;
-  position: relative;
-  min-width: 0;
-  height: 22px;
-  margin: 0 8px;
-  cursor: pointer;
-  touch-action: none;
-}
-.cpv-audio-ref-seek::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 9px;
-  height: 3px;
-  border-radius: 99px;
-  background: var(--line);
-}
-.cpv-audio-ref-seek-fill {
-  position: absolute;
-  left: 0;
-  top: 9px;
-  height: 3px;
-  border-radius: 99px;
-  background: var(--chord);
-  pointer-events: none;
-}
-.cpv-audio-ref-times {
-  grid-area: times;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 10px;
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-.cpv-audio-ref-error {
-  grid-area: ctrl;
-  margin: 0;
-  font-size: 12px;
-  color: var(--danger);
 }

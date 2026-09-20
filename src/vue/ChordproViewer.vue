@@ -42,13 +42,6 @@ import {
   viewerMulStep,
   writeMeta,
   writeStrumPatterns,
-  audioArtOf,
-  audioArtistOf,
-  audioKindsOf,
-  audioTracksOf,
-  defaultAudioKind,
-  displaySongTitle,
-  type AudioKind,
   STORE_KEYS,
   browserStore,
   type StrumPattern,
@@ -87,7 +80,6 @@ import CpvViewerStates from './chrome/CpvViewerStates.vue'
 import CpvEditHead from './chrome/CpvEditHead.vue'
 import CpvWideDock from './chrome/CpvWideDock.vue'
 import CpvPhoneDock from './chrome/CpvPhoneDock.vue'
-import CpvAudioRef from './chrome/CpvAudioRef.vue'
 import CpvMoreSheet from './chrome/CpvMoreSheet.vue'
 import CpvEditDock from './chrome/CpvEditDock.vue'
 import CpvEndOffer from './chrome/CpvEndOffer.vue'
@@ -110,7 +102,6 @@ import { useSongSwipe } from './use/useSongSwipe'
 import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
-import { useAudioRef } from './use/useAudioRef'
 import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
@@ -365,29 +356,7 @@ const effTheme = computed<'light' | 'dark'>(() =>
       : 'light',
 )
 const liveSource = computed(() => working.value)
-const audioTracks = computed(() =>
-  isEdit.value
-    ? { sung: null, playback: null }
-    : audioTracksOf(liveSource.value),
-)
-const audioKinds = computed(() => audioKindsOf(audioTracks.value))
-const audioKind = ref<AudioKind>('sung')
-watch(
-  audioTracks,
-  (t) => {
-    const fallback = defaultAudioKind(t)
-    if (!fallback) return
-    if (!t[audioKind.value]) audioKind.value = fallback
-  },
-  { immediate: true },
-)
-const audioUrl = computed(() => audioTracks.value[audioKind.value])
-const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
-const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
-const audioArt = computed(() => (isEdit.value ? null : audioArtOf(liveSource.value)))
-const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
-const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
   return isParseFatal(liveSource.value, parsed.value)
@@ -1100,11 +1069,7 @@ const rollLive = computed(
   () => scrolling.value || (met.follow.value && met.running.value && canScroll.value),
 )
 const chromeHidden = computed(
-  () =>
-    (zen.value || (rollLive.value && idle.value)) &&
-    !sheet.value &&
-    !isEdit.value &&
-    !audio.playing.value,
+  () => (zen.value || (rollLive.value && idle.value)) && !sheet.value && !isEdit.value,
 )
 watch(chromeHidden, (gone) => {
   if (gone && !zen.value && !idleSeen) {
@@ -2888,27 +2853,7 @@ defineExpose({
       @theme="requestTheme"
       @edit="enterEdit"
       @export="sheet = true"
-    >
-      <CpvAudioRef
-        v-if="audioUrl"
-        :key="audioKey"
-        :playing="audio.playing.value"
-        :current="audio.current.value"
-        :duration="audio.duration.value"
-        :error="audio.error.value"
-        :title="audioTitle"
-        :artist="audioArtist"
-        :art="audioArt?.url"
-        :art-width="audioArt?.width"
-        :art-height="audioArt?.height"
-        :kind="audioKind"
-        :kinds="audioKinds"
-        @toggle="audio.toggle"
-        @skip="audio.skip"
-        @seek="audio.seek"
-        @kind="audioKind = $event"
-      />
-    </CpvWideDock>
+    />
 
     <CpvPhoneDock
       v-if="!isEdit && phone && isPopulated"
@@ -2952,27 +2897,7 @@ defineExpose({
       @edit="enterEdit"
       @toggle-fit="toggleFit"
       @more="moreOpen = true"
-    >
-      <CpvAudioRef
-        v-if="audioUrl"
-        :key="audioKey"
-        :playing="audio.playing.value"
-        :current="audio.current.value"
-        :duration="audio.duration.value"
-        :error="audio.error.value"
-        :title="audioTitle"
-        :artist="audioArtist"
-        :art="audioArt?.url"
-        :art-width="audioArt?.width"
-        :art-height="audioArt?.height"
-        :kind="audioKind"
-        :kinds="audioKinds"
-        @toggle="audio.toggle"
-        @skip="audio.skip"
-        @seek="audio.seek"
-        @kind="audioKind = $event"
-      />
-    </CpvPhoneDock>
+    />
 
     <button
       v-if="queueEntry"

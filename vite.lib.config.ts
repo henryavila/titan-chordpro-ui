@@ -44,8 +44,7 @@ export default defineConfig({
         globals: { vue: 'Vue' },
         inlineDynamicImports: true,
         entryFileNames: 'vue/index.js',
-        assetFileNames: (info) =>
-          info.names?.some((n) => n.endsWith('.css')) ? 'vue/style.css' : 'vue/[name][extname]',
+        assetFileNames: 'vue/style.css',
       },
     },
     outDir: `${root}dist`,
