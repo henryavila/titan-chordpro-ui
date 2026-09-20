@@ -4,6 +4,7 @@ slug: versoes-cifra
 title: Cifras nomeadas da mesma música — `titan-chordpro-ui`
 version: "1.0"
 status: active
+executionMode: automate
 started: 2026-09-20T15:40:57.297Z
 lastUpdated: 2026-09-20T16:15:00.000Z
 branch: plan/versoes-cifra
@@ -27,10 +28,9 @@ principles:
   - id: P4
     title: Setlist não é switcher de cifra
     body: "Swipe de borda, dock e `songs[]` continuam N músicas. Cifra troca no chip
-      do título. verified_by: design.md Decision 6;
-      `src/vue/use/useSetlist.ts` L45–55 (ensaio = lista de músicas), L80–82
-      (id duplicado uniquifica porque compartilhariam overlay);
-      `src/vue/ChordproViewer.vue` L2390 `goSong`."
+      do título. verified_by: design.md Decision 6; `src/vue/use/useSetlist.ts`
+      L45–55 (ensaio = lista de músicas), L80–82 (id duplicado uniquifica porque
+      compartilhariam overlay); `src/vue/ChordproViewer.vue` L2390 `goSong`."
   - id: P5
     title: Core sem Vue
     body: "Envelope, listCharts, parse fatiado, replaceChart, writeMeta target vivem
@@ -63,8 +63,8 @@ phases:
     goal: "`listCharts` e `parse(source, { chartId })` fatiam o arquivo; 1 cifra
       implícita é bit-compatível com o parse atual; N>1 não concatena corpos;
       writeMeta tem alvo song/chart; writeMeta sem target em N>1 não achata
-      key/duration das cifras no header; replaceChart reconstitui o arquivo.
-      Sem Vue. Sem writer de UI. verified_by: tests/helpers/load-fixture.ts L11
+      key/duration das cifras no header; replaceChart reconstitui o arquivo. Sem
+      Vue. Sem writer de UI. verified_by: tests/helpers/load-fixture.ts L11
       (JESUS_1); design.md Decision 4 (sem target só 1-cifra é o comportamento
       atual)."
     dependsOn: []
@@ -134,12 +134,12 @@ phases:
     slug: versoes-cifra-f2-viewer-seletor-de-cifra
     title: "Viewer: seletor de cifra"
     summary: Chip no título troca a cifra sem usar a setlist nem o swipe de música.
-    goal: With N>1, a compact control on the title shows the active chart label and
+    goal: "With N>1, a compact control on the title shows the active chart label and
       switches chartId without goSong; N=1 hides it; swipe/dock/setlist still
-      change songs; live capo/offset/speed/scroll and metronome BPM persist
-      per (songId, chartId); timeline and rehearsal audio reload from the
-      new chart document. verified_by: design.md Decision 7; Ground-truth B4
-      (`STORE_KEYS.bpm` is title|artist today).
+      change songs; live capo/offset/speed/scroll and metronome BPM persist per
+      (songId, chartId); timeline and rehearsal audio reload from the new chart
+      document. verified_by: design.md Decision 7; Ground-truth B4
+      (`STORE_KEYS.bpm` is title|artist today)."
     dependsOn:
       - F1
     subPhaseCount: 0
@@ -166,9 +166,9 @@ phases:
     summary: Editor grava o arquivo inteiro e cria/renomeia/apaga cifras nomeadas.
     goal: Edit session works on the chart document; save-content and update:source
       emit the full file; add/rename/delete/default exist; deleting the last
-      named chart writes a one-chart file with no envelope; UI writer ships
-      only after P1 (F0 parse/listCharts, F1 overlay keyed, F2 seletor green),
-      not after F0-G1 alone.
+      named chart writes a one-chart file with no envelope; UI writer ships only
+      after P1 (F0 parse/listCharts, F1 overlay keyed, F2 seletor green), not
+      after F0-G1 alone.
     dependsOn:
       - F2
     subPhaseCount: 0
@@ -190,7 +190,8 @@ phases:
   - id: F4
     slug: versoes-cifra-f4-export-e-docs
     title: Export e docs
-    summary: Export tem dois verbos (arquivo vs cifra visível) e os docs separam música de cifra.
+    summary: Export tem dois verbos (arquivo vs cifra visível) e os docs separam
+      música de cifra.
     goal: exportCho default scope is file; PDF and download-this-chart use scope
       chart; filenames include chartId when N>1;
       VISAO/SPEC/CONSUMER/NAMING/README distinguish host song pick from in-file
@@ -202,8 +203,8 @@ phases:
       summary: 2 criteria to meet
       criteria:
         - id: F4-G1
-          description: Export scope tests green. FAILS when exportCho() without opts on
-            a two-chart source returns only the visible chart.
+          description: Export scope tests green. FAILS when exportCho() without opts on a
+            two-chart source returns only the visible chart.
           status: pending
           verifier:
             kind: shell
@@ -217,11 +218,16 @@ phases:
           status: pending
           verifier:
             kind: shell
-            command: >-
-              node -e 'const fs=require("fs"); const files=["docs/VISAO.md","SPEC.md","docs/CONSUMER.md","docs/NAMING.md","README.md"]; for (const f of files) { const t=fs.readFileSync(f,"utf8"); if (!/start_of_x_chart|chartId|cifras nomeadas/.test(t)) throw new Error(f+" missing in-file chart contract"); }'
+            command: node -e 'const fs=require("fs"); const
+              files=["docs/VISAO.md","SPEC.md","docs/CONSUMER.md","docs/NAMING.md","README.md"];
+              for (const f of files) { const t=fs.readFileSync(f,"utf8"); if
+              (!/start_of_x_chart|chartId|cifras nomeadas/.test(t)) throw new
+              Error(f+" missing in-file chart contract"); }'
             expectExitCode: 0
     status: pending
 references: []
+planActive: true
+planTitle: Cifras nomeadas da mesma música — `titan-chordpro-ui`
 ---
 
 # Cifras nomeadas da mesma música — `titan-chordpro-ui`

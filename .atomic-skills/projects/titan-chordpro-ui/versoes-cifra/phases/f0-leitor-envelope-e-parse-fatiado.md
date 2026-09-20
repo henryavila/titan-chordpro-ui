@@ -30,6 +30,8 @@ tasksDone: 0
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 2
+weightDone: 0
+weightTotal: 8
 exitGates:
   - id: F0-G1
     description: Envelope tests green. FAILS when parse of a two-chart source
@@ -39,6 +41,7 @@ exitGates:
       kind: shell
       command: pnpm exec vitest run tests/core/charts-envelope.test.ts
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/core/charts-envelope.test.ts"
   - id: F0-G2
     description: Existing one-chart parse still green on SDA fixtures and no Vue in core.
     status: pending
@@ -47,6 +50,7 @@ exitGates:
       command: pnpm exec vitest run tests/core/no-vue-in-core.test.ts
         tests/demo/sda-fixtures.test.ts
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/core/no-vue-in-core.test.ts test…"
 stack:
   - id: 1
     title: "Leitor: envelope e parse fatiado"
@@ -135,6 +139,9 @@ tasks:
         path: tests/core/charts-envelope.test.ts
 parked: []
 emerged: []
+planTitle: Cifras nomeadas da mesma música — `titan-chordpro-ui`
+planActive: true
+current: true
 ---
 
 # Narrative / notes
