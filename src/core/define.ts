@@ -3,6 +3,8 @@
  * not package dictionary. Generic `{define:}` infers instrument from payload.
  */
 
+import { transposeToken } from './transpose'
+
 export const DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/
 
 export type DefineDirective = 'define' | 'define-guitar' | 'define-ukulele'
@@ -142,7 +144,8 @@ export function parseDefineDirective(raw: string): DefineResult {
     return miss()
   }
 
-  if (instrument !== 'piano' && fingers && fingers.length !== frets?.length) return miss()
+  if (fingers && frets && fingers.length !== frets.length) return miss()
+  if (fingers && !frets?.length) return miss()
 
   const parsed: DefineResult = {
     class: 'parse',
@@ -150,24 +153,65 @@ export function parseDefineDirective(raw: string): DefineResult {
     instrument,
     directive,
   }
-  if (instrument === 'piano') {
-    parsed.keys = keys
-    return parsed
+  if (keys?.length) parsed.keys = keys
+  if (frets?.length) {
+    parsed.baseFret = baseFret ?? 1
+    parsed.frets = frets
   }
-  parsed.baseFret = baseFret ?? 1
-  parsed.frets = frets
   if (fingers) parsed.fingers = fingers
   return parsed
 }
 
 export function serializeDefine(def: ChordDefine): string {
-  if (def.instrument === 'piano') {
-    return `{${def.directive}: ${def.name} keys ${(def.keys ?? []).join(' ')}}`
+  let body = `${def.directive}: ${def.name}`
+  if (def.frets?.length) {
+    body += ` base-fret ${def.baseFret ?? 1} frets ${fmtSlots(def.frets)}`
+    if (def.fingers) body += ` fingers ${fmtSlots(def.fingers)}`
   }
-  const base = def.baseFret ?? 1
-  const frets = fmtSlots(def.frets ?? [])
-  const fingers = def.fingers ? ` fingers ${fmtSlots(def.fingers)}` : ''
-  return `{${def.directive}: ${def.name} base-fret ${base} frets ${frets}${fingers}}`
+  if (def.keys?.length) body += ` keys ${def.keys.join(' ')}`
+  return `{${body}}`
+}
+
+function shiftKey(k: number, n: number): number {
+  if (k >= 0 && k <= 11) return (((k + n) % 12) + 12) % 12
+  return k + n
+}
+
+/**
+ * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
+ * string is open (fret 0) or the new base would fall below 1. Piano: add n
+ * to each key (mod 12 when the value is a 0–11 pitch-class).
+ */
+export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
+  if (!n) return { ...def }
+  if (def.frets?.some((f) => f === 0)) return null
+  const next: ChordDefine = { ...def, name: transposeToken(def.name, n, flats) }
+  if (def.frets?.length) {
+    const base = (def.baseFret ?? 1) + n
+    if (base < 1) return null
+    next.baseFret = base
+  }
+  if (def.keys?.length) next.keys = def.keys.map((k) => shiftKey(k, n))
+  return next
+}
+
+export function transposeDefineLine(line: string, n: number, flats: boolean): string | null {
+  const def = asChordDefine(parseDefineDirective(line))
+  if (!def) return line
+  const next = transposeDefine(def, n, flats)
+  return next ? serializeDefine(next) : null
+}
+
+export function rewriteDefineLines(source: string, n: number, flats: boolean): string {
+  if (!n) return source
+  return String(source ?? '')
+    .split('\n')
+    .flatMap((line) => {
+      if (!isDefineKey(line.match(DIR)?.[1] ?? '')) return [line]
+      const next = transposeDefineLine(line, n, flats)
+      return next == null ? [] : [next]
+    })
+    .join('\n')
 }
 
 export function asChordDefine(r: DefineResult): ChordDefine | null {

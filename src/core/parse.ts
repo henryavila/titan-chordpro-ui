@@ -1,4 +1,11 @@
-import { asChordDefine, DIR, isDefineKey, parseDefineDirective, type ChordDefine } from './define'
+import {
+  asChordDefine,
+  DIR,
+  isDefineKey,
+  parseDefineDirective,
+  transposeDefine,
+  type ChordDefine,
+} from './define'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
 import type { ChordProLine, ChordProSection, ChordProView, SectionKind } from './types'
@@ -281,7 +288,10 @@ function applyShape(view: ChordProView, semis: number): ChordProView {
     }),
   }))
   const displayKey = view.meta.key ? transposeToken(view.meta.key, semis, flats) : null
-  return { ...view, sections, transposeSemitones: semis, displayKey }
+  const defines = view.defines
+    .map((d) => transposeDefine(d, semis, flats))
+    .filter((d): d is ChordDefine => d !== null)
+  return { ...view, sections, transposeSemitones: semis, displayKey, defines }
 }
 
 /**
