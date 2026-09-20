@@ -9,8 +9,8 @@ goal: Layout segs expose concert, shapeName, capoFret before dual/Nashville;
 status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
-lastUpdated: 2026-09-20T20:56:39.000Z
-nextAction: "Start T-001: Layout concert / shapeName / capoFret"
+lastUpdated: 2026-09-20T21:44:13.000Z
+nextAction: spawn evaluation agent for F2
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -32,11 +32,11 @@ businessIntent:
   doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e
     tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha
     voicing de concert; piano ignora capoFret.
-tasksDone: 0
+tasksDone: 3
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 1
-weightDone: 0
+weightDone: 9
 weightTotal: 9
 exitGates:
   - id: F2-G1
@@ -58,8 +58,16 @@ stack:
 tasks:
   - id: T-001
     title: Layout concert / shapeName / capoFret
-    status: pending
-    lastUpdated: 2026-09-20T20:56:39.000Z
+    status: done
+    closedAt: 2026-09-20T21:44:13.000Z
+    lastUpdated: 2026-09-20T21:44:13.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T21:43:27.000Z
+      verifiedCommit: c09259cfad432b5c671f856693e5a619ea8ce182
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/layout-capo.test.ts (18 tests)
     scopeBoundary:
       - No Vue; no dictionary; do not change auto-scroll math; do not use
         shapeCapo as the draw source.
@@ -83,8 +91,16 @@ tasks:
     weight: 3
   - id: T-002
     title: Dictionary + resolveDiagram
-    status: pending
-    lastUpdated: 2026-09-20T20:56:39.000Z
+    status: done
+    closedAt: 2026-09-20T21:44:13.000Z
+    lastUpdated: 2026-09-20T21:44:13.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T21:43:27.000Z
+      verifiedCommit: c09259cfad432b5c671f856693e5a619ea8ce182
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/resolve-diagram.test.ts (18 tests)
     scopeBoundary:
       - No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA
         only; do not ship baritone; do not guess 7+.
@@ -110,8 +126,16 @@ tasks:
     weight: 3
   - id: T-003
     title: SVG draw guitar ukulele piano with capo
-    status: pending
-    lastUpdated: 2026-09-20T20:56:39.000Z
+    status: done
+    closedAt: 2026-09-20T21:44:13.000Z
+    lastUpdated: 2026-09-20T21:44:13.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T21:43:27.000Z
+      verifiedCommit: c09259cfad432b5c671f856693e5a619ea8ce182
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/diagram-draw.test.ts (10 tests)
     scopeBoundary:
       - No Vue components; draw returns data or SVG string from core; do not
         pause auto-scroll here; do not open the modal.
@@ -154,8 +178,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 materialized after package ratify. Visual validation is F3. Next is spawn F2 writer (core draw model, no Vue modal).
-- **Decision log:** Operator: prossiga com F2; anotar F3 com validacao visual. BI Mode B from package draft.
-- **Single nextAction:** spawn fresh writer after ratify
-- **Verbatim state:** HEAD `9b8033aba89b8c5fc71e84e6335d80e9fdcde78b`. Cursor H then A/C after assert spawn.
-- **Uncommitted changes:** materialize staging.
+- **Narrative:** F2 T-001/T-002/T-003 done on merged HEAD. Fix1 landed SVG one-space coords, dict characteristic tones, slash bass miss. Visual validation remains F3. Next is evaluation then phase-done.
+- **Decision log:** Operator prossiga F2; F3 owns look. Redispatch F2-fix1 after both-claude criticals.
+- **Single nextAction:** spawn evaluation agent for F2
+- **Verbatim state:** HEAD `c09259cfad432b5c671f856693e5a619ea8ce182`. `assert-automate-gate --gate done` ok. Verifiers 47 tests exit 0 (layout-capo 18, resolve-diagram 18, diagram-draw 10, no-vue 1). Cursor E.
+- **Uncommitted changes:** initiative close + reviews + cursor (checkpoint imediato).

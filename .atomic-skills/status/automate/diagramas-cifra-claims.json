@@ -1,44 +1,64 @@
 {
   "planSlug": "diagramas-cifra",
-  "phaseId": "F1",
-  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F1-fix1",
-  "writerBranch": "impl/diagramas-cifra-F1-fix1",
-  "finishedAt": "2026-09-20T15:52:00.000Z",
+  "phaseId": "F2",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix1",
+  "writerBranch": "impl/diagramas-cifra-F2-fix1",
+  "finishedAt": "2026-09-20T21:41:59.000Z",
   "tasks": [
     {
       "taskId": "T-001",
       "status": "claimed-pass",
       "commitShas": [
-        "73982a7cc5dd9e2c37b83f3df7487db65fcb9961"
+        "af3b630c89d008c4c47947dd0f5f2cca40aa5291",
+        "31d3696c6bd67bb8e4b907e8567402d737eba64c"
       ],
+      "base": null,
+      "head": null,
       "paths": [
-        "src/core/parse.ts",
-        "src/core/define.ts",
-        "src/core/index.ts",
         "src/core/types.ts",
-        "tests/core/define-directive.test.ts"
+        "src/core/layout.ts",
+        "tests/core/layout-capo.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/define-directive.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/layout-capo.test.ts",
       "exitCode": 0,
-      "transcript": "merged tree 32 tests later; T-001 73982a7 DIR hyphen parse/serialize. post-merge define-directive 25 passed."
+      "transcript": "merged tree: T-001 from F2-writer; layout-capo 18 passed on HEAD after fix1"
     },
     {
       "taskId": "T-002",
       "status": "claimed-pass",
       "commitShas": [
-        "871ff98b8ed08cf1b3ec0bf7078690883d74fad1"
+        "1ff8adc30f6583b6d4b1a3688c11a73323a2efab",
+        "cbab2b15efe811c7551c5083b1895d8ce77afff8"
       ],
+      "base": null,
+      "head": null,
       "paths": [
-        "src/core/define.ts",
-        "src/core/import-chordpro.ts",
-        "src/core/export-cho.ts",
-        "tests/core/define-directive.test.ts",
-        "tests/core/export-cho.test.ts",
-        "fixtures/define-roundtrip.cho"
+        "src/core/chord-dict.ts",
+        "src/core/resolve-diagram.ts",
+        "src/core/index.ts",
+        "tests/core/resolve-diagram.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/resolve-diagram.test.ts",
       "exitCode": 0,
-      "transcript": "open-string define dropped on transpose; piano keys shift; 32 tests exit 0 on merged HEAD"
+      "transcript": "\u2713 tests/core/resolve-diagram.test.ts (18 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  18 passed (18)\n   Start at  18:41:43\n   Duration  333ms (transform 116ms, setup 13ms, import 124ms, tests 5ms, environment 133ms)"
+    },
+    {
+      "taskId": "T-003",
+      "status": "claimed-pass",
+      "commitShas": [
+        "8e1ab643e959c93e8752bd03508b0d52220a9de2",
+        "56887270ebd150aeeb6b873e5b6a03e5195d69cc"
+      ],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/diagram-draw.ts",
+        "src/core/index.ts",
+        "tests/core/diagram-draw.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/diagram-draw.test.ts",
+      "exitCode": 0,
+      "transcript": "\u2713 tests/core/diagram-draw.test.ts (10 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:41:44\n   Duration  318ms (transform 102ms, setup 13ms, import 110ms, tests 5ms, environment 131ms)"
     }
   ]
 }
