@@ -181,6 +181,12 @@ phases:
               tests/core/export-cho.test.ts
             expectExitCode: 0
     status: active
+    evaluationGate:
+      status: passed
+      verdict: pass
+      reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F1.md
+      at: d6591d612ac250a8f4fc7e051c1919cb6a7e5fe3
+      verifiedAt: 2026-09-20T16:10:54.000Z
     businessIntent:
       value: O musico grava uma forma so naquele arquivo ChordPro. Se writeMeta ou
         exportCho dropa {define-guitar:}, a forma some na proxima abertura e o

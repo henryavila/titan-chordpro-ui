@@ -153,8 +153,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F1 T-001 e T-002 estão `done` no plano `diagramas-cifra` (worktree `plan/diagramas-cifra`). Merge do writer + fix1 (shape-or-drop no transpose de `{define}`) já está em HEAD `10dac98`. Cursor maestro em E com `lastAssert.gate=done`. Próximo passo do pure-maestro é avaliação (Step F), não spawn.
-- **Decision log:** Pacote F1 ratificado (fixture `fixtures/define-roundtrip.cho` fora de sda). Redispatch F1-fix1 após critical Claude: `exportCho` transpoe forma ou dropa open-string. Claim report exclusivo T-001 `73982a7` / T-002 `871ff98`.
-- **Single nextAction:** spawn evaluation agent for F1
-- **Verbatim state:** HEAD `10dac980d24514d662becc4381c6a5f2b898b56c`. Cursor `.atomic-skills/status/automate/diagramas-cifra.json` step=E lastAssert `{gate:done,ok:true,at:2026-09-20T15:52:18.223Z}`. Evidence T-001/T-002 `verifiedCommit: 3d4b6f930a7bd520b338ea3ceaf7c424a1d81a9f` `passed: true` `exitCode: 0`. Verifier F1-G1: `pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts`. Lease: missing.
-- **Uncommitted changes:** `.atomic-skills/status/automate/diagramas-cifra-F0-prepare.json` (M), `.atomic-skills/status/automate/diagramas-cifra-F0-sealed-brief.md` (M), `.atomic-skills/status/automate/diagramas-cifra-F1-prepare.json` (untracked), `.atomic-skills/status/automate/diagramas-cifra-F1-sealed-brief.md` (untracked) — artefatos de prepare do orquestrador, commit de estado nesta retomada.
+- **Narrative:** F1 T-001/T-002 `done`. Avaliação Step F: verdict pass, 0 blocker/critical/major, 3 minor + 2 notes. F1-G1 host re-run 31 passed exit 0. `evaluationGate` carimbado. Cursor em F. Próximo: lessons + review-code both-claude + decision-review + audit-delivery.
+- **Decision log:** Pacote F1 ratificado (fixture fora de sda). Redispatch F1-fix1: `transposeDefine` shape-or-drop. Evaluation pass em `.atomic-skills/reviews/eval-diagramas-cifra-F1.md`.
+- **Single nextAction:** distill F1 lessons then review-code --mode=both-claude
+- **Verbatim state:** HEAD `d6591d612ac250a8f4fc7e051c1919cb6a7e5fe3`. evaluationGate `{status:passed,verdict:pass,reportPath:.atomic-skills/reviews/eval-diagramas-cifra-F1.md,at:d6591d612ac250a8f4fc7e051c1919cb6a7e5fe3,verifiedAt:2026-09-20T16:10:54.000Z}`. F1-G1 `pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts` Tests 31 passed exit 0. Cursor step=F.
+- **Uncommitted changes:** plan.md evaluationGate, eval report, F1.jsonl, cursor.json (checkpoint imediato).
