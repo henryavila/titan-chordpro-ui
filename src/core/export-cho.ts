@@ -1,4 +1,12 @@
+import { DIR, isDefineKey, parseDefineDirective, serializeDefine } from './define'
 import { transposeToken, usesFlats } from './transpose'
+
+function transposeDefineLine(line: string, n: number, flats: boolean): string {
+  const r = parseDefineDirective(line)
+  if (r.class !== 'parse') return line
+  const { class: _c, ...def } = r
+  return serializeDefine({ ...def, name: transposeToken(def.name, n, flats) })
+}
 
 export function exportCho(
   source: string,
@@ -16,6 +24,9 @@ export function exportCho(
       .replace(/^(\s*\{\s*key\s*:\s*)([^}]*)\}/gim, (_, a: string, k: string) => {
         return `${a}${transposeToken(k.trim(), n, flats)}}`
       })
+      .split('\n')
+      .map((line) => (isDefineKey(line.match(DIR)?.[1] ?? '') ? transposeDefineLine(line, n, flats) : line))
+      .join('\n')
   }
   if (capo) {
     out = out.replace(/\{\s*capo\s*:[^}]*\}[ \t]*\n?/gi, '')
@@ -44,7 +55,6 @@ export function patchMeta(
   },
 ): string {
   const lines = String(source ?? '').split('\n')
-  const DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/
   const ALIASES: Record<string, string[]> = {
     title: ['title', 't'],
     subtitle: ['subtitle', 'st'],
