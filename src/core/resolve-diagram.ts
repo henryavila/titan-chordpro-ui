@@ -3,7 +3,7 @@
  * Guitar/ukulele token is shapeName; piano token is concert.
  */
 
-import { lookupDict, type DictInstrument, type DictVoicing } from './chord-dict'
+import { lookupDict, pianoKeysToRelative, type DictInstrument, type DictVoicing } from './chord-dict'
 import type { ChordDefine, DefineInstrument } from './define'
 import { parseChordToken } from './parse-chord'
 import { keyIndex } from './transpose'
@@ -58,14 +58,14 @@ function isInstrument(value: string): value is DiagramInstrument {
   return value === 'guitar' || value === 'ukulele' || value === 'piano'
 }
 
-function fromDefine(def: ChordDefine): DiagramVoicing {
+function fromDefine(def: ChordDefine, want: Canonical): DiagramVoicing {
   const voicing: DiagramVoicing = {}
   if (def.frets?.length) {
     voicing.baseFret = def.baseFret ?? 1
     voicing.frets = [...def.frets]
   }
   if (def.fingers) voicing.fingers = [...def.fingers]
-  if (def.keys?.length) voicing.keys = [...def.keys]
+  if (def.keys?.length) voicing.keys = pianoKeysToRelative(def.keys, want.rootPc, want.quality)
   return voicing
 }
 
@@ -114,9 +114,11 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
       instrument,
       token,
       source: 'override',
-      voicing: fromDefine(def),
+      voicing: fromDefine(def, want),
     }
   }
+
+  if (want.bassPc != null) return { class: 'miss', reason: 'no-shape' }
 
   const found = lookupDict(instrument, want.rootPc, want.quality)
   if (!found) return { class: 'miss', reason: 'no-shape' }

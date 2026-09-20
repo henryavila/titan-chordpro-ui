@@ -144,9 +144,9 @@ function fretSvg(opts: {
   const padX = 24
   const padY = 28
   const fretH = 18
-  const maxRel = Math.max(4, ...dots.map((d) => d.relativeFret), capoFret)
+  const maxFret = Math.max(4, capoFret, ...dots.map((d) => d.fret))
   const width = padX * 2 + (strings - 1) * 16
-  const height = padY + maxRel * fretH + 28
+  const height = padY + maxFret * fretH + 28
   const xOf = (s: number) => padX + s * 16
   const yOf = (fret: number) => padY + fret * fretH
   const parts: string[] = [
@@ -157,10 +157,10 @@ function fretSvg(opts: {
   )
   for (let s = 0; s < strings; s++) {
     parts.push(
-      `<line class="diagram-string" x1="${xOf(s)}" y1="${yOf(0)}" x2="${xOf(s)}" y2="${yOf(maxRel)}" stroke="currentColor" stroke-width="1"/>`,
+      `<line class="diagram-string" x1="${xOf(s)}" y1="${yOf(0)}" x2="${xOf(s)}" y2="${yOf(maxFret)}" stroke="currentColor" stroke-width="1"/>`,
     )
   }
-  for (let f = 1; f <= maxRel; f++) {
+  for (let f = 1; f <= maxFret; f++) {
     parts.push(
       `<line class="diagram-fret" x1="${xOf(0)}" y1="${yOf(f)}" x2="${xOf(strings - 1)}" y2="${yOf(f)}" stroke="currentColor" stroke-width="1"/>`,
     )
@@ -201,23 +201,23 @@ function fretSvg(opts: {
   return parts.join('')
 }
 
-function pianoRootPc(token: string | undefined): number {
-  if (!token) return 0
+function pianoRootPc(token: string | undefined): number | null {
+  if (!token) return null
   const parsed = parseChordToken(token)
-  if (parsed.class !== 'parse') return 0
-  return keyIndex(parsed.root) ?? 0
+  if (parsed.class !== 'parse') return null
+  return keyIndex(parsed.root)
 }
 
-function drawPiano(voicing: DiagramVoicing, token: string | undefined, capoFret: number): PianoDraw {
+function drawPiano(voicing: DiagramVoicing, token: string | undefined): PianoDraw {
   const root = pianoRootPc(token)
   const rel = voicing.keys ?? []
-  const lit = rel.map((k) => (((root + k) % 12) + 12) % 12)
+  const lit = root == null ? [] : rel.map((k) => (((root + k) % 12) + 12) % 12)
   const litNotes = lit.map((pc) => NOTE[pc] ?? 'C')
   const litSet = new Set(lit)
   const svg = pianoSvg(litSet)
   return {
     kind: 'piano',
-    capoFret,
+    capoFret: 0,
     capoLabel: null,
     hasCapoBar: false,
     lit,
@@ -254,6 +254,6 @@ function pianoSvg(lit: Set<number>): string {
 
 export function drawDiagram(opts: DrawDiagramOpts): DiagramDraw {
   const capoFret = Math.max(0, opts.capoFret ?? 0)
-  if (opts.instrument === 'piano') return drawPiano(opts.voicing, opts.token, capoFret)
+  if (opts.instrument === 'piano') return drawPiano(opts.voicing, opts.token)
   return drawFrets(opts.instrument, opts.voicing, capoFret)
 }
