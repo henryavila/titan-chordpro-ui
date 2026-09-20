@@ -151,3 +151,10 @@ _(record decisions here as they are made)_
 ## Links
 
 _(plan doc, external refs)_
+
+## Session handoff
+- **Narrative:** F1 T-001 e T-002 estão `done` no plano `diagramas-cifra` (worktree `plan/diagramas-cifra`). Merge do writer + fix1 (shape-or-drop no transpose de `{define}`) já está em HEAD `10dac98`. Cursor maestro em E com `lastAssert.gate=done`. Próximo passo do pure-maestro é avaliação (Step F), não spawn.
+- **Decision log:** Pacote F1 ratificado (fixture `fixtures/define-roundtrip.cho` fora de sda). Redispatch F1-fix1 após critical Claude: `exportCho` transpoe forma ou dropa open-string. Claim report exclusivo T-001 `73982a7` / T-002 `871ff98`.
+- **Single nextAction:** spawn evaluation agent for F1
+- **Verbatim state:** HEAD `10dac980d24514d662becc4381c6a5f2b898b56c`. Cursor `.atomic-skills/status/automate/diagramas-cifra.json` step=E lastAssert `{gate:done,ok:true,at:2026-09-20T15:52:18.223Z}`. Evidence T-001/T-002 `verifiedCommit: 3d4b6f930a7bd520b338ea3ceaf7c424a1d81a9f` `passed: true` `exitCode: 0`. Verifier F1-G1: `pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts`. Lease: missing.
+- **Uncommitted changes:** `.atomic-skills/status/automate/diagramas-cifra-F0-prepare.json` (M), `.atomic-skills/status/automate/diagramas-cifra-F0-sealed-brief.md` (M), `.atomic-skills/status/automate/diagramas-cifra-F1-prepare.json` (untracked), `.atomic-skills/status/automate/diagramas-cifra-F1-sealed-brief.md` (untracked) — artefatos de prepare do orquestrador, commit de estado nesta retomada.

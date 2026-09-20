@@ -1,0 +1,12 @@
+{
+  "planSlug": "diagramas-cifra",
+  "phaseId": "F1",
+  "baseRef": "28dc6be91cbad0c53cbde9867c6226ef80a12165",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F1-fix1",
+  "writerBranch": "impl/diagramas-cifra-F1-fix1",
+  "sealedBriefPath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-F1-sealed-brief.md",
+  "claimReportPath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json",
+  "claimReportPathForBrief": ".atomic-skills/status/automate/diagramas-cifra-claims.json",
+  "leasePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/writer-leases/diagramas-cifra.json",
+  "preparedAt": "2026-09-20T15:41:43.101Z"
+}

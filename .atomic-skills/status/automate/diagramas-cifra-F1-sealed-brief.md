@@ -1,4 +1,4 @@
-# Phase writer brief — diagramas-cifra F0
+# Phase writer brief — diagramas-cifra F1
 
 You are a **code-only phase writer** implementing plan tasks in an isolated sibling worktree.
 This sealed brief is self-contained. **No host chat history is included or authorized.**
@@ -25,29 +25,29 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 ## Phase work-order
 
 - **planSlug:** diagramas-cifra
-- **phaseId:** F0
-- **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f0-d0-parser-br-oraculo-257.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-fix2
-- **writerBranch:** impl/diagramas-cifra-F0-fix2
-- **baseRef:** fd14989abc09fab6e9a026cd70df5fa47a46cb7f
-- **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F0.jsonl (informational — host owns append; do not write)
+- **phaseId:** F1
+- **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f1-d1-define-parse-serialize-round-trip.md (read-only)
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F1-fix1
+- **writerBranch:** impl/diagramas-cifra-F1-fix1
+- **baseRef:** 28dc6be91cbad0c53cbde9867c6226ef80a12165
+- **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F1.jsonl (informational — host owns append; do not write)
 
 ### Tasks (2)
 
-#### T-001 — Oracle table from fixtures/sda
-- status: active
-- paths: ["tests/core/chord-oracle.table.json","tests/core/chord-oracle.test.ts","scripts/build-chord-oracle.mjs"]
-- scopeBoundary: ["Do not invent chart lyrics; do not implement parseChordToken here; do not add Vue; do not ship a voicing dictionary."]
-- acceptance: ["Table lists every unique bracket token from fixtures/sda (257 names); each row is parse, UNPARSED, or AMBIGUOUS; 7+ and quote-junk rows are AMBIGUOUS or UNPARSED; chord-oracle.test.ts fails if fixtures/sda gains a name missing from the table"]
-- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/chord-oracle.test.ts","expectExitCode":0}
-- weight: 2
+#### T-001 — Parse and serialize define directives
+- status: pending
+- paths: ["src/core/parse.ts","src/core/define.ts","src/core/index.ts","tests/core/define-directive.test.ts"]
+- scopeBoundary: ["No Vue editor; no dictionary lookup; do not add define to META_KEYS as an x_ key; do not implement the diagram SVG."]
+- acceptance: ["DIR accepts define-guitar and define-ukulele as full keys; parseDefineDirective reads frets, fingers, base-fret, keys; serializeDefine emits ChordPro text; generic {define:} infers guitar from 6 frets, ukulele from 4, piano from keys; unknown arity is miss"]
+- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/define-directive.test.ts","expectExitCode":0}
+- weight: 3
 
-#### T-002 — parseChordToken + BR aliases
-- status: active
-- paths: ["src/core/parse-chord.ts","src/core/index.ts","tests/core/parse-chord-token.test.ts"]
-- scopeBoundary: ["No Vue; no fret/key diagrams; no {define} parser; do not treat 7+ as aug or maj7."]
-- acceptance: ["parseChordToken(\"C7M\") quality is maj7; parseChordToken(\"C7M(9)\") is maj9; parseChordToken(\"C4\") and parseChordToken(\"Csus\") are sus4; parseChordToken(\"C9\") is add9; parseChordToken(\"G2\") is sus2; parseChordToken(\"C6(9)\") is 6add9; parseChordToken(\"C7(9)\") is 9; parseChordToken(\"Cm7(11)\") is m11; parseChordToken(\"C7+\") is AMBIGUOUS; parseChordToken(\"A4\\\"\") is UNPARSED; parseChordToken(\"Dm(3b)\") quality is m; parseChordToken(\"Dm(3b)/F#\") is m with bass F#; slash after / is always bass; function is exported from src/core/index.ts"]
-- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/parse-chord-token.test.ts","expectExitCode":0}
+#### T-002 — writeDefines + fixture + exportCho keep
+- status: pending
+- paths: ["src/core/define.ts","src/core/import-chordpro.ts","src/core/export-cho.ts","tests/core/define-directive.test.ts","tests/core/export-cho.test.ts","fixtures/define-roundtrip.cho"]
+- scopeBoundary: ["Do not invent lyrics; only add define lines to an existing fixture; do not build the shape editor UI; do not change strum meta keys."]
+- acceptance: ["writeDefines places the define block after META_KEYS header and before lyrics; writeMeta leaves define lines in place; exportCho of a source with {define-guitar:} still contains that directive; fixture fixtures/define-roundtrip.cho (outside fixtures/sda) has at least one {define-guitar:} used in tests; exportCho({semitones:2}) rewrites define names with the same transpose as the body"]
+- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts","expectExitCode":0}
 - weight: 3
 
 ## Claim report (required output)
