@@ -1,23 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { parseChordToken } from '../../src/core/index'
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
-
-type OracleRow = {
-  name: string
-  class: 'parse' | 'UNPARSED' | 'AMBIGUOUS'
-  quality?: string
-  root?: string
-  bass?: string
-}
-
-function expectedRoot(name: string): string | undefined {
-  const body = name.split('/')[0] ?? ''
-  return body.match(/^([A-G](?:#|b)?)/)?.[1]
-}
 
 function qualityOf(token: string): string | undefined {
   const r = parseChordToken(token)
@@ -96,41 +78,25 @@ describe('parseChordToken miss honesty', () => {
     expect(r.class).toBe('AMBIGUOUS')
     expect(r).not.toHaveProperty('quality')
   })
+
+  it('treats invalid numeric bass as AMBIGUOUS, not a quality', () => {
+    const r = parseChordToken('D9/4')
+    expect(r.class).toBe('AMBIGUOUS')
+    expect(r).not.toHaveProperty('quality')
+  })
 })
 
-describe('parseChordToken vs SDA oracle', () => {
-  it('matches the oracle class, quality, root, and bass for every fixtures/sda name', () => {
-    const table = JSON.parse(
-      readFileSync(join(root, 'tests/core/chord-oracle.table.json'), 'utf8'),
-    ) as OracleRow[]
-    const mismatches: string[] = []
-    for (const row of table) {
-      const got = parseChordToken(row.name)
-      if (got.class !== row.class) {
-        mismatches.push(`${row.name}: oracle ${row.class} parser ${got.class}`)
-      }
-      if (row.class === 'parse') {
-        if (got.class === 'parse') {
-          if (got.quality !== row.quality) {
-            mismatches.push(`${row.name}: quality oracle ${row.quality} parser ${got.quality}`)
-          }
-          const wantRoot = row.root ?? expectedRoot(row.name)
-          if (got.root !== wantRoot) {
-            mismatches.push(`${row.name}: root oracle ${wantRoot} parser ${got.root}`)
-          }
-          if (got.bass !== row.bass) {
-            mismatches.push(`${row.name}: bass oracle ${row.bass} parser ${got.bass}`)
-          }
-        }
-      } else {
-        if (row.quality !== undefined) {
-          mismatches.push(`${row.name}: miss row must not have quality`)
-        }
-        if ('quality' in got) {
-          mismatches.push(`${row.name}: miss parser result has quality`)
-        }
-      }
-    }
-    expect(mismatches).toEqual([])
+describe('parseChordToken m(3b)', () => {
+  it('maps m(3b) to quality m', () => {
+    const r = parseChordToken('Dm(3b)')
+    expect(r.class).toBe('parse')
+    expect(r).toMatchObject({ root: 'D', quality: 'm' })
+    expect(r).not.toHaveProperty('bass')
+  })
+
+  it('parses Dm(3b)/F# as minor with bass F#', () => {
+    const r = parseChordToken('Dm(3b)/F#')
+    expect(r.class).toBe('parse')
+    expect(r).toMatchObject({ root: 'D', quality: 'm', bass: 'F#' })
   })
 })

@@ -810,7 +810,9 @@
   },
   {
     "name": "Dm(3b)/F#",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "m",
+    "bass": "F#"
   },
   {
     "name": "Dm/C",

@@ -21,6 +21,7 @@ const QUALITY: Record<string, string> = {
   '': 'major',
   M: 'major',
   m: 'm',
+  'm(3b)': 'm',
   '2': 'sus2',
   '4': 'sus4',
   '5': '5',
@@ -47,7 +48,7 @@ const QUALITY: Record<string, string> = {
   '°': 'dim',
 }
 
-const AMBIGUOUS_SUFFIX = new Set(['7+', 'm(3b)'])
+const AMBIGUOUS_SUFFIX = new Set(['7+'])
 
 const ROOT = /^([A-G](?:#|b)?)(.*)$/
 const BASS = /^[A-G](?:#|b)?$/
