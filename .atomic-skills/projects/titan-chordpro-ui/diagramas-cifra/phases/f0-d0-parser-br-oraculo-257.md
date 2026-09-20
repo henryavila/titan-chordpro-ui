@@ -12,7 +12,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
 lastUpdated: 2026-09-20T11:54:19.571Z
-nextAction: Run `done T-002`
+nextAction: Run `phase-done`
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -29,11 +29,11 @@ businessIntent:
   doneWhen: tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts
     passam; tests/core/no-vue-in-core.test.ts passa; a tabela cobre os nomes
     unicos de fixtures/sda.
-tasksDone: 1
+tasksDone: 2
 tasksTotal: 2
 gatesMet: 0
 gatesTotal: 2
-weightDone: 2
+weightDone: 5
 weightTotal: 5
 exitGates:
   - id: F0-G1
@@ -99,8 +99,17 @@ tasks:
     title: parseChordToken + BR aliases
     summary: Parser canônico BR com aliases e miss honesto.
     weight: 3
-    status: pending
-    lastUpdated: 2026-09-19T08:49:13.733Z
+    status: done
+    closedAt: 2026-09-20T11:55:22.000Z
+    lastUpdated: 2026-09-20T11:55:22.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T11:55:22.000Z
+      verifiedCommit: e7d4bb34d7ceda025beb65f7779183085e73ed4d
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/parse-chord-token.test.ts (13 tests) 3ms; Test Files
+        1 passed; Tests 13 passed
     scopeBoundary:
       - No Vue; no fret/key diagrams; no {define} parser; do not treat 7+ as aug
         or maj7.
@@ -143,8 +152,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** T-001 fechado via `done` após verifier pós-merge exit 0. T-002 ainda pending; fix1 mergeado (`64d5183`). Cursor E, lastAssert done ok.
-- **Decision log:** `assert-automate-gate --gate done` exit 0 com receipt both-claude + disposition fix. T-001 SHA `3b173f5` reachable.
-- **Single nextAction:** Run `done T-002`
-- **Verbatim state:** `pnpm exec vitest run tests/core/chord-oracle.test.ts` → 3 passed, exit 0, HEAD `f168726c74faccef56bec469468c75cfb73109f7`. lastAssert `{ gate: done, ok: true, at: 2026-09-20T11:54:19.571Z }`.
-- **Uncommitted changes:** este close T-001 (checkpoint imediato).
+- **Narrative:** Última tarefa da F0 fechada. T-001 e T-002 `done` com evidence.passed true. phase-done NÃO auto-roda: falta evaluation + lessons + review + decision-review + audit-delivery + assert phase-done.
+- **Decision log:** T-002 closed after fix1 `64d5183` and both-claude receipt with operator disposition fix. lastAssert done ok.
+- **Single nextAction:** Run `phase-done`
+- **Verbatim state:** `pnpm exec vitest run tests/core/parse-chord-token.test.ts` → 13 passed, exit 0, HEAD `e7d4bb34d7ceda025beb65f7779183085e73ed4d`. `assert-automate-gate --gate done` → `ok`. lastAssert `{ gate: done, ok: true, at: 2026-09-20T11:54:19.571Z }`.
+- **Uncommitted changes:** este close T-002 (checkpoint imediato).
