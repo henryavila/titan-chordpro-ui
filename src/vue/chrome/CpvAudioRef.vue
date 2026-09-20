@@ -61,7 +61,7 @@ function onSeek(e: PointerEvent) {
 <template>
   <div
     class="cpv-hit cpv-audio-ref"
-    :class="{ 'is-playing': playing, 'is-closed': !open, 'has-kinds': open && canSwitch }"
+    :class="{ 'is-playing': playing, 'is-closed': !open }"
     data-audio-ref
     role="region"
     aria-label="Áudio de referência"
@@ -119,6 +119,30 @@ function onSeek(e: PointerEvent) {
       <div class="cpv-audio-ref-id">
         <p data-audio-title class="cpv-audio-ref-title">{{ title }}</p>
         <p data-audio-artist class="cpv-audio-ref-artist">{{ artist }}</p>
+        <div
+          class="cpv-audio-ref-kind"
+          :class="{ 'is-switch': canSwitch }"
+          data-audio-kind
+          role="group"
+          :aria-label="canSwitch ? 'Tipo de áudio' : kindLabel"
+        >
+          <template v-if="canSwitch">
+            <button
+              v-for="k in kinds"
+              :key="k"
+              type="button"
+              :data-audio-kind="k"
+              :aria-pressed="kind === k ? 'true' : 'false'"
+              :class="{ 'is-on': kind === k }"
+              @click="emit('kind', k)"
+            >{{ AUDIO_KIND_LABEL[k] }}</button>
+          </template>
+          <span
+            v-else
+            :data-audio-kind="kind"
+            class="is-on is-solo"
+          >{{ kindLabel }}</span>
+        </div>
       </div>
 
       <button
@@ -131,24 +155,6 @@ function onSeek(e: PointerEvent) {
       >
         <CpvIcon name="x" :size="14" />
       </button>
-
-      <div
-        v-if="canSwitch"
-        class="cpv-audio-kind"
-        data-audio-kind
-        role="group"
-        aria-label="Tipo de áudio"
-      >
-        <button
-          v-for="k in kinds"
-          :key="k"
-          type="button"
-          :data-audio-kind="k"
-          :aria-pressed="kind === k ? 'true' : 'false'"
-          :class="{ 'is-on': kind === k }"
-          @click="emit('kind', k)"
-        >{{ AUDIO_KIND_LABEL[k] }}</button>
-      </div>
 
       <p v-if="error" class="cpv-audio-ref-error">Não foi possível tocar</p>
 

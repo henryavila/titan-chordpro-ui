@@ -306,7 +306,8 @@ setAudioUrl(next, null, 'playback') // tira só o playback
 Dois tipos, independentes: **sung** (`{x_audio_sung:}`) e **playback**
 (`{x_audio_playback:}`). Qualquer combinação vale — os dois, só um, ou
 nenhum. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung. Sem nenhuma
-faixa, o chrome não muda. Com as duas, o card troca Cantado | Playback.
+faixa, o chrome não muda. Com as duas, o card troca Cantado / Playback em rótulos discretos (não tabs).
+Com uma só, o mesmo rótulo indica o que está tocando.
 
 Capa opcional (mesma regra de URL):
 
