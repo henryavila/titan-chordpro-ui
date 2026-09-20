@@ -11,8 +11,8 @@ goal: "`parseChordToken` classifies every unique name in `fixtures/sda` (257) as
 status: active
 branch: plan/diagramas-cifra
 started: 2026-09-19T08:49:13.733Z
-lastUpdated: 2026-09-19T08:49:13.733Z
-nextAction: sync-wait F0 T-002 fix agent then validate claims
+lastUpdated: 2026-09-20T11:54:19.571Z
+nextAction: Run `done T-002`
 parentPlan: diagramas-cifra
 phaseId: F0
 businessIntent:
@@ -29,11 +29,11 @@ businessIntent:
   doneWhen: tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts
     passam; tests/core/no-vue-in-core.test.ts passa; a tabela cobre os nomes
     unicos de fixtures/sda.
-tasksDone: 0
+tasksDone: 1
 tasksTotal: 2
 gatesMet: 0
 gatesTotal: 2
-weightDone: 0
+weightDone: 2
 weightTotal: 5
 exitGates:
   - id: F0-G1
@@ -65,8 +65,17 @@ tasks:
     title: Oracle table from fixtures/sda
     summary: Gerar a tabela dos nomes únicos de fixtures/sda.
     weight: 2
-    status: pending
-    lastUpdated: 2026-09-19T08:49:13.733Z
+    status: done
+    closedAt: 2026-09-20T11:54:19.571Z
+    lastUpdated: 2026-09-20T11:54:19.571Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-20T11:53:13.000Z
+      verifiedCommit: f168726c74faccef56bec469468c75cfb73109f7
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/chord-oracle.test.ts (3 tests) 22ms; Test Files 1
+        passed; Tests 3 passed
     scopeBoundary:
       - Do not invent chart lyrics; do not implement parseChordToken here; do
         not add Vue; do not ship a voicing dictionary.
@@ -134,8 +143,8 @@ _(record decisions here as they are made)_
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Operador escolheu Corrigir nos majors T-002. Redispatch 1: fix agent em `impl/diagramas-cifra-F0-fix1`. Cursor C, redispatchCount 1. T-001/T-002 ainda pending no YAML. Host-thin.
-- **Decision log:** disposition `fix` (AskUserQuestion). QUALITY prototype + oracle full-row + slash body UNPARSED. Codex quota fail; Claude was the external leg.
-- **Single nextAction:** sync-wait F0 T-002 fix agent then validate claims
-- **Verbatim state:** subagent `01a0bea4-39e6-7e51-a4b0-784e11f8b492`. cwd `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F0-fix1`. baseRef `17e4f1fe1118e484f41aef9949bf0fc6bccd453a`. `assert-automate-gate --gate spawn` → `ok`. Cursor `step: C` `redispatchCount: 1`.
-- **Uncommitted changes:** prepare fix1 + este handoff (checkpoint imediato).
+- **Narrative:** T-001 fechado via `done` após verifier pós-merge exit 0. T-002 ainda pending; fix1 mergeado (`64d5183`). Cursor E, lastAssert done ok.
+- **Decision log:** `assert-automate-gate --gate done` exit 0 com receipt both-claude + disposition fix. T-001 SHA `3b173f5` reachable.
+- **Single nextAction:** Run `done T-002`
+- **Verbatim state:** `pnpm exec vitest run tests/core/chord-oracle.test.ts` → 3 passed, exit 0, HEAD `f168726c74faccef56bec469468c75cfb73109f7`. lastAssert `{ gate: done, ok: true, at: 2026-09-20T11:54:19.571Z }`.
+- **Uncommitted changes:** este close T-001 (checkpoint imediato).
