@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: slash-bass Astra review approved; do not phase-done and do not start F3
+nextAction: re-evaluate F2 on current HEAD, then phase-done gates; do not start F3 yet
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -32,11 +32,11 @@ businessIntent:
   doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e
     tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha
     voicing de concert; piano ignora capoFret.
-tasksDone: 1
+tasksDone: 3
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 1
-weightDone: 3
+weightDone: 9
 weightTotal: 9
 exitGates:
   - id: F2-G1
@@ -91,8 +91,16 @@ tasks:
     weight: 3
   - id: T-002
     title: Dictionary + resolveDiagram
-    status: pending
-    lastUpdated: 2026-09-23T12:40:00.000Z
+    status: done
+    closedAt: 2026-09-23T18:43:30.000Z
+    lastUpdated: 2026-09-23T18:43:30.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-23T18:42:45.000Z
+      verifiedCommit: b30690c8b98fc64e7c09a1d450e56c14304fa364
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/resolve-diagram.test.ts (25 tests)
     scopeBoundary:
       - No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA
         only; do not ship baritone; do not guess 7+.
@@ -118,8 +126,16 @@ tasks:
     weight: 3
   - id: T-003
     title: SVG draw guitar ukulele piano with capo
-    status: pending
-    lastUpdated: 2026-09-23T12:40:00.000Z
+    status: done
+    closedAt: 2026-09-23T18:43:30.000Z
+    lastUpdated: 2026-09-23T18:43:30.000Z
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-23T18:42:45.000Z
+      verifiedCommit: b30690c8b98fc64e7c09a1d450e56c14304fa364
+      passed: true
+      exitCode: 0
+      outputSummary: ✓ tests/core/diagram-draw.test.ts (12 tests)
     scopeBoundary:
       - No Vue components; draw returns data or SVG string from core; do not
         pause auto-scroll here; do not open the modal.
@@ -162,8 +178,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Codex gpt-6-astra reviewed f446c14..b9b3780 (slash bass on a piano tie). Blind and informed passes both approved, 0 findings. Do not phase-done and do not start F3 until the operator says to continue.
-- **Decision log:** reviews 2026-09-23-1105 and 2026-09-23-1115.
-- **Single nextAction:** slash-bass Astra review approved; do not phase-done and do not start F3
-- **Verbatim state:** Merge of fix4 is on the plan branch. Claim SHA b9b3780 is an ancestor. Cursor should sit at D.5, not done.
-- **Uncommitted changes:** this handoff and the fix4 claim files.
+- **Narrative:** Operator said save state and continue. T-002 and T-003 closed after the exit-gate suite passed (55 tests) and assert --gate done exited 0. Astra approved the slash-bass fix. F3 is not started.
+- **Decision log:** task close follows the Astra approval 2026-09-23-1122.
+- **Single nextAction:** re-evaluate F2 on current HEAD, then phase-done gates; do not start F3 yet
+- **Verbatim state:** Cursor step E. lastAssert gate done ok. verifiedCommit b30690c8b98fc64e7c09a1d450e56c14304fa364.
+- **Uncommitted changes:** task close, local review, complex receipts.
