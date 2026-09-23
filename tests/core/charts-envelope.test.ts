@@ -5,6 +5,7 @@ import {
   commitChartDocument,
   inferWrittenKey,
   listCharts,
+  lintSource,
   parse,
   parseXStrum,
   replaceChart,
@@ -407,6 +408,51 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
     expect(header).not.toContain('{duration:')
     expect(header).not.toContain('{key:')
   })
+
+  it('spreading readMeta while moving x_chart_default does not copy sound onto the new chart', () => {
+    const file = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+{x_audio_sung:https://cdn.example/g.m4a}
+{x_strum:bpm=40;meter=4/4;grid=4;label=Sib;pat=DUDU}
+[G]completa
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{x_audio_sung:https://cdn.example/c.m4a}
+{x_strum:bpm=60;meter=4/4;grid=4;label=A;pat=DUDU}
+[C]oferta
+{end_of_x_chart}
+`
+    const out = writeMeta(file, { ...readMeta(file), x_chart_default: 'completa' })
+    expect(listCharts(out).find((c) => c.isDefault)?.id).toBe('completa')
+    const completa = chartBlock(out, 'completa')
+    const oferta = chartBlock(out, 'oferta')
+    expect(completa).toContain('{key:G}')
+    expect(completa).toContain('{x_audio_sung:https://cdn.example/g.m4a}')
+    expect(completa).toContain('label=Sib')
+    expect(completa).not.toContain('{key:C}')
+    expect(completa).not.toContain('cdn.example/c.m4a')
+    expect(completa).not.toContain('label=A')
+    expect(oferta).toContain('{key:C}')
+    expect(oferta).toContain('{x_audio_sung:https://cdn.example/c.m4a}')
+    expect(oferta).toContain('label=A')
+
+    const pointer = writeMeta(file, { x_chart_default: 'completa' })
+    expect(listCharts(pointer).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(chartBlock(pointer, 'completa')).toContain('{key:G}')
+    expect(chartBlock(pointer, 'completa')).toContain('{x_audio_sung:https://cdn.example/g.m4a}')
+    expect(chartBlock(pointer, 'oferta')).toContain('{key:C}')
+    expect(chartBlock(pointer, 'oferta')).toContain('{x_audio_sung:https://cdn.example/c.m4a}')
+
+    const sparseKey = writeMeta(file, { key: 'D' })
+    expect(listCharts(sparseKey).find((c) => c.isDefault)?.id).toBe('oferta')
+    expect(chartBlock(sparseKey, 'oferta')).toContain('{key:D}')
+    expect(chartBlock(sparseKey, 'oferta')).not.toContain('{key:C}')
+    expect(chartBlock(sparseKey, 'completa')).toContain('{key:G}')
+    expect(chartBlock(sparseKey, 'completa')).not.toContain('{key:D}')
+  })
 })
 
 describe('chart document edits and x_chart_default', () => {
@@ -466,6 +512,52 @@ describe('chart document edits and x_chart_default', () => {
     expect(rewritten).toContain('{title:Novo}')
     expect(rewritten).toContain('[G]Letra')
     expect(rewritten.match(/\{x_chart_default:/g)).toHaveLength(1)
+
+    const oneWithDefault = '{title:Velho}\n{x_chart_default:completa}\n{key:C}\n[G]Letra'
+    const cleared = writeMeta(oneWithDefault, { x_chart_default: '' }, { target: 'song' })
+    expect(cleared).not.toContain('x_chart_default')
+    expect(cleared).toContain('{title:Velho}')
+    expect(cleared).toContain('{key:C}')
+    expect(cleared).toContain('[G]Letra')
+    const omittedSong = writeMeta(oneWithDefault, { title: 'Novo' }, { target: 'song' })
+    expect(omittedSong).toContain('{x_chart_default:completa}')
+    expect(omittedSong).toContain('{title:Novo}')
+    expect(omittedSong).toContain('{key:C}')
+  })
+
+  it('commitChartDocument keeps a leading blank line in the chart body', () => {
+    const doc = '{title:Uma}\n{artist:Alguém}\n\n[C]corpo da oferta\n\n[C]segunda'
+    const out = commitChartDocument(TWO_CHART_SOURCE, doc)
+    const oferta = chartBlock(out, 'oferta')
+    expect(oferta).toContain('{x_chart_label:Oferta}\n\n[C]corpo da oferta\n\n[C]segunda')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    expect(parse(out).source).toBe(doc)
+  })
+
+  it('lintSource on the chart document ignores a broken sibling and reports the default key', () => {
+    const file = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+{soc}
+[G]completa
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:H}
+[C]oferta
+{end_of_x_chart}
+`
+    const doc = parse(file).source
+    expect(doc).toContain('{key:H}')
+    expect(doc).not.toContain('{soc}')
+    expect(doc).not.toContain('completa')
+    const pane = lintSource(doc)
+    expect(pane.ok).toBe(false)
+    expect(pane.issues.join(' ')).toContain('tom não reconhecido: H')
+    expect(pane.issues.join(' ')).not.toContain('refrão')
+    const whole = lintSource(file)
+    expect(whole.issues.join(' ')).toContain('refrão')
+    expect(whole.issues.join(' ')).not.toContain('tom não reconhecido')
   })
 
   it('keeps {transpose:2} when the sibling chart is in another key', () => {
