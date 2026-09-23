@@ -34,6 +34,8 @@ export {
 } from './storage'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
+export { listCharts } from './charts'
+export type { ChartInfo } from './charts'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
