@@ -39,6 +39,7 @@ import {
   parseXStrumSet,
   type StrumPatternSet,
 } from './strum-multi'
+import { parse } from './parse'
 import { hasSongDuration } from './timeline'
 import { keyIndex, keyRootOf, signedSemitoneDelta, transposeTextChords, usesFlats } from './transpose'
 
@@ -492,18 +493,17 @@ export function inferWrittenKey(source: string): string | null {
 }
 
 /**
- * `{transpose:}` counts only when the active chart's written chords match `{key:}`.
- * A sibling chart is not part of that comparison.
+ * `{transpose}` counts only when the active chart's written chords match `{key}`.
+ * A sibling chart is not part of that comparison. The colon is optional, same
+ * read as `parse` (`{transpose 2}`, `{key C}`).
  */
 export function storedTransposeSemis(source: string): number {
-  const doc = chartDocument(source)
-  const meta = readMeta(doc)
-  const n = Number(meta.transpose)
-  const stored = Number.isFinite(n) ? n : 0
+  const view = parse(source)
+  const stored = view.meta.transpose ?? 0
   if (!stored) return 0
-  const written = inferWrittenKey(doc)
+  const written = inferWrittenKey(view.source)
   const a = keyIndex(keyRootOf(written || ''))
-  const b = keyIndex(keyRootOf(meta.key || ''))
+  const b = keyIndex(keyRootOf(view.meta.key || ''))
   if (a == null || b == null || a !== b) return 0
   return stored
 }

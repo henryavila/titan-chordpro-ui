@@ -402,7 +402,7 @@ function rewriteChartInner(inner: string, patch: MetaPatch): string {
     if (d && chartSoundKey(d.name)) continue
     rest.push(line)
   }
-  while (rest.length && !rest[0]!.trim()) rest.shift()
+  // A blank under the label is content. Clearing a sound key must not eat it.
   const next = applyPatch(readKeyed(inner, 'chart'), patch, CHART_SOUND_KEYS)
   const head = formatKeys(CHART_SOUND_KEYS, next)
   return [labelLines.join('\n'), head, rest.join('\n')].filter((s) => s.length > 0).join('\n')
@@ -423,24 +423,62 @@ export function writeChartScopedMeta(source: string, patch: MetaPatch, chartId?:
 }
 
 /**
- * Song-identity keys from a one-chart document. A missing title, subtitle,
- * artist, x_source, or x_youtube clears that header field. `{x_chart_default}`
- * is never in the patch, so omitting it does not remove the song header value.
+ * Song-identity lines from a chart document, raw. `dirOf` trims values, so a
+ * trailing space in `{title:Uma }` only survives if the line itself is copied.
+ * An empty `{title:}` is present. A missing key is not.
  */
-function songIdentityPatch(document: string): MetaPatch {
-  const present = readKeyed(document, 'song')
-  const patch: MetaPatch = {}
+function rawSongIdentityLines(document: string): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const line of document.split('\n')) {
+    const d = dirOf(line)
+    if (!d) continue
+    const canon = songMetaKey(d.name)
+    if (!canon || canon === 'x_chart_default') continue
+    const exact = (SONG_META_KEYS as readonly string[]).includes(d.name)
+    if (exact || !out.has(canon)) out.set(canon, line)
+  }
+  return out
+}
+
+/**
+ * Copy song-identity lines onto the header in place. Omitted keys are removed.
+ * Comments, `{x_chart_default}`, and the blank line before the first chart stay.
+ */
+function applyRawSongIdentity(raws: string[], headerEnd: number, document: string): string[] {
+  const wanted = rawSongIdentityLines(document)
+  const seen = new Set<string>()
+  const nextHeader: string[] = []
+  for (const line of raws.slice(0, headerEnd)) {
+    const d = dirOf(line)
+    const canon = d ? songMetaKey(d.name) : null
+    if (!canon || canon === 'x_chart_default') {
+      nextHeader.push(line)
+      continue
+    }
+    if (seen.has(canon)) continue
+    seen.add(canon)
+    const raw = wanted.get(canon)
+    if (raw === undefined) continue
+    nextHeader.push(raw)
+  }
+  const missing: string[] = []
   for (const key of SONG_META_KEYS) {
     if (key === 'x_chart_default') continue
-    patch[key] = present[key] ?? ''
+    if (wanted.has(key) && !seen.has(key)) missing.push(wanted.get(key)!)
   }
-  return patch
+  if (missing.length) {
+    let at = nextHeader.length
+    while (at > 0 && nextHeader[at - 1]!.trim() === '') at--
+    nextHeader.splice(at, 0, ...missing)
+  }
+  return [...nextHeader, ...raws.slice(headerEnd)]
 }
 
 /**
  * Splice a one-chart document back into the named envelope block.
- * Song identity in the document replaces the song header, including deletions.
- * The sibling chart stays.
+ * Song identity is copied raw (trailing space and empty `{title:}` stay).
+ * A missing title, subtitle, artist, x_source, or x_youtube clears that field.
+ * `{x_chart_default}` is left as it stands. The sibling chart stays.
  */
 export function replaceChart(file: string, chartId: string, doc: string): string {
   const src = String(file ?? '').replace(/\r\n?/g, '\n')
@@ -465,8 +503,8 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   const hasLabel = body.some((line) => dirOf(line)?.name === 'x_chart_label')
   const labelLine = !hasLabel && chart.label ? `{x_chart_label:${chart.label}}` : null
   const inner = [labelLine, body.join('\n')].filter((s) => s && s.length > 0).join('\n')
-  const spliced = spliceInner(split.raws, chart, inner).join('\n')
-  return writeSongScopedMeta(spliced, songIdentityPatch(document))
+  const spliced = spliceInner(split.raws, chart, inner)
+  return applyRawSongIdentity(spliced, split.charts[0]!.startLi, document).join('\n')
 }
 
 /**

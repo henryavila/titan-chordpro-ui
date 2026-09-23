@@ -406,6 +406,29 @@ const ENVELOPE = [
   '{end_of_x_chart}',
 ].join('\n')
 
+describe('chord picker vocabulary', () => {
+  it('offers chords from the chart on screen, not a sibling-only chord', async () => {
+    const source = [
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:completa}',
+      '{key:G}',
+      '[F#m7]so a completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{key:C}',
+      '[C]oferta [G]mais',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = await edit({ source })
+    await w.findAll('[data-pill]')[0]?.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(w.find('[data-chord-dialog]').exists()).toBe(true)
+    expect(w.findAll('.cpv-vocab-btn').map((b) => b.text())).toEqual(['C', 'G'])
+    w.unmount()
+  })
+})
+
 describe('envelope block edit', () => {
   it('deletes the default chart lyric and keeps the sibling chart', async () => {
     const w = await edit({ source: ENVELOPE })
