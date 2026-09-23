@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: re-evaluate F2 on current HEAD, then phase-done gates; do not start F3 yet
+nextAction: await disposition of F2 re-eval majors (known-miss list, transposed piano define); do not start F3
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -178,8 +178,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Operator said save state and continue. T-002 and T-003 closed after the exit-gate suite passed (55 tests) and assert --gate done exited 0. Astra approved the slash-bass fix. F3 is not started.
+- **Narrative:** T-002 and T-003 are done. Fresh evaluation verdict pass, 0 critical, 2 major (known-miss list; transposed relative piano define lights the old chord). F3 is not started. Majors are not dispositioned.
 - **Decision log:** task close follows the Astra approval 2026-09-23-1122.
-- **Single nextAction:** re-evaluate F2 on current HEAD, then phase-done gates; do not start F3 yet
+- **Single nextAction:** await disposition of F2 re-eval majors (known-miss list, transposed piano define); do not start F3
 - **Verbatim state:** Cursor step E. lastAssert gate done ok. verifiedCommit b30690c8b98fc64e7c09a1d450e56c14304fa364.
 - **Uncommitted changes:** task close, local review, complex receipts.
