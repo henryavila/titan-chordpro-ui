@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: fix Astra majors (piano relative tie, test TS2339); do not phase-done
+nextAction: fix slash-bass piano tie from the second Astra review; do not phase-done
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -162,8 +162,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Codex gpt-6-astra review of eb8539f..eb34c11 returned needs_changes, 2 major, 0 critical. A relative piano override can lose the note that defines the chord. The new enharmonic test has TS2339. Do not phase-done and do not start F3.
-- **Decision log:** external review saved under .atomic-skills/reviews/. Fix those two majors before any advance.
-- **Single nextAction:** fix Astra majors (piano relative tie, test TS2339); do not phase-done
-- **Verbatim state:** 408 dictionary cells stayed green. The new failure is a file-override piano tie, not a guitar pack.
-- **Uncommitted changes:** review receipt, this handoff, cursor redispatch.
+- **Narrative:** First Astra review's two majors were fixed and retested (54 tests). A second Astra review of that fix kept one major: a piano override of D7M(9)/B can drop the bass. Do not phase-done and do not start F3.
+- **Decision log:** reviews 2026-09-23-1105 and 2026-09-23-1115. Both needs_changes. No critical.
+- **Single nextAction:** fix slash-bass piano tie from the second Astra review; do not phase-done
+- **Verbatim state:** Guitar and ukulele 408-cell oracle stayed green. The open defect is a file override on piano, not a fretted pack.
+- **Uncommitted changes:** second review receipt and this handoff.
