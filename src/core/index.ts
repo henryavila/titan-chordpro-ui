@@ -34,6 +34,7 @@ export {
 } from './storage'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
+export type { ParseOpts } from './parse'
 export { listCharts } from './charts'
 export type { ChartInfo } from './charts'
 export { renderHtml, isParseFatal } from './render-html'

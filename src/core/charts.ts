@@ -129,3 +129,55 @@ export function listCharts(source: string): ChartInfo[] {
     isDefault: c.id === split.defaultId,
   }))
 }
+
+function isEnvelopeName(name: string): boolean {
+  return (
+    name === 'start_of_x_chart' ||
+    name === 'end_of_x_chart' ||
+    name === 'x_chart_label' ||
+    name === 'x_chart_default'
+  )
+}
+
+function songIdentityHeader(header: string): string {
+  return header
+    .split('\n')
+    .filter((line) => {
+      const d = dirOf(line)
+      if (!d) return false
+      const canon = songMetaKey(d.name)
+      return canon !== null && canon !== 'x_chart_default'
+    })
+    .join('\n')
+}
+
+function chartDocBody(inner: string): string {
+  return inner
+    .split('\n')
+    .filter((line) => {
+      const d = dirOf(line)
+      if (!d) return true
+      return !isEnvelopeName(d.name)
+    })
+    .join('\n')
+}
+
+export function resolveChartId(source: string, chartId?: string): string {
+  const split = splitCho(source)
+  if (chartId && split.charts.some((c) => c.id === chartId)) return chartId
+  return split.defaultId
+}
+
+/**
+ * One-chart ChordPro: song title/artist plus that chart's sound and body.
+ * No sibling charts, no envelope directives. File without envelope is unchanged.
+ */
+export function chartDocument(source: string, chartId?: string): string {
+  const split = splitCho(source)
+  if (!split.hasEnvelope) return split.header
+  const id = resolveChartId(source, chartId)
+  const chart = split.charts.find((c) => c.id === id) ?? split.charts[0]!
+  const identity = songIdentityHeader(split.header)
+  const body = chartDocBody(chart.inner)
+  return [identity, body].filter((s) => s.length > 0).join('\n')
+}

@@ -1,3 +1,4 @@
+import { chartDocument } from './charts'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
 import type { ChordProLine, ChordProSection, ChordProView, SectionKind } from './types'
@@ -297,9 +298,15 @@ export function normalizeSource(source: string): string {
   return looksLikeOnSong(text) ? normalizeOnSong(text) : text
 }
 
-export function parse(source: string): ChordProView {
+export type ParseOpts = {
+  /** Named chart inside an N>1 envelope. Absent → file default / implicit `default`. */
+  chartId?: string
+}
+
+export function parse(source: string, opts?: ParseOpts): ChordProView {
   const text = normalizeEol(source ?? '')
-  const normalized = looksLikeOnSong(text) ? normalizeOnSong(text) : text
+  const sliced = chartDocument(text, opts?.chartId)
+  const normalized = looksLikeOnSong(sliced) ? normalizeOnSong(sliced) : sliced
   const { meta, lines, eocOf } = parseRaw(normalized)
   return {
     meta,
