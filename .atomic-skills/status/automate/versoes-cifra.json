@@ -1,7 +1,15 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 2,
-  "updatedAt": "2026-09-23T12:40:15.376Z",
+  "redispatchCount": 3,
+  "updatedAt": "2026-09-23T14:02:14.913Z",
+  "operatorOverrides": [
+    {
+      "at": "2026-09-23T14:02:14.912Z",
+      "reason": "operator 2026-09-23: prossiga até o término da implementação de todo o plano; fix F-002 replaceChart identity deletion plus F-003 regression test before done",
+      "priorCount": 2,
+      "gate": "spawn"
+    }
+  ],
   "claimReportPath": ".atomic-skills/status/automate/versoes-cifra-claims.json"
 }
