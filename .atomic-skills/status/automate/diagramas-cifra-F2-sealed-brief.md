@@ -27,9 +27,9 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix2
-- **writerBranch:** impl/diagramas-cifra-F2-fix2
-- **baseRef:** eb8539fb8d18cba61c57fc22d0febc2856cb4caf
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix3
+- **writerBranch:** impl/diagramas-cifra-F2-fix3
+- **baseRef:** 6812f544296a3e3975143492a78840cc1a4f10d7
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (2)
@@ -90,21 +90,18 @@ Rules:
 ## Exit
 
 1. All listed verifiers green for claimed-pass tasks (self-check).
-2. Write the claim report JSON to both absolute paths below. Do not commit it. Do not write it only inside the sibling worktree.
-   - `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
-   - `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-F2-fix2-claims.json`
+2. Write the claim report JSON only to this absolute path. Do not commit it.
+   `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
 3. Final message: summary of files changed, commit SHAs, claim report path, any blockers.
 4. Do not mark tasks done in YAML. Do not call done/phase-done.
 
 ## Fix contract (authoritative for the code)
 
-Read and follow this file in full. It is the product contract for the reopened tasks, not chat history. It is already in your worktree at the same relative path.
+Read and follow this file. It is in your worktree:
 
-`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix2/.atomic-skills/status/automate/diagramas-cifra-F2-fix2-contract.md`
+`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix3/.atomic-skills/status/automate/diagramas-cifra-F2-fix3-contract.md`
 
-Where that file names a claim-report path, the two absolute paths in Exit step 2 win. Write both.
-
-T-002 commit(s) first, then T-003. Exclusive `commitShas`. No shared SHA. `base: null` and `head: null`.
+T-003 may be `skipped` when diagram-draw needs no edit, as that file says. T-002 must be `claimed-pass` with its own commit SHA.
 
 ---
 sealed-brief: true
