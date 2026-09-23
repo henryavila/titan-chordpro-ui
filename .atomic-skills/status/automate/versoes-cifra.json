@@ -1,7 +1,7 @@
 {
   "step": "E",
   "phaseId": "F0",
-  "redispatchCount": 1,
-  "updatedAt": "2026-09-23T01:20:14.843Z",
+  "redispatchCount": 2,
+  "updatedAt": "2026-09-23T12:40:15.376Z",
   "claimReportPath": ".atomic-skills/status/automate/versoes-cifra-claims.json"
 }
