@@ -405,8 +405,24 @@ export function writeChartScopedMeta(source: string, patch: MetaPatch, chartId?:
 }
 
 /**
+ * Song-identity keys from a one-chart document. A missing title, subtitle,
+ * artist, x_source, or x_youtube clears that header field. `{x_chart_default}`
+ * is never in the patch, so omitting it does not remove the song header value.
+ */
+function songIdentityPatch(document: string): MetaPatch {
+  const present = readKeyed(document, 'song')
+  const patch: MetaPatch = {}
+  for (const key of SONG_META_KEYS) {
+    if (key === 'x_chart_default') continue
+    patch[key] = present[key] ?? ''
+  }
+  return patch
+}
+
+/**
  * Splice a one-chart document back into the named envelope block.
- * Song title/artist in the document update the song header; the sibling chart stays.
+ * Song identity in the document replaces the song header, including deletions.
+ * The sibling chart stays.
  */
 export function replaceChart(file: string, chartId: string, doc: string): string {
   const src = String(file ?? '').replace(/\r\n?/g, '\n')
@@ -419,15 +435,10 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   const chart = split.charts.find((c) => c.id === chartId)
   if (!chart) return src
 
-  const identity: MetaPatch = {}
   const body: string[] = []
   for (const line of document.split('\n')) {
     const d = dirOf(line)
-    if (d && songMetaKey(d.name)) {
-      const canon = songMetaKey(d.name)
-      if (canon && canon !== 'x_chart_default' && identity[canon] === undefined) identity[canon] = d.value
-      continue
-    }
+    if (d && songMetaKey(d.name)) continue
     if (d && isEnvelopeName(d.name)) continue
     body.push(line)
   }
@@ -437,5 +448,5 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   const labelLine = !hasLabel && chart.label ? `{x_chart_label:${chart.label}}` : null
   const inner = [labelLine, body.join('\n')].filter((s) => s && s.length > 0).join('\n')
   const spliced = spliceInner(split.raws, chart, inner).join('\n')
-  return Object.keys(identity).length ? writeSongScopedMeta(spliced, identity) : spliced
+  return writeSongScopedMeta(spliced, songIdentityPatch(document))
 }
