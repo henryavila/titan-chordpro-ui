@@ -29,6 +29,11 @@ async function edit(props: Record<string, unknown> = {}) {
   return w
 }
 
+function lastEmitted(w: Viewer): string {
+  const ev = w.emitted('update:source')
+  return String(ev?.at(-1)?.[0] ?? '')
+}
+
 /** What the editor holds right now, read back through the source pane. */
 async function sourceOf(w: Viewer): Promise<string> {
   await w.get('[data-source]').trigger('click')
@@ -384,6 +389,69 @@ describe('putting something new into the chart', () => {
     await flushPromises()
     expect(w.find('[data-score-editor]').exists()).toBe(false)
     expect(await sourceOf(w)).toBe(before)
+    w.unmount()
+  })
+})
+
+const ENVELOPE = [
+  '{title:Uma}',
+  '{x_chart_default:oferta}',
+  '{start_of_x_chart:completa}',
+  '{key:G}',
+  '[G]linha completa',
+  '{end_of_x_chart}',
+  '{start_of_x_chart:oferta}',
+  '{key:C}',
+  '[C]linha oferta',
+  '{end_of_x_chart}',
+].join('\n')
+
+describe('envelope block edit', () => {
+  it('deletes the default chart lyric and keeps the sibling chart', async () => {
+    const w = await edit({ source: ENVELOPE })
+    expect(w.text()).toContain('linha oferta')
+    expect(w.text()).not.toContain('linha completa')
+    await select(w, firstSongBlock(w))
+    await w.get('[data-delete]').trigger('click')
+    await flushPromises()
+    const out = lastEmitted(w)
+    expect(out).not.toContain('linha oferta')
+    expect(out).toContain('{start_of_x_chart:completa}')
+    expect(out).toContain('{start_of_x_chart:oferta}')
+    expect(out).toContain('linha completa')
+    w.unmount()
+  })
+
+  it('edits the chart document in the source pane and keeps the sibling', async () => {
+    const w = await edit({ source: ENVELOPE })
+    await w.get('[data-source]').trigger('click')
+    await flushPromises()
+    const ta = w.get('textarea[aria-label="Fonte ChordPro"]')
+    const shown = (ta.element as HTMLTextAreaElement).value
+    expect(shown).toContain('linha oferta')
+    expect(shown).not.toContain('linha completa')
+    expect(shown).not.toContain('start_of_x_chart')
+    await ta.setValue(shown.replace('linha oferta', 'linha nova'))
+    await flushPromises()
+    const out = lastEmitted(w)
+    expect(out).toContain('linha nova')
+    expect(out).not.toContain('linha oferta')
+    expect(out).toContain('{start_of_x_chart:completa}')
+    expect(out).toContain('{start_of_x_chart:oferta}')
+    expect(out).toContain('linha completa')
+    w.unmount()
+  })
+
+  it('still changes a one-chart file', async () => {
+    const one = '{title:Uma}\n{key:C}\n[C]linha unica\n'
+    const w = await edit({ source: one })
+    await select(w, firstSongBlock(w))
+    await w.get('[data-delete]').trigger('click')
+    await flushPromises()
+    const out = lastEmitted(w)
+    expect(out).not.toBe(one)
+    expect(out).not.toContain('linha unica')
+    expect(out).toContain('{title:Uma}')
     w.unmount()
   })
 })

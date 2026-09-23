@@ -35,7 +35,7 @@ export {
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export type { ParseOpts } from './parse'
-export { listCharts, replaceChart } from './charts'
+export { commitChartDocument, listCharts, replaceChart } from './charts'
 export type { ChartInfo } from './charts'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
@@ -203,6 +203,7 @@ export {
   fromPlain,
   hostOk,
   inferWrittenKey,
+  storedTransposeSemis,
   isChord,
   isChordLine,
   looksLikeCifraClubHtml,

@@ -183,6 +183,65 @@ describe('setAudioArt / identity', () => {
   })
 })
 
+function chartBlock(source: string, id: string): string {
+  const start = source.indexOf(`{start_of_x_chart:${id}}`)
+  const end = source.indexOf('{end_of_x_chart}', start)
+  return source.slice(start, end === -1 ? source.length : end)
+}
+
+const ENVELOPE_AUDIO = `{title:Uma}
+{x_chart_default:oferta}
+
+{start_of_x_chart:completa}
+{key:G}
+{x_audio_sung:https://cdn.example/g.m4a}
+{x_audio_playback:https://cdn.example/gp.m4a}
+{x_audio_art:https://cdn.example/g.jpg}
+{x_audio_art_w:128}
+{x_audio_art_h:128}
+[G]linha completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{key:C}
+{x_audio_sung:https://cdn.example/c.m4a}
+{x_audio_playback:https://cdn.example/cp.m4a}
+{x_audio_art:https://cdn.example/c.jpg}
+{x_audio_art_w:256}
+{x_audio_art_h:256}
+[C]linha oferta
+{end_of_x_chart}
+`
+
+describe('envelope audio clear', () => {
+  it('setAudioUrl(null) clears the default chart and leaves the sibling', () => {
+    const next = setAudioUrl(ENVELOPE_AUDIO, null)
+    const oferta = chartBlock(next, 'oferta')
+    expect(oferta).not.toContain('x_audio_sung')
+    expect(oferta).toContain('{x_audio_playback:https://cdn.example/cp.m4a}')
+    expect(oferta).toContain('{x_audio_art:https://cdn.example/c.jpg}')
+    expect(oferta).toContain('[C]linha oferta')
+    expect(chartBlock(next, 'completa')).toBe(chartBlock(ENVELOPE_AUDIO, 'completa'))
+    expect(next).toContain('{x_chart_default:oferta}')
+    expect(audioTracksOf(next).sung).toBeNull()
+    expect(audioTracksOf(next).playback).toBe('https://cdn.example/cp.m4a')
+  })
+
+  it('setRehearsalAudio nulls clear sung, playback and art on the default chart only', () => {
+    const next = setRehearsalAudio(ENVELOPE_AUDIO, { sung: null, playback: null, art: null })
+    const oferta = chartBlock(next, 'oferta')
+    expect(oferta).not.toContain('x_audio')
+    expect(oferta).toContain('[C]linha oferta')
+    expect(oferta).toContain('{key:C}')
+    expect(chartBlock(next, 'completa')).toBe(chartBlock(ENVELOPE_AUDIO, 'completa'))
+    expect(audioTracksOf(next)).toEqual({ sung: null, playback: null })
+    expect(audioArtOf(next)).toBeNull()
+    expect(next).toContain('{start_of_x_chart:completa}')
+    expect(next).toContain('{start_of_x_chart:oferta}')
+    expect(next).toContain('linha completa')
+  })
+})
+
 describe('formatAudioClock', () => {
   it('renders m:ss from seconds', () => {
     expect(formatAudioClock(0)).toBe('0:00')
