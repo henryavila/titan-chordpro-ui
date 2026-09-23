@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: await disposition of F2 re-eval majors (known-miss list, transposed piano define); do not start F3
+nextAction: fix transposed relative piano define; known-miss list stays deferred to F3
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -32,11 +32,11 @@ businessIntent:
   doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e
     tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha
     voicing de concert; piano ignora capoFret.
-tasksDone: 3
+tasksDone: 2
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 1
-weightDone: 9
+weightDone: 6
 weightTotal: 9
 exitGates:
   - id: F2-G1
@@ -91,16 +91,8 @@ tasks:
     weight: 3
   - id: T-002
     title: Dictionary + resolveDiagram
-    status: done
-    closedAt: 2026-09-23T18:43:30.000Z
-    lastUpdated: 2026-09-23T18:43:30.000Z
-    evidence:
-      verifierKind: shell
-      verifiedAt: 2026-09-23T18:42:45.000Z
-      verifiedCommit: b30690c8b98fc64e7c09a1d450e56c14304fa364
-      passed: true
-      exitCode: 0
-      outputSummary: ✓ tests/core/resolve-diagram.test.ts (25 tests)
+    status: pending
+    lastUpdated: 2026-09-23T19:05:00.000Z
     scopeBoundary:
       - No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA
         only; do not ship baritone; do not guess 7+.
@@ -122,6 +114,10 @@ tasks:
         path: src/core/index.ts
       - kind: file
         path: tests/core/resolve-diagram.test.ts
+      - kind: file
+        path: src/core/define.ts
+      - kind: file
+        path: tests/core/define-directive.test.ts
     summary: Dicionario e resolveDiagram preferem {define} do arquivo; C7+ e miss.
     weight: 3
   - id: T-003
@@ -178,8 +174,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** T-002 and T-003 are done. Fresh evaluation verdict pass, 0 critical, 2 major (known-miss list; transposed relative piano define lights the old chord). F3 is not started. Majors are not dispositioned.
+- **Narrative:** Operator chose to fix the transposed relative piano define now and leave the known-miss list for F3. T-002 reopened. T-003 stays done. F3 is not started.
 - **Decision log:** task close follows the Astra approval 2026-09-23-1122.
-- **Single nextAction:** await disposition of F2 re-eval majors (known-miss list, transposed piano define); do not start F3
+- **Single nextAction:** fix transposed relative piano define; known-miss list stays deferred to F3
 - **Verbatim state:** Cursor step E. lastAssert gate done ok. verifiedCommit b30690c8b98fc64e7c09a1d450e56c14304fa364.
 - **Uncommitted changes:** task close, local review, complex receipts.

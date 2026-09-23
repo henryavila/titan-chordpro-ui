@@ -1,8 +1,8 @@
 {
-  "step": "F",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 4,
-  "updatedAt": "2026-09-23T18:44:04.036Z",
+  "redispatchCount": 5,
+  "updatedAt": "2026-09-23T19:03:17.754Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -20,6 +20,12 @@
       "at": "2026-09-23T14:14:30.875Z",
       "reason": "Second Codex Astra review: slash piano override D7M(9)/B drops the bass on a tie. Do not advance until that diagram keeps the written notes.",
       "priorCount": 3,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-23T19:03:17.754Z",
+      "reason": "Operator chose to fix the transposed relative piano define now. Known-miss list stays deferred to F3.",
+      "priorCount": 4,
       "gate": "spawn"
     }
   ],
