@@ -277,6 +277,16 @@ describe('transposeDefine', () => {
     if (!up) return
     expect(transposeDefine(up, -3, false)).toMatchObject({ name: 'Dsus2', keys: [2, 9] })
   })
+
+  it('stores relative keys when absolute classes would be re-read on Gsus2', () => {
+    const r = parseDefineDirective('{define: Dsus2 keys 0 7}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    const up = transposeDefine(r, 5, false)
+    expect(up).toMatchObject({ name: 'Gsus2', keys: [0, 7] })
+    if (!up) return
+    expect(transposeDefine(up, -5, false)).toMatchObject({ name: 'Dsus2', keys: [2, 9] })
+  })
 })
 
 describe('transpose/setKey apply the same define rewrite as export', () => {
