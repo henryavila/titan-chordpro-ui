@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: piano transpose fix merged and retested; known-miss list stays deferred to F3; do not start F3 yet
+nextAction: Astra review of the piano transpose fix needs changes; do not start F3
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -174,8 +174,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Relative piano `{define: D keys 0 4 7}` transposed +2 stays keys 0 4 7 on E and draws E G# B. C keys 0 4 7 +2 still shifts to D keys 2 6 9. Host re-ran define, resolve, export, layout, and draw: 88 tests passed. Known-miss list stays deferred to F3. F3 is not started. T-002 is not re-closed.
+- **Narrative:** Codex gpt-6-astra reviewed f2355ac..fd09dba. Both passes needs_changes, 2 major, 0 critical. F7sus4 keys 0 5 10 and Dsus2 keys 0 7 still transpose to the wrong piano notes. F3 is not started.
 - **Decision log:** task close follows the Astra approval 2026-09-23-1122.
-- **Single nextAction:** piano transpose fix merged and retested; known-miss list stays deferred to F3; do not start F3 yet
+- **Single nextAction:** Astra review of the piano transpose fix needs changes; do not start F3
 - **Verbatim state:** Cursor step E. lastAssert gate done ok. verifiedCommit b30690c8b98fc64e7c09a1d450e56c14304fa364.
 - **Uncommitted changes:** task close, local review, complex receipts.
