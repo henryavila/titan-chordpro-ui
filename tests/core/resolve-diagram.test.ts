@@ -275,6 +275,23 @@ describe('resolveDiagram', () => {
     expect(d.lit).toEqual([5, 10, 3])
     expect(d.litNotes).toEqual(['F', 'A#', 'D#'])
   })
+
+  it('breaks a piano-key score tie toward the slash bass that sounds in only one reading', () => {
+    const r = resolveDiagram({
+      token: 'D7M(9)/B',
+      instrument: 'piano',
+      overrides: [
+        { name: 'D7M(9)/B', instrument: 'piano', directive: 'define', keys: [11, 2, 1, 4] },
+      ],
+    })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    const d = drawDiagram({ instrument: 'piano', voicing: r.voicing, token: 'D7M(9)/B' })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.lit).toEqual([11, 2, 1, 4])
+    expect(d.litNotes).toEqual(['B', 'D', 'C#', 'E'])
+  })
 })
 
 const TUNING = {
