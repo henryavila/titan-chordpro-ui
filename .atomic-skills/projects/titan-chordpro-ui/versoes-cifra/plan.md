@@ -256,8 +256,8 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 **Status:** complete-with-findings
 **Codebase class:** populated
 **Scanned:** `src/core/*.ts` (27; no `charts.ts`), `src/vue/{public.ts,ChordproViewer.vue,use/useSetlist.ts,use/useOverlay.ts,use/useMetronome.ts,use/song-swipe.ts,chrome/CpvViewHead.vue,edit/NewChartDialog.vue,edit/MetaDialog.vue}`, `src/cli/index.ts`, `tests/core/{no-vue-in-core,overlay,parse,filenames,import-chordpro,timeline-charts}.test.ts`, `tests/demo/sda-fixtures.test.ts`, `tests/vue/{setlist,song-swipe,overlay-ui,storage-seam,head-chip,audio-ref,new-chart}.test.ts`, `docs/{VISAO,CONSUMER,NAMING}.md`, `SPEC.md`, `README.md`, `AGENTS.md`, `fixtures/sda` (148 `.cho`), `design-source/design_handoff_chordpro_viewer/GAPS.md` → 27 core + listed vue/cli/tests/docs + 148 fixtures
-**Commit:** 1a04429
-**At:** 2026-09-23T00:20:00Z
+**Commit:** 6c5fc66
+**At:** 2026-09-23T01:20:25Z
 
 ### A — Plan premises vs code
 
@@ -287,7 +287,7 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 | 22 | jesus-1 fixture, design SoT, AGENTS.md, README.md exist | ok | `tests/helpers/load-fixture.ts:11`; `projects/titan-chordpro-ui/versoes-cifra/design.md`; `AGENTS.md`; `README.md` |
 | 23 | `audioTracksOf` reads via `readMeta` (not `parse().meta`); `ChordProView.source` is the full normalized file | ok | `audio-url.ts:83-89`; `parse.ts:304-311` |
 | 24 | `writeMeta` one-header contract is tested | ok | `tests/core/import-chordpro.test.ts:153-169` |
-| 25 | `charts.ts`, `charts-envelope.test.ts`, `chart-switcher.test.ts`, `chart-editor.test.ts`, `export-cho-charts.test.ts` | n/a (create) | glob absent; F0–F4 `outputs[]` create them |
+| 25 | `charts.ts`, `charts-envelope.test.ts`, `chart-switcher.test.ts`, `chart-editor.test.ts`, `export-cho-charts.test.ts` | n/a (create) | F0 created `src/core/charts.ts` and `tests/core/charts-envelope.test.ts` (commits `275abe4`, `5841b8f`). `chart-switcher.test.ts`, `chart-editor.test.ts`, `export-cho-charts.test.ts` still absent — later-phase outputs |
 
 ### B — Code present, plan silent (impact candidates)
 
@@ -310,5 +310,5 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=d05447702b4f | premises=25 | impacts=11 @ 1a04429 (2026-09-23T00:20:00Z)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=bd86c97dd048 | premises=25 | impacts=11 @ 6c5fc66 (2026-09-23T01:20:25Z)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.

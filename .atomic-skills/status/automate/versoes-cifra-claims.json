@@ -1,0 +1,55 @@
+{
+  "planSlug": "versoes-cifra",
+  "phaseId": "F0",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-writer",
+  "writerBranch": "impl/versoes-cifra-F0-writer",
+  "finishedAt": "2026-09-23T00:57:12Z",
+  "tasks": [
+    {
+      "taskId": "T-001",
+      "status": "claimed-pass",
+      "commitShas": ["275abe489d77d53c88d0d0e8a4207619b044edaa"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/charts.ts",
+        "src/core/index.ts",
+        "tests/core/charts-envelope.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/core/charts-envelope.test.ts (13 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Start at  21:36:45\n   Duration  309ms (transform 98ms, setup 11ms, import 108ms, tests 5ms, environment 129ms)"
+    },
+    {
+      "taskId": "T-002",
+      "status": "claimed-pass",
+      "commitShas": ["b59b3b3730bb033e96b35d088b9c2dcb29508dcc"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/parse.ts",
+        "src/core/charts.ts",
+        "src/core/index.ts",
+        "tests/core/charts-envelope.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/core/charts-envelope.test.ts (13 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Start at  21:36:45\n   Duration  309ms (transform 98ms, setup 11ms, import 108ms, tests 5ms, environment 129ms)"
+    },
+    {
+      "taskId": "T-003",
+      "status": "claimed-pass",
+      "commitShas": ["5841b8f7f8a0d9cd1dde492f8e9f3d8b8e618e2e"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/charts.ts",
+        "src/core/import-chordpro.ts",
+        "tests/core/charts-envelope.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/core/charts-envelope.test.ts (19 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  19 passed (19)\n   Start at  21:56:53\n   Duration  304ms (transform 97ms, setup 12ms, import 105ms, tests 5ms, environment 126ms)"
+    }
+  ]
+}

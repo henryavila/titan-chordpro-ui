@@ -159,8 +159,8 @@ Initiative for phase **F0 — Leitor: envelope e parse fatiado**.
 - Design: `projects/titan-chordpro-ui/versoes-cifra/design.md`
 
 ## Session handoff
-- **Narrative:** F0 is materialized and package-ratified. Flow and ground-truth receipts are green (`fp=1dd465bef045`). Maestro cursor was at A; host is advancing to C to spawn the code-only phase writer. No product source has been edited on the plan branch.
-- **Decision log:** Flow locked 2026-09-20; `executionMode: automate` stamped; F0 package ratified 2026-09-23 with existing BI spine (listCharts + parse fatiado + writeMeta target + replaceChart; no Vue; no N>1 in fixtures/sda).
-- **Single nextAction:** spawn fresh writer after ratify
-- **Verbatim state:** `node "$(cat "$HOME/.atomic-skills/package-root" 2>/dev/null || echo .)/scripts/find-plans-missing-ground-truth.js" .atomic-skills/projects/titan-chordpro-ui/versoes-cifra/plan.md` exit 0; `find-missing-flow.js --strict` exit 0; HEAD `1a04429`; cursor file `.atomic-skills/status/automate/versoes-cifra.json`.
-- **Uncommitted changes:** `?? .atomic-skills/.aideck/` and `?? .atomic-skills/_drafts/` (unrelated scratch; not task-owned).
+- **Narrative:** F0 product is on `plan/versoes-cifra` at merge `6c5fc66` (envelope parse plus one-chart `writeMeta`/`replaceChart` fix `5841b8f`). Tasks are still pending. Local review found 11 items; in-scope holes 4 and 9 are merged. `done` is blocked: T-002/T-003 weight 3 need a `mode: both` receipt, and the operator has not dispositioned the other findings.
+- **Decision log:** Flow locked; `executionMode: automate`; F0 package ratified. Local review file `.atomic-skills/reviews/2026-09-23-versoes-cifra-f0-local.md`. Finding 2 matches the N>1-without-target contract. Findings 1, 3, 8 are Vue/readMeta/export and were not fixed in F0.
+- **Single nextAction:** Await operator disposition on F0 local-review findings, then `review-code --mode=both` before `done`.
+- **Verbatim state:** `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts` exit 0 (19 + 43). `assert-automate-gate.js --plan versoes-cifra --gate done` blocked: `complex task requires durable review receipt mode both`. Cursor `.atomic-skills/status/automate/versoes-cifra.json` step E, redispatchCount 1. HEAD `6c5fc66`.
+- **Uncommitted changes:** state files for the review/cursor/handoff not yet committed at the moment this block was written; product merge is committed. Unrelated scratch: `?? .atomic-skills/.aideck/` and `?? .atomic-skills/_drafts/`.
