@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix3",
-  "writerBranch": "impl/versoes-cifra-F0-fix3",
-  "finishedAt": "2026-09-23T14:06:56Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix4",
+  "writerBranch": "impl/versoes-cifra-F0-fix4",
+  "finishedAt": "2026-09-23T14:19:40Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -14,7 +14,7 @@
       "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "Existing T-001 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix3: 23 tests passed, exit 0."
+      "transcript": "Existing T-001 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix4 @ 26083d936399fca1501018d2725d5dd56102f1ab: tests/core/charts-envelope.test.ts 24 passed, exit 0."
     },
     {
       "taskId": "T-002",
@@ -25,18 +25,18 @@
       "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "Existing T-002 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix3: 23 tests passed, exit 0."
+      "transcript": "Existing T-002 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix4 @ 26083d936399fca1501018d2725d5dd56102f1ab: tests/core/charts-envelope.test.ts 24 passed, exit 0."
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["0b182590dcf6026d97bf05f5c882413d25842de9"],
+      "commitShas": ["26083d936399fca1501018d2725d5dd56102f1ab"],
       "base": null,
       "head": null,
-      "paths": ["src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
+      "paths": ["src/core/charts.ts", "src/core/import-chordpro.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "replaceChart now clears omitted title, subtitle, artist, x_source, and x_youtube on an enveloped file and leaves x_chart_default plus the sibling chart. Regression covers the omitted artist. readKeyed already matched readMeta; the duration-only alias/exact test stayed green, so import-chordpro.ts was not edited. 23 tests passed, exit 0."
+      "transcript": "readMeta on an enveloped file matches readMeta(chartDocument(source)): default-chart key and audio, not a later sibling. writeMeta(source, { ...readMeta(source), duration: '01:11' }) keeps sibling {key:C} off the default chart. writeStrumPatterns assigns '' so an empty strum key still clears. pnpm exec vitest run tests/core/charts-envelope.test.ts: 24 passed, exit 0. import-chordpro.test.ts: 43 passed, exit 0."
     }
   ]
 }
