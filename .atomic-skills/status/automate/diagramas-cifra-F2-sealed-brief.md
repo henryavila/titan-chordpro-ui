@@ -27,20 +27,12 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix1
-- **writerBranch:** impl/diagramas-cifra-F2-fix1
-- **baseRef:** 6a1027a70de6f1dc4d732f112bbdfc39f535559d
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix2
+- **writerBranch:** impl/diagramas-cifra-F2-fix2
+- **baseRef:** eb8539fb8d18cba61c57fc22d0febc2856cb4caf
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
-### Tasks (3)
-
-#### T-001 — Layout concert / shapeName / capoFret
-- status: pending
-- paths: ["src/core/types.ts","src/core/layout.ts","tests/core/layout-capo.test.ts"]
-- scopeBoundary: ["No Vue; no dictionary; do not change auto-scroll math; do not use shapeCapo as the draw source."]
-- acceptance: ["Each playable seg has concert, shapeName, capoFret; capo 2 dual on source Bm yields concert Bm and shapeName Am and capoFret 2; capo 2 dual off still has capoFret 2 and shapeName Am; Nashville changes the label only; lens letra still drops chords from the reading blocks"]
-- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/layout-capo.test.ts","expectExitCode":0}
-- weight: 3
+### Tasks (2)
 
 #### T-002 — Dictionary + resolveDiagram
 - status: pending
@@ -98,9 +90,21 @@ Rules:
 ## Exit
 
 1. All listed verifiers green for claimed-pass tasks (self-check).
-2. Write claim report to `.atomic-skills/status/automate/diagramas-cifra-claims.json`.
+2. Write the claim report JSON to both absolute paths below. Do not commit it. Do not write it only inside the sibling worktree.
+   - `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
+   - `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-F2-fix2-claims.json`
 3. Final message: summary of files changed, commit SHAs, claim report path, any blockers.
 4. Do not mark tasks done in YAML. Do not call done/phase-done.
+
+## Fix contract (authoritative for the code)
+
+Read and follow this file in full. It is the product contract for the reopened tasks, not chat history. It is already in your worktree at the same relative path.
+
+`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix2/.atomic-skills/status/automate/diagramas-cifra-F2-fix2-contract.md`
+
+Where that file names a claim-report path, the two absolute paths in Exit step 2 win. Write both.
+
+T-002 commit(s) first, then T-003. Exclusive `commitShas`. No shared SHA. `base: null` and `head: null`.
 
 ---
 sealed-brief: true

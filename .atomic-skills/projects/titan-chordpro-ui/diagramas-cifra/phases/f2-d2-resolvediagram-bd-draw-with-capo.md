@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: F2-fix2 writer — exhaustive chord oracle, then replace illegal dictionary grips
+nextAction: Codex Astra review of the chord-identity merge before any task done; do not phase-done
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -162,8 +162,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Operator chose fix-now. Dictionary grips that sound like a different chord are the blocker. Guitar 9 illegal cells, ukulele 55. They are chromatic copies of a simpler grip. Visual modal look stays F3. External review from here is Codex gpt-6-astra only, not Claude.
-- **Decision log:** review-disposition fix (5c5467d3). Do not phase-done and do not materialize F3 until the exhaustive oracle is green.
-- **Single nextAction:** F2-fix2 writer — exhaustive chord oracle, then replace illegal dictionary grips
-- **Verbatim state:** T-001 stays done. T-002 and T-003 reopened pending. Cursor redispatch F to C. Cause is copied grips, not the SVG fret axis and not the slash miss.
-- **Uncommitted changes:** none at handoff rewrite; state checkpoint follows.
+- **Narrative:** F2-fix2 merged at eb34c11. Host re-ran layout-capo, resolve-diagram, diagram-draw, and no-vue: 54 tests passed. The oracle requires a hit for 17 qualities × 12 roots × guitar and ukulele. Illegal copied grips were replaced. Piano key ties convert as absolute. Visual modal look stays F3. External review is Codex gpt-6-astra only.
+- **Decision log:** fix-now 5c5467d3; redispatch f7eaee57. Tasks T-002 and T-003 stay pending until the Astra review. Do not phase-done.
+- **Single nextAction:** Codex Astra review of the chord-identity merge before any task done; do not phase-done
+- **Verbatim state:** Cursor step D.5, redispatchCount 2. Claim SHAs bcf06ee, 70e9148, 7db7c12 are ancestors of eb34c11. Eighteen pre-existing pitch-legal grips still span 5–7 frets; new packs do not.
+- **Uncommitted changes:** automate status (claims, brief, cursor) and this handoff, checkpoint follows.

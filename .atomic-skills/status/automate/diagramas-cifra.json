@@ -1,8 +1,8 @@
 {
-  "step": "C",
+  "step": "D.5",
   "phaseId": "F2",
   "redispatchCount": 2,
-  "updatedAt": "2026-09-23T12:33:44.839Z",
+  "updatedAt": "2026-09-23T12:52:20.677Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -11,5 +11,5 @@
       "gate": "spawn"
     }
   ],
-  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json"
+  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-F2-fix2-claims.json"
 }
