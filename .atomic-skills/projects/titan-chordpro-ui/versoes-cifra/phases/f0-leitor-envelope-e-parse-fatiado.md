@@ -159,8 +159,8 @@ Initiative for phase **F0 — Leitor: envelope e parse fatiado**.
 - Design: `projects/titan-chordpro-ui/versoes-cifra/design.md`
 
 ## Session handoff
-- **Narrative:** Both review `.atomic-skills/reviews/2026-09-23-versoes-cifra-f0-fix-both.md` is `needs_changes`. Operator said `Fix all`. Open items: source-pane keystrokes canonicalize the song header (`ChordproViewer.vue:2050`); `storedTransposeSemis` misses colonless `{transpose 2}` (`import-chordpro.ts:500`); `commitChartDocument` drops the blank line before the first chart (`charts.ts:384`); clearing audio drops a leading blank (`charts.ts:405`); chord picker reads the whole file (`ChordproViewer.vue:868`). Tasks stay pending.
-- **Decision log:** Operator disposition is `fix` for every finding in that both review, local minors included. No chart switcher. No `exportCho`.
-- **Single nextAction:** Spawn the code-only writer for those five findings, merge, and re-run the plan-tree verifiers.
-- **Verbatim state:** HEAD `3f2fa2d`. Cursor `.atomic-skills/status/automate/versoes-cifra.json` step E, redispatchCount 6, lease missing. T-003 SHA `ee20a83038960a080a84afbd1eb000d490801aa1`.
+- **Narrative:** Operator `Fix all` is merged as `7214bd9`. Source-pane saves copy song-identity lines raw, so `{title:Uma }` and `{title:}` stay and the spacer before the first chart stays. `storedTransposeSemis` uses `parse`, so `{transpose 2}` counts. Clearing audio keeps the blank under the label. `chordVocab` reads `chartSource`. Tasks T-001, T-002, and T-003 stay pending. The both review at `6ff593c..621dfe8` does not cover this commit.
+- **Decision log:** Operator said Fix all. No chart switcher. No `exportCho`.
+- **Single nextAction:** Run a fresh `review-code --mode=both` on `eee2c7f..HEAD` product paths before `done`.
+- **Verbatim state:** Cursor `.atomic-skills/status/automate/versoes-cifra.json` step E, redispatchCount 7, lease missing. T-003 SHA `7214bd9265ed99966e0e0316759feb7eb45f4bab`. Plan-tree `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/demo/sda-fixtures.test.ts` exit 0 (156).
 - **Uncommitted changes:** unrelated scratch only: `?? .atomic-skills/.aideck/`, `?? .atomic-skills/_drafts/`, `?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json`, `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`.
