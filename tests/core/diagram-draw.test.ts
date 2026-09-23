@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { drawDiagram, resolveDiagram, type DiagramDraw, type FretDraw } from '../../src/core/index'
+import { keyIndex } from '../../src/core/transpose'
 
 const AM_FRETS = ['x', 0, 2, 2, 1, 0] as const
 const AM_FINGERS = ['x', 0, 2, 3, 1, 0] as const
@@ -218,5 +219,100 @@ describe('drawDiagram', () => {
     expect(d.capoFret).toBe(0)
     expect(d.lit).toEqual([])
     expect(d.litNotes).toEqual([])
+  })
+})
+
+const ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
+const FRET_SUFFIXES = ['', 'm', '5', '6', '6(9)', '7', '7(9)', '9', 'maj7', '7M(9)', 'm6', 'm7', 'm9', 'sus2', 'sus4', '7sus4', 'dim'] as const
+const PIANO_SUFFIXES = [...FRET_SUFFIXES, 'm7(11)'] as const
+
+function yOf(fret: number): number {
+  return 28 + fret * 18
+}
+
+describe('dictionary draw grid', () => {
+  it('places every guitar and ukulele hit on one fret axis at capo 0 and 2', () => {
+    let drawn = 0
+    for (const instrument of ['guitar', 'ukulele'] as const) {
+      for (const root of ROOTS) {
+        for (const suffix of FRET_SUFFIXES) {
+          const token = `${root}${suffix}`
+          const hit = resolveDiagram({ token, instrument })
+          expect(hit.class, `${instrument} ${token}`).toBe('hit')
+          if (hit.class !== 'hit' || !hit.voicing.frets) continue
+          const base = Math.max(1, hit.voicing.baseFret ?? 1)
+          for (const capoFret of [0, 2] as const) {
+            const d = asFrets(drawDiagram({ instrument, voicing: hit.voicing, capoFret, token }))
+            const mutes: number[] = []
+            const opens: number[] = []
+            const nutOpens: number[] = []
+            const dots: { string: number; fret: number; relativeFret: number }[] = []
+            hit.voicing.frets.forEach((slot, string) => {
+              if (slot === 'x') {
+                mutes.push(string)
+                return
+              }
+              if (slot === 0) {
+                opens.push(string)
+                if (capoFret === 0) nutOpens.push(string)
+                return
+              }
+              dots.push({ string, relativeFret: slot, fret: capoFret + (base - 1) + slot })
+            })
+            const label = `${instrument} ${token} capo ${capoFret}`
+            expect(d.mutes, label).toEqual(mutes)
+            expect(d.opens, label).toEqual(opens)
+            expect(d.nutOpens, label).toEqual(nutOpens)
+            expect(
+              d.dots.map((dot) => ({ string: dot.string, fret: dot.fret, relativeFret: dot.relativeFret })),
+              label,
+            ).toEqual(dots)
+            if (capoFret > 0) {
+              expect(d.hasCapoBar, label).toBe(true)
+              expect(d.capoLabel, label).toBe(`Capo ${capoFret}`)
+              expect(d.svg, label).toContain(`Capo ${capoFret}`)
+            } else {
+              expect(d.hasCapoBar, label).toBe(false)
+              expect(d.capoLabel, label).toBeNull()
+              expect(d.svg, label).not.toMatch(/Capo/)
+            }
+            const maxFret = Math.max(4, d.capoFret, ...d.dots.map((dot) => dot.fret))
+            const { y0, yMax } = stringYRange(d.svg)
+            expect(y0, label).toBe(yOf(0))
+            expect(yMax, label).toBe(yOf(maxFret))
+            for (const dot of d.dots) expect(dot.fret, label).toBeLessThanOrEqual(maxFret)
+            expect(diagramDotCys(d.svg), label).toEqual(d.dots.map((dot) => yOf(dot.fret) - 9))
+            drawn++
+          }
+        }
+      }
+    }
+    expect(drawn).toBe(17 * 12 * 2 * 2)
+  })
+
+  it('lights concert piano keys for every quality and ignores capo', () => {
+    let drawn = 0
+    for (const root of ROOTS) {
+      const rootPc = keyIndex(root)
+      expect(rootPc, root).not.toBeNull()
+      if (rootPc === null) continue
+      for (const suffix of PIANO_SUFFIXES) {
+        const token = `${root}${suffix}`
+        const hit = resolveDiagram({ token, instrument: 'piano' })
+        expect(hit.class, token).toBe('hit')
+        if (hit.class !== 'hit') continue
+        const d = drawDiagram({ instrument: 'piano', voicing: hit.voicing, capoFret: 2, token })
+        expect(d.kind, token).toBe('piano')
+        if (d.kind !== 'piano') continue
+        expect(d.capoFret, token).toBe(0)
+        expect(d.capoLabel, token).toBeNull()
+        expect(d.hasCapoBar, token).toBe(false)
+        expect(d.svg, token).not.toMatch(/Capo/)
+        const keys = hit.voicing.keys ?? []
+        expect(d.lit, token).toEqual(keys.map((k) => ((rootPc + k) % 12 + 12) % 12))
+        drawn++
+      }
+    }
+    expect(drawn).toBe(18 * 12)
   })
 })
