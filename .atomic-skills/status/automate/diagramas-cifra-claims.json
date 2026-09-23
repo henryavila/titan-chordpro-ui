@@ -1,27 +1,27 @@
 {
   "planSlug": "diagramas-cifra",
   "phaseId": "F2",
-  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix6",
-  "writerBranch": "impl/diagramas-cifra-F2-fix6",
-  "finishedAt": "2026-09-23T22:01:56.000Z",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix7",
+  "writerBranch": "impl/diagramas-cifra-F2-fix7",
+  "finishedAt": "2026-09-23T22:46:53.000Z",
   "tasks": [
     {
       "taskId": "T-002",
       "status": "claimed-pass",
       "commitShas": [
-        "fb9e22885ba40667f55a2811c32cf91765422b1a"
+        "80e990039459193ae29ff60098bca25ffdb7b649"
       ],
-      "base": "4c1a21d8eee830a86144d56e31c3ad66e2ceb9d7",
-      "head": "fb9e22885ba40667f55a2811c32cf91765422b1a",
+      "base": "bca4654db0966d1bf4d1f4e11309f7da9d999da0",
+      "head": "80e990039459193ae29ff60098bca25ffdb7b649",
       "paths": [
-        "src/core/chord-dict.ts",
         "src/core/define.ts",
         "tests/core/define-directive.test.ts",
-        "tests/core/resolve-diagram.test.ts"
+        "tests/core/resolve-diagram.test.ts",
+        "tests/core/export-cho.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/resolve-diagram.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts && pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts",
       "exitCode": 0,
-      "transcript": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/export-cho.test.ts (6 tests) 4ms\n✓ tests/core/resolve-diagram.test.ts (28 tests) 8ms\n✓ tests/core/define-directive.test.ts (28 tests) 6ms\nTest Files  3 passed (3)\nTests  62 passed (62)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (28 tests) 8ms\n✓ tests/core/layout-capo.test.ts (18 tests) 8ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 69ms\nTest Files  3 passed (3)\nTests  58 passed (58)\nexit 0\n\n408-cell count stayed 17 * 12 * 2. Guitar and ukulele packs were not edited. chord-dict.ts does not import define.ts. F7sus4 keys 0 5 10 still draws F A# D#; +2 stores G7sus4 keys [7, 0, 5] and draws G C F. Dsus2 keys 0 7 +3 stores Fsus2 keys [5, 0] and draws F C; −3 stores Dsus2 keys [2, 9] and draws D A. D keys 0 4 7 +2 is name E keys [4, 8, 11] and draws E G# B. C keys 0 4 7 +2 stays name D keys [2, 6, 9] and draws D F# A. B keys 11 3 6 +1 stays name C keys [0, 4, 7]. C keys 48 52 55 +2 stays keys [50, 54, 57]. D7M(9)/B keys [11, 2, 1, 4] still draws B D C# E."
+      "transcript": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/export-cho.test.ts (7 tests) 5ms\n✓ tests/core/resolve-diagram.test.ts (29 tests) 9ms\n✓ tests/core/define-directive.test.ts (29 tests) 6ms\nTest Files  3 passed (3)\nTests  65 passed (65)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (29 tests) 11ms\n✓ tests/core/layout-capo.test.ts (18 tests) 8ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 69ms\nTest Files  3 passed (3)\nTests  59 passed (59)\nexit 0\n\n408-cell count stayed 17 * 12 * 2. Guitar and ukulele packs were not edited. chord-dict.ts was not edited and does not import define.ts. F7sus4 keys 0 5 10 still draws F A# D#; +2 stores G7sus4 keys [7, 0, 5] and draws G C F. Dsus2 keys 0 7 +3 stores Fsus2 keys [5, 0] and draws F C; −3 stores Dsus2 keys [2, 9] and draws D A. Dsus2 keys 0 7 +5 stores Gsus2 keys [0, 7] and draws G D (pcs 7, 2); −5 stores Dsus2 keys [2, 9] and draws D A (pcs 2, 9). exportCho of the one-line chart at +5 parses back to that G D draw. D keys 0 4 7 +2 is name E keys [4, 8, 11] and draws E G# B. C keys 0 4 7 +2 stays name D keys [2, 6, 9] and draws D F# A. B keys 11 3 6 +1 stays name C keys [0, 4, 7]. C keys 48 52 55 +2 stays keys [50, 54, 57]. D7M(9)/B keys [11, 2, 1, 4] still draws B D C# E."
     }
   ]
 }
