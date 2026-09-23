@@ -1,8 +1,8 @@
 {
-  "step": "D.5",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 6,
-  "updatedAt": "2026-09-23T22:06:43.287Z",
+  "redispatchCount": 7,
+  "updatedAt": "2026-09-23T22:39:28.972Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -32,6 +32,12 @@
       "at": "2026-09-23T21:56:51.283Z",
       "reason": "Operator said fix both Astra piano-transpose majors and review that diff again.",
       "priorCount": 5,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-23T22:39:28.972Z",
+      "reason": "Operator said continue. Fix the remaining Astra major: Dsus2 keys 0 7 plus 5 must light G and D, and minus 5 must restore D and A. Do not start F3.",
+      "priorCount": 6,
       "gate": "spawn"
     }
   ],
