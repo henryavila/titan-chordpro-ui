@@ -170,6 +170,45 @@ describe('writeMeta target and replaceChart', () => {
     expect(out).toContain('{duration:04:26}')
     expect(out).toContain('{duration:02:00}')
   })
+
+  it('song target on a one-chart file rewrites title and keeps sound keys', () => {
+    const one = '{key:C}\n{title:Velho}\n{duration:02:00}\n[G]Letra'
+    const out = writeMeta(one, { title: 'X', key: 'A' }, { target: 'song' })
+    expect(out).toBe('{title:X}\n{key:C}\n{duration:02:00}\n[G]Letra')
+  })
+
+  it('chart target on a one-chart file rewrites key and duration on that header', () => {
+    const one = '{key:C}\n{title:Velho}\n{duration:02:00}\n[G]Letra'
+    const out = writeMeta(one, { title: 'Z', key: 'G', duration: '03:00' }, { target: 'chart', chartId: 'default' })
+    expect(out).toBe('{title:Velho}\n{key:G}\n{duration:03:00}\n[G]Letra')
+  })
+
+  it('unknown chartId leaves an enveloped file unchanged', () => {
+    const out = writeMeta(TWO_CHART_SOURCE, { key: 'A', duration: '01:00' }, { target: 'chart', chartId: 'ausente' })
+    expect(out).toBe(TWO_CHART_SOURCE)
+  })
+
+  it('another chartId does not rewrite a one-chart file', () => {
+    const one = '{title:Velho}\n{key:C}\n[G]Letra'
+    expect(writeMeta(one, { key: 'G' }, { target: 'chart', chartId: 'oferta' })).toBe(one)
+  })
+
+  it('replaceChart without an envelope replaces only default or an empty id', () => {
+    const one = '{title:Velho}\n{key:C}\n[G]Letra'
+    const doc = '{title:Nova}\n{key:G}\n[G]nova'
+    expect(replaceChart(one, 'default', doc)).toBe(doc)
+    expect(replaceChart(one, '', doc)).toBe(doc)
+    expect(replaceChart(one, 'oferta', doc)).toBe(one)
+  })
+
+  it('replaceChart with a missing enveloped id returns the file', () => {
+    const doc = '{title:Nova}\n{key:G}\n[G]nova'
+    expect(replaceChart(TWO_CHART_SOURCE, 'ausente', doc)).toBe(TWO_CHART_SOURCE)
+    const kept = replaceChart(TWO_CHART_SOURCE, 'oferta', doc)
+    expect(kept).toContain('{start_of_x_chart:completa}')
+    expect(kept).toContain('corpo da completa')
+    expect(kept).not.toContain('corpo da oferta')
+  })
 })
 
 

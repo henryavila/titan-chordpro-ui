@@ -13,10 +13,16 @@
  */
 
 import {
+  META_KEYS,
   SONG_META_KEYS,
+  canonicalMetaKey,
+  readMeta,
   splitCho,
   writeChartScopedMeta,
+  writeMetaOneHeader,
   writeSongScopedMeta,
+  type ChartMeta,
+  type MetaKey,
 } from './charts'
 import {
   isLegalStrumPattern,
@@ -347,60 +353,8 @@ export function convert(text: string): ImportResult {
 
 // ----------------------------------------------------------------- metadata
 
-export const META_KEYS = [
-  'title',
-  'subtitle',
-  'artist',
-  'key',
-  'transpose',
-  'tempo',
-  'time',
-  'duration',
-  'capo',
-  'x_source',
-  'x_youtube',
-  'x_audio_sung',
-  'x_audio_playback',
-  'x_audio_art',
-  'x_audio_art_w',
-  'x_audio_art_h',
-  'x_strum',
-  'x_strum_set',
-] as const
-export type MetaKey = (typeof META_KEYS)[number]
-export type ChartMeta = Partial<Record<MetaKey, string>>
-
-/** Portuguese / short names still in files. Canonical key wins when both exist. */
-const META_ALIAS: Record<string, MetaKey> = {
-  t: 'title',
-  st: 'subtitle',
-  x_origem: 'x_source',
-  x_audio: 'x_audio_sung',
-  x_audio_cantado: 'x_audio_sung',
-}
-
-export function canonicalMetaKey(k: string): MetaKey | null {
-  const lower = k.toLowerCase()
-  if ((META_KEYS as readonly string[]).includes(lower)) return lower as MetaKey
-  return META_ALIAS[lower] ?? null
-}
-
-export function readMeta(source: string): ChartMeta {
-  const meta: ChartMeta = {}
-  String(source ?? '')
-    .split('\n')
-    .forEach((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*([^}]*)\}\s*$/)
-      if (!d) return
-      const k = (d[1] ?? '').toLowerCase()
-      const v = (d[2] ?? '').trim()
-      const canon = canonicalMetaKey(k)
-      if (!canon) return
-      const exact = (META_KEYS as readonly string[]).includes(k)
-      if (exact || meta[canon] === undefined) meta[canon] = v
-    })
-  return meta
-}
+export { META_KEYS, canonicalMetaKey, readMeta }
+export type { ChartMeta, MetaKey }
 
 /**
  * Read batida as a pattern set.
@@ -449,25 +403,6 @@ export function writeStrumPatterns(source: string, set: StrumPatternSet): string
 export type WriteMetaOpts = {
   target?: 'song' | 'chart'
   chartId?: string
-}
-
-/**
- * One-chart header rewrite: known keys leave the body and come back on top, in
- * the canonical order. No two `{key:}` lines competing.
- */
-function writeMetaOneHeader(source: string, meta: ChartMeta): string {
-  const body = String(source ?? '')
-    .split('\n')
-    .filter((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
-      if (!d) return true
-      const k = (d[1] ?? '').toLowerCase()
-      return canonicalMetaKey(k) === null
-    })
-  const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
-    (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
-  )
-  return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
 }
 
 function songPatchOf(meta: ChartMeta): ChartMeta {
