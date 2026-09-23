@@ -52,6 +52,39 @@ const CHART_ALIAS: Record<string, string> = {
   x_audio_cantado: 'x_audio_sung',
 }
 
+/** One-header order. Two-arg `writeMeta` on a file with no envelope emits this. */
+export const META_KEYS = [
+  'title',
+  'subtitle',
+  'artist',
+  'key',
+  'transpose',
+  'tempo',
+  'time',
+  'duration',
+  'capo',
+  'x_source',
+  'x_youtube',
+  'x_audio_sung',
+  'x_audio_playback',
+  'x_audio_art',
+  'x_audio_art_w',
+  'x_audio_art_h',
+  'x_strum',
+  'x_strum_set',
+] as const
+export type MetaKey = (typeof META_KEYS)[number]
+export type ChartMeta = Partial<Record<MetaKey, string>>
+
+/** Portuguese / short names still in files. Canonical key wins when both exist. */
+const META_ALIAS: Record<string, MetaKey> = {
+  t: 'title',
+  st: 'subtitle',
+  x_origem: 'x_source',
+  x_audio: 'x_audio_sung',
+  x_audio_cantado: 'x_audio_sung',
+}
+
 export type MetaPatch = { [key: string]: string | undefined }
 
 export type FileChart = {
@@ -94,6 +127,29 @@ export function chartSoundKey(name: string): string | null {
   const k = name.toLowerCase()
   if ((CHART_SOUND_KEYS as readonly string[]).includes(k)) return k
   return CHART_ALIAS[k] ?? null
+}
+
+export function canonicalMetaKey(k: string): MetaKey | null {
+  const lower = k.toLowerCase()
+  if ((META_KEYS as readonly string[]).includes(lower)) return lower as MetaKey
+  return META_ALIAS[lower] ?? null
+}
+
+export function readMeta(source: string): ChartMeta {
+  const meta: ChartMeta = {}
+  String(source ?? '')
+    .split('\n')
+    .forEach((l) => {
+      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*([^}]*)\}\s*$/)
+      if (!d) return
+      const k = (d[1] ?? '').toLowerCase()
+      const v = (d[2] ?? '').trim()
+      const canon = canonicalMetaKey(k)
+      if (!canon) return
+      const exact = (META_KEYS as readonly string[]).includes(k)
+      if (exact || meta[canon] === undefined) meta[canon] = v
+    })
+  return meta
 }
 
 export function splitCho(source: string): SplitCho {
@@ -254,10 +310,48 @@ function spliceInner(raws: string[], chart: FileChart, inner: string): string[] 
   return [...raws.slice(0, from), ...linesOf(inner), ...raws.slice(chart.endLi)]
 }
 
+/**
+ * One-chart header rewrite: known keys leave the body and come back on top, in
+ * the canonical order. No two `{key:}` lines competing.
+ */
+export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
+  const body = String(source ?? '')
+    .split('\n')
+    .filter((l) => {
+      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
+      if (!d) return true
+      const k = (d[1] ?? '').toLowerCase()
+      return canonicalMetaKey(k) === null
+    })
+  const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
+    (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
+  )
+  return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
+}
+
+/** Implicit chart id when the file has no `{start_of_x_chart}`. */
+function isImplicitChartId(chartId: string | undefined): boolean {
+  const id = String(chartId ?? '').trim()
+  return id === '' || id === 'default'
+}
+
+function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string[]): string {
+  const next: ChartMeta = { ...readMeta(source) }
+  for (const k of keys) {
+    if (!(META_KEYS as readonly string[]).includes(k)) continue
+    if (!Object.prototype.hasOwnProperty.call(patch, k)) continue
+    const key = k as MetaKey
+    const v = (patch[k] ?? '').trim()
+    if (v) next[key] = v
+    else delete next[key]
+  }
+  return writeMetaOneHeader(source, next)
+}
+
 /** Rewrite song-header keys; never strip `{key:}` / `{duration:}` from chart blocks. */
 export function writeSongScopedMeta(source: string, patch: MetaPatch): string {
   const split = splitCho(source)
-  if (!split.hasEnvelope) return String(source ?? '')
+  if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS)
   const first = split.charts[0]!
   const headerLines = split.raws.slice(0, first.startLi)
   const next = applyPatch(readKeyed(headerLines.join('\n'), 'song'), patch, SONG_META_KEYS)
@@ -296,7 +390,10 @@ function rewriteChartInner(inner: string, patch: MetaPatch): string {
 /** Rewrite sound keys inside one named chart; sibling blocks stay put. */
 export function writeChartScopedMeta(source: string, patch: MetaPatch, chartId?: string): string {
   const split = splitCho(source)
-  if (!split.hasEnvelope) return String(source ?? '')
+  if (!split.hasEnvelope) {
+    if (!isImplicitChartId(chartId)) return String(source ?? '')
+    return writeFlatScoped(source, patch, CHART_SOUND_KEYS)
+  }
   const id = chartId && split.charts.some((c) => c.id === chartId) ? chartId : null
   if (!id) return String(source ?? '')
   const chart = split.charts.find((c) => c.id === id)
@@ -312,7 +409,10 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   const src = String(file ?? '').replace(/\r\n?/g, '\n')
   const document = String(doc ?? '').replace(/\r\n?/g, '\n')
   const split = splitCho(src)
-  if (!split.hasEnvelope) return document
+  if (!split.hasEnvelope) {
+    if (!isImplicitChartId(chartId)) return src
+    return document
+  }
   const chart = split.charts.find((c) => c.id === chartId)
   if (!chart) return src
 
