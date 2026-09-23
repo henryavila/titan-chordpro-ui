@@ -865,7 +865,7 @@ const editScale = computed(() => editTypeScale(bias.value, compact.value))
 const chordVocab = computed(() =>
   Array.from(
     new Set(
-      (liveSource.value.match(/\[([^\]]+)\]/g) ?? [])
+      (chartSource.value.match(/\[([^\]]+)\]/g) ?? [])
         .map((t) => t.slice(1, -1))
         .filter((t) => /^[A-G]/.test(t)),
     ),

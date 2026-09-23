@@ -560,6 +560,60 @@ describe('chart document edits and x_chart_default', () => {
     expect(whole.issues.join(' ')).not.toContain('tom não reconhecido')
   })
 
+  it('keeps raw title bytes, preamble order, and the spacer before the first chart', () => {
+    const file = [
+      '# antes',
+      '{title:Uma}',
+      '# meio',
+      '{artist:Alguém}',
+      '{x_chart_default:oferta}',
+      '',
+      '{start_of_x_chart:completa}',
+      '{x_chart_label:Completa}',
+      '{key:G}',
+      '[G]corpo da completa',
+      '{end_of_x_chart}',
+      '',
+      '{start_of_x_chart:oferta}',
+      '{x_chart_label:Oferta}',
+      '{key:C}',
+      '[C]corpo da oferta',
+      '{end_of_x_chart}',
+      '',
+    ].join('\n')
+    const spaced = commitChartDocument(file, '{title:Uma }\n{artist:Alguém}\n{key:C}\n[C]corpo da oferta')
+    const header = spaced.slice(0, spaced.indexOf('{start_of_x_chart'))
+    expect(header.startsWith('# antes\n{title:Uma }\n# meio\n{artist:Alguém}\n')).toBe(true)
+    expect(header).toContain('{title:Uma }')
+    expect(header).not.toMatch(/\{title:Uma\}/)
+    expect(header.endsWith('{x_chart_default:oferta}\n\n')).toBe(true)
+    expect(chartBlock(spaced, 'completa')).toBe(chartBlock(file, 'completa'))
+    expect(chartBlock(spaced, 'oferta')).toContain('[C]corpo da oferta')
+    expect(parse(spaced).source).toContain('{title:Uma }')
+    expect(parse(spaced).source).not.toMatch(/\{title:Uma\}/)
+
+    const emptied = commitChartDocument(spaced, '{title:}\n{artist:Alguém}\n{key:C}\n[C]corpo da oferta')
+    const emptyHeader = emptied.slice(0, emptied.indexOf('{start_of_x_chart'))
+    expect(emptyHeader.startsWith('# antes\n{title:}\n# meio\n')).toBe(true)
+    expect(emptyHeader).toContain('{title:}')
+    expect(emptyHeader).not.toMatch(/\{title:Uma/)
+    expect(emptyHeader.endsWith('{x_chart_default:oferta}\n\n')).toBe(true)
+    expect(parse(emptied).source.startsWith('{title:}\n')).toBe(true)
+    expect(chartBlock(emptied, 'completa')).toBe(chartBlock(file, 'completa'))
+
+    const lyric = commitChartDocument(file, '{title:Uma}\n{artist:Alguém}\n{key:C}\n[C]corpo novo')
+    const lyricHeader = lyric.slice(0, lyric.indexOf('{start_of_x_chart'))
+    expect(lyricHeader.startsWith('# antes\n{title:Uma}\n# meio\n')).toBe(true)
+    expect(lyricHeader.endsWith('\n\n')).toBe(true)
+    expect(chartBlock(lyric, 'oferta')).toContain('[C]corpo novo')
+    expect(chartBlock(lyric, 'completa')).toContain('[G]corpo da completa')
+  })
+
+  it('counts colonless {transpose} and {key} the way parse does', () => {
+    expect(storedTransposeSemis('{key:C}\n{transpose 2}\n[C]uma')).toBe(2)
+    expect(storedTransposeSemis('{key C}\n{transpose:2}\n[C]uma')).toBe(2)
+  })
+
   it('keeps {transpose:2} when the sibling chart is in another key', () => {
     const src = `{title:Uma}
 {x_chart_default:oferta}
