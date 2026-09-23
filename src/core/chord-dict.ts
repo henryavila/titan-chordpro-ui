@@ -90,22 +90,54 @@ export function pianoKeysOf(quality: string): number[] | null {
   return keys ? [...keys] : null
 }
 
+function mod12(n: number): number {
+  return ((n % 12) + 12) % 12
+}
+
+/** Tones that name the quality. A power chord's only characteristic tone is the fifth; other qualities drop the root and the fifth. */
+function characteristicIntervals(quality: string, intervals: readonly number[]): number[] {
+  if (quality === '5') return [7]
+  const seen = new Set<number>()
+  const out: number[] = []
+  for (const iv of intervals) {
+    const tone = mod12(iv)
+    if (tone === 0 || tone === 7 || seen.has(tone)) continue
+    seen.add(tone)
+    out.push(tone)
+  }
+  return out
+}
+
+function characteristicCount(sounding: Set<number>, rootPc: number, tones: readonly number[]): number {
+  const heard = new Set<number>()
+  for (const pc of sounding) heard.add(mod12(pc - rootPc))
+  let count = 0
+  for (const tone of tones) {
+    if (heard.has(tone)) count++
+  }
+  return count
+}
+
 /** File `{define}` keys may be absolute pitch classes; dictionary keys are intervals from the tonic. */
 export function pianoKeysToRelative(keys: number[], rootPc: number, quality: string): number[] {
-  const pcs = keys.map((k) => (((k % 12) + 12) % 12))
+  const pcs = keys.map((k) => mod12(k))
   const intervals = pianoKeysOf(quality) ?? [0]
-  const expected = intervals.map((iv) => (((rootPc + iv) % 12) + 12) % 12)
+  const expected = intervals.map((iv) => mod12(rootPc + iv))
   let absScore = 0
   let relScore = 0
   const absSet = new Set(pcs)
-  const relSet = new Set(pcs.map((k) => (((rootPc + k) % 12) + 12) % 12))
+  const relSet = new Set(pcs.map((k) => mod12(rootPc + k)))
   for (const pc of expected) {
     if (absSet.has(pc)) absScore++
     if (relSet.has(pc)) relScore++
   }
-  // A tie is absolute. Draw adds the root, so store intervals from it.
-  if (absScore >= relScore) return pcs.map((k) => (((k - rootPc) % 12) + 12) % 12)
-  return pcs
+  // Draw adds the token root, so an absolute reading is stored as intervals from it.
+  const asAbsolute = () => pcs.map((k) => mod12(k - rootPc))
+  if (absScore > relScore) return asAbsolute()
+  if (relScore > absScore) return pcs
+  const tones = characteristicIntervals(quality, intervals)
+  if (characteristicCount(relSet, rootPc, tones) > characteristicCount(absSet, rootPc, tones)) return pcs
+  return asAbsolute()
 }
 
 export function lookupDict(

@@ -257,6 +257,24 @@ describe('resolveDiagram', () => {
     if (dC.kind !== 'piano') return
     expect(dC.litNotes).toEqual(['C', 'E', 'G'])
   })
+
+  it('keeps a relative piano-key tie when its characteristic tones win', () => {
+    const f7sus4 = resolveDiagram({
+      token: 'F7sus4',
+      instrument: 'piano',
+      overrides: [
+        { name: 'F7sus4', instrument: 'piano', directive: 'define', keys: [0, 5, 10] },
+      ],
+    })
+    expect(f7sus4.class).toBe('hit')
+    if (f7sus4.class !== 'hit') return
+    expect(f7sus4.voicing.keys).toEqual([0, 5, 10])
+    const d = drawDiagram({ instrument: 'piano', voicing: f7sus4.voicing, token: 'F7sus4' })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.lit).toEqual([5, 10, 3])
+    expect(d.litNotes).toEqual(['F', 'A#', 'D#'])
+  })
 })
 
 const TUNING = {
@@ -448,8 +466,12 @@ describe('dictionary chord identity', () => {
         for (const row of GRID) {
           const left = dictionaryFrets(`${a}${row.suffix}`, instrument)
           const right = dictionaryFrets(`${b}${row.suffix}`, instrument)
-          if ('error' in left || 'error' in right) {
-            failures.push(`${instrument} ${a}/${b} ${row.quality}: ${'error' in left ? left.error : right.error}`)
+          if ('error' in left) {
+            failures.push(`${instrument} ${a}/${b} ${row.quality}: ${left.error}`)
+            continue
+          }
+          if ('error' in right) {
+            failures.push(`${instrument} ${a}/${b} ${row.quality}: ${right.error}`)
             continue
           }
           if (left.frets.join('') !== right.frets.join('')) {
