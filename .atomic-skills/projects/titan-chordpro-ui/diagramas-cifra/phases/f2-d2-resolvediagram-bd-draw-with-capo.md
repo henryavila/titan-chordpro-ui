@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: spawn evaluation agent for F2
+nextAction: await disposition of F2 close-review critical (61 dict rows) — defer F3 or fix
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -178,8 +178,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 T-001/T-002/T-003 done on merged HEAD. Fix1 landed SVG one-space coords, dict characteristic tones, slash bass miss. Visual validation remains F3. Next is evaluation then phase-done.
-- **Decision log:** Operator prossiga F2; F3 owns look. Redispatch F2-fix1 after both-claude criticals.
-- **Single nextAction:** spawn evaluation agent for F2
-- **Verbatim state:** HEAD `c09259cfad432b5c671f856693e5a619ea8ce182`. `assert-automate-gate --gate done` ok. Verifiers 47 tests exit 0 (layout-capo 18, resolve-diagram 18, diagram-draw 10, no-vue 1). Cursor E.
-- **Uncommitted changes:** initiative close + reviews + cursor (checkpoint imediato).
+- **Narrative:** F2 T-001/T-002/T-003 done. Evaluation verdict pass (F2-G1 46 tests). Lessons L-F2-001..003 recorded. Close-review local found CRITICAL: 61 dict rows still a different chord. Operator declined disposition twice — phase-done not run. Visual validation remains F3.
+- **Decision log:** Eval majors (known-miss, 6add9) were deferred to F3. The later close-review critical is not dispositioned. Decline is not accept.
+- **Single nextAction:** await disposition of F2 close-review critical (61 dict rows) — defer F3 or fix
+- **Verbatim state:** HEAD `aabd36c81c38df2e24471c8a774eb249fea2535a`. evaluationGate `{status:passed,verdict:pass,reportPath:.atomic-skills/reviews/eval-diagramas-cifra-F2.md,at:aabd36c81c38df2e24471c8a774eb249fea2535a}`. Local close: `.atomic-skills/reviews/2026-09-23-diagramas-cifra-F2-close-local.md` counts critical 1. Cursor step F. Claude close retry in flight or empty (exit 142 first try).
+- **Uncommitted changes:** plan evaluationGate+lessons, F2 initiative handoff, lessons file, eval report, close-local review, cursor, decisions (checkpoint imediato).

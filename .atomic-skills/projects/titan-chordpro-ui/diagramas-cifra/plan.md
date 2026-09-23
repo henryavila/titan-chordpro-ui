@@ -265,6 +265,14 @@ phases:
               tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts
             expectExitCode: 0
     status: active
+    evaluationGate:
+      status: passed
+      verdict: pass
+      reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F2.md
+      at: aabd36c81c38df2e24471c8a774eb249fea2535a
+      verifiedAt: 2026-09-23T00:27:29.000Z
+    lessonsState: recorded
+    lessonsPath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/lessons/diagramas-cifra-f2-d2-resolvediagram-bd-draw-with-capo.md
     businessIntent:
       value: O musico precisa ver a forma da mao sob o capo no violao e no ukulele, e as teclas de concert no piano. Buscar a voicing de concert no capo 2 enquanto a cifra diz Bm mente no ensaio.
       workflow: Layout expoe concert, shapeName e capoFret mesmo em edit ou Nashville; resolveDiagram prefere o {define} do arquivo ao dicionario do pacote; guitarra usa shapeName, piano usa concert; o core devolve o modelo de desenho (pontos, mute, barre, barra de capo, rotulo Capo n, teclas). Modal Vue e validacao visual ficam na F3.
