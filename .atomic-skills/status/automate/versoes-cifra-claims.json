@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix4",
-  "writerBranch": "impl/versoes-cifra-F0-fix4",
-  "finishedAt": "2026-09-23T14:19:40Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix5",
+  "writerBranch": "impl/versoes-cifra-F0-fix5",
+  "finishedAt": "2026-09-23T18:56:12Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -11,10 +11,14 @@
       "commitShas": ["275abe489d77d53c88d0d0e8a4207619b044edaa"],
       "base": null,
       "head": null,
-      "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
+      "paths": [
+        "src/core/charts.ts",
+        "src/core/index.ts",
+        "tests/core/charts-envelope.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "Existing T-001 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix4 @ 26083d936399fca1501018d2725d5dd56102f1ab: tests/core/charts-envelope.test.ts 24 passed, exit 0."
+      "transcript": "Test Files  4 passed (4)\nTests  95 passed (95)"
     },
     {
       "taskId": "T-002",
@@ -22,21 +26,37 @@
       "commitShas": ["b59b3b3730bb033e96b35d088b9c2dcb29508dcc"],
       "base": null,
       "head": null,
-      "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
+      "paths": [
+        "src/core/charts.ts",
+        "src/core/index.ts",
+        "src/core/parse.ts",
+        "tests/core/charts-envelope.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "Existing T-002 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix4 @ 26083d936399fca1501018d2725d5dd56102f1ab: tests/core/charts-envelope.test.ts 24 passed, exit 0."
+      "transcript": "Test Files  4 passed (4)\nTests  95 passed (95)"
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["26083d936399fca1501018d2725d5dd56102f1ab"],
+      "commitShas": ["2f985e519a552b350ef82557453e0febaad7e4ab"],
       "base": null,
       "head": null,
-      "paths": ["src/core/charts.ts", "src/core/import-chordpro.ts", "tests/core/charts-envelope.test.ts"],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
+      "paths": [
+        "src/core/audio-url.ts",
+        "src/core/charts.ts",
+        "src/core/import-chordpro.ts",
+        "src/core/index.ts",
+        "src/vue/ChordproViewer.vue",
+        "src/vue/edit/MetaDialog.vue",
+        "tests/core/audio-url.test.ts",
+        "tests/core/charts-envelope.test.ts",
+        "tests/vue/block-edit-ui.test.ts",
+        "tests/vue/meta-dialog.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "readMeta on an enveloped file matches readMeta(chartDocument(source)): default-chart key and audio, not a later sibling. writeMeta(source, { ...readMeta(source), duration: '01:11' }) keeps sibling {key:C} off the default chart. writeStrumPatterns assigns '' so an empty strum key still clears. pnpm exec vitest run tests/core/charts-envelope.test.ts: 24 passed, exit 0. import-chordpro.test.ts: 43 passed, exit 0."
+      "transcript": "Test Files  4 passed (4)\nTests  95 passed (95)"
     }
   ]
 }
