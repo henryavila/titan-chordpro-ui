@@ -159,8 +159,8 @@ Initiative for phase **F0 — Leitor: envelope e parse fatiado**.
 - Design: `projects/titan-chordpro-ui/versoes-cifra/design.md`
 
 ## Session handoff
-- **Narrative:** Operator fix is on `plan/versoes-cifra`. `6f8135c` covers block edit, audio clear, transpose, and writable `x_chart_default`. `ee20a83` stops that write from copying sound onto the newly selected chart, lints the chart document, clears an empty default id, and keeps a leading blank line. Tasks T-001, T-002, and T-003 are still pending. The both review at `d9b5d22` does not cover these commits.
-- **Decision log:** Operator 2026-09-23 said corrigir agora, including Vue for those findings. No chart switcher. No `exportCho`.
-- **Single nextAction:** Run a fresh `review-code --mode=both` on the product diff since `6ff593c` before `done`.
-- **Verbatim state:** Cursor `.atomic-skills/status/automate/versoes-cifra.json` step E, redispatchCount 6, lease missing. T-003 SHA `ee20a83038960a080a84afbd1eb000d490801aa1`. Plan-tree `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/demo/sda-fixtures.test.ts` exit 0 (152).
+- **Narrative:** The fix commits are on `plan/versoes-cifra`. A fresh `mode: both` review of `6ff593c..621dfe8` is `needs_changes`: Codex informed 0 blocker, 0 critical, 1 major, 1 minor. Local leg had 0 major and 3 minor. Tasks T-001, T-002, and T-003 stay pending. The major is the source pane rewriting the song header on every keystroke.
+- **Decision log:** Operator asked for the review (`revisar agora`). No disposition yet on `.atomic-skills/reviews/2026-09-23-versoes-cifra-f0-fix-both.md`. No chart switcher. No `exportCho`.
+- **Single nextAction:** Await operator disposition `accept|defer|fix` on that both review before `done`.
+- **Verbatim state:** HEAD after this commit will include the review files. Cursor `.atomic-skills/status/automate/versoes-cifra.json` step E, redispatchCount 6, lease missing. T-003 SHA `ee20a83038960a080a84afbd1eb000d490801aa1`. Codex informed `.atomic-skills/reviews/2026-09-23-versoes-cifra-f0-fix-codex.md`. Local `.atomic-skills/reviews/2026-09-23-versoes-cifra-f0-fix-local.md`.
 - **Uncommitted changes:** unrelated scratch only: `?? .atomic-skills/.aideck/`, `?? .atomic-skills/_drafts/`, `?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json`, `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`.
