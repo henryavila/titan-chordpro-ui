@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: fix the two Astra transpose majors, then review that diff again; do not start F3
+nextAction: Astra re-review of the transpose reading still needs changes (Dsus2 +5); do not start F3
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -174,8 +174,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** Operator said fix both Astra majors and review again. Transpose must use the same piano reading as the draw and store the shifted sounding notes. F3 is not started.
+- **Narrative:** F7sus4 +2 and Dsus2 +3 now draw the shifted notes. Codex re-review of 4c1a21d..fb9e228 kept 1 major: Dsus2 +5 stores Gsus2 keys 7 2 and lights D A, not G D. F3 is not started.
 - **Decision log:** task close follows the Astra approval 2026-09-23-1122.
-- **Single nextAction:** fix the two Astra transpose majors, then review that diff again; do not start F3
+- **Single nextAction:** Astra re-review of the transpose reading still needs changes (Dsus2 +5); do not start F3
 - **Verbatim state:** Cursor step E. lastAssert gate done ok. verifiedCommit b30690c8b98fc64e7c09a1d450e56c14304fa364.
 - **Uncommitted changes:** task close, local review, complex receipts.
