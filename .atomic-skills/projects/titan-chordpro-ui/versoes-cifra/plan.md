@@ -256,8 +256,8 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 **Status:** complete-with-findings
 **Codebase class:** populated
 **Scanned:** `src/core/*.ts` (27; no `charts.ts`), `src/vue/{public.ts,ChordproViewer.vue,use/useSetlist.ts,use/useOverlay.ts,use/useMetronome.ts,use/song-swipe.ts,chrome/CpvViewHead.vue,edit/NewChartDialog.vue,edit/MetaDialog.vue}`, `src/cli/index.ts`, `tests/core/{no-vue-in-core,overlay,parse,filenames,import-chordpro,timeline-charts}.test.ts`, `tests/demo/sda-fixtures.test.ts`, `tests/vue/{setlist,song-swipe,overlay-ui,storage-seam,head-chip,audio-ref,new-chart}.test.ts`, `docs/{VISAO,CONSUMER,NAMING}.md`, `SPEC.md`, `README.md`, `AGENTS.md`, `fixtures/sda` (148 `.cho`), `design-source/design_handoff_chordpro_viewer/GAPS.md` → 27 core + listed vue/cli/tests/docs + 148 fixtures
-**Commit:** de3ce91
-**At:** 2026-09-23T00:14:31Z
+**Commit:** 1a04429
+**At:** 2026-09-23T00:20:00Z
 
 ### A — Plan premises vs code
 
@@ -310,5 +310,5 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=1dd465bef045 | premises=25 | impacts=11 @ de3ce91 (2026-09-23T00:14:31Z)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=d05447702b4f | premises=25 | impacts=11 @ 1a04429 (2026-09-23T00:20:00Z)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.
