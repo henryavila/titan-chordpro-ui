@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { exportCho, parse, serializeDefine, transpose } from '../../src/core/index'
+import { drawDiagram, exportCho, parse, resolveDiagram, serializeDefine, transpose } from '../../src/core/index'
 import { loadFixture } from '../helpers/load-fixture'
 
 const BARRED_F =
@@ -47,6 +47,24 @@ describe('exportCho keeps define directives', () => {
     const out = exportCho(src, { semitones: 2 })
     expect(out).not.toMatch(/\{define-ukulele:/)
     expect(out).toMatch(/\[D\]/)
+  })
+
+  it('exports a one-line Dsus2 chart at +5 that still draws G and D', () => {
+    const source = '{define: Dsus2 keys 0 7}'
+    const out = exportCho(source, { semitones: 5 })
+    const view = parse(out)
+    expect(view.defines).toHaveLength(1)
+    const def = view.defines[0]
+    expect(def).toMatchObject({ name: 'Gsus2', keys: [0, 7] })
+    if (!def) return
+    const hit = resolveDiagram({ token: def.name, instrument: 'piano', overrides: view.defines })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: def.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([7, 2])
+    expect(draw.litNotes).toEqual(['G', 'D'])
   })
 
   it('agrees with transpose() on view.defines', () => {
