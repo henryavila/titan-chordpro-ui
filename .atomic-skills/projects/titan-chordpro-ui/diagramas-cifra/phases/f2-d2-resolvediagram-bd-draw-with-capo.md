@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: Codex Astra review of the chord-identity merge before any task done; do not phase-done
+nextAction: fix Astra majors (piano relative tie, test TS2339); do not phase-done
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -162,8 +162,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2-fix2 merged at eb34c11. Host re-ran layout-capo, resolve-diagram, diagram-draw, and no-vue: 54 tests passed. The oracle requires a hit for 17 qualities × 12 roots × guitar and ukulele. Illegal copied grips were replaced. Piano key ties convert as absolute. Visual modal look stays F3. External review is Codex gpt-6-astra only.
-- **Decision log:** fix-now 5c5467d3; redispatch f7eaee57. Tasks T-002 and T-003 stay pending until the Astra review. Do not phase-done.
-- **Single nextAction:** Codex Astra review of the chord-identity merge before any task done; do not phase-done
-- **Verbatim state:** Cursor step D.5, redispatchCount 2. Claim SHAs bcf06ee, 70e9148, 7db7c12 are ancestors of eb34c11. Eighteen pre-existing pitch-legal grips still span 5–7 frets; new packs do not.
-- **Uncommitted changes:** automate status (claims, brief, cursor) and this handoff, checkpoint follows.
+- **Narrative:** Codex gpt-6-astra review of eb8539f..eb34c11 returned needs_changes, 2 major, 0 critical. A relative piano override can lose the note that defines the chord. The new enharmonic test has TS2339. Do not phase-done and do not start F3.
+- **Decision log:** external review saved under .atomic-skills/reviews/. Fix those two majors before any advance.
+- **Single nextAction:** fix Astra majors (piano relative tie, test TS2339); do not phase-done
+- **Verbatim state:** 408 dictionary cells stayed green. The new failure is a file-override piano tie, not a guitar pack.
+- **Uncommitted changes:** review receipt, this handoff, cursor redispatch.
