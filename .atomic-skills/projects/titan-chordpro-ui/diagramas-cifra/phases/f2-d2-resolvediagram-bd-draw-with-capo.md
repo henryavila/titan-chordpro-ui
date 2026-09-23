@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: await disposition of F2 close-review critical (61 dict rows) — defer F3 or fix
+nextAction: F2-fix2 writer — exhaustive chord oracle, then replace illegal dictionary grips
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -32,11 +32,11 @@ businessIntent:
   doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e
     tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha
     voicing de concert; piano ignora capoFret.
-tasksDone: 3
+tasksDone: 1
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 1
-weightDone: 9
+weightDone: 3
 weightTotal: 9
 exitGates:
   - id: F2-G1
@@ -91,16 +91,8 @@ tasks:
     weight: 3
   - id: T-002
     title: Dictionary + resolveDiagram
-    status: done
-    closedAt: 2026-09-20T21:44:13.000Z
-    lastUpdated: 2026-09-20T21:44:13.000Z
-    evidence:
-      verifierKind: shell
-      verifiedAt: 2026-09-20T21:43:27.000Z
-      verifiedCommit: c09259cfad432b5c671f856693e5a619ea8ce182
-      passed: true
-      exitCode: 0
-      outputSummary: ✓ tests/core/resolve-diagram.test.ts (18 tests)
+    status: pending
+    lastUpdated: 2026-09-23T12:40:00.000Z
     scopeBoundary:
       - No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA
         only; do not ship baritone; do not guess 7+.
@@ -126,16 +118,8 @@ tasks:
     weight: 3
   - id: T-003
     title: SVG draw guitar ukulele piano with capo
-    status: done
-    closedAt: 2026-09-20T21:44:13.000Z
-    lastUpdated: 2026-09-20T21:44:13.000Z
-    evidence:
-      verifierKind: shell
-      verifiedAt: 2026-09-20T21:43:27.000Z
-      verifiedCommit: c09259cfad432b5c671f856693e5a619ea8ce182
-      passed: true
-      exitCode: 0
-      outputSummary: ✓ tests/core/diagram-draw.test.ts (10 tests)
+    status: pending
+    lastUpdated: 2026-09-23T12:40:00.000Z
     scopeBoundary:
       - No Vue components; draw returns data or SVG string from core; do not
         pause auto-scroll here; do not open the modal.
@@ -178,8 +162,8 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 T-001/T-002/T-003 done. Evaluation verdict pass (F2-G1 46 tests). Lessons L-F2-001..003 recorded. Close-review local found CRITICAL: 61 dict rows still a different chord. Operator declined disposition twice — phase-done not run. Visual validation remains F3.
-- **Decision log:** Eval majors (known-miss, 6add9) were deferred to F3. The later close-review critical is not dispositioned. Decline is not accept.
-- **Single nextAction:** await disposition of F2 close-review critical (61 dict rows) — defer F3 or fix
-- **Verbatim state:** HEAD `aabd36c81c38df2e24471c8a774eb249fea2535a`. evaluationGate `{status:passed,verdict:pass,reportPath:.atomic-skills/reviews/eval-diagramas-cifra-F2.md,at:aabd36c81c38df2e24471c8a774eb249fea2535a}`. Local close: `.atomic-skills/reviews/2026-09-23-diagramas-cifra-F2-close-local.md` counts critical 1. Cursor step F. Claude close retry in flight or empty (exit 142 first try).
-- **Uncommitted changes:** plan evaluationGate+lessons, F2 initiative handoff, lessons file, eval report, close-local review, cursor, decisions (checkpoint imediato).
+- **Narrative:** Operator chose fix-now. Dictionary grips that sound like a different chord are the blocker. Guitar 9 illegal cells, ukulele 55. They are chromatic copies of a simpler grip. Visual modal look stays F3. External review from here is Codex gpt-6-astra only, not Claude.
+- **Decision log:** review-disposition fix (5c5467d3). Do not phase-done and do not materialize F3 until the exhaustive oracle is green.
+- **Single nextAction:** F2-fix2 writer — exhaustive chord oracle, then replace illegal dictionary grips
+- **Verbatim state:** T-001 stays done. T-002 and T-003 reopened pending. Cursor redispatch F to C. Cause is copied grips, not the SVG fret axis and not the slash miss.
+- **Uncommitted changes:** none at handoff rewrite; state checkpoint follows.
