@@ -119,7 +119,12 @@ function characteristicCount(sounding: Set<number>, rootPc: number, tones: reado
 }
 
 /** File `{define}` keys may be absolute pitch classes; dictionary keys are intervals from the tonic. */
-export function pianoKeysToRelative(keys: number[], rootPc: number, quality: string): number[] {
+export function pianoKeysToRelative(
+  keys: number[],
+  rootPc: number,
+  quality: string,
+  bassPc: number | null = null,
+): number[] {
   const pcs = keys.map((k) => mod12(k))
   const intervals = pianoKeysOf(quality) ?? [0]
   const expected = intervals.map((iv) => mod12(rootPc + iv))
@@ -135,6 +140,13 @@ export function pianoKeysToRelative(keys: number[], rootPc: number, quality: str
   const asAbsolute = () => pcs.map((k) => mod12(k - rootPc))
   if (absScore > relScore) return asAbsolute()
   if (relScore > absScore) return pcs
+  // Score tie: a slash bass that sounds in only one reading picks that reading.
+  if (bassPc != null) {
+    const bass = mod12(bassPc)
+    const inAbs = absSet.has(bass)
+    const inRel = relSet.has(bass)
+    if (inAbs !== inRel) return inAbs ? asAbsolute() : pcs
+  }
   const tones = characteristicIntervals(quality, intervals)
   if (characteristicCount(relSet, rootPc, tones) > characteristicCount(absSet, rootPc, tones)) return pcs
   return asAbsolute()
