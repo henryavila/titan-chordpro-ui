@@ -1,18 +1,18 @@
 {
   "planSlug": "diagramas-cifra",
   "phaseId": "F2",
-  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix5",
-  "writerBranch": "impl/diagramas-cifra-F2-fix5",
-  "finishedAt": "2026-09-23T19:08:00.000Z",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix6",
+  "writerBranch": "impl/diagramas-cifra-F2-fix6",
+  "finishedAt": "2026-09-23T22:01:56.000Z",
   "tasks": [
     {
       "taskId": "T-002",
       "status": "claimed-pass",
       "commitShas": [
-        "fd09dba11c53adef3ca6427a3c437096ad33fd65"
+        "fb9e22885ba40667f55a2811c32cf91765422b1a"
       ],
-      "base": "f2355ac24737d380fa4f25342e600e1b33c58cb8",
-      "head": "fd09dba11c53adef3ca6427a3c437096ad33fd65",
+      "base": "4c1a21d8eee830a86144d56e31c3ad66e2ceb9d7",
+      "head": "fb9e22885ba40667f55a2811c32cf91765422b1a",
       "paths": [
         "src/core/chord-dict.ts",
         "src/core/define.ts",
@@ -21,7 +21,7 @@
       ],
       "verifierCommand": "pnpm exec vitest run tests/core/resolve-diagram.test.ts",
       "exitCode": 0,
-      "transcript": "pnpm exec vitest run tests/core/resolve-diagram.test.ts\n✓ tests/core/resolve-diagram.test.ts (26 tests) 9ms\nTest Files  1 passed (1)\nTests  26 passed (26)\nexit 0\n\npnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/export-cho.test.ts (6 tests) 4ms\n✓ tests/core/resolve-diagram.test.ts (26 tests) 8ms\n✓ tests/core/define-directive.test.ts (26 tests) 6ms\nTest Files  3 passed (3)\nTests  58 passed (58)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (26 tests) 10ms\n✓ tests/core/layout-capo.test.ts (18 tests) 10ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 69ms\nTest Files  3 passed (3)\nTests  56 passed (56)\nexit 0\n\n408-cell assertion stayed checked: 17 * 12 * 2. Guitar and ukulele packs were not edited. {define: D keys 0 4 7} +2 is name E keys [0, 4, 7] and draws E G# B. Untransposed D keys 0 4 7 still draws D F# A. {define: C keys 0 4 7} +2 stays name D keys [2, 6, 9] and draws D F# A. {define: B keys 11 3 6} +1 stays name C keys [0, 4, 7]. {define: C keys 48 52 55} +2 stays keys [50, 54, 57]."
+      "transcript": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/export-cho.test.ts (6 tests) 4ms\n✓ tests/core/resolve-diagram.test.ts (28 tests) 8ms\n✓ tests/core/define-directive.test.ts (28 tests) 6ms\nTest Files  3 passed (3)\nTests  62 passed (62)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (28 tests) 8ms\n✓ tests/core/layout-capo.test.ts (18 tests) 8ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 69ms\nTest Files  3 passed (3)\nTests  58 passed (58)\nexit 0\n\n408-cell count stayed 17 * 12 * 2. Guitar and ukulele packs were not edited. chord-dict.ts does not import define.ts. F7sus4 keys 0 5 10 still draws F A# D#; +2 stores G7sus4 keys [7, 0, 5] and draws G C F. Dsus2 keys 0 7 +3 stores Fsus2 keys [5, 0] and draws F C; −3 stores Dsus2 keys [2, 9] and draws D A. D keys 0 4 7 +2 is name E keys [4, 8, 11] and draws E G# B. C keys 0 4 7 +2 stays name D keys [2, 6, 9] and draws D F# A. B keys 11 3 6 +1 stays name C keys [0, 4, 7]. C keys 48 52 55 +2 stays keys [50, 54, 57]. D7M(9)/B keys [11, 2, 1, 4] still draws B D C# E."
     }
   ]
 }

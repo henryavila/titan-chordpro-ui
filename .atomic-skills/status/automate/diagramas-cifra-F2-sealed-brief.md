@@ -27,9 +27,9 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix5
-- **writerBranch:** impl/diagramas-cifra-F2-fix5
-- **baseRef:** f2355ac24737d380fa4f25342e600e1b33c58cb8
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix6
+- **writerBranch:** impl/diagramas-cifra-F2-fix6
+- **baseRef:** 4c1a21d8eee830a86144d56e31c3ad66e2ceb9d7
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (1)
@@ -91,7 +91,7 @@ Rules:
 
 Read and follow:
 
-`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix5/.atomic-skills/status/automate/diagramas-cifra-F2-fix5-contract.md`
+`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix6/.atomic-skills/status/automate/diagramas-cifra-F2-fix6-contract.md`
 
 T-002 only. One commit. Claimed-pass with that SHA.
 
