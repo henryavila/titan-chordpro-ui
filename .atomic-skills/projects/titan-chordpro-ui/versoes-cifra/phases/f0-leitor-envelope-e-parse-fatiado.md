@@ -191,9 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-Run a fresh `review-code --mode=both` on the product diff `eee2c7f..HEAD` (`src` and `tests` only) before any `done`.
-
-Review shape that worked on this machine (codex-cli 0.155.0): local sealed pass first (explore subagent, diff only, no commit messages, no intent, no fixes), then Codex on the **same** captured diff. Do not fix between the two passes. Command: `codex exec --model gpt-6-astra -c model_reasoning_effort=high --sandbox read-only --skip-git-repo-check --ephemeral --color never -o OUT - < BRIEF`. The model flag is two arguments. This CLI has no `-a never`. Pass 2 is informed, with verifiable constraints only. Persist under `.atomic-skills/reviews/`. If the new review is clean of blocker, critical, and major, continue the automate close: claim-bound `done`, evaluation agent, lessons ratify (operator), phase `review-code --mode=both`, decision-review PASS is operator-only, `audit-delivery` plus `deliveryAuditGate`, `assert-automate-gate --gate phase-done`, `phase-done`, then pause. If it is not clean, report in Portuguese and wait. Do not spawn another writer unless the operator again says to fix.
+The fresh `review-code --mode=both` of `eee2c7f..HEAD` (`src` and `tests` only) is done. Receipt `.atomic-skills/reviews/2026-09-23-versoes-cifra-f0-product-both.md`. Codex `gpt-6-astra` informed verdict `needs_changes`: 0 blocker, 0 critical, 2 major, 0 minor. Nothing dropped. Local leg: 0 blocker, 0 critical, 0 major, 2 minor. Host reproduced both majors: `storedTransposeSemis('{key:C}\n{transpose:2}\n{transpose:0}\n[C]uma')` returns 2 while `readMeta` stores `"0"`; `commitChartDocument` of `{title Uma}` or `{composer:Alguém}` leaves `readMeta` title and artist undefined. Do not `done`. Do not spawn a writer unless the operator says to fix (`corrigir agora` or `Fix all`). `accept` and `defer` are operator-only. No product edits in this review.
 
 ### Verbatim state
 
