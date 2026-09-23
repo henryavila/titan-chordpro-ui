@@ -27,27 +27,19 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix4
-- **writerBranch:** impl/diagramas-cifra-F2-fix4
-- **baseRef:** f446c146da35037246f596645e2efe0d26fc3c6e
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix5
+- **writerBranch:** impl/diagramas-cifra-F2-fix5
+- **baseRef:** f2355ac24737d380fa4f25342e600e1b33c58cb8
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
-### Tasks (2)
+### Tasks (1)
 
 #### T-002 — Dictionary + resolveDiagram
 - status: pending
-- paths: ["src/core/chord-dict.ts","src/core/resolve-diagram.ts","src/core/index.ts","tests/core/resolve-diagram.test.ts"]
+- paths: ["src/core/chord-dict.ts","src/core/resolve-diagram.ts","src/core/index.ts","tests/core/resolve-diagram.test.ts","src/core/define.ts","tests/core/define-directive.test.ts"]
 - scopeBoundary: ["No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA only; do not ship baritone; do not guess 7+."]
 - acceptance: ["resolveDiagram({ token, instrument, overrides }) prefers file override over dictionary; guitar token is shapeName; piano token is concert; miss reasons are unknown-token or no-shape; C7M hits maj7 voicing; C7+ is miss; one voicing per name (lowest open)"]
 - verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/resolve-diagram.test.ts","expectExitCode":0}
-- weight: 3
-
-#### T-003 — SVG draw guitar ukulele piano with capo
-- status: pending
-- paths: ["src/core/diagram-draw.ts","src/core/index.ts","tests/core/diagram-draw.test.ts"]
-- scopeBoundary: ["No Vue components; draw returns data or SVG string from core; do not pause auto-scroll here; do not open the modal."]
-- acceptance: ["Guitar/ukulele draw with capoFret 2 includes a capo bar and the label Capo 2; open string in the shape is at the capo, not the nut; piano draw ignores capoFret and lights concert keys; fingers 1-4 render when present, else dots only"]
-- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/diagram-draw.test.ts","expectExitCode":0}
 - weight: 3
 
 ## Claim report (required output)
@@ -95,13 +87,13 @@ Rules:
 3. Final message: summary of files changed, commit SHAs, claim report path, any blockers.
 4. Do not mark tasks done in YAML. Do not call done/phase-done.
 
-## Fix contract (authoritative for the code)
+## Fix contract
 
 Read and follow:
 
-`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix4/.atomic-skills/status/automate/diagramas-cifra-F2-fix4-contract.md`
+`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix5/.atomic-skills/status/automate/diagramas-cifra-F2-fix5-contract.md`
 
-T-003 may be skipped when diagram-draw needs no edit. T-002 must be claimed-pass with its own commit SHA.
+T-002 only. One commit. Claimed-pass with that SHA.
 
 ---
 sealed-brief: true

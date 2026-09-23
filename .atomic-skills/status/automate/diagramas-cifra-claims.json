@@ -1,39 +1,27 @@
 {
   "planSlug": "diagramas-cifra",
   "phaseId": "F2",
-  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix4",
-  "writerBranch": "impl/diagramas-cifra-F2-fix4",
-  "finishedAt": "2026-09-23T14:17:32.000Z",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix5",
+  "writerBranch": "impl/diagramas-cifra-F2-fix5",
+  "finishedAt": "2026-09-23T19:08:00.000Z",
   "tasks": [
     {
       "taskId": "T-002",
       "status": "claimed-pass",
       "commitShas": [
-        "b9b3780063e55eca564716f39a70b1c5e8a5bc23"
+        "fd09dba11c53adef3ca6427a3c437096ad33fd65"
       ],
-      "base": null,
-      "head": null,
+      "base": "f2355ac24737d380fa4f25342e600e1b33c58cb8",
+      "head": "fd09dba11c53adef3ca6427a3c437096ad33fd65",
       "paths": [
         "src/core/chord-dict.ts",
-        "src/core/resolve-diagram.ts",
+        "src/core/define.ts",
+        "tests/core/define-directive.test.ts",
         "tests/core/resolve-diagram.test.ts"
       ],
       "verifierCommand": "pnpm exec vitest run tests/core/resolve-diagram.test.ts",
       "exitCode": 0,
-      "transcript": "pnpm exec vitest run tests/core/resolve-diagram.test.ts\n✓ tests/core/resolve-diagram.test.ts (25 tests) 7ms\nTest Files  1 passed (1)\nTests  25 passed (25)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (25 tests) 9ms\n✓ tests/core/layout-capo.test.ts (18 tests) 8ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 67ms\nTest Files  3 passed (3)\nTests  55 passed (55)\nexit 0\n\n408-cell assertion stayed checked: 17 * 12 * 2. Guitar and ukulele packs were not edited. diagram-draw.ts was not edited. On a piano-key score tie, pianoKeysToRelative uses want.bassPc from fromDefine: D7M(9)/B keys [11, 2, 1, 4] draw lit [11, 2, 1, 4] and litNotes B D C# E. F7sus4 keys [0, 5, 10] still draw F A# D#."
-    },
-    {
-      "taskId": "T-003",
-      "status": "skipped",
-      "commitShas": [],
-      "base": null,
-      "head": null,
-      "paths": [
-        "tests/core/diagram-draw.test.ts"
-      ],
-      "verifierCommand": "pnpm exec vitest run tests/core/diagram-draw.test.ts",
-      "exitCode": 0,
-      "transcript": "pnpm exec vitest run tests/core/diagram-draw.test.ts\n✓ tests/core/diagram-draw.test.ts (12 tests) 67ms\nTest Files  1 passed (1)\nTests  12 passed (12)\nexit 0\n\nsrc/core/diagram-draw.ts was not edited and has no commit SHA. The slash-bass tie is decided in pianoKeysToRelative before drawPiano adds the token root."
+      "transcript": "pnpm exec vitest run tests/core/resolve-diagram.test.ts\n✓ tests/core/resolve-diagram.test.ts (26 tests) 9ms\nTest Files  1 passed (1)\nTests  26 passed (26)\nexit 0\n\npnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/export-cho.test.ts (6 tests) 4ms\n✓ tests/core/resolve-diagram.test.ts (26 tests) 8ms\n✓ tests/core/define-directive.test.ts (26 tests) 6ms\nTest Files  3 passed (3)\nTests  58 passed (58)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (26 tests) 10ms\n✓ tests/core/layout-capo.test.ts (18 tests) 10ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 69ms\nTest Files  3 passed (3)\nTests  56 passed (56)\nexit 0\n\n408-cell assertion stayed checked: 17 * 12 * 2. Guitar and ukulele packs were not edited. {define: D keys 0 4 7} +2 is name E keys [0, 4, 7] and draws E G# B. Untransposed D keys 0 4 7 still draws D F# A. {define: C keys 0 4 7} +2 stays name D keys [2, 6, 9] and draws D F# A. {define: B keys 11 3 6} +1 stays name C keys [0, 4, 7]. {define: C keys 48 52 55} +2 stays keys [50, 54, 57]."
     }
   ]
 }
