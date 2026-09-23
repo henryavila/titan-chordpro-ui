@@ -15,6 +15,7 @@ import {
   hasSongDuration,
   inferWrittenKey,
   commitChartDocument,
+  lintSource,
   storedTransposeSemis,
   isParseFatal,
   keyIndex,
@@ -988,7 +989,8 @@ const dirty = computed(() => {
 })
 const lint = computed(() => {
   rev.value
-  return session.lint()
+  // Pane and edit dock follow the chart document, not a sibling block.
+  return lintSource(parsed.value.source)
 })
 const canUndo = computed(() => {
   rev.value

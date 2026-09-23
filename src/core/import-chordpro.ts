@@ -428,19 +428,21 @@ function soundPatchOf(meta: ChartMeta): ChartMeta {
 /**
  * Rewrites meta. Two-arg one-chart still replaces the canonical header.
  * N>1 without `target`: song identity stays in the song header; sound keys
- * on the patch go to the default chart and are not hoisted. Pass `{ target }` to aim.
+ * on the patch go to the chart that was already default, not the id
+ * `{x_chart_default}` selects in the same patch. Pass `{ target }` to aim.
  * `{x_chart_default}` updates the song header when the patch includes it, and
  * a patch that omits it leaves the header value in place.
  */
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
   if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
   if (opts?.target === 'song') return writeSongScopedMeta(source, meta)
-  if (!splitCho(source).hasEnvelope) return writeMetaOneHeader(source, meta)
+  const split = splitCho(source)
+  if (!split.hasEnvelope) return writeMetaOneHeader(source, meta)
   const song = songPatchOf(meta)
   const sound = soundPatchOf(meta)
   const withSong = Object.keys(song).length ? writeSongScopedMeta(source, song) : source
   if (!Object.keys(sound).length) return withSong
-  return writeChartScopedMeta(withSong, sound, splitCho(withSong).defaultId)
+  return writeChartScopedMeta(withSong, sound, split.defaultId)
 }
 
 /**

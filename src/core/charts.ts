@@ -361,6 +361,9 @@ function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string
     const key = k as MetaKey
     const v = (patch[k] ?? '').trim()
     if (v) next[key] = v
+    // Deleting an explicit empty `{x_chart_default}` looks like an omit, and
+    // writeMetaOneHeader then keeps the line already in the file.
+    else if (key === 'x_chart_default') next[key] = ''
     else delete next[key]
   }
   return writeMetaOneHeader(source, next)
@@ -457,7 +460,7 @@ export function replaceChart(file: string, chartId: string, doc: string): string
     if (d && isEnvelopeName(d.name)) continue
     body.push(line)
   }
-  while (body.length && !body[0]!.trim()) body.shift()
+  // A blank line at the top of the chart body is content. Do not strip it.
 
   const hasLabel = body.some((line) => dirOf(line)?.name === 'x_chart_label')
   const labelLine = !hasLabel && chart.label ? `{x_chart_label:${chart.label}}` : null
