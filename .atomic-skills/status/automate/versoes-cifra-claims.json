@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix5",
-  "writerBranch": "impl/versoes-cifra-F0-fix5",
-  "finishedAt": "2026-09-23T18:56:12Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix6",
+  "writerBranch": "impl/versoes-cifra-F0-fix6",
+  "finishedAt": "2026-09-23T19:13:23Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -16,9 +16,9 @@
         "src/core/index.ts",
         "tests/core/charts-envelope.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  4 passed (4)\nTests  95 passed (95)"
+      "transcript": "Test Files  6 passed (6)\nTests  148 passed (148)"
     },
     {
       "taskId": "T-002",
@@ -32,31 +32,25 @@
         "src/core/parse.ts",
         "tests/core/charts-envelope.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  4 passed (4)\nTests  95 passed (95)"
+      "transcript": "Test Files  6 passed (6)\nTests  148 passed (148)"
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["2f985e519a552b350ef82557453e0febaad7e4ab"],
+      "commitShas": ["ee20a83038960a080a84afbd1eb000d490801aa1"],
       "base": null,
       "head": null,
       "paths": [
-        "src/core/audio-url.ts",
         "src/core/charts.ts",
         "src/core/import-chordpro.ts",
-        "src/core/index.ts",
         "src/vue/ChordproViewer.vue",
-        "src/vue/edit/MetaDialog.vue",
-        "tests/core/audio-url.test.ts",
-        "tests/core/charts-envelope.test.ts",
-        "tests/vue/block-edit-ui.test.ts",
-        "tests/vue/meta-dialog.test.ts"
+        "tests/core/charts-envelope.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  4 passed (4)\nTests  95 passed (95)"
+      "transcript": "Test Files  6 passed (6)\nTests  148 passed (148)"
     }
   ]
 }
