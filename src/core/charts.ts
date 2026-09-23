@@ -135,7 +135,7 @@ export function canonicalMetaKey(k: string): MetaKey | null {
   return META_ALIAS[lower] ?? null
 }
 
-export function readMeta(source: string): ChartMeta {
+function readMetaLines(source: string): ChartMeta {
   const meta: ChartMeta = {}
   String(source ?? '')
     .split('\n')
@@ -150,6 +150,17 @@ export function readMeta(source: string): ChartMeta {
       if (exact || meta[canon] === undefined) meta[canon] = v
     })
   return meta
+}
+
+/**
+ * No envelope: the whole file, same as before.
+ * With `{start_of_x_chart}`: song identity plus the default chart only.
+ * A later sibling `{key:}` or audio line must not win.
+ */
+export function readMeta(source: string): ChartMeta {
+  const text = String(source ?? '')
+  if (!splitCho(text).hasEnvelope) return readMetaLines(text)
+  return readMetaLines(chartDocument(text))
 }
 
 export function splitCho(source: string): SplitCho {

@@ -395,8 +395,9 @@ export function readStrumPatterns(source: string): StrumPatternSet {
  */
 export function writeStrumPatterns(source: string, set: StrumPatternSet): string {
   const cur: ChartMeta = { ...readMeta(source) }
-  delete cur.x_strum
-  delete cur.x_strum_set
+  // Present empty keys still clear; delete would drop them from a two-arg patch.
+  cur.x_strum = ''
+  cur.x_strum_set = ''
   const fields = metaFromStrumSet(set)
   if (fields.x_strum) cur.x_strum = fields.x_strum
   if (fields.x_strum_set) cur.x_strum_set = fields.x_strum_set

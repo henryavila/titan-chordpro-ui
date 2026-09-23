@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { chartDocument, readMeta } from '../../src/core/charts'
 import { listCharts, parse, replaceChart, rewriteToKey, writeMeta } from '../../src/core/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -318,6 +319,51 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
     expect(oferta).not.toContain('{key:D}')
     expect(parse(out, { chartId: 'completa' }).meta.key).toBe('D')
     expect(parse(out, { chartId: 'oferta' }).meta.key).toBe('C')
+  })
+
+  it('readMeta is the default chart, so a spread write does not copy the sibling key', () => {
+    const source = `{title:Uma}
+{x_chart_default:completa}
+
+{start_of_x_chart:completa}
+{key:G}
+{x_audio_sung:https://cdn.example/g.m4a}
+[G]completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{key:C}
+{x_audio_sung:https://cdn.example/c.m4a}
+[C]oferta
+{end_of_x_chart}
+`
+    expect(readMeta(source).key).toBe('G')
+    expect(readMeta(source).x_audio_sung).toBe('https://cdn.example/g.m4a')
+    expect(readMeta(source)).toEqual(readMeta(chartDocument(source)))
+    expect(readMeta(TWO_CHART_SOURCE)).toEqual(readMeta(chartDocument(TWO_CHART_SOURCE)))
+    expect(readMeta(TWO_CHART_SOURCE)).toMatchObject({
+      title: 'Uma',
+      artist: 'Alguém',
+      key: 'C',
+      duration: '02:00',
+    })
+    const plain = '{title:Uma}\n{key:G}\n{key:D}\n[G]letra'
+    expect(readMeta(plain).key).toBe('D')
+
+    const out = writeMeta(source, { ...readMeta(source), duration: '01:11' })
+    const completa = chartBlock(out, 'completa')
+    const oferta = chartBlock(out, 'oferta')
+    expect(completa).toContain('{key:G}')
+    expect(completa).not.toContain('{key:C}')
+    expect(completa).toContain('{duration:01:11}')
+    expect(completa).toContain('{x_audio_sung:https://cdn.example/g.m4a}')
+    expect(oferta).toContain('{key:C}')
+    expect(oferta).toContain('{x_audio_sung:https://cdn.example/c.m4a}')
+    expect(oferta).not.toContain('{key:G}')
+    expect(oferta).not.toContain('{duration:')
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).not.toMatch(/\{key:/)
+    expect(header).toContain('{title:Uma}')
   })
 
   it('a later canonical sound key wins over an earlier alias on a duration-only write', () => {
