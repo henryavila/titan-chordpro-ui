@@ -1,13 +1,19 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 3,
-  "updatedAt": "2026-09-23T14:08:29.326Z",
+  "redispatchCount": 4,
+  "updatedAt": "2026-09-23T14:15:10.344Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
       "reason": "operator 2026-09-23: prossiga até o término da implementação de todo o plano; fix F-002 replaceChart identity deletion plus F-003 regression test before done",
       "priorCount": 2,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-23T14:15:10.344Z",
+      "reason": "operator 2026-09-23: prossiga até o término da implementação de todo o plano; local review critical is in-scope readMeta last-wins copying sibling sound onto the default chart",
+      "priorCount": 3,
       "gate": "spawn"
     }
   ],
