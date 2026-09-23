@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-writer",
-  "writerBranch": "impl/versoes-cifra-F0-writer",
-  "finishedAt": "2026-09-23T12:39:01Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix3",
+  "writerBranch": "impl/versoes-cifra-F0-fix3",
+  "finishedAt": "2026-09-23T14:06:56Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -11,14 +11,10 @@
       "commitShas": ["275abe489d77d53c88d0d0e8a4207619b044edaa"],
       "base": null,
       "head": null,
-      "paths": [
-        "src/core/charts.ts",
-        "src/core/index.ts",
-        "tests/core/charts-envelope.test.ts"
-      ],
+      "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "✓ tests/core/charts-envelope.test.ts (13 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Start at  21:36:45\n   Duration  309ms (transform 98ms, setup 11ms, import 108ms, tests 5ms, environment 129ms)"
+      "transcript": "Existing T-001 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix3: 23 tests passed, exit 0."
     },
     {
       "taskId": "T-002",
@@ -26,30 +22,21 @@
       "commitShas": ["b59b3b3730bb033e96b35d088b9c2dcb29508dcc"],
       "base": null,
       "head": null,
-      "paths": [
-        "src/core/parse.ts",
-        "src/core/charts.ts",
-        "src/core/index.ts",
-        "tests/core/charts-envelope.test.ts"
-      ],
+      "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "✓ tests/core/charts-envelope.test.ts (13 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Start at  21:36:45\n   Duration  309ms (transform 98ms, setup 11ms, import 108ms, tests 5ms, environment 129ms)"
+      "transcript": "Existing T-002 commit left untouched. Verifier re-run on impl/versoes-cifra-F0-fix3: 23 tests passed, exit 0."
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["82370fbb6f5973ed47535f968074e68769e71fcc"],
+      "commitShas": ["0b182590dcf6026d97bf05f5c882413d25842de9"],
       "base": null,
       "head": null,
-      "paths": [
-        "src/core/charts.ts",
-        "src/core/import-chordpro.ts",
-        "tests/core/charts-envelope.test.ts"
-      ],
+      "paths": ["src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "✓ tests/core/charts-envelope.test.ts (22 tests) 6ms\n\n Test Files  1 passed (1)\n      Tests  22 passed (22)\n   Start at  09:38:38\n   Duration  311ms (transform 100ms, setup 13ms, import 108ms, tests 6ms, environment 129ms)"
+      "transcript": "replaceChart now clears omitted title, subtitle, artist, x_source, and x_youtube on an enveloped file and leaves x_chart_default plus the sibling chart. Regression covers the omitted artist. readKeyed already matched readMeta; the duration-only alias/exact test stayed green, so import-chordpro.ts was not edited. 23 tests passed, exit 0."
     }
   ]
 }
