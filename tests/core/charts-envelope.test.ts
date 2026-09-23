@@ -212,6 +212,53 @@ describe('writeMeta target and replaceChart', () => {
     expect(kept).toContain('corpo da completa')
     expect(kept).not.toContain('corpo da oferta')
   })
+
+  it('replaceChart drops omitted song identity and keeps x_chart_default', () => {
+    const file = `{title:Uma}
+{subtitle:Sub}
+{artist:Alguém}
+{x_source:https://example.test/a}
+{x_youtube:abcdefghijk}
+{x_chart_default:oferta}
+
+{start_of_x_chart:completa}
+{x_chart_label:Completa}
+{key:G}
+{duration:04:26}
+[G]corpo da completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{x_chart_label:Oferta}
+{key:C}
+{duration:02:00}
+[C]corpo da oferta
+{end_of_x_chart}
+`
+    const doc = `{title:Nova}\n{key:D}\n[D]nova oferta`
+    const out = replaceChart(file, 'oferta', doc)
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).toContain('{title:Nova}')
+    expect(header).not.toContain('{title:Uma}')
+    expect(header).not.toMatch(/\{subtitle:/)
+    expect(header).not.toMatch(/\{artist:/)
+    expect(header).not.toContain('Alguém')
+    expect(header).not.toMatch(/\{x_source:/)
+    expect(header).not.toMatch(/\{x_youtube:/)
+    expect(header).toContain('{x_chart_default:oferta}')
+    const completa = chartBlock(out, 'completa')
+    const oferta = chartBlock(out, 'oferta')
+    expect(completa).toContain('{key:G}')
+    expect(completa).toContain('{duration:04:26}')
+    expect(completa).toContain('[G]corpo da completa')
+    expect(oferta).toContain('{key:D}')
+    expect(oferta).toContain('[D]nova oferta')
+    expect(oferta).not.toContain('corpo da oferta')
+    expect(oferta).not.toContain('{key:C}')
+    expect(parse(out, { chartId: 'completa' }).meta.key).toBe('G')
+    expect(parse(out, { chartId: 'oferta' }).meta.artist).toBeUndefined()
+    expect(parse(out, { chartId: 'oferta' }).meta.title).toBe('Nova')
+  })
 })
 
 /** Default chart is `completa`, not the first block's sibling. */
