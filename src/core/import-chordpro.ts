@@ -13,10 +13,13 @@
  */
 
 import {
+  CHART_SOUND_KEYS,
   META_KEYS,
   SONG_META_KEYS,
   canonicalMetaKey,
+  chartDocument,
   readMeta,
+  replaceChart,
   splitCho,
   writeChartScopedMeta,
   writeMetaOneHeader,
@@ -414,16 +417,28 @@ function songPatchOf(meta: ChartMeta): ChartMeta {
   return patch
 }
 
+function soundPatchOf(meta: ChartMeta): ChartMeta {
+  const patch: ChartMeta = {}
+  for (const k of CHART_SOUND_KEYS) {
+    if (meta[k] !== undefined) patch[k] = meta[k]
+  }
+  return patch
+}
+
 /**
  * Rewrites meta. Two-arg one-chart still replaces the canonical header.
- * N>1 without `target` only patches song identity — it does not flatten
- * `{key:}` / `{duration:}` out of chart blocks. Pass `{ target }` to aim.
+ * N>1 without `target`: song identity stays in the song header; sound keys
+ * on the patch go to the default chart and are not hoisted. Pass `{ target }` to aim.
  */
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
   if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
   if (opts?.target === 'song') return writeSongScopedMeta(source, meta)
-  if (splitCho(source).hasEnvelope) return writeSongScopedMeta(source, songPatchOf(meta))
-  return writeMetaOneHeader(source, meta)
+  if (!splitCho(source).hasEnvelope) return writeMetaOneHeader(source, meta)
+  const song = songPatchOf(meta)
+  const sound = soundPatchOf(meta)
+  const withSong = Object.keys(song).length ? writeSongScopedMeta(source, song) : source
+  if (!Object.keys(sound).length) return withSong
+  return writeChartScopedMeta(withSong, sound, splitCho(withSong).defaultId)
 }
 
 /**
@@ -504,9 +519,19 @@ export type RewriteToKeyResult = {
  * Move the written chords to `targetKey` and store `{transpose:N}` so the
  * sounding/playing pitch stays where it was. A `{capo:}` that only encoded
  * that same gap is dropped. Does not invent chords — semitone rewrite only.
+ * Named charts: only the default chart is rewritten; siblings stay put.
  */
 export function rewriteToKey(source: string, targetKey: string): RewriteToKeyResult | null {
   const src = String(source ?? '')
+  const split = splitCho(src)
+  if (!split.hasEnvelope) return rewriteOneChartToKey(src, targetKey)
+  const rewritten = rewriteOneChartToKey(chartDocument(src), targetKey)
+  if (!rewritten) return null
+  const out = replaceChart(src, split.defaultId, rewritten.source)
+  return { ...rewritten, source: out, changed: out !== src }
+}
+
+function rewriteOneChartToKey(src: string, targetKey: string): RewriteToKeyResult | null {
   const to = targetKey.trim()
   if (!/^[A-G](?:#|b)?m?$/.test(to)) return null
   const meta = readMeta(src)
