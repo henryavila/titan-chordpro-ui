@@ -307,7 +307,7 @@ describe('resolveDiagram', () => {
     expect(plainDraw.litNotes).toEqual(['D', 'F#', 'A'])
 
     const shifted = transposeDefine(raw, 2, false)
-    expect(shifted).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+    expect(shifted).toMatchObject({ name: 'E', keys: [4, 8, 11] })
     if (!shifted) return
     const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
     expect(hit.class).toBe('hit')
@@ -330,6 +330,61 @@ describe('resolveDiagram', () => {
     expect(cDraw.kind).toBe('piano')
     if (cDraw.kind !== 'piano') return
     expect(cDraw.litNotes).toEqual(['D', 'F#', 'A'])
+  })
+
+  it('draws F7sus4 and its +2 transpose from the same relative reading', () => {
+    const raw = parseDefineDirective('{define: F7sus4 keys 0 5 10}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const plain = resolveDiagram({ token: 'F7sus4', instrument: 'piano', overrides: [raw] })
+    expect(plain.class).toBe('hit')
+    if (plain.class !== 'hit') return
+    const plainDraw = drawDiagram({ instrument: 'piano', voicing: plain.voicing, token: 'F7sus4' })
+    expect(plainDraw.kind).toBe('piano')
+    if (plainDraw.kind !== 'piano') return
+    expect(plainDraw.lit).toEqual([5, 10, 3])
+    expect(plainDraw.litNotes).toEqual(['F', 'A#', 'D#'])
+
+    const shifted = transposeDefine(raw, 2, false)
+    expect(shifted).toMatchObject({ name: 'G7sus4', keys: [7, 0, 5] })
+    if (!shifted) return
+    const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: shifted.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([7, 0, 5])
+    expect(draw.litNotes).toEqual(['G', 'C', 'F'])
+  })
+
+  it('round-trips Dsus2 keys 0 7 through +3 and back to D A', () => {
+    const raw = parseDefineDirective('{define: Dsus2 keys 0 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const up = transposeDefine(raw, 3, false)
+    expect(up).toMatchObject({ name: 'Fsus2', keys: [5, 0] })
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.lit).toEqual([5, 0])
+    expect(upDraw.litNotes).toEqual(['F', 'C'])
+
+    const back = transposeDefine(up, -3, false)
+    expect(back).toMatchObject({ name: 'Dsus2', keys: [2, 9] })
+    if (!back) return
+    const backHit = resolveDiagram({ token: back.name, instrument: 'piano', overrides: [back] })
+    expect(backHit.class).toBe('hit')
+    if (backHit.class !== 'hit') return
+    const backDraw = drawDiagram({ instrument: 'piano', voicing: backHit.voicing, token: back.name })
+    expect(backDraw.kind).toBe('piano')
+    if (backDraw.kind !== 'piano') return
+    expect(backDraw.lit).toEqual([2, 9])
+    expect(backDraw.litNotes).toEqual(['D', 'A'])
   })
 })
 

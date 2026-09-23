@@ -254,11 +254,28 @@ describe('transposeDefine', () => {
     expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'D', keys: [50, 54, 57] })
   })
 
-  it('keeps relative piano intervals when they outscore pitch classes', () => {
+  it('stores shifted sounding pitch classes for a relative piano spelling', () => {
     const r = parseDefineDirective('{define: D keys 0 4 7}')
     expect(r.class).toBe('parse')
     if (r.class !== 'parse') return
-    expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+    expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'E', keys: [4, 8, 11] })
+  })
+
+  it('stores the sounding classes of a relative tie, not the shifted intervals', () => {
+    const r = parseDefineDirective('{define: F7sus4 keys 0 5 10}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'G7sus4', keys: [7, 0, 5] })
+  })
+
+  it('round-trips a relative sus2 through absolute pitch classes', () => {
+    const r = parseDefineDirective('{define: Dsus2 keys 0 7}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    const up = transposeDefine(r, 3, false)
+    expect(up).toMatchObject({ name: 'Fsus2', keys: [5, 0] })
+    if (!up) return
+    expect(transposeDefine(up, -3, false)).toMatchObject({ name: 'Dsus2', keys: [2, 9] })
   })
 })
 
