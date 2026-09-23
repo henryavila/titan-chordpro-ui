@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listCharts, parse, replaceChart, writeMeta } from '../../src/core/index'
+import { listCharts, parse, replaceChart, rewriteToKey, writeMeta } from '../../src/core/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /** Minimal N>1 envelope — not an SDA chart. */
@@ -161,14 +161,17 @@ describe('writeMeta target and replaceChart', () => {
     expect(out.split('\n').slice(0, 2)).toEqual(['{title:Novo}', '{key:G}'])
   })
 
-  it('two-arg writeMeta on N>1 does not flatten chart key and duration into the song header', () => {
+  it('two-arg writeMeta on N>1 puts sound keys on the default chart, not the song header', () => {
     const out = writeMeta(TWO_CHART_SOURCE, { title: 'X', key: 'A' })
     expect(out).toContain('{title:X}')
-    expect(out).not.toMatch(/\{key:A\}/)
-    expect(parse(out, { chartId: 'oferta' }).meta.key).toBe('C')
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).not.toMatch(/\{key:/)
+    expect(parse(out, { chartId: 'oferta' }).meta.key).toBe('A')
     expect(parse(out, { chartId: 'completa' }).meta.key).toBe('G')
     expect(out).toContain('{duration:04:26}')
     expect(out).toContain('{duration:02:00}')
+    expect(out).toContain('[C]corpo da oferta')
+    expect(out).toContain('[G]corpo da completa')
   })
 
   it('song target on a one-chart file rewrites title and keeps sound keys', () => {
@@ -208,6 +211,97 @@ describe('writeMeta target and replaceChart', () => {
     expect(kept).toContain('{start_of_x_chart:completa}')
     expect(kept).toContain('corpo da completa')
     expect(kept).not.toContain('corpo da oferta')
+  })
+})
+
+/** Default chart is `completa`, not the first block's sibling. */
+const DEFAULT_COMPLETA = `{title:Uma}
+{x_chart_default:completa}
+
+{start_of_x_chart:completa}
+{key:G}
+[G]completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{key:C}
+[C]oferta
+{end_of_x_chart}
+`
+
+function chartBlock(source: string, id: string): string {
+  const start = source.indexOf(`{start_of_x_chart:${id}}`)
+  const end = source.indexOf('{end_of_x_chart}', start)
+  return source.slice(start, end === -1 ? source.length : end)
+}
+
+describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
+  it('rewrites only the default chart into the target key', () => {
+    const result = rewriteToKey(DEFAULT_COMPLETA, 'A')
+    expect(result).not.toBeNull()
+    const out = result!.source
+    expect(result).toEqual(expect.objectContaining({ changed: true, from: 'G', to: 'A' }))
+    const completa = chartBlock(out, 'completa')
+    const oferta = chartBlock(out, 'oferta')
+    expect(completa).toContain('{key:A}')
+    expect(completa).toContain('[A]completa')
+    expect(completa).not.toContain('{key:G}')
+    expect(completa).not.toContain('[G]')
+    expect(oferta).toContain('{key:C}')
+    expect(oferta).toContain('[C]oferta')
+    expect(oferta).not.toContain('[D]')
+    expect(oferta).not.toContain('{transpose:')
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).not.toMatch(/\{key:/)
+    expect(header).not.toMatch(/\{transpose:/)
+    expect(parse(out, { chartId: 'completa' }).meta.key).toBe('A')
+    expect(parse(out, { chartId: 'oferta' }).meta.key).toBe('C')
+  })
+
+  it('writeMeta without target updates only the default chart key', () => {
+    const out = writeMeta(DEFAULT_COMPLETA, { key: 'D' })
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).not.toContain('{key:')
+    const completa = chartBlock(out, 'completa')
+    const oferta = chartBlock(out, 'oferta')
+    expect(completa).toContain('{key:D}')
+    expect(completa).toContain('[G]completa')
+    expect(oferta).toContain('{key:C}')
+    expect(oferta).toContain('[C]oferta')
+    expect(oferta).not.toContain('{key:D}')
+    expect(parse(out, { chartId: 'completa' }).meta.key).toBe('D')
+    expect(parse(out, { chartId: 'oferta' }).meta.key).toBe('C')
+  })
+
+  it('a later canonical sound key wins over an earlier alias on a duration-only write', () => {
+    const src = `{x_chart_default:completa}
+{start_of_x_chart:completa}
+{x_audio:old}
+{x_audio_sung:current}
+{key:C}
+{key:D}
+[G]z
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{x_audio_sung:other}
+[C]o
+{end_of_x_chart}
+`
+    const out = writeMeta(src, { duration: '01:30' })
+    const completa = chartBlock(out, 'completa')
+    const oferta = chartBlock(out, 'oferta')
+    expect(completa).toContain('{x_audio_sung:current}')
+    expect(completa).not.toContain('old')
+    expect(completa).toContain('{key:D}')
+    expect(completa).not.toContain('{key:C}')
+    expect(completa).toContain('{duration:01:30}')
+    expect(oferta).toContain('{key:C}')
+    expect(oferta).toContain('{x_audio_sung:other}')
+    expect(oferta).not.toContain('{duration:')
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).not.toContain('{duration:')
+    expect(header).not.toContain('{key:')
   })
 })
 

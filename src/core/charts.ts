@@ -277,12 +277,15 @@ function linesOf(text: string): string[] {
 
 function readKeyed(text: string, which: 'song' | 'chart'): Record<string, string> {
   const out: Record<string, string> = {}
+  const keys = which === 'song' ? SONG_META_KEYS : CHART_SOUND_KEYS
+  const resolve = which === 'song' ? songMetaKey : chartSoundKey
   for (const line of text.split('\n')) {
     const d = dirOf(line)
     if (!d) continue
-    const canon = which === 'song' ? songMetaKey(d.name) : chartSoundKey(d.name)
-    if (!canon || out[canon] !== undefined) continue
-    out[canon] = d.value
+    const canon = resolve(d.name)
+    if (!canon) continue
+    const exact = (keys as readonly string[]).includes(d.name)
+    if (exact || out[canon] === undefined) out[canon] = d.value
   }
   return out
 }
