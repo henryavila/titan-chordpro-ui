@@ -3,7 +3,9 @@
  * not package dictionary. Generic `{define:}` infers instrument from payload.
  */
 
-import { transposeToken } from './transpose'
+import { pianoChordToneScores } from './chord-dict'
+import { parseChordToken } from './parse-chord'
+import { keyIndex, transposeToken } from './transpose'
 
 export const DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/
 
@@ -172,15 +174,32 @@ export function serializeDefine(def: ChordDefine): string {
   return `{${body}}`
 }
 
+function isPitchClass(k: number): boolean {
+  return k >= 0 && k <= 11
+}
+
 function shiftKey(k: number, n: number): number {
-  if (k >= 0 && k <= 11) return (((k + n) % 12) + 12) % 12
+  if (isPitchClass(k)) return (((k + n) % 12) + 12) % 12
   return k + n
+}
+
+/** Interval spelling: every key is 0–11 and the relative reading strictly outscores pitch classes. */
+function keepRelativeKeys(def: ChordDefine): boolean {
+  const keys = def.keys
+  if (!keys?.length || !keys.every(isPitchClass)) return false
+  const parsed = parseChordToken(def.name)
+  if (parsed.class !== 'parse') return false
+  const rootPc = keyIndex(parsed.root)
+  if (rootPc === null) return false
+  const { absScore, relScore } = pianoChordToneScores(keys, rootPc, parsed.quality)
+  return relScore > absScore
 }
 
 /**
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
- * string is open (fret 0) or the new base would fall below 1. Piano: add n
- * to each key (mod 12 when the value is a 0–11 pitch-class).
+ * string is open (fret 0) or the new base would fall below 1. Piano pitch
+ * classes add n, unless the keys are a relative spelling — then they stay.
+ * MIDI keys add n and do not wrap.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
@@ -191,7 +210,9 @@ export function transposeDefine(def: ChordDefine, n: number, flats: boolean): Ch
     if (base < 1) return null
     next.baseFret = base
   }
-  if (def.keys?.length) next.keys = def.keys.map((k) => shiftKey(k, n))
+  if (def.keys?.length) {
+    next.keys = keepRelativeKeys(def) ? [...def.keys] : def.keys.map((k) => shiftKey(k, n))
+  }
   return next
 }
 
