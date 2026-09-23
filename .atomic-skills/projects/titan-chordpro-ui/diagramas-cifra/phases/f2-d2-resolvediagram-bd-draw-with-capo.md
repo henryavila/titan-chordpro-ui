@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: Astra re-review of the transpose reading still needs changes (Dsus2 +5); do not start F3
+nextAction: fix Dsus2 +5 piano transpose (Gsus2 keys 7 2 must light G D); do not start F3
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -174,8 +174,10 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F7sus4 +2 and Dsus2 +3 now draw the shifted notes. Codex re-review of 4c1a21d..fb9e228 kept 1 major: Dsus2 +5 stores Gsus2 keys 7 2 and lights D A, not G D. F3 is not started.
-- **Decision log:** task close follows the Astra approval 2026-09-23-1122.
-- **Single nextAction:** Astra re-review of the transpose reading still needs changes (Dsus2 +5); do not start F3
-- **Verbatim state:** Cursor step E. lastAssert gate done ok. verifiedCommit b30690c8b98fc64e7c09a1d450e56c14304fa364.
-- **Uncommitted changes:** task close, local review, complex receipts.
+- **Narrative:** F2 is open. Dictionary identity for 17 qualities × 12 roots × guitar and ukulele is green (408 cells). Piano `{define}` transpose is not done. Codex Astra (`gpt-6-astra` only; do not send reviews to Claude) reviewed `4c1a21d..fb9e228` and kept 1 major. F3 modal and phone look stay out. Known-miss list (m7(11) and slash) stays deferred to F3 by operator choice.
+- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Latest review receipt: `.atomic-skills/reviews/2026-09-23-1906-diagramas-cifra-f2-transpose-reading-codex.md` (needs_changes, 1 major, 0 critical).
+- **Single nextAction:** fix Dsus2 +5 piano transpose (Gsus2 keys 7 2 must light G D); do not start F3
+- **Open bug:** `{define: Dsus2 keys 0 7}` plus 5 semitones becomes `{define: Gsus2 keys 7 2}`. Both readings score two sus2 tones. The characteristic second makes the resolver treat `7 2` as intervals, so the draw lights D and A (pcs 2, 9), not G and D (pcs 7, 2). Minus 5 then does not restore D and A. The same class was fixed for F7sus4 `0 5 10` +2 (now G, C, F) and Dsus2 `0 7` +3 (now F, C, and −3 returns D, A). Storing shifted sounding pitch classes is not enough when the new root re-reads them as intervals. `transposeDefine` is in `src/core/define.ts`. The shared reading is `pianoSoundingPitchClasses` in `src/core/chord-dict.ts`. `drawPiano` adds the root back.
+- **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 draws E G# B. C `0 4 7` +2 is still D keys `2 6 9`. B `11 3 6` +1 is still C keys `0 4 7`. MIDI `48 52 55` +2 is still `50 54 57`. F7sus4 untransposed still draws F A# D#. D7M(9)/B keys `11 2 1 4` still draws B D C# E. No Vue in core.
+- **Verbatim state:** HEAD `394564f03d1f42ceb00a71b5a6f24727f9539766` on `plan/diagramas-cifra`. Product fix commit `fb9e22885ba40667f55a2811c32cf91765422b1a`, merge `39f2370`. Cursor `.atomic-skills/status/automate/diagramas-cifra.json` step D.5, phaseId F2, redispatchCount 6 (next code writer needs `operatorOverride`; do not hand-edit the count down). T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Last host verifier: define + resolve + export-cho + layout-capo + diagram-draw = 92 tests, exit 0, before the +5 finding. Worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`.
+- **Uncommitted changes:** none at this handoff. Next session starts from a clean tree.
