@@ -13,6 +13,12 @@
  */
 
 import {
+  SONG_META_KEYS,
+  splitCho,
+  writeChartScopedMeta,
+  writeSongScopedMeta,
+} from './charts'
+import {
   isLegalStrumPattern,
   parseXStrum,
   patternFromCc,
@@ -440,11 +446,16 @@ export function writeStrumPatterns(source: string, set: StrumPatternSet): string
   return writeMeta(source, cur)
 }
 
+export type WriteMetaOpts = {
+  target?: 'song' | 'chart'
+  chartId?: string
+}
+
 /**
- * Rewrites the header: the known keys leave the body and come back on top, in
+ * One-chart header rewrite: known keys leave the body and come back on top, in
  * the canonical order. No two `{key:}` lines competing.
  */
-export function writeMeta(source: string, meta: ChartMeta): string {
+function writeMetaOneHeader(source: string, meta: ChartMeta): string {
   const body = String(source ?? '')
     .split('\n')
     .filter((l) => {
@@ -457,6 +468,27 @@ export function writeMeta(source: string, meta: ChartMeta): string {
     (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
   )
   return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
+}
+
+function songPatchOf(meta: ChartMeta): ChartMeta {
+  const patch: ChartMeta = {}
+  for (const k of SONG_META_KEYS) {
+    if (k === 'x_chart_default') continue
+    if (meta[k] !== undefined) patch[k] = meta[k]
+  }
+  return patch
+}
+
+/**
+ * Rewrites meta. Two-arg one-chart still replaces the canonical header.
+ * N>1 without `target` only patches song identity — it does not flatten
+ * `{key:}` / `{duration:}` out of chart blocks. Pass `{ target }` to aim.
+ */
+export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
+  if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
+  if (opts?.target === 'song') return writeSongScopedMeta(source, meta)
+  if (splitCho(source).hasEnvelope) return writeSongScopedMeta(source, songPatchOf(meta))
+  return writeMetaOneHeader(source, meta)
 }
 
 /**

@@ -35,7 +35,7 @@ export {
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export type { ParseOpts } from './parse'
-export { listCharts } from './charts'
+export { listCharts, replaceChart } from './charts'
 export type { ChartInfo } from './charts'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
@@ -259,6 +259,7 @@ export type {
   KeyRewriteOffer,
   MetaKey,
   RewriteToKeyResult,
+  WriteMetaOpts,
 } from './import-chordpro'
 export {
   formatXStrumSet,
