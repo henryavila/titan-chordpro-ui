@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { chartDocument, readMeta } from '../../src/core/charts'
-import { listCharts, parse, replaceChart, rewriteToKey, writeMeta } from '../../src/core/index'
+import {
+  applyCifraClubEnrich,
+  commitChartDocument,
+  inferWrittenKey,
+  listCharts,
+  parse,
+  parseXStrum,
+  replaceChart,
+  rewriteToKey,
+  storedTransposeSemis,
+  writeMeta,
+} from '../../src/core/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /** Minimal N>1 envelope — not an SDA chart. */
@@ -395,6 +406,146 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
     const header = out.slice(0, out.indexOf('{start_of_x_chart'))
     expect(header).not.toContain('{duration:')
     expect(header).not.toContain('{key:')
+  })
+})
+
+describe('chart document edits and x_chart_default', () => {
+  it('commitChartDocument rewrites the default lyric and keeps the sibling', () => {
+    const doc = parse(TWO_CHART_SOURCE).source.replace('corpo da oferta', 'corpo novo')
+    const out = commitChartDocument(TWO_CHART_SOURCE, doc)
+    expect(out).toContain('{start_of_x_chart:completa}')
+    expect(out).toContain('{start_of_x_chart:oferta}')
+    expect(out).toContain('corpo da completa')
+    expect(out).not.toContain('corpo da oferta')
+    expect(parse(out).source).toContain('corpo novo')
+    expect(parse(out, { chartId: 'completa' }).source).toContain('corpo da completa')
+    expect(out).toContain('{x_chart_default:oferta}')
+    expect(parse(commitChartDocument(TWO_CHART_SOURCE, parse(TWO_CHART_SOURCE).source)).source).toBe(
+      parse(TWO_CHART_SOURCE).source,
+    )
+  })
+
+  it('commitChartDocument on a one-chart file replaces the file', () => {
+    const one = '{title:Velho}\n{key:C}\n[C]linha unica'
+    const doc = one.replace('linha unica', 'linha nova')
+    expect(commitChartDocument(one, doc)).toBe(doc)
+    expect(doc).not.toBe(one)
+  })
+
+  it('writes x_chart_default and does not clear it when a patch omits it', () => {
+    const song = writeMeta(TWO_CHART_SOURCE, { x_chart_default: 'completa' }, { target: 'song' })
+    expect(listCharts(song).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(parse(song, { chartId: 'oferta' }).meta.key).toBe('C')
+    expect(parse(song, { chartId: 'completa' }).meta.key).toBe('G')
+    expect(song).toContain('corpo da oferta')
+    expect(song).toContain('corpo da completa')
+
+    const untargeted = writeMeta(TWO_CHART_SOURCE, { x_chart_default: 'completa' })
+    expect(listCharts(untargeted).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(chartBlock(untargeted, 'oferta')).toContain('{key:C}')
+    expect(chartBlock(untargeted, 'completa')).toContain('{key:G}')
+    expect(untargeted).not.toMatch(/\{x_chart_default:[^}]*\}[\s\S]*\{x_chart_default:/)
+
+    const omitted = writeMeta(untargeted, { title: 'X' })
+    expect(omitted).toContain('{x_chart_default:completa}')
+    expect(listCharts(omitted).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(omitted).toContain('{title:X}')
+
+    const one = '{title:Velho}\n{key:C}\n[G]Letra'
+    expect(writeMeta(one, { title: 'Novo', key: 'C' })).not.toContain('x_chart_default')
+    expect(writeMeta(one, { ...readMeta(one), title: 'Novo' })).not.toContain('x_chart_default')
+    const added = writeMeta(one, { ...readMeta(one), x_chart_default: 'completa' })
+    expect(added.match(/\{x_chart_default:/g)).toHaveLength(1)
+    expect(added).toContain('{title:Velho}')
+    expect(added).toContain('{key:C}')
+    expect(added).toContain('[G]Letra')
+
+    const kept = '{title:Velho}\n{x_chart_default:completa}\n{key:C}\n[G]Letra'
+    const rewritten = writeMeta(kept, { title: 'Novo', key: 'C' })
+    expect(rewritten).toContain('{x_chart_default:completa}')
+    expect(rewritten).toContain('{title:Novo}')
+    expect(rewritten).toContain('[G]Letra')
+    expect(rewritten.match(/\{x_chart_default:/g)).toHaveLength(1)
+  })
+
+  it('keeps {transpose:2} when the sibling chart is in another key', () => {
+    const src = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+[G]completa [G]mais [G]ainda
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{transpose:2}
+[C]oferta
+{end_of_x_chart}
+`
+    expect(inferWrittenKey(src)).toBe('G')
+    expect(storedTransposeSemis(src)).toBe(2)
+    expect(inferWrittenKey(parse(src).source)).toBe('C')
+    expect(parse(src).meta.key).toBe('C')
+    expect(parse(src).meta.transpose).toBe(2)
+  })
+})
+
+function mustStrum(raw: string) {
+  const parsed = parseXStrum(raw)
+  if (!parsed) throw new Error(`bad strum ${raw}`)
+  return parsed
+}
+
+describe('applyCifraClubEnrich strum clear on an envelope', () => {
+  it('drops a stale x_strum_set on the default chart and leaves the sibling', () => {
+    const src = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+{x_strum:bpm=40;meter=4/4;grid=4;label=Sib;pat=DUDU}
+{x_strum_set:0|bpm=40;meter=4/4;grid=4;label=Sib;pat=DUDU|bpm=50;meter=4/4;grid=4;label=Sib2;pat=UDUD}
+[G]linha completa
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{x_strum:bpm=60;meter=4/4;grid=4;label=A;pat=DUDU}
+{x_strum_set:0|bpm=60;meter=4/4;grid=4;label=A;pat=DUDU|bpm=70;meter=4/4;grid=4;label=B;pat=UDUD}
+[C]linha oferta
+{end_of_x_chart}
+`
+    const next = applyCifraClubEnrich(
+      src,
+      {
+        proposed: {},
+        patch: {},
+        conflicts: [],
+        youtube: null,
+        capoWarning: null,
+        strumMissing: false,
+        strumConflict: {
+          local: {
+            activeIndex: 0,
+            patterns: [
+              mustStrum('bpm=60;meter=4/4;grid=4;label=A;pat=DUDU'),
+              mustStrum('bpm=70;meter=4/4;grid=4;label=B;pat=UDUD'),
+            ],
+          },
+          remote: {
+            activeIndex: 0,
+            patterns: [mustStrum('bpm=80;meter=4/4;grid=4;label=CC;pat=DUDU')],
+          },
+        },
+      },
+      { strum: 'replace' },
+    )
+    const oferta = chartBlock(next, 'oferta')
+    const completa = chartBlock(next, 'completa')
+    expect(oferta).toContain('label=CC')
+    expect(oferta).not.toContain('x_strum_set')
+    expect(oferta).toContain('[C]linha oferta')
+    expect(completa).toBe(chartBlock(src, 'completa'))
+    expect(completa).toContain('x_strum_set')
+    expect(next).toContain('{start_of_x_chart:completa}')
+    expect(next).toContain('{start_of_x_chart:oferta}')
   })
 })
 

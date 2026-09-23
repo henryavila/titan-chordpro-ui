@@ -64,11 +64,9 @@ export function setAudioUrl(
 ): string {
   const cur: ChartMeta = { ...readMeta(source) }
   const key = kindKey(kind)
-  if (kind === 'sung') {
-    delete cur.x_audio_sung
-  }
   if (url == null || !String(url).trim()) {
-    delete cur[key]
+    // '' clears; delete would drop the key from a two-arg envelope patch.
+    cur[key] = ''
     return writeMeta(source, cur)
   }
   const ok = playableAudioUrl(url)
@@ -117,9 +115,9 @@ function artDim(raw: string | undefined): number | null {
 export function setAudioArt(source: string, art: AudioArt | null): string {
   const cur: ChartMeta = { ...readMeta(source) }
   if (art == null) {
-    delete cur.x_audio_art
-    delete cur.x_audio_art_w
-    delete cur.x_audio_art_h
+    cur.x_audio_art = ''
+    cur.x_audio_art_w = ''
+    cur.x_audio_art_h = ''
     return writeMeta(source, cur)
   }
   const ok = playableAudioUrl(art.url)

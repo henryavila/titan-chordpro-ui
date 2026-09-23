@@ -65,6 +65,7 @@ export const META_KEYS = [
   'capo',
   'x_source',
   'x_youtube',
+  'x_chart_default',
   'x_audio_sung',
   'x_audio_playback',
   'x_audio_art',
@@ -329,12 +330,15 @@ function spliceInner(raws: string[], chart: FileChart, inner: string): string[] 
  * the canonical order. No two `{key:}` lines competing.
  */
 export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
+  // A patch that omits `{x_chart_default}` must not drop a line already in the file.
+  const setsDefault = Object.prototype.hasOwnProperty.call(meta, 'x_chart_default')
   const body = String(source ?? '')
     .split('\n')
     .filter((l) => {
       const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
+      if (k === 'x_chart_default' && !setsDefault) return true
       return canonicalMetaKey(k) === null
     })
   const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
@@ -460,4 +464,12 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   const inner = [labelLine, body.join('\n')].filter((s) => s && s.length > 0).join('\n')
   const spliced = spliceInner(split.raws, chart, inner).join('\n')
   return writeSongScopedMeta(spliced, songIdentityPatch(document))
+}
+
+/**
+ * Write a chart document back. No envelope: `default` replaces the file.
+ * With an envelope: only the default chart changes; the sibling stays.
+ */
+export function commitChartDocument(file: string, document: string): string {
+  return replaceChart(file, splitCho(file).defaultId, document)
 }

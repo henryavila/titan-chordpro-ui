@@ -13,6 +13,7 @@ import {
   readMeta,
   rewriteToKey,
   inferWrittenKey,
+  parse,
   keyIndex,
   keyRootOf,
   trazerCcStrumChoice,
@@ -83,7 +84,7 @@ const edge = (k: string) => {
 const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
 const minor = computed(() => /m$/.test(String(meta.value.key ?? '')))
 const showKeyPad = computed(() => keyEdit.value || !keyRoot.value)
-const writtenKey = computed(() => inferWrittenKey(props.source))
+const writtenKey = computed(() => inferWrittenKey(parse(props.source).source))
 const keyMismatch = computed(() => {
   const a = keyIndex(keyRootOf(writtenKey.value || ''))
   const b = keyIndex(keyRootOf(meta.value.key || ''))

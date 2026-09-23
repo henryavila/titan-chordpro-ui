@@ -63,6 +63,24 @@ async function enterContent(w: ReturnType<typeof viewer>) {
 }
 
 describe('MetaDialog', () => {
+  it('does not treat a sibling chart as the chords of the default chart', () => {
+    const src = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+[G]completa [G]mais [G]ainda
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{transpose:2}
+[C]oferta
+{end_of_x_chart}
+`
+    const w = dialog(src)
+    expect(w.find('[data-meta-rewrite]').exists()).toBe(false)
+    expect(w.text()).not.toMatch(/acordes estão em/i)
+  })
+
   it('offers rewrite when the declared key is not what the chords spell', async () => {
     const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
     const w = dialog(src)

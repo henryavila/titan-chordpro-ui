@@ -14,6 +14,8 @@ import {
   formatEta,
   hasSongDuration,
   inferWrittenKey,
+  commitChartDocument,
+  storedTransposeSemis,
   isParseFatal,
   keyIndex,
   keyRootOf,
@@ -783,19 +785,16 @@ const fileTranspose = computed(() => {
   const n = Number(meta.value.transpose)
   return Number.isFinite(n) ? n : 0
 })
-const writtenKey = computed(() => inferWrittenKey(liveSource.value))
-const writtenMatchesKey = computed(() => {
-  const a = keyIndex(keyRootOf(writtenKey.value || ''))
-  const b = keyIndex(keyRootOf(meta.value.key || ''))
-  return a != null && b != null && a === b
-})
+/** Line indexes from `parse` refer to this chart document, not the envelope. */
+const chartSource = computed(() => parsed.value.source)
+const writtenKey = computed(() => inferWrittenKey(chartSource.value))
 const keyMismatch = computed(() => {
   const a = keyIndex(keyRootOf(writtenKey.value || ''))
   const b = keyIndex(keyRootOf(meta.value.key || ''))
   return a != null && b != null && a !== b
 })
 const viewSemis = computed(() =>
-  isEdit.value ? 0 : offset.value + (writtenMatchesKey.value ? fileTranspose.value : 0),
+  isEdit.value ? 0 : offset.value + storedTransposeSemis(chartSource.value),
 )
 const shownKey = computed(() => (meta.value.key ? transposeToken(meta.value.key, offset.value, flats.value) : ''))
 const playingKey = computed(() =>
@@ -845,7 +844,7 @@ const capoPairs = computed(() => layout.value.capoPairs)
  * so it survives a reload, an undo and a re-parse.
  */
 const bedit = useBlockEdit({
-  source: liveSource,
+  source: chartSource,
   blocks,
   editing: isEdit,
   wMode,
@@ -854,7 +853,7 @@ const bedit = useBlockEdit({
   root,
   scroller,
   write: (next, message) => {
-    session.replace(next)
+    session.replace(commitChartDocument(session.getSource(), next))
     touch()
     if (message) toastMsg(message)
   },
@@ -2045,7 +2044,8 @@ function discard() {
 
 function onDraft(next: string) {
   // The step was already opened by the pane: keystrokes coalesce into it.
-  session.edit(next)
+  // The pane edits the chart document; the file keeps every other chart.
+  session.edit(commitChartDocument(session.getSource(), next))
   touch()
 }
 
@@ -3354,7 +3354,7 @@ defineExpose({
 
     <SourcePane
       v-if="isContentEdit && srcOpen && capabilities.sourcePane !== false"
-      :source="liveSource"
+      :source="chartSource"
       :lint="lint"
       :sel="srcSel"
       @input="onDraft"

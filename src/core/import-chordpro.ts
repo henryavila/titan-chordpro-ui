@@ -412,7 +412,6 @@ export type WriteMetaOpts = {
 function songPatchOf(meta: ChartMeta): ChartMeta {
   const patch: ChartMeta = {}
   for (const k of SONG_META_KEYS) {
-    if (k === 'x_chart_default') continue
     if (meta[k] !== undefined) patch[k] = meta[k]
   }
   return patch
@@ -430,6 +429,8 @@ function soundPatchOf(meta: ChartMeta): ChartMeta {
  * Rewrites meta. Two-arg one-chart still replaces the canonical header.
  * N>1 without `target`: song identity stays in the song header; sound keys
  * on the patch go to the default chart and are not hoisted. Pass `{ target }` to aim.
+ * `{x_chart_default}` updates the song header when the patch includes it, and
+ * a patch that omits it leaves the header value in place.
  */
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
   if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
@@ -486,6 +487,23 @@ export function inferWrittenKey(source: string): string | null {
     }
   }
   return best
+}
+
+/**
+ * `{transpose:}` counts only when the active chart's written chords match `{key:}`.
+ * A sibling chart is not part of that comparison.
+ */
+export function storedTransposeSemis(source: string): number {
+  const doc = chartDocument(source)
+  const meta = readMeta(doc)
+  const n = Number(meta.transpose)
+  const stored = Number.isFinite(n) ? n : 0
+  if (!stored) return 0
+  const written = inferWrittenKey(doc)
+  const a = keyIndex(keyRootOf(written || ''))
+  const b = keyIndex(keyRootOf(meta.key || ''))
+  if (a == null || b == null || a !== b) return 0
+  return stored
 }
 
 /**
@@ -1161,8 +1179,9 @@ export function applyCifraClubEnrich(
   const strumChoice = choice?.strum ?? 'keep'
   if (proposal.strumConflict && strumChoice !== 'keep') {
     const set = applyCcStrumChoice(proposal.strumConflict, strumChoice)
-    delete next.x_strum
-    delete next.x_strum_set
+    // '' clears; delete would leave a stale `{x_strum_set:}` on an envelope.
+    next.x_strum = ''
+    next.x_strum_set = ''
     if (set) {
       const fields = metaFromStrumSet(set)
       if (fields.x_strum) next.x_strum = fields.x_strum
