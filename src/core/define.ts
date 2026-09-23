@@ -3,7 +3,7 @@
  * not package dictionary. Generic `{define:}` infers instrument from payload.
  */
 
-import { pianoChordToneScores } from './chord-dict'
+import { pianoSoundingPitchClasses } from './chord-dict'
 import { parseChordToken } from './parse-chord'
 import { keyIndex, transposeToken } from './transpose'
 
@@ -183,23 +183,29 @@ function shiftKey(k: number, n: number): number {
   return k + n
 }
 
-/** Interval spelling: every key is 0–11 and the relative reading strictly outscores pitch classes. */
-function keepRelativeKeys(def: ChordDefine): boolean {
-  const keys = def.keys
-  if (!keys?.length || !keys.every(isPitchClass)) return false
+/**
+ * 0–11 keys: the same reading the draw uses, then `(sounding + n) % 12`.
+ * Any key outside that range stays on `shiftKey` (MIDI adds n, no wrap).
+ */
+function transposePianoKeys(def: ChordDefine, n: number): number[] {
+  const keys = def.keys ?? []
+  const shifted = () => keys.map((k) => shiftKey(k, n))
+  if (!keys.length || !keys.every(isPitchClass)) return shifted()
   const parsed = parseChordToken(def.name)
-  if (parsed.class !== 'parse') return false
+  if (parsed.class !== 'parse') return shifted()
   const rootPc = keyIndex(parsed.root)
-  if (rootPc === null) return false
-  const { absScore, relScore } = pianoChordToneScores(keys, rootPc, parsed.quality)
-  return relScore > absScore
+  if (rootPc === null) return shifted()
+  const bassPc = parsed.bass != null ? keyIndex(parsed.bass) : null
+  if (parsed.bass != null && bassPc === null) return shifted()
+  const sounding = pianoSoundingPitchClasses(keys, rootPc, parsed.quality, bassPc)
+  return sounding.map((k) => shiftKey(k, n))
 }
 
 /**
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
- * string is open (fret 0) or the new base would fall below 1. Piano pitch
- * classes add n, unless the keys are a relative spelling — then they stay.
- * MIDI keys add n and do not wrap.
+ * string is open (fret 0) or the new base would fall below 1. Piano keys
+ * inside 0–11 are stored as the transposed sounding pitch classes. MIDI keys
+ * add n and do not wrap.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
@@ -210,9 +216,7 @@ export function transposeDefine(def: ChordDefine, n: number, flats: boolean): Ch
     if (base < 1) return null
     next.baseFret = base
   }
-  if (def.keys?.length) {
-    next.keys = keepRelativeKeys(def) ? [...def.keys] : def.keys.map((k) => shiftKey(k, n))
-  }
+  if (def.keys?.length) next.keys = transposePianoKeys(def, n)
   return next
 }
 

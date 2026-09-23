@@ -142,14 +142,32 @@ function scorePianoReadings(keys: readonly number[], rootPc: number, quality: st
   return { pcs, intervals, absSet, relSet, absScore, relScore }
 }
 
-/** Chord-tone hits of stored pitch classes versus intervals from the root. */
-export function pianoChordToneScores(
+/**
+ * Sounding pitch classes of the one piano reading, in key order.
+ * Absolute: the stored classes. Relative: `(root + key) % 12`.
+ * Draw stores those classes as intervals from the root.
+ */
+export function pianoSoundingPitchClasses(
   keys: readonly number[],
   rootPc: number,
   quality: string,
-): { absScore: number; relScore: number } {
-  const { absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
-  return { absScore, relScore }
+  bassPc: number | null = null,
+): number[] {
+  const { pcs, intervals, absSet, relSet, absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
+  const absolute = () => [...pcs]
+  const relative = () => pcs.map((k) => mod12(rootPc + k))
+  if (absScore > relScore) return absolute()
+  if (relScore > absScore) return relative()
+  // Score tie: a slash bass that sounds in only one reading picks that reading.
+  if (bassPc != null) {
+    const bass = mod12(bassPc)
+    const inAbs = absSet.has(bass)
+    const inRel = relSet.has(bass)
+    if (inAbs !== inRel) return inAbs ? absolute() : relative()
+  }
+  const tones = characteristicIntervals(quality, intervals)
+  if (characteristicCount(relSet, rootPc, tones) > characteristicCount(absSet, rootPc, tones)) return relative()
+  return absolute()
 }
 
 /** File `{define}` keys may be absolute pitch classes; dictionary keys are intervals from the tonic. */
@@ -159,21 +177,7 @@ export function pianoKeysToRelative(
   quality: string,
   bassPc: number | null = null,
 ): number[] {
-  const { pcs, intervals, absSet, relSet, absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
-  // Draw adds the token root, so an absolute reading is stored as intervals from it.
-  const asAbsolute = () => pcs.map((k) => mod12(k - rootPc))
-  if (absScore > relScore) return asAbsolute()
-  if (relScore > absScore) return pcs
-  // Score tie: a slash bass that sounds in only one reading picks that reading.
-  if (bassPc != null) {
-    const bass = mod12(bassPc)
-    const inAbs = absSet.has(bass)
-    const inRel = relSet.has(bass)
-    if (inAbs !== inRel) return inAbs ? asAbsolute() : pcs
-  }
-  const tones = characteristicIntervals(quality, intervals)
-  if (characteristicCount(relSet, rootPc, tones) > characteristicCount(absSet, rootPc, tones)) return pcs
-  return asAbsolute()
+  return pianoSoundingPitchClasses(keys, rootPc, quality, bassPc).map((pc) => mod12(pc - rootPc))
 }
 
 export function lookupDict(
