@@ -5,6 +5,7 @@ import {
   resolveDiagram,
   type ChordDefine,
 } from '../../src/core/index'
+import { parseDefineDirective, transposeDefine } from '../../src/core/define'
 import { keyIndex } from '../../src/core/transpose'
 
 const AM_OVERRIDE: ChordDefine = {
@@ -291,6 +292,44 @@ describe('resolveDiagram', () => {
     if (d.kind !== 'piano') return
     expect(d.lit).toEqual([11, 2, 1, 4])
     expect(d.litNotes).toEqual(['B', 'D', 'C#', 'E'])
+  })
+
+  it('draws a transposed relative piano define as the new chord', () => {
+    const raw = parseDefineDirective('{define: D keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const plain = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(plain.class).toBe('hit')
+    if (plain.class !== 'hit') return
+    const plainDraw = drawDiagram({ instrument: 'piano', voicing: plain.voicing, token: 'D' })
+    expect(plainDraw.kind).toBe('piano')
+    if (plainDraw.kind !== 'piano') return
+    expect(plainDraw.litNotes).toEqual(['D', 'F#', 'A'])
+
+    const shifted = transposeDefine(raw, 2, false)
+    expect(shifted).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+    if (!shifted) return
+    const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: shifted.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.litNotes).toEqual(['E', 'G#', 'B'])
+
+    const c = parseDefineDirective('{define: C keys 0 4 7}')
+    expect(c.class).toBe('parse')
+    if (c.class !== 'parse') return
+    const cShift = transposeDefine(c, 2, false)
+    expect(cShift).toMatchObject({ name: 'D', keys: [2, 6, 9] })
+    if (!cShift) return
+    const cHit = resolveDiagram({ token: cShift.name, instrument: 'piano', overrides: [cShift] })
+    expect(cHit.class).toBe('hit')
+    if (cHit.class !== 'hit') return
+    const cDraw = drawDiagram({ instrument: 'piano', voicing: cHit.voicing, token: cShift.name })
+    expect(cDraw.kind).toBe('piano')
+    if (cDraw.kind !== 'piano') return
+    expect(cDraw.litNotes).toEqual(['D', 'F#', 'A'])
   })
 })
 

@@ -253,6 +253,13 @@ describe('transposeDefine', () => {
     if (r.class !== 'parse') return
     expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'D', keys: [50, 54, 57] })
   })
+
+  it('keeps relative piano intervals when they outscore pitch classes', () => {
+    const r = parseDefineDirective('{define: D keys 0 4 7}')
+    expect(r.class).toBe('parse')
+    if (r.class !== 'parse') return
+    expect(transposeDefine(r, 2, false)).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+  })
 })
 
 describe('transpose/setKey apply the same define rewrite as export', () => {

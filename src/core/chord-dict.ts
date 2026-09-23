@@ -118,6 +118,40 @@ function characteristicCount(sounding: Set<number>, rootPc: number, tones: reado
   return count
 }
 
+type PianoReading = {
+  pcs: number[]
+  intervals: number[]
+  absSet: Set<number>
+  relSet: Set<number>
+  absScore: number
+  relScore: number
+}
+
+function scorePianoReadings(keys: readonly number[], rootPc: number, quality: string): PianoReading {
+  const pcs = keys.map((k) => mod12(k))
+  const intervals = pianoKeysOf(quality) ?? [0]
+  const expected = intervals.map((iv) => mod12(rootPc + iv))
+  const absSet = new Set(pcs)
+  const relSet = new Set(pcs.map((k) => mod12(rootPc + k)))
+  let absScore = 0
+  let relScore = 0
+  for (const pc of expected) {
+    if (absSet.has(pc)) absScore++
+    if (relSet.has(pc)) relScore++
+  }
+  return { pcs, intervals, absSet, relSet, absScore, relScore }
+}
+
+/** Chord-tone hits of stored pitch classes versus intervals from the root. */
+export function pianoChordToneScores(
+  keys: readonly number[],
+  rootPc: number,
+  quality: string,
+): { absScore: number; relScore: number } {
+  const { absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
+  return { absScore, relScore }
+}
+
 /** File `{define}` keys may be absolute pitch classes; dictionary keys are intervals from the tonic. */
 export function pianoKeysToRelative(
   keys: number[],
@@ -125,17 +159,7 @@ export function pianoKeysToRelative(
   quality: string,
   bassPc: number | null = null,
 ): number[] {
-  const pcs = keys.map((k) => mod12(k))
-  const intervals = pianoKeysOf(quality) ?? [0]
-  const expected = intervals.map((iv) => mod12(rootPc + iv))
-  let absScore = 0
-  let relScore = 0
-  const absSet = new Set(pcs)
-  const relSet = new Set(pcs.map((k) => mod12(rootPc + k)))
-  for (const pc of expected) {
-    if (absSet.has(pc)) absScore++
-    if (relSet.has(pc)) relScore++
-  }
+  const { pcs, intervals, absSet, relSet, absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
   // Draw adds the token root, so an absolute reading is stored as intervals from it.
   const asAbsolute = () => pcs.map((k) => mod12(k - rootPc))
   if (absScore > relScore) return asAbsolute()
