@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix17",
-  "writerBranch": "impl/versoes-cifra-F0-fix17",
-  "finishedAt": "2026-09-24T21:51:29Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix18",
+  "writerBranch": "impl/versoes-cifra-F0-fix18",
+  "finishedAt": "2026-09-24T22:15:50Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -14,7 +14,7 @@
       "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "tests/core/charts-envelope.test.ts passed inside the fix17 self-check (69 tests)."
+      "transcript": "tests/core/charts-envelope.test.ts passed inside the fix18 self-check (72 tests)."
     },
     {
       "taskId": "T-002",
@@ -25,28 +25,25 @@
       "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "tests/core/charts-envelope.test.ts passed inside the fix17 self-check (69 tests)."
+      "transcript": "tests/core/charts-envelope.test.ts passed inside the fix18 self-check (72 tests)."
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["80f53e2498fcc73e8432cfc370302bf1f8fb20c1"],
+      "commitShas": ["7ba5b51a84d55c5b5621d38b086a89af65ce5566"],
       "base": null,
       "head": null,
       "paths": [
         "src/core/charts.ts",
-        "src/core/import-chordpro.ts",
-        "src/core/index.ts",
-        "src/core/source-session.ts",
         "src/vue/ChordproViewer.vue",
         "src/vue/edit/MetaDialog.vue",
         "tests/core/charts-envelope.test.ts",
         "tests/vue/block-edit-ui.test.ts",
         "tests/vue/meta-dialog.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/audio-url.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\nTests  201 passed (201)\n✓ tests/core/no-vue-in-core.test.ts (1 test)\n✓ tests/core/audio-url.test.ts (31 tests)\n✓ tests/core/import-chordpro.test.ts (43 tests)\n✓ tests/core/charts-envelope.test.ts (69 tests)\n✓ tests/demo/sda-fixtures.test.ts (4 tests)\n✓ tests/vue/meta-dialog.test.ts (25 tests)\n✓ tests/vue/block-edit-ui.test.ts (28 tests)"
+      "transcript": "Test Files  5 passed (5)\nTests  164 passed (164)\n✓ tests/core/audio-url.test.ts (31 tests)\n✓ tests/core/charts-envelope.test.ts (72 tests)\n✓ tests/demo/sda-fixtures.test.ts (4 tests)\n✓ tests/vue/meta-dialog.test.ts (28 tests)\n✓ tests/vue/block-edit-ui.test.ts (29 tests)"
     }
   ]
 }

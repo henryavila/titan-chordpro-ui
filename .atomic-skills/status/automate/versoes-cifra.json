@@ -1,8 +1,8 @@
 {
   "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 18,
-  "updatedAt": "2026-09-24T21:57:15.787Z",
+  "redispatchCount": 19,
+  "updatedAt": "2026-09-24T22:17:12.556Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -98,6 +98,12 @@
       "at": "2026-09-24T21:57:15.787Z",
       "reason": "operator 2026-09-24: fix the two fix17 majors — pinned source chart and an explicit title clear",
       "priorCount": 17,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T22:17:12.556Z",
+      "reason": "operator 2026-09-24: local review of fix17 — do not flat-rewrite a file that still has start_of_x_chart; do not concatenate a pasted second chart",
+      "priorCount": 18,
       "gate": "spawn"
     }
   ],
