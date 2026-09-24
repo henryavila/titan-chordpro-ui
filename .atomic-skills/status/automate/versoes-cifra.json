@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 11,
-  "updatedAt": "2026-09-24T11:25:15.146Z",
+  "redispatchCount": 12,
+  "updatedAt": "2026-09-24T11:40:34.224Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -56,6 +56,12 @@
       "at": "2026-09-24T11:15:24.954Z",
       "reason": "operator 2026-09-24: loop longo — fix10 both review needs_changes, setAudioUrl drops composer credit and image gap",
       "priorCount": 10,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T11:40:34.224Z",
+      "reason": "operator 2026-09-24: loop longo — fix11 both review needs_changes, explicit identity edit ignored, sibling credit, tab line deleted",
+      "priorCount": 11,
       "gate": "spawn"
     }
   ],
