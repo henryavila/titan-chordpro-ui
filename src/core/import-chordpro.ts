@@ -22,6 +22,7 @@ import {
   replaceChart,
   splitCho,
   writeChartScopedMeta,
+  patchEchoesReadMeta,
   writeMetaOneHeader,
   writeSongScopedMeta,
   type ChartMeta,
@@ -436,15 +437,16 @@ function soundPatchOf(meta: ChartMeta): ChartMeta {
  */
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
   if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
-  if (opts?.target === 'song') return writeSongScopedMeta(source, meta)
+  // A spread of `readMeta` is an echo. A sparse `{title:Second}` is not,
+  // even when that value is what `readMeta` already returns from the chart.
+  const echo = patchEchoesReadMeta(source, meta)
+  if (opts?.target === 'song') return writeSongScopedMeta(source, meta, { preserveEcho: echo })
   const split = splitCho(source)
   if (!split.hasEnvelope) return writeMetaOneHeader(source, meta)
   const song = songPatchOf(meta)
   const sound = soundPatchOf(meta)
-  // Two-arg meta often copies `readMeta`. That echo must not count as an edit
-  // of title, subtitle, or artist — `writeSongScopedMeta` applies a named key.
   const withSong = Object.keys(song).length
-    ? writeSongScopedMeta(source, song, { preserveEcho: true })
+    ? writeSongScopedMeta(source, song, { preserveEcho: echo })
     : source
   if (!Object.keys(sound).length) return withSong
   return writeChartScopedMeta(withSong, sound, split.defaultId)

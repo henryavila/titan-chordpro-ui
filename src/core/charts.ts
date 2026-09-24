@@ -268,11 +268,15 @@ function songIdentityHeader(header: string): string {
 }
 
 function chartDocBody(inner: string): string {
+  const block = { tab: false, score: false }
   return inner
     .split('\n')
     .filter((line) => {
       const d = dirOf(line)
       if (!d) return true
+      // Identity and `{x_chart_default}` inside tab or score are notation.
+      // Filtering them out would make a later save delete the line.
+      if (stepBlock(d.name, block) === 'in') return true
       return !isEnvelopeName(d.name)
     })
     .join('\n')
@@ -311,7 +315,9 @@ function readKeyed(text: string, which: 'song' | 'chart'): Record<string, string
   for (const line of text.split('\n')) {
     const d = dirOf(line)
     if (!d) continue
-    // A name inside tab or score is not the song header the writer should copy out.
+    // A credit inside tab or score stays on that line. `{x_chart_default}` there
+    // is still the file selector: do not copy it out, or a subtitle save would
+    // emit a second one and the tab copy would win or disappear.
     if (which === 'song' && stepBlock(d.name, block) === 'in' && songMetaKey(d.name)) continue
     const canon = resolve(d.name)
     if (!canon) continue
@@ -487,6 +493,44 @@ function roundTripIdentityKeep(source: string, meta: ChartMeta): Set<string> {
   return keep
 }
 
+/** Song header only, not the chart body. Exact `{title:}` wins over a later alias. */
+function headerCanonicalIdentity(source: string): ChartMeta {
+  const split = splitCho(source)
+  return readMetaLines(split.hasEnvelope ? split.header : String(source ?? ''))
+}
+
+/**
+ * True when `patch` is a `readMeta` spread, not a sparse edit.
+ * `{title:Second}` against a header `{title:First}` is an edit: `readMeta`
+ * already returns Second from the default chart, and preserveEcho must not
+ * swallow it. A spread that only adds `{subtitle}` must not apply the copied
+ * artist. A non-identity field (key, audio) marks the same spread.
+ */
+export function patchEchoesReadMeta(source: string, patch: MetaPatch): boolean {
+  const read = readMeta(source)
+  for (const key of META_KEYS) {
+    if ((read[key] ?? '').trim() === '') continue
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) return false
+  }
+  for (const key of META_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
+    // A sound or source field, even cleared to '', means the caller copied
+    // readMeta and then edited that field. An empty clear still counts.
+    if ((PARSE_IDENTITY_KEYS as readonly string[]).includes(key)) continue
+    return true
+  }
+  const header = headerCanonicalIdentity(source)
+  for (const key of PARSE_IDENTITY_KEYS) {
+    if ((read[key] ?? '').trim() === '') continue
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
+    const headerVal = (header[key] ?? '').trim()
+    // No header value: the copy came from the chart body. Do not promote it.
+    // A header value that differs (First vs the chart's Second) is the edit.
+    if (headerVal !== '' && headerVal !== (patch[key] ?? '').trim()) return false
+  }
+  return true
+}
+
 /**
  * Header lines this patch must not replace.
  * A key the caller named is applied, even when the value equals `readMeta`.
@@ -555,7 +599,9 @@ function keepSongHeaderLine(line: string, block: { tab: boolean; score: boolean 
   const d = dirOf(line)
   if (!d) return true
   const where = stepBlock(d.name, block)
-  if (where === 'in' && songIdentityMetaKey(d.name)) return true
+  // `{x_chart_default}` inside a header tab is the selector, not a credit.
+  // Song-meta lines are normally rewritten at the top; this one must stay.
+  if (where === 'in' && (songIdentityMetaKey(d.name) || songMetaKey(d.name) === 'x_chart_default')) return true
   if (identityLineKept(d.name, keep)) return true
   return songMetaKey(d.name) === null
 }
@@ -637,7 +683,12 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
     if (line.trim() === '') continue
     lastNonBlank = i
     const directive = dirOf(line)
-    if (directive && stepBlock(directive.name, block) === 'in') continue
+    if (directive) {
+      if (stepBlock(directive.name, block) === 'in') continue
+    } else if (block.tab || block.score) {
+      // A staff or score row is notation, not the lyric that starts the body.
+      continue
+    }
     isSound[i] = !!(directive && chartSoundKey(directive.name))
     if (lineStartsChartBody(directive)) seenBody = true
   }
@@ -701,9 +752,12 @@ export function writeChartScopedMeta(source: string, patch: MetaPatch, chartId?:
  */
 function rawSongIdentityLines(document: string): Map<string, string> {
   const out = new Map<string, string>()
+  const block = { tab: false, score: false }
   for (const line of document.split('\n')) {
     const d = dirOf(line)
     if (!d) continue
+    // `{t:}` / `{composer:}` inside tab or score is notation, not the header.
+    if (stepBlock(d.name, block) === 'in') continue
     const canon = songMetaKey(d.name)
     if (!canon || canon === 'x_chart_default') continue
     const exact = (SONG_META_KEYS as readonly string[]).includes(d.name)
@@ -771,8 +825,15 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   if (!chart) return src
 
   const body: string[] = []
+  const block = { tab: false, score: false }
   for (const line of document.split('\n')) {
     const d = dirOf(line)
+    // Notation keeps its own title, artist, composer, and lyricist lines.
+    // Omitting them from the song header is not a request to delete them.
+    if (d && stepBlock(d.name, block) === 'in') {
+      body.push(line)
+      continue
+    }
     if (d && songMetaKey(d.name)) continue
     if (d && isEnvelopeName(d.name)) continue
     body.push(line)

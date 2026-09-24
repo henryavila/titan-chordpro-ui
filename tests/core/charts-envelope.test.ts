@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartDocument, readMeta, writeSongScopedMeta } from '../../src/core/charts'
+import { chartDocument, readMeta, splitCho, writeSongScopedMeta } from '../../src/core/charts'
 import {
   applyCifraClubEnrich,
   commitChartDocument,
@@ -1003,6 +1003,233 @@ describe('applyCifraClubEnrich strum clear on an envelope', () => {
     expect(completa).toContain('x_strum_set')
     expect(next).toContain('{start_of_x_chart:completa}')
     expect(next).toContain('{start_of_x_chart:oferta}')
+  })
+})
+
+const NOTATION_FENCES = [
+  ['{sot}', '{eot}'],
+  ['{start_of_tab}', '{end_of_tab}'],
+  ['{sos}', '{eos}'],
+  ['{start_of_score}', '{end_of_score}'],
+] as const
+
+function betweenMarkers(source: string, open: string, close: string): string {
+  const openAt = source.indexOf(open)
+  const closeAt = source.indexOf(close, openAt + open.length)
+  return source.slice(openAt, closeAt)
+}
+
+describe('notation identity is not the song header', () => {
+  it('does not hoist a body-tab credit onto the header on round-trip', () => {
+    for (const [open, close] of NOTATION_FENCES) {
+      const file = [
+        '{x_chart_default:oferta}',
+        '{start_of_x_chart:completa}',
+        '[G]completa',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        open,
+        '{composer:Bach}',
+        '{lyricist:Bach}',
+        close,
+        '[C]oferta',
+        '{end_of_x_chart}',
+      ].join('\n')
+      const saved = commitChartDocument(file, chartDocument(file))
+      const header = saved.slice(0, saved.indexOf('{start_of_x_chart'))
+      expect(header).not.toContain('Bach')
+      expect(betweenMarkers(chartBlock(saved, 'oferta'), open, close)).toContain('{composer:Bach}')
+      expect(betweenMarkers(chartBlock(saved, 'oferta'), open, close)).toContain('{lyricist:Bach}')
+      expect(parse(saved).meta.artist).toBeUndefined()
+      expect(parse(saved, { chartId: 'completa' }).meta.artist).toBeUndefined()
+      expect(chartBlock(saved, 'completa')).toBe(chartBlock(file, 'completa'))
+    }
+  })
+
+  it('keeps {t:Second} inside the default chart tab when the header title is First', () => {
+    for (const [open, close] of NOTATION_FENCES) {
+      const file = [
+        '{title:First}',
+        '{x_chart_default:oferta}',
+        '{start_of_x_chart:completa}',
+        '[G]completa',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        open,
+        '{t:Second}',
+        close,
+        '[C]oferta',
+        '{end_of_x_chart}',
+      ].join('\n')
+      const saved = replaceChart(file, 'oferta', chartDocument(file, 'oferta'))
+      expect(parse(saved).meta.title).toBe('First')
+      expect(parse(saved, { chartId: 'completa' }).meta.title).toBe('First')
+      const header = saved.slice(0, saved.indexOf('{start_of_x_chart'))
+      expect(header).toContain('{title:First}')
+      expect(header).not.toContain('Second')
+      expect(betweenMarkers(chartBlock(saved, 'oferta'), open, close)).toContain('{t:Second}')
+      expect(chartBlock(saved, 'completa')).toBe(chartBlock(file, 'completa'))
+    }
+  })
+
+  it('does not write a body-tab Mozart onto the header or strip it from the tab', () => {
+    const file = [
+      '{sot}',
+      '{composer:Bach}',
+      '{eot}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{sos}',
+      '{composer:Mozart}',
+      '{lyricist:Mozart}',
+      '{eos}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const saved = commitChartDocument(file, chartDocument(file))
+    const header = saved.slice(0, saved.indexOf('{start_of_x_chart'))
+    expect(betweenMarkers(header, '{sot}', '{eot}')).toContain('{composer:Bach}')
+    expect(header).not.toContain('Mozart')
+    expect(betweenMarkers(chartBlock(saved, 'oferta'), '{sos}', '{eos}')).toContain('{composer:Mozart}')
+    expect(betweenMarkers(chartBlock(saved, 'oferta'), '{sos}', '{eos}')).toContain('{lyricist:Mozart}')
+    expect(parse(saved).meta.artist).toBeUndefined()
+    expect(parse(saved, { chartId: 'completa' }).meta.artist).toBeUndefined()
+  })
+})
+
+describe('a notation row is not the lyric body', () => {
+  it('does not leave a blank before the lyric when a tab staff sits above sound keys', () => {
+    const src = ['{sot}', 'e|-----0-----|', '{eot}', '{key:G}', '', '{tempo:72}', '[G]linha'].join('\n')
+    const cleared = writeMeta(src, { ...readMeta(src), x_audio_sung: '' })
+    expect(cleared).toContain('e|-----0-----|')
+    expect(cleared).toContain('[G]linha')
+    expect(cleared).not.toMatch(/\n\n\[G\]linha/)
+    expect(cleared).toContain('{key:G}')
+    expect(cleared).toContain('{tempo:72}')
+  })
+
+  it('does not leave a blank before the lyric when a score row sits above sound keys', () => {
+    const src = ['{sos}', 'C4 D4 E4', '{eos}', '{key:G}', '', '{tempo:72}', '[G]linha'].join('\n')
+    const cleared = writeMeta(src, { ...readMeta(src), x_audio_sung: '' })
+    expect(cleared).toContain('C4 D4 E4')
+    expect(cleared).toContain('[G]linha')
+    expect(cleared).not.toMatch(/\n\n\[G\]linha/)
+  })
+
+  it('drops that blank on the default chart and leaves the sibling', () => {
+    for (const row of ['e|-----0-----|', 'C4 D4 E4']) {
+      const open = row.startsWith('e|') ? '{sot}' : '{sos}'
+      const close = row.startsWith('e|') ? '{eot}' : '{eos}'
+      const src = [
+        '{title:Uma}',
+        '{x_chart_default:oferta}',
+        '{start_of_x_chart:completa}',
+        '{key:D}',
+        '[D]outro',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        open,
+        row,
+        close,
+        '{key:G}',
+        '',
+        '{tempo:72}',
+        '[G]linha',
+        '{x_audio_sung:https://cdn.example/c.m4a}',
+        '{end_of_x_chart}',
+      ].join('\n')
+      const next = writeMeta(src, { ...readMeta(src), x_audio_sung: '' })
+      const oferta = chartBlock(next, 'oferta')
+      expect(oferta).toContain(row)
+      expect(oferta).toContain('[G]linha')
+      expect(oferta).not.toMatch(/\n\n\[G\]linha/)
+      expect(oferta).not.toContain('x_audio_sung')
+      expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
+    }
+  })
+})
+
+describe('x_chart_default inside a header tab', () => {
+  it('stays the file default when a subtitle is saved', () => {
+    for (const [open, close] of NOTATION_FENCES) {
+      const file = [
+        open,
+        '{x_chart_default:oferta}',
+        close,
+        '{start_of_x_chart:completa}',
+        '[G]completa',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        '[C]oferta',
+        '{end_of_x_chart}',
+      ].join('\n')
+      expect(splitCho(file).defaultId).toBe('oferta')
+      const saved = writeSongScopedMeta(file, { subtitle: 'X' })
+      expect(saved).toContain('{subtitle:X}')
+      expect(saved.match(/\{x_chart_default:/g)).toHaveLength(1)
+      expect(betweenMarkers(saved, open, close)).toContain('{x_chart_default:oferta}')
+      expect(splitCho(saved).defaultId).toBe('oferta')
+      expect(parse(saved).meta.key).toBeUndefined()
+      expect(chartBlock(saved, 'oferta')).toContain('[C]oferta')
+      expect(chartBlock(saved, 'completa')).toContain('[G]completa')
+    }
+  })
+})
+
+describe('sparse title edit versus a readMeta spread', () => {
+  it('writeMeta({ title: Second }) updates the shared header the sibling inherits', () => {
+    const file = [
+      '{title:First}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Second}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(readMeta(file).title).toBe('Second')
+    expect(parse(file, { chartId: 'completa' }).meta.title).toBe('First')
+    const out = writeMeta(file, { title: 'Second' })
+    const header = out.slice(0, out.indexOf('{start_of_x_chart'))
+    expect(header).toContain('{title:Second}')
+    expect(header).not.toContain('{title:First}')
+    expect(parse(out).meta.title).toBe('Second')
+    expect(parse(out, { chartId: 'completa' }).meta.title).toBe('Second')
+    expect(chartBlock(out, 'completa')).toContain('[G]completa')
+    expect(chartBlock(out, 'oferta')).toContain('[C]oferta')
+    expect(splitCho(out).defaultId).toBe('oferta')
+  })
+
+  it('a song-scoped subtitle spread does not apply the copied artist', () => {
+    const flat = '{artist:Local}\n{composer:Bach}\n'
+    const flatOut = writeMeta(flat, { ...readMeta(flat), subtitle: 'X' }, { target: 'song' })
+    expect(flatOut).toContain('{composer:Bach}')
+    expect(flatOut).toContain('{subtitle:X}')
+    expect(parse(flatOut).meta.artist).toBe('Bach')
+
+    const file = [
+      '{artist:Local}',
+      '{composer:Bach}',
+      '{start_of_x_chart:completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(parse(file).meta.artist).toBe('Bach')
+    expect(parse(file, { chartId: 'oferta' }).meta.artist).toBe('Bach')
+    const out = writeMeta(file, { ...readMeta(file), subtitle: 'X' }, { target: 'song' })
+    expect(out).toContain('{composer:Bach}')
+    expect(out).toContain('{subtitle:X}')
+    expect(parse(out).meta.artist).toBe('Bach')
+    expect(parse(out, { chartId: 'oferta' }).meta.artist).toBe('Bach')
+    expect(parse(out).meta.artist).not.toBe('Local')
   })
 })
 
