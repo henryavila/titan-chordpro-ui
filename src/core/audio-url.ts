@@ -1,3 +1,4 @@
+import { splitCho } from './charts'
 import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 
 export const AUDIO_KINDS = ['sung', 'playback'] as const
@@ -54,27 +55,35 @@ function kindKey(kind: AudioKind): 'x_audio_sung' | 'x_audio_playback' {
 }
 
 /**
+ * One field on the chart that is open. A spread of `readMeta` would rewrite
+ * the title. One-chart files still pass the whole header, as before.
+ */
+function writeAudioField(source: string, patch: ChartMeta): string {
+  if (splitCho(source).hasEnvelope) return writeMeta(source, patch)
+  const cur: ChartMeta = { ...readMeta(source), ...patch }
+  return writeMeta(source, cur)
+}
+
+/**
  * Write or clear one rehearsal track. `sung` also drops legacy
  * `{x_audio:}` / `{x_audio_cantado:}` so a chart does not carry two sung URLs.
+ * N>1: the URL is written inside the open chart, and only that field.
  */
 export function setAudioUrl(
   source: string,
   url: string | null,
   kind: AudioKind = 'sung',
 ): string {
-  const cur: ChartMeta = { ...readMeta(source) }
   const key = kindKey(kind)
   if (url == null || !String(url).trim()) {
     // '' clears; delete would drop the key from a two-arg envelope patch.
-    cur[key] = ''
-    return writeMeta(source, cur)
+    return writeAudioField(source, { [key]: '' })
   }
   const ok = playableAudioUrl(url)
   if (!ok) {
     throw new Error('x_audio_sung / x_audio_playback must be an http(s) audio file URL (not YouTube)')
   }
-  cur[key] = ok
-  return writeMeta(source, cur)
+  return writeAudioField(source, { [key]: ok })
 }
 
 /** Both tracks. Legacy `{x_audio:}` / `{x_audio_cantado:}` already fold into sung via readMeta. */
@@ -113,12 +122,8 @@ function artDim(raw: string | undefined): number | null {
  * file and must pass that file’s width/height (square 256–512 is enough).
  */
 export function setAudioArt(source: string, art: AudioArt | null): string {
-  const cur: ChartMeta = { ...readMeta(source) }
   if (art == null) {
-    cur.x_audio_art = ''
-    cur.x_audio_art_w = ''
-    cur.x_audio_art_h = ''
-    return writeMeta(source, cur)
+    return writeAudioField(source, { x_audio_art: '', x_audio_art_w: '', x_audio_art_h: '' })
   }
   const ok = playableAudioUrl(art.url)
   if (!ok) {
@@ -129,10 +134,11 @@ export function setAudioArt(source: string, art: AudioArt | null): string {
   if (!w || !h) {
     throw new Error('x_audio_art requires integer width and height (1–4096)')
   }
-  cur.x_audio_art = ok
-  cur.x_audio_art_w = String(w)
-  cur.x_audio_art_h = String(h)
-  return writeMeta(source, cur)
+  return writeAudioField(source, {
+    x_audio_art: ok,
+    x_audio_art_w: String(w),
+    x_audio_art_h: String(h),
+  })
 }
 
 export function audioArtOf(source: string): AudioArt | null {
