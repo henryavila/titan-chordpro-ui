@@ -9,12 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2026-09-24
 
-### Changed
-- **Áudio de referência no celular:** o recolhido é o fone na linha Cifra | Letra. Toque abre o card; enquanto toca, o fone usa a cor do acorde e uma onda. Recolher o chrome fecha o card e deixa o fone, sem parar o áudio. No desktop o chip com título continua acima do dock. Tocar não segura mais o chrome.
+### No celular, o áudio de referência fechado é um fone
 
-### Fixed
-- **Importar Cifra Club:** a cifra é lida pelo texto (acorde, letra, seção), não pelas classes da página. Tablatura no meio da música, e a linha de acordes que só mostra o que a tab toca, fica de fora. Páginas gravadas: Tu És, Tua Vontade, Unidos em Cristo, Meu Farol.
-- **Demo, busca do Cifra Club:** quando a página não é a cifra, `/__cifra_fetch` monta o HTML que o parser já lê, a partir de `GET /v3/version/{artista}/{musica}`. O tom desse HTML é `stdShapeKey`. A página que já é a cifra segue como veio.
+Na mesma linha de **Cifra** e **Letra** aparece um fone. Toque nele e abre o player, com capa e os botões de tocar.
+
+Enquanto a música toca, o fone fica na cor do acorde e mostra uma onda entre as conchas.
+
+Se você esconde a barra (toque na cifra, ou a rolagem que guarda os controles), o player grande fecha. O fone continua na linha, e a música segue tocando.
+
+No computador o player fechado continua o mesmo de antes: um chip com o título da música, acima da barra.
+
+Tocar a música não deixa mais a barra presa na tela. Dá para esconder os controles com o áudio ligado.
+
+### Importar do Cifra Club
+
+A cifra passa a ser lida pelo que está escrito: acorde, letra e nome da parte. Não depende mais do nome das classes no HTML da página.
+
+Tablatura no meio da música sai fora, junto com a linha de acordes que só mostra o que a tab toca. Visto em Tu És, Tua Vontade, Unidos em Cristo e Meu Farol.
+
+### Demo
+
+Quando a página do Cifra Club não vem (o site responde bloqueado), a demo busca a versão na API e monta a cifra que o leitor já sabe abrir. O tom usado é o das formas da página, não o outro tom que a API manda junto. Se a página chega inteira, ela é usada como veio.
 
 ## [0.7.0] - 2026-09-24
 
