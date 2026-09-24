@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-fix14 is merged as `03f4ec5` (product `b013bb0`). Plan-tree verifier after that merge, exit 0, 147 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. The both review of `070b7c1..03f4ec5` is not written yet. Do not `done`. Next action is `review-code --mode=both` of that product range with Codex `gpt-6-astra`, then fix every finding.
+fix14 is merged as `03f4ec5` (product `b013bb0`). Plan-tree verifier after that merge, exit 0, 147 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. The both review is `.atomic-skills/reviews/2026-09-24-versoes-cifra-f0-fix14-both.md`, needs_changes. Codex informed 4 majors (same count as fix13). Local 2 critical and 3 major. Do not `done`. Do not spawn another writer on the value-inference heuristic. Next action is an operator look at that receipt before another fix.
 
 ### Verbatim state
 
