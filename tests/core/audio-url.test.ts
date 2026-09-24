@@ -301,6 +301,49 @@ describe('envelope audio clear', () => {
     expect(next).toContain('linha completa')
   })
 
+  it('setAudioUrl(null) does not keep a blank between sound keys under a non-lyric directive', () => {
+    for (const lead of ['{c: Intro}', '{define: C}', '{start_of_verse}']) {
+      const src = [
+        '{title:Uma}',
+        '{x_chart_default:oferta}',
+        '{start_of_x_chart:oferta}',
+        lead,
+        '{key:C}',
+        '',
+        '{x_audio_sung:https://cdn.example/c.m4a}',
+        '[C]linha',
+        '{end_of_x_chart}',
+      ].join('\n')
+      const next = setAudioUrl(src, null)
+      const oferta = chartBlock(next, 'oferta')
+      expect(oferta).toContain(lead)
+      expect(oferta).toContain('{key:C}')
+      expect(oferta).toContain('[C]linha')
+      expect(oferta).not.toMatch(/\n\n\[C\]linha/)
+      expect(oferta).not.toContain('x_audio_sung')
+      expect(oferta).not.toContain('cdn.example/c.m4a')
+    }
+  })
+
+  it('drops a long leading blank run beside a long sound directive', () => {
+    const sung = '{x_audio_sung:https://cdn.example/' + 'a'.repeat(4000) + '.m4a}'
+    const src = [
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:oferta}',
+      sung,
+      ...Array.from({ length: 2000 }, () => ''),
+      '{tempo:80}',
+      '[C]linha',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const next = setAudioUrl(src, null)
+    const oferta = chartBlock(next, 'oferta')
+    expect(oferta).toContain('{tempo:80}\n[C]linha')
+    expect(oferta).not.toMatch(/\n\n\[C\]linha/)
+    expect(oferta).not.toContain('x_audio_sung')
+  })
+
   it('setAudioUrl(null) keeps a blank that follows a lyric', () => {
     const src = [
       '{title:Uma}',

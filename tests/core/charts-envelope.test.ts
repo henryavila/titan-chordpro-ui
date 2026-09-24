@@ -650,6 +650,31 @@ describe('chart document edits and x_chart_default', () => {
     expect(cleared).toContain('[C]corpo')
   })
 
+  it('an unrelated flat save keeps the artist parse shows', () => {
+    const later = '{artist:Local}\n{composer:Bach}\n[C]song\n'
+    expect(parse(later).meta.artist).toBe('Bach')
+    const savedLater = writeSongScopedMeta(later, { subtitle: 'X' })
+    expect(parse(savedLater).meta.artist).toBe('Bach')
+    expect(savedLater).toContain('{composer:Bach}')
+    expect(savedLater).not.toContain('composer:Local')
+    expect(savedLater).toContain('{subtitle:X}')
+    expect(savedLater).toContain('[C]song')
+
+    const earlier = '{composer:Bach}\n{artist:Local}\n[C]song\n'
+    expect(parse(earlier).meta.artist).toBe('Local')
+    const savedEarlier = writeSongScopedMeta(earlier, { subtitle: 'X' })
+    expect(parse(savedEarlier).meta.artist).toBe('Local')
+    expect(savedEarlier).toContain('{subtitle:X}')
+    expect(savedEarlier).toContain('[C]song')
+
+    const repeated = '{composer:Bach}\n{composer:Mozart}\n[C]song\n'
+    expect(parse(repeated).meta.artist).toBe('Mozart')
+    const savedRepeated = writeSongScopedMeta(repeated, { subtitle: 'X' })
+    expect(parse(savedRepeated).meta.artist).toBe('Mozart')
+    expect(savedRepeated).toContain('{composer:Mozart}')
+    expect(savedRepeated).toContain('[C]song')
+  })
+
   it('counts colonless {transpose} and {key} the way parse does', () => {
     expect(storedTransposeSemis('{key:C}\n{transpose 2}\n[C]uma')).toBe(2)
     expect(storedTransposeSemis('{key C}\n{transpose:2}\n[C]uma')).toBe(2)

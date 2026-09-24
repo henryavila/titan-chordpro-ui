@@ -340,7 +340,7 @@ function spliceInner(raws: string[], chart: FileChart, inner: string): string[] 
  * One-chart header rewrite: known keys leave the body and come back on top, in
  * the canonical order. No two `{key:}` lines competing.
  */
-export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
+export function writeMetaOneHeader(source: string, meta: ChartMeta, keepArtistCredit = false): string {
   // A patch that omits `{x_chart_default}` must not drop a line already in the file.
   const setsDefault = Object.prototype.hasOwnProperty.call(meta, 'x_chart_default')
   const body = String(source ?? '')
@@ -348,6 +348,9 @@ export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
     .filter((l) => {
       const parsed = dirOf(l)
       if (!parsed) return true
+      // parse uses the last {artist}/{composer}. An unrelated save keeps those
+      // lines so a later composer credit is not replaced by an earlier artist.
+      if (keepArtistCredit && songIdentityMetaKey(parsed.name) === 'artist') return true
       const colonForm = /^\s*\{\s*[a-zA-Z_]+\s*:/.test(l)
       if (!colonForm) {
         // `{transpose 2}` stays. `{title Uma}` does not: readMeta still accepts it.
@@ -356,9 +359,10 @@ export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
       if (parsed.name === 'x_chart_default' && !setsDefault) return true
       return canonicalMetaKey(parsed.name) === null
     })
-  const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
-    (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
-  )
+  const head = META_KEYS.filter((k) => {
+    if (keepArtistCredit && k === 'artist') return false
+    return (meta[k] ?? '').trim()
+  }).map((k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}')
   return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
 }
 
@@ -366,6 +370,27 @@ export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
 function isImplicitChartId(chartId: string | undefined): boolean {
   const id = String(chartId ?? '').trim()
   return id === '' || id === 'default'
+}
+
+/** Last `{artist}` or `{composer}` value, the credit `parse` keeps. */
+function lastArtistCredit(source: string): string | undefined {
+  let seen = false
+  let credit = ''
+  for (const line of String(source ?? '').split('\n')) {
+    const d = dirOf(line)
+    if (!d || songIdentityMetaKey(d.name) !== 'artist') continue
+    seen = true
+    credit = d.value
+  }
+  return seen ? credit : undefined
+}
+
+/**
+ * `readMeta` keeps an earlier exact `{artist}` and ignores a later `{composer}`.
+ * `parse` uses whichever comes last. An unrelated patch must not collapse them.
+ */
+function artistCreditDisagrees(source: string): boolean {
+  return (readMeta(source).artist ?? '') !== (lastArtistCredit(source) ?? '')
 }
 
 function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string[]): string {
@@ -381,7 +406,10 @@ function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string
     else if (key === 'x_chart_default') next[key] = ''
     else delete next[key]
   }
-  return writeMetaOneHeader(source, next)
+  const keepArtistCredit =
+    !Object.prototype.hasOwnProperty.call(patch, 'artist') && artistCreditDisagrees(source)
+  if (keepArtistCredit) delete next.artist
+  return writeMetaOneHeader(source, next, keepArtistCredit)
 }
 
 /** Rewrite song-header keys; never strip `{key:}` / `{duration:}` from chart blocks. */
@@ -390,11 +418,17 @@ export function writeSongScopedMeta(source: string, patch: MetaPatch): string {
   if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS)
   const first = split.charts[0]!
   const headerLines = split.raws.slice(0, first.startLi)
-  const next = applyPatch(readKeyed(headerLines.join('\n'), 'song'), patch, SONG_META_KEYS)
+  const headerText = headerLines.join('\n')
+  const ownsArtist = Object.prototype.hasOwnProperty.call(patch, 'artist')
+  const keepArtistCredit = !ownsArtist && artistCreditDisagrees(headerText)
+  const next = applyPatch(readKeyed(headerText, 'song'), patch, SONG_META_KEYS)
+  if (keepArtistCredit) delete next.artist
   const rest = headerLines
     .filter((line) => {
       const d = dirOf(line)
-      return !d || songMetaKey(d.name) === null
+      if (!d) return true
+      if (keepArtistCredit && songIdentityMetaKey(d.name) === 'artist') return true
+      return songMetaKey(d.name) === null
     })
     .join('\n')
     .replace(/^\n+/, '')
@@ -405,26 +439,23 @@ export function writeSongScopedMeta(source: string, patch: MetaPatch): string {
   return [header, tail].filter((s) => s.length > 0).join('\n')
 }
 
-function lineStartsChartBody(line: string): boolean {
-  if (line.trim() === '') return false
-  const d = dirOf(line)
-  if (!d) return true
-  if (d.name === 'x_chart_label') return false
-  if (chartSoundKey(d.name)) return false
-  return true
+/** A lyric starts the body. `{c:}`, `{define:}`, `{start_of_verse}`, and any other directive do not. */
+function lineStartsChartBody(directive: { name: string } | null): boolean {
+  return directive === null
 }
 
 /**
  * Blanks that sit only between leading sound keys.
- * Nearest non-blank neighbours are one forward pass and one backward pass,
- * so a run of blanks is not walked again from each line.
- * A blank after the lyric (or any other body line) has started stays.
+ * Each non-blank line is classified once. Neighbour indexes are one forward
+ * pass and one backward pass, so a long directive is not parsed again per blank.
+ * A blank stays once a lyric has started.
  */
 function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
   const n = lines.length
   const prev = new Array<number>(n)
   const next = new Array<number>(n)
   const bodyBefore = new Array<boolean>(n)
+  const isSound = new Array<boolean>(n)
   let lastNonBlank = -1
   let seenBody = false
   for (let i = 0; i < n; i++) {
@@ -433,7 +464,9 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
     const line = lines[i] ?? ''
     if (line.trim() === '') continue
     lastNonBlank = i
-    if (lineStartsChartBody(line)) seenBody = true
+    const directive = dirOf(line)
+    isSound[i] = !!(directive && chartSoundKey(directive.name))
+    if (lineStartsChartBody(directive)) seenBody = true
   }
   lastNonBlank = n
   for (let i = n - 1; i >= 0; i--) {
@@ -446,9 +479,7 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
     const beforeAt = prev[i] ?? -1
     const afterAt = next[i] ?? n
     if (beforeAt < 0 || afterAt >= n) continue
-    const before = dirOf(lines[beforeAt] ?? '')
-    const after = dirOf(lines[afterAt] ?? '')
-    drop[i] = !!(before && chartSoundKey(before.name) && after && chartSoundKey(after.name))
+    drop[i] = isSound[beforeAt] === true && isSound[afterAt] === true
   }
   return drop
 }
