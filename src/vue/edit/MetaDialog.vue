@@ -151,7 +151,17 @@ function onDurationInput(e: Event) {
   setMeta('duration', maskDurationMmSs((e.target as HTMLInputElement).value))
 }
 function onDurationBlur() {
-  setMeta('duration', normalizeDurationMmSs(meta.value.duration ?? ''))
+  const cur = meta.value.duration ?? ''
+  const next = normalizeDurationMmSs(cur)
+  if (next === cur) return
+  // Tabbing through only reformats. Do not mark duration touched, and do not
+  // replace a stored length the mask would read as different seconds.
+  if (!touched.value.has('duration')) {
+    const curSec = songDurationSec(cur)
+    const nextSec = songDurationSec(next)
+    if (curSec !== nextSec) return
+  }
+  meta.value = { ...meta.value, duration: next }
 }
 function bpmStep(d: number) {
   const cur = parseInt(String(meta.value.tempo ?? ''), 10)
