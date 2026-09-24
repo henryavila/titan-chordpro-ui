@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { drawDiagram, resolveDiagram, type DiagramDraw, type FretDraw } from '../../src/core/index'
+import { drawDiagram, parseDefineDirective, resolveDiagram, type DiagramDraw, type FretDraw } from '../../src/core/index'
 import { keyIndex } from '../../src/core/transpose'
 
 const AM_FRETS = ['x', 0, 2, 2, 1, 0] as const
@@ -219,7 +219,16 @@ describe('drawDiagram', () => {
     expect(lines.length).toBeLessThanOrEqual(24)
     expect(lines.length).toBeGreaterThan(0)
     expect(d.svg).not.toContain('Infinity')
+    expect(d.svg).not.toContain('10000')
     expect(d.svg.length).toBeLessThan(20000)
+    expect(d.dots.some((dot) => dot.string === 1 || dot.fret > 24)).toBe(false)
+    expect(d.dots.map((dot) => [dot.string, dot.fret])).toEqual([
+      [2, 2],
+      [4, 1],
+    ])
+    expectDotsOnFretboard(d)
+    expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length)
+    expect(diagramDotCys(d.svg)).not.toContain(yOf(lines.length) - 9)
   })
 
   it('does not hang when a fret token is hundreds of nines', () => {
@@ -238,7 +247,53 @@ describe('drawDiagram', () => {
       expect(lines.length).toBeLessThanOrEqual(24)
       expect(d.svg).toContain('<svg')
       expect(d.svg).not.toContain('Infinity')
+      expect(d.dots.some((dot) => dot.string === 1 || !Number.isFinite(dot.fret) || dot.fret > 24)).toBe(false)
+      expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length)
+      expect(diagramDotCys(d.svg)).not.toContain(yOf(lines.length) - 9)
     }
+  })
+
+  it('does not draw a capo past the fret cap on the last fret', () => {
+    const d = drawDiagram({
+      instrument: 'guitar',
+      voicing: { baseFret: 1, frets: [...AM_FRETS] },
+      capoFret: 30,
+    })
+    expect(d.kind).toBe('frets')
+    if (d.kind !== 'frets') return
+    expect(d.hasCapoBar).toBe(false)
+    expect(d.capoLabel).toBeNull()
+    expect(d.svg).not.toContain('diagram-capo-bar')
+    expect(d.svg).not.toMatch(/Capo/)
+    expect(d.dots).toEqual([])
+    expect(d.svg).not.toContain('diagram-dot')
+    const lines = d.svg.match(/class="diagram-fret"/g) ?? []
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.length).toBeLessThanOrEqual(24)
+  })
+
+  it('draws fret 24 and omits a dot past the cap', () => {
+    const onCap = asFrets(
+      drawDiagram({
+        instrument: 'guitar',
+        voicing: { baseFret: 1, frets: ['x', 24, 0, 0, 0, 0] },
+      }),
+    )
+    expect(onCap.dots).toEqual([expect.objectContaining({ string: 1, fret: 24, relativeFret: 24 })])
+    expect(onCap.svg.match(/class="diagram-fret"/g)).toHaveLength(24)
+    expect(diagramDotCys(onCap.svg)).toEqual([yOf(24) - 9])
+
+    const past = asFrets(
+      drawDiagram({
+        instrument: 'guitar',
+        voicing: { baseFret: 1, frets: ['x', 25, 0, 0, 0, 0] },
+      }),
+    )
+    expect(past.dots).toEqual([])
+    expect(past.svg).not.toContain('diagram-dot')
+    const lines = past.svg.match(/class="diagram-fret"/g) ?? []
+    expect(lines.length).toBeLessThanOrEqual(24)
+    expect(lines.length).toBeGreaterThan(0)
   })
 
   it('draws capo opens clear of the filled capo bar', () => {
@@ -286,6 +341,42 @@ describe('drawDiagram', () => {
     expect(d.capoFret).toBe(0)
     expect(d.lit).toEqual([])
     expect(d.litNotes).toEqual([])
+  })
+
+  it('lights Caug from the leading note and its keys', () => {
+    const keysOnly = parseDefineDirective('{define: Caug keys 0 4 8}')
+    expect(keysOnly.class).toBe('parse')
+    if (keysOnly.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [keysOnly] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const d = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'Caug' })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.lit).toEqual([0, 4, 8])
+    expect(d.litNotes).toEqual(['C', 'E', 'G#'])
+
+    const mixed = parseDefineDirective('{define: Caug frets x 3 2 1 1 0 keys 0 4 8}')
+    expect(mixed.class).toBe('parse')
+    if (mixed.class !== 'parse') return
+    const mixedHit = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [mixed] })
+    expect(mixedHit.class).toBe('hit')
+    if (mixedHit.class !== 'hit') return
+    const mixedDraw = drawDiagram({ instrument: 'piano', voicing: mixedHit.voicing, token: 'Caug' })
+    expect(mixedDraw.kind).toBe('piano')
+    if (mixedDraw.kind !== 'piano') return
+    expect(mixedDraw.litNotes).toEqual(['C', 'E', 'G#'])
+
+    const midi = parseDefineDirective('{define: Daug keys 48 52 56}')
+    expect(midi.class).toBe('parse')
+    if (midi.class !== 'parse') return
+    const midiHit = resolveDiagram({ token: 'Daug', instrument: 'piano', overrides: [midi] })
+    expect(midiHit.class).toBe('hit')
+    if (midiHit.class !== 'hit') return
+    const midiDraw = drawDiagram({ instrument: 'piano', voicing: midiHit.voicing, token: 'Daug' })
+    expect(midiDraw.kind).toBe('piano')
+    if (midiDraw.kind !== 'piano') return
+    expect(midiDraw.litNotes).toEqual(['C', 'E', 'G#'])
   })
 })
 
