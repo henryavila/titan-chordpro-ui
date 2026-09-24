@@ -415,6 +415,20 @@ describe('resolveDiagram', () => {
     expect(backDraw.lit).toEqual([2, 9])
     expect(backDraw.litNotes).toEqual(['D', 'A'])
   })
+
+  it('draws D9 keys 0 4 7 14 as D F# A E', () => {
+    const raw = parseDefineDirective('{define: D9 keys 0 4 7 14}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D9', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D9' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 6, 9, 4])
+    expect(draw.litNotes).toEqual(['D', 'F#', 'A', 'E'])
+  })
 })
 
 const TUNING = {

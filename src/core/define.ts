@@ -195,10 +195,14 @@ function sameOrder(a: readonly number[], b: readonly number[]): boolean {
  * 0–11 keys: shift the draw's sounding classes, then keep the absolute list
  * or the relative list that the renamed chord reads back as that sequence.
  * When neither candidate reads that sequence, store 60 + pc. Do not throw.
- * A key outside 0–11 stays MIDI: add n, no wrap.
+ * Keys that are all >= 60 add n, then store 60 + (result mod 12).
+ * Any other key outside 0–11 adds n and does not wrap.
  */
 function transposePianoKeys(def: ChordDefine, n: number, flats: boolean): number[] {
   const keys = def.keys ?? []
+  if (keys.length > 0 && keys.every((k) => k >= 60)) {
+    return keys.map((k) => 60 + mod12(k + n))
+  }
   const midi = () => keys.map((k) => shiftKey(k, n))
   if (!keys.length || !keys.every(isPitchClass)) return midi()
   const parsed = parseChordToken(def.name)
@@ -227,8 +231,8 @@ function transposePianoKeys(def: ChordDefine, n: number, flats: boolean): number
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
  * string is open (fret 0) or the new base would fall below 1. Piano keys
  * inside 0–11 are stored so the renamed chord reads the shifted sounding
- * classes, or as 60 + pc when neither 0–11 candidate does. MIDI keys add n
- * and do not wrap.
+ * classes, or as 60 + pc when neither 0–11 candidate does. Keys that are
+ * all >= 60 add n and stay >= 60. Other keys outside 0–11 add n and do not wrap.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
