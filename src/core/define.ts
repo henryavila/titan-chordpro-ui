@@ -3,7 +3,7 @@
  * not package dictionary. Generic `{define:}` infers instrument from payload.
  */
 
-import { pianoKeysAreMidi } from './chord-dict'
+import { PIANO_MIDI_FLOOR, pianoKeysAreMidi } from './chord-dict'
 import { transposeToken } from './transpose'
 
 export const DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/
@@ -173,48 +173,71 @@ export function serializeDefine(def: ChordDefine): string {
   return `{${body}}`
 }
 
-/**
- * Shifted MIDI that would land on an interval (≤ 17) is lifted by the same
- * number of octaves until every key is above 17. Spacing stays.
- */
-function keepMidiAboveIntervals(keys: readonly number[]): number[] {
-  const min = Math.min(...keys)
-  if (min > 17) return [...keys]
-  const octaves = Math.floor((17 - min) / 12) + 1
-  const bump = octaves * 12
-  return keys.map((k) => k + bump)
+/** Lowest key. A loop — never `Math.min(...keys)`, which throws on a long list. */
+function lowestKey(keys: readonly number[]): number {
+  let min = Number.POSITIVE_INFINITY
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i] ?? 0
+    if (k < min) min = k
+  }
+  return min
 }
 
 /**
- * Same MIDI test as `pianoKeysAreMidi`. Distances, including a number above
- * 17 beside a key in 0–17 (12, 16, 19), are returned unchanged. MIDI adds n,
- * and if a result is ≤ 17 every key is lifted by the same octaves until each
- * is > 17. Does not throw.
+ * MIDI adds n, then every key is lifted by the same number of octaves until
+ * each one is >= 48. Spacing stays. Distances are not passed here.
+ */
+function liftMidiToFloor(keys: readonly number[]): number[] {
+  if (keys.length === 0) return []
+  const min = lowestKey(keys)
+  if (!Number.isFinite(min) || min >= PIANO_MIDI_FLOOR) return [...keys]
+  const octaves = Math.floor((PIANO_MIDI_FLOOR - 1 - min) / 12) + 1
+  const bump = octaves * 12
+  const out: number[] = []
+  for (let i = 0; i < keys.length; i++) out.push((keys[i] ?? 0) + bump)
+  return out
+}
+
+/**
+ * Distances, including a list entirely above 17 (24 28 31), stay as written.
+ * MIDI (every key >= 48, or any key < 0) adds n and is lifted to >= 48.
+ * Does not throw, including when the list is longer than 32.
  */
 function transposePianoKeys(keys: readonly number[], n: number): number[] {
-  if (pianoKeysAreMidi(keys)) {
-    return keepMidiAboveIntervals(keys.map((k) => k + n))
-  }
-  return [...keys]
+  if (!pianoKeysAreMidi(keys)) return [...keys]
+  const shifted: number[] = []
+  for (let i = 0; i < keys.length; i++) shifted.push((keys[i] ?? 0) + n)
+  return liftMidiToFloor(shifted)
 }
 
 /**
- * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
- * string is open (fret 0) or the new base would fall below 1. Piano distances
- * (any key in 0–17, none below 0) stay as written; only the chord name
- * changes. MIDI (every key > 17, or any key < 0) adds n and stays above 17
- * without folding into one octave.
+ * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop the
+ * fret shape if any string is open (fret 0) or the new base would fall
+ * below 1. Piano keys still transpose in that case — the define is not
+ * deleted. Distances stay as written; only the chord name changes. MIDI
+ * adds n and stays >= 48 without folding into one octave.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
-  if (def.frets?.some((f) => f === 0)) return null
-  const next: ChordDefine = { ...def, name: transposeToken(def.name, n, flats) }
-  if (def.frets?.length) {
-    const base = (def.baseFret ?? 1) + n
-    if (base < 1) return null
-    next.baseFret = base
+  const frets = def.frets
+  const hasFrets = (frets?.length ?? 0) > 0
+  const hasKeys = (def.keys?.length ?? 0) > 0
+  const open = frets?.some((f) => f === 0) ?? false
+  const nextBase = hasFrets ? (def.baseFret ?? 1) + n : 1
+  const fretsMove = hasFrets && !open && nextBase >= 1
+  if (!fretsMove && !hasKeys) return null
+
+  const next: ChordDefine = {
+    name: transposeToken(def.name, n, flats),
+    instrument: def.instrument,
+    directive: def.directive,
   }
-  if (def.keys?.length) next.keys = transposePianoKeys(def.keys, n)
+  if (fretsMove && frets) {
+    next.baseFret = nextBase
+    next.frets = [...frets]
+    if (def.fingers) next.fingers = [...def.fingers]
+  }
+  if (hasKeys && def.keys) next.keys = transposePianoKeys(def.keys, n)
   return next
 }
 

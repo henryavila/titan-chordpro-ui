@@ -58,7 +58,7 @@ function isInstrument(value: string): value is DiagramInstrument {
   return value === 'guitar' || value === 'ukulele' || value === 'piano'
 }
 
-function fromDefine(def: ChordDefine, want: Canonical): DiagramVoicing {
+function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
   const voicing: DiagramVoicing = {}
   if (def.frets?.length) {
     voicing.baseFret = def.baseFret ?? 1
@@ -66,9 +66,30 @@ function fromDefine(def: ChordDefine, want: Canonical): DiagramVoicing {
   }
   if (def.fingers) voicing.fingers = [...def.fingers]
   if (def.keys?.length) {
-    voicing.keys = pianoKeysToRelative(def.keys, want.rootPc)
+    voicing.keys = rootPc == null ? [...def.keys] : pianoKeysToRelative(def.keys, rootPc)
   }
   return voicing
+}
+
+/** Parser-unknown name: exact `{define}` name plus a fret shape. `+` never hits. */
+function exactFretOverride(
+  overrides: readonly ChordDefine[],
+  instrument: DiagramInstrument,
+  token: string,
+): DiagramHit | null {
+  for (const def of overrides) {
+    if (def.instrument !== instrument) continue
+    if (def.name !== token) continue
+    if (!def.frets?.length) continue
+    return {
+      class: 'hit',
+      instrument,
+      token,
+      source: 'override',
+      voicing: fromDefine(def, null),
+    }
+  }
+  return null
 }
 
 function fromDict(found: DictVoicing): DiagramVoicing {
@@ -102,11 +123,16 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
   }
 
   const parsed = parseChordToken(token)
-  if (parsed.class !== 'parse') return { class: 'miss', reason: 'unknown-token' }
+  // `7+` is not aug or maj7. A define named C7+ does not make it a hit.
+  if (token.includes('+')) return { class: 'miss', reason: 'unknown-token' }
+
+  const overrides = opts.overrides ?? []
+  if (parsed.class !== 'parse') {
+    return exactFretOverride(overrides, instrument, token) ?? { class: 'miss', reason: 'unknown-token' }
+  }
   const want = canonicalOf(token)
   if (!want) return { class: 'miss', reason: 'unknown-token' }
 
-  const overrides = opts.overrides ?? []
   for (const def of overrides) {
     if (!overrideMatch(def, instrument, token, want)) continue
     if (instrument !== 'piano' && !def.frets?.length) continue
@@ -116,7 +142,7 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
       instrument,
       token,
       source: 'override',
-      voicing: fromDefine(def, want),
+      voicing: fromDefine(def, want.rootPc),
     }
   }
 
