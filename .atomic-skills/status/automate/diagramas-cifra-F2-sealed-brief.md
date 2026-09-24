@@ -27,12 +27,12 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix12
-- **writerBranch:** impl/diagramas-cifra-F2-fix12
-- **baseRef:** bfa02a642024eae93c8e075c4c81b6625a25bd0f
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix15
+- **writerBranch:** impl/diagramas-cifra-F2-fix15
+- **baseRef:** 511a737b96a0676fd71d2c8a63b3961b81154b68
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
-### Tasks (1)
+### Tasks (2)
 
 #### T-002 — Dictionary + resolveDiagram
 - status: pending
@@ -40,6 +40,14 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - scopeBoundary: ["No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA only; do not ship baritone; do not guess 7+."]
 - acceptance: ["resolveDiagram({ token, instrument, overrides }) prefers file override over dictionary; guitar token is shapeName; piano token is concert; miss reasons are unknown-token or no-shape; C7M hits maj7 voicing; C7+ is miss; one voicing per name (lowest open)"]
 - verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/resolve-diagram.test.ts","expectExitCode":0}
+- weight: 3
+
+#### T-003 — SVG draw guitar ukulele piano with capo
+- status: pending
+- paths: ["src/core/diagram-draw.ts","src/core/index.ts","tests/core/diagram-draw.test.ts"]
+- scopeBoundary: ["No Vue components; draw returns data or SVG string from core; do not pause auto-scroll here; do not open the modal."]
+- acceptance: ["Guitar/ukulele draw with capoFret 2 includes a capo bar and the label Capo 2; open string in the shape is at the capo, not the nut; piano draw ignores capoFret and lights concert keys; fingers 1-4 render when present, else dots only"]
+- verifier: {"kind":"shell","command":"pnpm exec vitest run tests/core/diagram-draw.test.ts","expectExitCode":0}
 - weight: 3
 
 ## Claim report (required output)
@@ -88,65 +96,45 @@ Rules:
 
 ## Scoped context — this dispatch only
 
-Fix one defect in the piano `{define}` reader and transpose. Do not open a Vue modal. Do not edit guitar or ukulele dictionary packs. `src/core/chord-dict.ts` must not import `src/core/define.ts`. `transposePianoKeys` must not throw.
+One commit is enough if both tasks share it: then the claim must use exclusive commit SHAs. Prefer two commits and `base: null`, `head: null`, each SHA used once.
 
-### Rule
+Commit 1 `fix(T-002): do not shadow an existing piano define`:
+- `src/core/define.ts`, tests in `tests/core/define-directive.test.ts` and `tests/core/export-cho.test.ts` if needed
 
-A key list is MIDI only when every key is greater than 17, or any key is below 0.
-If any key is in 0–17, the whole list is a distance from the chord root. Numbers above 17 in that list stay distances (12, 16, 19).
-Interval transpose returns the same numbers. Only the chord name changes.
-MIDI transpose adds n. If a result is 17 or below, lift every key by the same number of octaves until each key is greater than 17.
-Use the same MIDI test in `pianoSoundingPitchClasses` and `transposePianoKeys`.
+Commit 2 `fix(T-003): off-neck capo and quoted piano names`:
+- `src/core/diagram-draw.ts`, `src/core/resolve-diagram.ts`, `tests/core/diagram-draw.test.ts`, `tests/core/resolve-diagram.test.ts`
 
-### Must become true
+Keep these true:
+- One line `{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}` +2 still becomes `{define: E keys 0 4 7}` and parses.
+- `{define: D keys 24 28 31}` stays distances and draws D F# A.
+- MIDI lists with every key >= 48 still add the shift.
+- `C7+` stays unknown-token. Guitar Caug with frets stays a hit.
+- Fret 10000 does not hang and is not drawn as fret 24.
 
-- `{define: D keys 12 16 19}` draws D, F#, A (pitch classes 2, 6, 9). It must not draw C, E, G.
-- Transpose +2 stores `{define: E keys 12 16 19}` and draws E, G#, B (pitch classes 4, 8, 11). It must not store `26 30 33`.
-- `{define: D keys 7 12 16}` stays distances and draws D, A, F# (pitch classes 2, 9, 6).
+### Shadow
 
-### Already green — do not change the stored numbers or the sounding notes
+If the chart already has a piano `{define:}` for the transposed name, drop the fretted line that lost its frets. Do not emit a second piano define that would be found first.
+`{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}` followed by `{define: D keys 0 7}`, transposed +2, must still resolve piano E as keys `[0, 7]`, not `[0, 4, 7]`.
 
-- Dsus2 `0 7` +5 stores Gsus2 `[0, 7]` and draws G, D. −5 stores `[0, 7]` and draws D, A.
-- C `0 2` +2 stores D `[0, 2]` and draws D, E. −2 stores C `[0, 2]` and draws C, D. No throw.
-- D9 `0 4 7 14` draws D, F#, A, E. +2 stores E9 `[0, 4, 7, 14]` and draws E, G#, B, F#.
-- C `0 4 7` +2 stores D `[0, 4, 7]`. D `0 4 7` +2 stores E `[0, 4, 7]`.
-- B `0 4 7` +1 stores C `[0, 4, 7]`. `B keys 11 3 6` stays distances, not B major.
-- F7sus4 `0 5 10` +2 stores G7sus4 `[0, 5, 10]`.
-- Am `0 3 7` draws A, C, E. Am `9 0 4` draws F#, A, C#.
-- MIDI `48 52 55` +2 stores `[50, 54, 57]`. C `48 50` +2 stores D `[50, 52]` and draws D, E.
-- C `60 64 79` +2 stores `[62, 66, 81]`. −2 restores `[60, 64, 79]`.
-- D `62 64` −60 stores `[26, 28]` (every key still above 17) and draws D, E.
-- 408 fretted dictionary cells stay `17*12*2`.
+### Off-neck
 
-### Tests
+A dot whose fret is above 24: that string is a mute, not a blank string and not a dot on fret 24.
+Capo 30 with frets `x 0 2 2 1 0` must not draw open circles at the nut. If the capo bar is not drawn, the SVG must not show those strings as open.
 
-Add the new assertions in `tests/core/define-directive.test.ts` and/or `tests/core/resolve-diagram.test.ts`.
-Change `tests/core/export-cho.test.ts` only if an existing assertion must change.
-Do not add a second guess that scores absolute pitch classes against intervals.
+### Quotes
 
-### Self-check before the claim
+`{define: C' keys 0 4 7}`, `{define: C" keys 0 4 7}`, and a curly apostrophe in the name must be a miss, not a hit with no lit keys. Same rejection the draw already uses for quotes.
 
-If `node_modules` is missing, run `CI=true pnpm install` in this worktree only. Do not symlink `node_modules`.
+### Checks
+
+`CI=true pnpm install` in this worktree only if `node_modules` is missing.
 
 ```
 pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts
 pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts
 ```
 
-Both must exit 0. Commit only the product files you changed, with message `fix(T-002): a high interval does not turn the chord into MIDI`.
-
-### Claim report path
-
-Write the JSON to this absolute path (the sibling worktree does not own the orchestrator status file):
-
-`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
-
-One task, T-002, status claimed-pass only if both commands exited 0.
-`base`: `bfa02a642024eae93c8e075c4c81b6625a25bd0f`
-`head`: the product commit you just created.
-`paths`: the files in that commit.
-`verifierCommand`: the first vitest command above.
-`transcript`: the pass counts.
+Both exit 0. Claim JSON path: `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
 
 ---
 sealed-brief: true

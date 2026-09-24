@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 12,
-  "updatedAt": "2026-09-24T16:34:15.027Z",
+  "redispatchCount": 15,
+  "updatedAt": "2026-09-24T18:39:53.558Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -69,12 +69,25 @@
       "reason": "Operator said implement the plan and resolve every finding. Astra informed pass on b57bf30..3d0c3c6: D keys 12 16 19 is read as MIDI and draws C E G. A key above 17 must not flip a list that still has a key in 0-17. MIDI stays only when every key is above 17 or any key is below 0. Do not start F3.",
       "priorCount": 11,
       "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T17:38:52.842Z",
+      "reason": "Operator said resolve every finding and continue. F2 phase review: bound diagram rendering, honor an exact {define} name, keep open-string marks off the capo bar, do not throw on a long key list, and do not read a distance above 17 as MIDI. Real piano keys stay the lists where every key is at least 48. A slash without a matching define stays no-shape. Do not start F3.",
+      "priorCount": 12,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T18:08:37.315Z",
+      "reason": "Operator said resolve every finding. Fix13 review: a define-guitar line that loses its frets must be saved as a plain piano define, and an unknown piano name must not be a hit that lights nothing. Do not draw a dot past the fret cap. Do not start F3.",
+      "priorCount": 13,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T18:39:53.558Z",
+      "reason": "Operator said resolve every finding. Fix14 review: do not let a converted guitar define shadow an existing piano define, do not draw nut opens for a capo past the neck, and do not hit a quoted piano name that lights nothing. Do not start F3.",
+      "priorCount": 14,
+      "gate": "spawn"
     }
   ],
-  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json",
-  "lastAssert": {
-    "gate": "done",
-    "ok": true,
-    "at": "2026-09-24T16:34:15.027Z"
-  }
+  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json"
 }

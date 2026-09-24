@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: Run phase-done for F2.
+nextAction: Review 511a737..53a7429 with local and Codex Astra, then close T-002 and T-003 if that pass is clean. Do not start F3.
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -32,7 +32,7 @@ businessIntent:
   doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e
     tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha
     voicing de concert; piano ignora capoFret.
-tasksDone: 3
+tasksDone: 1
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 1
@@ -91,16 +91,8 @@ tasks:
     weight: 3
   - id: T-002
     title: Dictionary + resolveDiagram
-    status: done
-    closedAt: 2026-09-24T16:34:31.000Z
-    lastUpdated: 2026-09-24T16:34:31.000Z
-    evidence:
-      verifierKind: shell
-      verifiedAt: 2026-09-24T16:34:31.000Z
-      verifiedCommit: e8cff9e27e93fd8e9272b86d460afd291f58af36
-      passed: true
-      exitCode: 0
-      outputSummary: ✓ tests/core/resolve-diagram.test.ts (33 tests)
+    status: pending
+    lastUpdated: 2026-09-24T17:40:00.000Z
     scopeBoundary:
       - No Vue; no editor sheet; guitar dictionary is EADGBE; ukulele is GCEA
         only; do not ship baritone; do not guess 7+.
@@ -130,16 +122,8 @@ tasks:
     weight: 3
   - id: T-003
     title: SVG draw guitar ukulele piano with capo
-    status: done
-    closedAt: 2026-09-23T18:43:30.000Z
-    lastUpdated: 2026-09-23T18:43:30.000Z
-    evidence:
-      verifierKind: shell
-      verifiedAt: 2026-09-23T18:42:45.000Z
-      verifiedCommit: b30690c8b98fc64e7c09a1d450e56c14304fa364
-      passed: true
-      exitCode: 0
-      outputSummary: ✓ tests/core/diagram-draw.test.ts (12 tests)
+    status: pending
+    lastUpdated: 2026-09-24T17:40:00.000Z
     scopeBoundary:
       - No Vue components; draw returns data or SVG string from core; do not
         pause auto-scroll here; do not open the modal.
@@ -184,7 +168,7 @@ _(plan doc, external refs)_
 ## Session handoff
 - **Narrative:** F2 tasks are closed. `{define: D keys 12 16 19}` stays a distance and draws D, F#, A. Transpose +2 keeps `12 16 19` on E. MIDI is only when every key is above 17, or any key is below 0. Host verifiers passed. Local review was clean. Codex Astra informed pass approved `bfa02a6..a74cc81`. T-002 is done on `e8cff9e`. F3 is not started.
 - **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. The mixed-MIDI finding on `14 18 21` was dropped because ChordPro reads those numbers as distances.
-- **Single nextAction:** Run phase-done for F2.
+- **Single nextAction:** Review 511a737b96a0676fd71d2c8a63b3961b81154b68..53a7429014d699906726a7acc402e189ca80e0c0 with local and Codex Astra. Close T-002 and T-003 only if that pass is clean. Do not start F3.
 - **Open bug:** none in the host verifiers. Receipt `.atomic-skills/reviews/2026-09-24-1625-diagramas-cifra-f2-fix12-both.md`.
 - **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 stores E keys `[0, 4, 7]` and draws E G# B. C `0 4 7` +2 stores D keys `[0, 4, 7]` and draws D F# A. B `0 4 7` +1 stores C keys `[0, 4, 7]` and draws C E G. `B keys 11 3 6` is distances, not B major. MIDI `48 52 55` +2 is still `[50, 54, 57]`. F7sus4 `0 5 10` +2 stores `G7sus4` keys `[0, 5, 10]` and draws G, C, F. Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D; −5 stores `[0, 7]` and draws D, A. Dsus2 +3 stores `Fsus2` keys `[0, 7]` and draws F, C; −3 stores `[0, 7]` and draws D, A. C `0 2` +2 stores D keys `[0, 2]` and draws D, E; −2 stores C keys `[0, 2]` and draws C, D. D9 `0 4 7 14` draws D, F#, A, E; +2 stores `E9` keys `[0, 4, 7, 14]` and draws E, G#, B, F#. D7M(9)/B keys `9 0 11 2` draws B, D, C#, E. Am `0 3 7` draws A, C, E. Am `9 0 4` draws F#, A, C#. No Vue in core.
 - **Verbatim state:** Plan branch `plan/diagramas-cifra`. HEAD `e8cff9e27e93fd8e9272b86d460afd291f58af36`. Product commit `a74cc8191790b5071dc041814ae0d41f6209a086`. T-002 verifier `pnpm exec vitest run tests/core/resolve-diagram.test.ts` exit 0, 33 tests, verifiedCommit `e8cff9e27e93fd8e9272b86d460afd291f58af36`. Also `define-directive` + `resolve-diagram` + `export-cho` = 75 passed; `layout-capo` + `resolve-diagram` + `diagram-draw` = 63 passed. Cursor step E, phaseId F2, redispatchCount 12. Lease cleared. Worktree `diagramas-cifra-F2-fix12` removed.
