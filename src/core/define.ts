@@ -194,6 +194,7 @@ function sameOrder(a: readonly number[], b: readonly number[]): boolean {
 /**
  * 0–11 keys: shift the draw's sounding classes, then keep the absolute list
  * or the relative list that the renamed chord reads back as that sequence.
+ * When neither candidate reads that sequence, store 60 + pc. Do not throw.
  * A key outside 0–11 stays MIDI: add n, no wrap.
  */
 function transposePianoKeys(def: ChordDefine, n: number, flats: boolean): number[] {
@@ -209,28 +210,25 @@ function transposePianoKeys(def: ChordDefine, n: number, flats: boolean): number
   const sounding = pianoSoundingPitchClasses(keys, rootPc, parsed.quality, bassPc)
   const shifted = sounding.map((k) => shiftKey(k, n))
   const renamed = parseChordToken(transposeToken(def.name, n, flats))
-  if (renamed.class !== 'parse') {
-    throw new Error('transposeDefine: renamed piano chord does not parse')
-  }
+  if (renamed.class !== 'parse') return shifted
   const newRoot = keyIndex(renamed.root)
-  if (newRoot === null) throw new Error('transposeDefine: renamed piano chord does not parse')
+  if (newRoot === null) return shifted
   const newBass = renamed.bass != null ? keyIndex(renamed.bass) : null
-  if (renamed.bass != null && newBass === null) {
-    throw new Error('transposeDefine: renamed piano chord does not parse')
-  }
+  if (renamed.bass != null && newBass === null) return shifted
   const readsShifted = (candidate: readonly number[]) =>
     sameOrder(pianoSoundingPitchClasses(candidate, newRoot, renamed.quality, newBass), shifted)
   if (readsShifted(shifted)) return shifted
   const relative = shifted.map((pc) => mod12(pc - newRoot))
   if (readsShifted(relative)) return relative
-  throw new Error('transposeDefine: piano keys do not round-trip')
+  return shifted.map((pc) => 60 + pc)
 }
 
 /**
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
  * string is open (fret 0) or the new base would fall below 1. Piano keys
  * inside 0–11 are stored so the renamed chord reads the shifted sounding
- * classes. MIDI keys add n and do not wrap.
+ * classes, or as 60 + pc when neither 0–11 candidate does. MIDI keys add n
+ * and do not wrap.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
