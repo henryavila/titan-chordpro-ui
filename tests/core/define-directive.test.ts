@@ -427,14 +427,15 @@ describe('transposeDefine', () => {
     expect(backDraw.litNotes).toEqual(['C', 'D'])
   })
 
-  it('keeps D keys 62 64 above 17 after a -60 transpose and still draws D E', () => {
+  it('keeps D keys 62 64 at or above 48 after a -60 transpose and still draws D E', () => {
     const raw = parseDefineDirective('{define: D keys 62 64}')
     expect(raw.class).toBe('parse')
     if (raw.class !== 'parse') return
     expect(() => transposeDefine(raw, -60, false)).not.toThrow()
     const shifted = transposeDefine(raw, -60, false)
-    expect(shifted).toMatchObject({ name: 'D', keys: [26, 28] })
-    expect(shifted?.keys?.every((k) => k > 17)).toBe(true)
+    expect(shifted).toMatchObject({ name: 'D', keys: [50, 52] })
+    expect(shifted?.keys).not.toEqual([26, 28])
+    expect(shifted?.keys?.every((k) => k >= 48)).toBe(true)
     if (!shifted) return
     const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
     expect(hit.class).toBe('hit')
@@ -503,6 +504,45 @@ describe('transposeDefine', () => {
     expect(up).toMatchObject({ name: 'D', keys: [62, 66, 81] })
     if (!up) return
     expect(transposeDefine(up, -2, false)).toMatchObject({ name: 'C', keys: [60, 64, 79] })
+  })
+
+  it('keeps piano keys when open frets cannot move', () => {
+    const raw = parseDefineDirective('{define: D frets x 0 0 2 3 2 keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.frets).toEqual(['x', 0, 0, 2, 3, 2])
+    expect(() => transposeDefine(raw, 2, false)).not.toThrow()
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+    expect(up?.frets).toBeUndefined()
+    if (!up) return
+    expect(serializeDefine(up)).toBe('{define: E keys 0 4 7}')
+    const hit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: up.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.litNotes).toEqual(['E', 'G#', 'B'])
+  })
+
+  it('does not throw when a key list is longer than 32', () => {
+    const distances = Array.from({ length: 40 }, () => 0)
+    const distanceLine = `{define: C keys ${distances.join(' ')}}`
+    const distance = parseDefineDirective(distanceLine)
+    expect(distance.class).toBe('parse')
+    if (distance.class !== 'parse') return
+    expect(() => transposeDefine(distance, 2, false)).not.toThrow()
+    expect(transposeDefine(distance, 2, false)?.keys).toEqual(distances)
+
+    const midi = Array.from({ length: 40 }, () => 60)
+    const midiRaw = parseDefineDirective(`{define: D keys ${midi.join(' ')}}`)
+    expect(midiRaw.class).toBe('parse')
+    if (midiRaw.class !== 'parse') return
+    expect(() => transposeDefine(midiRaw, -60, false)).not.toThrow()
+    const shifted = transposeDefine(midiRaw, -60, false)
+    expect(shifted?.keys).toEqual(Array.from({ length: 40 }, () => 48))
+    expect(shifted?.keys?.every((k) => k >= 48)).toBe(true)
   })
 
   it('keeps a key above 17 as a distance when another key is in 0–17', () => {

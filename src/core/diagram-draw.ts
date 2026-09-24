@@ -56,6 +56,12 @@ export type DrawDiagramOpts = {
 
 const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
 
+/** Neck window. A fret of 10000 or hundreds of nines must not draw a line each. */
+const FRET_LINE_CAP = 24
+const PAD_X = 24
+const PAD_Y = 28
+const FRET_H = 18
+
 function fingerOf(slot: number | 'x' | undefined): number | undefined {
   if (typeof slot !== 'number') return undefined
   if (slot < 1 || slot > 4) return undefined
@@ -131,6 +137,26 @@ function drawFrets(
   }
 }
 
+/** Finite fret inside the drawn neck. Non-finite and huge frets clamp to the cap. */
+function drawnFret(fret: number, span: number): number {
+  if (!Number.isFinite(fret)) return span
+  if (fret < 0) return 0
+  if (fret > span) return span
+  return fret
+}
+
+/** Highest fret line to paint. Never follows a token of hundreds of nines. */
+function fretSpan(capoFret: number, dots: readonly FretDot[]): number {
+  let max = 4
+  if (Number.isFinite(capoFret) && capoFret > max) max = capoFret
+  for (let i = 0; i < dots.length; i++) {
+    const fret = dots[i]?.fret ?? 0
+    if (Number.isFinite(fret) && fret > max) max = fret
+  }
+  if (!Number.isFinite(max) || max > FRET_LINE_CAP) return FRET_LINE_CAP
+  return max
+}
+
 function fretSvg(opts: {
   strings: number
   capoFret: number
@@ -141,14 +167,11 @@ function fretSvg(opts: {
   fingersRendered: boolean
 }): string {
   const { strings, capoFret, capoLabel, mutes, opens, dots, fingersRendered } = opts
-  const padX = 24
-  const padY = 28
-  const fretH = 18
-  const maxFret = Math.max(4, capoFret, ...dots.map((d) => d.fret))
-  const width = padX * 2 + (strings - 1) * 16
-  const height = padY + maxFret * fretH + 28
-  const xOf = (s: number) => padX + s * 16
-  const yOf = (fret: number) => padY + fret * fretH
+  const span = fretSpan(capoFret, dots)
+  const width = PAD_X * 2 + (strings - 1) * 16
+  const height = PAD_Y + span * FRET_H + 28
+  const xOf = (s: number) => PAD_X + s * 16
+  const yOf = (fret: number) => PAD_Y + drawnFret(fret, span) * FRET_H
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">`,
   ]
@@ -157,15 +180,15 @@ function fretSvg(opts: {
   )
   for (let s = 0; s < strings; s++) {
     parts.push(
-      `<line class="diagram-string" x1="${xOf(s)}" y1="${yOf(0)}" x2="${xOf(s)}" y2="${yOf(maxFret)}" stroke="currentColor" stroke-width="1"/>`,
+      `<line class="diagram-string" x1="${xOf(s)}" y1="${yOf(0)}" x2="${xOf(s)}" y2="${yOf(span)}" stroke="currentColor" stroke-width="1"/>`,
     )
   }
-  for (let f = 1; f <= maxFret; f++) {
+  for (let f = 1; f <= span; f++) {
     parts.push(
       `<line class="diagram-fret" x1="${xOf(0)}" y1="${yOf(f)}" x2="${xOf(strings - 1)}" y2="${yOf(f)}" stroke="currentColor" stroke-width="1"/>`,
     )
   }
-  if (capoFret > 0 && capoLabel) {
+  if (capoFret > 0 && capoLabel && Number.isFinite(capoFret)) {
     const y = yOf(capoFret)
     parts.push(
       `<rect class="diagram-capo-bar" x="${xOf(0) - 4}" y="${y - 4}" width="${(strings - 1) * 16 + 8}" height="8" rx="2" fill="currentColor"/>`,
@@ -179,9 +202,10 @@ function fretSvg(opts: {
   for (let s = 0; s < strings; s++) {
     const x = xOf(s)
     if (muteSet.has(s)) {
-      parts.push(`<text class="diagram-mute" x="${x}" y="${padY - 10}" text-anchor="middle" font-size="11">x</text>`)
+      parts.push(`<text class="diagram-mute" x="${x}" y="${PAD_Y - 10}" text-anchor="middle" font-size="11">x</text>`)
     } else if (openSet.has(s)) {
-      const y = capoFret > 0 ? yOf(capoFret) : padY - 12
+      // Above the filled capo bar, not centered on it in the same color.
+      const y = capoFret > 0 ? yOf(capoFret) - 12 : PAD_Y - 12
       parts.push(
         `<circle class="diagram-open" cx="${x}" cy="${y}" r="4" fill="none" stroke="currentColor" stroke-width="1"/>`,
       )
@@ -189,11 +213,11 @@ function fretSvg(opts: {
   }
   for (const dot of dots) {
     const x = xOf(dot.string)
-    const y = yOf(dot.fret) - fretH / 2
+    const y = yOf(dot.fret) - FRET_H / 2
     parts.push(`<circle class="diagram-dot" cx="${x}" cy="${y}" r="6" fill="currentColor"/>`)
     if (fingersRendered && dot.finger != null) {
       parts.push(
-        `<text class="diagram-finger" x="${x}" y="${y + 3}" text-anchor="middle" font-size="9" fill="#fff">${dot.finger}</text>`,
+        `<text class="diagram-finger" x="${x}" y="${y + 3}" text-anchor="middle" font-size="9" fill="var(--canvas)">${dot.finger}</text>`,
       )
     }
   }
@@ -253,7 +277,8 @@ function pianoSvg(lit: Set<number>): string {
 }
 
 export function drawDiagram(opts: DrawDiagramOpts): DiagramDraw {
-  const capoFret = Math.max(0, opts.capoFret ?? 0)
+  const rawCapo = opts.capoFret ?? 0
+  const capoFret = Number.isFinite(rawCapo) && rawCapo > 0 ? rawCapo : 0
   if (opts.instrument === 'piano') return drawPiano(opts.voicing, opts.token)
   return drawFrets(opts.instrument, opts.voicing, capoFret)
 }

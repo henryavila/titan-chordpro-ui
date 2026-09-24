@@ -43,6 +43,26 @@ describe('resolveDiagram', () => {
     expect(r.reason).toBe('unknown-token')
   })
 
+  it('misses C7+ even when a define uses that name', () => {
+    const raw = parseDefineDirective('{define-guitar: C7+ frets x 3 2 1 1 0}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const r = resolveDiagram({ token: 'C7+', instrument: 'guitar', overrides: [raw] })
+    expect(r).toEqual({ class: 'miss', reason: 'unknown-token' })
+  })
+
+  it('hits Caug when the define name matches and the frets are present', () => {
+    expect(parseChordToken('Caug').class).not.toBe('parse')
+    const raw = parseDefineDirective('{define-guitar: Caug frets x 3 2 1 1 0}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const r = resolveDiagram({ token: 'Caug', instrument: 'guitar', overrides: [raw] })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('override')
+    expect(r.voicing.frets).toEqual(['x', 3, 2, 1, 1, 0])
+  })
+
   it('prefers a file override over the package dictionary', () => {
     const dict = resolveDiagram({ token: 'Am', instrument: 'guitar' })
     expect(dict.class).toBe('hit')
@@ -523,6 +543,50 @@ describe('resolveDiagram', () => {
     expect(fifthDraw.lit).toEqual([9, 2, 6])
     expect(fifthDraw.litNotes).toEqual(['A', 'D', 'F#'])
     expect(new Set(fifthDraw.lit)).toEqual(new Set([2, 9, 6]))
+  })
+
+  it('reads D keys 24 28 31 as distances D F# A and keeps them on +2', () => {
+    const raw = parseDefineDirective('{define: D keys 24 28 31}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.litNotes).toEqual(['D', 'F#', 'A'])
+
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({ name: 'E', keys: [24, 28, 31] })
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.litNotes).toEqual(['E', 'G#', 'B'])
+  })
+
+  it('reads D keys 19 24 28 as distances A D F#', () => {
+    const raw = parseDefineDirective('{define: D keys 19 24 28}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([9, 2, 6])
+    expect(draw.litNotes).toEqual(['A', 'D', 'F#'])
+    expect(transposeDefine(raw, 2, false)).toMatchObject({ name: 'E', keys: [19, 24, 28] })
+  })
+
+  it('does not draw a piano diagram for a slash chord without a define', () => {
+    const r = resolveDiagram({ token: 'G/B', instrument: 'piano' })
+    expect(r).toEqual({ class: 'miss', reason: 'no-shape' })
   })
 
   it('draws D9 keys 0 4 7 14 transposed +2 as E G# B F#', () => {

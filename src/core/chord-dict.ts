@@ -95,13 +95,20 @@ function mod12(n: number): number {
 }
 
 /**
- * MIDI only when every key is greater than 17, or any key is below 0.
- * A key in 0–17 makes the whole list distances from the chord root, so a
- * higher number in that list stays a distance (12, 16, 19). Do not score
- * absolute classes against intervals.
+ * Absolute MIDI starts at middle C. A list is MIDI only when every key is
+ * >= 48, or any key is below 0. Anything else is a distance from the chord
+ * root, including a list whose numbers are all above 17 (24 28 31, 19 24 28).
  */
+export const PIANO_MIDI_FLOOR = 48
+
 export function pianoKeysAreMidi(keys: readonly number[]): boolean {
-  return keys.every((k) => k > 17) || keys.some((k) => k < 0)
+  let allHigh = true
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i] ?? 0
+    if (k < 0) return true
+    if (k < PIANO_MIDI_FLOOR) allHigh = false
+  }
+  return allHigh
 }
 
 /**

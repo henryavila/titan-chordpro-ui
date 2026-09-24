@@ -208,6 +208,73 @@ describe('drawDiagram', () => {
     expect(d.lit).toEqual([11, 2, 6])
   })
 
+  it('bounds a guitar define whose fret is 10000', () => {
+    const d = drawDiagram({
+      instrument: 'guitar',
+      voicing: { baseFret: 1, frets: ['x', 10000, 2, 0, 1, 0] },
+    })
+    expect(d.kind).toBe('frets')
+    if (d.kind !== 'frets') return
+    const lines = d.svg.match(/class="diagram-fret"/g) ?? []
+    expect(lines.length).toBeLessThanOrEqual(24)
+    expect(lines.length).toBeGreaterThan(0)
+    expect(d.svg).not.toContain('Infinity')
+    expect(d.svg.length).toBeLessThan(20000)
+  })
+
+  it('does not hang when a fret token is hundreds of nines', () => {
+    const hundreds = Number('9'.repeat(300))
+    const overflow = Number('9'.repeat(400))
+    expect(hundreds).toBeGreaterThan(24)
+    expect(Number.isFinite(overflow)).toBe(false)
+    for (const fret of [hundreds, overflow]) {
+      const d = drawDiagram({
+        instrument: 'guitar',
+        voicing: { baseFret: 1, frets: ['x', fret, 2, 0, 1, 0] },
+      })
+      expect(d.kind).toBe('frets')
+      if (d.kind !== 'frets') continue
+      const lines = d.svg.match(/class="diagram-fret"/g) ?? []
+      expect(lines.length).toBeLessThanOrEqual(24)
+      expect(d.svg).toContain('<svg')
+      expect(d.svg).not.toContain('Infinity')
+    }
+  })
+
+  it('draws capo opens clear of the filled capo bar', () => {
+    const d = drawDiagram({
+      instrument: 'guitar',
+      voicing: { baseFret: 1, frets: [...AM_FRETS] },
+      capoFret: 2,
+    })
+    expect(d.kind).toBe('frets')
+    if (d.kind !== 'frets') return
+    expect(d.hasCapoBar).toBe(true)
+    expect(d.capoLabel).toBe('Capo 2')
+    expect(d.svg).toContain('Capo 2')
+    expect(d.svg).toContain('diagram-capo-bar')
+    const bar = d.svg.match(/class="diagram-capo-bar"[^>]*\by="([\d.]+)"/)
+    expect(bar?.[1]).toBeDefined()
+    const barTop = Number(bar?.[1])
+    const opens = [...d.svg.matchAll(/class="diagram-open"[^>]*\bcy="([\d.]+)"/g)].map((m) => Number(m[1]))
+    expect(opens).toHaveLength(2)
+    for (const cy of opens) {
+      expect(cy + 4).toBeLessThan(barTop)
+    }
+  })
+
+  it('paints finger numbers in var(--canvas), not white on the dot', () => {
+    const d = drawDiagram({
+      instrument: 'guitar',
+      voicing: { baseFret: 1, frets: [...AM_FRETS], fingers: [...AM_FINGERS] },
+      capoFret: 0,
+    })
+    expect(d.kind).toBe('frets')
+    if (d.kind !== 'frets') return
+    expect(d.svg).toContain('fill="var(--canvas)"')
+    expect(d.svg).not.toContain('fill="#fff"')
+  })
+
   it('does not default piano root to C when token is missing', () => {
     const d = drawDiagram({
       instrument: 'piano',
