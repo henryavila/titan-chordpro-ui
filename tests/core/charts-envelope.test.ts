@@ -802,6 +802,44 @@ describe('chart document edits and x_chart_default', () => {
     expect(cleared.slice(cleared.indexOf('{sot}'), cleared.indexOf('{eot}'))).toContain('{artist:Bach}')
   })
 
+  it('a subtitle edit does not copy an artist out of a header tab', () => {
+    const file = [
+      '{artist:Local}',
+      '{sot}',
+      '{artist:Bach}',
+      '{eot}',
+      '{start_of_x_chart:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const saved = writeSongScopedMeta(file, { subtitle: 'X' })
+    expect(parse(saved).meta.artist).toBe('Local')
+    expect(readMeta(saved).artist).toBe('Local')
+    expect(saved).toContain('{subtitle:X}')
+    const openAt = saved.indexOf('{sot}')
+    const closeAt = saved.indexOf('{eot}')
+    expect(saved.slice(0, openAt)).toContain('{artist:Local}')
+    expect(saved.slice(0, openAt)).not.toContain('{artist:Bach}')
+    expect(saved.slice(openAt, closeAt)).toContain('{artist:Bach}')
+  })
+
+  it('saving the chart document does not delete a credit that exists only inside a header tab', () => {
+    const file = [
+      '{sot}',
+      '{composer:Bach}',
+      '{eot}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const saved = replaceChart(file, 'oferta', chartDocument(file, 'oferta'))
+    const openAt = saved.indexOf('{sot}')
+    const closeAt = saved.indexOf('{eot}')
+    expect(saved.slice(openAt, closeAt)).toContain('{composer:Bach}')
+    expect(saved).toContain('[C]oferta')
+  })
+
   it('a new identity value replaces the alias inside the default chart only', () => {
     const artistFile = [
       '{artist:Local}',

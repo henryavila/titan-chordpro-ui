@@ -307,9 +307,12 @@ function readKeyed(text: string, which: 'song' | 'chart'): Record<string, string
   const out: Record<string, string> = {}
   const keys = which === 'song' ? SONG_META_KEYS : CHART_SOUND_KEYS
   const resolve = which === 'song' ? songMetaKey : chartSoundKey
+  const block = { tab: false, score: false }
   for (const line of text.split('\n')) {
     const d = dirOf(line)
     if (!d) continue
+    // A name inside tab or score is not the song header the writer should copy out.
+    if (which === 'song' && stepBlock(d.name, block) === 'in' && songMetaKey(d.name)) continue
     const canon = resolve(d.name)
     if (!canon) continue
     const exact = (keys as readonly string[]).includes(d.name)
@@ -717,8 +720,15 @@ function applyRawSongIdentity(raws: string[], headerEnd: number, document: strin
   const wanted = rawSongIdentityLines(document)
   const seen = new Set<string>()
   const nextHeader: string[] = []
+  const block = { tab: false, score: false }
   for (const line of raws.slice(0, headerEnd)) {
     const d = dirOf(line)
+    // The chart document does not carry names that live inside tab or score.
+    // Leaving them out is not a request to delete the notation.
+    if (d && stepBlock(d.name, block) === 'in') {
+      nextHeader.push(line)
+      continue
+    }
     const canon = d ? songMetaKey(d.name) : null
     if (!canon || canon === 'x_chart_default') {
       nextHeader.push(line)
