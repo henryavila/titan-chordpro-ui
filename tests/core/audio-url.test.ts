@@ -256,6 +256,37 @@ describe('envelope audio clear', () => {
     expect(audioTracksOf(next).sung).toBeNull()
   })
 
+  it('setAudioUrl(null) does not move a blank between sound keys onto the lyric', () => {
+    const src = [
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
+      '',
+      '{start_of_x_chart:completa}',
+      '{x_chart_label:Completa}',
+      '{key:G}',
+      '',
+      '{x_audio_sung:https://cdn.example/g.m4a}',
+      '[G]linha completa',
+      '{end_of_x_chart}',
+      '',
+      '{start_of_x_chart:oferta}',
+      '{x_chart_label:Oferta}',
+      '{key:C}',
+      '',
+      '{x_audio_sung:https://cdn.example/c.m4a}',
+      '[C]linha oferta',
+      '{end_of_x_chart}',
+      '',
+    ].join('\n')
+    const next = setAudioUrl(src, null)
+    const oferta = chartBlock(next, 'oferta')
+    expect(oferta).toContain('{key:C}\n[C]linha oferta')
+    expect(oferta).not.toContain('x_audio_sung')
+    expect(oferta).not.toContain('cdn.example/c.m4a')
+    expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
+    expect(audioTracksOf(next).sung).toBeNull()
+  })
+
   it('setRehearsalAudio nulls clear sung, playback and art on the default chart only', () => {
     const next = setRehearsalAudio(ENVELOPE_AUDIO, { sung: null, playback: null, art: null })
     const oferta = chartBlock(next, 'oferta')

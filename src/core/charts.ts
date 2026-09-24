@@ -136,19 +136,29 @@ export function canonicalMetaKey(k: string): MetaKey | null {
   return META_ALIAS[lower] ?? null
 }
 
+/** Song identity `readMeta` can store. `{composer:}` is artist; `{x_chart_default}` is not. */
+function songIdentityMetaKey(name: string): MetaKey | null {
+  const song = songMetaKey(name)
+  if (!song || song === 'x_chart_default') return null
+  return (META_KEYS as readonly string[]).includes(song) ? (song as MetaKey) : null
+}
+
 function readMetaLines(source: string): ChartMeta {
   const meta: ChartMeta = {}
   String(source ?? '')
     .split('\n')
     .forEach((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*([^}]*)\}\s*$/)
+      const d = dirOf(l)
       if (!d) return
-      const k = (d[1] ?? '').toLowerCase()
-      const v = (d[2] ?? '').trim()
-      const canon = canonicalMetaKey(k)
+      // Raw song identity may omit the colon (`{title Uma}`) or use `{composer:}`.
+      // Sound keys still need a colon, so `{key C}` is not a second header key.
+      const colonForm = /^\s*\{\s*[a-zA-Z_]+\s*:/.test(l)
+      const ident = songIdentityMetaKey(d.name)
+      if (!colonForm && !ident) return
+      const canon = canonicalMetaKey(d.name) ?? ident
       if (!canon) return
-      const exact = (META_KEYS as readonly string[]).includes(k)
-      if (exact || meta[canon] === undefined) meta[canon] = v
+      const exact = (META_KEYS as readonly string[]).includes(d.name)
+      if (exact || meta[canon] === undefined) meta[canon] = d.value
     })
   return meta
 }
@@ -390,19 +400,36 @@ export function writeSongScopedMeta(source: string, patch: MetaPatch): string {
   return [header, tail].filter((s) => s.length > 0).join('\n')
 }
 
+/** A blank whose nearest neighbours are both sound keys — not lyric content. */
+function blankBetweenSoundKeys(lines: string[], index: number): boolean {
+  if ((lines[index] ?? '').trim() !== '') return false
+  let prev = index - 1
+  while (prev >= 0 && (lines[prev] ?? '').trim() === '') prev--
+  let next = index + 1
+  while (next < lines.length && (lines[next] ?? '').trim() === '') next++
+  if (prev < 0 || next >= lines.length) return false
+  const before = dirOf(lines[prev] ?? '')
+  const after = dirOf(lines[next] ?? '')
+  return !!(before && chartSoundKey(before.name) && after && chartSoundKey(after.name))
+}
+
 function rewriteChartInner(inner: string, patch: MetaPatch): string {
+  const lines = inner.split('\n')
   const labelLines: string[] = []
   const rest: string[] = []
-  for (const line of inner.split('\n')) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
     const d = dirOf(line)
     if (d?.name === 'x_chart_label') {
       labelLines.push(line)
       continue
     }
     if (d && chartSoundKey(d.name)) continue
+    // A blank under the label is content. A blank between sound keys is not:
+    // rewriting those keys as one block must not drop it onto the lyric.
+    if (blankBetweenSoundKeys(lines, i)) continue
     rest.push(line)
   }
-  // A blank under the label is content. Clearing a sound key must not eat it.
   const next = applyPatch(readKeyed(inner, 'chart'), patch, CHART_SOUND_KEYS)
   const head = formatKeys(CHART_SOUND_KEYS, next)
   return [labelLines.join('\n'), head, rest.join('\n')].filter((s) => s.length > 0).join('\n')
