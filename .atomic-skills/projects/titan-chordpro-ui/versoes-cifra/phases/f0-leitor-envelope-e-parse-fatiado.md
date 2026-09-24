@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-The block contract is on `plan/versoes-cifra`. Product commit `e73742a593885312f30f7a9a0c27c621b5967591`, merge parent of the claim checkpoint. Plan-tree verifier exit 0, 213 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. A completed chart pair plus any other top-level text is still an error. Do not `done`. Next action is `review-code --mode=both` of `212e36fec1f0ac4f24735bfcf8aab03e537fedc9..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`, then fix every finding.
+fix20 is merged. Product `833632c70bd0ee8d65a914e26b6622ac603602db`. Plan-tree verifier exit 0, 219 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. A completed chart pair plus any other top-level text is still an error. Do not `done`. Next action is `review-code --mode=both` of `d05cf9f..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`.
 
 ### Verbatim state
 

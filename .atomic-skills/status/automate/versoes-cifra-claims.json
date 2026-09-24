@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix19",
-  "writerBranch": "impl/versoes-cifra-F0-fix19",
-  "finishedAt": "2026-09-24T22:33:10Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix20",
+  "writerBranch": "impl/versoes-cifra-F0-fix20",
+  "finishedAt": "2026-09-24T22:53:20Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -14,7 +14,7 @@
       "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "tests/core/charts-envelope.test.ts passed (76 tests) inside the self-check run, exit 0. Prior commit 275abe489d77d53c88d0d0e8a4207619b044edaa was not rewritten."
+      "transcript": "tests/core/charts-envelope.test.ts passed (80 tests) inside the self-check run, exit 0. Prior commit 275abe489d77d53c88d0d0e8a4207619b044edaa was not rewritten."
     },
     {
       "taskId": "T-002",
@@ -25,25 +25,23 @@
       "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "tests/core/charts-envelope.test.ts passed (76 tests) inside the self-check run, exit 0. Prior commit 064926f71aba1ad9cb569ddef50aa550971e092e was not rewritten."
+      "transcript": "tests/core/charts-envelope.test.ts passed (80 tests) inside the self-check run, exit 0. Prior commit 064926f71aba1ad9cb569ddef50aa550971e092e was not rewritten."
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["e73742a593885312f30f7a9a0c27c621b5967591"],
+      "commitShas": ["833632c70bd0ee8d65a914e26b6622ac603602db"],
       "base": null,
       "head": null,
       "paths": [
         "src/core/charts.ts",
-        "src/vue/ChordproViewer.vue",
         "src/vue/edit/MetaDialog.vue",
         "tests/core/charts-envelope.test.ts",
-        "tests/vue/block-edit-ui.test.ts",
         "tests/vue/meta-dialog.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files 7 passed (7). Tests 213 passed (213). charts-envelope 76, audio-url 31, import-chordpro 43, sda-fixtures 4, meta-dialog 29, block-edit-ui 29, no-vue-in-core 1. Exit 0."
+      "transcript": "Test Files 5 passed (5). Tests 175 passed (175). charts-envelope 80, audio-url 31, meta-dialog 31, block-edit-ui 29, sda-fixtures 4. Exit 0."
     }
   ]
 }
