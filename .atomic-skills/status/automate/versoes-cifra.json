@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 8,
-  "updatedAt": "2026-09-24T10:11:59.211Z",
+  "redispatchCount": 9,
+  "updatedAt": "2026-09-24T10:28:36.101Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -38,6 +38,12 @@
       "at": "2026-09-24T10:02:16.097Z",
       "reason": "operator 2026-09-24: loop longo corrigindo todos os findings da revisão both e relançando os agentes de revisão",
       "priorCount": 7,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T10:28:36.101Z",
+      "reason": "operator 2026-09-24: loop longo — fix8 both review needs_changes, three majors (identity round-trip, lyric blank, blank-scan cost)",
+      "priorCount": 8,
       "gate": "spawn"
     }
   ],
