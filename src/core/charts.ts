@@ -1,7 +1,8 @@
 /**
  * Named charts in one song file. `{start_of_x_chart: id}` … `{end_of_x_chart}`.
- * No completed pair = one implicit chart `id=default`, including a title plus
- * one unclosed start. `{new_song}` is not used.
+ * No completed pair, and any non-blank line outside the blocks (a title before
+ * one unclosed start): one implicit chart `id=default`. `{new_song}` is not used.
+ * Only chart blocks, even with a missing `{end_of_x_chart}`: still an envelope.
  * A completed pair plus any other top-level text is an error. That text is not
  * moved into a block. Blank lines between blocks are allowed.
  * Title, artist, key, duration, and audio live inside the block that owns them.
@@ -264,6 +265,17 @@ export function splitCho(source: string): SplitCho {
     const raw = raws[li] ?? ''
     const d = dirOf(raw)
     if (d?.name === 'start_of_x_chart' || d?.name === 'end_of_x_chart') {
+      // A fence inside a tab or score that still closes is notation.
+      // An unclosed tab does not hide the next chart.
+      const notation =
+        (block.tab && blockClosesAfter(raws, li, 'tab')) ||
+        (block.score && blockClosesAfter(raws, li, 'score'))
+      if (notation) {
+        if (!cur) {
+          if (raw.trim() !== '') outside = true
+        } else cur.inner.push(raw)
+        continue
+      }
       block = { tab: false, score: false }
       if (d.name === 'start_of_x_chart') {
         seenChart = true
@@ -297,9 +309,10 @@ export function splitCho(source: string): SplitCho {
   }
   flush(raws.length)
 
-  // No completed `{start_of_x_chart}` … `{end_of_x_chart}` pair: one chart, the whole text.
-  // A title plus one unclosed start does not throw and is not moved into a block.
-  if (!completed) {
+  // No completed pair, and text outside the blocks or no chart at all:
+  // one chart, the whole text. A title before an unclosed start is that case.
+  // Fence-only files stay an envelope below, even when an end fence is missing.
+  if (!completed && (outside || charts.length === 0)) {
     return {
       hasEnvelope: false,
       header: text,
@@ -323,7 +336,7 @@ export function splitCho(source: string): SplitCho {
   return { hasEnvelope: true, header, charts, defaultId: named, raws }
 }
 
-/** True when the file has at least one completed chart pair. */
+/** True when the file is an envelope, including chart blocks with no end fence. */
 export function hasChartEnvelope(source: string): boolean {
   return splitCho(source).hasEnvelope
 }
@@ -464,6 +477,26 @@ function blockEdge(name: string): BlockEdge | null {
   if (name === 'sos' || name === 'start_of_score') return 'score-open'
   if (name === 'eos' || name === 'end_of_score') return 'score-close'
   return null
+}
+
+/**
+ * The open tab or score still has its closer after this line.
+ * A chart fence before that closer is notation. No closer: the fence is real,
+ * so an unclosed tab cannot hide the next chart.
+ */
+function blockClosesAfter(lines: readonly string[], lineIndex: number, kind: 'tab' | 'score'): boolean {
+  const openEdge = kind === 'tab' ? 'tab-open' : 'score-open'
+  const closeEdge = kind === 'tab' ? 'tab-close' : 'score-close'
+  let depth = 1
+  for (let j = lineIndex + 1; j < lines.length; j++) {
+    const edge = blockEdge(dirOf(lines[j] ?? '')?.name ?? '')
+    if (edge === openEdge) depth++
+    else if (edge === closeEdge) {
+      depth--
+      if (depth === 0) return true
+    }
+  }
+  return false
 }
 
 /** Opening line is `out`. Lines inside the block, including the close, are `in`. */
@@ -834,7 +867,48 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
   return drop
 }
 
+/**
+ * Change sound lines that already exist once, and leave every other line put.
+ * A new key, a clear, an alias, or a duplicate still reprints the sound header.
+ */
+function patchSoundInPlace(inner: string, patch: MetaPatch): string | null {
+  const lines = inner.length ? inner.split('\n') : []
+  const inside = notationInside(lines)
+  const counts = new Map<string, number>()
+  for (let i = 0; i < lines.length; i++) {
+    if (inside[i]) continue
+    const line = lines[i] ?? ''
+    const d = dirOf(line)
+    if (!d || !chartSoundKey(d.name)) continue
+    if (!(CHART_SOUND_KEYS as readonly string[]).includes(d.name)) return null
+    if (!/^\s*\{\s*[a-zA-Z_]+\s*:/.test(line)) return null
+    counts.set(d.name, (counts.get(d.name) ?? 0) + 1)
+  }
+  for (const n of counts.values()) {
+    if (n !== 1) return null
+  }
+  let sound = false
+  for (const key of CHART_SOUND_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
+    sound = true
+    if (!(patch[key] ?? '').trim()) return null
+    if (counts.get(key) !== 1) return null
+  }
+  if (!sound) return null
+  return lines
+    .map((line, i) => {
+      if (inside[i]) return line
+      const d = dirOf(line)
+      if (!d || !Object.prototype.hasOwnProperty.call(patch, d.name)) return line
+      if (!(CHART_SOUND_KEYS as readonly string[]).includes(d.name)) return line
+      return '{' + d.name + ':' + (patch[d.name] ?? '').trim() + '}'
+    })
+    .join('\n')
+}
+
 function rewriteChartInner(inner: string, patch: MetaPatch): string {
+  const inPlace = patchSoundInPlace(inner, patch)
+  if (inPlace !== null) return inPlace
   const lines = inner.split('\n')
   const dropBlank = blanksOnlyBetweenLeadingSoundKeys(lines)
   const inside = notationInside(lines)
@@ -890,16 +964,52 @@ function outsideNamedLines(inner: string, name: string): string[] {
   return out
 }
 
-/** `{start_of_x_chart}` / `{end_of_x_chart}` in a replacement would nest fences. */
-function stripEnvelopeFences(document: string): string {
+/** A chart fence outside tab and score. Fences inside a block that closes are notation. */
+function hasRealChartFence(lines: string[]): boolean {
+  const block = { tab: false, score: false }
+  for (let i = 0; i < lines.length; i++) {
+    const d = dirOf(lines[i] ?? '')
+    if (!d) continue
+    if (d.name === 'start_of_x_chart' || d.name === 'end_of_x_chart') {
+      const notation =
+        (block.tab && blockClosesAfter(lines, i, 'tab')) ||
+        (block.score && blockClosesAfter(lines, i, 'score'))
+      if (notation) continue
+      return true
+    }
+    stepBlock(d.name, block)
+  }
+  return false
+}
+
+/**
+ * Drop one wrapping start at the first non-blank line and one end at the last
+ * non-blank line. Null when any other real chart fence remains: do not splice.
+ * Fences inside tab or score stay.
+ */
+function stripEnvelopeFences(document: string): string | null {
   if (!document) return ''
-  return document
-    .split('\n')
-    .filter((line) => {
-      const name = dirOf(line)?.name
-      return name !== 'start_of_x_chart' && name !== 'end_of_x_chart'
-    })
-    .join('\n')
+  const lines = document.split('\n')
+  let first = -1
+  let last = -1
+  for (let i = 0; i < lines.length; i++) {
+    if ((lines[i] ?? '').trim() === '') continue
+    if (first < 0) first = i
+    last = i
+  }
+  const drop = new Set<number>()
+  if (
+    first >= 0 &&
+    last > first &&
+    dirOf(lines[first] ?? '')?.name === 'start_of_x_chart' &&
+    dirOf(lines[last] ?? '')?.name === 'end_of_x_chart'
+  ) {
+    drop.add(first)
+    drop.add(last)
+  }
+  const kept = lines.filter((_, i) => !drop.has(i))
+  if (hasRealChartFence(kept)) return null
+  return kept.join('\n')
 }
 
 function documentMarksItself(text: string, id: string): boolean {
@@ -908,8 +1018,9 @@ function documentMarksItself(text: string, id: string): boolean {
 
 /**
  * The document replaces that chart. Title bytes stay as written.
- * A label omitted from the document stays. Fences are stripped so `splitCho`
- * can read the file. A self-marker in the document is kept. A marker that
+ * A label omitted from the document stays. One wrapping fence pair is stripped
+ * so `splitCho` can read the file. Any other real chart fence leaves the file
+ * unchanged. A self-marker in the document is kept. A marker that
  * exactly names another chart is not written in. A half-typed marker stays;
  * it is not a switch. A marker the document removed is not put back.
  * Notation stays.
@@ -918,8 +1029,9 @@ function chartInnerFromDocument(
   chart: FileChart,
   document: string,
   chartIds: readonly string[],
-): string {
+): string | null {
   const stripped = stripEnvelopeFences(document)
+  if (stripped === null) return null
   const lines = stripped.length ? stripped.split('\n') : []
   const inside = notationInside(lines)
   const body = lines.filter((line, i) => {
@@ -960,6 +1072,7 @@ export function replaceChart(file: string, chartId: string, doc: string): string
     document,
     split.charts.map((c) => c.id),
   )
+  if (nextInner === null) return src
   inners[index] = nextInner
   // One self-marker. The document claimed default, so the sibling's marker goes.
   if (documentMarksItself(nextInner, chart.id)) {

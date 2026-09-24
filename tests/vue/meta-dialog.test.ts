@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { chartBody, memoryStore, parse } from '../../src/core'
+import { splitCho } from '../../src/core/charts'
 import { ChordproViewer } from '../../src/vue'
 import MetaDialog from '../../src/vue/edit/MetaDialog.vue'
 import { loadFixture } from '../helpers/load-fixture'
@@ -203,6 +204,42 @@ describe('MetaDialog', () => {
     expect(next).toContain('[C]oferta')
     expect(next).toContain('{x_chart_default:oferta}')
     expect(next.slice(0, next.indexOf('{start_of_x_chart')).trim()).toBe('')
+  })
+
+  it('a tempo save does not mark the same duration changed or reprint the sound header', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{t:Completa}',
+      '{composer:Um}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{t:Oferta}',
+      '{composer:Dois}',
+      '{x_chart_default:oferta}',
+      '{key:C}',
+      '{duration:4:26}',
+      '{tempo:80}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    expect((w.get('[data-meta-duration]').element as HTMLInputElement).value).toBe('4:26')
+    await w.get('[data-meta-tempo]').setValue('100')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    const before = splitCho(src).charts.find((c) => c.id === 'oferta')?.inner
+    const after = splitCho(next).charts.find((c) => c.id === 'oferta')?.inner
+    expect(after).toBe(before?.replace('{tempo:80}', '{tempo:100}'))
+    expect(next).toContain('{duration:4:26}')
+    expect(next).not.toContain('{duration:04:26}')
+    expect(next).toContain('{t:Oferta}')
+    expect(next).toContain('{composer:Dois}')
+    expect(next).not.toContain('{title:')
+    expect(next).not.toContain('{artist:')
+    expect(splitCho(next).charts.find((c) => c.id === 'completa')?.inner).toBe(
+      splitCho(src).charts.find((c) => c.id === 'completa')?.inner,
+    )
   })
 
   it('a tempo save does not clear a later short title the field did not edit', async () => {

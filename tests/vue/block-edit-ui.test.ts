@@ -513,6 +513,8 @@ describe('envelope block edit', () => {
     expect(w.text()).not.toContain('linha oferta')
     expect(w.text()).not.toContain('linha completa')
     expect(w.find('[data-cpv-scroll]').exists()).toBe(false)
+    expect(w.text()).toContain('chart file has text outside chart blocks')
+    expect(w.text()).not.toContain('Nenhuma linha legível')
     w.unmount()
   })
 
