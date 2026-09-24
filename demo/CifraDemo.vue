@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
+  convert,
   readMeta,
   setRehearsalAudio,
   writeMeta,
@@ -105,8 +106,20 @@ const liveHref = computed(() =>
 )
 const meta = computed(() => readMeta(source.value))
 
-const needsCorpus = !lab.criar && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
-const boot = ref(needsCorpus)
+const ccPages = import.meta.glob('../tests/helpers/cifraclub-pages/*.html', {
+  query: '?raw',
+  import: 'default',
+}) as Record<string, () => Promise<string>>
+
+async function capturedCifra(slug: string): Promise<string | null> {
+  const hit = Object.entries(ccPages).find(([path]) => path.endsWith(`/${slug}.html`))
+  if (!hit) return null
+  return convert(await hit[1]()).source
+}
+
+const needsCorpus =
+  !lab.criar && !lab.cc && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
+const boot = ref(needsCorpus || !!lab.cc)
 
 /**
  * Pretends an external API: a few seconds of wait so the skeleton and the
@@ -140,6 +153,14 @@ const readPdf = async (file: File) => {
 
 onMounted(async () => {
   try {
+    if (lab.cc) {
+      const src = await capturedCifra(lab.cc)
+      if (src) {
+        id.value = lab.cc
+        source.value = src
+        return
+      }
+    }
     if (needsCorpus) {
       fixtures.value = mergeCatalog(fixtures.value, await loadAllFixtures())
       if (!lab.criar) {
@@ -151,6 +172,7 @@ onMounted(async () => {
   } finally {
     boot.value = false
   }
+  if (lab.cc) return
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
   fixtures.value = mergeCatalog(fixtures.value, catalogToFixtures(catalog))

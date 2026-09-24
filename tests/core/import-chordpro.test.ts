@@ -347,6 +347,180 @@ describe('Cifra Club chords and HTML', () => {
     expect(r.source).toContain('Junto ao poço')
   })
 
+  // Live page 2026-09-24: tabs are a caption, the same chords again, "Parte N
+  // de M", then the staff. Pasted text has no `.tabs` wrapper.
+  const TU_ES_PLAIN = `[Intro] Bm7  A/C#  G2
+
+[TAB - Intro]
+
+   Bm7   A/C#   G2
+E|-------0--0-------------------------------|
+B|-3--3---------3---------------------------|
+G|-2--2--2--2---2---------------------------|
+D|--------------0---------------------------|
+A|-2-----4----------------------------------|
+E|--------------3---------------------------|
+
+[Primeira Parte]
+
+Bm7                  A/C#
+    Junto ao poço estava eu
+
+[Tab - Primeira parte]
+
+Parte 1 de 2
+   Bm7 A/C#  G2  Bm7  A/C#  G2
+E|------0--------------0--------------------|
+B|-3---------3----3---------3---------------|
+G|-2----2----2----2----2----2---------------|
+D|-----------0--------------0---------------|
+A|-2----4---------2----4--------------------|
+E|-----------3--------------3---------------|
+
+Parte 2 de 2
+   Bm7   A/C#   G2  Bm7  A/C#  G2
+E|-------0--0-------------0-----------------|
+B|-3--3---------3----3---------3------------|
+G|-2--2--2--2---2----2----2----2------------|
+D|--------------0--------------0------------|
+A|-2-----4-----------2----4-----------------|
+E|--------------3--------------3------------|
+
+[Pré-Refrão]
+
+ Em7                       D/F#
+Dá-me de beber pois tenho sede
+
+[Tab - frase do A]
+
+   A
+E|-3---2---0--------------------------------|
+B|------------------------------------------|
+G|-4---2---2--------------------------------|
+D|------------------------------------------|
+A|---0--------------------------------------|
+E|------------------------------------------|
+
+( Bm7  A/C#  G  Em7 )
+`
+
+  it('drops a pasted Cifra Club tab, including the chord line that only labels it', () => {
+    const out = fromPlain(TU_ES_PLAIN)
+    expect(out).toContain('{c:INTRODUÇÃO}')
+    expect(out).toContain('[Bm7] [A/C#] [G2]')
+    expect(out).toContain('{c:Primeira Parte}')
+    expect(out).toContain('Junto ao poço')
+    expect(out).toContain('{c:Pré-Refrão}')
+    expect(out).toContain('de beber')
+    expect(out).toContain('( Bm7  A/C#  G  Em7 )')
+    expect(out).not.toContain('{sot}')
+    expect(out).not.toMatch(/E\|-+/)
+    expect(out).not.toMatch(/Parte \d+ de \d+/)
+    expect(out).not.toMatch(/\[TAB\b|\{c:TAB/i)
+    // The tab repeats Bm7 A/C# G2 with no lyric. The intro keeps that line once.
+    expect(out.match(/\[Bm7\] \[A\/C#\] \[G2\]/g)).toHaveLength(1)
+  })
+
+  it('reads the chart when the tags and class names are not the ones used today', () => {
+    const html = `<!doctype html><html><body>
+<h1>Unidos Em Cristo</h1>
+<p>Tom: G</p>
+<div class="sheet-9f3a">
+<div class="row-aa">
+<span class="n">G9</span>                 <span class="n">D/G</span>
+U.ma andorinha nco f.az verao
+</div>
+<div class="row-aa">
+<span class="n">G7(4)</span>                <span class="n">G6</span>
+U.ma só pessoa nco é m.ultidao
+</div>
+<div class="row-aa">
+Mas n.ao clareia o c.éu
+
+[Refrão]
+
+</div>
+<div class="row-aa">
+<span class="n">G9</span>               <span class="n">D/G</span>
+Pois a f.orça esta na uni.ao
+</div>
+<div class="zz-tab">
+[TAB - Intro]
+<span class="n">G9</span>
+E|-------0--0---|
+B|-3--3---------|
+</div>
+</div>
+</body></html>`
+    expect(looksLikeCifraClubHtml(html)).toBe(true)
+    const page = fromCifraClubHtml(html)
+    expect(page.title).toBe('Unidos Em Cristo')
+    expect(page.key).toBe('G')
+    expect(page.body).toContain('U.ma andorinha')
+    expect(page.body).toContain('[Refrão]')
+    expect(page.body).not.toMatch(/\[TAB\b/i)
+    expect(page.body).not.toMatch(/E\|-+/)
+    const r = convert(html)
+    expect(r.format).toBe('cifraclub')
+    expect(r.source).toContain('[G9]Uma andorinha nco [D/G]faz verao')
+    expect(r.source).toMatch(/andorinha[^\n]+\n\[G7\(4\)\]/)
+    expect(r.source).not.toMatch(/andorinha[^\n]+\n\n\[G7\(4\)\]/)
+    expect(r.source).toContain('{soc}')
+    expect(r.source).toContain('força')
+    expect(r.source).not.toContain('{sot}')
+    expect(r.source).not.toMatch(/^\[G9\]$/m)
+  })
+
+  it('drops the same tab when the pre has no .tabs wrapper', () => {
+    const html = `<pre data-chord-content="true"><div class="kvMV">[Intro] <b data-chord-original-text="Bm7">Bm7</b>  <b data-chord-original-text="A/C#">A/C#</b>  <b data-chord-original-text="G2">G2</b>
+</div><div class="kvMV">[TAB - Intro]
+   <b data-chord-original-text="Bm7">Bm7</b>   <b data-chord-original-text="A/C#">A/C#</b>   <b data-chord-original-text="G2">G2</b>
+E|-------0--0-------------------------------|
+B|-3--3---------3---------------------------|
+G|-2--2--2--2---2---------------------------|
+D|--------------0---------------------------|
+A|-2-----4----------------------------------|
+E|--------------3---------------------------|
+</div><div class="kvMV">[Primeira Parte]
+<b data-chord-original-text="Bm7">Bm7</b>
+    Junto ao poço estava eu
+</div></pre>`
+    const page = fromCifraClubHtml(html)
+    expect(page.body).toContain('[Intro] Bm7')
+    expect(page.body).toContain('[Primeira Parte]')
+    expect(page.body).toContain('Junto ao poço')
+    expect(page.body).not.toMatch(/\[TAB\b/i)
+    expect(page.body).not.toMatch(/E\|-+/)
+    const r = convert(html)
+    expect(r.source).not.toContain('{sot}')
+    expect(r.source.match(/\[Bm7\] \[A\/C#\] \[G2\]/g)).toHaveLength(1)
+  })
+
+  it('keeps a "Parte N de M" line that is not a tab', () => {
+    const out = fromPlain('Parte 1 de 2\nUma frase qualquer')
+    expect(out).toContain('Parte 1 de 2')
+    expect(out).toContain('Uma frase qualquer')
+  })
+
+  it('keeps the chord line that follows a tab staff', () => {
+    const out = fromPlain(`[Tab - Intro]\n   Bm7\nE|-------0--0---|\nB|-3--3---------|\n\nG       C\nUma letra`)
+    expect(out).not.toContain('{sot}')
+    expect(out).not.toContain('[Bm7]')
+    expect(out).toContain('[G]Uma')
+    expect(out).toContain('[C]')
+  })
+
+  it('drops the raw #t1# block Cifra Club stores around a tab', () => {
+    const raw = `[Intro] Bm7\n\n#t1#[TAB - Intro]\n   Bm7\n#t2#E|-------0--0---|\nB|-3--3---------3---|#/t2##/t1#\n\n[Primeira Parte]\nBm7\n    Junto ao poço`
+    const out = fromPlain(raw)
+    expect(out).toContain('{c:INTRODUÇÃO}')
+    expect(out).toContain('{c:Primeira Parte}')
+    expect(out).toContain('Junto ao poço')
+    expect(out).not.toContain('{sot}')
+    expect(out).not.toMatch(/#t1#|E\|-+/)
+    expect(out.match(/\[Bm7\]/g)).toHaveLength(2)
+  })
+
   it('reads tempo, time, youtube and strum from the songData payload', () => {
     const page = fromCifraClubHtml(TU_ES_TABS)
     expect(page.tempo).toBe('71')

@@ -113,9 +113,70 @@ function sectionDirective(label: string, open: boolean): string {
   return CHORUS.test(name) ? (open ? '{soc}' : '{eoc}') : '{c:' + name + '}'
 }
 
-/** Plain body → ChordPro. An intro tab stays a tab: `{sot}`…`{eot}`. */
+/**
+ * Cifra Club writes a tab as `[TAB - …]` / `[Tab - …]`, then the same chords
+ * again, often `Parte N de M`, then the ASCII staff. That chord line only
+ * labels the fingering. Drop the whole block. A staff with no caption stays,
+ * so a pasted tab the musician wrote is still `{sot}`.
+ */
+const TAB_CAPTION = /^\s*\[(?:tab|tablatura)\b[^\]]*\]\s*$/i
+const TAB_PARTE = /^\s*parte\s+\d+\s+de\s+\d+\s*$/i
+
+function stripHashTabMarkers(text: string): string {
+  if (!text.includes('#t1#') && !text.includes('#t2#')) return text
+  return text.replace(/#t1#[\s\S]*?#\/t1#/g, '\n').replace(/#t2#[\s\S]*?#\/t2#/g, '\n')
+}
+
+function staffAhead(lines: string[], from: number): boolean {
+  let seen = 0
+  for (let i = from + 1; i < lines.length && seen < 8; i++) {
+    const raw = lines[i] ?? ''
+    const bare = raw.trim()
+    if (!bare) continue
+    seen++
+    if (isTabLine(raw)) return true
+    if (TAB_CAPTION.test(bare) || /^\[[^\]]+\]/.test(bare)) return false
+  }
+  return false
+}
+
+function stripPlainCifraClubTabs(text: string): string {
+  const lines = stripHashTabMarkers(text).split('\n')
+  const out: string[] = []
+  let inTab = false
+  // Chord names above the staff label the fingering. The same shape after
+  // the staff is the song again.
+  let seenStaff = false
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i] ?? ''
+    const bare = raw.trim()
+    if (TAB_CAPTION.test(bare) || (TAB_PARTE.test(bare) && staffAhead(lines, i))) {
+      inTab = true
+      seenStaff = false
+      continue
+    }
+    if (inTab) {
+      if (!bare) continue
+      if (TAB_PARTE.test(bare)) {
+        seenStaff = false
+        continue
+      }
+      if (isTabLine(raw)) {
+        seenStaff = true
+        continue
+      }
+      if (isChordLine(raw) && !seenStaff) continue
+      inTab = false
+      if (out.length && (out[out.length - 1] ?? '').trim()) out.push('')
+    }
+    out.push(raw)
+  }
+  return out.join('\n')
+}
+
+/** Plain body → ChordPro. A bare staff stays a tab: `{sot}`…`{eot}`. */
 export function fromPlain(text: string): string {
-  const src = clean(text).split('\n')
+  const src = stripPlainCifraClubTabs(clean(text)).split('\n')
   const out: string[] = []
   let chorus = false
   let tab: string[] | null = null
@@ -662,9 +723,15 @@ export function hostOk(url: string): boolean {
   }
 }
 
-/** The page Cifra Club serves: a <pre data-chord-content> with <b data-chord-name>. */
+/**
+ * A Cifra Club page. The attributes are a fast path; the chart itself is
+ * recognized by its text (section labels, chord lines, a lyric), so a
+ * redesign that renames every class still counts.
+ */
 export function looksLikeCifraClubHtml(text: string): boolean {
-  return /data-chord-content|data-chord-name\s*=/.test(text)
+  if (/data-chord-content|data-chord-name\s*=/.test(text)) return true
+  if (!/<\w+[\s>/]/i.test(text)) return false
+  return chartScore(markupToText(extractChartHtml(text))) > 0
 }
 
 function decodeEntities(s: string): string {
@@ -858,12 +925,12 @@ export function fromCifraClubHtml(html: string): CifraClubPage {
     (html.match(/<a href="\/[^"/]+\/">([^<]+)<\/a>/i) || [])[1]?.trim() ||
     ''
   const key =
-    (html.match(/data-anchor="--chord-tone"[^>]*>([A-G][#b]?m?)</i) || [])[1] ||
+    (html.match(/data-anchor="--chord-tone"[^>]*>\s*([A-G][#b]?m?)\s*</i) || [])[1] ||
     (html.match(/>\s*Tom:\s*<\/span>\s*<button[^>]*>([A-G][#b]?m?)</i) || [])[1] ||
+    (html.match(/\bTom:\s*([A-G][#b]?m?)\b/) || [])[1] ||
     extractKeyShape(html) ||
     ''
-  const pre = (html.match(/<pre[^>]*data-chord-content[^>]*>([\s\S]*?)<\/pre>/i) || [])[1] ?? ''
-  const body = cifraPreToPlain(pre)
+  const body = cifraPreToPlain(extractChartHtml(html))
   const strums = extractCcStrums(html)
   const tempo = strums[0]?.bpm != null ? String(strums[0].bpm) : ''
   const time = strums[0]?.meter || ''
@@ -872,103 +939,131 @@ export function fromCifraClubHtml(html: string): CifraClubPage {
   return { body, title, subtitle, key, tempo, time, capo, youtubeId, strums }
 }
 
-function htmlChunkToText(chunk: string): string {
-  const inner = chunk
-    .replace(/<b\b[^>]*data-chord-original-text="([^"]*)"[^>]*>[\s\S]*?<\/b>/gi, '$1')
-    .replace(/<b\b[^>]*data-chord-name="([^"]*)"[^>]*>[\s\S]*?<\/b>/gi, '$1')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-  return decodeEntities(inner).replace(/\r/g, '').replace(/[ \t]+$/gm, '')
+const BLOCK_TAG = 'div|p|pre|section|article|li|ul|ol|table|tr|td|th|header|footer|nav|main|figure|blockquote|h[1-6]'
+
+function isSectionOnlyLine(line: string): boolean {
+  const bare = line.trim()
+  const inner = bare.replace(/^\[(.+)\]$/, '$1')
+  return SECTION.test(inner) && !isChordLine(bare)
 }
 
 /**
- * Cifra Club wraps tablature in `.tabs` / `.tab`. Those blocks repeat the
- * same chords as the rehearsal chart and have no usable bar marks — drop the
- * whole thing (caption, position chords, ASCII strings, "Parte N de M").
+ * Tags carry the chord token when the attribute is there; otherwise the
+ * visible text is the token. Newlines that only indent a block tag are
+ * markup. Newlines next to the words, and spaces between chords, stay.
  */
-function stripCifraClubTabs(pre: string): string {
-  return stripDivsByClass(pre, 'tabs')
+function markupToText(html: string): string {
+  let s = String(html ?? '')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+  s = s.replace(/<br\s*\/?>/gi, '\n')
+  s = s.replace(new RegExp(`(<(?:${BLOCK_TAG})\\b[^>]*>)[ \\t]*\\n+[ \\t]*`, 'gi'), '$1')
+  s = s.replace(new RegExp(`[ \\t]*\\n+[ \\t]*(<(?:${BLOCK_TAG})\\b)`, 'gi'), '$1')
+  s = s.replace(new RegExp(`(</(?:${BLOCK_TAG})>)[ \\t]*\\n+[ \\t]*`, 'gi'), '$1')
+  s = s.replace(
+    /<([a-zA-Z][\w:-]*)\b[^>]*\bdata-chord-original-text="([^"]*)"[^>]*>[\s\S]*?<\/\1>/gi,
+    '$2',
+  )
+  s = s.replace(/<[^>]+>/g, '')
+  return decodeEntities(s).replace(/\r/g, '').replace(/[ \t]+$/gm, '')
 }
 
-/** Remove every `<div class="… name …">…</div>`, honouring nested divs. */
-function stripDivsByClass(html: string, className: string): string {
-  const openRe = new RegExp(`<div\\b[^>]*\\bclass=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>`, 'gi')
-  let out = ''
-  let cursor = 0
-  let m: RegExpExecArray | null
-  while ((m = openRe.exec(html))) {
-    out += html.slice(cursor, m.index)
-    const innerStart = m.index + m[0].length
-    const end = findMatchingCloseDiv(html, innerStart)
-    if (end < 0) {
-      out += m[0]
-      cursor = innerStart
-      break
-    }
-    cursor = end + '</div>'.length
-    openRe.lastIndex = cursor
+/** A `[Refrão]` with a blank under it would close the chorus before its first line. */
+function dropBlanksAfterSection(text: string): string {
+  const lines = text.split('\n')
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    out.push(lines[i] ?? '')
+    if (!isSectionOnlyLine(lines[i] ?? '')) continue
+    while (i + 1 < lines.length && !(lines[i + 1] ?? '').trim()) i++
   }
-  return out + html.slice(cursor)
+  return out.join('\n')
 }
 
-function findMatchingCloseDiv(html: string, from: number): number {
-  let depth = 1
-  let i = from
-  while (i < html.length && depth > 0) {
-    const nextOpen = html.toLowerCase().indexOf('<div', i)
-    const nextClose = html.toLowerCase().indexOf('</div>', i)
-    if (nextClose < 0) return -1
-    if (nextOpen >= 0 && nextOpen < nextClose) {
-      depth++
-      i = nextOpen + 4
+function chartSignals(text: string): { hits: number; lines: number; lyric: boolean } {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+  let hits = 0
+  let lyric = false
+  for (const l of lines) {
+    if (isChordLine(l) || isTabLine(l)) {
+      hits++
       continue
     }
-    depth--
-    if (depth === 0) return nextClose
-    i = nextClose + 6
+    if (isSectionOnlyLine(l) || /^\[[^\]]+\]/.test(l)) {
+      hits++
+      lyric = true
+      continue
+    }
+    if (/[A-Za-zÀ-ÿ]{3}/.test(l)) lyric = true
   }
-  return -1
+  return { hits, lines: lines.length, lyric }
 }
 
 /**
- * Each Cifra Club pair is a `.kvMV`. A naive non-greedy `</div>` stops at the
- * inner `.tabs` close and drops the section label that follows (`[Primeira
- * Parte]`, `[Refrão]`). Walk nested divs. Keep pairs adjacent; a trailing
- * blank in the pair is a real paragraph (intro → verse, verse → refrão).
+ * How many chart lines this text has. A chord menu has no lyric, so it
+ * scores 0. The whole page is mostly chrome, so a low share of chart
+ * lines scores 0. The cifra itself has the most hits.
  */
-function cifraPreToPlain(pre: string): string {
-  const cleaned = stripCifraClubTabs(pre)
-  const parts = extractDivInnersByClass(cleaned, 'kvMV')
-  const chunks: string[] = []
-  if (parts.length) {
-    for (const p of parts) {
-      const raw = htmlChunkToText(p)
-      const text = raw.replace(/^\n+/, '').replace(/\n+$/, '')
-      if (!text) continue
-      chunks.push(text)
-      const last = text.split('\n').at(-1) ?? ''
-      // A trailing blank after [Refrão] would close {soc} before the first
-      // refrain line. Keep it only when this pair is a real paragraph.
-      if (/\n\s*\n\s*$/.test(raw) && !/^\[[^\]]+\]\s*$/.test(last)) chunks.push('')
-    }
-  } else {
-    chunks.push(htmlChunkToText(cleaned).replace(/^\n+/, '').replace(/\n+$/, ''))
-  }
-  return chunks.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+function chartScore(text: string): number {
+  const s = chartSignals(text)
+  if (!s.lyric || s.hits < 1 || s.lines < 2) return 0
+  if (s.hits / s.lines < 0.15) return 0
+  return s.hits
 }
 
-function extractDivInnersByClass(html: string, className: string): string[] {
-  const openRe = new RegExp(`<div\\b[^>]*\\bclass=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>`, 'gi')
-  const parts: string[] = []
+const VOID_TAG = /^(?:br|img|hr|meta|link|input|source|wbr|col|base|area)$/i
+
+function elementInners(html: string): string[] {
+  const src = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+  const out: string[] = []
+  const stack: number[] = []
+  const re = /<!--[\s\S]*?-->|<\/([a-zA-Z][\w:-]*)\s*>|<([a-zA-Z][\w:-]*)\b[^>]*\/?>/g
   let m: RegExpExecArray | null
-  while ((m = openRe.exec(html))) {
-    const innerStart = m.index + m[0].length
-    const end = findMatchingCloseDiv(html, innerStart)
-    if (end < 0) break
-    parts.push(html.slice(innerStart, end))
-    openRe.lastIndex = end + '</div>'.length
+  while ((m = re.exec(src))) {
+    if (m[0].startsWith('<!--')) continue
+    if (m[1]) {
+      const start = stack.pop()
+      if (start == null) continue
+      out.push(src.slice(start, m.index))
+      continue
+    }
+    const name = m[2] ?? ''
+    if (VOID_TAG.test(name) || m[0].endsWith('/>')) continue
+    stack.push(m.index + m[0].length)
   }
-  return parts
+  return out
+}
+
+/** `<pre>` bodies, including a page whose last tag was cut off mid-attribute. */
+function preInners(html: string): string[] {
+  const src = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+  return [...src.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/gi)].map((m) => m[1] ?? '')
+}
+
+/**
+ * The region whose text is a chart: section labels and chord lines, not the
+ * page around it and not the tab staff alone. Class names are not consulted.
+ */
+function extractChartHtml(html: string): string {
+  let best = ''
+  let bestScore = 0
+  for (const inner of [...elementInners(html), ...preInners(html)]) {
+    const score = chartScore(markupToText(inner))
+    if (score > bestScore || (score === bestScore && best.length > 0 && inner.length < best.length)) {
+      best = inner
+      bestScore = score
+    }
+  }
+  return bestScore > 0 ? best : ''
+}
+
+function cifraPreToPlain(fragment: string): string {
+  const text = dropBlanksAfterSection(markupToText(fragment))
+  return stripPlainCifraClubTabs(text.replace(/\n{3,}/g, '\n\n').trim())
 }
 
 /**
