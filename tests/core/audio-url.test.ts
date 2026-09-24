@@ -300,6 +300,43 @@ describe('envelope audio clear', () => {
     expect(next).toContain('{start_of_x_chart:oferta}')
     expect(next).toContain('linha completa')
   })
+
+  it('setAudioUrl(null) keeps a blank that follows a lyric', () => {
+    const src = [
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:oferta}',
+      '{x_chart_label:Oferta}',
+      '[C]corpo',
+      '{tempo:80}',
+      '',
+      '{x_audio_sung:https://cdn.example/c.m4a}',
+      '[C]corpo',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const next = setAudioUrl(src, null)
+    const oferta = chartBlock(next, 'oferta')
+    expect(oferta).toContain('[C]corpo\n\n[C]corpo')
+    expect(oferta).not.toMatch(/\[C\]corpo\n\[C\]corpo/)
+    expect(oferta).not.toContain('x_audio_sung')
+    expect(oferta).not.toContain('cdn.example/c.m4a')
+    expect(oferta).toContain('{tempo:80}')
+  })
+
+  it('rewrites a chart with a long trailing blank run and keeps the lyric', () => {
+    const lyric = '[C]corpo longo'
+    const src = [
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:oferta}',
+      '{key:C}',
+      lyric,
+      ...Array.from({ length: 8000 }, () => ''),
+      '{end_of_x_chart}',
+    ].join('\n')
+    const next = setAudioUrl(src, null)
+    expect(chartBlock(next, 'oferta')).toContain(lyric)
+  })
 })
 
 describe('formatAudioClock', () => {
