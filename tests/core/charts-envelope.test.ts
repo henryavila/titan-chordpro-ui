@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartDocument, readMeta } from '../../src/core/charts'
+import { chartDocument, readMeta, writeSongScopedMeta } from '../../src/core/charts'
 import {
   applyCifraClubEnrich,
   commitChartDocument,
@@ -628,6 +628,26 @@ describe('chart document edits and x_chart_default', () => {
     expect(readMeta(composed).artist).toBe('Alguém')
     expect(composed).toContain('{composer:Alguém}')
     expect(chartBlock(composed, 'completa')).toBe(chartBlock(TWO_CHART_SOURCE, 'completa'))
+  })
+
+  it('a flat identity edit does not leave a second copy the reader accepts', () => {
+    const titled = writeSongScopedMeta('{title Uma}\n[C]corpo\n', { title: 'Nova' })
+    expect(readMeta(titled).title).toBe('Nova')
+    expect(parse(titled).meta.title).toBe('Nova')
+    expect(titled).not.toContain('{title Uma}')
+    expect(titled).toContain('[C]corpo')
+
+    const artist = writeSongScopedMeta('{composer:Alguém}\n[C]corpo\n', { artist: 'Novo' })
+    expect(readMeta(artist).artist).toBe('Novo')
+    expect(parse(artist).meta.artist).toBe('Novo')
+    expect(artist).not.toContain('composer')
+    expect(artist).toContain('[C]corpo')
+
+    const cleared = writeSongScopedMeta('{composer:Alguém}\n[C]corpo\n', { artist: '' })
+    expect(readMeta(cleared).artist).toBeUndefined()
+    expect(parse(cleared).meta.artist).toBeUndefined()
+    expect(cleared).not.toContain('composer')
+    expect(cleared).toContain('[C]corpo')
   })
 
   it('counts colonless {transpose} and {key} the way parse does', () => {

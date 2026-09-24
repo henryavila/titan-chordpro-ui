@@ -81,6 +81,7 @@ export type ChartMeta = Partial<Record<MetaKey, string>>
 const META_ALIAS: Record<string, MetaKey> = {
   t: 'title',
   st: 'subtitle',
+  composer: 'artist',
   x_origem: 'x_source',
   x_audio: 'x_audio_sung',
   x_audio_cantado: 'x_audio_sung',
@@ -345,11 +346,15 @@ export function writeMetaOneHeader(source: string, meta: ChartMeta): string {
   const body = String(source ?? '')
     .split('\n')
     .filter((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
-      if (!d) return true
-      const k = (d[1] ?? '').toLowerCase()
-      if (k === 'x_chart_default' && !setsDefault) return true
-      return canonicalMetaKey(k) === null
+      const parsed = dirOf(l)
+      if (!parsed) return true
+      const colonForm = /^\s*\{\s*[a-zA-Z_]+\s*:/.test(l)
+      if (!colonForm) {
+        // `{transpose 2}` stays. `{title Uma}` does not: readMeta still accepts it.
+        return songIdentityMetaKey(parsed.name) === null
+      }
+      if (parsed.name === 'x_chart_default' && !setsDefault) return true
+      return canonicalMetaKey(parsed.name) === null
     })
   const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
     (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
@@ -400,21 +405,57 @@ export function writeSongScopedMeta(source: string, patch: MetaPatch): string {
   return [header, tail].filter((s) => s.length > 0).join('\n')
 }
 
-/** A blank whose nearest neighbours are both sound keys — not lyric content. */
-function blankBetweenSoundKeys(lines: string[], index: number): boolean {
-  if ((lines[index] ?? '').trim() !== '') return false
-  let prev = index - 1
-  while (prev >= 0 && (lines[prev] ?? '').trim() === '') prev--
-  let next = index + 1
-  while (next < lines.length && (lines[next] ?? '').trim() === '') next++
-  if (prev < 0 || next >= lines.length) return false
-  const before = dirOf(lines[prev] ?? '')
-  const after = dirOf(lines[next] ?? '')
-  return !!(before && chartSoundKey(before.name) && after && chartSoundKey(after.name))
+function lineStartsChartBody(line: string): boolean {
+  if (line.trim() === '') return false
+  const d = dirOf(line)
+  if (!d) return true
+  if (d.name === 'x_chart_label') return false
+  if (chartSoundKey(d.name)) return false
+  return true
+}
+
+/**
+ * Blanks that sit only between leading sound keys.
+ * Nearest non-blank neighbours are one forward pass and one backward pass,
+ * so a run of blanks is not walked again from each line.
+ * A blank after the lyric (or any other body line) has started stays.
+ */
+function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
+  const n = lines.length
+  const prev = new Array<number>(n)
+  const next = new Array<number>(n)
+  const bodyBefore = new Array<boolean>(n)
+  let lastNonBlank = -1
+  let seenBody = false
+  for (let i = 0; i < n; i++) {
+    prev[i] = lastNonBlank
+    bodyBefore[i] = seenBody
+    const line = lines[i] ?? ''
+    if (line.trim() === '') continue
+    lastNonBlank = i
+    if (lineStartsChartBody(line)) seenBody = true
+  }
+  lastNonBlank = n
+  for (let i = n - 1; i >= 0; i--) {
+    next[i] = lastNonBlank
+    if ((lines[i] ?? '').trim() !== '') lastNonBlank = i
+  }
+  const drop = new Array<boolean>(n).fill(false)
+  for (let i = 0; i < n; i++) {
+    if ((lines[i] ?? '').trim() !== '' || bodyBefore[i]) continue
+    const beforeAt = prev[i] ?? -1
+    const afterAt = next[i] ?? n
+    if (beforeAt < 0 || afterAt >= n) continue
+    const before = dirOf(lines[beforeAt] ?? '')
+    const after = dirOf(lines[afterAt] ?? '')
+    drop[i] = !!(before && chartSoundKey(before.name) && after && chartSoundKey(after.name))
+  }
+  return drop
 }
 
 function rewriteChartInner(inner: string, patch: MetaPatch): string {
   const lines = inner.split('\n')
+  const dropBlank = blanksOnlyBetweenLeadingSoundKeys(lines)
   const labelLines: string[] = []
   const rest: string[] = []
   for (let i = 0; i < lines.length; i++) {
@@ -425,9 +466,9 @@ function rewriteChartInner(inner: string, patch: MetaPatch): string {
       continue
     }
     if (d && chartSoundKey(d.name)) continue
-    // A blank under the label is content. A blank between sound keys is not:
-    // rewriting those keys as one block must not drop it onto the lyric.
-    if (blankBetweenSoundKeys(lines, i)) continue
+    // A blank under the label is content. A blank only between leading sound
+    // keys is not: regrouping those keys must not drop it onto the lyric.
+    if (dropBlank[i]) continue
     rest.push(line)
   }
   const next = applyPatch(readKeyed(inner, 'chart'), patch, CHART_SOUND_KEYS)
