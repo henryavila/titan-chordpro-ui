@@ -1084,11 +1084,7 @@ const rollLive = computed(
   () => scrolling.value || (met.follow.value && met.running.value && canScroll.value),
 )
 const chromeHidden = computed(
-  () =>
-    (zen.value || (rollLive.value && idle.value)) &&
-    !sheet.value &&
-    !isEdit.value &&
-    !audio.playing.value,
+  () => (zen.value || (rollLive.value && idle.value)) && !sheet.value && !isEdit.value,
 )
 watch(chromeHidden, (gone) => {
   if (gone && !zen.value && !idleSeen) {
@@ -1641,6 +1637,7 @@ function onSurfaceTap(e: MouseEvent) {
  */
 function showChrome() {
   if (zen.value) setChromeGone(false)
+  idle.value = false
 }
 
 /**
@@ -2933,10 +2930,13 @@ defineExpose({
         :art-height="audioArt?.height"
         :kind="audioKind"
         :kinds="audioKinds"
+        inline
+        :chrome-gone="chromeHidden"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"
         @kind="audioKind = $event"
+        @reveal="showChrome"
       />
     </CpvPhoneDock>
 

@@ -255,6 +255,33 @@ export const ICONS = {
     { tag: 'path', attrs: { d: 'M3 12h.01' } },
     { tag: 'path', attrs: { d: 'M3 18h.01' } },
   ],
+  /** Lucide headphones — rehearsal reference, not a play triangle. */
+  headphones: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3',
+      },
+    },
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M8.3 12c1.05-3.3 2.1-3.3 3.15 0s2.1 3.3 3.15 0 2.1-3.3 3.15 0',
+        fill: 'none',
+        'stroke-width': '2.6',
+        'data-audio-wave': '1',
+      },
+    },
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M8.6 12c.9-2.2 1.8-2.2 2.7 0s1.8 2.2 2.7 0 1.8-2.2 2.7 0',
+        fill: 'none',
+        'stroke-width': '1.6',
+        'data-audio-wave': '2',
+      },
+    },
+  ],
   /** Music notation start-repeat |: — two dots and the thick bar. */
   repeatBar: [
     { tag: 'rect', attrs: { x: '7', y: '4', width: '1.4', height: '16', rx: '0.4', fill: 'currentColor', stroke: 'none' } },

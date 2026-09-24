@@ -2870,6 +2870,124 @@ div.cpv-head-id {
   padding: 5px 6px 5px 5px;
   border-radius: 999px;
 }
+.cpv-phone-stack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 13;
+  padding: 0 10px calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.cpv-phone-stack .cpv-chrome.is-hidden {
+  display: none;
+}
+.cpv-phone-stack.is-zen .cpv-veil {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.cpv-phone-stack.is-zen .cpv-phone-lead {
+  border: 0;
+  padding: 0;
+}
+.cpv-phone-lead {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cpv-phone-lead .cpv-reading {
+  flex: 1;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.cpv-phone-lead:has(.cpv-audio-ref:not(.is-closed)) {
+  flex-direction: column;
+  align-items: stretch;
+}
+.cpv-phone-lead:has(.cpv-audio-ref:not(.is-closed)) .cpv-audio-ref {
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  height: auto;
+}
+.cpv-phone-lead:has(.cpv-audio-ref:not(.is-closed)) .cpv-reading {
+  display: none;
+}
+.cpv-audio-ref.is-inline.is-closed {
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  height: var(--cpv-dock-ctrl-h, 44px);
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cpv-audio-ref-phones {
+  flex: none;
+  width: var(--cpv-dock-ctrl-h, 44px);
+  height: var(--cpv-dock-ctrl-h, 44px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.cpv-audio-ref.is-playing .cpv-audio-ref-phones {
+  color: var(--chord);
+}
+.cpv-audio-ref [data-audio-wave] {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cpv-audio-ref.is-playing [data-audio-wave] {
+  opacity: 1;
+  animation: cpv-audio-wave 0.7s ease-in-out infinite;
+}
+.cpv-audio-ref.is-playing [data-audio-wave='2'] {
+  opacity: 0.55;
+  animation-duration: 1s;
+  animation-direction: reverse;
+}
+@keyframes cpv-audio-wave {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1.15);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cpv-audio-ref.is-playing [data-audio-wave] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+.cpv-phone-stack.is-zen .cpv-audio-ref-phones {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
 .cpv-audio-ref-art {
   grid-area: art;
   align-self: center;
