@@ -86,7 +86,6 @@ function drawFrets(
   const opens: number[] = []
   const nutOpens: number[] = []
   const dots: FretDot[] = []
-  let fingersRendered = false
 
   for (let s = 0; s < strings; s++) {
     const slot = frets[s]
@@ -102,21 +101,23 @@ function drawFrets(
     const relativeFret = slot
     const fret = capoFret + (base - 1) + relativeFret
     const finger = fingerOf(fingers?.[s])
-    if (finger != null) fingersRendered = true
     const dot: FretDot = { string: s, fret, relativeFret }
     if (finger != null) dot.finger = finger
     dots.push(dot)
   }
 
-  const hasCapoBar = capoFret > 0
+  // A fret above the cap is omitted. It is not clamped onto the last line.
+  const drawnDots = dots.filter((dot) => fretOnNeck(dot.fret))
+  const hasCapoBar = fretOnNeck(capoFret)
   const capoLabel = hasCapoBar ? `Capo ${capoFret}` : null
+  const fingersRendered = drawnDots.some((dot) => dot.finger != null)
   const svg = fretSvg({
     strings,
-    capoFret,
+    capoFret: hasCapoBar ? capoFret : 0,
     capoLabel,
     mutes,
     opens,
-    dots,
+    dots: drawnDots,
     fingersRendered,
   })
 
@@ -131,29 +132,25 @@ function drawFrets(
     mutes,
     opens,
     nutOpens,
-    dots,
+    dots: drawnDots,
     fingersRendered,
     svg,
   }
 }
 
-/** Finite fret inside the drawn neck. Non-finite and huge frets clamp to the cap. */
-function drawnFret(fret: number, span: number): number {
-  if (!Number.isFinite(fret)) return span
-  if (fret < 0) return 0
-  if (fret > span) return span
-  return fret
+/** Fret that has a line on the neck. Above the cap is not drawable. */
+function fretOnNeck(fret: number): boolean {
+  return Number.isFinite(fret) && fret >= 1 && fret <= FRET_LINE_CAP
 }
 
-/** Highest fret line to paint. Never follows a token of hundreds of nines. */
+/** Highest fret line to paint. Frets above the cap do not extend the neck. */
 function fretSpan(capoFret: number, dots: readonly FretDot[]): number {
   let max = 4
-  if (Number.isFinite(capoFret) && capoFret > max) max = capoFret
+  if (fretOnNeck(capoFret) && capoFret > max) max = capoFret
   for (let i = 0; i < dots.length; i++) {
     const fret = dots[i]?.fret ?? 0
-    if (Number.isFinite(fret) && fret > max) max = fret
+    if (fretOnNeck(fret) && fret > max) max = fret
   }
-  if (!Number.isFinite(max) || max > FRET_LINE_CAP) return FRET_LINE_CAP
   return max
 }
 
@@ -171,7 +168,7 @@ function fretSvg(opts: {
   const width = PAD_X * 2 + (strings - 1) * 16
   const height = PAD_Y + span * FRET_H + 28
   const xOf = (s: number) => PAD_X + s * 16
-  const yOf = (fret: number) => PAD_Y + drawnFret(fret, span) * FRET_H
+  const yOf = (fret: number) => PAD_Y + fret * FRET_H
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">`,
   ]
@@ -188,7 +185,7 @@ function fretSvg(opts: {
       `<line class="diagram-fret" x1="${xOf(0)}" y1="${yOf(f)}" x2="${xOf(strings - 1)}" y2="${yOf(f)}" stroke="currentColor" stroke-width="1"/>`,
     )
   }
-  if (capoFret > 0 && capoLabel && Number.isFinite(capoFret)) {
+  if (capoFret > 0 && capoLabel && fretOnNeck(capoFret) && capoFret <= span) {
     const y = yOf(capoFret)
     parts.push(
       `<rect class="diagram-capo-bar" x="${xOf(0) - 4}" y="${y - 4}" width="${(strings - 1) * 16 + 8}" height="8" rx="2" fill="currentColor"/>`,
@@ -212,6 +209,7 @@ function fretSvg(opts: {
     }
   }
   for (const dot of dots) {
+    if (!fretOnNeck(dot.fret) || dot.fret > span) continue
     const x = xOf(dot.string)
     const y = yOf(dot.fret) - FRET_H / 2
     parts.push(`<circle class="diagram-dot" cx="${x}" cy="${y}" r="6" fill="currentColor"/>`)
@@ -228,8 +226,10 @@ function fretSvg(opts: {
 function pianoRootPc(token: string | undefined): number | null {
   if (!token) return null
   const parsed = parseChordToken(token)
-  if (parsed.class !== 'parse') return null
-  return keyIndex(parsed.root)
+  if (parsed.class === 'parse') return keyIndex(parsed.root)
+  // `Caug` does not parse, but the leading note is still the root. `+` is not.
+  if (token.includes('+') || /["'’]/.test(token)) return null
+  return keyIndex(token)
 }
 
 function drawPiano(voicing: DiagramVoicing, token: string | undefined): PianoDraw {

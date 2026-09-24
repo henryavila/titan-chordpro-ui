@@ -71,6 +71,33 @@ function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
   return voicing
 }
 
+/**
+ * Parser-unknown piano name that still starts with a note (`Caug`).
+ * Keys are read from that root. No root letter, or no keys, is a miss.
+ * `+` never hits.
+ */
+function pianoUnknownOverride(
+  overrides: readonly ChordDefine[],
+  token: string,
+): DiagramHit | null {
+  if (token.includes('+')) return null
+  const rootPc = keyIndex(token)
+  if (rootPc == null) return null
+  for (const def of overrides) {
+    if (def.instrument !== 'piano') continue
+    if (def.name !== token) continue
+    if (!def.keys?.length) continue
+    return {
+      class: 'hit',
+      instrument: 'piano',
+      token,
+      source: 'override',
+      voicing: fromDefine(def, rootPc),
+    }
+  }
+  return null
+}
+
 /** Parser-unknown name: exact `{define}` name plus a fret shape. `+` never hits. */
 function exactFretOverride(
   overrides: readonly ChordDefine[],
@@ -128,6 +155,9 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
 
   const overrides = opts.overrides ?? []
   if (parsed.class !== 'parse') {
+    if (instrument === 'piano') {
+      return pianoUnknownOverride(overrides, token) ?? { class: 'miss', reason: 'unknown-token' }
+    }
     return exactFretOverride(overrides, instrument, token) ?? { class: 'miss', reason: 'unknown-token' }
   }
   const want = canonicalOf(token)

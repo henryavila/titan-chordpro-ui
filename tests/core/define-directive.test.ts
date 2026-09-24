@@ -526,6 +526,133 @@ describe('transposeDefine', () => {
     expect(draw.litNotes).toEqual(['E', 'G#', 'B'])
   })
 
+  it('serializes dropped guitar frets as a parsable piano define', () => {
+    const line = '{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}'
+    const raw = parseDefineDirective(line)
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('guitar')
+    expect(() => transposeDefine(raw, 2, false)).not.toThrow()
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({
+      name: 'E',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [0, 4, 7],
+    })
+    expect(up?.frets).toBeUndefined()
+    expect(up?.directive).not.toBe('define-guitar')
+    if (!up) return
+    expect(serializeDefine(up)).toBe('{define: E keys 0 4 7}')
+    const again = parseDefineDirective(serializeDefine(up))
+    expect(again.class).toBe('parse')
+    if (again.class !== 'parse') return
+    expect(again).toMatchObject({ instrument: 'piano', directive: 'define', keys: [0, 4, 7] })
+
+    const src = `${line}\n[D]`
+    expect(() => transpose(parse(src), 2)).not.toThrow()
+    expect(() => exportCho(src, { semitones: 2 })).not.toThrow()
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: E keys 0 4 7}')
+    expect(out).not.toContain('define-guitar')
+    const exported = parse(out).defines[0]
+    expect(exported).toMatchObject({
+      name: 'E',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [0, 4, 7],
+    })
+    expect(exported?.frets).toBeUndefined()
+    expect(transpose(parse(src), 2).defines).toEqual(parse(out).defines)
+  })
+
+  it('serializes dropped ukulele frets as a parsable piano define', () => {
+    const line = '{define-ukulele: C frets 0 0 0 3 keys 0 4 7}'
+    const raw = parseDefineDirective(line)
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(() => transposeDefine(raw, 2, false)).not.toThrow()
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({
+      name: 'D',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [0, 4, 7],
+    })
+    expect(up?.frets).toBeUndefined()
+    if (!up) return
+    expect(serializeDefine(up)).toBe('{define: D keys 0 4 7}')
+    expect(parseDefineDirective(serializeDefine(up)).class).toBe('parse')
+    const out = exportCho(`${line}\n[C]`, { semitones: 2 })
+    expect(parse(out).defines[0]).toMatchObject({
+      name: 'D',
+      keys: [0, 4, 7],
+      instrument: 'piano',
+      directive: 'define',
+    })
+  })
+
+  it('keeps define-guitar when barred frets still move', () => {
+    const raw = parseDefineDirective('{define-guitar: F base-fret 1 frets 1 3 3 2 1 1 keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({
+      name: 'G',
+      instrument: 'guitar',
+      directive: 'define-guitar',
+      baseFret: 3,
+      frets: [1, 3, 3, 2, 1, 1],
+      keys: [0, 4, 7],
+    })
+    if (!up) return
+    expect(serializeDefine(up)).toBe(
+      '{define-guitar: G base-fret 3 frets 1 3 3 2 1 1 keys 0 4 7}',
+    )
+    expect(parseDefineDirective(serializeDefine(up)).class).toBe('parse')
+  })
+
+  it('keeps piano keys when a barred shape would fall below fret 1', () => {
+    const raw = parseDefineDirective('{define-guitar: F base-fret 1 frets 1 3 3 2 1 1 keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(() => transposeDefine(raw, -1, false)).not.toThrow()
+    const down = transposeDefine(raw, -1, false)
+    expect(down).toMatchObject({
+      name: 'E',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [0, 4, 7],
+    })
+    expect(down?.frets).toBeUndefined()
+    if (!down) return
+    expect(serializeDefine(down)).toBe('{define: E keys 0 4 7}')
+  })
+
+  it('does not turn distances above 17 into MIDI when guitar frets are dropped', () => {
+    const raw = parseDefineDirective('{define-guitar: D frets x 0 0 2 3 2 keys 24 28 31}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(transposeDefine(raw, 2, false)).toMatchObject({
+      name: 'E',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [24, 28, 31],
+    })
+  })
+
+  it('still adds n to MIDI keys when guitar frets are dropped', () => {
+    const raw = parseDefineDirective('{define-guitar: C frets x 0 0 2 3 2 keys 48 52 55}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(transposeDefine(raw, 2, false)).toMatchObject({
+      name: 'D',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [50, 54, 57],
+    })
+  })
+
   it('does not throw when a key list is longer than 32', () => {
     const distances = Array.from({ length: 40 }, () => 0)
     const distanceLine = `{define: C keys ${distances.join(' ')}}`
