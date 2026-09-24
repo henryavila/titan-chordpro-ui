@@ -756,6 +756,103 @@ describe('transposeDefine', () => {
     ])
     expect(transpose(parse(src), 2).defines).toEqual(parse(out).defines)
   })
+
+  it('keeps a define that already has keys when open frets drop', () => {
+    const src = '{define: D frets x 0 0 2 3 2 keys 0 4 7}\n{define: D keys 0 7}\n[D]'
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: E keys 0 4 7}')
+    expect(out).toContain('{define: E keys 0 7}')
+    const defines = parse(out).defines
+    expect(defines.map((d) => d.keys)).toEqual([
+      [0, 4, 7],
+      [0, 7],
+    ])
+    expect(transpose(parse(src), 2).defines).toEqual(defines)
+    const hit = resolveDiagram({ token: 'E', instrument: 'piano', overrides: defines })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.voicing.keys).toEqual([0, 4, 7])
+  })
+
+  it('drops the stringed line when the piano define is written first', () => {
+    const src = '{define: D keys 0 7}\n{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}\n[D]'
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: E keys 0 7}')
+    expect(out).not.toContain('{define: E keys 0 4 7}')
+    expect(parse(out).defines).toHaveLength(1)
+    expect(parse(out).defines[0]).toMatchObject({ keys: [0, 7] })
+  })
+
+  it('drops a converted ukulele define that would hide a piano define', () => {
+    const src = '{define-ukulele: C frets 0 0 0 3 keys 0 4 7}\n{define: C keys 0 7}\n[C]'
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: D keys 0 7}')
+    expect(out).not.toContain('{define: D keys 0 4 7}')
+    expect(parse(out).defines).toHaveLength(1)
+    expect(parse(out).defines[0]).toMatchObject({ name: 'D', keys: [0, 7] })
+  })
+
+  it('drops a converted guitar alias that would hide a piano define', () => {
+    const src =
+      '{define-guitar: Cmaj7 frets x 0 0 2 3 2 keys 0 4 7 11}\n{define: C7M keys 0 4 7 11}'
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: D7M keys 0 4 7 11}')
+    expect(out).not.toContain('{define: Dmaj7')
+    expect(out).not.toContain('define-guitar')
+    const defines = parse(out).defines
+    expect(defines).toHaveLength(1)
+    expect(defines[0]).toMatchObject({ name: 'D7M', keys: [0, 4, 7, 11] })
+    expect(transpose(parse(src), 2).defines).toEqual(defines)
+
+    const flipped =
+      '{define-guitar: C7M frets x 0 0 2 3 2 keys 0 4 7 11}\n{define: Cmaj7 keys 0 4 7 11}'
+    const flippedOut = exportCho(flipped, { semitones: 2 })
+    expect(flippedOut).toContain('{define: Dmaj7 keys 0 4 7 11}')
+    expect(flippedOut).not.toContain('{define: D7M')
+    expect(parse(flippedOut).defines).toHaveLength(1)
+  })
+
+  it('transposes defines inside tab and score without the outside collision', () => {
+    const blocks = [
+      ['{start_of_tab}', '{end_of_tab}'],
+      ['{sot}', '{eot}'],
+      ['{start_of_score}', '{end_of_score}'],
+      ['{sos}', '{eos}'],
+    ] as const
+    for (const [open, close] of blocks) {
+      const src = [
+        '{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}',
+        open,
+        '{define: D keys 0 7}',
+        close,
+        '[D]',
+      ].join('\n')
+      const out = exportCho(src, { semitones: 2 })
+      expect(out, open).toContain('{define: E keys 0 4 7}')
+      expect(out, open).toContain('{define: E keys 0 7}')
+      const defines = parse(out).defines
+      expect(defines, open).toHaveLength(1)
+      expect(defines[0], open).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+      expect(transpose(parse(src), 2).defines, open).toEqual(defines)
+    }
+
+    const insideGuitar = [
+      '{define: D keys 0 7}',
+      '{start_of_tab}',
+      '{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}',
+      '{end_of_tab}',
+      '{start_of_score}',
+      '{define-ukulele: D frets 0 0 0 3 keys 0 4 7}',
+      '{end_of_score}',
+      '[D]',
+    ].join('\n')
+    const kept = exportCho(insideGuitar, { semitones: 2 })
+    expect(kept).toContain('{define: E keys 0 7}')
+    expect(kept).toContain('{define: E keys 0 4 7}')
+    expect(parse(kept).defines).toHaveLength(1)
+    expect(parse(kept).defines[0]).toMatchObject({ name: 'E', keys: [0, 7] })
+    expect(transpose(parse(insideGuitar), 2).defines).toEqual(parse(kept).defines)
+  })
 })
 
 describe('transpose/setKey apply the same define rewrite as export', () => {

@@ -4,7 +4,8 @@
  */
 
 import { PIANO_MIDI_FLOOR, pianoKeysAreMidi } from './chord-dict'
-import { transposeToken } from './transpose'
+import { parseChordToken } from './parse-chord'
+import { keyIndex, transposeToken } from './transpose'
 
 export const DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/
 
@@ -255,10 +256,30 @@ function lostItsFrets(before: ChordDefine, after: ChordDefine): boolean {
   return (before.frets?.length ?? 0) > 0 && !(after.frets?.length)
 }
 
+/** Same chord as resolveDiagram: exact name, or root + quality + bass. */
+function chordNameKey(name: string): string {
+  const parsed = parseChordToken(name)
+  if (parsed.class !== 'parse') return `raw\0${name}`
+  const rootPc = keyIndex(parsed.root)
+  if (rootPc === null) return `raw\0${name}`
+  const bassPc = parsed.bass != null ? keyIndex(parsed.bass) : null
+  if (parsed.bass != null && bassPc === null) return `raw\0${name}`
+  return `chord\0${rootPc}\0${parsed.quality}\0${bassPc ?? ''}`
+}
+
+function startedAsStringed(def: ChordDefine): boolean {
+  return def.instrument === 'guitar' || def.instrument === 'ukulele'
+}
+
+function wasAlreadyPiano(def: ChordDefine): boolean {
+  return def.instrument === 'piano' && (def.keys?.length ?? 0) > 0
+}
+
 /**
- * Transpose each define. A fretted line that lost its frets is dropped when
- * another piano `{define:}` already uses that transposed name — otherwise the
- * new piano line is found first and hides the one the chart wrote.
+ * Transpose each define. Drop a line only when it started as guitar or
+ * ukulele, lost its frets, and another define that was already piano has
+ * the same transposed name (`C7M` and `Cmaj7` count as one). A `{define:}`
+ * that already had keys stays, even if its open frets are gone.
  */
 export function transposeDefines(
   defs: readonly ChordDefine[],
@@ -271,40 +292,88 @@ export function transposeDefines(
   for (let i = 0; i < defs.length; i++) {
     const before = defs[i]
     const after = next[i]
-    if (!before || !after || lostItsFrets(before, after)) continue
-    if (after.instrument !== 'piano' || !after.keys?.length) continue
-    pianoNames.add(after.name)
+    if (!before || !after || !wasAlreadyPiano(before)) continue
+    if (!after.keys?.length) continue
+    pianoNames.add(chordNameKey(after.name))
   }
   if (pianoNames.size === 0) return next
   return next.map((after, i) => {
     const before = defs[i]
     if (!before || !after) return after ?? null
-    if (lostItsFrets(before, after) && after.instrument === 'piano' && pianoNames.has(after.name)) {
-      return null
-    }
-    return after
+    if (!startedAsStringed(before) || !lostItsFrets(before, after)) return after
+    if (after.instrument !== 'piano' || !after.keys?.length) return after
+    if (!pianoNames.has(chordNameKey(after.name))) return after
+    return null
   })
 }
 
+function lineKey(line: string): string {
+  return (line.match(DIR)?.[1] ?? '').toLowerCase()
+}
+
+function notationOpen(key: string): 'tab' | 'score' | null {
+  if (key === 'sot' || key === 'start_of_tab') return 'tab'
+  if (key === 'sos' || key === 'start_of_score') return 'score'
+  return null
+}
+
+function notationClose(key: string, region: 'tab' | 'score'): boolean {
+  if (region === 'tab') return key === 'eot' || key === 'end_of_tab'
+  return key === 'eos' || key === 'end_of_score'
+}
+
+/**
+ * Defines inside tab or score are transposed one line at a time. They do not
+ * join the collision, and they cannot delete a define outside the block.
+ */
 export function rewriteDefineLines(source: string, n: number, flats: boolean): string {
   if (!n) return source
   const lines = String(source ?? '').split('\n')
-  const indexes: number[] = []
-  const defs: ChordDefine[] = []
+  const outsideAt: number[] = []
+  const outside: ChordDefine[] = []
+  const soloAt: number[] = []
+  const solo: ChordDefine[] = []
+  let region: 'tab' | 'score' | null = null
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? ''
-    if (!isDefineKey(line.match(DIR)?.[1] ?? '')) continue
+    const key = lineKey(line)
+    if (region) {
+      if (notationClose(key, region)) {
+        region = null
+        continue
+      }
+      if (!isDefineKey(key)) continue
+      const def = asChordDefine(parseDefineDirective(line))
+      if (!def) continue
+      soloAt.push(i)
+      solo.push(def)
+      continue
+    }
+    const opened = notationOpen(key)
+    if (opened) {
+      region = opened
+      continue
+    }
+    if (!isDefineKey(key)) continue
     const def = asChordDefine(parseDefineDirective(line))
     if (!def) continue
-    indexes.push(i)
-    defs.push(def)
+    outsideAt.push(i)
+    outside.push(def)
   }
-  const kept = transposeDefines(defs, n, flats)
+
+  const outsideNext = transposeDefines(outside, n, flats)
+  const soloNext = solo.map((def) => transposeDefine(def, n, flats))
   const at = new Map<number, ChordDefine | null>()
-  for (let i = 0; i < indexes.length; i++) {
-    const lineNo = indexes[i]
+  for (let i = 0; i < outsideAt.length; i++) {
+    const lineNo = outsideAt[i]
     if (lineNo === undefined) continue
-    at.set(lineNo, kept[i] ?? null)
+    at.set(lineNo, outsideNext[i] ?? null)
+  }
+  for (let i = 0; i < soloAt.length; i++) {
+    const lineNo = soloAt[i]
+    if (lineNo === undefined) continue
+    at.set(lineNo, soloNext[i] ?? null)
   }
   const out: string[] = []
   for (let i = 0; i < lines.length; i++) {

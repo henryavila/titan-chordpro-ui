@@ -72,18 +72,22 @@ function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
 }
 
 /**
+ * Straight and curly quotes. A token that contains one is not a chord name
+ * on guitar, ukulele, or piano — checked before any file override.
+ * U+0022 U+0027 U+2018 U+2019 U+201C U+201D.
+ */
+const CHORD_NAME_QUOTE = /[\u0022\u0027\u2018\u2019\u201C\u201D]/
+
+/**
  * Parser-unknown piano name that still starts with a note (`Caug`).
  * Keys are read from that root. No root letter, or no keys, is a miss.
- * `+` never hits.
+ * `+` and quotes never hit.
  */
-/** Same marks `drawDiagram` refuses before it will light a piano root. */
-const PIANO_NAME_QUOTE = /["'’]/
-
 function pianoUnknownOverride(
   overrides: readonly ChordDefine[],
   token: string,
 ): DiagramHit | null {
-  if (token.includes('+') || PIANO_NAME_QUOTE.test(token)) return null
+  if (token.includes('+') || CHORD_NAME_QUOTE.test(token)) return null
   const rootPc = keyIndex(token)
   if (rootPc == null) return null
   for (const def of overrides) {
@@ -152,10 +156,12 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
     return { class: 'miss', reason: 'unknown-token' }
   }
 
-  const parsed = parseChordToken(token)
-  // `7+` is not aug or maj7. A define named C7+ does not make it a hit.
-  if (token.includes('+')) return { class: 'miss', reason: 'unknown-token' }
+  // Quotes and `+` are not chord names. A define does not make them a hit.
+  if (CHORD_NAME_QUOTE.test(token) || token.includes('+')) {
+    return { class: 'miss', reason: 'unknown-token' }
+  }
 
+  const parsed = parseChordToken(token)
   const overrides = opts.overrides ?? []
   if (parsed.class !== 'parse') {
     if (instrument === 'piano') {

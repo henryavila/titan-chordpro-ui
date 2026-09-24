@@ -356,7 +356,8 @@ describe('drawDiagram', () => {
   })
 
   it('does not light keys when the piano name contains a quote', () => {
-    for (const token of ["C'", 'C"', 'C\u2019']) {
+    for (const mark of ['\u0027', '\u0022', '\u2018', '\u2019', '\u201C', '\u201D']) {
+      const token = `C${mark}`
       const d = drawDiagram({
         instrument: 'piano',
         voicing: { keys: [0, 4, 7] },

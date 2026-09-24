@@ -56,6 +56,9 @@ export type DrawDiagramOpts = {
 
 const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
 
+/** U+0022 U+0027 U+2018 U+2019 U+201C U+201D. Same marks resolveDiagram refuses. */
+const CHORD_NAME_QUOTE = /[\u0022\u0027\u2018\u2019\u201C\u201D]/
+
 /** Neck window. A fret of 10000 or hundreds of nines must not draw a line each. */
 const FRET_LINE_CAP = 24
 const PAD_X = 24
@@ -234,10 +237,11 @@ function fretSvg(opts: {
 
 function pianoRootPc(token: string | undefined): number | null {
   if (!token) return null
+  // `Caug` does not parse, but the leading note is still the root.
+  // `+` and quotes are not a root, on any spelling of the mark.
+  if (token.includes('+') || CHORD_NAME_QUOTE.test(token)) return null
   const parsed = parseChordToken(token)
   if (parsed.class === 'parse') return keyIndex(parsed.root)
-  // `Caug` does not parse, but the leading note is still the root. `+` is not.
-  if (token.includes('+') || /["'’]/.test(token)) return null
   return keyIndex(token)
 }
 
