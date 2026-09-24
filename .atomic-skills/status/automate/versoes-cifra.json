@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 15,
-  "updatedAt": "2026-09-24T21:05:02.490Z",
+  "redispatchCount": 16,
+  "updatedAt": "2026-09-24T21:05:39.918Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -80,6 +80,12 @@
       "at": "2026-09-24T20:33:48.994Z",
       "reason": "operator 2026-09-24: N>1 files are only chart blocks; revise F0 to that contract and stop the value-inference loop",
       "priorCount": 14,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T21:05:39.917Z",
+      "reason": "operator 2026-09-24: block-only contract; Vue tests still build a shared header and must follow the same rule",
+      "priorCount": 15,
       "gate": "spawn"
     }
   ],
