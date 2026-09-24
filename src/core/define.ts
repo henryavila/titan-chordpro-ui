@@ -3,9 +3,7 @@
  * not package dictionary. Generic `{define:}` infers instrument from payload.
  */
 
-import { pianoSoundingPitchClasses } from './chord-dict'
-import { parseChordToken } from './parse-chord'
-import { keyIndex, transposeToken } from './transpose'
+import { transposeToken } from './transpose'
 
 export const DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/
 
@@ -174,23 +172,6 @@ export function serializeDefine(def: ChordDefine): string {
   return `{${body}}`
 }
 
-function isPitchClass(k: number): boolean {
-  return k >= 0 && k <= 11
-}
-
-function mod12(n: number): number {
-  return ((n % 12) + 12) % 12
-}
-
-function shiftKey(k: number, n: number): number {
-  if (isPitchClass(k)) return mod12(k + n)
-  return k + n
-}
-
-function sameOrder(a: readonly number[], b: readonly number[]): boolean {
-  return a.length === b.length && a.every((pc, i) => pc === b[i])
-}
-
 /**
  * Shifted MIDI that would land on an interval (≤ 17) is lifted by the same
  * number of octaves until every key is above 17. Spacing stays.
@@ -204,49 +185,23 @@ function keepMidiAboveIntervals(keys: readonly number[]): number[] {
 }
 
 /**
- * 0–11, and 0–17 that includes a 12–17 interval: shift the draw's sounding
- * classes inside 0–11. Do not add n to a 12–17 interval. Keep the absolute
- * list, else the relative list, that the renamed chord reads back. When
- * neither does, store 60 + pc. Do not throw.
- * Any key above 17 or below 0 is MIDI: add n. Do not fold with 60 + (mod 12).
- * If a result is ≤ 17, lift every key by the same octaves until each is > 17.
+ * 0–17, including a 12–17 tone such as 14, is a distance from the chord root:
+ * return the same numbers. Do not add n. Any key above 17 or below 0 is MIDI:
+ * add n, and if a result is ≤ 17 lift every key by the same octaves until
+ * each is > 17. Does not throw and does not ask the reader which form to store.
  */
-function transposePianoKeys(def: ChordDefine, n: number, flats: boolean): number[] {
-  const keys = def.keys ?? []
+function transposePianoKeys(keys: readonly number[], n: number): number[] {
   if (keys.some((k) => k > 17 || k < 0)) {
     return keepMidiAboveIntervals(keys.map((k) => k + n))
   }
-  const fallback = () => keys.map((k) => shiftKey(k, n))
-  if (!keys.length) return []
-  const parsed = parseChordToken(def.name)
-  if (parsed.class !== 'parse') return fallback()
-  const rootPc = keyIndex(parsed.root)
-  if (rootPc === null) return fallback()
-  const bassPc = parsed.bass != null ? keyIndex(parsed.bass) : null
-  if (parsed.bass != null && bassPc === null) return fallback()
-  const sounding = pianoSoundingPitchClasses(keys, rootPc, parsed.quality, bassPc)
-  const shifted = sounding.map((k) => mod12(k + n))
-  const renamed = parseChordToken(transposeToken(def.name, n, flats))
-  if (renamed.class !== 'parse') return shifted
-  const newRoot = keyIndex(renamed.root)
-  if (newRoot === null) return shifted
-  const newBass = renamed.bass != null ? keyIndex(renamed.bass) : null
-  if (renamed.bass != null && newBass === null) return shifted
-  const readsShifted = (candidate: readonly number[]) =>
-    sameOrder(pianoSoundingPitchClasses(candidate, newRoot, renamed.quality, newBass), shifted)
-  if (readsShifted(shifted)) return shifted
-  const relative = shifted.map((pc) => mod12(pc - newRoot))
-  if (readsShifted(relative)) return relative
-  return shifted.map((pc) => 60 + pc)
+  return [...keys]
 }
 
 /**
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
- * string is open (fret 0) or the new base would fall below 1. Piano keys
- * inside 0–11 are stored so the renamed chord reads the shifted sounding
- * classes, or as 60 + pc when neither 0–11 candidate does. A 12–17 interval
- * uses that same path. MIDI (any key above 17 or below 0) adds n and stays
- * above 17 without folding into one octave.
+ * string is open (fret 0) or the new base would fall below 1. Piano keys in
+ * 0–17 stay as written; only the chord name changes. MIDI (any key above 17
+ * or below 0) adds n and stays above 17 without folding into one octave.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
@@ -257,7 +212,7 @@ export function transposeDefine(def: ChordDefine, n: number, flats: boolean): Ch
     if (base < 1) return null
     next.baseFret = base
   }
-  if (def.keys?.length) next.keys = transposePianoKeys(def, n, flats)
+  if (def.keys?.length) next.keys = transposePianoKeys(def.keys, n)
   return next
 }
 

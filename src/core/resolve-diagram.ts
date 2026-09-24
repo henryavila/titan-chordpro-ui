@@ -66,7 +66,7 @@ function fromDefine(def: ChordDefine, want: Canonical): DiagramVoicing {
   }
   if (def.fingers) voicing.fingers = [...def.fingers]
   if (def.keys?.length) {
-    voicing.keys = pianoKeysToRelative(def.keys, want.rootPc, want.quality, want.bassPc)
+    voicing.keys = pianoKeysToRelative(def.keys, want.rootPc)
   }
   return voicing
 }

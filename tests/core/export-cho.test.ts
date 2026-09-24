@@ -38,7 +38,7 @@ describe('exportCho keeps define directives', () => {
   it('rewrites piano define names and shifts keys as pitch-classes', () => {
     const src = '{title:X}\n{key:C}\n{define: C keys 0 4 7}\n[C]oi'
     const out = exportCho(src, { semitones: 2 })
-    expect(out).toContain('{define: D keys 2 6 9}')
+    expect(out).toContain('{define: D keys 0 4 7}')
     expect(out).toMatch(/\[D\]/)
   })
 

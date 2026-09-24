@@ -94,93 +94,20 @@ function mod12(n: number): number {
   return ((n % 12) + 12) % 12
 }
 
-/** Tones that name the quality. A power chord's only characteristic tone is the fifth; other qualities drop the root and the fifth. */
-function characteristicIntervals(quality: string, intervals: readonly number[]): number[] {
-  if (quality === '5') return [7]
-  const seen = new Set<number>()
-  const out: number[] = []
-  for (const iv of intervals) {
-    const tone = mod12(iv)
-    if (tone === 0 || tone === 7 || seen.has(tone)) continue
-    seen.add(tone)
-    out.push(tone)
-  }
-  return out
-}
-
-function characteristicCount(sounding: Set<number>, rootPc: number, tones: readonly number[]): number {
-  const heard = new Set<number>()
-  for (const pc of sounding) heard.add(mod12(pc - rootPc))
-  let count = 0
-  for (const tone of tones) {
-    if (heard.has(tone)) count++
-  }
-  return count
-}
-
-type PianoReading = {
-  pcs: number[]
-  intervals: number[]
-  absSet: Set<number>
-  relSet: Set<number>
-  absScore: number
-  relScore: number
-}
-
-function scorePianoReadings(keys: readonly number[], rootPc: number, quality: string): PianoReading {
-  const pcs = keys.map((k) => mod12(k))
-  const intervals = pianoKeysOf(quality) ?? [0]
-  const expected = intervals.map((iv) => mod12(rootPc + iv))
-  const absSet = new Set(pcs)
-  const relSet = new Set(pcs.map((k) => mod12(rootPc + k)))
-  let absScore = 0
-  let relScore = 0
-  for (const pc of expected) {
-    if (absSet.has(pc)) absScore++
-    if (relSet.has(pc)) relScore++
-  }
-  return { pcs, intervals, absSet, relSet, absScore, relScore }
-}
-
 /**
- * Sounding pitch classes of the one piano reading, in key order.
- * A key above 17 (the largest QUALITY_INTERVALS tone) or below 0 is MIDI:
- * return mod 12 and skip the reading. 14 and 17 beside 0–11 stay on the
- * heuristic. Absolute: the stored classes. Relative: `(root + key) % 12`.
- * Draw stores those classes as intervals from the root.
+ * Sounding pitch classes in key order.
+ * 0–17 (17 is the largest QUALITY_INTERVALS tone) are distances from the
+ * chord root. Any key above 17 or below 0 is a real piano key (MIDI): read
+ * mod 12. Never score the chord. Never choose absolute classes versus intervals.
  */
-export function pianoSoundingPitchClasses(
-  keys: readonly number[],
-  rootPc: number,
-  quality: string,
-  bassPc: number | null = null,
-): number[] {
+export function pianoSoundingPitchClasses(keys: readonly number[], rootPc: number): number[] {
   if (keys.some((k) => k > 17 || k < 0)) return keys.map((k) => mod12(k))
-  const { pcs, intervals, absSet, relSet, absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
-  const absolute = () => [...pcs]
-  const relative = () => pcs.map((k) => mod12(rootPc + k))
-  if (absScore > relScore) return absolute()
-  if (relScore > absScore) return relative()
-  // Score tie: a slash bass that sounds in only one reading picks that reading.
-  if (bassPc != null) {
-    const bass = mod12(bassPc)
-    const inAbs = absSet.has(bass)
-    const inRel = relSet.has(bass)
-    if (inAbs !== inRel) return inAbs ? absolute() : relative()
-  }
-  const tones = characteristicIntervals(quality, intervals)
-  if (characteristicCount(relSet, rootPc, tones) > characteristicCount(absSet, rootPc, tones)) return relative()
-  return absolute()
+  return keys.map((k) => mod12(rootPc + k))
 }
 
-/** File `{define}` keys may be absolute pitch classes; dictionary keys are intervals from the tonic. */
-export function pianoKeysToRelative(
-  keys: number[],
-  rootPc: number,
-  quality: string,
-  bassPc: number | null = null,
-): number[] {
-  return pianoSoundingPitchClasses(keys, rootPc, quality, bassPc).map((pc) => mod12(pc - rootPc))
+/** Intervals from the tonic. drawPiano lights `(root + interval) mod 12`. */
+export function pianoKeysToRelative(keys: number[], rootPc: number): number[] {
+  return pianoSoundingPitchClasses(keys, rootPc).map((pc) => mod12(pc - rootPc))
 }
 
 export function lookupDict(
