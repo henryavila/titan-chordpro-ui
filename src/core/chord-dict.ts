@@ -144,6 +144,7 @@ function scorePianoReadings(keys: readonly number[], rootPc: number, quality: st
 
 /**
  * Sounding pitch classes of the one piano reading, in key order.
+ * A key outside 0–11 is already absolute: return mod 12 and skip the reading.
  * Absolute: the stored classes. Relative: `(root + key) % 12`.
  * Draw stores those classes as intervals from the root.
  */
@@ -153,6 +154,7 @@ export function pianoSoundingPitchClasses(
   quality: string,
   bassPc: number | null = null,
 ): number[] {
+  if (keys.some((k) => k < 0 || k > 11)) return keys.map((k) => mod12(k))
   const { pcs, intervals, absSet, relSet, absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
   const absolute = () => [...pcs]
   const relative = () => pcs.map((k) => mod12(rootPc + k))

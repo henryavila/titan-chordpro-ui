@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   META_KEYS,
+  drawDiagram,
+  exportCho,
   parse,
   parseDefineDirective,
+  resolveDiagram,
   rewriteToKey,
   serializeDefine,
   setKey,
@@ -286,6 +289,44 @@ describe('transposeDefine', () => {
     expect(up).toMatchObject({ name: 'Gsus2', keys: [0, 7] })
     if (!up) return
     expect(transposeDefine(up, -5, false)).toMatchObject({ name: 'Dsus2', keys: [2, 9] })
+  })
+
+  it('stores absolute MIDI keys when C keys 0 2 do not round-trip on D', () => {
+    const line = '{define: C keys 0 2}'
+    const raw = parseDefineDirective(line)
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(() => transposeDefine(raw, 2, false)).not.toThrow()
+    expect(transposeDefine(raw, 2, false)).toMatchObject({ name: 'D', keys: [62, 64] })
+
+    const src = `${line}\n[C]`
+    expect(() => transpose(parse(src), 2)).not.toThrow()
+    expect(transpose(parse(src), 2).defines).toMatchObject([{ name: 'D', keys: [62, 64] }])
+    expect(() => exportCho(src, { semitones: 2 })).not.toThrow()
+    const out = exportCho(src, { semitones: 2 })
+    const exported = parse(out).defines[0]
+    expect(exported).toMatchObject({ name: 'D', keys: [62, 64] })
+    if (!exported) return
+    const hit = resolveDiagram({ token: exported.name, instrument: 'piano', overrides: [exported] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: exported.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 4])
+    expect(draw.litNotes).toEqual(['D', 'E'])
+
+    const back = transposeDefine(exported, -2, false)
+    expect(back).toMatchObject({ name: 'C', keys: [60, 62] })
+    if (!back) return
+    const backHit = resolveDiagram({ token: back.name, instrument: 'piano', overrides: [back] })
+    expect(backHit.class).toBe('hit')
+    if (backHit.class !== 'hit') return
+    const backDraw = drawDiagram({ instrument: 'piano', voicing: backHit.voicing, token: back.name })
+    expect(backDraw.kind).toBe('piano')
+    if (backDraw.kind !== 'piano') return
+    expect(backDraw.lit).toEqual([0, 2])
+    expect(backDraw.litNotes).toEqual(['C', 'D'])
   })
 })
 
