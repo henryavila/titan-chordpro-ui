@@ -160,6 +160,8 @@ function readMetaLines(source: string): ChartMeta {
     if (!colonForm && !ident) continue
     const canon = canonicalMetaKey(d.name) ?? ident
     if (!canon) continue
+    // `{x_chart_default}` inside tab or score is notation, not a header value.
+    if (where === 'in' && d.name === 'x_chart_default') continue
     const exact = (META_KEYS as readonly string[]).includes(d.name)
     if (exact || meta[canon] === undefined) meta[canon] = d.value
   }
@@ -195,10 +197,29 @@ export function splitCho(source: string): SplitCho {
     cur = null
   }
 
+  const block = { tab: false, score: false }
+  let seenChart = false
+  let outsideDefault: string | null = null
+  let insideDefault: string | null = null
+  let clearedOutside = false
+
   for (let li = 0; li < raws.length; li++) {
     const raw = raws[li] ?? ''
     const d = dirOf(raw)
+    const inNotation = d ? stepBlock(d.name, block) === 'in' : block.tab || block.score
+    // `{end_of_x_chart}` / `{start_of_x_chart}` inside tab or score are notation.
+    // They do not open or close a chart. A header `{x_chart_default}` there is
+    // only the fallback when no selector sits outside the notation block.
+    if (inNotation) {
+      if (!seenChart && d?.name === 'x_chart_default' && isChartId(d.value)) insideDefault = d.value
+      if (cur) {
+        if (d?.name === 'x_chart_label' && cur.label === null && d.value) cur.label = d.value
+        cur.inner.push(raw)
+      }
+      continue
+    }
     if (d?.name === 'start_of_x_chart') {
+      seenChart = true
       flush(li)
       cur = isChartId(d.value) ? { id: d.value, label: null, inner: [], startLi: li } : null
       continue
@@ -206,6 +227,15 @@ export function splitCho(source: string): SplitCho {
     if (d?.name === 'end_of_x_chart') {
       flush(li)
       continue
+    }
+    if (!seenChart && d?.name === 'x_chart_default') {
+      if (isChartId(d.value)) {
+        outsideDefault = d.value
+        clearedOutside = false
+      } else {
+        outsideDefault = null
+        clearedOutside = true
+      }
     }
     if (cur) {
       if (d?.name === 'x_chart_label' && cur.label === null && d.value) cur.label = d.value
@@ -225,12 +255,8 @@ export function splitCho(source: string): SplitCho {
   }
 
   const header = raws.slice(0, charts[0]!.startLi).join('\n')
-  let defaultFromHeader: string | null = null
-  for (const line of header.split('\n')) {
-    const d = dirOf(line)
-    if (d?.name === 'x_chart_default' && isChartId(d.value)) defaultFromHeader = d.value
-  }
-  const named = defaultFromHeader && charts.some((c) => c.id === defaultFromHeader) ? defaultFromHeader : charts[0]!.id
+  const picked = outsideDefault ?? (clearedOutside ? null : insideDefault)
+  const named = picked && charts.some((c) => c.id === picked) ? picked : charts[0]!.id
   return { hasEnvelope: true, header, charts, defaultId: named, raws }
 }
 
@@ -316,8 +342,7 @@ function readKeyed(text: string, which: 'song' | 'chart'): Record<string, string
     const d = dirOf(line)
     if (!d) continue
     // A credit inside tab or score stays on that line. `{x_chart_default}` there
-    // is still the file selector: do not copy it out, or a subtitle save would
-    // emit a second one and the tab copy would win or disappear.
+    // is notation: do not copy it onto the header.
     if (which === 'song' && stepBlock(d.name, block) === 'in' && songMetaKey(d.name)) continue
     const canon = resolve(d.name)
     if (!canon) continue
@@ -499,49 +524,60 @@ function headerCanonicalIdentity(source: string): ChartMeta {
   return readMetaLines(split.hasEnvelope ? split.header : String(source ?? ''))
 }
 
+function metaTrim(value: string | undefined): string {
+  return (value ?? '').trim()
+}
+
 /**
- * True when `patch` is a `readMeta` spread, not a sparse edit.
- * `{title:Second}` against a header `{title:First}` is an edit: `readMeta`
- * already returns Second from the default chart, and preserveEcho must not
- * swallow it. A spread that only adds `{subtitle}` must not apply the copied
- * artist. A non-identity field (key, audio) marks the same spread.
+ * Identity keys copied from `readMeta` that this patch must not apply.
+ * Each key is classified on its own. A value that differs from `readMeta`,
+ * including `''`, is an edit. A value that still equals `readMeta` is a copy
+ * when another identity key is also in the patch, or when a sound edit is the
+ * only change and the header already shows that value. A sound edit does not
+ * cancel an identity edit whose header value differs. One named identity key,
+ * with no other edit, is applied even when it equals `readMeta`.
  */
-export function patchEchoesReadMeta(source: string, patch: MetaPatch): boolean {
+export function copiedIdentityKeys(source: string, patch: MetaPatch): Set<string> {
   const read = readMeta(source)
-  for (const key of META_KEYS) {
-    if ((read[key] ?? '').trim() === '') continue
-    if (!Object.prototype.hasOwnProperty.call(patch, key)) return false
-  }
-  for (const key of META_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
-    // A sound or source field, even cleared to '', means the caller copied
-    // readMeta and then edited that field. An empty clear still counts.
-    if ((PARSE_IDENTITY_KEYS as readonly string[]).includes(key)) continue
-    return true
-  }
   const header = headerCanonicalIdentity(source)
-  for (const key of PARSE_IDENTITY_KEYS) {
-    if ((read[key] ?? '').trim() === '') continue
+  const touched = PARSE_IDENTITY_KEYS.filter((key) => Object.prototype.hasOwnProperty.call(patch, key))
+  const identityEdits = touched.filter((key) => metaTrim(patch[key]) !== metaTrim(read[key]))
+  let soundDiffers = false
+  for (const key of META_KEYS) {
+    if ((PARSE_IDENTITY_KEYS as readonly string[]).includes(key)) continue
     if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
-    const headerVal = (header[key] ?? '').trim()
-    // No header value: the copy came from the chart body. Do not promote it.
-    // A header value that differs (First vs the chart's Second) is the edit.
-    if (headerVal !== '' && headerVal !== (patch[key] ?? '').trim()) return false
+    if (metaTrim(patch[key]) !== metaTrim(read[key])) {
+      soundDiffers = true
+      break
+    }
   }
-  return true
+  const copies = new Set<string>()
+  for (const key of touched) {
+    const patchVal = metaTrim(patch[key])
+    if (patchVal !== metaTrim(read[key])) continue
+    if (identityEdits.length > 0 || touched.length > 1) {
+      copies.add(key)
+      continue
+    }
+    if (soundDiffers) {
+      const headerVal = metaTrim(header[key])
+      if (headerVal !== '' && headerVal !== patchVal) continue
+      copies.add(key)
+    }
+  }
+  return copies
 }
 
 /**
  * Header lines this patch must not replace.
- * A key the caller named is applied, even when the value equals `readMeta`.
- * `preserveEcho` is the separate signal that the caller copied `readMeta`
- * and did not ask to change that key.
+ * `copyKeys` are identity fields still equal to `readMeta` that the caller
+ * did not ask to change. A key the caller edited is applied.
  */
 function patchIdentityKeep(
   source: string,
   patch: MetaPatch,
   appliedKeys: readonly string[],
-  preserveEcho: boolean,
+  copyKeys: ReadonlySet<string>,
 ): Set<string> {
   const read = readMeta(source)
   const disagree = headerIdentityDisagreements(source)
@@ -552,8 +588,8 @@ function patchIdentityKeep(
       if (disagree.has(key)) keep.add(key)
       continue
     }
-    if (!preserveEcho) continue
-    if ((patch[key] ?? '').trim() !== (read[key] ?? '').trim()) continue
+    if (!copyKeys.has(key)) continue
+    if (metaTrim(patch[key]) !== metaTrim(read[key])) continue
     keep.add(key)
   }
   return keep
@@ -595,18 +631,29 @@ function stripSongIdentity(inner: string, keys: ReadonlySet<string>): string {
   return out.join('\n')
 }
 
-function keepSongHeaderLine(line: string, block: { tab: boolean; score: boolean }, keep: ReadonlySet<string>): boolean {
+function keepSongHeaderLine(
+  line: string,
+  block: { tab: boolean; score: boolean },
+  keep: ReadonlySet<string>,
+  dropNotationDefault: boolean,
+): boolean {
   const d = dirOf(line)
   if (!d) return true
   const where = stepBlock(d.name, block)
-  // `{x_chart_default}` inside a header tab is the selector, not a credit.
-  // Song-meta lines are normally rewritten at the top; this one must stay.
-  if (where === 'in' && (songIdentityMetaKey(d.name) || songMetaKey(d.name) === 'x_chart_default')) return true
+  // An explicit clear removes `{x_chart_default}` inside a header tab.
+  // Otherwise that copy stays; it is not rewritten onto the header.
+  if (where === 'in' && d.name === 'x_chart_default') return !dropNotationDefault
+  if (where === 'in' && songIdentityMetaKey(d.name)) return true
   if (identityLineKept(d.name, keep)) return true
   return songMetaKey(d.name) === null
 }
 
-function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string[], preserveEcho = false): string {
+function writeFlatScoped(
+  source: string,
+  patch: MetaPatch,
+  keys: readonly string[],
+  copyKeys: ReadonlySet<string> = new Set(),
+): string {
   const next: ChartMeta = { ...readMeta(source) }
   for (const k of keys) {
     if (!(META_KEYS as readonly string[]).includes(k)) continue
@@ -619,21 +666,23 @@ function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string
     else if (key === 'x_chart_default') next[key] = ''
     else delete next[key]
   }
-  const keep = patchIdentityKeep(source, patch, keys, preserveEcho)
+  const keep = patchIdentityKeep(source, patch, keys, copyKeys)
   for (const key of keep) delete next[key as MetaKey]
   return writeMetaOneHeader(source, next, keep)
 }
 
-export type SongMetaWriteOpts = { preserveEcho?: boolean }
+export type SongMetaWriteOpts = { copyKeys?: ReadonlySet<string> }
 
 /** Rewrite song-header keys; never strip `{key:}` / `{duration:}` from chart blocks. */
 export function writeSongScopedMeta(source: string, patch: MetaPatch, opts?: SongMetaWriteOpts): string {
-  const preserveEcho = opts?.preserveEcho === true
+  const copyKeys = opts?.copyKeys ?? new Set<string>()
   const split = splitCho(source)
-  if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS, preserveEcho)
+  if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS, copyKeys)
   const first = split.charts[0]!
   const headerLines = split.raws.slice(0, first.startLi)
-  const keep = patchIdentityKeep(source, patch, SONG_META_KEYS, preserveEcho)
+  const keep = patchIdentityKeep(source, patch, SONG_META_KEYS, copyKeys)
+  const dropNotationDefault =
+    Object.prototype.hasOwnProperty.call(patch, 'x_chart_default') && metaTrim(patch.x_chart_default) === ''
   const next = applyPatch(readKeyed(headerLines.join('\n'), 'song'), patch, SONG_META_KEYS)
   for (const key of keep) delete next[key]
   const applied = appliedIdentityKeys(patch, keep, SONG_META_KEYS)
@@ -644,7 +693,7 @@ export function writeSongScopedMeta(source: string, patch: MetaPatch, opts?: Son
   }
   const block = { tab: false, score: false }
   const rest = headerLines
-    .filter((line) => keepSongHeaderLine(line, block, keep))
+    .filter((line) => keepSongHeaderLine(line, block, keep, dropNotationDefault))
     .join('\n')
     .replace(/^\n+/, '')
     .replace(/\n+$/, '')

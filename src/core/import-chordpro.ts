@@ -18,11 +18,11 @@ import {
   SONG_META_KEYS,
   canonicalMetaKey,
   chartDocument,
+  copiedIdentityKeys,
   readMeta,
   replaceChart,
   splitCho,
   writeChartScopedMeta,
-  patchEchoesReadMeta,
   writeMetaOneHeader,
   writeSongScopedMeta,
   type ChartMeta,
@@ -434,19 +434,19 @@ function soundPatchOf(meta: ChartMeta): ChartMeta {
  * `{x_chart_default}` selects in the same patch. Pass `{ target }` to aim.
  * `{x_chart_default}` updates the song header when the patch includes it, and
  * a patch that omits it leaves the header value in place.
+ * Identity keys are copies or edits one at a time. A sound key does not
+ * cancel an identity edit.
  */
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
   if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
-  // A spread of `readMeta` is an echo. A sparse `{title:Second}` is not,
-  // even when that value is what `readMeta` already returns from the chart.
-  const echo = patchEchoesReadMeta(source, meta)
-  if (opts?.target === 'song') return writeSongScopedMeta(source, meta, { preserveEcho: echo })
+  const copyKeys = copiedIdentityKeys(source, meta)
+  if (opts?.target === 'song') return writeSongScopedMeta(source, meta, { copyKeys })
   const split = splitCho(source)
   if (!split.hasEnvelope) return writeMetaOneHeader(source, meta)
   const song = songPatchOf(meta)
   const sound = soundPatchOf(meta)
   const withSong = Object.keys(song).length
-    ? writeSongScopedMeta(source, song, { preserveEcho: echo })
+    ? writeSongScopedMeta(source, song, { copyKeys })
     : source
   if (!Object.keys(sound).length) return withSong
   return writeChartScopedMeta(withSong, sound, split.defaultId)
