@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: "F2 stays open. Fix10 is merged and host tests passed. Astra has not reviewed a07fa6a..d256f44. Do not start F3."
+nextAction: "F2 stays open. Astra informed pass on b57bf30..3d0c3c6 kept one major: D keys 12 16 19 is read as MIDI. Dispatch the fix. Do not start F3."
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -174,10 +174,10 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 is open. The piano guess is gone. Keys 0–17 are distances from the chord root and stay on transpose; only the name changes. A key above 17 or below 0 is MIDI and adds the shift. Fix11 is merged. Host verifiers passed. Astra has not reviewed `b57bf30..3d0c3c6`. F3 stays out.
-- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Operator order was faça: delete the absolute-versus-interval guess.
-- **Single nextAction:** F2 stays open. Fix11 is merged and host tests passed. Astra has not reviewed b57bf30c3c127832937faab01d757dc203e151af..3d0c3c6fbec833aa9f08c4d9c20acfd9ffe1e890. Do not start F3.
-- **Open bug:** none in the host verifiers. Fix11 has no Astra receipt.
+- **Narrative:** F2 is open. Fix11 is merged. Local review of `b57bf30..3d0c3c6` was clean. Codex Astra informed pass dropped the unreleased-export finding and kept one major: `{define: D keys 12 16 19}` is read as MIDI and draws C E G. A list that still has a key in 0–17 must stay distances, including 19. MIDI stays only when every key is above 17 or any key is below 0. F3 stays out.
+- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Operator order on 2026-09-24 is to implement the plan and resolve every finding. Disposition of the Astra major is fix.
+- **Single nextAction:** Dispatch the code-only fix for D keys 12 16 19, then review that diff with local and Codex Astra. Do not start F3.
+- **Open bug:** `{define: D keys 12 16 19}` draws C E G. +2 exports `{define: E keys 26 30 33}`. Receipt `.atomic-skills/reviews/2026-09-24-1535-diagramas-cifra-f2-fix11-both.md`.
 - **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 stores E keys `[0, 4, 7]` and draws E G# B. C `0 4 7` +2 stores D keys `[0, 4, 7]` and draws D F# A. B `0 4 7` +1 stores C keys `[0, 4, 7]` and draws C E G. `B keys 11 3 6` is distances, not B major. MIDI `48 52 55` +2 is still `[50, 54, 57]`. F7sus4 `0 5 10` +2 stores `G7sus4` keys `[0, 5, 10]` and draws G, C, F. Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D; −5 stores `[0, 7]` and draws D, A. Dsus2 +3 stores `Fsus2` keys `[0, 7]` and draws F, C; −3 stores `[0, 7]` and draws D, A. C `0 2` +2 stores D keys `[0, 2]` and draws D, E; −2 stores C keys `[0, 2]` and draws C, D. D9 `0 4 7 14` draws D, F#, A, E; +2 stores `E9` keys `[0, 4, 7, 14]` and draws E, G#, B, F#. D7M(9)/B keys `9 0 11 2` draws B, D, C#, E. Am `0 3 7` draws A, C, E. Am `9 0 4` draws F#, A, C#. No Vue in core.
-- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Product commit `3d0c3c6fbec833aa9f08c4d9c20acfd9ffe1e890`, merge `a8457bf`, parent `b57bf30c3c127832937faab01d757dc203e151af`. Cursor step D.5, phaseId F2, redispatchCount 11. Writer worktree removed. Lease cleared. Host verifiers: define + resolve + export-cho = 73 passed, exit 0; layout-capo + resolve + diagram-draw = 62 passed, exit 0. T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Plan worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`. Do not start F3.
+- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Product commit `3d0c3c6fbec833aa9f08c4d9c20acfd9ffe1e890`, merge `a8457bf`, parent `b57bf30c3c127832937faab01d757dc203e151af`. Review range `b57bf30c3c127832937faab01d757dc203e151af..3d0c3c6fbec833aa9f08c4d9c20acfd9ffe1e890`. Local verdict clean. Astra final verdict needs_changes, 0 blocker, 0 critical, 1 major, 0 minor. Cursor will move E then C with operatorOverride for F2-fix12. T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Plan worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`. Do not start F3.
 - **Uncommitted changes:** none at this handoff commit.
