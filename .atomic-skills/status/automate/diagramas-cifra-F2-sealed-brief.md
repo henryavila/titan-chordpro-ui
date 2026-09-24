@@ -28,8 +28,8 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
 - **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-writer
-- **writerBranch:** impl/diagramas-cifra-F2-fix17
-- **baseRef:** ea41efddb3068582406ab8a3528ae761ad404af5
+- **writerBranch:** impl/diagramas-cifra-F2-fix18
+- **baseRef:** 8922e91f527b7261441c4253f16625e7e8b8438d
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (2)
