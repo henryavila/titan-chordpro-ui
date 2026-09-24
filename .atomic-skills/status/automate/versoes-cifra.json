@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 19,
-  "updatedAt": "2026-09-24T22:34:41.659Z",
+  "redispatchCount": 20,
+  "updatedAt": "2026-09-24T22:39:41.091Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -104,6 +104,12 @@
       "at": "2026-09-24T22:17:12.556Z",
       "reason": "operator 2026-09-24: local review of fix17 — do not flat-rewrite a file that still has start_of_x_chart; do not concatenate a pasted second chart",
       "priorCount": 18,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T22:39:41.090Z",
+      "reason": "operator 2026-09-24: fix the three majors from the fix19 Codex pass",
+      "priorCount": 19,
       "gate": "spawn"
     }
   ],
