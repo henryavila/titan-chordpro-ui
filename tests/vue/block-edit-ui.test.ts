@@ -394,13 +394,14 @@ describe('putting something new into the chart', () => {
 })
 
 const ENVELOPE = [
-  '{title:Uma}',
-  '{x_chart_default:oferta}',
   '{start_of_x_chart:completa}',
+  '{title:Uma}',
   '{key:G}',
   '[G]linha completa',
   '{end_of_x_chart}',
   '{start_of_x_chart:oferta}',
+  '{title:Uma}',
+  '{x_chart_default:oferta}',
   '{key:C}',
   '[C]linha oferta',
   '{end_of_x_chart}',
@@ -409,13 +410,14 @@ const ENVELOPE = [
 describe('chord picker vocabulary', () => {
   it('offers chords from the chart on screen, not a sibling-only chord', async () => {
     const source = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '{start_of_x_chart:completa}',
+      '{title:Uma}',
       '{key:G}',
       '[F#m7]so a completa',
       '{end_of_x_chart}',
       '{start_of_x_chart:oferta}',
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
       '{key:C}',
       '[C]oferta [G]mais',
       '{end_of_x_chart}',

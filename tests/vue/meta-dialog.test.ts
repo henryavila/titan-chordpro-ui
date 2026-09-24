@@ -64,13 +64,14 @@ async function enterContent(w: ReturnType<typeof viewer>) {
 
 describe('MetaDialog', () => {
   it('does not treat a sibling chart as the chords of the default chart', () => {
-    const src = `{title:Uma}
-{x_chart_default:oferta}
-{start_of_x_chart:completa}
+    const src = `{start_of_x_chart:completa}
+{title:Uma}
 {key:G}
 [G]completa [G]mais [G]ainda
 {end_of_x_chart}
 {start_of_x_chart:oferta}
+{title:Uma}
+{x_chart_default:oferta}
 {key:C}
 {transpose:2}
 [C]oferta
