@@ -63,12 +63,30 @@ function isInstrument(value: string): value is DiagramInstrument {
  * even when 6 or 4 frets are still on the line; those frets still hit
  * guitar or ukulele. Keys on a string directive still hit piano.
  * No frets: guitar and ukulele miss. No keys: piano misses.
+ * Several matches: `pickDefine` keeps the same instrument.
  */
 function servesInstrument(def: ChordDefine, instrument: DiagramInstrument): boolean {
   if (instrument === 'piano') return (def.keys?.length ?? 0) > 0
   const need = instrument === 'guitar' ? 6 : 4
   if ((def.frets?.length ?? 0) !== need) return false
   return def.instrument === instrument || def.instrument === 'piano'
+}
+
+/**
+ * Same instrument first. A cross-payload line is used only when no
+ * `def.instrument ===` the request also matches. Line order does not
+ * decide between instruments.
+ */
+function pickDefine(
+  matches: readonly ChordDefine[],
+  instrument: DiagramInstrument,
+): ChordDefine | undefined {
+  let cross: ChordDefine | undefined
+  for (const def of matches) {
+    if (def.instrument === instrument) return def
+    if (!cross) cross = def
+  }
+  return cross
 }
 
 function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
@@ -103,18 +121,21 @@ function pianoUnknownOverride(
   if (token.includes('+') || CHORD_NAME_QUOTE.test(token)) return null
   const rootPc = keyIndex(token)
   if (rootPc == null) return null
+  const matches: ChordDefine[] = []
   for (const def of overrides) {
     if (!servesInstrument(def, 'piano')) continue
     if (def.name !== token) continue
-    return {
-      class: 'hit',
-      instrument: 'piano',
-      token,
-      source: 'override',
-      voicing: fromDefine(def, rootPc),
-    }
+    matches.push(def)
   }
-  return null
+  const def = pickDefine(matches, 'piano')
+  if (!def) return null
+  return {
+    class: 'hit',
+    instrument: 'piano',
+    token,
+    source: 'override',
+    voicing: fromDefine(def, rootPc),
+  }
 }
 
 /** Parser-unknown name: exact `{define}` name plus a fret shape. `+` never hits. */
@@ -123,18 +144,21 @@ function exactFretOverride(
   instrument: DiagramInstrument,
   token: string,
 ): DiagramHit | null {
+  const matches: ChordDefine[] = []
   for (const def of overrides) {
     if (!servesInstrument(def, instrument)) continue
     if (def.name !== token) continue
-    return {
-      class: 'hit',
-      instrument,
-      token,
-      source: 'override',
-      voicing: fromDefine(def, null),
-    }
+    matches.push(def)
   }
-  return null
+  const def = pickDefine(matches, instrument)
+  if (!def) return null
+  return {
+    class: 'hit',
+    instrument,
+    token,
+    source: 'override',
+    voicing: fromDefine(def, null),
+  }
 }
 
 function fromDict(found: DictVoicing): DiagramVoicing {
@@ -183,10 +207,15 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
   const want = canonicalOf(token)
   if (!want) return { class: 'miss', reason: 'unknown-token' }
 
+  const matches: ChordDefine[] = []
   for (const def of overrides) {
     if (!overrideMatch(def, instrument, token, want)) continue
     if (instrument !== 'piano' && !def.frets?.length) continue
     if (instrument === 'piano' && !def.keys?.length) continue
+    matches.push(def)
+  }
+  const def = pickDefine(matches, instrument)
+  if (def) {
     return {
       class: 'hit',
       instrument,

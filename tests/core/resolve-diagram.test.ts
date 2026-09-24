@@ -158,6 +158,60 @@ describe('resolveDiagram', () => {
     expect(fromUke.voicing.keys).toEqual([0, 7])
   })
 
+  it('prefers a piano {define:} over a guitar line that also carries keys, in either order', () => {
+    const guitarLine = '{define-guitar: C frets x 3 2 0 1 0 keys 0 4 7}'
+    const pianoLine = '{define: C keys 0 7}'
+    for (const lines of [
+      [guitarLine, pianoLine],
+      [pianoLine, guitarLine],
+    ]) {
+      const overrides: ChordDefine[] = []
+      for (const line of lines) {
+        const raw = parseDefineDirective(line)
+        expect(raw.class, line).toBe('parse')
+        if (raw.class !== 'parse') continue
+        overrides.push(raw)
+      }
+      const guitar = resolveDiagram({ token: 'C', instrument: 'guitar', overrides })
+      expect(guitar.class).toBe('hit')
+      if (guitar.class !== 'hit') continue
+      expect(guitar.source).toBe('override')
+      expect(guitar.voicing.frets).toEqual(['x', 3, 2, 0, 1, 0])
+      const piano = resolveDiagram({ token: 'C', instrument: 'piano', overrides })
+      expect(piano.class).toBe('hit')
+      if (piano.class !== 'hit') continue
+      expect(piano.source).toBe('override')
+      expect(piano.voicing.keys).toEqual([0, 7])
+    }
+  })
+
+  it('prefers {define-guitar:} frets over a piano line that also has six frets, in either order', () => {
+    const pianoLine = '{define: D frets x 0 0 2 3 2 keys 0 4 7}'
+    const guitarLine = '{define-guitar: D frets 1 3 3 2 1 1}'
+    for (const lines of [
+      [pianoLine, guitarLine],
+      [guitarLine, pianoLine],
+    ]) {
+      const overrides: ChordDefine[] = []
+      for (const line of lines) {
+        const raw = parseDefineDirective(line)
+        expect(raw.class, line).toBe('parse')
+        if (raw.class !== 'parse') continue
+        overrides.push(raw)
+      }
+      const guitar = resolveDiagram({ token: 'D', instrument: 'guitar', overrides })
+      expect(guitar.class).toBe('hit')
+      if (guitar.class !== 'hit') continue
+      expect(guitar.source).toBe('override')
+      expect(guitar.voicing.frets).toEqual([1, 3, 3, 2, 1, 1])
+      const piano = resolveDiagram({ token: 'D', instrument: 'piano', overrides })
+      expect(piano.class).toBe('hit')
+      if (piano.class !== 'hit') continue
+      expect(piano.source).toBe('override')
+      expect(piano.voicing.keys).toEqual([0, 4, 7])
+    }
+  })
+
   it('misses a piano define whose name has no root letter', () => {
     const raw = parseDefineDirective('{define: aug keys 0 4 8}')
     expect(raw.class).toBe('parse')
