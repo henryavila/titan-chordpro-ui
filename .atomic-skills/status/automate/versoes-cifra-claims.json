@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix13",
-  "writerBranch": "impl/versoes-cifra-F0-fix13",
-  "finishedAt": "2026-09-24T15:43:39Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix14",
+  "writerBranch": "impl/versoes-cifra-F0-fix14",
+  "finishedAt": "2026-09-24T16:23:49.000Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -14,7 +14,7 @@
       "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "This dispatch did not change T-001. charts-envelope.test.ts passed inside the self-check run (exit 0)."
+      "transcript": "Included in the fix14 self-check. tests/core/charts-envelope.test.ts: 68 passed. Combined command exit 0."
     },
     {
       "taskId": "T-002",
@@ -25,18 +25,18 @@
       "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "This dispatch did not change T-002. charts-envelope.test.ts passed inside the self-check run (exit 0)."
+      "transcript": "Included in the fix14 self-check. tests/core/charts-envelope.test.ts: 68 passed. Combined command exit 0."
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["aa07755ab97906e6dd68bab4e1bc98f4aad9b0f8"],
+      "commitShas": ["b013bb004b2aa55a8109ded90ef2bd2b21e3ebac"],
       "base": null,
       "head": null,
-      "paths": ["src/core/charts.ts", "src/core/import-chordpro.ts", "tests/core/charts-envelope.test.ts"],
+      "paths": ["src/core/import-chordpro.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Notation identity inside tab or score is not hoisted or deleted on chartDocument round-trip. A staff or score row does not start the lyric body, so a sound-key rewrite does not leave a blank before the lyric. x_chart_default inside a header tab survives a subtitle save and stays the default. Sparse writeMeta({ title: 'Second' }) updates the shared header; a song-scoped readMeta spread that only adds a subtitle does not apply the copied artist. Verifier exit 0 (136 tests)."
+      "transcript": "Test Files 5 passed (5). Tests 147 passed (147). charts-envelope 68, audio-url 31, import-chordpro 43, no-vue-in-core 1, sda-fixtures 4. Exit 0."
     }
   ]
 }

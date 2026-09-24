@@ -167,9 +167,9 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 - Plan worktree: `/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra`
 - Branch: `plan/versoes-cifra`. Durable `executionMode: automate`. `currentPhase: F0`. Flow already ratified (`ratifiedGraphSha` `fc1ef06b484e34cb6580c90b678824e5c2d3f180c9fbc41661a9f3c510b4ba61`). Do not restamp the flow.
 - Package root: file `$HOME/.atomic-skills/package-root` → `/Volumes/External/code/atomic-skills`.
-- Cursor `.atomic-skills/status/automate/versoes-cifra.json`: step `E`, phaseId `F0`, `redispatchCount` 7 (ceiling is 2). Another writer is `advanceCursor` from `E` to `C` with `operatorOverride: { reason, gate: 'spawn' }`. Do not hand-edit the count down.
+- Cursor `.atomic-skills/status/automate/versoes-cifra.json`: step `E`, phaseId `F0`, `redispatchCount` 14 (ceiling is 2). Another writer is `advanceCursor` from `E` to `C` with `operatorOverride: { reason, gate: 'spawn' }`. Do not hand-edit the count down.
 - Writer lease: missing. Do not clear a future lease without its acquire secret. Never print a lease secret.
-- Claims `.atomic-skills/status/automate/versoes-cifra-claims.json`, all `claimed-pass`, `base` and `head` null, exclusive SHAs, ancestors of the plan branch: T-001 `275abe489d77d53c88d0d0e8a4207619b044edaa`, T-002 `b59b3b3730bb033e96b35d088b9c2dcb29508dcc`, T-003 `7214bd9265ed99966e0e0316759feb7eb45f4bab`.
+- Claims `.atomic-skills/status/automate/versoes-cifra-claims.json`, all `claimed-pass`, `base` and `head` null, exclusive SHAs, ancestors of the plan branch: T-001 `275abe489d77d53c88d0d0e8a4207619b044edaa`, T-002 `064926f71aba1ad9cb569ddef50aa550971e092e`, T-003 `b013bb004b2aa55a8109ded90ef2bd2b21e3ebac`.
 - Tasks T-001, T-002, and T-003 are still **pending** in the initiative YAML. T-002 and T-003 are weight 3. `done` needs a `mode: both` receipt that covers the current tree and has no unresolved blocker, critical, or major, unless the operator records accept, defer, or fix.
 - F1–F4 are descriptor-only. Do not materialize or spawn them. After F0 `phase-done`, the cursor pauses at `awaiting-operator-advance`. Continue only with `clearContinue` token `operator-continue`. Each later phase needs its own package ratify before materialize.
 
@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-The operator asked for a long fix-and-review loop. Rounds so far: product both review (2 majors), fix8 merged as `4a657a3` then both review `.atomic-skills/reviews/2026-09-24-versoes-cifra-f0-fix8-both.md` (3 majors), fix9 merged as `a10df0f` then both review `.atomic-skills/reviews/2026-09-24-versoes-cifra-f0-fix9-both.md` (2 majors), fix10 merged as `87ce9da` (commit `19f6116`). Verifier on the plan tree after fix10: 165 tests, exit 0. Host reproduced: unrelated subtitle save keeps `parse` artist Bach when `{composer:Bach}` follows `{artist:Local}`; no blank before the lyric when `{c: Intro}` sits above a sound-key gap; a later `{transpose:0}` still returns 0. Cursor is step E, redispatchCount 10. Do not `done`. The both review of `3b1f9ef..dddfad9` is `.atomic-skills/reviews/2026-09-24-versoes-cifra-f0-fix11-both.md`, needs_changes, Codex informed 3 majors. Host reproduced: an explicit `{ artist: 'Local' }` on `{artist:Local}` plus `{composer:Bach}` still parses as Bach, and `{ title: '' }` does not clear a later `{t:Second}`. Do not `done`. Next action is the fix of those three majors plus the local chart-body alias major, then another `review-code --mode=both` of that fix only.
+fix14 is merged as `03f4ec5` (product `b013bb0`). Plan-tree verifier after that merge, exit 0, 147 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. The both review of `070b7c1..03f4ec5` is not written yet. Do not `done`. Next action is `review-code --mode=both` of that product range with Codex `gpt-6-astra`, then fix every finding.
 
 ### Verbatim state
 
@@ -201,4 +201,4 @@ The operator asked for a long fix-and-review loop. Rounds so far: product both r
 
 ### Uncommitted changes
 
-Unrelated scratch only, do not commit: `?? .atomic-skills/.aideck/`, `?? .atomic-skills/_drafts/`, `?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json`, `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`. No product edits. Lease file absent.
+Unrelated scratch only, do not commit: `?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json`, `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`. Older `.aideck` and `_drafts` sit in `/tmp/versoes-cifra-scratch-90533`. No product edits. Lease file absent.
