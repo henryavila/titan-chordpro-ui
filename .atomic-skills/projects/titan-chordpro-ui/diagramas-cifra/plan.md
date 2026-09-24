@@ -268,9 +268,9 @@ phases:
     evaluationGate:
       status: passed
       verdict: pass
-      reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F2-r2.md
-      at: 72f412578067707b0ce2b463212b46f502cae05a
-      verifiedAt: 2026-09-23T18:55:00.000Z
+      reportPath: .atomic-skills/reviews/eval-diagramas-cifra-F2-r3.md
+      at: 9851e4cf0ce300e3944adf30fb991b3356be1e9a
+      verifiedAt: 2026-09-24T22:07:58.000Z
     lessonsState: recorded
     lessonsPath: .atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/lessons/diagramas-cifra-f2-d2-resolvediagram-bd-draw-with-capo.md
     businessIntent:
@@ -413,5 +413,5 @@ _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when
 ## Reviews
 
 - internal: 2026-09-19 local self-loop (items 1–7, 14–20). Finding: F4 goal still said dedicated sheet vs Decision 11 same modal — fixed in plan.md goal.
-- ground-truth: complete | mode=ground-truth | fp=ad00751f1800 | premises=17 | impacts=8 @ uncommitted (2026-09-23T14:22:00Z)
+- ground-truth: complete | mode=ground-truth | fp=b9e53627124d | premises=17 | impacts=8 @ uncommitted (2026-09-23T14:22:00Z)
 - cross-model (claude): needs_changes | provider=claude | provider_version=2.1.263 | 4 critical applied (F-001 oracle vs dict, F-002 exportCho transpose defines, F-003 capoFret in edit, F-004 zen/swipe) plus F-005..F-011 encoded in phase goals/gates | file=.atomic-skills/reviews/2026-09-19-diagramas-cifra-claude-pass1.md
