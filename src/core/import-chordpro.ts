@@ -441,7 +441,11 @@ export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts)
   if (!split.hasEnvelope) return writeMetaOneHeader(source, meta)
   const song = songPatchOf(meta)
   const sound = soundPatchOf(meta)
-  const withSong = Object.keys(song).length ? writeSongScopedMeta(source, song) : source
+  // Two-arg meta often copies `readMeta`. That echo must not count as an edit
+  // of title, subtitle, or artist — `writeSongScopedMeta` applies a named key.
+  const withSong = Object.keys(song).length
+    ? writeSongScopedMeta(source, song, { preserveEcho: true })
+    : source
   if (!Object.keys(sound).length) return withSong
   return writeChartScopedMeta(withSong, sound, split.defaultId)
 }

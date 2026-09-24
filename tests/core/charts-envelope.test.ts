@@ -710,6 +710,98 @@ describe('chart document edits and x_chart_default', () => {
     }
   })
 
+  it('an explicit identity edit applies even when the value equals readMeta', () => {
+    const artist = writeSongScopedMeta('{artist:Local}\n{composer:Bach}\n[C]song\n', { artist: 'Local' })
+    expect(parse(artist).meta.artist).toBe('Local')
+    expect(artist).not.toContain('{composer:Bach}')
+    expect(artist).toContain('[C]song')
+
+    const title = writeSongScopedMeta('{title:}\n{t:Second}\n[C]song\n', { title: '' })
+    expect(parse(title).meta.title).toBeUndefined()
+    expect(readMeta(title).title).toBeUndefined()
+    expect(title).not.toContain('{t:Second}')
+    expect(title).toContain('[C]song')
+  })
+
+  it('an unrelated save does not drop a header composer a sibling still parses', () => {
+    const file = [
+      '{artist:Local}',
+      '{composer:Bach}',
+      '{start_of_x_chart:completa}',
+      '{artist:Local}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(parse(file, { chartId: 'oferta' }).meta.artist).toBe('Bach')
+    expect(parse(file).meta.artist).toBe('Local')
+    const saved = writeSongScopedMeta(file, { subtitle: 'X' })
+    expect(parse(saved, { chartId: 'oferta' }).meta.artist).toBe('Bach')
+    expect(saved).toContain('{composer:Bach}')
+    expect(saved).toContain('{subtitle:X}')
+    expect(chartBlock(saved, 'completa')).toBe(chartBlock(file, 'completa'))
+    expect(chartBlock(saved, 'oferta')).toBe(chartBlock(file, 'oferta'))
+  })
+
+  it('does not delete a credit that lives inside tab or score', () => {
+    for (const [open, close] of [
+      ['{sot}', '{eot}'],
+      ['{start_of_tab}', '{end_of_tab}'],
+      ['{sos}', '{eos}'],
+      ['{start_of_score}', '{end_of_score}'],
+    ]) {
+      const src = `{artist:Local}\n${open}\n{composer:Bach}\n${close}\n[C]song\n`
+      expect(parse(src).meta.artist).toBe('Local')
+      const saved = writeSongScopedMeta(src, { subtitle: 'X' })
+      expect(parse(saved).meta.artist).toBe('Local')
+      expect(saved).toContain('{subtitle:X}')
+      const openAt = saved.indexOf(open)
+      const closeAt = saved.indexOf(close)
+      expect(openAt).toBeGreaterThanOrEqual(0)
+      expect(saved.slice(openAt, closeAt)).toContain('{composer:Bach}')
+      expect(saved).toContain('[C]song')
+    }
+  })
+
+  it('a new identity value replaces the alias inside the default chart only', () => {
+    const artistFile = [
+      '{artist:Local}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:completa}',
+      '{composer:Stay}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{composer:Bach}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(parse(artistFile).meta.artist).toBe('Bach')
+    const artistSaved = writeSongScopedMeta(artistFile, { artist: 'Novo' })
+    expect(parse(artistSaved).meta.artist).toBe('Novo')
+    expect(chartBlock(artistSaved, 'oferta')).not.toContain('composer')
+    expect(chartBlock(artistSaved, 'completa')).toBe(chartBlock(artistFile, 'completa'))
+
+    const titleFile = [
+      '{title:First}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{t:Second}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(parse(titleFile).meta.title).toBe('Second')
+    const titleSaved = writeSongScopedMeta(titleFile, { title: 'Nova' })
+    expect(parse(titleSaved).meta.title).toBe('Nova')
+    expect(chartBlock(titleSaved, 'oferta')).not.toContain('{t:Second}')
+    expect(chartBlock(titleSaved, 'completa')).toBe(chartBlock(titleFile, 'completa'))
+  })
+
   it('counts colonless {transpose} and {key} the way parse does', () => {
     expect(storedTransposeSemis('{key:C}\n{transpose 2}\n[C]uma')).toBe(2)
     expect(storedTransposeSemis('{key C}\n{transpose:2}\n[C]uma')).toBe(2)

@@ -345,6 +345,55 @@ describe('envelope audio clear', () => {
     expect(oferta).not.toContain('x_audio_sung')
   })
 
+  it('setAudioUrl(null) does not treat an image inside tab or score as the lyric body', () => {
+    for (const [open, close] of [
+      ['{sot}', '{eot}'],
+      ['{start_of_tab}', '{end_of_tab}'],
+      ['{sos}', '{eos}'],
+      ['{start_of_score}', '{end_of_score}'],
+    ]) {
+      for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
+        const src = [
+          '{title:Uma}',
+          '{x_chart_default:oferta}',
+          '{start_of_x_chart:oferta}',
+          open,
+          image,
+          close,
+          '{key:G}',
+          '',
+          '{tempo:72}',
+          '[G]linha',
+          '{x_audio_sung:https://cdn.example/c.m4a}',
+          '{end_of_x_chart}',
+        ].join('\n')
+        const next = setAudioUrl(src, null)
+        const oferta = chartBlock(next, 'oferta')
+        expect(oferta).toContain(image)
+        expect(oferta).toContain('[G]linha')
+        expect(oferta).not.toMatch(/\n\n\[G\]linha/)
+        expect(oferta).not.toContain('x_audio_sung')
+        expect(oferta).not.toContain('cdn.example/c.m4a')
+      }
+    }
+
+    const flat = [
+      '{sot}',
+      '{image:https://cdn.example/capa.png}',
+      '{eot}',
+      '{key:G}',
+      '',
+      '{tempo:72}',
+      '[G]linha',
+      '{x_audio_sung:https://cdn.example/c.m4a}',
+    ].join('\n')
+    const cleared = setAudioUrl(flat, null)
+    expect(cleared).toContain('{image:https://cdn.example/capa.png}')
+    expect(cleared).toContain('[G]linha')
+    expect(cleared).not.toMatch(/\n\n\[G\]linha/)
+    expect(cleared).not.toContain('x_audio_sung')
+  })
+
   it('setAudioUrl(null) keeps a blank after an image that starts the body', () => {
     for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
       const src = [
