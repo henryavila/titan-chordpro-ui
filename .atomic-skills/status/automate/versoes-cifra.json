@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 16,
-  "updatedAt": "2026-09-24T21:11:34.127Z",
+  "redispatchCount": 17,
+  "updatedAt": "2026-09-24T21:28:53.182Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -86,6 +86,12 @@
       "at": "2026-09-24T21:05:39.917Z",
       "reason": "operator 2026-09-24: block-only contract; Vue tests still build a shared header and must follow the same rule",
       "priorCount": 15,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T21:28:53.181Z",
+      "reason": "operator 2026-09-24: block contract stands; fix the five review majors without restoring a shared header",
+      "priorCount": 16,
       "gate": "spawn"
     }
   ],
