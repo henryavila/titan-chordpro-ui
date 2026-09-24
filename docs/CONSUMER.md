@@ -283,7 +283,7 @@ chega vira painel *Não carregou*.
 
 `{key:}` no `.cho` é o tom original. `{transpose:N}` hidrata o −/+ ao abrir
 (não soma com o overlay). `{capo:}` no arquivo é dica de arranjo — o capotraste
-ao vivo começa em 0, a não ser que o músico (setlist, overlay, `initialCapo`)
+ao vivo começa em 0, a não ser que o músico (setlist ou overlay)
 já tenha ligado. Reescrever (import e ficha) é pergunta; o corpo só muda depois
 do Sim.
 
@@ -592,7 +592,76 @@ Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e rev
 
 ---
 
-## 11. Checklist rápido
+## 11. Buscar no Cifra Club (`fetchChart`)
+
+O Titan **não** busca o Cifra Club. `fetchChart(url)` devolve HTML. Na cifra
+nova o Titan chama `convert` (cifra e meta). Em “Completar com Cifra Club” o
+mesmo HTML passa por `fromCifraClubHtml` e só preenche meta — o corpo não
+troca. Sem a prop, a aba Cifra Club diz “Buscar no Cifra Club não está
+disponível” e “A página precisa ser buscada pelo servidor do site.” Na ficha:
+“o site precisa buscar a página.”
+
+O navegador não lê `cifraclub.com.br` nem `api.cifraclub.com.br` a partir do
+seu domínio (CORS). A API só manda `Access-Control-Allow-Origin` para
+`https://www.cifraclub.com.br`. `fetchChart` devolve **HTML**, não JSON. O link é `cifraclub.com.br` ou
+`www.cifraclub.com.br`, em `http` ou `https`.
+
+Se não houver cifra, **rejeite** a Promise. Não resolva com o corpo do erro.
+O Titan mostra “Não deu para ler essa cifra no Cifra Club” (cifra nova) ou
+“Não deu para ler essa página no Cifra Club” (ficha).
+
+Um `GET` da página pública muitas vezes responde **403**, com
+`<TITLE>Access Denied</TITLE>` e sem a cifra. Em outra rede o mesmo endereço
+pode responder 200. 200 na sua máquina não é o contrato.
+
+Quando a resposta não for a cifra, busque a versão e monte o HTML abaixo.
+Não siga redirect dessa API.
+
+```
+GET https://api.cifraclub.com.br/v3/version/{artista}/{musica}
+Referer: https://www.cifraclub.com.br/
+Accept: application/json
+```
+
+`{artista}` e `{musica}` são os dois primeiros segmentos do path
+(`/oasis/wonderwall/simplificada/` → `oasis` e `wonderwall`), em minúsculas,
+só `[a-z0-9-]`. Fora isso, não monte a URL. `/v3/song/…` não é esse
+endpoint. O terceiro segmento não entra: a resposta é a versão principal.
+Sem o `Referer`, alguns servidores respondem 401.
+
+| Campo da API | No HTML |
+|---|---|
+| `music.name` | JSON-LD com `name` logo depois de `@type`, sem espaço: `"@type":"MusicComposition","name":"…"`. Com espaço ou quebra, o título não entra |
+| `artist.name` | `"byArtist":{"name":"…"}` no mesmo objeto. Aqui o espaço pode existir |
+| `stdShapeKey` | `config.keyShape` e `<button data-anchor="--chord-tone">Em</button>`. Este é o tom da página. `key` e `shapeKey` divergem quando há capo (Wonderwall: a página mostra `Em`, a API manda `key` `A`) |
+| `capo` | `config.capo` (número). `0` não vira `{capo:}` |
+| `youtubeId` | `"youtubeID"` (ID maiúsculo), 11 caracteres, antes de um `videoLesson` |
+| `strumming` | array `strummings`. Em cada item, `time_signature` vira `timeSignature`; `pattern`, `bpm` e `section` ficam. Sem `strummings`, tempo, compasso e `{x_strum:}` não entram. Sem `timeSignature`, o compasso cai em 4/4; tempo e batida continuam |
+| `content` | o texto da API, dentro de `<pre>`, do jeito que veio |
+
+O acorde em `content` já é `<b>Bm7</b>`. O parser usa o texto da tag.
+`data-chord-original-text`, quando a tag traz, ganha desse texto. Não
+reescreva para `data-chord-name`.
+
+A tablatura vem entre `#t1#`…`#/t1#` e `#t2#`…`#/t2#`. O parser corta esses
+blocos (teste `drops the raw #t1# block`). Não apague isso antes de devolver.
+
+```html
+<script type="application/ld+json">{"@type":"MusicComposition","name":"Wonderwall","byArtist":{"name":"Oasis"}}</script>
+<script>{"config":{"capo":2,"keyShape":"Em"},"metadata":{"youtubeID":"6hzrDeceEKc"},"strummings":[{"timeSignature":["1","x","x","x","2","x","x","x","3","x","x","x","4","x","x","x"],"pattern":[7,23,23,19,23,19,7,23,23,19,23,19,7,23,7,19],"bpm":87,"section":"Ritmo Padrão"}]}</script>
+<button data-anchor="--chord-tone">Em</button>
+<pre>
+[Intro] <b>Em7</b>  <b>G</b>
+
+…o content da API, inclusive #t1#…
+</pre>
+```
+
+O `pattern` do exemplo é um 4/4 de 16 passos que o parser aceita; na cifra
+real, copie o array que a API mandou (`time_signature` renomeado para
+`timeSignature`). A demo monta essa página em `src/core/cifraclub-api-html.ts`.
+
+## 12. Checklist rápido
 
 - [ ] Vue 3 único no bundle; CSS do pacote no app
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
@@ -604,5 +673,6 @@ Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e rev
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
 - [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek
+- [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
 
 Props, emits e o resto da API: [README](../README.md).
