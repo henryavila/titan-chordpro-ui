@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 17,
-  "updatedAt": "2026-09-24T21:52:27.369Z",
+  "redispatchCount": 18,
+  "updatedAt": "2026-09-24T21:57:15.787Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -92,6 +92,12 @@
       "at": "2026-09-24T21:28:53.181Z",
       "reason": "operator 2026-09-24: block contract stands; fix the five review majors without restoring a shared header",
       "priorCount": 16,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T21:57:15.787Z",
+      "reason": "operator 2026-09-24: fix the two fix17 majors — pinned source chart and an explicit title clear",
+      "priorCount": 17,
       "gate": "spawn"
     }
   ],
