@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-Operator 2026-09-24 replaced the shared header for N>1. A file with more than one chart is only `{start_of_x_chart}` … `{end_of_x_chart}` pairs. Blank lines between pairs are allowed. Any other top-level text is an error. A file with no pair stays one chart. The chart that opens is the block that contains `{x_chart_default}` with its own id, outside tab and score; otherwise the first block. A write touches one block and only the requested fields. Chart fences always delimit, even inside an open tab. Tab and score stay notation. Do not `done`. Next action is the code-only writer on `impl/versoes-cifra-F0-fix15` implementing that contract, then `review-code --mode=both` with Codex `gpt-6-astra`.
+The block contract is on `plan/versoes-cifra`. Product commit `e73742a593885312f30f7a9a0c27c621b5967591`, merge parent of the claim checkpoint. Plan-tree verifier exit 0, 213 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. A completed chart pair plus any other top-level text is still an error. Do not `done`. Next action is `review-code --mode=both` of `212e36fec1f0ac4f24735bfcf8aab03e537fedc9..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`, then fix every finding.
 
 ### Verbatim state
 
