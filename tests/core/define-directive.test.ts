@@ -328,6 +328,25 @@ describe('transposeDefine', () => {
     expect(backDraw.lit).toEqual([0, 2])
     expect(backDraw.litNotes).toEqual(['C', 'D'])
   })
+
+  it('keeps D keys 62 64 at or above 60 after a -60 transpose', () => {
+    const raw = parseDefineDirective('{define: D keys 62 64}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(() => transposeDefine(raw, -60, false)).not.toThrow()
+    const shifted = transposeDefine(raw, -60, false)
+    expect(shifted).toMatchObject({ name: 'D', keys: [62, 64] })
+    expect(shifted?.keys?.every((k) => k >= 60)).toBe(true)
+    if (!shifted) return
+    const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: shifted.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 4])
+    expect(draw.litNotes).toEqual(['D', 'E'])
+  })
 })
 
 describe('transpose/setKey apply the same define rewrite as export', () => {
