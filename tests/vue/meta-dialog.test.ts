@@ -242,6 +242,58 @@ describe('MetaDialog', () => {
     )
   })
 
+  it('applying 04:26 replaces a duration stored as 426 seconds', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '{duration:426}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '{duration:426}',
+      '{tempo:80}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    expect((w.get('[data-meta-duration]').element as HTMLInputElement).value).toBe('426')
+    await w.get('[data-meta-duration]').setValue('04:26')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    const oferta = splitCho(next).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    const completa = splitCho(next).charts.find((c) => c.id === 'completa')?.inner ?? ''
+    expect(oferta).toContain('{duration:04:26}')
+    expect(oferta).not.toContain('{duration:426}')
+    expect(completa).toContain('{duration:426}')
+    expect(parse(next).meta.duration).toBe('04:26')
+  })
+
+  it('a tempo save does not rewrite 426 seconds into 04:26', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '{duration:426}',
+      '{tempo:80}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    await w.get('[data-meta-tempo]').setValue('100')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toContain('{duration:426}')
+    expect(next).not.toContain('{duration:04:26}')
+    expect(next).toContain('{tempo:100}')
+    expect(splitCho(next).charts.find((c) => c.id === 'completa')?.inner).toContain('[G]completa')
+  })
+
   it('a tempo save does not clear a later short title the field did not edit', async () => {
     const src = '{title:}\n{t:Second}\n{tempo:80}\n[C]song\n'
     const w = dialog(src)

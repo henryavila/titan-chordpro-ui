@@ -1188,6 +1188,84 @@ describe('the chart that opens marks itself', () => {
   })
 })
 
+describe('an eot inside a sibling score is not the tab end', () => {
+  it('keeps both charts when the only eot sits inside sos…eos', () => {
+    const file = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '{sot}',
+      'e|-----0-----|',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '{sos}',
+      '{eot}',
+      '{eos}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'oferta'])
+    expect(listCharts(file).find((c) => c.isDefault)?.id).toBe('oferta')
+    expect(parse(file, { chartId: 'completa' }).meta.title).toBe('Completa')
+    expect(parse(file).meta.title).toBe('Oferta')
+    const completa = splitCho(file).charts.find((c) => c.id === 'completa')?.inner ?? ''
+    const oferta = splitCho(file).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    expect(completa).toContain('e|-----0-----|')
+    expect(completa).not.toContain('Oferta')
+    expect(oferta).toContain('{eot}')
+    expect(oferta).toContain('[C]oferta')
+  })
+
+  it('keeps both charts when the only eos sits inside sot…eot', () => {
+    const file = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '{sos}',
+      'C4 D4 E4',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{sot}',
+      '{eos}',
+      '{eot}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'oferta'])
+    expect(splitCho(file).charts.find((c) => c.id === 'oferta')?.inner).toContain('{eos}')
+    expect(splitCho(file).charts.find((c) => c.id === 'completa')?.inner).not.toContain('Oferta')
+  })
+})
+
+describe('a closed tab with many chart fences stays one chart', () => {
+  it('hides fences that sit before the real eot, even after a score that contains eot', () => {
+    const file = [
+      '{start_of_x_chart:unica}',
+      '{sot}',
+      '{start_of_x_chart:nota}',
+      '{sos}',
+      '{eot}',
+      '{eos}',
+      '{eot}',
+      '[G]linha',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(listCharts(file).map((c) => c.id)).toEqual(['unica'])
+    expect(splitCho(file).charts[0]?.inner).toContain('{start_of_x_chart:nota}')
+    expect(splitCho(file).charts[0]?.inner).toContain('[G]linha')
+  })
+
+  it('stays one chart without rescanning the tab at every fence', () => {
+    const fences = Array.from({ length: 4000 }, () => '{start_of_x_chart:nota}')
+    const file = ['{start_of_x_chart:unica}', '{sot}', ...fences, '{eot}', '[G]linha', '{end_of_x_chart}'].join('\n')
+    const started = performance.now()
+    const charts = listCharts(file)
+    const elapsed = performance.now() - started
+    expect(charts.map((c) => c.id)).toEqual(['unica'])
+    expect(splitCho(file).charts[0]?.inner).toContain('{start_of_x_chart:nota}')
+    expect(elapsed).toBeLessThan(500)
+  })
+})
+
 describe('an open tab does not hide the next chart', () => {
   it('keeps the next chart and each title when audio is saved', () => {
     const file = [

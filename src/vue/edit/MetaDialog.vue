@@ -10,6 +10,7 @@ import {
   missingOf,
   MISSING_LABEL,
   normalizeDurationMmSs,
+  songDurationSec,
   proposeCifraClubEnrich,
   readMeta,
   rewriteToKey,
@@ -183,10 +184,33 @@ const IDENTITY_CLEAR = ['title', 'subtitle', 'artist'] as const
  * N>1 writes only fields that changed, so a tempo save does not rewrite `{t:}` or `{composer:}`.
  * An empty value the user typed is still a field, even when it equals `readMeta`.
  */
-/** `4:26` and `04:26` are one duration. Aplicar must not write that as a change. */
+/**
+ * `4:26` and `04:26` are one duration (same parsed seconds).
+ * `426` is 426 seconds, not 4:26. Aplicar must not treat those as equal.
+ */
+function sameDuration(orig: string, next: string): boolean {
+  const a = songDurationSec(orig)
+  const b = songDurationSec(next)
+  if (a != null && b != null) return a === b
+  return normalizeDurationMmSs(orig) === normalizeDurationMmSs(next)
+}
+
 function sameField(key: MetaKey, orig: string, next: string): boolean {
-  if (key === 'duration') return normalizeDurationMmSs(orig) === normalizeDurationMmSs(next)
+  if (key === 'duration') return sameDuration(orig, next)
   return orig.trim() === next.trim()
+}
+
+/**
+ * The mask reads `426` as `04:26`. Leave an untouched second count as stored
+ * when that mask would change the length. A duration the user edited is `MM:SS`.
+ */
+function durationToWrite(raw: string): string {
+  const masked = normalizeDurationMmSs(raw)
+  if (touched.value.has('duration')) return masked
+  const origSec = songDurationSec(raw)
+  const maskSec = songDurationSec(masked)
+  if (origSec != null && maskSec != null && origSec !== maskSec) return raw.trim()
+  return masked
 }
 
 function fieldsToWrite(source: string, next: ChartMeta): ChartMeta {
@@ -234,7 +258,7 @@ function commitMeta(source: string, next: ChartMeta): string {
 }
 
 function apply() {
-  const next = { ...meta.value, duration: normalizeDurationMmSs(meta.value.duration ?? '') }
+  const next = { ...meta.value, duration: durationToWrite(meta.value.duration ?? '') }
   meta.value = next
   emit('apply', commitMeta(props.source, next))
 }

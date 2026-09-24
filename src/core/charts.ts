@@ -257,7 +257,8 @@ export function splitCho(source: string): SplitCho {
   }
 
   // Notation state resets on a chart fence. An open tab must not hide the next chart.
-  let block = { tab: false, score: false }
+  // The closer for an open block is resolved once, not again at every fence.
+  const scan = freshNotationScan()
   let seenChart = false
   let outside = false
 
@@ -267,16 +268,13 @@ export function splitCho(source: string): SplitCho {
     if (d?.name === 'start_of_x_chart' || d?.name === 'end_of_x_chart') {
       // A fence inside a tab or score that still closes is notation.
       // An unclosed tab does not hide the next chart.
-      const notation =
-        (block.tab && blockClosesAfter(raws, li, 'tab')) ||
-        (block.score && blockClosesAfter(raws, li, 'score'))
-      if (notation) {
+      if (notationFence(scan, raws, li)) {
         if (!cur) {
           if (raw.trim() !== '') outside = true
         } else cur.inner.push(raw)
         continue
       }
-      block = { tab: false, score: false }
+      resetNotationScan(scan)
       if (d.name === 'start_of_x_chart') {
         seenChart = true
         flush(li)
@@ -297,7 +295,7 @@ export function splitCho(source: string): SplitCho {
       else if (seenChart) outside = true
       continue
     }
-    const inNotation = d ? stepBlock(d.name, block) === 'in' : block.tab || block.score
+    const inNotation = d ? stepNotation(scan, d.name) === 'in' : scan.block.tab || scan.block.score
     if (!cur) {
       if (raw.trim() !== '') outside = true
       continue
@@ -479,24 +477,67 @@ function blockEdge(name: string): BlockEdge | null {
   return null
 }
 
+type NotationScan = {
+  block: { tab: boolean; score: boolean }
+  /** Closer line for the open tab, -1 if none, null if not resolved yet. */
+  tabClose: number | null
+  scoreClose: number | null
+}
+
+function freshNotationScan(): NotationScan {
+  return { block: { tab: false, score: false }, tabClose: null, scoreClose: null }
+}
+
+function resetNotationScan(scan: NotationScan) {
+  scan.block.tab = false
+  scan.block.score = false
+  scan.tabClose = null
+  scan.scoreClose = null
+}
+
 /**
- * The open tab or score still has its closer after this line.
- * A chart fence before that closer is notation. No closer: the fence is real,
- * so an unclosed tab cannot hide the next chart.
+ * Line of the closer for the tab or score already open at `lineIndex`, or -1.
+ * `{eot}` inside a finished `{sos}`…`{eos}` is not the end of a tab, and
+ * `{eos}` inside a finished `{sot}`…`{eot}` is not the end of a score.
+ * An other-block that never closes does not hide a later closer.
+ * One forward scan from this line. Callers cache the result for the open block.
  */
-function blockClosesAfter(lines: readonly string[], lineIndex: number, kind: 'tab' | 'score'): boolean {
+function notationCloserAfter(lines: readonly string[], lineIndex: number, kind: 'tab' | 'score'): number {
   const openEdge = kind === 'tab' ? 'tab-open' : 'score-open'
   const closeEdge = kind === 'tab' ? 'tab-close' : 'score-close'
+  const otherOpen = kind === 'tab' ? 'score-open' : 'tab-open'
+  const otherKind: 'tab' | 'score' = kind === 'tab' ? 'score' : 'tab'
   let depth = 1
   for (let j = lineIndex + 1; j < lines.length; j++) {
     const edge = blockEdge(dirOf(lines[j] ?? '')?.name ?? '')
-    if (edge === openEdge) depth++
-    else if (edge === closeEdge) {
-      depth--
-      if (depth === 0) return true
+    if (edge === otherOpen) {
+      const end = notationCloserAfter(lines, j, otherKind)
+      if (end >= 0) j = end
+      continue
     }
+    if (edge === openEdge) depth++
+    else if (edge === closeEdge && --depth === 0) return j
   }
-  return false
+  return -1
+}
+
+/** Drop a cached closer once that block has closed, so the next one is scanned again. */
+function stepNotation(scan: NotationScan, name: string): 'in' | 'out' {
+  const where = stepBlock(name, scan.block)
+  if (!scan.block.tab) scan.tabClose = null
+  if (!scan.block.score) scan.scoreClose = null
+  return where
+}
+
+/** Chart fence is notation when the open tab or score still has its closer. */
+function notationFence(scan: NotationScan, lines: readonly string[], li: number): boolean {
+  if (!scan.block.tab) scan.tabClose = null
+  if (!scan.block.score) scan.scoreClose = null
+  if (scan.block.tab && scan.tabClose === null) scan.tabClose = notationCloserAfter(lines, li, 'tab')
+  if (scan.block.score && scan.scoreClose === null) scan.scoreClose = notationCloserAfter(lines, li, 'score')
+  const tabHides = scan.block.tab && scan.tabClose !== null && scan.tabClose >= 0
+  const scoreHides = scan.block.score && scan.scoreClose !== null && scan.scoreClose >= 0
+  return tabHides || scoreHides
 }
 
 /** Opening line is `out`. Lines inside the block, including the close, are `in`. */
@@ -966,18 +1007,15 @@ function outsideNamedLines(inner: string, name: string): string[] {
 
 /** A chart fence outside tab and score. Fences inside a block that closes are notation. */
 function hasRealChartFence(lines: string[]): boolean {
-  const block = { tab: false, score: false }
+  const scan = freshNotationScan()
   for (let i = 0; i < lines.length; i++) {
     const d = dirOf(lines[i] ?? '')
     if (!d) continue
     if (d.name === 'start_of_x_chart' || d.name === 'end_of_x_chart') {
-      const notation =
-        (block.tab && blockClosesAfter(lines, i, 'tab')) ||
-        (block.score && blockClosesAfter(lines, i, 'score'))
-      if (notation) continue
+      if (notationFence(scan, lines, i)) continue
       return true
     }
-    stepBlock(d.name, block)
+    stepNotation(scan, d.name)
   }
   return false
 }
