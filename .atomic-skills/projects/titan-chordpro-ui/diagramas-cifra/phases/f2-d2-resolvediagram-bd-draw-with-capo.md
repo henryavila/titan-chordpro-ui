@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: "Sync-wait impl/diagramas-cifra-F2-fix10. Keep C 0 2, Dsus2 +5, and untransposed D9. Fix D9 +2, MIDI 50 52, and MIDI 60 64 79. Do not start F3."
+nextAction: "F2 stays open. Fix10 is merged and host tests passed. Astra has not reviewed a07fa6a..d256f44. Do not start F3."
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -174,10 +174,10 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 is open. Operator said prossiga. Codex Astra reviewed `008249e..4e0e1e5` and kept 3 majors. Untransposed D9, C keys 0 2, and Dsus2 +5 still draw the right notes. A writer is dispatched on `impl/diagramas-cifra-F2-fix10`. F3 stays out.
-- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Latest entry `bc1e118c-76c8-48ae-80de-52cb03954377`. Receipt `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md` (needs_changes, 3 major, 0 critical).
-- **Single nextAction:** Sync-wait impl/diagramas-cifra-F2-fix10. Keep C 0 2, Dsus2 +5, and untransposed D9. Fix D9 +2, MIDI 50 52, and MIDI 60 64 79. Do not start F3.
-- **Open bug:** `{define: D9 keys 0 4 7 14}` +2 draws F# A# C# G# instead of E G# B F#. `{define: D keys 50 52}` draws E F# instead of D E. `{define: C keys 60 64 79}` +2 stores `[62, 66, 69]` and drops 79. Keys `<= 17` are intervals, including 14 and 17. Any key `> 17` is MIDI: read `mod12`, add `n`, and do not fold the octave into `60 + pc`.
+- **Narrative:** F2 is open. Astra on `008249e..4e0e1e5` kept 3 majors. Fix10 is merged. A key above 17 is MIDI. Keys 14 and 17 stay intervals. Host verifiers passed. Astra has not reviewed `a07fa6a..d256f44`. F3 stays out.
+- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Receipt of the previous diff: `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md`.
+- **Single nextAction:** F2 stays open. Fix10 is merged and host tests passed. Astra has not reviewed a07fa6a..d256f44. Do not start F3.
+- **Open bug:** none in the host verifiers. The three Astra majors on fix9 were D9 +2, MIDI 50 52, and MIDI 60 64 79. Fix10 claims those draws. That claim is not an Astra receipt.
 - **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 draws E G# B and stores keys `[4, 8, 11]`. C `0 4 7` +2 is still D keys `[2, 6, 9]`. B `11 3 6` +1 is still C keys `[0, 4, 7]`. MIDI `48 52 55` +2 is still `[50, 54, 57]`. F7sus4 `0 5 10` +2 stores `G7sus4` keys `[7, 0, 5]` and draws G, C, F. Dsus2 +3 stores `Fsus2` keys `[5, 0]`; −3 stores keys `[2, 9]` and draws D, A. D7M(9)/B keys `11 2 1 4` still draws B, D, C#, E. No Vue in core.
-- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Reviewed range `008249e63eaa9d65a4a51c379b8540f07bd5ddd9..4e0e1e539848c973f1a68d938a72914f17ac9995`. Receipt `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md`. Next writer `impl/diagramas-cifra-F2-fix10`. T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Plan worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`. Do not start F3.
+- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Product commit `d256f4494f58b8706bec1b2c5561c3a0f938363d`, merge `e6ee9c9`. Cursor step D.5, phaseId F2, redispatchCount 10. Writer worktree removed. Lease cleared. Host verifiers: define + resolve + export-cho = 73 passed, exit 0; layout-capo + resolve + diagram-draw = 62 passed, exit 0. T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Plan worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`. Do not start F3.
 - **Uncommitted changes:** none at this handoff commit.
