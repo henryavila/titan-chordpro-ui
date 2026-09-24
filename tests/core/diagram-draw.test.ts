@@ -222,6 +222,8 @@ describe('drawDiagram', () => {
     expect(d.svg).not.toContain('10000')
     expect(d.svg.length).toBeLessThan(20000)
     expect(d.dots.some((dot) => dot.string === 1 || dot.fret > 24)).toBe(false)
+    expect(d.mutes).toEqual([0, 1])
+    expect(d.opens).toEqual([3, 5])
     expect(d.dots.map((dot) => [dot.string, dot.fret])).toEqual([
       [2, 2],
       [4, 1],
@@ -248,6 +250,8 @@ describe('drawDiagram', () => {
       expect(d.svg).toContain('<svg')
       expect(d.svg).not.toContain('Infinity')
       expect(d.dots.some((dot) => dot.string === 1 || !Number.isFinite(dot.fret) || dot.fret > 24)).toBe(false)
+      expect(d.mutes).toEqual([0, 1])
+      expect(d.opens).toEqual([3, 5])
       expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length)
       expect(diagramDotCys(d.svg)).not.toContain(yOf(lines.length) - 9)
     }
@@ -266,7 +270,12 @@ describe('drawDiagram', () => {
     expect(d.svg).not.toContain('diagram-capo-bar')
     expect(d.svg).not.toMatch(/Capo/)
     expect(d.dots).toEqual([])
+    expect(d.opens).toEqual([])
+    expect(d.nutOpens).toEqual([])
+    expect(d.mutes).toEqual([0, 1, 2, 3, 4, 5])
     expect(d.svg).not.toContain('diagram-dot')
+    expect(d.svg).not.toContain('diagram-open')
+    expect(d.svg.match(/class="diagram-mute"/g)).toHaveLength(6)
     const lines = d.svg.match(/class="diagram-fret"/g) ?? []
     expect(lines.length).toBeGreaterThan(0)
     expect(lines.length).toBeLessThanOrEqual(24)
@@ -290,7 +299,10 @@ describe('drawDiagram', () => {
       }),
     )
     expect(past.dots).toEqual([])
+    expect(past.mutes).toEqual([0, 1])
+    expect(past.opens).toEqual([2, 3, 4, 5])
     expect(past.svg).not.toContain('diagram-dot')
+    expect(past.dots.some((dot) => dot.fret === 24)).toBe(false)
     const lines = past.svg.match(/class="diagram-fret"/g) ?? []
     expect(lines.length).toBeLessThanOrEqual(24)
     expect(lines.length).toBeGreaterThan(0)
@@ -341,6 +353,20 @@ describe('drawDiagram', () => {
     expect(d.capoFret).toBe(0)
     expect(d.lit).toEqual([])
     expect(d.litNotes).toEqual([])
+  })
+
+  it('does not light keys when the piano name contains a quote', () => {
+    for (const token of ["C'", 'C"', 'C\u2019']) {
+      const d = drawDiagram({
+        instrument: 'piano',
+        voicing: { keys: [0, 4, 7] },
+        token,
+      })
+      expect(d.kind, token).toBe('piano')
+      if (d.kind !== 'piano') continue
+      expect(d.lit, token).toEqual([])
+      expect(d.litNotes, token).toEqual([])
+    }
   })
 
   it('lights Caug from the leading note and its keys', () => {
