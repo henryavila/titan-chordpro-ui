@@ -429,6 +429,37 @@ describe('resolveDiagram', () => {
     expect(draw.lit).toEqual([2, 6, 9, 4])
     expect(draw.litNotes).toEqual(['D', 'F#', 'A', 'E'])
   })
+
+  it('draws D keys 50 52 as MIDI D and E, not a relative reading', () => {
+    const raw = parseDefineDirective('{define: D keys 50 52}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 4])
+    expect(draw.litNotes).toEqual(['D', 'E'])
+  })
+
+  it('draws D9 keys 0 4 7 14 transposed +2 as E G# B F#', () => {
+    const raw = parseDefineDirective('{define: D9 keys 0 4 7 14}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({ name: 'E9', keys: [4, 8, 11, 6] })
+    if (!up) return
+    const hit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: up.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([4, 8, 11, 6])
+    expect(draw.litNotes).toEqual(['E', 'G#', 'B', 'F#'])
+  })
 })
 
 const TUNING = {
