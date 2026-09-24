@@ -139,7 +139,7 @@ describe('lens Só letra', () => {
     expect(dlg.text()).not.toContain('Lentes de leitura')
     expect(dlg.find('[data-lens=nashville]').exists()).toBe(true)
     expect(dlg.find('[data-comments-toggle]').exists()).toBe(true)
-    expect(w.get('[data-reading-switch]').element.closest('.cpv-chrome')!.classList.contains('is-hidden')).toBe(true)
+    expect(w.get('.cpv-phone-stack .cpv-chrome').classes()).toContain('is-hidden')
   })
 
   it('Cifra brings named chords back after Letra', async () => {
