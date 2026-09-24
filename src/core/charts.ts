@@ -500,6 +500,8 @@ function resetNotationScan(scan: NotationScan) {
  * `{eot}` inside a finished `{sos}`…`{eos}` is not the end of a tab, and
  * `{eos}` inside a finished `{sot}`…`{eot}` is not the end of a score.
  * An other-block that never closes does not hide a later closer.
+ * A closer counts only before the next real chart fence. `{end_of_x_chart}`
+ * on this line is that fence, so a closer after it is another chart.
  * One forward scan from this line. Callers cache the result for the open block.
  */
 function notationCloserAfter(lines: readonly string[], lineIndex: number, kind: 'tab' | 'score'): number {
@@ -507,9 +509,24 @@ function notationCloserAfter(lines: readonly string[], lineIndex: number, kind: 
   const closeEdge = kind === 'tab' ? 'tab-close' : 'score-close'
   const otherOpen = kind === 'tab' ? 'score-open' : 'tab-open'
   const otherKind: 'tab' | 'score' = kind === 'tab' ? 'score' : 'tab'
+  const here = dirOf(lines[lineIndex] ?? '')?.name ?? ''
+  // The chart ended on this line. Do not keep `{end_of_x_chart}` as tab or score text.
+  if (here === 'end_of_x_chart') return -1
   let depth = 1
+  // A start here opened inside the block. The end that closes it is still notation.
+  let openCharts = here === 'start_of_x_chart' ? 1 : 0
   for (let j = lineIndex + 1; j < lines.length; j++) {
-    const edge = blockEdge(dirOf(lines[j] ?? '')?.name ?? '')
+    const name = dirOf(lines[j] ?? '')?.name ?? ''
+    if (name === 'start_of_x_chart') {
+      openCharts++
+      continue
+    }
+    if (name === 'end_of_x_chart') {
+      if (openCharts === 0) return -1
+      openCharts--
+      continue
+    }
+    const edge = blockEdge(name)
     if (edge === otherOpen) {
       const end = notationCloserAfter(lines, j, otherKind)
       if (end >= 0) j = end
@@ -1005,46 +1022,59 @@ function outsideNamedLines(inner: string, name: string): string[] {
   return out
 }
 
-/** A chart fence outside tab and score. Fences inside a block that closes are notation. */
-function hasRealChartFence(lines: string[]): boolean {
+/**
+ * Indexes of chart fences outside tab and score.
+ * `stop` returns true to end the walk. A real fence resets notation, as `splitCho` does.
+ */
+function walkRealChartFences(lines: readonly string[], stop: (index: number) => boolean): void {
   const scan = freshNotationScan()
   for (let i = 0; i < lines.length; i++) {
     const d = dirOf(lines[i] ?? '')
     if (!d) continue
     if (d.name === 'start_of_x_chart' || d.name === 'end_of_x_chart') {
       if (notationFence(scan, lines, i)) continue
-      return true
+      if (stop(i)) return
+      resetNotationScan(scan)
+      continue
     }
     stepNotation(scan, d.name)
   }
-  return false
+}
+
+/** A chart fence outside tab and score. Fences inside a block that closes are notation. */
+function hasRealChartFence(lines: readonly string[]): boolean {
+  let found = false
+  walkRealChartFences(lines, () => {
+    found = true
+    return true
+  })
+  return found
 }
 
 /**
- * Drop one wrapping start at the first non-blank line and one end at the last
- * non-blank line. Null when any other real chart fence remains: do not splice.
+ * Drop one real start and one real end, even when other lines sit before or
+ * after that pair. Null when a second real chart fence remains: do not splice.
  * Fences inside tab or score stay.
  */
 function stripEnvelopeFences(document: string): string | null {
   if (!document) return ''
   const lines = document.split('\n')
-  let first = -1
-  let last = -1
-  for (let i = 0; i < lines.length; i++) {
-    if ((lines[i] ?? '').trim() === '') continue
-    if (first < 0) first = i
-    last = i
+  const real: number[] = []
+  walkRealChartFences(lines, (index) => {
+    real.push(index)
+    return false
+  })
+  let starts = 0
+  let ends = 0
+  for (const index of real) {
+    const name = dirOf(lines[index] ?? '')?.name
+    if (name === 'start_of_x_chart') starts++
+    else if (name === 'end_of_x_chart') ends++
   }
-  const drop = new Set<number>()
-  if (
-    first >= 0 &&
-    last > first &&
-    dirOf(lines[first] ?? '')?.name === 'start_of_x_chart' &&
-    dirOf(lines[last] ?? '')?.name === 'end_of_x_chart'
-  ) {
-    drop.add(first)
-    drop.add(last)
-  }
+  if (real.length === 0) return lines.join('\n')
+  // One pair only. A second start or end would still be a chart fence after the strip.
+  if (starts !== 1 || ends !== 1) return null
+  const drop = new Set(real)
   const kept = lines.filter((_, i) => !drop.has(i))
   if (hasRealChartFence(kept)) return null
   return kept.join('\n')
@@ -1056,9 +1086,9 @@ function documentMarksItself(text: string, id: string): boolean {
 
 /**
  * The document replaces that chart. Title bytes stay as written.
- * A label omitted from the document stays. One wrapping fence pair is stripped
- * so `splitCho` can read the file. Any other real chart fence leaves the file
- * unchanged. A self-marker in the document is kept. A marker that
+ * A label omitted from the document stays. One real fence pair is stripped
+ * so `splitCho` can read the file, even with other lines around that pair.
+ * Any other real chart fence leaves the file unchanged. A self-marker in the document is kept. A marker that
  * exactly names another chart is not written in. A half-typed marker stays;
  * it is not a switch. A marker the document removed is not put back.
  * Notation stays.

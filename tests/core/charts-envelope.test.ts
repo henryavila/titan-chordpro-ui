@@ -1690,7 +1690,74 @@ describe('a paste keeps notation fences and refuses a second chart', () => {
       '{end_of_x_chart}',
     ].join('\n')
     expect(replaceChart(TWO_CHART_SOURCE, 'oferta', wrappedPair)).toBe(TWO_CHART_SOURCE)
+  })
+})
+
+describe('a paste strips one pair with other lines around it', () => {
+  it('keeps a comment after the end inside the open chart', () => {
+    const doc = '{start_of_x_chart:oferta}\n[G]nova\n{end_of_x_chart}\n{comment:fim}'
+    const out = replaceChart(TWO_CHART_SOURCE, 'oferta', doc)
+    expect(out).not.toBe(TWO_CHART_SOURCE)
+    const inner = splitCho(out).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    expect(inner).toContain('[G]nova')
+    expect(inner).toContain('{comment:fim}')
+    expect(inner).not.toContain('start_of_x_chart')
+    expect(inner).not.toContain('end_of_x_chart')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
+    expect(() => splitCho(out)).not.toThrow()
+  })
+
+  it('keeps a comment before the start inside the open chart', () => {
+    const doc = '{comment:antes}\n{start_of_x_chart:oferta}\n[G]nova\n{end_of_x_chart}'
+    const out = replaceChart(TWO_CHART_SOURCE, 'oferta', doc)
+    expect(out).not.toBe(TWO_CHART_SOURCE)
+    const inner = splitCho(out).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    expect(inner).toContain('{comment:antes}')
+    expect(inner).toContain('[G]nova')
+    expect(inner).not.toContain('start_of_x_chart')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
+  })
+
+  it('strips a title that sits before the only pair', () => {
     const mid = ['{title:Uma}', '{start_of_x_chart:oferta}', '[G]linha', '{end_of_x_chart}'].join('\n')
-    expect(replaceChart(TWO_CHART_SOURCE, 'oferta', mid)).toBe(TWO_CHART_SOURCE)
+    const out = replaceChart(TWO_CHART_SOURCE, 'oferta', mid)
+    expect(out).not.toBe(TWO_CHART_SOURCE)
+    const inner = splitCho(out).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    expect(inner).toContain('{title:Uma}')
+    expect(inner).toContain('[G]linha')
+    expect(inner).not.toContain('start_of_x_chart')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
+  })
+})
+
+describe('a notation closer stops at the next chart fence', () => {
+  it('lists chart b when the closer sits after that chart', () => {
+    for (const [openFence, closeFence, row] of [
+      ['{sos}', '{eos}', 'C4 D4 E4'],
+      ['{sot}', '{eot}', 'e|-----0-----|'],
+    ] as const) {
+      const file = [
+        '{start_of_x_chart:a}',
+        openFence,
+        row,
+        '{end_of_x_chart}',
+        '{start_of_x_chart:b}',
+        closeFence,
+        '[C]linha b',
+        '{end_of_x_chart}',
+      ].join('\n')
+      expect(listCharts(file).map((c) => c.id)).toEqual(['a', 'b'])
+      const a = splitCho(file).charts.find((c) => c.id === 'a')?.inner ?? ''
+      const b = splitCho(file).charts.find((c) => c.id === 'b')?.inner ?? ''
+      expect(a).toContain(row)
+      expect(a).not.toContain('{end_of_x_chart}')
+      expect(a).not.toContain('linha b')
+      expect(b).toContain('[C]linha b')
+      expect(b).toContain(closeFence)
+      expect(b).not.toContain(row)
+    }
   })
 })

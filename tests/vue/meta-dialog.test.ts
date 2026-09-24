@@ -294,6 +294,45 @@ describe('MetaDialog', () => {
     expect(splitCho(next).charts.find((c) => c.id === 'completa')?.inner).toContain('[G]completa')
   })
 
+  it('tabbing through duration keeps 426 and 1:04:26', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '{duration:426}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '{duration:426}',
+      '{tempo:80}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    const duration = w.get('[data-meta-duration]')
+    expect((duration.element as HTMLInputElement).value).toBe('426')
+    await duration.trigger('blur')
+    expect((duration.element as HTMLInputElement).value).toBe('426')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toContain('{duration:426}')
+    expect(next).not.toContain('{duration:04:26}')
+    expect(splitCho(next).charts.find((c) => c.id === 'completa')?.inner).toContain('{duration:426}')
+
+    const hour = src.replaceAll('{duration:426}', '{duration:1:04:26}')
+    const w2 = dialog(hour)
+    const duration2 = w2.get('[data-meta-duration]')
+    expect((duration2.element as HTMLInputElement).value).toBe('1:04:26')
+    await duration2.trigger('blur')
+    expect((duration2.element as HTMLInputElement).value).toBe('1:04:26')
+    await w2.get('[data-meta-apply]').trigger('click')
+    const next2 = w2.emitted('apply')?.at(-1)?.[0] as string
+    expect(next2).toContain('{duration:1:04:26}')
+    expect(next2).not.toContain('{duration:10:42}')
+    expect(next2).not.toContain('{duration:04:26}')
+  })
+
   it('a tempo save does not clear a later short title the field did not edit', async () => {
     const src = '{title:}\n{t:Second}\n{tempo:80}\n[C]song\n'
     const w = dialog(src)

@@ -513,9 +513,49 @@ describe('envelope block edit', () => {
     expect(w.text()).not.toContain('linha oferta')
     expect(w.text()).not.toContain('linha completa')
     expect(w.find('[data-cpv-scroll]').exists()).toBe(false)
-    expect(w.text()).toContain('chart file has text outside chart blocks')
+    expect(w.text()).toContain('Há texto fora dos blocos de cifra.')
+    expect(w.text()).not.toContain('chart file has text outside chart blocks')
     expect(w.text()).not.toContain('Nenhuma linha legível')
     w.unmount()
+  })
+
+  it('maps the other envelope errors to Portuguese', async () => {
+    const cases = [
+      {
+        source: [
+          '{start_of_x_chart:completa}',
+          '{x_chart_default:oferta}',
+          '[G]completa',
+          '{end_of_x_chart}',
+          '{start_of_x_chart:oferta}',
+          '[C]oferta',
+          '{end_of_x_chart}',
+        ].join('\n'),
+        pt: 'A cifra padrão aponta para outra cifra.',
+        en: 'x_chart_default names a different chart',
+      },
+      {
+        source: [
+          '{start_of_x_chart:completa}',
+          '{x_chart_default:completa}',
+          '[G]c',
+          '{end_of_x_chart}',
+          '{start_of_x_chart:oferta}',
+          '{x_chart_default:oferta}',
+          '[C]o',
+          '{end_of_x_chart}',
+        ].join('\n'),
+        pt: 'Mais de uma cifra está marcada como padrão.',
+        en: 'more than one chart marks itself default',
+      },
+    ]
+    for (const c of cases) {
+      const w = mountViewer({ source: c.source })
+      await flushPromises()
+      expect(w.text()).toContain(c.pt)
+      expect(w.text()).not.toContain(c.en)
+      w.unmount()
+    }
   })
 
   it('still changes a one-chart file', async () => {

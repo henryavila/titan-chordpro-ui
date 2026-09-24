@@ -385,6 +385,16 @@ function readChartFile<T>(read: () => T, fallback: T): T {
   }
 }
 
+const CHART_ENVELOPE_PT: Readonly<Record<string, string>> = {
+  'chart file has text outside chart blocks': 'Há texto fora dos blocos de cifra.',
+  'x_chart_default names a different chart': 'A cifra padrão aponta para outra cifra.',
+  'more than one chart marks itself default': 'Mais de uma cifra está marcada como padrão.',
+}
+
+function chartEnvelopePt(err: ChartEnvelopeError): string {
+  return CHART_ENVELOPE_PT[err.message] ?? 'Este arquivo de cifras não pode ser aberto.'
+}
+
 const EMPTY_CHART: ReturnType<typeof parse> = {
   meta: {},
   displayKey: null,
@@ -430,7 +440,7 @@ const parsedState = computed(() => {
       envelopeError: '',
     }
   } catch (err) {
-    if (err instanceof ChartEnvelopeError) return { view: EMPTY_CHART, envelopeError: err.message }
+    if (err instanceof ChartEnvelopeError) return { view: EMPTY_CHART, envelopeError: chartEnvelopePt(err) }
     throw err
   }
 })
