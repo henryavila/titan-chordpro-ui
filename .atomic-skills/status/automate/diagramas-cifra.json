@@ -1,8 +1,8 @@
 {
-  "step": "D.5",
+  "step": "E",
   "phaseId": "F2",
-  "redispatchCount": 11,
-  "updatedAt": "2026-09-24T15:30:55.969Z",
+  "redispatchCount": 12,
+  "updatedAt": "2026-09-24T16:34:15.027Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -63,7 +63,18 @@
       "reason": "Operator said faça. Piano keys 0–17 are distances from the chord root: transpose renames only. A key above 17 or below 0 is a real piano key and adds the shift. Delete the absolute-versus-relative guess. Do not start F3.",
       "priorCount": 10,
       "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T16:14:36.780Z",
+      "reason": "Operator said implement the plan and resolve every finding. Astra informed pass on b57bf30..3d0c3c6: D keys 12 16 19 is read as MIDI and draws C E G. A key above 17 must not flip a list that still has a key in 0-17. MIDI stays only when every key is above 17 or any key is below 0. Do not start F3.",
+      "priorCount": 11,
+      "gate": "spawn"
     }
   ],
-  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json"
+  "claimReportPath": ".atomic-skills/status/automate/diagramas-cifra-claims.json",
+  "lastAssert": {
+    "gate": "done",
+    "ok": true,
+    "at": "2026-09-24T16:34:15.027Z"
+  }
 }
