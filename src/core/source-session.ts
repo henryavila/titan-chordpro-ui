@@ -1,3 +1,4 @@
+import { hasChartEnvelope } from './charts'
 import { parse } from './parse'
 import { readMeta, writeMeta, type ChartMeta, type MetaKey } from './import-chordpro'
 import { lintSource } from './lint'
@@ -62,11 +63,17 @@ export function createSourceSession(opts: { source: string }): SourceSession {
       redoStack.length = 0
     },
     setMeta: (patch) => {
-      const next: ChartMeta = { ...readMeta(source) }
+      const only: ChartMeta = {}
       for (const [k, v] of Object.entries(patch)) {
         if (v === undefined) continue
-        next[k as MetaKey] = String(v)
+        only[k as MetaKey] = String(v)
       }
+      // N>1: a tempo save must not rewrite title, artist, `{t:}`, or `{composer:}`.
+      if (hasChartEnvelope(source)) {
+        push(writeMeta(source, only))
+        return
+      }
+      const next: ChartMeta = { ...readMeta(source), ...only }
       push(writeMeta(source, next))
     },
     undo: () => {

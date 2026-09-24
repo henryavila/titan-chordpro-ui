@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { chartDocument, readMeta, splitCho, writeSongScopedMeta } from '../../src/core/charts'
 import {
+  ChartEnvelopeError,
   applyCifraClubEnrich,
+  audioUrlOf,
   commitChartDocument,
+  createSourceSession,
   inferWrittenKey,
   listCharts,
   lintSource,
@@ -13,6 +16,7 @@ import {
   setAudioUrl,
   storedTransposeSemis,
   writeMeta,
+  writeStrumPatterns,
 } from '../../src/core/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -230,7 +234,7 @@ describe('writeMeta target and replaceChart', () => {
     expect(kept).not.toContain('corpo da oferta')
   })
 
-  it('replaceChart drops omitted song identity and keeps x_chart_default', () => {
+  it('replaceChart drops omitted song identity and does not put the default marker back', () => {
     const file = `{start_of_x_chart:completa}
 {x_chart_label:Completa}
 {key:G}
@@ -264,7 +268,7 @@ describe('writeMeta target and replaceChart', () => {
     expect(oferta).not.toContain('Alguém')
     expect(oferta).not.toMatch(/\{x_source:/)
     expect(oferta).not.toMatch(/\{x_youtube:/)
-    expect(oferta).toContain('{x_chart_default:oferta}')
+    expect(oferta).not.toContain('{x_chart_default:')
     expect(completa).toContain('{key:G}')
     expect(completa).toContain('{duration:04:26}')
     expect(completa).toContain('[G]corpo da completa')
@@ -535,11 +539,13 @@ describe('chart document edits and x_chart_default', () => {
     const oferta = chartBlock(out, 'oferta')
     expect(oferta).toContain('{title:Uma}\n{artist:Alguém}\n\n[C]corpo da oferta\n\n[C]segunda')
     expect(oferta).toContain('{x_chart_label:Oferta}')
-    expect(oferta).toContain('{x_chart_default:oferta}')
+    expect(oferta).not.toContain('{x_chart_default:')
     expect(chartBlock(out, 'completa')).toContain('corpo da completa')
-    expect(parse(out).source).toContain('\n\n[C]corpo da oferta\n\n[C]segunda')
-    expect(parse(out).source).toContain('{title:Uma}')
-    expect(parse(out).source).not.toContain('corpo da completa')
+    expect(() => splitCho(out)).not.toThrow()
+    const ofertaView = parse(out, { chartId: 'oferta' })
+    expect(ofertaView.source).toContain('\n\n[C]corpo da oferta\n\n[C]segunda')
+    expect(ofertaView.source).toContain('{title:Uma}')
+    expect(ofertaView.source).not.toContain('corpo da completa')
   })
 
   it('lintSource on the chart document ignores a broken sibling and reports the default key', () => {
@@ -1273,5 +1279,205 @@ describe('a file with no chart pair still parses', () => {
     expect(view.meta.title).toBe('087 - Jesus, Tu És a minha vida')
     expect(view.sections.length).toBe(11)
     expect(listCharts(src)).toEqual([{ id: 'default', label: 'default', isDefault: true }])
+  })
+})
+
+const ALIAS_ENVELOPE = [
+  '{start_of_x_chart:completa}',
+  '{t:Completa}',
+  '{composer:Um}',
+  '{key:G}',
+  '[G]completa',
+  '{end_of_x_chart}',
+  '{start_of_x_chart:oferta}',
+  '{t:Oferta}',
+  '{composer:Dois}',
+  '{x_chart_default:oferta}',
+  '{key:C}',
+  '{tempo:80}',
+  '[C]oferta',
+  '{end_of_x_chart}',
+].join('\n')
+
+function keepsAliases(source: string) {
+  const oferta = chartBlock(source, 'oferta')
+  const completa = chartBlock(source, 'completa')
+  expect(oferta).toContain('{t:Oferta}')
+  expect(oferta).toContain('{composer:Dois}')
+  expect(oferta).not.toContain('{title:')
+  expect(oferta).not.toContain('{artist:')
+  expect(completa).toContain('{t:Completa}')
+  expect(completa).toContain('{composer:Um}')
+  expect(completa).not.toContain('{title:')
+  expect(completa).not.toContain('{artist:')
+}
+
+describe('a tempo or strum save does not rewrite aliases', () => {
+  it('setMeta sends only tempo on an N>1 file', () => {
+    const session = createSourceSession({ source: ALIAS_ENVELOPE })
+    session.setMeta({ tempo: '100' })
+    const out = session.getSource()
+    keepsAliases(out)
+    expect(chartBlock(out, 'oferta')).toContain('{tempo:100}')
+    expect(chartBlock(out, 'oferta')).not.toContain('{tempo:80}')
+    expect(chartBlock(out, 'completa')).not.toContain('{tempo:')
+    expect(parse(out).meta.tempo).toBe(100)
+    expect(parse(out).meta.title).toBe('Oferta')
+    expect(parse(out).meta.artist).toBe('Dois')
+  })
+
+  it('writeStrumPatterns sends only the strum fields', () => {
+    const pat = parseXStrum('bpm=90;meter=4/4;grid=4;label=Nova;pat=DUDU')
+    if (!pat) throw new Error('strum')
+    const out = writeStrumPatterns(ALIAS_ENVELOPE, { activeIndex: 0, patterns: [pat] })
+    keepsAliases(out)
+    expect(chartBlock(out, 'oferta')).toContain('label=Nova')
+    expect(chartBlock(out, 'completa')).not.toContain('label=Nova')
+    expect(chartBlock(out, 'completa')).toBe(chartBlock(ALIAS_ENVELOPE, 'completa'))
+  })
+})
+
+describe('notation inside tab or score is not the chart header', () => {
+  it('readMeta ignores title, artist, audio, and x_chart_default', () => {
+    for (const [open, close] of NOTATION_FENCES) {
+      const src = [
+        open,
+        '{t:Hidden}',
+        '{composer:Hidden}',
+        '{x_audio_sung:https://cdn.example/hidden.m4a}',
+        '{x_audio:https://cdn.example/alias.m4a}',
+        '{x_chart_default:oferta}',
+        close,
+        '{title:Real}',
+        '{artist:Shown}',
+        '{x_audio_sung:https://cdn.example/real.m4a}',
+      ].join('\n')
+      const meta = readMeta(src)
+      expect(meta.title).toBe('Real')
+      expect(meta.artist).toBe('Shown')
+      expect(meta.x_audio_sung).toBe('https://cdn.example/real.m4a')
+      expect(meta.x_chart_default).toBeUndefined()
+      expect(src.slice(src.indexOf(open), src.indexOf(close))).toContain('{t:Hidden}')
+    }
+  })
+
+  it('setAudioUrl of a new URL or a clear wins over x_audio_sung inside tab', () => {
+    const flat = ['{sot}', '{x_audio_sung:https://cdn.example/old.m4a}', '{eot}', '{title:Uma}', '[G]linha'].join('\n')
+    const next = setAudioUrl(flat, 'https://cdn.example/new.m4a')
+    expect(readMeta(next).x_audio_sung).toBe('https://cdn.example/new.m4a')
+    expect(audioUrlOf(next)).toBe('https://cdn.example/new.m4a')
+    expect(next.slice(next.indexOf('{sot}'), next.indexOf('{eot}'))).toContain('old.m4a')
+    const cleared = setAudioUrl(flat, null)
+    expect(readMeta(cleared).x_audio_sung).toBeUndefined()
+    expect(audioUrlOf(cleared)).toBeNull()
+    expect(cleared.slice(cleared.indexOf('{sot}'), cleared.indexOf('{eot}'))).toContain('old.m4a')
+
+    const env = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '[G]c',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{sot}',
+      '{x_audio_sung:https://cdn.example/old.m4a}',
+      '{eot}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '[C]o',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const saved = setAudioUrl(env, 'https://cdn.example/new.m4a')
+    expect(readMeta(saved).x_audio_sung).toBe('https://cdn.example/new.m4a')
+    expect(betweenMarkers(chartBlock(saved, 'oferta'), '{sot}', '{eot}')).toContain('old.m4a')
+    expect(chartBlock(saved, 'completa')).toBe(chartBlock(env, 'completa'))
+    const gone = setAudioUrl(env, null)
+    expect(readMeta(gone).x_audio_sung).toBeUndefined()
+    expect(audioUrlOf(gone)).toBeNull()
+    expect(betweenMarkers(chartBlock(gone, 'oferta'), '{sot}', '{eot}')).toContain('old.m4a')
+    expect(chartBlock(gone, 'completa')).toBe(chartBlock(env, 'completa'))
+  })
+})
+
+describe('replaceChart returns a file splitCho can read', () => {
+  it('strips fences, keeps one self-marker, and does not put a removed marker back', () => {
+    const file = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '{x_chart_default:completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const marked = [
+      '{start_of_x_chart:oferta}',
+      '{title:Nova}',
+      '{x_chart_default:oferta}',
+      '[C]nova',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const out = replaceChart(file, 'oferta', marked)
+    expect(() => splitCho(out)).not.toThrow()
+    expect(out.match(/\{start_of_x_chart:/g)).toHaveLength(2)
+    expect(out.match(/\{end_of_x_chart\}/g)).toHaveLength(2)
+    expect(listCharts(out).find((c) => c.isDefault)?.id).toBe('oferta')
+    expect(chartBlock(out, 'oferta')).toContain('{x_chart_default:oferta}')
+    expect(chartBlock(out, 'completa')).not.toContain('x_chart_default')
+    expect(chartBlock(out, 'completa')).toContain('[G]completa')
+    expect(parse(out).meta.title).toBe('Nova')
+
+    const removed = chartDocument(TWO_CHART_SOURCE).replace('{x_chart_default:oferta}\n', '')
+    const cleared = commitChartDocument(TWO_CHART_SOURCE, removed)
+    expect(cleared).not.toContain('x_chart_default')
+    expect(() => splitCho(cleared)).not.toThrow()
+    expect(listCharts(cleared).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(chartBlock(cleared, 'oferta')).toContain('corpo da oferta')
+    expect(chartBlock(cleared, 'completa')).toContain('corpo da completa')
+  })
+})
+
+describe('no completed pair is one chart', () => {
+  it('a title plus one unclosed start is the whole text and does not throw', () => {
+    const src = '{title:Uma}\n{start_of_x_chart:completa}\n[G]linha\n'
+    expect(() => splitCho(src)).not.toThrow()
+    expect(listCharts(src)).toEqual([{ id: 'default', label: 'default', isDefault: true }])
+    const view = parse(src)
+    expect(view.meta.title).toBe('Uma')
+    expect(view.source).toContain('{title:Uma}')
+    expect(view.source).toContain('{start_of_x_chart:completa}')
+    expect(view.source).toContain('[G]linha')
+  })
+
+  it('a completed pair plus other top-level text stays an error', () => {
+    const outside = '{title:Fora}\n' + TWO_CHART_SOURCE
+    expect(() => splitCho(outside)).toThrow(ChartEnvelopeError)
+    expect(() => splitCho(outside)).toThrow(/outside chart blocks/)
+    expect(() => listCharts(outside)).toThrow(/outside chart blocks/)
+    expect(() => parse(outside)).toThrow(/outside chart blocks/)
+    const between = [
+      '{start_of_x_chart:completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{title:Fora}',
+      '{start_of_x_chart:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(() => splitCho(between)).toThrow(/outside chart blocks/)
+  })
+})
+
+describe('ChartEnvelopeError is exported', () => {
+  it('is the error a broken envelope throws', () => {
+    const outside = '{title:Fora}\n' + TWO_CHART_SOURCE
+    expect(ChartEnvelopeError).toBeInstanceOf(Function)
+    try {
+      listCharts(outside)
+      throw new Error('listCharts should throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(ChartEnvelopeError)
+    }
   })
 })

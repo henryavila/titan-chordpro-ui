@@ -14,6 +14,7 @@ import {
   formatEta,
   hasSongDuration,
   inferWrittenKey,
+  ChartEnvelopeError,
   commitChartDocument,
   lintSource,
   storedTransposeSemis,
@@ -368,10 +369,29 @@ const effTheme = computed<'light' | 'dark'>(() =>
       : 'light',
 )
 const liveSource = computed(() => working.value)
+/** A broken envelope must not throw out of a computed. The file still does not open as charts. */
+function readChartFile<T>(read: () => T, fallback: T): T {
+  try {
+    return read()
+  } catch (err) {
+    if (err instanceof ChartEnvelopeError) return fallback
+    throw err
+  }
+}
+
+const EMPTY_CHART: ReturnType<typeof parse> = {
+  meta: {},
+  displayKey: null,
+  transposeSemitones: 0,
+  source: '',
+  sections: [],
+  eocOf: {},
+}
+
 const audioTracks = computed(() =>
   isEdit.value
     ? { sung: null, playback: null }
-    : audioTracksOf(liveSource.value),
+    : readChartFile(() => audioTracksOf(liveSource.value), { sung: null, playback: null }),
 )
 const audioKinds = computed(() => audioKindsOf(audioTracks.value))
 const audioKind = ref<AudioKind>('sung')
@@ -387,8 +407,8 @@ watch(
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
 const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
 const audio = useAudioRef(audioUrl)
-const parsed = computed(() => parse(liveSource.value))
-const audioArt = computed(() => (isEdit.value ? null : audioArtOf(liveSource.value)))
+const parsed = computed(() => readChartFile(() => parse(liveSource.value), EMPTY_CHART))
+const audioArt = computed(() => (isEdit.value ? null : readChartFile(() => audioArtOf(liveSource.value), null)))
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {
@@ -486,7 +506,9 @@ const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
 /** Batida from `{x_strum:}` / `{x_strum_set:}` — toggle is the reader's choice. */
-const strumSet = computed(() => readStrumPatterns(liveSource.value))
+const strumSet = computed(() =>
+  readChartFile(() => readStrumPatterns(liveSource.value), { activeIndex: 0, patterns: [] }),
+)
 const strumPattern = computed(() => {
   const set = strumSet.value
   return set.patterns[set.activeIndex] ?? set.patterns[0] ?? null
@@ -723,7 +745,7 @@ const ov = useOverlay({
   songId: computed(() => {
     if (setlist.on.value) return setlist.current.value?.id ?? 'song'
     if (props.songId) return props.songId
-    return parse(normalizeSource(hostSource.value)).meta.title || 'song'
+    return readChartFile(() => parse(normalizeSource(hostSource.value)).meta.title || 'song', 'song')
   }),
   version: computed(() => props.version || 'v1'),
   // Line indices are what an adjustment anchors on: the overlay lives in the
