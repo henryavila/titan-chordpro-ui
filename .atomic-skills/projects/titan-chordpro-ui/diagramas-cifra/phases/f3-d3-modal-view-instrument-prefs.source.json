@@ -1,0 +1,87 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F3",
+  "slug": "diagramas-cifra-f3-d3-modal-view-instrument-prefs",
+  "title": "D3 Modal view + instrument prefs",
+  "goal": "View tap opens a large modal (full screen on phone/tablet, wide on desktop); instrument switch lives on that screen and persists as diagramInstrument, default guitar silent; host capability diagrams defaults true; tap pauses auto-scroll and metronome until the modal closes; lens letra has no modal; Nashville modal shows the playable name.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Prefs and diagrams capability",
+      "scopeBoundary": [
+        "Do not build the edit grid; do not call localStorage except via ChartStore; do not put instrument on ToneSheet or Mais."
+      ],
+      "acceptance": [
+        "STORE_KEYS.prefs stores diagramInstrument; missing key is guitar; ViewerCapabilities.diagrams defaults true; diagrams false hides the modal; instrument switch on the modal persists across source changes"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/diagram-modal.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/storage.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/public.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/diagram-modal.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Large modal + pause scroll and metronome",
+      "scopeBoundary": [
+        "Do not add a diagram strip in the chart; do not offer personalize in view; do not write {define} from view; do not use a small anchored popover."
+      ],
+      "acceptance": [
+        "View tap opens DiagramModal full viewport on narrow and large on wide without changing scrollHeight; instrument control on that screen switches guitar piano ukulele in place; miss copy is Sem forma neste instrumento; tap pauses auto-scroll and metronome; close resumes both; lens letra has no hit target"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/diagram-modal.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/chart/ChartBody.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/overlay/DiagramModal.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/diagram-modal.test.ts"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F3-G1",
+      "description": "Vue modal, prefs, and pause tests green. FAILS when tap leaves auto-scroll running or lens letra still opens the modal.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/diagram-modal.test.ts tests/core/no-vue-in-core.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}
