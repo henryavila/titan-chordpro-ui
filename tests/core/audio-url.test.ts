@@ -8,6 +8,7 @@ import {
   defaultAudioKind,
   displaySongTitle,
   formatAudioClock,
+  parse,
   playableAudioUrl,
   setAudioArt,
   setAudioUrl,
@@ -302,7 +303,7 @@ describe('envelope audio clear', () => {
   })
 
   it('setAudioUrl(null) does not keep a blank between sound keys under a non-lyric directive', () => {
-    for (const lead of ['{c: Intro}', '{define: C}', '{start_of_verse}']) {
+    for (const lead of ['{c: Intro}', '{comment: Intro}', '{define: C}', '{start_of_verse}']) {
       const src = [
         '{title:Uma}',
         '{x_chart_default:oferta}',
@@ -342,6 +343,65 @@ describe('envelope audio clear', () => {
     expect(oferta).toContain('{tempo:80}\n[C]linha')
     expect(oferta).not.toMatch(/\n\n\[C\]linha/)
     expect(oferta).not.toContain('x_audio_sung')
+  })
+
+  it('setAudioUrl(null) keeps a blank after an image that starts the body', () => {
+    for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
+      const src = [
+        '{title:Uma}',
+        '{x_chart_default:oferta}',
+        '{start_of_x_chart:completa}',
+        '{key:D}',
+        '[D]outro',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        image,
+        '{key:G}',
+        '',
+        '{tempo:72}',
+        '[G]linha',
+        '{x_audio_sung:https://cdn.example/c.m4a}',
+        '{end_of_x_chart}',
+      ].join('\n')
+      const next = setAudioUrl(src, null)
+      const oferta = chartBlock(next, 'oferta')
+      expect(oferta).toContain(`${image}\n\n[G]linha`)
+      expect(oferta).toContain('{tempo:72}')
+      expect(oferta).not.toContain('x_audio_sung')
+      expect(oferta).not.toContain('cdn.example/c.m4a')
+      expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
+    }
+  })
+
+  it('setAudioUrl(null) keeps the artist parse shows', () => {
+    const later = '{artist:Local}\n{composer:Bach}\n[C]song\n'
+    expect(parse(later).meta.artist).toBe('Bach')
+    const clearedLater = setAudioUrl(later, null)
+    expect(parse(clearedLater).meta.artist).toBe('Bach')
+    expect(clearedLater).toContain('{composer:Bach}')
+
+    const earlier = '{composer:Bach}\n{artist:Local}\n[C]song\n'
+    expect(parse(earlier).meta.artist).toBe('Local')
+    expect(parse(setAudioUrl(earlier, null)).meta.artist).toBe('Local')
+
+    const env = [
+      '{title:Uma}',
+      '{x_chart_default:oferta}',
+      '{start_of_x_chart:completa}',
+      '{key:G}',
+      '[G]outro',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{artist:Local}',
+      '{composer:Bach}',
+      '[C]song',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(parse(env).meta.artist).toBe('Bach')
+    const clearedEnv = setAudioUrl(env, null)
+    expect(parse(clearedEnv).meta.artist).toBe('Bach')
+    expect(clearedEnv).toContain('{composer:Bach}')
+    expect(chartBlock(clearedEnv, 'completa')).toBe(chartBlock(env, 'completa'))
   })
 
   it('setAudioUrl(null) keeps a blank that follows a lyric', () => {

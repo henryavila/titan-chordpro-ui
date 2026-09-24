@@ -675,6 +675,41 @@ describe('chart document edits and x_chart_default', () => {
     expect(savedRepeated).toContain('[C]song')
   })
 
+  it('a later short title or subtitle is the one parse shows', () => {
+    const titled = '{title:First}\n{t:Second}\n[C]song\n'
+    expect(parse(titled).meta.title).toBe('Second')
+    const savedTitle = writeSongScopedMeta(titled, { subtitle: 'X' })
+    expect(parse(savedTitle).meta.title).toBe('Second')
+    expect(savedTitle).toContain('{t:Second}')
+    expect(savedTitle).toContain('{subtitle:X}')
+    expect(savedTitle).toContain('[C]song')
+
+    const sub = '{subtitle:A}\n{st:B}\n[C]song\n'
+    expect(parse(sub).meta.subtitle).toBe('B')
+    const savedSub = writeSongScopedMeta(sub, { title: 'T' })
+    expect(parse(savedSub).meta.subtitle).toBe('B')
+    expect(savedSub).toContain('{st:B}')
+    expect(savedSub).toContain('{title:T}')
+    expect(savedSub).toContain('[C]song')
+  })
+
+  it('a credit inside tab or score is not the song credit', () => {
+    for (const [open, close] of [
+      ['{start_of_tab}', '{end_of_tab}'],
+      ['{sot}', '{eot}'],
+      ['{start_of_score}', '{end_of_score}'],
+      ['{sos}', '{eos}'],
+    ]) {
+      const src = `{composer:Bach}\n${open}\n{artist:Local}\n${close}\n[C]song\n`
+      expect(parse(src).meta.artist).toBe('Bach')
+      const saved = writeSongScopedMeta(src, { subtitle: 'X' })
+      expect(parse(saved).meta.artist).toBe('Bach')
+      expect(saved).toContain('{composer:Bach}')
+      expect(saved).toContain('{subtitle:X}')
+      expect(saved).toContain('[C]song')
+    }
+  })
+
   it('counts colonless {transpose} and {key} the way parse does', () => {
     expect(storedTransposeSemis('{key:C}\n{transpose 2}\n[C]uma')).toBe(2)
     expect(storedTransposeSemis('{key C}\n{transpose:2}\n[C]uma')).toBe(2)
