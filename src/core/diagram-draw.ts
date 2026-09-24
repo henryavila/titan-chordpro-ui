@@ -94,19 +94,28 @@ function drawFrets(
       continue
     }
     if (slot === 0) {
+      // Open at a capo past the cap is not an open string at the nut.
+      if (capoFret > FRET_LINE_CAP) {
+        mutes.push(s)
+        continue
+      }
       opens.push(s)
       if (capoFret <= 0) nutOpens.push(s)
       continue
     }
     const relativeFret = slot
     const fret = capoFret + (base - 1) + relativeFret
+    // Above the cap: mute. Not a blank string, and not a dot on fret 24.
+    if (!fretOnNeck(fret)) {
+      mutes.push(s)
+      continue
+    }
     const finger = fingerOf(fingers?.[s])
     const dot: FretDot = { string: s, fret, relativeFret }
     if (finger != null) dot.finger = finger
     dots.push(dot)
   }
 
-  // A fret above the cap is omitted. It is not clamped onto the last line.
   const drawnDots = dots.filter((dot) => fretOnNeck(dot.fret))
   const hasCapoBar = fretOnNeck(capoFret)
   const capoLabel = hasCapoBar ? `Capo ${capoFret}` : null

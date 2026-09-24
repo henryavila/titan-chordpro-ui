@@ -76,11 +76,14 @@ function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
  * Keys are read from that root. No root letter, or no keys, is a miss.
  * `+` never hits.
  */
+/** Same marks `drawDiagram` refuses before it will light a piano root. */
+const PIANO_NAME_QUOTE = /["'’]/
+
 function pianoUnknownOverride(
   overrides: readonly ChordDefine[],
   token: string,
 ): DiagramHit | null {
-  if (token.includes('+')) return null
+  if (token.includes('+') || PIANO_NAME_QUOTE.test(token)) return null
   const rootPc = keyIndex(token)
   if (rootPc == null) return null
   for (const def of overrides) {

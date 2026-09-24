@@ -715,6 +715,47 @@ describe('transposeDefine', () => {
     expect(fifthDraw.litNotes).toEqual(['A', 'D', 'F#'])
     expect(new Set(fifthDraw.lit)).toEqual(new Set([2, 9, 6]))
   })
+
+  it('does not let dropped guitar frets shadow an existing piano define', () => {
+    const guitar = '{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}'
+    const piano = '{define: D keys 0 7}'
+    const src = `${guitar}\n${piano}\n[D]`
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: E keys 0 7}')
+    expect(out).not.toContain('{define: E keys 0 4 7}')
+    expect(out).not.toContain('define-guitar')
+    const defines = parse(out).defines
+    expect(defines).toHaveLength(1)
+    expect(defines[0]).toMatchObject({
+      name: 'E',
+      instrument: 'piano',
+      directive: 'define',
+      keys: [0, 7],
+    })
+    const hit = resolveDiagram({ token: 'E', instrument: 'piano', overrides: defines })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.voicing.keys).toEqual([0, 7])
+    expect(transpose(parse(src), 2).defines).toEqual(defines)
+
+    const alone = exportCho(`${guitar}\n[D]`, { semitones: 2 })
+    expect(alone).toContain('{define: E keys 0 4 7}')
+    expect(parseDefineDirective(alone.split('\n').find((l) => l.startsWith('{define:')) ?? '').class).toBe(
+      'parse',
+    )
+  })
+
+  it('still emits dropped guitar frets when the piano define is a different chord', () => {
+    const src = '{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}\n{define: C keys 0 7}\n[D]'
+    const out = exportCho(src, { semitones: 2 })
+    expect(out).toContain('{define: E keys 0 4 7}')
+    expect(out).toContain('{define: D keys 0 7}')
+    expect(parse(out).defines.map((d) => [d.name, d.keys])).toEqual([
+      ['E', [0, 4, 7]],
+      ['D', [0, 7]],
+    ])
+    expect(transpose(parse(src), 2).defines).toEqual(parse(out).defines)
+  })
 })
 
 describe('transpose/setKey apply the same define rewrite as export', () => {

@@ -3,7 +3,7 @@ import {
   DIR,
   isDefineKey,
   parseDefineDirective,
-  transposeDefine,
+  transposeDefines,
   type ChordDefine,
 } from './define'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
@@ -288,9 +288,9 @@ function applyShape(view: ChordProView, semis: number): ChordProView {
     }),
   }))
   const displayKey = view.meta.key ? transposeToken(view.meta.key, semis, flats) : null
-  const defines = view.defines
-    .map((d) => transposeDefine(d, semis, flats))
-    .filter((d): d is ChordDefine => d !== null)
+  const defines = transposeDefines(view.defines, semis, flats).filter(
+    (d): d is ChordDefine => d !== null,
+  )
   return { ...view, sections, transposeSemitones: semis, displayKey, defines }
 }
 

@@ -247,20 +247,75 @@ export function transposeDefine(def: ChordDefine, n: number, flats: boolean): Ch
 export function transposeDefineLine(line: string, n: number, flats: boolean): string | null {
   const def = asChordDefine(parseDefineDirective(line))
   if (!def) return line
-  const next = transposeDefine(def, n, flats)
+  const next = transposeDefines([def], n, flats)[0]
   return next ? serializeDefine(next) : null
+}
+
+function lostItsFrets(before: ChordDefine, after: ChordDefine): boolean {
+  return (before.frets?.length ?? 0) > 0 && !(after.frets?.length)
+}
+
+/**
+ * Transpose each define. A fretted line that lost its frets is dropped when
+ * another piano `{define:}` already uses that transposed name — otherwise the
+ * new piano line is found first and hides the one the chart wrote.
+ */
+export function transposeDefines(
+  defs: readonly ChordDefine[],
+  n: number,
+  flats: boolean,
+): Array<ChordDefine | null> {
+  const next = defs.map((d) => transposeDefine(d, n, flats))
+  if (!n) return next
+  const pianoNames = new Set<string>()
+  for (let i = 0; i < defs.length; i++) {
+    const before = defs[i]
+    const after = next[i]
+    if (!before || !after || lostItsFrets(before, after)) continue
+    if (after.instrument !== 'piano' || !after.keys?.length) continue
+    pianoNames.add(after.name)
+  }
+  if (pianoNames.size === 0) return next
+  return next.map((after, i) => {
+    const before = defs[i]
+    if (!before || !after) return after ?? null
+    if (lostItsFrets(before, after) && after.instrument === 'piano' && pianoNames.has(after.name)) {
+      return null
+    }
+    return after
+  })
 }
 
 export function rewriteDefineLines(source: string, n: number, flats: boolean): string {
   if (!n) return source
-  return String(source ?? '')
-    .split('\n')
-    .flatMap((line) => {
-      if (!isDefineKey(line.match(DIR)?.[1] ?? '')) return [line]
-      const next = transposeDefineLine(line, n, flats)
-      return next == null ? [] : [next]
-    })
-    .join('\n')
+  const lines = String(source ?? '').split('\n')
+  const indexes: number[] = []
+  const defs: ChordDefine[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
+    if (!isDefineKey(line.match(DIR)?.[1] ?? '')) continue
+    const def = asChordDefine(parseDefineDirective(line))
+    if (!def) continue
+    indexes.push(i)
+    defs.push(def)
+  }
+  const kept = transposeDefines(defs, n, flats)
+  const at = new Map<number, ChordDefine | null>()
+  for (let i = 0; i < indexes.length; i++) {
+    const lineNo = indexes[i]
+    if (lineNo === undefined) continue
+    at.set(lineNo, kept[i] ?? null)
+  }
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    if (!at.has(i)) {
+      out.push(lines[i] ?? '')
+      continue
+    }
+    const next = at.get(i)
+    if (next) out.push(serializeDefine(next))
+  }
+  return out.join('\n')
 }
 
 export function asChordDefine(r: DefineResult): ChordDefine | null {

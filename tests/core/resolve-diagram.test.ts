@@ -97,6 +97,22 @@ describe('resolveDiagram', () => {
     })
   })
 
+  it('misses a piano name that contains a quote instead of hitting with no lit keys', () => {
+    for (const name of ["C'", 'C"', 'C\u2019']) {
+      const raw = parseDefineDirective(`{define: ${name} keys 0 4 7}`)
+      expect(raw.class, name).toBe('parse')
+      if (raw.class !== 'parse') continue
+      expect(resolveDiagram({ token: name, instrument: 'piano', overrides: [raw] }), name).toEqual({
+        class: 'miss',
+        reason: 'unknown-token',
+      })
+      const drawn = drawDiagram({ instrument: 'piano', voicing: { keys: raw.keys }, token: name })
+      expect(drawn.kind, name).toBe('piano')
+      if (drawn.kind !== 'piano') continue
+      expect(drawn.lit, name).toEqual([])
+    }
+  })
+
   it('misses C7+ on piano even when the define has keys', () => {
     const raw = parseDefineDirective('{define: C7+ keys 0 4 7}')
     expect(raw.class).toBe('parse')
