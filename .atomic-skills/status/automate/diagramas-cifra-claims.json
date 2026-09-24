@@ -1,26 +1,27 @@
 {
   "planSlug": "diagramas-cifra",
   "phaseId": "F2",
-  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix8",
-  "writerBranch": "impl/diagramas-cifra-F2-fix8",
-  "finishedAt": "2026-09-24T10:06:07Z",
+  "worktreePath": "/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix9",
+  "writerBranch": "impl/diagramas-cifra-F2-fix9",
+  "finishedAt": "2026-09-24T10:18:37Z",
   "tasks": [
     {
       "taskId": "T-002",
       "status": "claimed-pass",
       "commitShas": [
-        "30cbe2e52df528e525d783a13b24dc2149f70843"
+        "4e0e1e539848c973f1a68d938a72914f17ac9995"
       ],
-      "base": "b304ca5885875b0903151338978f22f1420ca43b",
-      "head": "30cbe2e52df528e525d783a13b24dc2149f70843",
+      "base": "008249e63eaa9d65a4a51c379b8540f07bd5ddd9",
+      "head": "4e0e1e539848c973f1a68d938a72914f17ac9995",
       "paths": [
-        "src/core/define.ts",
         "src/core/chord-dict.ts",
-        "tests/core/define-directive.test.ts"
+        "src/core/define.ts",
+        "tests/core/define-directive.test.ts",
+        "tests/core/resolve-diagram.test.ts"
       ],
       "verifierCommand": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts && pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts",
       "exitCode": 0,
-      "transcript": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/resolve-diagram.test.ts (29 tests) 9ms\n✓ tests/core/define-directive.test.ts (30 tests) 16ms\n✓ tests/core/export-cho.test.ts (7 tests) 17ms\nTest Files  3 passed (3)\nTests  66 passed (66)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (29 tests) 9ms\n✓ tests/core/layout-capo.test.ts (18 tests) 8ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 68ms\nTest Files  3 passed (3)\nTests  59 passed (59)\nexit 0\n\ntransposePianoKeys does not throw. When neither 0–11 candidate reads the shifted classes, keys are stored as 60 + pc. pianoSoundingPitchClasses treats any key outside 0–11 as absolute mod 12 and skips the relative heuristic. chord-dict.ts does not import define.ts. Guitar and ukulele packs were not edited.\n\n{define: C keys 0 2} +2 stores D keys [62, 64]. transpose() and exportCho({ semitones: 2 }) do not throw. The parsed define draws D and E (pcs 2, 4). That define −2 stores C keys [60, 62] and draws C and D (pcs 0, 2).\n\n408-cell count stayed 17 * 12 * 2. F7sus4 keys 0 5 10 still draws F A# D#; +2 stores G7sus4 keys [7, 0, 5] and draws G C F. Dsus2 keys 0 7 +3 stores Fsus2 keys [5, 0] and draws F C; −3 stores Dsus2 keys [2, 9] and draws D A. Dsus2 keys 0 7 +5 stores Gsus2 keys [0, 7] and draws G D (pcs 7, 2); −5 stores Dsus2 keys [2, 9] and draws D A. D keys 0 4 7 +2 stores E keys [4, 8, 11] and draws E G# B. C keys 0 4 7 +2 stores D keys [2, 6, 9] and draws D F# A. B keys 11 3 6 +1 stores C keys [0, 4, 7]. C keys 48 52 55 +2 stores keys [50, 54, 57]. D7M(9)/B keys [11, 2, 1, 4] still draws B D C# E."
+      "transcript": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts\n✓ tests/core/export-cho.test.ts (7 tests) 5ms\n✓ tests/core/resolve-diagram.test.ts (30 tests) 9ms\n✓ tests/core/define-directive.test.ts (31 tests) 8ms\nTest Files  3 passed (3)\nTests  68 passed (68)\nexit 0\n\npnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts\n✓ tests/core/resolve-diagram.test.ts (30 tests) 9ms\n✓ tests/core/layout-capo.test.ts (18 tests) 10ms\n✓ tests/core/diagram-draw.test.ts (12 tests) 69ms\nTest Files  3 passed (3)\nTests  60 passed (60)\nexit 0\n\nAbsolute marker is every key >= 60. pianoSoundingPitchClasses returns mod 12 and skips the heuristic only then. A 14 or 17 beside 0–11, and 48 52 55, stay on the b304ca5 heuristic. transposePianoKeys does not throw. When source keys are all >= 60, transpose adds n and stores 60 + (result mod 12). Other keys outside 0–11 still add n without wrapping. When neither 0–11 candidate round-trips, keys are stored as 60 + pc. chord-dict.ts does not import define.ts. Guitar and ukulele packs were not edited.\n\n{define: D9 keys 0 4 7 14} draws D F# A E (pcs 2, 6, 9, 4). D keys [62, 64] transposed by −60 stores D keys [62, 64], every key >= 60, and draws D and E (pcs 2, 4).\n\n{define: C keys 0 2} +2 stores D keys [62, 64]. transpose() and exportCho({ semitones: 2 }) do not throw. The parsed define draws D and E (pcs 2, 4). That define −2 stores C keys [60, 62] and draws C and D (pcs 0, 2).\n\n408-cell count stayed 17 * 12 * 2. F7sus4 keys 0 5 10 +2 stores G7sus4 keys [7, 0, 5]. Dsus2 keys 0 7 +3 stores Fsus2 keys [5, 0]. Dsus2 keys 0 7 +5 stores Gsus2 keys [0, 7] and draws G D; −5 stores Dsus2 keys [2, 9] and draws D A. D keys 0 4 7 +2 stores E keys [4, 8, 11]. C keys 0 4 7 +2 stores D keys [2, 6, 9]. B keys 11 3 6 +1 stores C keys [0, 4, 7]. C keys 48 52 55 +2 stores keys [50, 54, 57]."
     }
   ]
 }
