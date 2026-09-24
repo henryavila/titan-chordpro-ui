@@ -1,8 +1,8 @@
 {
-  "step": "F",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 16,
-  "updatedAt": "2026-09-24T22:00:43.536Z",
+  "redispatchCount": 17,
+  "updatedAt": "2026-09-24T22:24:35.538Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -92,6 +92,12 @@
       "at": "2026-09-24T20:46:46.404Z",
       "reason": "Operator said continue and resolve every finding. Fix15 review: only a guitar or ukulele line may be dropped when it would hide a piano define, tab and score defines must not take part in that choice, and a quoted chord name stays a miss on every instrument. Do not start F3.",
       "priorCount": 15,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T22:24:35.538Z",
+      "reason": "Phase review found two majors: a define with frets and keys serves only one instrument, and layout applies transposeSemitones on chords transpose() already rewrote. Fix before phase-done. Do not start F3.",
+      "priorCount": 16,
       "gate": "spawn"
     }
   ],

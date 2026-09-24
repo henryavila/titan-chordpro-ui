@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: Run phase-done for F2. Do not start F3 before that.
+nextAction: Fix the two phase-review majors, then review again. Do not start F3.
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -32,11 +32,11 @@ businessIntent:
   doneWhen: tests/core/layout-capo.test.ts, tests/core/resolve-diagram.test.ts e
     tests/core/diagram-draw.test.ts passam; guitarra com capo 2 nao desenha
     voicing de concert; piano ignora capoFret.
-tasksDone: 3
+tasksDone: 1
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 1
-weightDone: 9
+weightDone: 3
 weightTotal: 9
 exitGates:
   - id: F2-G1
@@ -58,9 +58,8 @@ stack:
 tasks:
   - id: T-001
     title: Layout concert / shapeName / capoFret
-    status: done
-    closedAt: 2026-09-20T21:44:13.000Z
-    lastUpdated: 2026-09-20T21:44:13.000Z
+    status: pending
+    lastUpdated: 2026-09-24T22:30:00.000Z
     evidence:
       verifierKind: shell
       verifiedAt: 2026-09-20T21:43:27.000Z
@@ -91,9 +90,8 @@ tasks:
     weight: 3
   - id: T-002
     title: Dictionary + resolveDiagram
-    status: done
-    closedAt: 2026-09-24T21:18:05.000Z
-    lastUpdated: 2026-09-24T21:18:05.000Z
+    status: pending
+    lastUpdated: 2026-09-24T22:30:00.000Z
     evidence:
       verifierKind: shell
       verifiedAt: 2026-09-24T21:18:05.000Z
@@ -182,10 +180,10 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 tasks are closed again. A guitar or ukulele line that loses its frets is dropped only when a piano `{define:}` already has that name. Quoted chord names are a miss. Local review was clean. Codex Astra informed pass approved `ff985dc..006c516`. T-002 and T-003 evidence is on `f20fd9f`. F3 is not started.
-- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Receipt `.atomic-skills/reviews/2026-09-24-1805-diagramas-cifra-f2-fix16-both.md`.
-- **Single nextAction:** Run phase-done for F2. Do not start F3 before that.
+- **Narrative:** F2 phase review of `9b8033a..HEAD` (src and tests) found two majors. T-001 and T-002 are pending again. T-003 stays done. F3 is not started.
+- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Local review of the phase diff: a define with frets and keys serves one instrument; `layoutChartFull` adds `transposeSemitones` on chords `transpose()` already rewrote.
+- **Single nextAction:** Fix the two phase-review majors, then review again. Do not start F3.
 - **Open bug:** none in the host verifiers.
 - **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 stores E keys `[0, 4, 7]` and draws E G# B. C `0 4 7` +2 stores D keys `[0, 4, 7]` and draws D F# A. B `0 4 7` +1 stores C keys `[0, 4, 7]` and draws C E G. `B keys 11 3 6` is distances, not B major. MIDI `48 52 55` +2 is still `[50, 54, 57]`. F7sus4 `0 5 10` +2 stores `G7sus4` keys `[0, 5, 10]` and draws G, C, F. Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D; −5 stores `[0, 7]` and draws D, A. Dsus2 +3 stores `Fsus2` keys `[0, 7]` and draws F, C; −3 stores `[0, 7]` and draws D, A. C `0 2` +2 stores D keys `[0, 2]` and draws D, E; −2 stores C keys `[0, 2]` and draws C, D. D9 `0 4 7 14` draws D, F#, A, E; +2 stores `E9` keys `[0, 4, 7, 14]` and draws E, G#, B, F#. D7M(9)/B keys `9 0 11 2` draws B, D, C#, E. Am `0 3 7` draws A, C, E. Am `9 0 4` draws F#, A, C#. No Vue in core.
-- **Verbatim state:** Plan branch `plan/diagramas-cifra`. HEAD `f20fd9fb4c5377bd395a75b6f4d4baf25f2433bd`. T-002 `pnpm exec vitest run tests/core/resolve-diagram.test.ts` exit 0, 44 tests. T-003 `pnpm exec vitest run tests/core/diagram-draw.test.ts` exit 0, 20 tests. Also define + resolve + export-cho = 101 passed; layout-capo + resolve + diagram-draw = 82 passed. Cursor step E, phaseId F2. Lease cleared. Worktree `diagramas-cifra-F2-fix16` removed.
-- **Uncommitted changes:** clean tree after the T-002 and T-003 checkpoint commit.
+- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Product merge `f20fd9fb4c5377bd395a75b6f4d4baf25f2433bd`. F2-G1 `pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts` exit 0, 82 tests. Evaluation report `.atomic-skills/reviews/eval-diagramas-cifra-F2-r3.md` verdict pass. Local phase review majors: `src/core/resolve-diagram.ts:142` and `src/core/layout.ts:445`. Cursor will move F to C for the fix. Lease clear.
+- **Uncommitted changes:** initiative reopen of T-001 and T-002 is the pending state edit.
