@@ -1436,6 +1436,45 @@ describe('replaceChart returns a file splitCho can read', () => {
     expect(chartBlock(cleared, 'oferta')).toContain('corpo da oferta')
     expect(chartBlock(cleared, 'completa')).toContain('corpo da completa')
   })
+
+  it('keeps a half-typed default marker on the chart being edited', () => {
+    const doc = chartDocument(TWO_CHART_SOURCE).replace('{x_chart_default:oferta}', '{x_chart_default:ofert}')
+    const out = commitChartDocument(TWO_CHART_SOURCE, doc)
+    expect(() => splitCho(out)).not.toThrow()
+    expect(chartBlock(out, 'oferta')).toContain('{x_chart_default:ofert}')
+    expect(chartBlock(out, 'oferta')).toContain('[C]corpo da oferta')
+    expect(chartBlock(out, 'completa')).toContain('[G]corpo da completa')
+    expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
+    expect(listCharts(out).find((c) => c.isDefault)?.id).toBe('oferta')
+    expect(parse(out).source).toContain('{x_chart_default:ofert}')
+    expect(parse(out).source).toContain('corpo da oferta')
+    expect(parse(out).source).not.toContain('corpo da completa')
+    const again = commitChartDocument(out, parse(out).source)
+    expect(parse(again).source).toContain('{x_chart_default:ofert}')
+    expect(parse(again).source).toContain('corpo da oferta')
+    expect(chartBlock(again, 'completa')).toContain('corpo da completa')
+  })
+
+  it('writes the pinned chart when that block is not the one that opens', () => {
+    const file = TWO_CHART_SOURCE.replace('{x_chart_default:oferta}\n', '')
+    expect(listCharts(file).find((c) => c.isDefault)?.id).toBe('completa')
+    const doc = chartDocument(file, 'oferta').replace('corpo da oferta', 'corpo pin')
+    const out = commitChartDocument(file, doc, 'oferta')
+    expect(chartBlock(out, 'oferta')).toContain('corpo pin')
+    expect(chartBlock(out, 'oferta')).not.toContain('corpo da oferta')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    expect(chartBlock(out, 'completa')).not.toContain('corpo pin')
+  })
+
+  it('does not write a marker that names the sibling chart', () => {
+    const doc = chartDocument(TWO_CHART_SOURCE).replace('{x_chart_default:oferta}', '{x_chart_default:completa}')
+    const out = commitChartDocument(TWO_CHART_SOURCE, doc)
+    expect(() => splitCho(out)).not.toThrow()
+    expect(out).not.toContain('x_chart_default')
+    expect(listCharts(out).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(chartBlock(out, 'oferta')).toContain('corpo da oferta')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+  })
 })
 
 describe('no completed pair is one chart', () => {

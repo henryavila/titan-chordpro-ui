@@ -210,17 +210,34 @@ type OpenChart = {
   label: string | null
   inner: string[]
   startLi: number
-  /** `{x_chart_default}` outside tab and score names this chart. */
-  selfDefault: boolean
-  /** `{x_chart_default}` outside tab and score names some other id. */
-  foreignDefault: boolean
+  /** `{x_chart_default}` values outside tab and score, in file order. */
+  defaults: string[]
+}
+
+/**
+ * Exact id: this chart. Exact id of another chart: refused.
+ * Any other value is half-typed — it still selects this chart, not a switch.
+ */
+function classifyChartDefault(
+  id: string,
+  values: readonly string[],
+  ids: readonly string[],
+): { selfDefault: boolean; foreignDefault: boolean } {
+  let selfDefault = false
+  let foreignDefault = false
+  for (const value of values) {
+    if (value === id) selfDefault = true
+    else if (ids.includes(value)) foreignDefault = true
+    else selfDefault = true
+  }
+  return { selfDefault, foreignDefault }
 }
 
 export function splitCho(source: string): SplitCho {
   const text = String(source ?? '').replace(/\r\n?/g, '\n')
   const raws = text.split('\n')
   const charts: FileChart[] = []
-  const flags: { selfDefault: boolean; foreignDefault: boolean }[] = []
+  const markerValues: string[][] = []
   let cur: OpenChart | null = null
   let completed = false
 
@@ -233,7 +250,7 @@ export function splitCho(source: string): SplitCho {
       startLi: cur.startLi,
       endLi,
     })
-    flags.push({ selfDefault: cur.selfDefault, foreignDefault: cur.foreignDefault })
+    markerValues.push(cur.defaults)
     if (byEnd) completed = true
     cur = null
   }
@@ -260,8 +277,7 @@ export function splitCho(source: string): SplitCho {
           label: null,
           inner: [],
           startLi: li,
-          selfDefault: false,
-          foreignDefault: false,
+          defaults: [],
         }
         continue
       }
@@ -276,10 +292,7 @@ export function splitCho(source: string): SplitCho {
     }
     // Inside tab or score the line is notation: not this chart's title, label, or default.
     if (!inNotation && d?.name === 'x_chart_label' && cur.label === null && d.value) cur.label = d.value
-    if (!inNotation && d?.name === 'x_chart_default') {
-      if (d.value === cur.id) cur.selfDefault = true
-      else cur.foreignDefault = true
-    }
+    if (!inNotation && d?.name === 'x_chart_default') cur.defaults.push(d.value)
     cur.inner.push(raw)
   }
   flush(raws.length)
@@ -297,6 +310,8 @@ export function splitCho(source: string): SplitCho {
   }
 
   if (outside) throw new ChartEnvelopeError('chart file has text outside chart blocks')
+  const ids = charts.map((c) => c.id)
+  const flags = markerValues.map((values, i) => classifyChartDefault(ids[i] ?? '', values, ids))
   if (flags.some((f) => f.foreignDefault)) {
     throw new ChartEnvelopeError('x_chart_default names a different chart')
   }
@@ -894,11 +909,16 @@ function documentMarksItself(text: string, id: string): boolean {
 /**
  * The document replaces that chart. Title bytes stay as written.
  * A label omitted from the document stays. Fences are stripped so `splitCho`
- * can read the file. A self-marker in the document is kept; a marker that
- * names another chart is not written in. A marker the document removed is
- * not put back. Notation stays.
+ * can read the file. A self-marker in the document is kept. A marker that
+ * exactly names another chart is not written in. A half-typed marker stays;
+ * it is not a switch. A marker the document removed is not put back.
+ * Notation stays.
  */
-function chartInnerFromDocument(chart: FileChart, document: string): string {
+function chartInnerFromDocument(
+  chart: FileChart,
+  document: string,
+  chartIds: readonly string[],
+): string {
   const stripped = stripEnvelopeFences(document)
   const lines = stripped.length ? stripped.split('\n') : []
   const inside = notationInside(lines)
@@ -906,7 +926,9 @@ function chartInnerFromDocument(chart: FileChart, document: string): string {
     if (inside[i]) return true
     const d = dirOf(line)
     if (!d || d.name !== 'x_chart_default') return true
-    return d.value === chart.id
+    if (d.value === chart.id) return true
+    // Finished name of a sibling. A prefix such as `ofert` is not that name.
+    return !chartIds.includes(d.value)
   })
   let text = body.join('\n')
   if (!outsideNamedLines(text, 'x_chart_label').length) {
@@ -933,7 +955,11 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   if (index < 0) return src
   const chart = split.charts[index]!
   const inners = split.charts.map((c) => c.inner)
-  const nextInner = chartInnerFromDocument(chart, document)
+  const nextInner = chartInnerFromDocument(
+    chart,
+    document,
+    split.charts.map((c) => c.id),
+  )
   inners[index] = nextInner
   // One self-marker. The document claimed default, so the sibling's marker goes.
   if (documentMarksItself(nextInner, chart.id)) {
@@ -947,8 +973,11 @@ export function replaceChart(file: string, chartId: string, doc: string): string
 
 /**
  * Write a chart document back. No envelope: `default` replaces the file.
- * With an envelope: only the default chart changes; the sibling stays.
+ * With an envelope: `chartId` when that block is in the file, otherwise the
+ * chart that opens. The sibling stays. A half-typed marker is not a switch.
  */
-export function commitChartDocument(file: string, document: string): string {
-  return replaceChart(file, splitCho(file).defaultId, document)
+export function commitChartDocument(file: string, document: string, chartId?: string): string {
+  const split = splitCho(file)
+  const pinned = chartId && split.charts.some((c) => c.id === chartId) ? chartId : split.defaultId
+  return replaceChart(file, pinned, document)
 }

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { chartBody, memoryStore } from '../../src/core'
+import { chartBody, memoryStore, parse } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
 import MetaDialog from '../../src/vue/edit/MetaDialog.vue'
 import { loadFixture } from '../helpers/load-fixture'
@@ -164,6 +164,57 @@ describe('MetaDialog', () => {
     expect(next).not.toContain('{artist:')
     expect(next).toContain('{tempo:100}')
     expect(next).not.toContain('{tempo:80}')
+  })
+
+  it('clearing the title removes a later {t:} that readMeta left hidden', async () => {
+    const src = '{title:}\n{t:Second}\n[C]song\n'
+    const w = dialog(src)
+    expect((w.get('[data-meta-title]').element as HTMLInputElement).value).toBe('')
+    await w.get('[data-meta-title]').setValue('')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(parse(next).meta.title ?? '').toBe('')
+    expect(parse(next).meta.title).not.toBe('Second')
+    expect(next).not.toContain('Second')
+    expect(next).toContain('[C]song')
+  })
+
+  it('clearing the open chart title removes its later {t:} and keeps the sibling', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:First}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:}',
+      '{t:Second}',
+      '{x_chart_default:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    await w.get('[data-meta-title]').setValue('')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(parse(next).meta.title ?? '').toBe('')
+    expect(parse(next, { chartId: 'completa' }).meta.title).toBe('First')
+    expect(next).not.toContain('Second')
+    expect(next).toContain('[G]completa')
+    expect(next).toContain('[C]oferta')
+    expect(next).toContain('{x_chart_default:oferta}')
+    expect(next.slice(0, next.indexOf('{start_of_x_chart')).trim()).toBe('')
+  })
+
+  it('a tempo save does not clear a later short title the field did not edit', async () => {
+    const src = '{title:}\n{t:Second}\n{tempo:80}\n[C]song\n'
+    const w = dialog(src)
+    await w.get('[data-meta-tempo]').setValue('100')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(parse(next).meta.title).toBe('Second')
+    expect(next).toContain('{t:Second}')
+    expect(next).toContain('{tempo:100}')
+    expect(next).toContain('[C]song')
   })
 })
 
