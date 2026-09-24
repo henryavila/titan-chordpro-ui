@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix7",
-  "writerBranch": "impl/versoes-cifra-F0-fix7",
-  "finishedAt": "2026-09-23T22:04:24Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix8",
+  "writerBranch": "impl/versoes-cifra-F0-fix8",
+  "finishedAt": "2026-09-24T10:09:42Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -11,48 +11,32 @@
       "commitShas": ["275abe489d77d53c88d0d0e8a4207619b044edaa"],
       "base": null,
       "head": null,
-      "paths": [
-        "src/core/charts.ts",
-        "src/core/index.ts",
-        "tests/core/charts-envelope.test.ts"
-      ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts",
+      "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  6 passed (6)\nTests  152 passed (152)\nDuration  2.64s"
+      "transcript": "Test Files  7 passed (7)\nTests  159 passed (159)\nDuration  2.78s\nexit 0"
     },
     {
       "taskId": "T-002",
       "status": "claimed-pass",
-      "commitShas": ["b59b3b3730bb033e96b35d088b9c2dcb29508dcc"],
+      "commitShas": ["064926f71aba1ad9cb569ddef50aa550971e092e"],
       "base": null,
       "head": null,
-      "paths": [
-        "src/core/charts.ts",
-        "src/core/index.ts",
-        "src/core/parse.ts",
-        "tests/core/charts-envelope.test.ts"
-      ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts",
+      "paths": ["src/core/parse.ts"],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  6 passed (6)\nTests  152 passed (152)\nDuration  2.64s"
+      "transcript": "Test Files  7 passed (7)\nTests  159 passed (159)\nDuration  2.78s\nexit 0"
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["7214bd9265ed99966e0e0316759feb7eb45f4bab"],
+      "commitShas": ["5f0f408610a4cad35db54b66cc29d86c8e4259a1"],
       "base": null,
       "head": null,
-      "paths": [
-        "src/core/charts.ts",
-        "src/core/import-chordpro.ts",
-        "src/vue/ChordproViewer.vue",
-        "tests/core/audio-url.test.ts",
-        "tests/core/charts-envelope.test.ts",
-        "tests/vue/block-edit-ui.test.ts"
-      ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts",
+      "paths": ["src/core/charts.ts", "tests/core/charts-envelope.test.ts", "tests/core/audio-url.test.ts"],
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/import-chordpro.test.ts tests/core/audio-url.test.ts tests/core/no-vue-in-core.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  6 passed (6)\nTests  152 passed (152)\nDuration  2.64s"
+      "transcript": "Test Files  7 passed (7)\nTests  159 passed (159)\nDuration  2.78s\nexit 0"
     }
   ]
 }
