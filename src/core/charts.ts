@@ -146,21 +146,23 @@ function songIdentityMetaKey(name: string): MetaKey | null {
 
 function readMetaLines(source: string): ChartMeta {
   const meta: ChartMeta = {}
-  String(source ?? '')
-    .split('\n')
-    .forEach((l) => {
-      const d = dirOf(l)
-      if (!d) return
-      // Raw song identity may omit the colon (`{title Uma}`) or use `{composer:}`.
-      // Sound keys still need a colon, so `{key C}` is not a second header key.
-      const colonForm = /^\s*\{\s*[a-zA-Z_]+\s*:/.test(l)
-      const ident = songIdentityMetaKey(d.name)
-      if (!colonForm && !ident) return
-      const canon = canonicalMetaKey(d.name) ?? ident
-      if (!canon) return
-      const exact = (META_KEYS as readonly string[]).includes(d.name)
-      if (exact || meta[canon] === undefined) meta[canon] = d.value
-    })
+  const block = { tab: false, score: false }
+  for (const l of String(source ?? '').split('\n')) {
+    const d = dirOf(l)
+    if (!d) continue
+    const where = stepBlock(d.name, block)
+    // A name inside tab or score is notation, not the song credit.
+    if (where === 'in' && songIdentityMetaKey(d.name)) continue
+    // Raw song identity may omit the colon (`{title Uma}`) or use `{composer:}`.
+    // Sound keys still need a colon, so `{key C}` is not a second header key.
+    const colonForm = /^\s*\{\s*[a-zA-Z_]+\s*:/.test(l)
+    const ident = songIdentityMetaKey(d.name)
+    if (!colonForm && !ident) continue
+    const canon = canonicalMetaKey(d.name) ?? ident
+    if (!canon) continue
+    const exact = (META_KEYS as readonly string[]).includes(d.name)
+    if (exact || meta[canon] === undefined) meta[canon] = d.value
+  }
   return meta
 }
 
@@ -251,15 +253,18 @@ function isEnvelopeName(name: string): boolean {
 }
 
 function songIdentityHeader(header: string): string {
-  return header
-    .split('\n')
-    .filter((line) => {
-      const d = dirOf(line)
-      if (!d) return false
-      const canon = songMetaKey(d.name)
-      return canon !== null && canon !== 'x_chart_default'
-    })
-    .join('\n')
+  const block = { tab: false, score: false }
+  const out: string[] = []
+  for (const line of header.split('\n')) {
+    const d = dirOf(line)
+    if (!d) continue
+    // The block stays in the file. The chart document must not see its names
+    // without the tab or score fences, or they become the song credit.
+    if (stepBlock(d.name, block) === 'in') continue
+    const canon = songMetaKey(d.name)
+    if (canon !== null && canon !== 'x_chart_default') out.push(line)
+  }
+  return out.join('\n')
 }
 
 function chartDocBody(inner: string): string {

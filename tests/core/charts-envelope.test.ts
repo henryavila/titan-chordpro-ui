@@ -704,7 +704,10 @@ describe('chart document edits and x_chart_default', () => {
       expect(parse(src).meta.artist).toBe('Bach')
       const saved = writeSongScopedMeta(src, { subtitle: 'X' })
       expect(parse(saved).meta.artist).toBe('Bach')
-      expect(saved).toContain('{composer:Bach}')
+      expect(readMeta(saved).artist).toBe('Bach')
+      const openAt = saved.indexOf(open)
+      const closeAt = saved.indexOf(close)
+      expect(saved.slice(openAt, closeAt)).toContain('{artist:Local}')
       expect(saved).toContain('{subtitle:X}')
       expect(saved).toContain('[C]song')
     }
@@ -763,6 +766,40 @@ describe('chart document edits and x_chart_default', () => {
       expect(saved.slice(openAt, closeAt)).toContain('{composer:Bach}')
       expect(saved).toContain('[C]song')
     }
+  })
+
+  it('an explicit artist edit wins over a credit kept inside a header tab', () => {
+    const file = [
+      '{artist:Local}',
+      '{sot}',
+      '{composer:Bach}',
+      '{eot}',
+      '{start_of_x_chart:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const saved = writeSongScopedMeta(file, { artist: 'Novo' })
+    expect(parse(saved).meta.artist).toBe('Novo')
+    expect(readMeta(saved).artist).toBe('Novo')
+    const openAt = saved.indexOf('{sot}')
+    const closeAt = saved.indexOf('{eot}')
+    expect(saved.slice(openAt, closeAt)).toContain('{composer:Bach}')
+    expect(saved).toContain('[C]oferta')
+  })
+
+  it('readMeta agrees with parse after an edit when a tab still holds the old artist', () => {
+    const src = '{artist:Local}\n{sot}\n{artist:Bach}\n{eot}\n[C]song\n'
+    const saved = writeSongScopedMeta(src, { artist: 'Novo' })
+    expect(parse(saved).meta.artist).toBe('Novo')
+    expect(readMeta(saved).artist).toBe('Novo')
+    const openAt = saved.indexOf('{sot}')
+    const closeAt = saved.indexOf('{eot}')
+    expect(saved.slice(openAt, closeAt)).toContain('{artist:Bach}')
+
+    const cleared = writeSongScopedMeta(src, { artist: '' })
+    expect(parse(cleared).meta.artist).toBeUndefined()
+    expect(readMeta(cleared).artist).toBeUndefined()
+    expect(cleared.slice(cleared.indexOf('{sot}'), cleared.indexOf('{eot}'))).toContain('{artist:Bach}')
   })
 
   it('a new identity value replaces the alias inside the default chart only', () => {
