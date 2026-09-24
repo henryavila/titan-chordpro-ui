@@ -283,7 +283,11 @@ function musicOf(block: ChartBlockDraft, srcLines: string[]): BlockMusic {
 }
 
 export type LayoutOpts = {
-  /** Global transpose, in semitones (defaults to the view's own). */
+  /**
+   * Semitones applied once to a view still in the written key.
+   * Omitted means 0: `transpose()` already rewrote the chords and stored
+   * the same count on `view.transposeSemitones`.
+   */
   semitones?: number
   /** Capo of the song. */
   capo?: number
@@ -442,7 +446,7 @@ export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlo
  * not change.
  */
 export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): ChartLayout {
-  const semis = opts.semitones ?? view.transposeSemitones
+  const semis = opts.semitones ?? 0
   const capo = Math.max(0, opts.capo ?? 0)
   const editing = !!opts.editing
   const flats = usesFlats(view.meta.key)
