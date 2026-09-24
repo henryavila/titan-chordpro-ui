@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix14",
-  "writerBranch": "impl/versoes-cifra-F0-fix14",
-  "finishedAt": "2026-09-24T16:23:49.000Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix15",
+  "writerBranch": "impl/versoes-cifra-F0-fix15",
+  "finishedAt": "2026-09-24T21:04:10Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -14,7 +14,7 @@
       "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "Included in the fix14 self-check. tests/core/charts-envelope.test.ts: 68 passed. Combined command exit 0."
+      "transcript": "Sealed redispatch keeps this historical SHA only. Not rebuilt in this pass."
     },
     {
       "taskId": "T-002",
@@ -25,18 +25,25 @@
       "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts",
       "exitCode": 0,
-      "transcript": "Included in the fix14 self-check. tests/core/charts-envelope.test.ts: 68 passed. Combined command exit 0."
+      "transcript": "Sealed redispatch keeps this historical SHA only. Not rebuilt in this pass."
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["b013bb004b2aa55a8109ded90ef2bd2b21e3ebac"],
+      "commitShas": ["2230f6e8237fac32d51788b2c2d01ad1eeed801a"],
       "base": null,
       "head": null,
-      "paths": ["src/core/import-chordpro.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
+      "paths": [
+        "src/core/charts.ts",
+        "src/core/import-chordpro.ts",
+        "src/core/audio-url.ts",
+        "tests/core/charts-envelope.test.ts",
+        "tests/core/audio-url.test.ts"
+      ],
       "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files 5 passed (5). Tests 147 passed (147). charts-envelope 68, audio-url 31, import-chordpro 43, no-vue-in-core 1, sda-fixtures 4. Exit 0."
+      "transcript": "Test Files  5 passed (5). Tests  140 passed (140). Exit 0. N>1 files are chart blocks only; outside text is refused; the self-marker selects the open chart; setAudioUrl writes one audio field on that chart and keeps each title.",
+      "notes": "Did not edit tests/vue/block-edit-ui.test.ts or tests/vue/meta-dialog.test.ts. Both still put a song header outside chart blocks and are outside src/core and tests/core."
     }
   ]
 }
