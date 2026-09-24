@@ -63,6 +63,60 @@ describe('resolveDiagram', () => {
     expect(r.voicing.frets).toEqual(['x', 3, 2, 1, 1, 0])
   })
 
+  it('hits a keys-only Caug define from the leading note, not unknown-token', () => {
+    const keysOnly = parseDefineDirective('{define: Caug keys 0 4 8}')
+    expect(keysOnly.class).toBe('parse')
+    if (keysOnly.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [keysOnly] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.source).toBe('override')
+    expect(hit.voicing.keys).toEqual([0, 4, 8])
+  })
+
+  it('hits Caug frets-plus-keys on piano from the leading note and the keys', () => {
+    const raw = parseDefineDirective('{define: Caug frets x 3 2 1 1 0 keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('piano')
+    const hit = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.source).toBe('override')
+    expect(hit.voicing.keys).toEqual([0, 4, 8])
+    expect(hit.voicing.keys?.length).toBeGreaterThan(0)
+  })
+
+  it('misses a piano define whose name has no root letter', () => {
+    const raw = parseDefineDirective('{define: aug keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(resolveDiagram({ token: 'aug', instrument: 'piano', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+  })
+
+  it('misses C7+ on piano even when the define has keys', () => {
+    const raw = parseDefineDirective('{define: C7+ keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(resolveDiagram({ token: 'C7+', instrument: 'piano', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+  })
+
+  it('reads MIDI keys on an unknown piano name from the leading note', () => {
+    const raw = parseDefineDirective('{define: Daug keys 48 52 56}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'Daug', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.voicing.keys).toEqual([10, 2, 6])
+  })
+
   it('prefers a file override over the package dictionary', () => {
     const dict = resolveDiagram({ token: 'Am', instrument: 'guitar' })
     expect(dict.class).toBe('hit')

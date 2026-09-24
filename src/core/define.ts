@@ -213,9 +213,10 @@ function transposePianoKeys(keys: readonly number[], n: number): number[] {
 /**
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop the
  * fret shape if any string is open (fret 0) or the new base would fall
- * below 1. Piano keys still transpose in that case — the define is not
- * deleted. Distances stay as written; only the chord name changes. MIDI
- * adds n and stays >= 48 without folding into one octave.
+ * below 1. Keys that remain become a generic piano `{define:}` — a
+ * `{define-guitar:}` / `{define-ukulele:}` line without its frets does not
+ * parse. Distances stay as written; only the chord name changes. MIDI
+ * adds n and stays >= 48 without folding into one octave. Does not throw.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
@@ -227,10 +228,12 @@ export function transposeDefine(def: ChordDefine, n: number, flats: boolean): Ch
   const fretsMove = hasFrets && !open && nextBase >= 1
   if (!fretsMove && !hasKeys) return null
 
+  // Dropped frets cannot stay on a stringed directive: that line is a miss.
+  const pianoOnly = !fretsMove && hasKeys
   const next: ChordDefine = {
     name: transposeToken(def.name, n, flats),
-    instrument: def.instrument,
-    directive: def.directive,
+    instrument: pianoOnly ? 'piano' : def.instrument,
+    directive: pianoOnly ? 'define' : def.directive,
   }
   if (fretsMove && frets) {
     next.baseFret = nextBase
