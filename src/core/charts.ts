@@ -1,7 +1,17 @@
 /**
  * Named charts in one song file. `{start_of_x_chart: id}` … `{end_of_x_chart}`.
- * No envelope = one implicit chart `id=default`. `{new_song}` is not used.
+ * No pair = one implicit chart `id=default`. `{new_song}` is not used.
+ * N>1: the file is only those blocks (blank lines between them are allowed).
+ * Title, artist, key, duration, and audio live inside the block that owns them.
  */
+
+/** The file has chart blocks plus some other top-level text, or a bad default marker. */
+export class ChartEnvelopeError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ChartEnvelopeError'
+  }
+}
 
 export type ChartInfo = {
   id: string
@@ -169,9 +179,9 @@ function readMetaLines(source: string): ChartMeta {
 }
 
 /**
- * No envelope: the whole file, same as before.
- * With `{start_of_x_chart}`: song identity plus the default chart only.
- * A later sibling `{key:}` or audio line must not win.
+ * No pair: the whole file, same as before.
+ * With chart blocks: the chart that opens, read from inside that block.
+ * A sibling key or title must not win. Outside text is refused.
  */
 export function readMeta(source: string): ChartMeta {
   const text = String(source ?? '')
@@ -179,11 +189,23 @@ export function readMeta(source: string): ChartMeta {
   return readMetaLines(chartDocument(text))
 }
 
+type OpenChart = {
+  id: string
+  label: string | null
+  inner: string[]
+  startLi: number
+  /** `{x_chart_default}` outside tab and score names this chart. */
+  selfDefault: boolean
+  /** `{x_chart_default}` outside tab and score names some other id. */
+  foreignDefault: boolean
+}
+
 export function splitCho(source: string): SplitCho {
   const text = String(source ?? '').replace(/\r\n?/g, '\n')
   const raws = text.split('\n')
   const charts: FileChart[] = []
-  let cur: { id: string; label: string | null; inner: string[]; startLi: number } | null = null
+  const flags: { selfDefault: boolean; foreignDefault: boolean }[] = []
+  let cur: OpenChart | null = null
 
   const flush = (endLi: number) => {
     if (!cur) return
@@ -194,53 +216,53 @@ export function splitCho(source: string): SplitCho {
       startLi: cur.startLi,
       endLi,
     })
+    flags.push({ selfDefault: cur.selfDefault, foreignDefault: cur.foreignDefault })
     cur = null
   }
 
-  const block = { tab: false, score: false }
+  // Notation state resets on a chart fence. An open tab must not hide the next chart.
+  let block = { tab: false, score: false }
   let seenChart = false
-  let outsideDefault: string | null = null
-  let insideDefault: string | null = null
-  let clearedOutside = false
+  let outside = false
 
   for (let li = 0; li < raws.length; li++) {
     const raw = raws[li] ?? ''
     const d = dirOf(raw)
+    if (d?.name === 'start_of_x_chart' || d?.name === 'end_of_x_chart') {
+      block = { tab: false, score: false }
+      if (d.name === 'start_of_x_chart') {
+        seenChart = true
+        flush(li)
+        if (!isChartId(d.value)) {
+          outside = true
+          continue
+        }
+        cur = {
+          id: d.value,
+          label: null,
+          inner: [],
+          startLi: li,
+          selfDefault: false,
+          foreignDefault: false,
+        }
+        continue
+      }
+      if (cur) flush(li)
+      else if (seenChart) outside = true
+      continue
+    }
     const inNotation = d ? stepBlock(d.name, block) === 'in' : block.tab || block.score
-    // `{end_of_x_chart}` / `{start_of_x_chart}` inside tab or score are notation.
-    // They do not open or close a chart. A header `{x_chart_default}` there is
-    // only the fallback when no selector sits outside the notation block.
-    if (inNotation) {
-      if (!seenChart && d?.name === 'x_chart_default' && isChartId(d.value)) insideDefault = d.value
-      if (cur) {
-        if (d?.name === 'x_chart_label' && cur.label === null && d.value) cur.label = d.value
-        cur.inner.push(raw)
-      }
+    if (!cur) {
+      if (raw.trim() !== '') outside = true
       continue
     }
-    if (d?.name === 'start_of_x_chart') {
-      seenChart = true
-      flush(li)
-      cur = isChartId(d.value) ? { id: d.value, label: null, inner: [], startLi: li } : null
-      continue
+    // Inside tab or score the line is notation: not this chart's title, label, or default.
+    if (!inNotation && d?.name === 'x_chart_label' && cur.label === null && d.value) cur.label = d.value
+    if (!inNotation && d?.name === 'x_chart_default') {
+      if (d.value === cur.id) cur.selfDefault = true
+      else cur.foreignDefault = true
     }
-    if (d?.name === 'end_of_x_chart') {
-      flush(li)
-      continue
-    }
-    if (!seenChart && d?.name === 'x_chart_default') {
-      if (isChartId(d.value)) {
-        outsideDefault = d.value
-        clearedOutside = false
-      } else {
-        outsideDefault = null
-        clearedOutside = true
-      }
-    }
-    if (cur) {
-      if (d?.name === 'x_chart_label' && cur.label === null && d.value) cur.label = d.value
-      cur.inner.push(raw)
-    }
+    cur.inner.push(raw)
   }
   flush(raws.length)
 
@@ -254,9 +276,15 @@ export function splitCho(source: string): SplitCho {
     }
   }
 
+  if (outside) throw new ChartEnvelopeError('chart file has text outside chart blocks')
+  if (flags.some((f) => f.foreignDefault)) {
+    throw new ChartEnvelopeError('x_chart_default names a different chart')
+  }
+  const selves = flags.filter((f) => f.selfDefault).length
+  if (selves > 1) throw new ChartEnvelopeError('more than one chart marks itself default')
+  const selfAt = flags.findIndex((f) => f.selfDefault)
   const header = raws.slice(0, charts[0]!.startLi).join('\n')
-  const picked = outsideDefault ?? (clearedOutside ? null : insideDefault)
-  const named = picked && charts.some((c) => c.id === picked) ? picked : charts[0]!.id
+  const named = selfAt >= 0 ? charts[selfAt]!.id : charts[0]!.id
   return { hasEnvelope: true, header, charts, defaultId: named, raws }
 }
 
@@ -269,45 +297,6 @@ export function listCharts(source: string): ChartInfo[] {
   }))
 }
 
-function isEnvelopeName(name: string): boolean {
-  return (
-    name === 'start_of_x_chart' ||
-    name === 'end_of_x_chart' ||
-    name === 'x_chart_label' ||
-    name === 'x_chart_default'
-  )
-}
-
-function songIdentityHeader(header: string): string {
-  const block = { tab: false, score: false }
-  const out: string[] = []
-  for (const line of header.split('\n')) {
-    const d = dirOf(line)
-    if (!d) continue
-    // The block stays in the file. The chart document must not see its names
-    // without the tab or score fences, or they become the song credit.
-    if (stepBlock(d.name, block) === 'in') continue
-    const canon = songMetaKey(d.name)
-    if (canon !== null && canon !== 'x_chart_default') out.push(line)
-  }
-  return out.join('\n')
-}
-
-function chartDocBody(inner: string): string {
-  const block = { tab: false, score: false }
-  return inner
-    .split('\n')
-    .filter((line) => {
-      const d = dirOf(line)
-      if (!d) return true
-      // Identity and `{x_chart_default}` inside tab or score are notation.
-      // Filtering them out would make a later save delete the line.
-      if (stepBlock(d.name, block) === 'in') return true
-      return !isEnvelopeName(d.name)
-    })
-    .join('\n')
-}
-
 export function resolveChartId(source: string, chartId?: string): string {
   const split = splitCho(source)
   if (chartId && split.charts.some((c) => c.id === chartId)) return chartId
@@ -315,17 +304,16 @@ export function resolveChartId(source: string, chartId?: string): string {
 }
 
 /**
- * One-chart ChordPro: song title/artist plus that chart's sound and body.
- * No sibling charts, no envelope directives. File without envelope is unchanged.
+ * The chart that opens, or `chartId` when that block exists.
+ * No pair: the whole file. N>1: that block's own text, fences not included.
+ * Title and artist are already inside the block. No sibling body.
  */
 export function chartDocument(source: string, chartId?: string): string {
   const split = splitCho(source)
   if (!split.hasEnvelope) return split.header
   const id = resolveChartId(source, chartId)
   const chart = split.charts.find((c) => c.id === id) ?? split.charts[0]!
-  const identity = songIdentityHeader(split.header)
-  const body = chartDocBody(chart.inner)
-  return [identity, body].filter((s) => s.length > 0).join('\n')
+  return chart.inner
 }
 
 function linesOf(text: string): string[] {
@@ -341,9 +329,8 @@ function readKeyed(text: string, which: 'song' | 'chart'): Record<string, string
   for (const line of text.split('\n')) {
     const d = dirOf(line)
     if (!d) continue
-    // A credit inside tab or score stays on that line. `{x_chart_default}` there
-    // is notation: do not copy it onto the header.
-    if (which === 'song' && stepBlock(d.name, block) === 'in' && songMetaKey(d.name)) continue
+    // A name inside tab or score is notation. Do not copy it out.
+    if (stepBlock(d.name, block) === 'in') continue
     const canon = resolve(d.name)
     if (!canon) continue
     const exact = (keys as readonly string[]).includes(d.name)
@@ -529,7 +516,9 @@ function metaTrim(value: string | undefined): string {
 }
 
 /**
- * Identity keys copied from `readMeta` that this patch must not apply.
+ * One-chart files only. N>1 does not use this: a key in the patch is the field
+ * to change, and the value is not compared to decide whether it was copied.
+ *
  * Each key is classified on its own. A value that differs from `readMeta`,
  * including `''`, is an edit. A value that still equals `readMeta` is a copy
  * when another identity key is also in the patch, or when a sound edit is the
@@ -595,59 +584,6 @@ function patchIdentityKeep(
   return keep
 }
 
-function appliedIdentityKeys(
-  patch: MetaPatch,
-  keep: ReadonlySet<string>,
-  keys: readonly string[],
-): Set<ParseIdentityKey> {
-  const out = new Set<ParseIdentityKey>()
-  for (const key of PARSE_IDENTITY_KEYS) {
-    if (!keys.includes(key)) continue
-    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
-    if (keep.has(key)) continue
-    out.add(key)
-  }
-  return out
-}
-
-/** Drop applied identity aliases. Lines inside tab or score stay. */
-function stripSongIdentity(inner: string, keys: ReadonlySet<string>): string {
-  const block = { tab: false, score: false }
-  const out: string[] = []
-  for (const line of inner.split('\n')) {
-    const d = dirOf(line)
-    if (!d) {
-      out.push(line)
-      continue
-    }
-    if (stepBlock(d.name, block) === 'in') {
-      out.push(line)
-      continue
-    }
-    const ident = songIdentityMetaKey(d.name)
-    if (ident && keys.has(ident)) continue
-    out.push(line)
-  }
-  return out.join('\n')
-}
-
-function keepSongHeaderLine(
-  line: string,
-  block: { tab: boolean; score: boolean },
-  keep: ReadonlySet<string>,
-  dropNotationDefault: boolean,
-): boolean {
-  const d = dirOf(line)
-  if (!d) return true
-  const where = stepBlock(d.name, block)
-  // An explicit clear removes `{x_chart_default}` inside a header tab.
-  // Otherwise that copy stays; it is not rewritten onto the header.
-  if (where === 'in' && d.name === 'x_chart_default') return !dropNotationDefault
-  if (where === 'in' && songIdentityMetaKey(d.name)) return true
-  if (identityLineKept(d.name, keep)) return true
-  return songMetaKey(d.name) === null
-}
-
 function writeFlatScoped(
   source: string,
   patch: MetaPatch,
@@ -673,34 +609,135 @@ function writeFlatScoped(
 
 export type SongMetaWriteOpts = { copyKeys?: ReadonlySet<string> }
 
-/** Rewrite song-header keys; never strip `{key:}` / `{duration:}` from chart blocks. */
+const CHART_IDENTITY_KEYS = ['title', 'subtitle', 'artist', 'x_source', 'x_youtube'] as const
+
+/** Change identity lines in one chart. Sound lines and notation stay put. */
+function patchIdentityInPlace(inner: string, patch: MetaPatch): string {
+  const wanted = new Map<string, string>()
+  for (const key of CHART_IDENTITY_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
+    wanted.set(key, (patch[key] ?? '').trim())
+  }
+  if (!wanted.size) return inner
+  const lines = inner.length ? inner.split('\n') : []
+  const block = { tab: false, score: false }
+  const replaced = new Set<string>()
+  const out: string[] = []
+  for (const line of lines) {
+    const d = dirOf(line)
+    if (!d) {
+      out.push(line)
+      continue
+    }
+    if (stepBlock(d.name, block) === 'in') {
+      out.push(line)
+      continue
+    }
+    const ident = songIdentityMetaKey(d.name)
+    if (!ident || !wanted.has(ident)) {
+      out.push(line)
+      continue
+    }
+    if (replaced.has(ident)) continue
+    replaced.add(ident)
+    const value = wanted.get(ident) ?? ''
+    if (value) out.push('{' + ident + ':' + value + '}')
+  }
+  const missing: string[] = []
+  for (const [ident, value] of wanted) {
+    if (replaced.has(ident) || !value) continue
+    missing.push('{' + ident + ':' + value + '}')
+  }
+  if (!missing.length) return out.join('\n')
+  return [...missing, ...out].join('\n')
+}
+
+function notationInside(lines: string[]): boolean[] {
+  const block = { tab: false, score: false }
+  return lines.map((line) => {
+    const d = dirOf(line)
+    if (!d) return block.tab || block.score
+    return stepBlock(d.name, block) === 'in'
+  })
+}
+
+function stripDefaultMarkers(inner: string): string {
+  if (!inner) return ''
+  const lines = inner.split('\n')
+  const inside = notationInside(lines)
+  return lines
+    .filter((line, i) => inside[i] || dirOf(line)?.name !== 'x_chart_default')
+    .join('\n')
+}
+
+function withSelfMarker(inner: string, id: string): string {
+  const stripped = stripDefaultMarkers(inner)
+  const marker = '{x_chart_default:' + id + '}'
+  return stripped ? marker + '\n' + stripped : marker
+}
+
+function withChartInners(split: SplitCho, inners: string[]): string {
+  let raws = split.raws
+  for (let i = split.charts.length - 1; i >= 0; i--) {
+    const next = inners[i] ?? ''
+    if (next === split.charts[i]!.inner) continue
+    raws = spliceInner(raws, split.charts[i]!, next)
+  }
+  return raws.join('\n')
+}
+
+/**
+ * N>1 write. One chart, only the keys in `allowed` that the patch names.
+ * No shared header. `{x_chart_default}` moves the self-marker; other fields
+ * stay on `chartId` (the chart that was open, or the chart the caller named).
+ */
+function writeEnvelopeMeta(
+  split: SplitCho,
+  patch: MetaPatch,
+  allowed: readonly string[],
+  chartId: string,
+): string {
+  const index = split.charts.findIndex((c) => c.id === chartId)
+  if (index < 0) return split.raws.join('\n')
+  const inners = split.charts.map((c) => c.inner)
+  const songPatch: MetaPatch = {}
+  const soundPatch: MetaPatch = {}
+  for (const key of allowed) {
+    if (key === 'x_chart_default') continue
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
+    if ((CHART_IDENTITY_KEYS as readonly string[]).includes(key)) songPatch[key] = patch[key]
+    else if ((CHART_SOUND_KEYS as readonly string[]).includes(key)) soundPatch[key] = patch[key]
+  }
+  const current = inners[index] ?? ''
+  let next = current
+  if (Object.keys(songPatch).length) next = patchIdentityInPlace(next, songPatch)
+  if (Object.keys(soundPatch).length) next = rewriteChartInner(next, soundPatch)
+  inners[index] = next
+  if (
+    (allowed as readonly string[]).includes('x_chart_default') &&
+    Object.prototype.hasOwnProperty.call(patch, 'x_chart_default')
+  ) {
+    const raw = (patch.x_chart_default ?? '').trim()
+    if (!raw) {
+      for (let i = 0; i < inners.length; i++) inners[i] = stripDefaultMarkers(inners[i] ?? '')
+    } else if (!split.charts.some((c) => c.id === raw)) {
+      throw new ChartEnvelopeError('x_chart_default names a different chart')
+    } else {
+      for (let i = 0; i < inners.length; i++) {
+        const id = split.charts[i]!.id
+        inners[i] = id === raw ? withSelfMarker(inners[i] ?? '', id) : stripDefaultMarkers(inners[i] ?? '')
+      }
+    }
+  }
+  return withChartInners(split, inners)
+}
+
+/** Rewrite song-header keys on a one-chart file. N>1 patches the open chart only. */
 export function writeSongScopedMeta(source: string, patch: MetaPatch, opts?: SongMetaWriteOpts): string {
   const copyKeys = opts?.copyKeys ?? new Set<string>()
   const split = splitCho(source)
   if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS, copyKeys)
-  const first = split.charts[0]!
-  const headerLines = split.raws.slice(0, first.startLi)
-  const keep = patchIdentityKeep(source, patch, SONG_META_KEYS, copyKeys)
-  const dropNotationDefault =
-    Object.prototype.hasOwnProperty.call(patch, 'x_chart_default') && metaTrim(patch.x_chart_default) === ''
-  const next = applyPatch(readKeyed(headerLines.join('\n'), 'song'), patch, SONG_META_KEYS)
-  for (const key of keep) delete next[key]
-  const applied = appliedIdentityKeys(patch, keep, SONG_META_KEYS)
-  let raws = split.raws
-  if (applied.size) {
-    const chart = split.charts.find((c) => c.id === split.defaultId)
-    if (chart) raws = spliceInner(raws, chart, stripSongIdentity(chart.inner, applied))
-  }
-  const block = { tab: false, score: false }
-  const rest = headerLines
-    .filter((line) => keepSongHeaderLine(line, block, keep, dropNotationDefault))
-    .join('\n')
-    .replace(/^\n+/, '')
-    .replace(/\n+$/, '')
-  const head = formatKeys(SONG_META_KEYS, next)
-  const header = [head, rest].filter((s) => s.length > 0).join('\n')
-  const tail = raws.slice(first.startLi).join('\n')
-  return [header, tail].filter((s) => s.length > 0).join('\n')
+  return writeEnvelopeMeta(split, patch, SONG_META_KEYS, split.defaultId)
 }
 
 /** A lyric, `{image:}`, or `{img:}` starts the body. `{c:}` and `{comment:}` do not. */
@@ -760,11 +797,17 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
 function rewriteChartInner(inner: string, patch: MetaPatch): string {
   const lines = inner.split('\n')
   const dropBlank = blanksOnlyBetweenLeadingSoundKeys(lines)
+  const inside = notationInside(lines)
   const labelLines: string[] = []
   const rest: string[] = []
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? ''
     const d = dirOf(line)
+    // Notation stays on its line. Do not hoist a label or a sound key out of it.
+    if (inside[i]) {
+      rest.push(line)
+      continue
+    }
     if (d?.name === 'x_chart_label') {
       labelLines.push(line)
       continue
@@ -794,73 +837,50 @@ export function writeChartScopedMeta(source: string, patch: MetaPatch, chartId?:
   return spliceInner(split.raws, chart, rewriteChartInner(chart.inner, patch)).join('\n')
 }
 
-/**
- * Song-identity lines from a chart document, raw. `dirOf` trims values, so a
- * trailing space in `{title:Uma }` only survives if the line itself is copied.
- * An empty `{title:}` is present. A missing key is not.
- */
-function rawSongIdentityLines(document: string): Map<string, string> {
-  const out = new Map<string, string>()
-  const block = { tab: false, score: false }
-  for (const line of document.split('\n')) {
-    const d = dirOf(line)
-    if (!d) continue
-    // `{t:}` / `{composer:}` inside tab or score is notation, not the header.
-    if (stepBlock(d.name, block) === 'in') continue
-    const canon = songMetaKey(d.name)
-    if (!canon || canon === 'x_chart_default') continue
-    const exact = (SONG_META_KEYS as readonly string[]).includes(d.name)
-    if (exact || !out.has(canon)) out.set(canon, line)
+function outsideNamedLines(inner: string, name: string): string[] {
+  if (!inner) return []
+  const lines = inner.split('\n')
+  const inside = notationInside(lines)
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    if (inside[i]) continue
+    const line = lines[i] ?? ''
+    if (dirOf(line)?.name === name) out.push(line)
   }
   return out
 }
 
 /**
- * Copy song-identity lines onto the header in place. Omitted keys are removed.
- * Comments, `{x_chart_default}`, and the blank line before the first chart stay.
+ * The document replaces that chart. Title bytes stay as written.
+ * A label or self-marker omitted from the document stays on the chart.
+ * A marker that names another chart is not written in. Notation stays.
+ * The sibling block is not rewritten.
  */
-function applyRawSongIdentity(raws: string[], headerEnd: number, document: string): string[] {
-  const wanted = rawSongIdentityLines(document)
-  const seen = new Set<string>()
-  const nextHeader: string[] = []
-  const block = { tab: false, score: false }
-  for (const line of raws.slice(0, headerEnd)) {
+function chartInnerFromDocument(chart: FileChart, document: string): string {
+  const lines = document.length ? document.split('\n') : []
+  const inside = notationInside(lines)
+  const body = lines.filter((line, i) => {
+    if (inside[i]) return true
     const d = dirOf(line)
-    // The chart document does not carry names that live inside tab or score.
-    // Leaving them out is not a request to delete the notation.
-    if (d && stepBlock(d.name, block) === 'in') {
-      nextHeader.push(line)
-      continue
-    }
-    const canon = d ? songMetaKey(d.name) : null
-    if (!canon || canon === 'x_chart_default') {
-      nextHeader.push(line)
-      continue
-    }
-    if (seen.has(canon)) continue
-    seen.add(canon)
-    const raw = wanted.get(canon)
-    if (raw === undefined) continue
-    nextHeader.push(raw)
+    if (!d || d.name !== 'x_chart_default') return true
+    return d.value === chart.id
+  })
+  let text = body.join('\n')
+  if (!outsideNamedLines(text, 'x_chart_label').length) {
+    const labels = outsideNamedLines(chart.inner, 'x_chart_label')
+    if (labels.length) text = [...labels, text].filter((s) => s.length > 0).join('\n')
   }
-  const missing: string[] = []
-  for (const key of SONG_META_KEYS) {
-    if (key === 'x_chart_default') continue
-    if (wanted.has(key) && !seen.has(key)) missing.push(wanted.get(key)!)
+  if (!outsideNamedLines(text, 'x_chart_default').length) {
+    const marker = outsideNamedLines(chart.inner, 'x_chart_default').find((line) => dirOf(line)?.value === chart.id)
+    if (marker) text = [marker, text].filter((s) => s.length > 0).join('\n')
   }
-  if (missing.length) {
-    let at = nextHeader.length
-    while (at > 0 && nextHeader[at - 1]!.trim() === '') at--
-    nextHeader.splice(at, 0, ...missing)
-  }
-  return [...nextHeader, ...raws.slice(headerEnd)]
+  return text
 }
 
 /**
- * Splice a one-chart document back into the named envelope block.
- * Song identity is copied raw (trailing space and empty `{title:}` stay).
- * A missing title, subtitle, artist, x_source, or x_youtube clears that field.
- * `{x_chart_default}` is left as it stands. The sibling chart stays.
+ * Splice a chart document back into one block.
+ * No pair: `default` or an empty id replaces the file.
+ * N>1: that block only. There is no shared header to update.
  */
 export function replaceChart(file: string, chartId: string, doc: string): string {
   const src = String(file ?? '').replace(/\r\n?/g, '\n')
@@ -870,30 +890,12 @@ export function replaceChart(file: string, chartId: string, doc: string): string
     if (!isImplicitChartId(chartId)) return src
     return document
   }
-  const chart = split.charts.find((c) => c.id === chartId)
-  if (!chart) return src
-
-  const body: string[] = []
-  const block = { tab: false, score: false }
-  for (const line of document.split('\n')) {
-    const d = dirOf(line)
-    // Notation keeps its own title, artist, composer, and lyricist lines.
-    // Omitting them from the song header is not a request to delete them.
-    if (d && stepBlock(d.name, block) === 'in') {
-      body.push(line)
-      continue
-    }
-    if (d && songMetaKey(d.name)) continue
-    if (d && isEnvelopeName(d.name)) continue
-    body.push(line)
-  }
-  // A blank line at the top of the chart body is content. Do not strip it.
-
-  const hasLabel = body.some((line) => dirOf(line)?.name === 'x_chart_label')
-  const labelLine = !hasLabel && chart.label ? `{x_chart_label:${chart.label}}` : null
-  const inner = [labelLine, body.join('\n')].filter((s) => s && s.length > 0).join('\n')
-  const spliced = spliceInner(split.raws, chart, inner)
-  return applyRawSongIdentity(spliced, split.charts[0]!.startLi, document).join('\n')
+  const index = split.charts.findIndex((c) => c.id === chartId)
+  if (index < 0) return src
+  const chart = split.charts[index]!
+  const inners = split.charts.map((c) => c.inner)
+  inners[index] = chartInnerFromDocument(chart, document)
+  return withChartInners(split, inners)
 }
 
 /**

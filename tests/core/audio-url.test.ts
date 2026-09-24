@@ -190,10 +190,7 @@ function chartBlock(source: string, id: string): string {
   return source.slice(start, end === -1 ? source.length : end)
 }
 
-const ENVELOPE_AUDIO = `{title:Uma}
-{x_chart_default:oferta}
-
-{start_of_x_chart:completa}
+const ENVELOPE_AUDIO = `{start_of_x_chart:completa}
 {key:G}
 {x_audio_sung:https://cdn.example/g.m4a}
 {x_audio_playback:https://cdn.example/gp.m4a}
@@ -201,6 +198,7 @@ const ENVELOPE_AUDIO = `{title:Uma}
 {x_audio_art_w:128}
 {x_audio_art_h:128}
 [G]linha completa
+{title:Completa}
 {end_of_x_chart}
 
 {start_of_x_chart:oferta}
@@ -211,6 +209,8 @@ const ENVELOPE_AUDIO = `{title:Uma}
 {x_audio_art_w:256}
 {x_audio_art_h:256}
 [C]linha oferta
+{title:Oferta}
+{x_chart_default:oferta}
 {end_of_x_chart}
 `
 
@@ -230,8 +230,6 @@ describe('envelope audio clear', () => {
 
   it('setAudioUrl(null) keeps the blank under the label', () => {
     const src = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '',
       '{start_of_x_chart:completa}',
       '{x_chart_label:Completa}',
@@ -245,6 +243,7 @@ describe('envelope audio clear', () => {
       '{x_audio_sung:https://cdn.example/c.m4a}',
       '',
       '[C]linha oferta',
+      '{x_chart_default:oferta}',
       '{end_of_x_chart}',
       '',
     ].join('\n')
@@ -259,8 +258,6 @@ describe('envelope audio clear', () => {
 
   it('setAudioUrl(null) does not move a blank between sound keys onto the lyric', () => {
     const src = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '',
       '{start_of_x_chart:completa}',
       '{x_chart_label:Completa}',
@@ -276,6 +273,7 @@ describe('envelope audio clear', () => {
       '',
       '{x_audio_sung:https://cdn.example/c.m4a}',
       '[C]linha oferta',
+      '{x_chart_default:oferta}',
       '{end_of_x_chart}',
       '',
     ].join('\n')
@@ -305,14 +303,13 @@ describe('envelope audio clear', () => {
   it('setAudioUrl(null) does not keep a blank between sound keys under a non-lyric directive', () => {
     for (const lead of ['{c: Intro}', '{comment: Intro}', '{define: C}', '{start_of_verse}']) {
       const src = [
-        '{title:Uma}',
-        '{x_chart_default:oferta}',
         '{start_of_x_chart:oferta}',
         lead,
         '{key:C}',
         '',
         '{x_audio_sung:https://cdn.example/c.m4a}',
         '[C]linha',
+        '{x_chart_default:oferta}',
         '{end_of_x_chart}',
       ].join('\n')
       const next = setAudioUrl(src, null)
@@ -329,13 +326,12 @@ describe('envelope audio clear', () => {
   it('drops a long leading blank run beside a long sound directive', () => {
     const sung = '{x_audio_sung:https://cdn.example/' + 'a'.repeat(4000) + '.m4a}'
     const src = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '{start_of_x_chart:oferta}',
       sung,
       ...Array.from({ length: 2000 }, () => ''),
       '{tempo:80}',
       '[C]linha',
+      '{x_chart_default:oferta}',
       '{end_of_x_chart}',
     ].join('\n')
     const next = setAudioUrl(src, null)
@@ -354,8 +350,6 @@ describe('envelope audio clear', () => {
     ]) {
       for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
         const src = [
-          '{title:Uma}',
-          '{x_chart_default:oferta}',
           '{start_of_x_chart:oferta}',
           open,
           image,
@@ -365,6 +359,7 @@ describe('envelope audio clear', () => {
           '{tempo:72}',
           '[G]linha',
           '{x_audio_sung:https://cdn.example/c.m4a}',
+          '{x_chart_default:oferta}',
           '{end_of_x_chart}',
         ].join('\n')
         const next = setAudioUrl(src, null)
@@ -397,8 +392,6 @@ describe('envelope audio clear', () => {
   it('setAudioUrl(null) keeps a blank after an image that starts the body', () => {
     for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
       const src = [
-        '{title:Uma}',
-        '{x_chart_default:oferta}',
         '{start_of_x_chart:completa}',
         '{key:D}',
         '[D]outro',
@@ -410,6 +403,7 @@ describe('envelope audio clear', () => {
         '{tempo:72}',
         '[G]linha',
         '{x_audio_sung:https://cdn.example/c.m4a}',
+        '{x_chart_default:oferta}',
         '{end_of_x_chart}',
       ].join('\n')
       const next = setAudioUrl(src, null)
@@ -434,8 +428,6 @@ describe('envelope audio clear', () => {
     expect(parse(setAudioUrl(earlier, null)).meta.artist).toBe('Local')
 
     const env = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '{start_of_x_chart:completa}',
       '{key:G}',
       '[G]outro',
@@ -444,6 +436,7 @@ describe('envelope audio clear', () => {
       '{artist:Local}',
       '{composer:Bach}',
       '[C]song',
+      '{x_chart_default:oferta}',
       '{end_of_x_chart}',
     ].join('\n')
     expect(parse(env).meta.artist).toBe('Bach')
@@ -455,8 +448,6 @@ describe('envelope audio clear', () => {
 
   it('setAudioUrl(null) keeps a blank that follows a lyric', () => {
     const src = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '{start_of_x_chart:oferta}',
       '{x_chart_label:Oferta}',
       '[C]corpo',
@@ -464,6 +455,7 @@ describe('envelope audio clear', () => {
       '',
       '{x_audio_sung:https://cdn.example/c.m4a}',
       '[C]corpo',
+      '{x_chart_default:oferta}',
       '{end_of_x_chart}',
     ].join('\n')
     const next = setAudioUrl(src, null)
@@ -478,12 +470,11 @@ describe('envelope audio clear', () => {
   it('rewrites a chart with a long trailing blank run and keeps the lyric', () => {
     const lyric = '[C]corpo longo'
     const src = [
-      '{title:Uma}',
-      '{x_chart_default:oferta}',
       '{start_of_x_chart:oferta}',
       '{key:C}',
       lyric,
       ...Array.from({ length: 8000 }, () => ''),
+      '{x_chart_default:oferta}',
       '{end_of_x_chart}',
     ].join('\n')
     const next = setAudioUrl(src, null)

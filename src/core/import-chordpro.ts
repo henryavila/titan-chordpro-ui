@@ -428,26 +428,26 @@ function soundPatchOf(meta: ChartMeta): ChartMeta {
 }
 
 /**
- * Rewrites meta. Two-arg one-chart still replaces the canonical header.
- * N>1 without `target`: song identity stays in the song header; sound keys
- * on the patch go to the chart that was already default, not the id
- * `{x_chart_default}` selects in the same patch. Pass `{ target }` to aim.
- * `{x_chart_default}` updates the song header when the patch includes it, and
- * a patch that omits it leaves the header value in place.
- * Identity keys are copies or edits one at a time. A sound key does not
- * cancel an identity edit.
+ * Rewrites meta. One chart, no pair: the canonical header, same as before.
+ * N>1: there is no shared header. A key in the patch changes that field on
+ * one chart — the open chart, or `chartId` when `target` is `chart`.
+ * Other fields on that chart stay. Sibling blocks stay.
+ * `{x_chart_default}` moves which block marks itself. Sound keys in the same
+ * patch stay on the chart that was already open, not the newly selected one.
+ * A file with text outside the blocks is refused.
  */
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
   if (opts?.target === 'chart') return writeChartScopedMeta(source, meta, opts.chartId)
-  const copyKeys = copiedIdentityKeys(source, meta)
-  if (opts?.target === 'song') return writeSongScopedMeta(source, meta, { copyKeys })
   const split = splitCho(source)
-  if (!split.hasEnvelope) return writeMetaOneHeader(source, meta)
+  if (!split.hasEnvelope) {
+    const copyKeys = copiedIdentityKeys(source, meta)
+    if (opts?.target === 'song') return writeSongScopedMeta(source, meta, { copyKeys })
+    return writeMetaOneHeader(source, meta)
+  }
+  if (opts?.target === 'song') return writeSongScopedMeta(source, meta)
   const song = songPatchOf(meta)
   const sound = soundPatchOf(meta)
-  const withSong = Object.keys(song).length
-    ? writeSongScopedMeta(source, song, { copyKeys })
-    : source
+  const withSong = Object.keys(song).length ? writeSongScopedMeta(source, song) : source
   if (!Object.keys(sound).length) return withSong
   return writeChartScopedMeta(withSong, sound, split.defaultId)
 }
