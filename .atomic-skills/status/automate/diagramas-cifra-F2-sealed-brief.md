@@ -27,9 +27,9 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix15
-- **writerBranch:** impl/diagramas-cifra-F2-fix15
-- **baseRef:** 511a737b96a0676fd71d2c8a63b3961b81154b68
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix16
+- **writerBranch:** impl/diagramas-cifra-F2-fix16
+- **baseRef:** ff985dc600fb797f3f6a77d2754195e43200c9ae
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (2)
@@ -96,45 +96,48 @@ Rules:
 
 ## Scoped context — this dispatch only
 
-One commit is enough if both tasks share it: then the claim must use exclusive commit SHAs. Prefer two commits and `base: null`, `head: null`, each SHA used once.
+Two commits. Claim `base` and `head` are null. Each SHA is used once.
 
-Commit 1 `fix(T-002): do not shadow an existing piano define`:
-- `src/core/define.ts`, tests in `tests/core/define-directive.test.ts` and `tests/core/export-cho.test.ts` if needed
+Commit 1, `fix(T-002): drop only a stringed define that would hide piano`:
+- `src/core/define.ts`, `src/core/parse.ts` only if export and transpose must share the helper
+- `tests/core/define-directive.test.ts`, `tests/core/export-cho.test.ts` only if an existing assertion must change
 
-Commit 2 `fix(T-003): off-neck capo and quoted piano names`:
-- `src/core/diagram-draw.ts`, `src/core/resolve-diagram.ts`, `tests/core/diagram-draw.test.ts`, `tests/core/resolve-diagram.test.ts`
+Commit 2, `fix(T-002): quoted chord names stay a miss`:
+Wait, the second commit is still the resolve path. Use message `fix(T-003): quoted names stay a miss on every instrument` only if you touch `src/core/diagram-draw.ts`. Otherwise put the quote guard in commit 1 and give T-003 a commit that only updates `tests/core/diagram-draw.test.ts` if the draw already matches. Do not invent a pass. If draw needs the same quote test, edit it in commit 2.
 
-Keep these true:
-- One line `{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}` +2 still becomes `{define: E keys 0 4 7}` and parses.
-- `{define: D keys 24 28 31}` stays distances and draws D F# A.
-- MIDI lists with every key >= 48 still add the shift.
-- `C7+` stays unknown-token. Guitar Caug with frets stays a hit.
-- Fret 10000 does not hang and is not drawn as fret 24.
+### Collision
 
-### Shadow
+Drop a line only when it started as guitar or ukulele, lost its frets, and another define that was already piano has the same transposed name.
+An original `{define:}` that already has keys stays, even if it also had open frets.
+`{define: D frets x 0 0 2 3 2 keys 0 4 7}` then `{define: D keys 0 7}`, +2, must keep the first as `{define: E keys 0 4 7}`.
+`{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}` then `{define: D keys 0 7}`, +2, must keep only the piano line, keys `[0, 7]`.
+A lone `{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}` +2 is still `{define: E keys 0 4 7}` and parses.
+Match the name the way resolve matches aliases: `C7M` and `Cmaj7` are the same chord. A converted guitar `Cmaj7` must not hide a piano `C7M`.
 
-If the chart already has a piano `{define:}` for the transposed name, drop the fretted line that lost its frets. Do not emit a second piano define that would be found first.
-`{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}` followed by `{define: D keys 0 7}`, transposed +2, must still resolve piano E as keys `[0, 7]`, not `[0, 4, 7]`.
+### Tab and score
 
-### Off-neck
-
-A dot whose fret is above 24: that string is a mute, not a blank string and not a dot on fret 24.
-Capo 30 with frets `x 0 2 2 1 0` must not draw open circles at the nut. If the capo bar is not drawn, the SVG must not show those strings as open.
+Defines inside `{start_of_tab}` / `{sot}` … `{end_of_tab}` / `{eot}` and `{start_of_score}` / `{sos}` … `{end_of_score}` / `{eos}` do not take part in that collision. Transpose each of those lines on its own. A define inside the block must not delete the define outside it.
+`parse` already ignores defines inside those blocks. `exportCho` must still round-trip the outside define.
 
 ### Quotes
 
-`{define: C' keys 0 4 7}`, `{define: C" keys 0 4 7}`, and a curly apostrophe in the name must be a miss, not a hit with no lit keys. Same rejection the draw already uses for quotes.
+Before any instrument override, a token containing `'`, `"`, `'`, `'`, `"`, or `"` (straight, U+2018, U+2019, U+201C, U+201D) is `unknown-token` for guitar, ukulele, and piano. `Caug` without a quote stays a hit when the define has frets. `C7+` stays a miss.
+
+### Still true
+
+`24 28 31` on D stays distances and draws D F# A. Every key >= 48 is MIDI and adds the shift. Capo 30 draws no open circle at the nut. Fret 10000 does not hang and is not drawn as fret 24.
 
 ### Checks
 
-`CI=true pnpm install` in this worktree only if `node_modules` is missing.
+`CI=true pnpm install` here only if `node_modules` is missing.
 
 ```
 pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts
 pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts
 ```
 
-Both exit 0. Claim JSON path: `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
+Both exit 0.
+Claim path: `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
 
 ---
 sealed-brief: true
