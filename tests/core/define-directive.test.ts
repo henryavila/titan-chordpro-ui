@@ -504,6 +504,50 @@ describe('transposeDefine', () => {
     if (!up) return
     expect(transposeDefine(up, -2, false)).toMatchObject({ name: 'C', keys: [60, 64, 79] })
   })
+
+  it('keeps a key above 17 as a distance when another key is in 0–17', () => {
+    const raw = parseDefineDirective('{define: D keys 12 16 19}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const plain = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(plain.class).toBe('hit')
+    if (plain.class !== 'hit') return
+    const plainDraw = drawDiagram({ instrument: 'piano', voicing: plain.voicing, token: 'D' })
+    expect(plainDraw.kind).toBe('piano')
+    if (plainDraw.kind !== 'piano') return
+    expect(plainDraw.lit).toEqual([2, 6, 9])
+    expect(plainDraw.litNotes).toEqual(['D', 'F#', 'A'])
+    expect(plainDraw.litNotes).not.toEqual(['C', 'E', 'G'])
+
+    expect(() => transposeDefine(raw, 2, false)).not.toThrow()
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({ name: 'E', keys: [12, 16, 19] })
+    expect(up?.keys).not.toEqual([26, 30, 33])
+    if (!up) return
+    expect(serializeDefine(up)).toBe('{define: E keys 12 16 19}')
+    const hit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: up.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([4, 8, 11])
+    expect(draw.litNotes).toEqual(['E', 'G#', 'B'])
+
+    const fifth = parseDefineDirective('{define: D keys 7 12 16}')
+    expect(fifth.class).toBe('parse')
+    if (fifth.class !== 'parse') return
+    expect(transposeDefine(fifth, 2, false)).toMatchObject({ name: 'E', keys: [7, 12, 16] })
+    const fifthHit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [fifth] })
+    expect(fifthHit.class).toBe('hit')
+    if (fifthHit.class !== 'hit') return
+    const fifthDraw = drawDiagram({ instrument: 'piano', voicing: fifthHit.voicing, token: 'D' })
+    expect(fifthDraw.kind).toBe('piano')
+    if (fifthDraw.kind !== 'piano') return
+    expect(fifthDraw.lit).toEqual([9, 2, 6])
+    expect(fifthDraw.litNotes).toEqual(['A', 'D', 'F#'])
+    expect(new Set(fifthDraw.lit)).toEqual(new Set([2, 9, 6]))
+  })
 })
 
 describe('transpose/setKey apply the same define rewrite as export', () => {

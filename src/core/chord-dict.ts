@@ -95,13 +95,21 @@ function mod12(n: number): number {
 }
 
 /**
+ * MIDI only when every key is greater than 17, or any key is below 0.
+ * A key in 0–17 makes the whole list distances from the chord root, so a
+ * higher number in that list stays a distance (12, 16, 19). Do not score
+ * absolute classes against intervals.
+ */
+export function pianoKeysAreMidi(keys: readonly number[]): boolean {
+  return keys.every((k) => k > 17) || keys.some((k) => k < 0)
+}
+
+/**
  * Sounding pitch classes in key order.
- * 0–17 (17 is the largest QUALITY_INTERVALS tone) are distances from the
- * chord root. Any key above 17 or below 0 is a real piano key (MIDI): read
- * mod 12. Never score the chord. Never choose absolute classes versus intervals.
+ * Distances are `root + key`. MIDI is the key itself, mod 12.
  */
 export function pianoSoundingPitchClasses(keys: readonly number[], rootPc: number): number[] {
-  if (keys.some((k) => k > 17 || k < 0)) return keys.map((k) => mod12(k))
+  if (pianoKeysAreMidi(keys)) return keys.map((k) => mod12(k))
   return keys.map((k) => mod12(rootPc + k))
 }
 
