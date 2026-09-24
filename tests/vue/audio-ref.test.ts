@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref, type Ref } from 'vue'
 import { setAudioUrl } from '../../src/core/index'
 import { ChordproViewer } from '../../src/vue/index'
 import CpvAudioRef from '../../src/vue/chrome/CpvAudioRef.vue'
@@ -66,7 +66,7 @@ async function viewerAt(width: number, props: Record<string, unknown> = {}) {
   return w
 }
 
-function hookOf(url: ReturnType<typeof ref<string | null>>, opts: AudioRefOpts) {
+function hookOf(url: Ref<string | null>, opts: AudioRefOpts) {
   let api!: ReturnType<typeof useAudioRef>
   const Host = defineComponent({
     setup() {
@@ -278,7 +278,7 @@ describe('CpvAudioRef', () => {
     expect(w.get('[data-audio-ref]').classes()).not.toContain('is-closed')
     expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
     expect(w.get('[data-audio-artist]').text()).toBe('Adoradores')
-    expect(w.get('[data-audio-close]').exists()).toBe(true)
+    expect(w.find('[data-audio-close]').exists()).toBe(true)
     expect(w.find('[data-icon=pause]').exists()).toBe(true)
     await w.get('[data-audio-close]').trigger('click')
     expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')

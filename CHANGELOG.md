@@ -7,14 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-24
+
 ### Added
 - **Áudio de referência no ensaio:** `setRehearsalAudio(cho, { sung, playback, art: { url, width, height } })`. Cantado e/ou playback (qualquer combinação, inclusive nenhuma). Chip no dock abre o card (capa, título, artista, play, seek, ±10 s); X fecha sem parar. Não sincroniza letra nem `{duration:}`. Capa: o host manda o arquivo já no tamanho (256–512 px) + `width`/`height`; sem capa, arte genérica 512×512. Arquivo direto ou GET de stream; YouTube recusado. Cache keyed pela URL. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung.
 
 ### Changed
 - **Diretivas custom em inglês:** `{x_source:}` (antes `{x_origem:}`), `{x_audio_sung:}` (antes `{x_audio_cantado:}`). Leitura aceita as chaves antigas; a próxima gravação reescreve. UI em português (Origem, Cantado, Playback).
+- **Tom original + transposição gravada.** `{key:}` é o tom original. Reescrever (import e ficha) grava o corpo nesse tom e `{transpose:N}` para a leitura continuar onde estava (082: Ab no arquivo, tela em G). `{capo:}` no arquivo é dica, não liga o capotraste. Overlay não soma no `{transpose:}`. Uma reescrita uniforme da cifra vira um único trecho de sugestão, não um por linha.
 
 ### Fixed
-- **Tom original + transposição gravada.** `{key:}` é o tom original. Reescrever (import e ficha) grava o corpo nesse tom e `{transpose:N}` para a leitura continuar onde estava (082: Ab no arquivo, tela em G). `{capo:}` no arquivo é dica, não liga o capotraste. Overlay não soma no `{transpose:}`. Uma reescrita uniforme da cifra vira um único trecho de sugestão, não um por linha.
 - **Cantado / Playback:** no card, um rótulo discreto (não tabs), com mais espaço sob o título. Sem capa do host, o player usa uma arte padrão. Com uma faixa só, o rótulo continua mostrando o que está tocando.
 - **Play da referência:** no card aberto o play é o centro do transporte; −10 / +10 ficam mais suaves.
 - **Chip da referência:** sólido sobre a cifra (canvas, sem véu). Mini-player flutuante; toque abre o card.
@@ -127,7 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.7.0
 [0.6.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.6.0
 [0.5.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.5.0
 [0.4.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.4.0
