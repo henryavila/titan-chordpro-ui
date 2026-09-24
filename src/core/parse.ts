@@ -158,8 +158,10 @@ function parseRaw(src: string): {
       else if (k === 'duration') meta.duration = v
       else if (k === 'capo') meta.capo = Number(v) || 0
       else if (k === 'transpose') {
+        // A later `{transpose:0}` or empty `{transpose:}` clears the earlier offset.
         const n = Number(v)
-        if (Number.isFinite(n) && n !== 0) meta.transpose = n
+        if (n === 0) meta.transpose = 0
+        else if (Number.isFinite(n)) meta.transpose = n
       }
       continue
     }

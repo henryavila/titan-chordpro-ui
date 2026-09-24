@@ -609,6 +609,27 @@ describe('chart document edits and x_chart_default', () => {
     expect(chartBlock(lyric, 'completa')).toContain('[G]corpo da completa')
   })
 
+  it('reads raw song identity that has no colon, and {composer:} as artist', () => {
+    const colonless = commitChartDocument(
+      TWO_CHART_SOURCE,
+      '{title Uma}\n{artist Alguém}\n{key:C}\n[C]corpo',
+    )
+    expect(readMeta(colonless).title).toBe('Uma')
+    expect(readMeta(colonless).artist).toBe('Alguém')
+    expect(colonless).toContain('{title Uma}')
+    expect(colonless).toContain('{artist Alguém}')
+    expect(chartBlock(colonless, 'completa')).toBe(chartBlock(TWO_CHART_SOURCE, 'completa'))
+
+    const composed = commitChartDocument(
+      TWO_CHART_SOURCE,
+      '{title:Uma}\n{composer:Alguém}\n{key:C}\n[C]corpo',
+    )
+    expect(readMeta(composed).title).toBe('Uma')
+    expect(readMeta(composed).artist).toBe('Alguém')
+    expect(composed).toContain('{composer:Alguém}')
+    expect(chartBlock(composed, 'completa')).toBe(chartBlock(TWO_CHART_SOURCE, 'completa'))
+  })
+
   it('counts colonless {transpose} and {key} the way parse does', () => {
     expect(storedTransposeSemis('{key:C}\n{transpose 2}\n[C]uma')).toBe(2)
     expect(storedTransposeSemis('{key C}\n{transpose:2}\n[C]uma')).toBe(2)
@@ -632,6 +653,49 @@ describe('chart document edits and x_chart_default', () => {
     expect(inferWrittenKey(parse(src).source)).toBe('C')
     expect(parse(src).meta.key).toBe('C')
     expect(parse(src).meta.transpose).toBe(2)
+  })
+
+  it('a later zero or empty {transpose} clears the earlier offset', () => {
+    const zero = '{key:C}\n{transpose:2}\n{transpose:0}\n[C]uma'
+    const empty = '{key:C}\n{transpose:2}\n{transpose:}\n[C]uma'
+    expect(storedTransposeSemis(zero)).toBe(0)
+    expect(parse(zero).meta.transpose).toBe(0)
+    expect(storedTransposeSemis(empty)).toBe(0)
+    expect(parse(empty).meta.transpose).toBe(0)
+
+    const siblingKeeps = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+{transpose:0}
+[G]completa [G]mais [G]ainda
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{transpose:2}
+[C]oferta
+{end_of_x_chart}
+`
+    expect(storedTransposeSemis(siblingKeeps)).toBe(2)
+    expect(parse(siblingKeeps).meta.transpose).toBe(2)
+
+    const siblingDoesNotInvent = `{title:Uma}
+{x_chart_default:oferta}
+{start_of_x_chart:completa}
+{key:G}
+{transpose:2}
+[G]completa [G]mais [G]ainda
+{end_of_x_chart}
+{start_of_x_chart:oferta}
+{key:C}
+{transpose:2}
+{transpose:0}
+[C]oferta
+{end_of_x_chart}
+`
+    expect(storedTransposeSemis(siblingDoesNotInvent)).toBe(0)
+    expect(parse(siblingDoesNotInvent).meta.transpose).toBe(0)
+    expect(parse(siblingDoesNotInvent, { chartId: 'completa' }).meta.transpose).toBe(2)
   })
 })
 
