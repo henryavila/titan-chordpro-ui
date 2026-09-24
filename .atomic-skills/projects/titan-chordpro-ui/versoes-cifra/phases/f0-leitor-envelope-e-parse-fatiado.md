@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-fix14 is merged as `03f4ec5` (product `b013bb0`). Plan-tree verifier after that merge, exit 0, 147 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. The both review is `.atomic-skills/reviews/2026-09-24-versoes-cifra-f0-fix14-both.md`, needs_changes. Codex informed 4 majors (same count as fix13). Local 2 critical and 3 major. Do not `done`. Do not spawn another writer on the value-inference heuristic. Next action is an operator look at that receipt before another fix.
+Operator 2026-09-24 replaced the shared header for N>1. A file with more than one chart is only `{start_of_x_chart}` … `{end_of_x_chart}` pairs. Blank lines between pairs are allowed. Any other top-level text is an error. A file with no pair stays one chart. The chart that opens is the block that contains `{x_chart_default}` with its own id, outside tab and score; otherwise the first block. A write touches one block and only the requested fields. Chart fences always delimit, even inside an open tab. Tab and score stay notation. Do not `done`. Next action is the code-only writer on `impl/versoes-cifra-F0-fix15` implementing that contract, then `review-code --mode=both` with Codex `gpt-6-astra`.
 
 ### Verbatim state
 
@@ -201,4 +201,4 @@ fix14 is merged as `03f4ec5` (product `b013bb0`). Plan-tree verifier after that 
 
 ### Uncommitted changes
 
-Unrelated scratch only, do not commit: `?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json`, `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`. Older `.aideck` and `_drafts` sit in `/tmp/versoes-cifra-scratch-90533`. No product edits. Lease file absent.
+Scratch moved aside to `/tmp/versoes-cifra-scratch-rules`. Older `.aideck` and `_drafts` sit in `/tmp/versoes-cifra-scratch-90533`. No product edits. Lease file absent.
