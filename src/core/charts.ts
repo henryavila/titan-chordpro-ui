@@ -348,11 +348,16 @@ export function writeMetaOneHeader(
   const keep = keepIdentity ?? roundTripIdentityKeep(source, meta)
   // A patch that omits `{x_chart_default}` must not drop a line already in the file.
   const setsDefault = Object.prototype.hasOwnProperty.call(meta, 'x_chart_default')
-  const body = String(source ?? '')
-    .split('\n')
-    .filter((l) => {
+  const lines = String(source ?? '').split('\n')
+  const dropBlank = blanksOnlyBetweenLeadingSoundKeys(lines)
+  const block = { tab: false, score: false }
+  const body = lines.filter((l, i) => {
+      if (dropBlank[i]) return false
       const parsed = dirOf(l)
       if (!parsed) return true
+      const where = stepBlock(parsed.name, block)
+      // A credit inside tab or score is not the song header. Leave it there.
+      if (where === 'in' && songIdentityMetaKey(parsed.name)) return true
       // parse uses the last title, subtitle, or artist outside tab and score.
       // An unrelated save keeps those lines, including a later short alias.
       if (identityLineKept(parsed.name, keep)) return true
@@ -385,43 +390,63 @@ function identityLineKept(name: string, keep: ReadonlySet<string>): boolean {
   return ident !== null && keep.has(ident)
 }
 
+type BlockEdge = 'tab-open' | 'tab-close' | 'score-open' | 'score-close'
+
+function blockEdge(name: string): BlockEdge | null {
+  if (name === 'sot' || name === 'start_of_tab') return 'tab-open'
+  if (name === 'eot' || name === 'end_of_tab') return 'tab-close'
+  if (name === 'sos' || name === 'start_of_score') return 'score-open'
+  if (name === 'eos' || name === 'end_of_score') return 'score-close'
+  return null
+}
+
+/** Opening line is `out`. Lines inside the block, including the close, are `in`. */
+function stepBlock(name: string, block: { tab: boolean; score: boolean }): 'in' | 'out' {
+  const edge = blockEdge(name)
+  if (block.tab) {
+    if (edge === 'tab-close') block.tab = false
+    return 'in'
+  }
+  if (block.score) {
+    if (edge === 'score-close') block.score = false
+    return 'in'
+  }
+  if (edge === 'tab-open') {
+    block.tab = true
+    return 'out'
+  }
+  if (edge === 'score-open') {
+    block.score = true
+    return 'out'
+  }
+  return 'out'
+}
+
 /**
- * Last title, subtitle, and artist on the chart `parse` reads.
+ * Last title, subtitle, and artist outside tab and score.
  * Credits inside `{start_of_tab}` / `{sot}` or `{start_of_score}` / `{sos}` are not the song.
  */
-function visibleParseIdentity(source: string): Partial<Record<ParseIdentityKey, string>> {
+function visibleIdentityIn(text: string): Partial<Record<ParseIdentityKey, string>> {
   const out: Partial<Record<ParseIdentityKey, string>> = {}
-  let tab = false
-  let score = false
-  for (const line of chartDocument(source).split('\n')) {
+  const block = { tab: false, score: false }
+  for (const line of text.split('\n')) {
     const d = dirOf(line)
     if (!d) continue
-    if (tab) {
-      if (d.name === 'eot' || d.name === 'end_of_tab') tab = false
-      continue
-    }
-    if (score) {
-      if (d.name === 'eos' || d.name === 'end_of_score') score = false
-      continue
-    }
-    if (d.name === 'sot' || d.name === 'start_of_tab') {
-      tab = true
-      continue
-    }
-    if (d.name === 'sos' || d.name === 'start_of_score') {
-      score = true
-      continue
-    }
+    if (stepBlock(d.name, block) === 'in') continue
     const ident = songIdentityMetaKey(d.name)
     if (ident === 'title' || ident === 'subtitle' || ident === 'artist') out[ident] = d.value
   }
   return out
 }
 
-/** `readMeta` prefers an earlier exact key. `parse` uses the last alias outside tab and score. */
-function parseIdentityDisagreements(source: string): Set<ParseIdentityKey> {
-  const read = readMeta(source)
-  const visible = visibleParseIdentity(source)
+function visibleParseIdentity(source: string): Partial<Record<ParseIdentityKey, string>> {
+  return visibleIdentityIn(chartDocument(source))
+}
+
+function identityDisagreements(
+  read: ChartMeta,
+  visible: Partial<Record<ParseIdentityKey, string>>,
+): Set<ParseIdentityKey> {
   const out = new Set<ParseIdentityKey>()
   for (const key of PARSE_IDENTITY_KEYS) {
     if ((read[key] ?? '').trim() !== (visible[key] ?? '').trim()) out.add(key)
@@ -429,7 +454,21 @@ function parseIdentityDisagreements(source: string): Set<ParseIdentityKey> {
   return out
 }
 
-/** Identity keys on a `readMeta` copy that `parse` does not show. */
+/** `readMeta` prefers an earlier exact key. `parse` uses the last alias outside tab and score. */
+function parseIdentityDisagreements(source: string): Set<ParseIdentityKey> {
+  return identityDisagreements(readMeta(source), visibleParseIdentity(source))
+}
+
+/**
+ * Song header only. `{artist:}` inside the default chart must not count:
+ * a sibling with no artist of its own still parses the header's later alias.
+ */
+function headerIdentityDisagreements(source: string): Set<ParseIdentityKey> {
+  const header = splitCho(source).header
+  return identityDisagreements(readMetaLines(header), visibleIdentityIn(header))
+}
+
+/** Identity keys on a `readMeta` copy that `parse` does not show. Flat echo path. */
 function roundTripIdentityKeep(source: string, meta: ChartMeta): Set<string> {
   const read = readMeta(source)
   const keep = new Set<string>()
@@ -441,20 +480,79 @@ function roundTripIdentityKeep(source: string, meta: ChartMeta): Set<string> {
 }
 
 /**
- * Patch keys this writer will apply. A missing key, or a repeat of `readMeta`,
- * must not replace the line `parse` shows.
+ * Header lines this patch must not replace.
+ * A key the caller named is applied, even when the value equals `readMeta`.
+ * `preserveEcho` is the separate signal that the caller copied `readMeta`
+ * and did not ask to change that key.
  */
-function patchIdentityKeep(source: string, patch: MetaPatch, appliedKeys: readonly string[]): Set<string> {
+function patchIdentityKeep(
+  source: string,
+  patch: MetaPatch,
+  appliedKeys: readonly string[],
+  preserveEcho: boolean,
+): Set<string> {
   const read = readMeta(source)
+  const disagree = headerIdentityDisagreements(source)
   const keep = new Set<string>()
-  for (const key of parseIdentityDisagreements(source)) {
+  for (const key of PARSE_IDENTITY_KEYS) {
     const seen = appliedKeys.includes(key) && Object.prototype.hasOwnProperty.call(patch, key)
-    if (!seen || (patch[key] ?? '').trim() === (read[key] ?? '').trim()) keep.add(key)
+    if (!seen) {
+      if (disagree.has(key)) keep.add(key)
+      continue
+    }
+    if (!preserveEcho) continue
+    if ((patch[key] ?? '').trim() !== (read[key] ?? '').trim()) continue
+    keep.add(key)
   }
   return keep
 }
 
-function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string[]): string {
+function appliedIdentityKeys(
+  patch: MetaPatch,
+  keep: ReadonlySet<string>,
+  keys: readonly string[],
+): Set<ParseIdentityKey> {
+  const out = new Set<ParseIdentityKey>()
+  for (const key of PARSE_IDENTITY_KEYS) {
+    if (!keys.includes(key)) continue
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue
+    if (keep.has(key)) continue
+    out.add(key)
+  }
+  return out
+}
+
+/** Drop applied identity aliases. Lines inside tab or score stay. */
+function stripSongIdentity(inner: string, keys: ReadonlySet<string>): string {
+  const block = { tab: false, score: false }
+  const out: string[] = []
+  for (const line of inner.split('\n')) {
+    const d = dirOf(line)
+    if (!d) {
+      out.push(line)
+      continue
+    }
+    if (stepBlock(d.name, block) === 'in') {
+      out.push(line)
+      continue
+    }
+    const ident = songIdentityMetaKey(d.name)
+    if (ident && keys.has(ident)) continue
+    out.push(line)
+  }
+  return out.join('\n')
+}
+
+function keepSongHeaderLine(line: string, block: { tab: boolean; score: boolean }, keep: ReadonlySet<string>): boolean {
+  const d = dirOf(line)
+  if (!d) return true
+  const where = stepBlock(d.name, block)
+  if (where === 'in' && songIdentityMetaKey(d.name)) return true
+  if (identityLineKept(d.name, keep)) return true
+  return songMetaKey(d.name) === null
+}
+
+function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string[], preserveEcho = false): string {
   const next: ChartMeta = { ...readMeta(source) }
   for (const k of keys) {
     if (!(META_KEYS as readonly string[]).includes(k)) continue
@@ -467,33 +565,38 @@ function writeFlatScoped(source: string, patch: MetaPatch, keys: readonly string
     else if (key === 'x_chart_default') next[key] = ''
     else delete next[key]
   }
-  const keep = patchIdentityKeep(source, patch, keys)
+  const keep = patchIdentityKeep(source, patch, keys, preserveEcho)
   for (const key of keep) delete next[key as MetaKey]
   return writeMetaOneHeader(source, next, keep)
 }
 
+export type SongMetaWriteOpts = { preserveEcho?: boolean }
+
 /** Rewrite song-header keys; never strip `{key:}` / `{duration:}` from chart blocks. */
-export function writeSongScopedMeta(source: string, patch: MetaPatch): string {
+export function writeSongScopedMeta(source: string, patch: MetaPatch, opts?: SongMetaWriteOpts): string {
+  const preserveEcho = opts?.preserveEcho === true
   const split = splitCho(source)
-  if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS)
+  if (!split.hasEnvelope) return writeFlatScoped(source, patch, SONG_META_KEYS, preserveEcho)
   const first = split.charts[0]!
   const headerLines = split.raws.slice(0, first.startLi)
-  const keep = patchIdentityKeep(source, patch, SONG_META_KEYS)
+  const keep = patchIdentityKeep(source, patch, SONG_META_KEYS, preserveEcho)
   const next = applyPatch(readKeyed(headerLines.join('\n'), 'song'), patch, SONG_META_KEYS)
   for (const key of keep) delete next[key]
+  const applied = appliedIdentityKeys(patch, keep, SONG_META_KEYS)
+  let raws = split.raws
+  if (applied.size) {
+    const chart = split.charts.find((c) => c.id === split.defaultId)
+    if (chart) raws = spliceInner(raws, chart, stripSongIdentity(chart.inner, applied))
+  }
+  const block = { tab: false, score: false }
   const rest = headerLines
-    .filter((line) => {
-      const d = dirOf(line)
-      if (!d) return true
-      if (identityLineKept(d.name, keep)) return true
-      return songMetaKey(d.name) === null
-    })
+    .filter((line) => keepSongHeaderLine(line, block, keep))
     .join('\n')
     .replace(/^\n+/, '')
     .replace(/\n+$/, '')
   const head = formatKeys(SONG_META_KEYS, next)
   const header = [head, rest].filter((s) => s.length > 0).join('\n')
-  const tail = split.raws.slice(first.startLi).join('\n')
+  const tail = raws.slice(first.startLi).join('\n')
   return [header, tail].filter((s) => s.length > 0).join('\n')
 }
 
@@ -507,7 +610,8 @@ function lineStartsChartBody(directive: { name: string } | null): boolean {
  * Blanks that sit only between leading sound keys.
  * Each non-blank line is classified once. Neighbour indexes are one forward
  * pass and one backward pass, so a long directive is not parsed again per blank.
- * A blank stays once a lyric or an image has started.
+ * A blank stays once a lyric or an image outside tab and score has started.
+ * `{image:}` inside `{sot}` / `{start_of_tab}` or score does not start the body.
  */
 function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
   const n = lines.length
@@ -517,6 +621,7 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
   const isSound = new Array<boolean>(n)
   let lastNonBlank = -1
   let seenBody = false
+  const block = { tab: false, score: false }
   for (let i = 0; i < n; i++) {
     prev[i] = lastNonBlank
     bodyBefore[i] = seenBody
@@ -524,6 +629,7 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
     if (line.trim() === '') continue
     lastNonBlank = i
     const directive = dirOf(line)
+    if (directive && stepBlock(directive.name, block) === 'in') continue
     isSound[i] = !!(directive && chartSoundKey(directive.name))
     if (lineStartsChartBody(directive)) seenBody = true
   }
