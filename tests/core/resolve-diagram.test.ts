@@ -97,16 +97,30 @@ describe('resolveDiagram', () => {
     })
   })
 
-  it('misses a piano name that contains a quote instead of hitting with no lit keys', () => {
-    for (const name of ["C'", 'C"', 'C\u2019']) {
-      const raw = parseDefineDirective(`{define: ${name} keys 0 4 7}`)
-      expect(raw.class, name).toBe('parse')
-      if (raw.class !== 'parse') continue
-      expect(resolveDiagram({ token: name, instrument: 'piano', overrides: [raw] }), name).toEqual({
+  it('misses a quoted name on every instrument before any override', () => {
+    const marks = ['\u0027', '\u0022', '\u2018', '\u2019', '\u201C', '\u201D']
+    for (const mark of marks) {
+      const name = `C${mark}`
+      const guitar = parseDefineDirective(`{define-guitar: ${name} frets x 3 2 0 1 0}`)
+      const uke = parseDefineDirective(`{define-ukulele: ${name} frets 0 0 0 3}`)
+      const piano = parseDefineDirective(`{define: ${name} keys 0 4 7}`)
+      expect(guitar.class, name).toBe('parse')
+      expect(uke.class, name).toBe('parse')
+      expect(piano.class, name).toBe('parse')
+      if (guitar.class !== 'parse' || uke.class !== 'parse' || piano.class !== 'parse') continue
+      expect(resolveDiagram({ token: name, instrument: 'guitar', overrides: [guitar] }), name).toEqual({
         class: 'miss',
         reason: 'unknown-token',
       })
-      const drawn = drawDiagram({ instrument: 'piano', voicing: { keys: raw.keys }, token: name })
+      expect(resolveDiagram({ token: name, instrument: 'ukulele', overrides: [uke] }), name).toEqual({
+        class: 'miss',
+        reason: 'unknown-token',
+      })
+      expect(resolveDiagram({ token: name, instrument: 'piano', overrides: [piano] }), name).toEqual({
+        class: 'miss',
+        reason: 'unknown-token',
+      })
+      const drawn = drawDiagram({ instrument: 'piano', voicing: { keys: piano.keys }, token: name })
       expect(drawn.kind, name).toBe('piano')
       if (drawn.kind !== 'piano') continue
       expect(drawn.lit, name).toEqual([])
