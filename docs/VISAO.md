@@ -69,7 +69,7 @@ ChordPro (1 string)
 4. **Export** `.cho` e PDF (nomes estáveis; PDF com tom exibido).
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
 6. **Temas:** claro e escuro, com opção de **troca automática**.
-7. **Modo ajuste ao espaço** opt-in (reflow + leve auto-size; sem colunas) — **só em view**; em edit o layout fica estável.
+7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.
 
 ### 4.2 Edição (edit) — mapa + gates
 

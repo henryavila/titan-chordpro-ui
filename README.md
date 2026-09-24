@@ -31,7 +31,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
 - **Áudio de referência** — arquivo no ensaio, **sem** sync com letra / Rolar / `{duration:}`:
-  - Chip flutuante no dock; toque abre o card (capa, título, artista, play, seek, ±10 s); X fecha sem parar
+  - No celular o recolhido é o fone na linha Cifra | Letra: toque abre o card. Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e deixa o fone. No desktop o chip com título fica acima do dock. X fecha sem parar
   - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
   - Capa do host (quadrado 256–512 px + `width`/`height`); sem capa, arte genérica 512×512
   - O host grava no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6
@@ -184,8 +184,11 @@ As duas que dependem do mundo externo são props, não mágica do pacote:
 />
 ```
 
-`fetchChart` é o **backend do host**: o navegador não alcança outro site de
-dentro do viewer. Sem ela, a aba Link diz isso em vez de fingir. `readPdf` vem
+`fetchChart` é o **backend do host**: o navegador não alcança o Cifra Club
+de dentro do viewer. Sem ela, a aba Cifra Club diz que a busca não está
+disponível — a página precisa ser buscada pelo servidor do site. Se a
+resposta não for a cifra, o HTML que o Titan lê está em
+[`docs/CONSUMER.md`](docs/CONSUMER.md) §11. `readPdf` vem
 de `@henryavila/titan-chordpro-ui/pdf`; é prop para que o `pdfjs-dist` (peer opcional) só
 carregue em host que queira importar PDF. Sem ela, PDF é recusado na entrada —
 e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.

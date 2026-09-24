@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Áudio de referência no celular:** o recolhido é o fone na linha Cifra | Letra. Toque abre o card; enquanto toca, o fone usa a cor do acorde e uma onda. Recolher o chrome fecha o card e deixa o fone, sem parar o áudio. No desktop o chip com título continua acima do dock. Tocar não segura mais o chrome.
+
 ### Fixed
 - **Importar Cifra Club:** a cifra é lida pelo texto (acorde, letra, seção), não pelas classes da página. Tablatura no meio da música, e a linha de acordes que só mostra o que a tab toca, fica de fora. Páginas gravadas: Tu És, Tua Vontade, Unidos em Cristo, Meu Farol.
+- **Demo, busca do Cifra Club:** quando a página não é a cifra, `/__cifra_fetch` monta o HTML que o parser já lê, a partir de `GET /v3/version/{artista}/{musica}`. O tom desse HTML é `stdShapeKey`. A página que já é a cifra segue como veio.
 
 ## [0.7.0] - 2026-09-24
 
