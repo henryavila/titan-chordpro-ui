@@ -144,9 +144,9 @@ function scorePianoReadings(keys: readonly number[], rootPc: number, quality: st
 
 /**
  * Sounding pitch classes of the one piano reading, in key order.
- * Absolute marker: every key is >= 60. Only then return mod 12 and skip
- * the reading. A 14 or 17 beside 0–11, or 48 52 55, stays on the heuristic.
- * Absolute: the stored classes. Relative: `(root + key) % 12`.
+ * A key above 17 (the largest QUALITY_INTERVALS tone) or below 0 is MIDI:
+ * return mod 12 and skip the reading. 14 and 17 beside 0–11 stay on the
+ * heuristic. Absolute: the stored classes. Relative: `(root + key) % 12`.
  * Draw stores those classes as intervals from the root.
  */
 export function pianoSoundingPitchClasses(
@@ -155,7 +155,7 @@ export function pianoSoundingPitchClasses(
   quality: string,
   bassPc: number | null = null,
 ): number[] {
-  if (keys.length > 0 && keys.every((k) => k >= 60)) return keys.map((k) => mod12(k))
+  if (keys.some((k) => k > 17 || k < 0)) return keys.map((k) => mod12(k))
   const { pcs, intervals, absSet, relSet, absScore, relScore } = scorePianoReadings(keys, rootPc, quality)
   const absolute = () => [...pcs]
   const relative = () => pcs.map((k) => mod12(rootPc + k))
