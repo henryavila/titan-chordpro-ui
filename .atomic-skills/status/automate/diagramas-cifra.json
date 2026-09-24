@@ -1,8 +1,8 @@
 {
   "step": "D.5",
   "phaseId": "F2",
-  "redispatchCount": 10,
-  "updatedAt": "2026-09-24T14:43:49.071Z",
+  "redispatchCount": 11,
+  "updatedAt": "2026-09-24T15:30:55.969Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -56,6 +56,12 @@
       "at": "2026-09-24T14:34:17.137Z",
       "reason": "Operator said prossiga. Astra kept 3 majors on 008249e..4e0e1e5. Fix D9 +2, MIDI below 60, and multi-octave MIDI without undoing C keys 0 2, Dsus2 +5, or untransposed D9. Do not start F3.",
       "priorCount": 9,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T15:18:28.204Z",
+      "reason": "Operator said faça. Piano keys 0–17 are distances from the chord root: transpose renames only. A key above 17 or below 0 is a real piano key and adds the shift. Delete the absolute-versus-relative guess. Do not start F3.",
+      "priorCount": 10,
       "gate": "spawn"
     }
   ],

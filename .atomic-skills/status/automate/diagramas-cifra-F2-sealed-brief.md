@@ -27,9 +27,9 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix10
-- **writerBranch:** impl/diagramas-cifra-F2-fix10
-- **baseRef:** a07fa6a57dda6b1d57291fb1b3f95a0f3e08454e
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix11
+- **writerBranch:** impl/diagramas-cifra-F2-fix11
+- **baseRef:** b57bf30c3c127832937faab01d757dc203e151af
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (1)
@@ -79,67 +79,83 @@ Rules:
 - Prefer exclusive `base`+`head` per task when multi-task commits share SHAs.
 - Do not invent pass for missing work-order tasks.
 
-## Fix contract — F2-fix10 (this dispatch only)
-
-Codex receipt `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md` kept three majors. Do not start F3. Do not edit guitar or ukulele packs. Do not add Vue. `transposePianoKeys` must not throw. `chord-dict.ts` must not import `define.ts`.
-
-The largest interval in `QUALITY_INTERVALS` is 17. A key above 17 is a MIDI note, not an interval.
-
-### Rule
-
-`pianoSoundingPitchClasses`:
-
-- If any key is `> 17` or `< 0`, return `keys.map(mod12)` in order. Do not run the relative-versus-absolute heuristic.
-- Otherwise keep the current heuristic. That includes `14` and `17` next to `0–11`.
-
-`transposePianoKeys`:
-
-1. Every key is inside `0–11`: keep the current candidate path. When neither candidate reads the shifted classes, store `60 + pc`. Do not throw.
-2. Every key is `0–17` and at least one key is `12–17`: these are extended intervals. Do not add `n` to the raw numbers. Take the sounding classes from the heuristic, shift them by `n` inside `0–11`, then store the `0–11` candidate (absolute, else relative) that the renamed chord reads back as that sequence. If neither does, store `60 + pc`.
-3. Any key `> 17` or `< 0`: MIDI. Add `n` to each key. Do not fold them with `60 + (mod 12)`. If any result is `<= 17`, add the same multiple of 12 to every key until every key is `> 17`. Keep the spacing.
-
-### Tests that must stay green
-
-- `{define: C keys 0 2}` +2 stores `D` keys `[62, 64]`. `exportCho` and `transpose` draw D and E. Minus 2 stores `C` keys `[60, 62]` and draws C and D.
-- Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D. Minus 5 stores keys `[2, 9]` and draws D, A.
-- `{define: D9 keys 0 4 7 14}` untransposed draws D, F#, A, E (pcs 2, 6, 9, 4).
-- F7sus4 `0 5 10` +2 stores `[7, 0, 5]`. Dsus2 +3 stores `[5, 0]`. D `0 4 7` +2 stores `[4, 8, 11]`. C `0 4 7` +2 stores `[2, 6, 9]`. B `11 3 6` +1 stores `[0, 4, 7]`. C `48 52 55` +2 stores `[50, 54, 57]`.
-- The 408-cell count stays `17 * 12 * 2`.
-
-The test that expects `D` keys `[62, 64]` after −60 may change its stored numbers. It must still draw D and E, and every stored key must be `> 17`.
-
-### Tests you must add
-
-- `{define: D9 keys 0 4 7 14}` +2 draws E, G#, B, F# (pcs 4, 8, 11, 6). `exportCho` of that chart does not throw.
-- `{define: D keys 50 52}` draws D and E (pcs 2, 4). `{define: C keys 48 50}` +2 stores `[50, 52]` and draws D and E.
-- `{define: C keys 60 64 79}` +2 stores `[62, 66, 81]`. That result transposed by −2 stores `[60, 64, 79]`.
-
-Put assertions in `tests/core/define-directive.test.ts` and/or `tests/core/resolve-diagram.test.ts`.
-
-### Checks
-
-`pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts`
-
-Also:
-
-`pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts`
-
-One T-002 commit. Paths: `src/core/define.ts`, `src/core/chord-dict.ts`, `tests/core/define-directive.test.ts`, `tests/core/resolve-diagram.test.ts`. Do not commit `.atomic-skills/`.
-
-If `node_modules` is missing, run `CI=true pnpm install` in this worktree only. Do not symlink another worktree's `node_modules`. Run vitest with this worktree as cwd.
-
-Write the claim report only to `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`. Do not `git add` it. Do not edit any other file in the plan worktree.
-
-The sealed brief inside the writer worktree is stale. This file is the authority:
-
-`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-F2-sealed-brief.md`
-
 ## Exit
 
 1. All listed verifiers green for claimed-pass tasks (self-check).
-2. Write claim report to `.atomic-skills/status/automate/diagramas-cifra-claims.json`.
+2. Write claim report to the absolute path in Scoped context (the sibling worktree does not share the plan status dir).
 3. Final message: summary of files changed, commit SHAs, claim report path, any blockers.
 4. Do not mark tasks done in YAML. Do not call done/phase-done.
+
+## Scoped context (product contract only — not chat history)
+
+Operator order for this dispatch: delete the piano-key guess. One rule.
+
+### Rule
+
+File `{define}` piano `keys` have one meaning, chosen by a hard cutoff. Never score the chord. Never pick absolute pitch classes versus intervals.
+
+- Every key is in `0..17` (17 is the largest `QUALITY_INTERVALS` tone): the number is a **distance from the chord root**. `0` is the root, `4` the major third, `7` the fifth, `14` the ninth. `drawPiano` already lights `(root + interval) mod 12`.
+- Any key `> 17` or `< 0`: the number is a **real piano key** (MIDI). Read `mod 12`. Do not run the interval formula.
+
+`pianoSoundingPitchClasses` (`src/core/chord-dict.ts`):
+
+- MIDI branch: `return keys.map((k) => mod12(k))`.
+- Otherwise: `return keys.map((k) => mod12(rootPc + k))`.
+- Delete the score, the absolute-versus-relative tie, the slash-bass tie-break, and the characteristic-tone tie-break. Remove the helpers that exist only for that guess (`scorePianoReadings`, `characteristicIntervals`, `characteristicCount`) if nothing else calls them.
+- `chord-dict.ts` must not import `define.ts`. Do not edit the guitar or ukulele dictionary packs. Fretted identity stays `17 * 12 * 2 = 408`.
+
+`transposePianoKeys` (`src/core/define.ts`):
+
+- Must not throw. `transpose` and `exportCho` call it with no try/catch.
+- MIDI branch: `keepMidiAboveIntervals(keys.map((k) => k + n))`. Add `n`. Do not fold with `60 + (mod 12)`. If a result is `<= 17`, lift every key by the same number of octaves until each is `> 17`.
+- Interval branch (`0..17`, including a 12–17 tone such as 14): **return the same numbers**. Do not add `n`. Do not rewrite them as pitch classes, as `60 + pc`, or as whatever the reader would accept. Only `transposeDefine` changes the chord name.
+- Do not call the reader to choose a storage form.
+
+### What must still light
+
+Storage changes. The lit notes below do not.
+
+- `{define: Dsus2 keys 0 7}` +5 stores `Gsus2` keys `[0, 7]` and lights G and D (pcs 7, 2). −5 stores `Dsus2` keys `[0, 7]` (not `[2, 9]`) and lights D and A (pcs 2, 9).
+- `{define: Dsus2 keys 0 7}` +3 stores `Fsus2` keys `[0, 7]` (not `[5, 0]`) and lights F and C. −3 stores `[0, 7]` and lights D and A.
+- `{define: C keys 0 2}` +2 stores `D` keys `[0, 2]` (not `[62, 64]`). Does not throw. `transpose` and `exportCho` write it. Lights D and E (pcs 2, 4). −2 stores `C` keys `[0, 2]` (not `[60, 62]`) and lights C and D.
+- `{define: C keys 0 4 7}` +2 stores `D` keys `[0, 4, 7]` (not `[2, 6, 9]`) and lights D, F#, A.
+- `{define: D keys 0 4 7}` +2 stores `E` keys `[0, 4, 7]` (not `[4, 8, 11]`) and lights E, G#, B.
+- `{define: B keys 0 4 7}` +1 stores `C` keys `[0, 4, 7]` and lights C, E, G. Do not keep `{define: B keys 11 3 6}` as B major. `11 3 6` is distances, not the notes B, D#, F#.
+- `{define: F7sus4 keys 0 5 10}` +2 stores `G7sus4` keys `[0, 5, 10]` (not `[7, 0, 5]`) and lights G, C, F (pcs 7, 0, 5). Untransposed still lights F, A#, D# (pcs 5, 10, 3).
+- `{define: D9 keys 0 4 7 14}` untransposed lights D, F#, A, E (pcs 2, 6, 9, 4). +2 stores `E9` keys `[0, 4, 7, 14]` (not `[4, 8, 11, 6]`) and lights E, G#, B, F# (pcs 4, 8, 11, 6). `exportCho` does not throw.
+- `{define: D7M(9)/B keys 9 0 11 2}` lights B, D, C#, E (pcs 11, 2, 1, 4). Those numbers are distances from D. Do not restore a bass tie-break so that `11 2 1 4` is read as absolute notes.
+- `{define: Am keys 0 3 7}` lights A, C, E. `{define: Am keys 9 0 4}` is distances and lights F#, A, C# — not A, C, E. Delete the test that treats `9 0 4` as absolute A, C, E.
+- `{define: G7sus4 keys 0 5 10}` lights G, C, F. `{define: G7sus4 keys 7 0 5}` is distances (D, G, C), not a second spelling of G, C, F. Same for `Gsus4` `0 5` versus `7 0`.
+- MIDI stays: `{define: C keys 48 52 55}` +2 stores `[50, 54, 57]`. `{define: C keys 48 50}` +2 stores `D` keys `[50, 52]` and lights D and E. `{define: D keys 50 52}` lights D and E, not a relative reading. `{define: C keys 60 64 79}` +2 stores `[62, 66, 81]`; −2 restores `[60, 64, 79]`. `{define: D keys 62 64}` −60 stores keys that are all `> 17`, still lights D and E, and does not throw.
+
+### Tests
+
+Update expectations in `tests/core/define-directive.test.ts` and `tests/core/resolve-diagram.test.ts` to the storage above. Assert the lit notes, not the old re-encoded arrays.
+
+`tests/core/export-cho.test.ts` is outside the work-order path list. This dispatch authorizes one edit there: the assertion `{define: D keys 2 6 9}` becomes `{define: D keys 0 4 7}`. Do not otherwise rewrite that file. The Dsus2 +5 export test already expects keys `[0, 7]` and notes G, D — leave that behavior.
+
+### Do not
+
+- Do not mark T-002 done. Do not edit initiative YAML, plan.md, handoff, or reviews.
+- Do not add Vue. Do not open a diagram modal. Do not start F3.
+- Do not guess `7+`. Do not change guitar or ukulele shapes.
+- If `node_modules` is missing in this worktree, run `CI=true pnpm install` here only. Do not symlink `node_modules`.
+- Vitest cwd is this worktree.
+
+Self-check, both must exit 0:
+
+```
+pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts
+pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts
+```
+
+Commit only the paths you changed, with explicit `git add`. Subject: `fix(T-002): piano define keys are intervals from the root`.
+
+Write the claim report JSON to this absolute path (not the sibling copy):
+
+`/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`
+
+`claimed-pass` only if both commands exited 0. `commitShas` is the implementation commit. `base` is `b57bf30c3c127832937faab01d757dc203e151af`. `head` is that commit. `verifierCommand` is the first vitest command. `paths` lists every file in the commit.
 
 ---
 sealed-brief: true
