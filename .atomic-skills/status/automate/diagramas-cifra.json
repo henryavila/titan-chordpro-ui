@@ -1,8 +1,8 @@
 {
-  "step": "D.5",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 17,
-  "updatedAt": "2026-09-24T22:33:34.593Z",
+  "redispatchCount": 18,
+  "updatedAt": "2026-09-24T22:44:54.827Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -98,6 +98,12 @@
       "at": "2026-09-24T22:24:35.538Z",
       "reason": "Phase review found two majors: a define with frets and keys serves only one instrument, and layout applies transposeSemitones on chords transpose() already rewrote. Fix before phase-done. Do not start F3.",
       "priorCount": 16,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T22:44:54.827Z",
+      "reason": "Local review of fix17: a define that also carries the other instrument payload is returned first and hides the define written for the requested instrument. Prefer the same-instrument define. Do not start F3.",
+      "priorCount": 17,
       "gate": "spawn"
     }
   ],

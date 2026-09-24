@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: Fix the two phase-review majors, then review again. Do not start F3.
+nextAction: Prefer the define of the requested instrument, then review fix17 plus that fix. Do not start F3.
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -180,9 +180,9 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 phase review of `9b8033a..HEAD` (src and tests) found two majors. T-001 and T-002 are pending again. T-003 stays done. F3 is not started.
+- **Narrative:** Fix17 is merged as `2e00a3f`. Transpose is applied once. A define with frets and keys can serve the other instrument, but the first matching line wins, so a guitar line with keys hides a later piano `{define:}`. T-001 and T-002 stay pending. T-003 stays done. F3 is not started.
 - **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Local review of the phase diff: a define with frets and keys serves one instrument; `layoutChartFull` adds `transposeSemitones` on chords `transpose()` already rewrote.
-- **Single nextAction:** Fix the two phase-review majors, then review again. Do not start F3.
+- **Single nextAction:** Prefer the define of the requested instrument, then review fix17 plus that fix. Do not start F3.
 - **Open bug:** none in the host verifiers.
 - **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 stores E keys `[0, 4, 7]` and draws E G# B. C `0 4 7` +2 stores D keys `[0, 4, 7]` and draws D F# A. B `0 4 7` +1 stores C keys `[0, 4, 7]` and draws C E G. `B keys 11 3 6` is distances, not B major. MIDI `48 52 55` +2 is still `[50, 54, 57]`. F7sus4 `0 5 10` +2 stores `G7sus4` keys `[0, 5, 10]` and draws G, C, F. Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D; −5 stores `[0, 7]` and draws D, A. Dsus2 +3 stores `Fsus2` keys `[0, 7]` and draws F, C; −3 stores `[0, 7]` and draws D, A. C `0 2` +2 stores D keys `[0, 2]` and draws D, E; −2 stores C keys `[0, 2]` and draws C, D. D9 `0 4 7 14` draws D, F#, A, E; +2 stores `E9` keys `[0, 4, 7, 14]` and draws E, G#, B, F#. D7M(9)/B keys `9 0 11 2` draws B, D, C#, E. Am `0 3 7` draws A, C, E. Am `9 0 4` draws F#, A, C#. No Vue in core.
 - **Verbatim state:** Plan branch `plan/diagramas-cifra`. Product merge `f20fd9fb4c5377bd395a75b6f4d4baf25f2433bd`. F2-G1 `pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts` exit 0, 82 tests. Evaluation report `.atomic-skills/reviews/eval-diagramas-cifra-F2-r3.md` verdict pass. Local phase review majors: `src/core/resolve-diagram.ts:142` and `src/core/layout.ts:445`. Cursor will move F to C for the fix. Lease clear.
