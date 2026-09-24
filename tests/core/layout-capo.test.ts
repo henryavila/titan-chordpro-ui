@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { layoutChartFull, parse, type ChartLayout, type ChartSeg } from '../../src/core'
+import { layoutChartFull, parse, transpose, type ChartLayout, type ChartSeg } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 function songSegs(laid: ChartLayout): ChartSeg[] {
@@ -227,5 +227,30 @@ describe('playable concert / shapeName / capoFret', () => {
       shapeName: 'D',
       capoFret: 0,
     })
+  })
+})
+
+describe('transpose is applied once', () => {
+  const src = ['{title: T}', '{key: G}', '', '[C]hey'].join('\n')
+
+  function firstChord(laid: ChartLayout): ChartSeg {
+    const s = songSegs(laid).find((x) => x.chord)
+    if (!s) throw new Error('expected a lyric chord')
+    return s
+  }
+
+  it('does not add transposeSemitones again when semitones is omitted', () => {
+    const laid = layoutChartFull(transpose(parse(src), 2))
+    const s = firstChord(laid)
+    expect(s.chord).toBe('D')
+    expect(s.concert).toBe('D')
+    expect(s.chord).not.toBe('E')
+  })
+
+  it('shifts a parsed view once when semitones is passed', () => {
+    const laid = layoutChartFull(parse(src), { semitones: 2 })
+    const s = firstChord(laid)
+    expect(s.chord).toBe('D')
+    expect(s.concert).toBe('D')
   })
 })
