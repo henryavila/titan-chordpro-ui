@@ -285,6 +285,7 @@ const INTENT = new Set([
   'accent',
   'lens',
   'comentarios',
+  'cc',
 ])
 
 /** Old `/` + query bookmarks land on the matching named page. */
@@ -335,6 +336,8 @@ export type LabQuery = {
   audio: false | 'cantado' | 'playback' | 'ambos'
   /** When false (`capa=0`), skip cover so the packaged generic art shows. */
   capa: boolean
+  /** Captured Cifra Club page slug under tests/helpers/cifraclub-pages/. */
+  cc: string | null
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -373,6 +376,7 @@ export function labQuery(search: string): LabQuery {
     zonas: p.get('zonas') === '1',
     audio: parseDemoAudio(p.get('audio')),
     capa: p.get('capa') !== '0',
+    cc: p.get('cc'),
   }
 }
 

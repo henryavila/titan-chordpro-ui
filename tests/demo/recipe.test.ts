@@ -172,6 +172,7 @@ describe('labQuery', () => {
       zonas: false,
       audio: false,
       capa: true,
+      cc: null,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
       song: 'a',
@@ -187,6 +188,7 @@ describe('labQuery', () => {
       zonas: false,
       audio: false,
       capa: true,
+      cc: null,
     })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
     expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos', capa: true })

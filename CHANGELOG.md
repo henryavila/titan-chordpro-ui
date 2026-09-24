@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Importar Cifra Club:** a cifra é lida pelo texto (acorde, letra, seção), não pelas classes da página. Tablatura no meio da música, e a linha de acordes que só mostra o que a tab toca, fica de fora. Páginas gravadas: Tu És, Tua Vontade, Unidos em Cristo, Meu Farol.
+
 ## [0.7.0] - 2026-09-24
 
 ### Added
