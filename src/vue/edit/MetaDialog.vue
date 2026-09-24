@@ -47,6 +47,8 @@ const TIMES = ['4/4', '3/4', '6/8', '2/4']
 
 const meta = ref<ChartMeta>({ ...readMeta(props.source) })
 const keyEdit = ref(!String(readMeta(props.source).key ?? '').trim())
+/** Fields the user edited. An empty value there is a clear, not a readMeta echo. */
+const touched = ref<ReadonlySet<MetaKey>>(new Set())
 const taps = ref<number[]>([])
 const titleEl = ref<HTMLInputElement | null>(null)
 
@@ -139,6 +141,9 @@ const patchLabels = computed(() => {
 })
 
 function setMeta(k: MetaKey, v: string) {
+  const nextTouched = new Set(touched.value)
+  nextTouched.add(k)
+  touched.value = nextTouched
   meta.value = { ...meta.value, [k]: v }
 }
 function onDurationInput(e: Event) {
@@ -172,23 +177,60 @@ function toggleMinor() {
   setMeta('key', /m$/.test(cur) ? cur.replace(/m$/, '') : `${cur}m`)
 }
 
-/** N>1 writes only fields that changed, so a tempo save does not rewrite `{t:}` or `{composer:}`. */
+const IDENTITY_CLEAR = ['title', 'subtitle', 'artist'] as const
+
+/**
+ * N>1 writes only fields that changed, so a tempo save does not rewrite `{t:}` or `{composer:}`.
+ * An empty value the user typed is still a field, even when it equals `readMeta`.
+ */
 function fieldsToWrite(source: string, next: ChartMeta): ChartMeta {
   if (!hasChartEnvelope(source)) return next
   const orig = readMeta(source)
   const patch: ChartMeta = {}
   const keys = new Set<MetaKey>([...(Object.keys(orig) as MetaKey[]), ...(Object.keys(next) as MetaKey[])])
   for (const key of keys) {
-    if ((orig[key] ?? '').trim() === (next[key] ?? '').trim()) continue
+    const same = (orig[key] ?? '').trim() === (next[key] ?? '').trim()
+    if (same && !(touched.value.has(key) && (next[key] ?? '').trim() === '')) continue
     patch[key] = next[key] ?? ''
   }
   return patch
 }
 
+/**
+ * `{title:}` then `{t:Second}`: readMeta is empty and parse shows Second.
+ * A clear the user typed must remove that alias. A tempo save must not.
+ */
+function explicitIdentityClears(source: string, next: ChartMeta): MetaKey[] {
+  let shown: { title?: string; subtitle?: string; artist?: string }
+  try {
+    shown = parse(source).meta
+  } catch {
+    return []
+  }
+  const read = readMeta(source)
+  const out: MetaKey[] = []
+  for (const key of IDENTITY_CLEAR) {
+    if (!touched.value.has(key)) continue
+    if ((next[key] ?? '').trim() !== '') continue
+    if ((read[key] ?? '').trim() !== '') continue
+    if ((shown[key] ?? '').trim() === '') continue
+    out.push(key)
+  }
+  return out
+}
+
+function commitMeta(source: string, next: ChartMeta): string {
+  let out = writeMeta(source, fieldsToWrite(source, next))
+  for (const key of explicitIdentityClears(source, next)) {
+    out = writeMeta(out, { [key]: '' }, { target: 'song' })
+  }
+  return out
+}
+
 function apply() {
   const next = { ...meta.value, duration: normalizeDurationMmSs(meta.value.duration ?? '') }
   meta.value = next
-  emit('apply', writeMeta(props.source, fieldsToWrite(props.source, next)))
+  emit('apply', commitMeta(props.source, next))
 }
 
 function rewriteDeclared() {
@@ -257,7 +299,7 @@ async function runEnrich() {
   enrichErr.value = ''
   try {
     const html = await props.fetchChart(u)
-    const live = writeMeta(props.source, fieldsToWrite(props.source, meta.value))
+    const live = commitMeta(props.source, meta.value)
     const p = proposeCifraClubEnrich(live, html, { url: u })
     proposal.value = p
     ytPick.value = ''
@@ -315,7 +357,7 @@ async function commitEnrich() {
       : ytPick.value === 'local'
         ? p.youtube?.localId
         : null
-  const live = writeMeta(props.source, fieldsToWrite(props.source, meta.value))
+  const live = commitMeta(props.source, meta.value)
   let strum: CcStrumChoice = 'keep'
   if (p.strumConflict && strumPick.value === 'replace') {
     strum = trazerCcStrumChoice(p.strumConflict)
@@ -323,7 +365,7 @@ async function commitEnrich() {
   let next = applyCifraClubEnrich(live, p, { youtubeId: youtubeId || null, strum })
   let m = readMeta(next)
   if (youtubeId) m = await fillDuration(youtubeId, m)
-  next = writeMeta(next, fieldsToWrite(next, m))
+  next = commitMeta(next, m)
   meta.value = { ...m }
   keyEdit.value = !String(m.key ?? '').trim()
   emit('apply', next)

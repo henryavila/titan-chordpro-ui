@@ -16,6 +16,7 @@ import {
   inferWrittenKey,
   ChartEnvelopeError,
   commitChartDocument,
+  listCharts,
   lintSource,
   storedTransposeSemis,
   isParseFatal,
@@ -275,6 +276,11 @@ const lens = ref<Lens>(props.lens)
 const capoMap = ref(true)
 const hideComments = ref(props.hideComments)
 const srcOpen = ref(false)
+/**
+ * Chart the edit session opened on. A half-typed `{x_chart_default}` must not
+ * move the source pane onto the sibling.
+ */
+const pinnedChartId = ref<string | null>(null)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
 const wMode = ref<WriteMode | null>(null)
@@ -407,7 +413,22 @@ watch(
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
 const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
 const audio = useAudioRef(audioUrl)
-const parsed = computed(() => readChartFile(() => parse(liveSource.value), EMPTY_CHART))
+function pinEditedChart() {
+  const charts = readChartFile(() => listCharts(session.getSource()), [])
+  pinnedChartId.value = charts.find((c) => c.isDefault)?.id ?? charts[0]?.id ?? null
+}
+
+function commitOpenChart(next: string): string {
+  if (pinnedChartId.value == null) pinEditedChart()
+  return commitChartDocument(session.getSource(), next, pinnedChartId.value ?? undefined)
+}
+
+const parsed = computed(() =>
+  readChartFile(
+    () => parse(liveSource.value, pinnedChartId.value ? { chartId: pinnedChartId.value } : undefined),
+    EMPTY_CHART,
+  ),
+)
 const audioArt = computed(() => (isEdit.value ? null : readChartFile(() => audioArtOf(liveSource.value), null)))
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
@@ -876,7 +897,7 @@ const bedit = useBlockEdit({
   root,
   scroller,
   write: (next, message) => {
-    session.replace(commitChartDocument(session.getSource(), next))
+    session.replace(commitOpenChart(next))
     touch()
     if (message) toastMsg(message)
   },
@@ -1935,6 +1956,7 @@ function beginEdit(kind: WriteMode) {
   wMode.value = kind
   localMode.value = 'edit'
   if (!session.dirty()) forceBase()
+  pinEditedChart()
   emit('update:mode', 'edit')
   toastMsg(
     kind === 'local'
@@ -1952,6 +1974,7 @@ function exitEdit() {
   bedit.reset()
   scoreEd.value = null
   wMode.value = null
+  pinnedChartId.value = null
   localMode.value = 'view'
   // The local draft has already become the overlay; a "for everyone" draft
   // that was never saved stays on screen, so it cannot be lost by leaving.
@@ -2068,8 +2091,8 @@ function discard() {
 
 function onDraft(next: string) {
   // The step was already opened by the pane: keystrokes coalesce into it.
-  // The pane edits the chart document; the file keeps every other chart.
-  session.edit(commitChartDocument(session.getSource(), next))
+  // The pane edits the pinned chart; a half-typed marker is not a switch.
+  session.edit(commitOpenChart(next))
   touch()
 }
 
@@ -2350,6 +2373,7 @@ function syncHostSource() {
   metaOpen.value = false
   confirmDiscard.value = false
   wMode.value = null
+  pinnedChartId.value = null
   const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
   capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
   stopScroll()

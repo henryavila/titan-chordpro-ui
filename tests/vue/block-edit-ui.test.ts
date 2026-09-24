@@ -467,6 +467,35 @@ describe('envelope block edit', () => {
     w.unmount()
   })
 
+  it('does not swap the source pane when the default marker is half-typed', async () => {
+    const w = await edit({ source: ENVELOPE })
+    await w.get('[data-source]').trigger('click')
+    await flushPromises()
+    const ta = w.get('textarea[aria-label="Fonte ChordPro"]')
+    const shown = (ta.element as HTMLTextAreaElement).value
+    expect(shown).toContain('{x_chart_default:oferta}')
+    await ta.setValue(shown.replace('{x_chart_default:oferta}', '{x_chart_default:ofert}'))
+    await flushPromises()
+    let now = (ta.element as HTMLTextAreaElement).value
+    expect(now).toContain('{x_chart_default:ofert}')
+    expect(now).toContain('linha oferta')
+    expect(now).not.toContain('linha completa')
+    await ta.setValue(now.replace('{x_chart_default:ofert}', '{x_chart_default:ofer}'))
+    await flushPromises()
+    now = (ta.element as HTMLTextAreaElement).value
+    expect(now).toContain('{x_chart_default:ofer}')
+    expect(now).toContain('linha oferta')
+    expect(now).not.toContain('linha completa')
+    expect(now).not.toContain('start_of_x_chart')
+    const out = lastEmitted(w)
+    expect(out).toContain('{x_chart_default:ofer}')
+    expect(out).toContain('{start_of_x_chart:completa}')
+    expect(out).toContain('{start_of_x_chart:oferta}')
+    expect(out).toContain('linha completa')
+    expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
+    w.unmount()
+  })
+
   it('does not throw when a completed pair has text outside the blocks', async () => {
     const source = [
       '{title:Fora}',
