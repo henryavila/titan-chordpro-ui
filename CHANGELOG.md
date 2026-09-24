@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-24
+
 ### Changed
 - **Áudio de referência no celular:** o recolhido é o fone na linha Cifra | Letra. Toque abre o card; enquanto toca, o fone usa a cor do acorde e uma onda. Recolher o chrome fecha o card e deixa o fone, sem parar o áudio. No desktop o chip com título continua acima do dock. Tocar não segura mais o chrome.
 
@@ -136,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.8.0
 [0.7.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.7.0
 [0.6.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.6.0
 [0.5.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.5.0
