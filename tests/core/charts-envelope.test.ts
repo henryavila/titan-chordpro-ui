@@ -1520,3 +1520,99 @@ describe('ChartEnvelopeError is exported', () => {
     }
   })
 })
+
+describe('open fences stay an envelope', () => {
+  const open = [
+    '{start_of_x_chart:completa}',
+    '{t:Completa}',
+    '{composer:Um}',
+    '{tempo:80}',
+    '[G]completa',
+    '{start_of_x_chart:oferta}',
+    '{t:Oferta}',
+    '{composer:Dois}',
+    '{x_chart_default:oferta}',
+    '{key:C}',
+    '{duration:4:26}',
+    '{tempo:90}',
+    '[C]oferta',
+  ].join('\n')
+
+  it('keeps the ids when no end fence is present and nothing sits outside', () => {
+    expect(listCharts(open).map((c) => c.id)).toEqual(['completa', 'oferta'])
+    expect(listCharts(open).find((c) => c.isDefault)?.id).toBe('oferta')
+    expect(parse(open).meta.title).toBe('Oferta')
+    expect(parse(open).source).toContain('[C]oferta')
+    expect(parse(open).source).not.toContain('[G]completa')
+    expect(parse(open, { chartId: 'completa' }).meta.title).toBe('Completa')
+  })
+
+  it('a tempo or strum save does not hoist {t:} or {composer:} above the fence', () => {
+    const session = createSourceSession({ source: open })
+    session.setMeta({ tempo: '100' })
+    const tempo = session.getSource()
+    expect(tempo.slice(0, tempo.indexOf('{start_of_x_chart')).trim()).toBe('')
+    expect(tempo).not.toContain('{title:')
+    expect(tempo).not.toContain('{artist:')
+    expect(tempo).toContain('{t:Completa}')
+    expect(tempo).toContain('{composer:Um}')
+    expect(tempo).toContain('{t:Oferta}')
+    expect(tempo).toContain('{composer:Dois}')
+    expect(splitCho(tempo).charts.find((c) => c.id === 'oferta')?.inner).toContain('{tempo:100}')
+    expect(splitCho(tempo).charts.find((c) => c.id === 'oferta')?.inner).toContain('{duration:4:26}')
+    expect(splitCho(tempo).charts.find((c) => c.id === 'completa')?.inner).toContain('{tempo:80}')
+
+    const pat = parseXStrum('bpm=90;meter=4/4;grid=4;label=Nova;pat=DUDU')
+    if (!pat) throw new Error('strum')
+    const strum = writeStrumPatterns(open, { activeIndex: 0, patterns: [pat] })
+    expect(strum.slice(0, strum.indexOf('{start_of_x_chart')).trim()).toBe('')
+    expect(strum).not.toContain('{title:')
+    expect(strum).not.toContain('{artist:')
+    expect(strum).toContain('{t:Oferta}')
+    expect(strum).toContain('{composer:Dois}')
+    expect(strum).toContain('label=Nova')
+    expect(splitCho(strum).charts.find((c) => c.id === 'completa')?.inner).not.toContain('label=Nova')
+  })
+})
+
+describe('a paste keeps notation fences and refuses a second chart', () => {
+  it('strips one wrapping pair and leaves a fence inside tab or score', () => {
+    for (const [openFence, closeFence] of [
+      ['{sot}', '{eot}'],
+      ['{sos}', '{eos}'],
+    ] as const) {
+      const doc = [
+        '{start_of_x_chart:oferta}',
+        openFence,
+        '{start_of_x_chart:nota}',
+        'E|---',
+        '{end_of_x_chart}',
+        closeFence,
+        '[G]linha',
+        '{end_of_x_chart}',
+      ].join('\n')
+      const out = replaceChart(TWO_CHART_SOURCE, 'oferta', doc)
+      expect(out).not.toBe(TWO_CHART_SOURCE)
+      const inner = splitCho(out).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+      expect(inner).toContain('{start_of_x_chart:nota}')
+      expect(inner).toContain('{end_of_x_chart}')
+      expect(inner).toContain('[G]linha')
+      expect(splitCho(out).charts.map((c) => c.id)).toEqual(['completa', 'oferta'])
+      expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    }
+  })
+
+  it('does not splice when another real chart fence remains', () => {
+    const wrappedPair = [
+      '{start_of_x_chart:completa}',
+      '[G]a',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '[C]b',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(replaceChart(TWO_CHART_SOURCE, 'oferta', wrappedPair)).toBe(TWO_CHART_SOURCE)
+    const mid = ['{title:Uma}', '{start_of_x_chart:oferta}', '[G]linha', '{end_of_x_chart}'].join('\n')
+    expect(replaceChart(TWO_CHART_SOURCE, 'oferta', mid)).toBe(TWO_CHART_SOURCE)
+  })
+})

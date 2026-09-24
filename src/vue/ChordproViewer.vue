@@ -423,17 +423,24 @@ function commitOpenChart(next: string): string {
   return commitChartDocument(session.getSource(), next, pinnedChartId.value ?? undefined)
 }
 
-const parsed = computed(() =>
-  readChartFile(
-    () => parse(liveSource.value, pinnedChartId.value ? { chartId: pinnedChartId.value } : undefined),
-    EMPTY_CHART,
-  ),
-)
+const parsedState = computed(() => {
+  try {
+    return {
+      view: parse(liveSource.value, pinnedChartId.value ? { chartId: pinnedChartId.value } : undefined),
+      envelopeError: '',
+    }
+  } catch (err) {
+    if (err instanceof ChartEnvelopeError) return { view: EMPTY_CHART, envelopeError: err.message }
+    throw err
+  }
+})
+const parsed = computed(() => parsedState.value.view)
 const audioArt = computed(() => (isEdit.value ? null : readChartFile(() => audioArtOf(liveSource.value), null)))
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
+  if (parsedState.value.envelopeError) return parsedState.value.envelopeError
   return isParseFatal(liveSource.value, parsed.value)
 })
 const isLoading = computed(() => props.loading)

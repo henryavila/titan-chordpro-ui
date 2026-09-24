@@ -183,13 +183,19 @@ const IDENTITY_CLEAR = ['title', 'subtitle', 'artist'] as const
  * N>1 writes only fields that changed, so a tempo save does not rewrite `{t:}` or `{composer:}`.
  * An empty value the user typed is still a field, even when it equals `readMeta`.
  */
+/** `4:26` and `04:26` are one duration. Aplicar must not write that as a change. */
+function sameField(key: MetaKey, orig: string, next: string): boolean {
+  if (key === 'duration') return normalizeDurationMmSs(orig) === normalizeDurationMmSs(next)
+  return orig.trim() === next.trim()
+}
+
 function fieldsToWrite(source: string, next: ChartMeta): ChartMeta {
   if (!hasChartEnvelope(source)) return next
   const orig = readMeta(source)
   const patch: ChartMeta = {}
   const keys = new Set<MetaKey>([...(Object.keys(orig) as MetaKey[]), ...(Object.keys(next) as MetaKey[])])
   for (const key of keys) {
-    const same = (orig[key] ?? '').trim() === (next[key] ?? '').trim()
+    const same = sameField(key, orig[key] ?? '', next[key] ?? '')
     if (same && !(touched.value.has(key) && (next[key] ?? '').trim() === '')) continue
     patch[key] = next[key] ?? ''
   }
