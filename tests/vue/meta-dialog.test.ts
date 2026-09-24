@@ -136,6 +136,35 @@ describe('MetaDialog', () => {
     expect(next).toContain('{title:Novo}')
     expect(next).toContain(body)
   })
+
+  it('a tempo save on N>1 does not rewrite {t:} or {composer:}', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{t:Completa}',
+      '{composer:Um}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{t:Oferta}',
+      '{composer:Dois}',
+      '{x_chart_default:oferta}',
+      '{tempo:80}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    await w.get('[data-meta-tempo]').setValue('100')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    expect(next).toContain('{t:Oferta}')
+    expect(next).toContain('{composer:Dois}')
+    expect(next).toContain('{t:Completa}')
+    expect(next).toContain('{composer:Um}')
+    expect(next).not.toContain('{title:')
+    expect(next).not.toContain('{artist:')
+    expect(next).toContain('{tempo:100}')
+    expect(next).not.toContain('{tempo:80}')
+  })
 })
 
 describe('rewrite of a registered mismatch', () => {

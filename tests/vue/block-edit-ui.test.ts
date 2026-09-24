@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { normalizeSource } from '../../src/core/index'
+import { ChartEnvelopeError, listCharts, normalizeSource } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
 
@@ -464,6 +464,26 @@ describe('envelope block edit', () => {
     expect(out).toContain('{start_of_x_chart:completa}')
     expect(out).toContain('{start_of_x_chart:oferta}')
     expect(out).toContain('linha completa')
+    w.unmount()
+  })
+
+  it('does not throw when a completed pair has text outside the blocks', async () => {
+    const source = [
+      '{title:Fora}',
+      '{start_of_x_chart:completa}',
+      '[G]linha completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{x_chart_default:oferta}',
+      '[C]linha oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(() => listCharts(source)).toThrow(ChartEnvelopeError)
+    const w = mountViewer({ source })
+    await flushPromises()
+    expect(w.text()).not.toContain('linha oferta')
+    expect(w.text()).not.toContain('linha completa')
+    expect(w.find('[data-cpv-scroll]').exists()).toBe(false)
     w.unmount()
   })
 

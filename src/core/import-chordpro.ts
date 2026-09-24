@@ -396,13 +396,14 @@ export function readStrumPatterns(source: string): StrumPatternSet {
  * `{x_strum_set:}` only when N>1; clears both when empty.
  */
 export function writeStrumPatterns(source: string, set: StrumPatternSet): string {
-  const cur: ChartMeta = { ...readMeta(source) }
-  // Present empty keys still clear; delete would drop them from a two-arg patch.
-  cur.x_strum = ''
-  cur.x_strum_set = ''
   const fields = metaFromStrumSet(set)
-  if (fields.x_strum) cur.x_strum = fields.x_strum
-  if (fields.x_strum_set) cur.x_strum_set = fields.x_strum_set
+  // Present empty keys still clear; delete would drop them from a two-arg patch.
+  const strum: ChartMeta = { x_strum: '', x_strum_set: '' }
+  if (fields.x_strum) strum.x_strum = fields.x_strum
+  if (fields.x_strum_set) strum.x_strum_set = fields.x_strum_set
+  // N>1: only the strum fields. A spread of readMeta would rewrite `{t:}` and `{composer:}`.
+  if (splitCho(source).hasEnvelope) return writeMeta(source, strum)
+  const cur: ChartMeta = { ...readMeta(source), ...strum }
   return writeMeta(source, cur)
 }
 
@@ -1180,7 +1181,8 @@ export function applyCifraClubEnrich(
   proposal: EnrichProposal,
   choice?: { youtubeId?: string | null; strum?: CcStrumChoice },
 ): string {
-  const next: ChartMeta = { ...readMeta(source), ...proposal.patch }
+  const base = readMeta(source)
+  const next: ChartMeta = { ...base, ...proposal.patch }
   const id = choice?.youtubeId
   if (typeof id === 'string' && id.trim()) next.x_youtube = id.trim()
 
@@ -1196,5 +1198,13 @@ export function applyCifraClubEnrich(
       if (fields.x_strum_set) next.x_strum_set = fields.x_strum_set
     }
   }
-  return writeMeta(source, next)
+  if (!splitCho(source).hasEnvelope) return writeMeta(source, next)
+  const patch: ChartMeta = {}
+  const keys = new Set<string>([...Object.keys(base), ...Object.keys(next)])
+  for (const key of keys) {
+    const k = key as MetaKey
+    if ((base[k] ?? '') === (next[k] ?? '')) continue
+    patch[k] = next[k] ?? ''
+  }
+  return writeMeta(source, patch)
 }
