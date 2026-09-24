@@ -310,5 +310,5 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=5db131b22f16 | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=81c6cc82f4fb | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.

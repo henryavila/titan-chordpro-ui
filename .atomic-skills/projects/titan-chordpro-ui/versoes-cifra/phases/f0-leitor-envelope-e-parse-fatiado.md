@@ -201,4 +201,4 @@ The block contract is on `plan/versoes-cifra`. Product commit `e73742a593885312f
 
 ### Uncommitted changes
 
-Scratch moved aside to `/tmp/versoes-cifra-scratch-rules`. Older `.aideck` and `_drafts` sit in `/tmp/versoes-cifra-scratch-90533`. No product edits. Lease file absent.
+`?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json` and `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`. Do not commit them. No product edits. Lease file absent.
