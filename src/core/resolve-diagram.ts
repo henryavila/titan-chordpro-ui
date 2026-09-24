@@ -58,6 +58,19 @@ function isInstrument(value: string): value is DiagramInstrument {
   return value === 'guitar' || value === 'ukulele' || value === 'piano'
 }
 
+/**
+ * Payload, not the label from `parseDefineDirective`. Keys force `piano`
+ * even when 6 or 4 frets are still on the line; those frets still hit
+ * guitar or ukulele. Keys on a string directive still hit piano.
+ * No frets: guitar and ukulele miss. No keys: piano misses.
+ */
+function servesInstrument(def: ChordDefine, instrument: DiagramInstrument): boolean {
+  if (instrument === 'piano') return (def.keys?.length ?? 0) > 0
+  const need = instrument === 'guitar' ? 6 : 4
+  if ((def.frets?.length ?? 0) !== need) return false
+  return def.instrument === instrument || def.instrument === 'piano'
+}
+
 function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
   const voicing: DiagramVoicing = {}
   if (def.frets?.length) {
@@ -91,9 +104,8 @@ function pianoUnknownOverride(
   const rootPc = keyIndex(token)
   if (rootPc == null) return null
   for (const def of overrides) {
-    if (def.instrument !== 'piano') continue
+    if (!servesInstrument(def, 'piano')) continue
     if (def.name !== token) continue
-    if (!def.keys?.length) continue
     return {
       class: 'hit',
       instrument: 'piano',
@@ -112,9 +124,8 @@ function exactFretOverride(
   token: string,
 ): DiagramHit | null {
   for (const def of overrides) {
-    if (def.instrument !== instrument) continue
+    if (!servesInstrument(def, instrument)) continue
     if (def.name !== token) continue
-    if (!def.frets?.length) continue
     return {
       class: 'hit',
       instrument,
@@ -143,7 +154,7 @@ function overrideMatch(
   token: string,
   want: Canonical,
 ): boolean {
-  if (def.instrument !== instrument) return false
+  if (!servesInstrument(def, instrument)) return false
   if (def.name === token) return true
   const got = canonicalOf(def.name)
   return !!got && sameCanonical(got, want)

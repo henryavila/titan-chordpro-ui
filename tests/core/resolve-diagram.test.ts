@@ -87,6 +87,77 @@ describe('resolveDiagram', () => {
     expect(hit.voicing.keys?.length).toBeGreaterThan(0)
   })
 
+  it('uses six frets from a piano-classified define for guitar, and its keys for piano', () => {
+    const raw = parseDefineDirective('{define: Caug frets x 3 2 1 1 0 keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('piano')
+    const guitar = resolveDiagram({ token: 'Caug', instrument: 'guitar', overrides: [raw] })
+    expect(guitar.class).toBe('hit')
+    if (guitar.class !== 'hit') return
+    expect(guitar.source).toBe('override')
+    expect(guitar.voicing.frets).toEqual(['x', 3, 2, 1, 1, 0])
+    const piano = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [raw] })
+    expect(piano.class).toBe('hit')
+    if (piano.class !== 'hit') return
+    expect(piano.source).toBe('override')
+    expect(piano.voicing.keys).toEqual([0, 4, 8])
+  })
+
+  it('uses four frets from a piano-classified define for ukulele', () => {
+    const raw = parseDefineDirective('{define: Caug frets 2 0 0 0 keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('piano')
+    const uke = resolveDiagram({ token: 'Caug', instrument: 'ukulele', overrides: [raw] })
+    expect(uke.class).toBe('hit')
+    if (uke.class !== 'hit') return
+    expect(uke.source).toBe('override')
+    expect(uke.voicing.frets).toEqual([2, 0, 0, 0])
+    expect(
+      resolveDiagram({
+        token: 'Caug',
+        instrument: 'guitar',
+        overrides: [raw],
+      }),
+    ).toEqual({ class: 'miss', reason: 'unknown-token' })
+  })
+
+  it('does not use a keys-only define for guitar or ukulele', () => {
+    const raw = parseDefineDirective('{define: Caug keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(resolveDiagram({ token: 'Caug', instrument: 'guitar', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+    expect(resolveDiagram({ token: 'Caug', instrument: 'ukulele', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+  })
+
+  it('uses keys on a guitar define for piano instead of the package triad', () => {
+    const raw = parseDefineDirective('{define-guitar: C frets x 3 2 0 1 0 keys 0 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('guitar')
+    const piano = resolveDiagram({ token: 'C', instrument: 'piano', overrides: [raw] })
+    expect(piano.class).toBe('hit')
+    if (piano.class !== 'hit') return
+    expect(piano.source).toBe('override')
+    expect(piano.voicing.keys).toEqual([0, 7])
+    const uke = parseDefineDirective('{define-ukulele: C frets 0 0 0 3 keys 0 7}')
+    expect(uke.class).toBe('parse')
+    if (uke.class !== 'parse') return
+    expect(uke.instrument).toBe('ukulele')
+    const fromUke = resolveDiagram({ token: 'C', instrument: 'piano', overrides: [uke] })
+    expect(fromUke.class).toBe('hit')
+    if (fromUke.class !== 'hit') return
+    expect(fromUke.source).toBe('override')
+    expect(fromUke.voicing.keys).toEqual([0, 7])
+  })
+
   it('misses a piano define whose name has no root letter', () => {
     const raw = parseDefineDirective('{define: aug keys 0 4 8}')
     expect(raw.class).toBe('parse')
