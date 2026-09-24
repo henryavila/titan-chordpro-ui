@@ -82,8 +82,12 @@ test.describe('rehearsal comments on the reading surface', () => {
     const pair = await page.evaluate(() => {
       const comment = getComputedStyle(document.querySelector('.cpv-comment-text') as HTMLElement)
       const lyric = getComputedStyle(document.querySelector('.cpv-stanza .cpv-lyric') as HTMLElement)
-      const rgb = (c: string) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number)
-      const lum = ([r, g, b]: number[]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+      const rgb = (c: string): [number, number, number] => {
+        const n = (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number)
+        return [n[0] ?? 0, n[1] ?? 0, n[2] ?? 0]
+      }
+      const lum = ([r, g, b]: [number, number, number]) =>
+        (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
       return {
         commentPx: parseFloat(comment.fontSize),
         lyricPx: parseFloat(lyric.fontSize),
