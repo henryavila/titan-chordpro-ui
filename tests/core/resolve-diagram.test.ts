@@ -484,6 +484,47 @@ describe('resolveDiagram', () => {
     expect(draw.litNotes).toEqual(['D', 'E'])
   })
 
+  it('reads D keys 12 16 19 and 7 12 16 as distances, not MIDI', () => {
+    const triad = parseDefineDirective('{define: D keys 12 16 19}')
+    expect(triad.class).toBe('parse')
+    if (triad.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [triad] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 6, 9])
+    expect(draw.litNotes).toEqual(['D', 'F#', 'A'])
+    expect(draw.litNotes).not.toEqual(['C', 'E', 'G'])
+
+    const up = transposeDefine(triad, 2, false)
+    expect(up).toMatchObject({ name: 'E', keys: [12, 16, 19] })
+    expect(up?.keys).not.toEqual([26, 30, 33])
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.lit).toEqual([4, 8, 11])
+    expect(upDraw.litNotes).toEqual(['E', 'G#', 'B'])
+
+    const fifth = parseDefineDirective('{define: D keys 7 12 16}')
+    expect(fifth.class).toBe('parse')
+    if (fifth.class !== 'parse') return
+    const fifthHit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [fifth] })
+    expect(fifthHit.class).toBe('hit')
+    if (fifthHit.class !== 'hit') return
+    const fifthDraw = drawDiagram({ instrument: 'piano', voicing: fifthHit.voicing, token: 'D' })
+    expect(fifthDraw.kind).toBe('piano')
+    if (fifthDraw.kind !== 'piano') return
+    expect(fifthDraw.lit).toEqual([9, 2, 6])
+    expect(fifthDraw.litNotes).toEqual(['A', 'D', 'F#'])
+    expect(new Set(fifthDraw.lit)).toEqual(new Set([2, 9, 6]))
+  })
+
   it('draws D9 keys 0 4 7 14 transposed +2 as E G# B F#', () => {
     const raw = parseDefineDirective('{define: D9 keys 0 4 7 14}')
     expect(raw.class).toBe('parse')

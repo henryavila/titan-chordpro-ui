@@ -3,6 +3,7 @@
  * not package dictionary. Generic `{define:}` infers instrument from payload.
  */
 
+import { pianoKeysAreMidi } from './chord-dict'
 import { transposeToken } from './transpose'
 
 export const DIR = /^\s*\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:?\s*([^}]*)\}\s*$/
@@ -185,13 +186,13 @@ function keepMidiAboveIntervals(keys: readonly number[]): number[] {
 }
 
 /**
- * 0–17, including a 12–17 tone such as 14, is a distance from the chord root:
- * return the same numbers. Do not add n. Any key above 17 or below 0 is MIDI:
- * add n, and if a result is ≤ 17 lift every key by the same octaves until
- * each is > 17. Does not throw and does not ask the reader which form to store.
+ * Same MIDI test as `pianoKeysAreMidi`. Distances, including a number above
+ * 17 beside a key in 0–17 (12, 16, 19), are returned unchanged. MIDI adds n,
+ * and if a result is ≤ 17 every key is lifted by the same octaves until each
+ * is > 17. Does not throw.
  */
 function transposePianoKeys(keys: readonly number[], n: number): number[] {
-  if (keys.some((k) => k > 17 || k < 0)) {
+  if (pianoKeysAreMidi(keys)) {
     return keepMidiAboveIntervals(keys.map((k) => k + n))
   }
   return [...keys]
@@ -199,9 +200,10 @@ function transposePianoKeys(keys: readonly number[], n: number): number[] {
 
 /**
  * Guitar/ukulele: bump `baseFret` when every slot is >0 or `x`; drop if any
- * string is open (fret 0) or the new base would fall below 1. Piano keys in
- * 0–17 stay as written; only the chord name changes. MIDI (any key above 17
- * or below 0) adds n and stays above 17 without folding into one octave.
+ * string is open (fret 0) or the new base would fall below 1. Piano distances
+ * (any key in 0–17, none below 0) stay as written; only the chord name
+ * changes. MIDI (every key > 17, or any key < 0) adds n and stays above 17
+ * without folding into one octave.
  */
 export function transposeDefine(def: ChordDefine, n: number, flats: boolean): ChordDefine | null {
   if (!n) return { ...def }
