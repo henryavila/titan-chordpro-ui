@@ -25,6 +25,10 @@ const props = defineProps<{
   artHeight?: number
   kind: AudioKind
   kinds: AudioKind[]
+  /** Phone dock: headphones on the Cifra/Letra row. */
+  inline?: boolean
+  /** Zen / auto-hide: close the card and float the headphones. */
+  chromeGone?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -32,12 +36,19 @@ const emit = defineEmits<{
   skip: [dir: -1 | 1]
   seek: [t: number]
   kind: [kind: AudioKind]
+  reveal: []
 }>()
 
 const kindLabel = computed(() => AUDIO_KIND_LABEL[props.kind])
 const canSwitch = computed(() => props.kinds.length > 1)
 
 const open = ref(false)
+watch(
+  () => props.chromeGone,
+  (gone) => {
+    if (gone) open.value = false
+  },
+)
 const artBroken = ref(false)
 watch(
   () => props.art,
@@ -70,6 +81,11 @@ function onArtError() {
   if (!usingDefaultArt.value) artBroken.value = true
 }
 
+function openCard() {
+  open.value = true
+  emit('reveal')
+}
+
 function onSeek(e: PointerEvent) {
   const el = e.currentTarget as HTMLElement
   const box = el.getBoundingClientRect()
@@ -82,7 +98,7 @@ function onSeek(e: PointerEvent) {
 <template>
   <div
     class="cpv-hit cpv-audio-ref"
-    :class="{ 'is-playing': playing, 'is-closed': !open }"
+    :class="{ 'is-playing': playing, 'is-closed': !open, 'is-inline': inline }"
     data-audio-ref
     role="region"
     aria-label="Áudio de referência"
@@ -90,6 +106,18 @@ function onSeek(e: PointerEvent) {
     @pointerdown.stop
   >
     <template v-if="!open">
+      <button
+        v-if="inline"
+        type="button"
+        class="cpv-audio-ref-phones"
+        data-audio-open
+        aria-label="Abrir referência"
+        title="Abrir referência"
+        @click="openCard"
+      >
+        <CpvIcon name="headphones" :size="20" />
+      </button>
+      <template v-else>
       <button
         type="button"
         class="cpv-audio-ref-launch"
@@ -124,6 +152,7 @@ function onSeek(e: PointerEvent) {
       >
         <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
       </button>
+      </template>
     </template>
 
     <template v-else>

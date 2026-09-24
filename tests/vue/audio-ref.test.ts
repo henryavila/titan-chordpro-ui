@@ -272,6 +272,31 @@ describe('CpvAudioRef', () => {
     w.unmount()
   })
 
+  it('inline closed chip is headphones, not play or album art', async () => {
+    const w = mount(CpvAudioRef, { props: { ...base, inline: true } })
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-inline')
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
+    expect(w.find('[data-audio-play]').exists()).toBe(false)
+    expect(w.find('[data-icon=chevronUp]').exists()).toBe(false)
+    expect(w.get('[data-icon=headphones]').exists()).toBe(true)
+    expect(w.find('[data-audio-art]').exists()).toBe(false)
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.get('[data-audio-art]').exists()).toBe(true)
+    expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
+    w.unmount()
+  })
+
+  it('inline headphones pulse while the reference plays', () => {
+    const w = mount(CpvAudioRef, { props: { ...base, inline: true, playing: true } })
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-playing')
+    expect(w.get('[data-icon=headphones]').exists()).toBe(true)
+    expect(w.findAll('[data-audio-wave]').length).toBe(2)
+    const idle = mount(CpvAudioRef, { props: { ...base, inline: true, playing: false } })
+    expect(idle.get('[data-audio-ref]').classes()).not.toContain('is-playing')
+    idle.unmount()
+    w.unmount()
+  })
+
   it('opens the now-playing card and closes it without stopping', async () => {
     const w = mount(CpvAudioRef, { props: { ...base, playing: true } })
     await w.get('[data-audio-open]').trigger('click')
@@ -396,7 +421,8 @@ describe('viewer referência chrome', () => {
   it('shows playback-only and a switcher when both tracks exist', async () => {
     const onlyPb = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/pb.m4a?h=1', 'playback')
     const pb = await viewerAt(390, { source: onlyPb })
-    expect(pb.get('[data-audio-open]').text()).toContain('Playback')
+    expect(pb.get('[data-audio-open]').exists()).toBe(true)
+    expect(pb.get('[data-audio-open]').text()).not.toContain('Playback')
     await pb.get('[data-audio-open]').trigger('click')
     expect(pb.get('[data-audio-kind=playback]').text()).toBe('Playback')
     expect(pb.find('button[data-audio-kind]').exists()).toBe(false)
@@ -418,5 +444,122 @@ describe('viewer referência chrome', () => {
     await flushPromises()
     await nextTick()
     expect(w.find('[data-audio-ref]').exists()).toBe(false)
+  })
+
+  it('on a phone, the closed player shares the Cifra/Letra row', async () => {
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(390, { source })
+    expect(w.get('[data-phone-lead]').exists()).toBe(true)
+    expect(w.get('[data-reading-switch]').exists()).toBe(true)
+    expect(w.get('[data-audio-ref]').exists()).toBe(true)
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-inline')
+    expect(w.find('[data-audio-art]').exists()).toBe(false)
+    expect(w.find('[data-audio-play]').exists()).toBe(false)
+    expect(w.get('[data-icon=headphones]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('on a wide screen the chip stays above the dock, with title', async () => {
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(1024, { source })
+    expect(w.find('[data-phone-lead]').exists()).toBe(false)
+    expect(w.get('[data-audio-open]').text()).toContain('Cantado')
+    expect(w.get('[data-audio-ref]').classes()).not.toContain('is-inline')
+    w.unmount()
+  })
+})
+
+function installLiveAudio() {
+  class LiveAudio {
+    src = ''
+    currentTime = 0
+    duration = 90
+    paused = true
+    preload = 'metadata'
+    private listeners = new Map<string, Set<() => void>>()
+    play = async () => {
+      this.paused = false
+      this.listeners.get('play')?.forEach((fn) => fn())
+    }
+    pause = () => {
+      this.paused = true
+      this.listeners.get('pause')?.forEach((fn) => fn())
+    }
+    load = () => {}
+    removeAttribute() {}
+    addEventListener(type: string, fn: () => void) {
+      const set = this.listeners.get(type) ?? new Set<() => void>()
+      set.add(fn)
+      this.listeners.set(type, set)
+    }
+    removeEventListener(type: string, fn: () => void) {
+      this.listeners.get(type)?.delete(fn)
+    }
+  }
+  vi.stubGlobal('Audio', LiveAudio)
+}
+
+function chromeGone(w: Awaited<ReturnType<typeof viewerAt>>) {
+  return w.findAll('.cpv-chrome').map((c) => c.classes().includes('is-hidden'))
+}
+
+async function phoneWithAudio(props: Record<string, unknown> = {}) {
+  installLiveAudio()
+  const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+  const w = await viewerAt(390, { source, ...props })
+  const el = w.get('[data-cpv-scroll]').element as HTMLElement
+  Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+  Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+  observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
+  await flushPromises()
+  return w
+}
+
+describe('chrome while the reference plays', () => {
+  it('a tap on the chart hides the chrome without stopping the audio', async () => {
+    const w = await phoneWithAudio({ autoHide: false })
+    await w.get('[data-audio-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-audio-play]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-icon=pause]').exists()).toBe(true)
+    expect(chromeGone(w).some(Boolean)).toBe(false)
+
+    await w.get('[data-cpv-scroll]').trigger('click')
+    await flushPromises()
+    expect(chromeGone(w).every(Boolean), 'playing pinned the chrome').toBe(true)
+    expect(w.find('[data-audio-title]').exists()).toBe(false)
+    expect(w.get('[data-icon=headphones]').exists()).toBe(true)
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-playing')
+
+    await w.get('[data-cpv-scroll]').trigger('click')
+    await flushPromises()
+    expect(chromeGone(w).some(Boolean)).toBe(false)
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-playing')
+    w.unmount()
+  })
+
+  it('Rolar still tucks the dock while the reference plays', async () => {
+    const w = await phoneWithAudio({ autoHide: true })
+    await w.get('[data-audio-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-audio-play]').trigger('click')
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    const dock = w.get('[data-scroll]').element.closest('.cpv-chrome') as HTMLElement
+    expect(dock.classList.contains('is-hidden'), 'playing blocked auto-hide').toBe(true)
+    expect(w.get('[data-icon=headphones]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('a tap still hides chrome when the player is only paused', async () => {
+    const w = await phoneWithAudio({ autoHide: false })
+    expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    await w.get('[data-cpv-scroll]').trigger('click')
+    await flushPromises()
+    expect(chromeGone(w).every(Boolean)).toBe(true)
+    w.unmount()
   })
 })

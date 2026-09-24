@@ -6,31 +6,28 @@ test('reference player is a music transport, not Rolar', async ({ page }) => {
   const player = page.locator('[data-audio-ref]')
   await player.waitFor()
   await expect(player.locator('[data-audio-open]')).toBeVisible()
-  const paint = await player.evaluate((el) => {
-    const s = getComputedStyle(el)
-    return {
-      bg: s.backgroundColor,
-      filter: s.backdropFilter || (s as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter || '',
-      radius: s.borderRadius,
-    }
-  })
-  const alpha = (() => {
-    const m = paint.bg.match(/rgba?\(([^)]+)\)/)
-    if (!m?.[1]) return 1
-    const parts = m[1].split(',').map((p) => p.trim())
-    return parts.length === 4 ? Number(parts[3]) : 1
-  })()
-  expect(alpha, `closed chip must be opaque, got ${paint.bg}`).toBeGreaterThanOrEqual(0.95)
-  expect(paint.filter === 'none' || paint.filter === '').toBe(true)
-  const chip = await player.boundingBox()
-  expect(chip, 'chip missing box').toBeTruthy()
-  const chipMid = (chip?.x ?? 0) + (chip?.width ?? 0) / 2
-  expect(Math.abs(chipMid - 195), 'closed chip not centered on phone').toBeLessThan(12)
+  const lead = page.locator('[data-phone-lead]')
+  await expect(lead.locator('[data-reading-switch]')).toBeVisible()
+  await expect(player).toBeVisible()
+  await expect(player.locator('[data-audio-art]')).toHaveCount(0)
+  await expect(player.locator('[data-audio-play]')).toHaveCount(0)
+  await expect(player.locator('[data-icon=headphones]')).toBeVisible()
+  await expect(player.locator('[data-icon=chevronUp]')).toHaveCount(0)
+  const phonesBox = await player.locator('[data-audio-open]').boundingBox()
+  const readingBox = await lead.locator('[data-reading-switch]').boundingBox()
+  expect(phonesBox, 'headphones missing box').toBeTruthy()
+  expect(readingBox, 'Cifra/Letra missing box').toBeTruthy()
+  expect(
+    Math.abs((phonesBox?.y ?? 0) - (readingBox?.y ?? 0)),
+    'headphones not on the Cifra/Letra row',
+  ).toBeLessThan(12)
   await player.locator('[data-audio-open]').click()
+  await expect(lead.locator('[data-reading-switch]')).toBeHidden()
   const card = await player.boundingBox()
   const cardMid = (card?.x ?? 0) + (card?.width ?? 0) / 2
   expect(Math.abs(cardMid - 195), 'open card not centered on phone').toBeLessThan(12)
   await player.locator('[data-audio-close]').click()
+  await expect(lead.locator('[data-reading-switch]')).toBeVisible()
   await expect(player.locator('[data-audio-open]')).toBeVisible()
   await expect(player.locator('[data-audio-title]')).toHaveCount(0)
   await player.locator('[data-audio-open]').click()
@@ -54,4 +51,11 @@ test('reference player is a music transport, not Rolar', async ({ page }) => {
   const clock = player.locator('[data-audio-clock]')
   await player.locator('[data-audio-skip="1"]').click()
   await expect(clock).not.toHaveText('0:00')
+
+  await player.locator('[data-audio-close]').click()
+  await expect(player.locator('[data-icon=headphones]')).toBeVisible()
+  await page.locator('[data-cpv-scroll]').click({ position: { x: 180, y: 280 } })
+  await expect(page.locator('.cpv-chrome.is-hidden')).toHaveCount(2)
+  await expect(page.locator('[data-audio-title]')).toHaveCount(0)
+  await expect(page.locator('[data-icon=headphones]')).toBeVisible()
 })

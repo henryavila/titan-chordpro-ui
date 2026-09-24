@@ -334,8 +334,11 @@ Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
 
 O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
 ou `{subtitle:}`, e a capa. Com as duas faixas, Cantado / Playback são
-pílulas clicáveis; com uma só, só o rótulo. Chip no dock abre o card; X fecha
-(sem parar o áudio).
+pílulas clicáveis; com uma só, só o rótulo. No celular o recolhido é o ícone
+de fone na linha de Cifra | Letra: toque abre o card (capa e transporte).
+Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e
+deixa o fone. No desktop o chip continua acima do dock, com título. X fecha
+o card (sem parar o áudio).
 
 A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
 ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
