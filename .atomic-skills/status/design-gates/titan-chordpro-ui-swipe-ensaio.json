@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "0.1",
+  "projectId": "titan-chordpro-ui",
+  "slug": "swipe-ensaio",
+  "interviewAccepted": true,
+  "debateGate": {
+    "invoked": true,
+    "readyForValidation": true,
+    "singleApproach": false
+  },
+  "researchDigest": "projects/titan-chordpro-ui/swipe-ensaio/research-digest.md",
+  "criticVerdict": "Approved",
+  "userApproved": true,
+  "status": "ready",
+  "updatedAt": "2026-09-19T08:35:30.774Z"
+}

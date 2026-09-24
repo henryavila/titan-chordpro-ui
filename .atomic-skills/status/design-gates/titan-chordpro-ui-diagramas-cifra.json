@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "0.1",
+  "projectId": "titan-chordpro-ui",
+  "slug": "diagramas-cifra",
+  "interviewAccepted": true,
+  "debateGate": {
+    "invoked": true,
+    "readyForValidation": true,
+    "singleApproach": false
+  },
+  "researchDigest": "projects/titan-chordpro-ui/diagramas-cifra/research-digest.md",
+  "criticVerdict": "Approved",
+  "userApproved": true,
+  "status": "ready",
+  "updatedAt": "2026-09-18T23:30:00.000Z",
+  "interviewSpine": {
+    "problema": "O músico precisa ver como se toca o acorde da cifra (violão, piano, ukulele) sem poluir a leitura da letra.",
+    "inScope": [
+      "Popover no acorde (sem faixa/lista junto da cifra)",
+      "Três instrumentos no ship (violão, piano, ukulele)",
+      "Preferência de instrumento persistida no ChartStore (localStorage no demo; host pode trocar); próxima cifra abre o mesmo",
+      "BD completo de formas no pacote titan-chordpro-ui (core)",
+      "ChordPro só override; criar/personalizar grava naquele arquivo"
+    ],
+    "outOfScope": [
+      "Faixa ou lista de diagramas junto da cifra",
+      "Dicionário default gravado no .cho"
+    ],
+    "doneWhen": "design.md com decisões + abordagem, critic Approved, aprovação explícita do usuário. Não é a implementação.",
+    "stakes": "Dual-SoT BD vs {define}; toque view vs edit; parser BR; três visuais no mesmo ship",
+    "fontes": "VISAO, SPEC, editor design, storage/layout/transpose, ChordDialog, fixtures/sda"
+  },
+  "defaultsAfterDeclinedWidget": {
+    "dbLocation": "titan-chordpro-ui core package",
+    "unrecognizedWrites": "that .cho only, not global DB"
+  }
+}

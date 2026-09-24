@@ -1,0 +1,95 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F4",
+  "slug": "versoes-cifra-f4-export-e-docs",
+  "title": "Export e docs",
+  "goal": "exportCho default scope is file; PDF and download-this-chart use scope chart; filenames include chartId when N>1; VISAO/SPEC/CONSUMER/NAMING/README distinguish host song pick from in-file charts.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "exportCho scope and filenames",
+      "scopeBoundary": [
+        "Do not change key-rewrite rules on {key:}; do not add a third PDF engine; do not treat file capo as live capo."
+      ],
+      "acceptance": [
+        "exportCho(twoChartSource) contains both start_of_x_chart blocks; exportCho(twoChartSource, { scope: \"chart\", chartId: \"oferta\" }) is the oferta chart document only; buildPdfFilename(title, key, \"oferta\") includes oferta when N>1; viewer PDF uses scope chart"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/export-cho-charts.test.ts tests/core/filenames.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/export-cho.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/core/filenames.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/export-cho-charts.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/filenames.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Docs VISAO SPEC CONSUMER NAMING README",
+      "scopeBoundary": [
+        "Do not rewrite editor design.md; do not claim implementation DONE; do not document Portuguese write keys for the envelope."
+      ],
+      "acceptance": [
+        "VISAO table no longer lists in-file named charts as host-only multicifra; host multicifra remains which song string; CONSUMER documents source as the file, chartId prop, save as full file, suggestion chartId; NAMING lists start_of_x_chart, x_chart_label, x_chart_default; README features mention the title chip and that Minha versão is overlay"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "node -e \"const fs=require('fs'); for (const f of ['docs/VISAO.md','SPEC.md','docs/CONSUMER.md','docs/NAMING.md','README.md']) { const t=fs.readFileSync(f,'utf8'); if (!/start_of_x_chart|chartId/.test(t) && f!=='docs/VISAO.md') throw new Error(f+' missing chart contract'); if (f==='docs/VISAO.md' && !/cifra/.test(t)) throw new Error('VISAO missing cifra language'); }\"",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "docs/VISAO.md"
+        },
+        {
+          "kind": "file",
+          "path": "SPEC.md"
+        },
+        {
+          "kind": "file",
+          "path": "docs/CONSUMER.md"
+        },
+        {
+          "kind": "file",
+          "path": "docs/NAMING.md"
+        },
+        {
+          "kind": "file",
+          "path": "README.md"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F4-G1",
+      "description": "Export scope tests green and docs name cifra vs música vs Minha versão. FAILS when exportCho() without opts on a two-chart source returns only the visible chart.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/export-cho-charts.test.ts tests/core/filenames.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}
