@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 9,
-  "updatedAt": "2026-09-24T10:36:03.975Z",
+  "redispatchCount": 10,
+  "updatedAt": "2026-09-24T10:49:08.072Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -44,6 +44,12 @@
       "at": "2026-09-24T10:28:36.101Z",
       "reason": "operator 2026-09-24: loop longo — fix8 both review needs_changes, three majors (identity round-trip, lyric blank, blank-scan cost)",
       "priorCount": 8,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T10:49:08.072Z",
+      "reason": "operator 2026-09-24: loop longo — fix9 both review needs_changes, composer last-wins, leading-blank parse cost, and comment gap",
+      "priorCount": 9,
       "gate": "spawn"
     }
   ],
