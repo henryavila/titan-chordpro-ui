@@ -1,8 +1,8 @@
 {
-  "step": "C",
+  "step": "E",
   "phaseId": "F0",
   "redispatchCount": 21,
-  "updatedAt": "2026-09-24T22:58:51.702Z",
+  "updatedAt": "2026-09-24T23:16:03.532Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
