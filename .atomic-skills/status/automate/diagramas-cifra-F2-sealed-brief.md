@@ -27,9 +27,9 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix9
-- **writerBranch:** impl/diagramas-cifra-F2-fix9
-- **baseRef:** 008249e63eaa9d65a4a51c379b8540f07bd5ddd9
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix10
+- **writerBranch:** impl/diagramas-cifra-F2-fix10
+- **baseRef:** a07fa6a57dda6b1d57291fb1b3f95a0f3e08454e
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (1)
@@ -79,41 +79,42 @@ Rules:
 - Prefer exclusive `base`+`head` per task when multi-task commits share SHAs.
 - Do not invent pass for missing work-order tasks.
 
-## Fix contract — F2-fix9 (this dispatch only)
+## Fix contract — F2-fix10 (this dispatch only)
 
-Codex receipt `.atomic-skills/reviews/2026-09-24-0713-diagramas-cifra-f2-midi-marker-codex.md` kept one major and one minor. Do not start F3. Do not edit guitar or ukulele dictionary packs. Do not add Vue. Do not throw from `transposePianoKeys`.
+Codex receipt `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md` kept three majors. Do not start F3. Do not edit guitar or ukulele packs. Do not add Vue. `transposePianoKeys` must not throw. `chord-dict.ts` must not import `define.ts`.
 
-### Defect
-
-`pianoSoundingPitchClasses` returns `mod12` whenever any key is outside 0–11. `{define: D9 keys 0 4 7 14}` therefore draws C E G D. At `b304ca5` that line drew D F# A E. Interval 14 is a ninth, not a MIDI note.
-
-The C case is already right and must stay: `{define: C keys 0 2}` +2 stores `D` keys `[62, 64]` and draws D and E. Minus 2 stores `C` keys `[60, 62]` and draws C and D. Dsus2 `0 7` +5 still stores `Gsus2` keys `[0, 7]` and draws G and D.
-
-A second defect: those `[62, 64]` keys transposed by −60 become `[2, 4]` and then draw E F#. The absolute marker disappeared because the numbers fell into 0–11.
+The largest interval in `QUALITY_INTERVALS` is 17. A key above 17 is a MIDI note, not an interval.
 
 ### Rule
 
-1. Absolute marker: every key is `>= 60`. Only then `pianoSoundingPitchClasses` returns `mod12` in order and skips the relative-versus-absolute heuristic.
-2. Any other list, including a 14 or 17 beside 0–11 keys, and including `48 52 55`, keeps the heuristic that existed at `b304ca5`.
-3. When the source keys are all `>= 60`, a later transpose still adds `n`, then stores `60 + (result mod 12)` so every stored key stays `>= 60`.
-4. Keys that are not all `>= 60` and not all inside 0–11 stay on the old add-`n` path. `C` keys `48 52 55` +2 stays `[50, 54, 57]`.
-5. When neither 0–11 candidate round-trips, still store `60 + pc`. Do not throw.
+`pianoSoundingPitchClasses`:
 
-`chord-dict.ts` must not import `define.ts`.
+- If any key is `> 17` or `< 0`, return `keys.map(mod12)` in order. Do not run the relative-versus-absolute heuristic.
+- Otherwise keep the current heuristic. That includes `14` and `17` next to `0–11`.
+
+`transposePianoKeys`:
+
+1. Every key is inside `0–11`: keep the current candidate path. When neither candidate reads the shifted classes, store `60 + pc`. Do not throw.
+2. Every key is `0–17` and at least one key is `12–17`: these are extended intervals. Do not add `n` to the raw numbers. Take the sounding classes from the heuristic, shift them by `n` inside `0–11`, then store the `0–11` candidate (absolute, else relative) that the renamed chord reads back as that sequence. If neither does, store `60 + pc`.
+3. Any key `> 17` or `< 0`: MIDI. Add `n` to each key. Do not fold them with `60 + (mod 12)`. If any result is `<= 17`, add the same multiple of 12 to every key until every key is `> 17`. Keep the spacing.
 
 ### Tests that must stay green
 
-- `{define: C keys 0 2}` +2 does not throw, stores `D` keys `[62, 64]`, and `exportCho` / `transpose` draw D and E (pcs 2, 4). Minus 2 stores `C` keys `[60, 62]` and draws C and D (pcs 0, 2).
+- `{define: C keys 0 2}` +2 stores `D` keys `[62, 64]`. `exportCho` and `transpose` draw D and E. Minus 2 stores `C` keys `[60, 62]` and draws C and D.
 - Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D. Minus 5 stores keys `[2, 9]` and draws D, A.
-- F7sus4 `0 5 10` +2 stores `G7sus4` keys `[7, 0, 5]`. Dsus2 +3 stores `Fsus2` keys `[5, 0]`. D `0 4 7` +2 stores `E` keys `[4, 8, 11]`. C `0 4 7` +2 stores `D` keys `[2, 6, 9]`. B `11 3 6` +1 stores `C` keys `[0, 4, 7]`. C `48 52 55` +2 stores `[50, 54, 57]`.
+- `{define: D9 keys 0 4 7 14}` untransposed draws D, F#, A, E (pcs 2, 6, 9, 4).
+- F7sus4 `0 5 10` +2 stores `[7, 0, 5]`. Dsus2 +3 stores `[5, 0]`. D `0 4 7` +2 stores `[4, 8, 11]`. C `0 4 7` +2 stores `[2, 6, 9]`. B `11 3 6` +1 stores `[0, 4, 7]`. C `48 52 55` +2 stores `[50, 54, 57]`.
 - The 408-cell count stays `17 * 12 * 2`.
+
+The test that expects `D` keys `[62, 64]` after −60 may change its stored numbers. It must still draw D and E, and every stored key must be `> 17`.
 
 ### Tests you must add
 
-- `{define: D9 keys 0 4 7 14}` draws D, F#, A, E (pcs 2, 6, 9, 4).
-- `D` keys `[62, 64]` transposed by −60 still draws D and E (pcs 2, 4), and every stored key is `>= 60`.
+- `{define: D9 keys 0 4 7 14}` +2 draws E, G#, B, F# (pcs 4, 8, 11, 6). `exportCho` of that chart does not throw.
+- `{define: D keys 50 52}` draws D and E (pcs 2, 4). `{define: C keys 48 50}` +2 stores `[50, 52]` and draws D and E.
+- `{define: C keys 60 64 79}` +2 stores `[62, 66, 81]`. That result transposed by −2 stores `[60, 64, 79]`.
 
-Put the assertions in `tests/core/define-directive.test.ts` and/or `tests/core/resolve-diagram.test.ts`.
+Put assertions in `tests/core/define-directive.test.ts` and/or `tests/core/resolve-diagram.test.ts`.
 
 ### Checks
 

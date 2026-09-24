@@ -1,8 +1,8 @@
 {
-  "step": "D.5",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 9,
-  "updatedAt": "2026-09-24T10:19:21.653Z",
+  "redispatchCount": 10,
+  "updatedAt": "2026-09-24T14:34:17.137Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -50,6 +50,12 @@
       "at": "2026-09-24T10:13:55.240Z",
       "reason": "Operator said corrigir agora. Interval 14 must not be read as MIDI. D9 keys 0 4 7 14 must still draw D F# A E. C keys 0 2 +2 must still draw D E, and Dsus2 +5 must still draw G D. Do not start F3.",
       "priorCount": 8,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T14:34:17.137Z",
+      "reason": "Operator said prossiga. Astra kept 3 majors on 008249e..4e0e1e5. Fix D9 +2, MIDI below 60, and multi-octave MIDI without undoing C keys 0 2, Dsus2 +5, or untransposed D9. Do not start F3.",
+      "priorCount": 9,
       "gate": "spawn"
     }
   ],

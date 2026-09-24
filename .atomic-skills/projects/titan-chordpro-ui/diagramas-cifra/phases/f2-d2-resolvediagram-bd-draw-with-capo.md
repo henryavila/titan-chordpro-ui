@@ -10,7 +10,7 @@ status: active
 branch: plan/diagramas-cifra
 started: 2026-09-20T20:56:39.000Z
 lastUpdated: 2026-09-20T21:44:13.000Z
-nextAction: "F2 stays open. C keys 0 2 exports and draws D E. D9 keys 0 4 7 14 draws D F# A E. Dsus2 +5 draws G D. Astra has not reviewed 008249e..4e0e1e5. Do not start F3."
+nextAction: "Sync-wait impl/diagramas-cifra-F2-fix10. Keep C 0 2, Dsus2 +5, and untransposed D9. Fix D9 +2, MIDI 50 52, and MIDI 60 64 79. Do not start F3."
 parentPlan: diagramas-cifra
 phaseId: F2
 businessIntent:
@@ -174,10 +174,10 @@ Initiative for phase **F2 — D2 resolveDiagram + BD + draw with capo**.
 _(plan doc, external refs)_
 
 ## Session handoff
-- **Narrative:** F2 is open. `{define: C keys 0 2}` +2 is written and draws D and E. Dsus2 +5 still draws G and D. `{define: D9 keys 0 4 7 14}` draws D F# A E again. The absolute marker is every key `>= 60`. Codex Astra has not reviewed commit `4e0e1e5`. F3 stays out.
-- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Prior receipt `.atomic-skills/reviews/2026-09-24-0713-diagramas-cifra-f2-midi-marker-codex.md` covered `b304ca5..30cbe2e` only.
-- **Single nextAction:** F2 stays open. C keys 0 2 exports and draws D E. D9 keys 0 4 7 14 draws D F# A E. Dsus2 +5 draws G D. Astra has not reviewed 008249e..4e0e1e5. Do not start F3.
-- **Open bug:** none in the host verifiers. The last Astra major was interval 14 read as MIDI; fix9 changed the marker to keys that are all `>= 60`. That diff is not yet in an Astra receipt.
+- **Narrative:** F2 is open. Operator said prossiga. Codex Astra reviewed `008249e..4e0e1e5` and kept 3 majors. Untransposed D9, C keys 0 2, and Dsus2 +5 still draw the right notes. A writer is dispatched on `impl/diagramas-cifra-F2-fix10`. F3 stays out.
+- **Decision log:** `.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl`. Latest entry `bc1e118c-76c8-48ae-80de-52cb03954377`. Receipt `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md` (needs_changes, 3 major, 0 critical).
+- **Single nextAction:** Sync-wait impl/diagramas-cifra-F2-fix10. Keep C 0 2, Dsus2 +5, and untransposed D9. Fix D9 +2, MIDI 50 52, and MIDI 60 64 79. Do not start F3.
+- **Open bug:** `{define: D9 keys 0 4 7 14}` +2 draws F# A# C# G# instead of E G# B F#. `{define: D keys 50 52}` draws E F# instead of D E. `{define: C keys 60 64 79}` +2 stores `[62, 66, 69]` and drops 79. Keys `<= 17` are intervals, including 14 and 17. Any key `> 17` is MIDI: read `mod12`, add `n`, and do not fold the octave into `60 + pc`.
 - **Already green, do not reopen:** capo 2 on Bm is concert Bm / shape Am / capoFret 2. Slash without a matching bass override is no-shape. C7+ is not a diagram. D `0 4 7` +2 draws E G# B and stores keys `[4, 8, 11]`. C `0 4 7` +2 is still D keys `[2, 6, 9]`. B `11 3 6` +1 is still C keys `[0, 4, 7]`. MIDI `48 52 55` +2 is still `[50, 54, 57]`. F7sus4 `0 5 10` +2 stores `G7sus4` keys `[7, 0, 5]` and draws G, C, F. Dsus2 +3 stores `Fsus2` keys `[5, 0]`; −3 stores keys `[2, 9]` and draws D, A. D7M(9)/B keys `11 2 1 4` still draws B, D, C#, E. No Vue in core.
-- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Product commit `4e0e1e539848c973f1a68d938a72914f17ac9995`. Cursor `.atomic-skills/status/automate/diagramas-cifra.json` step D.5, phaseId F2, redispatchCount 9. Writer worktree removed. Lease cleared. Host verifiers: `pnpm exec vitest run tests/core/define-directive.test.ts tests/core/resolve-diagram.test.ts tests/core/export-cho.test.ts` → 68 passed, exit 0; `pnpm exec vitest run tests/core/layout-capo.test.ts tests/core/resolve-diagram.test.ts tests/core/diagram-draw.test.ts` → 60 passed, exit 0. T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Plan worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`.
+- **Verbatim state:** Plan branch `plan/diagramas-cifra`. Reviewed range `008249e63eaa9d65a4a51c379b8540f07bd5ddd9..4e0e1e539848c973f1a68d938a72914f17ac9995`. Receipt `.atomic-skills/reviews/2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md`. Next writer `impl/diagramas-cifra-F2-fix10`. T-001 done, T-002 pending, T-003 done. tasksDone 2/3. Plan worktree `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra`. Do not start F3.
 - **Uncommitted changes:** none at this handoff commit.
