@@ -27,9 +27,9 @@ Never claim Layer 4 shipped. Never commit writer-lease secrets.
 - **planSlug:** diagramas-cifra
 - **phaseId:** F2
 - **initiativePath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/phases/f2-d2-resolvediagram-bd-draw-with-capo.md (read-only)
-- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix8
-- **writerBranch:** impl/diagramas-cifra-F2-fix8
-- **baseRef:** b304ca5885875b0903151338978f22f1420ca43b
+- **worktreePath (cwd):** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra-F2-fix9
+- **writerBranch:** impl/diagramas-cifra-F2-fix9
+- **baseRef:** 008249e63eaa9d65a4a51c379b8540f07bd5ddd9
 - **decisionLogPath:** /Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/projects/titan-chordpro-ui/diagramas-cifra/decisions/F2.jsonl (informational — host owns append; do not write)
 
 ### Tasks (1)
@@ -79,48 +79,41 @@ Rules:
 - Prefer exclusive `base`+`head` per task when multi-task commits share SHAs.
 - Do not invent pass for missing work-order tasks.
 
-## Fix contract — F2-fix8 (this dispatch only)
+## Fix contract — F2-fix9 (this dispatch only)
 
-Codex receipt `.atomic-skills/reviews/2026-09-23-1953-diagramas-cifra-f2-roundtrip-throw-codex.md` kept one major. Do not start F3. Do not edit guitar or ukulele dictionary packs. Do not add Vue.
+Codex receipt `.atomic-skills/reviews/2026-09-24-0713-diagramas-cifra-f2-midi-marker-codex.md` kept one major and one minor. Do not start F3. Do not edit guitar or ukulele dictionary packs. Do not add Vue. Do not throw from `transposePianoKeys`.
 
 ### Defect
 
-`transposePianoKeys` in `src/core/define.ts` throws `transposeDefine: piano keys do not round-trip` at the lines that follow the two 0–11 candidates. `{define: C keys 0 2}` plus 2 semitones needs sounding classes `[2, 4]`. On D, the absolute candidate `[2, 4]` is read as `[4, 6]` and the relative candidate `[0, 2]` is read as `[0, 2]`. Neither matches, so it throws. `transpose` in `src/core/parse.ts` and `exportCho` in `src/core/export-cho.ts` do not catch that throw, so one define aborts the whole chart. At `b304ca5` the same input throws. At `bca4654` it returned a define and did not throw.
+`pianoSoundingPitchClasses` returns `mod12` whenever any key is outside 0–11. `{define: D9 keys 0 4 7 14}` therefore draws C E G D. At `b304ca5` that line drew D F# A E. Interval 14 is a ninth, not a MIDI note.
 
-`pianoSoundingPitchClasses` in `src/core/chord-dict.ts` reduces every key with `mod12` before the reading heuristic, so storing `60 + pc` does nothing unless that function treats keys outside 0–11 as already-absolute.
+The C case is already right and must stay: `{define: C keys 0 2}` +2 stores `D` keys `[62, 64]` and draws D and E. Minus 2 stores `C` keys `[60, 62]` and draws C and D. Dsus2 `0 7` +5 still stores `Gsus2` keys `[0, 7]` and draws G and D.
+
+A second defect: those `[62, 64]` keys transposed by −60 become `[2, 4]` and then draw E F#. The absolute marker disappeared because the numbers fell into 0–11.
 
 ### Rule
 
-`transposePianoKeys` must not throw.
+1. Absolute marker: every key is `>= 60`. Only then `pianoSoundingPitchClasses` returns `mod12` in order and skips the relative-versus-absolute heuristic.
+2. Any other list, including a 14 or 17 beside 0–11 keys, and including `48 52 55`, keeps the heuristic that existed at `b304ca5`.
+3. When the source keys are all `>= 60`, a later transpose still adds `n`, then stores `60 + (result mod 12)` so every stored key stays `>= 60`.
+4. Keys that are not all `>= 60` and not all inside 0–11 stay on the old add-`n` path. `C` keys `48 52 55` +2 stays `[50, 54, 57]`.
+5. When neither 0–11 candidate round-trips, still store `60 + pc`. Do not throw.
 
-For keys that are all inside 0–11:
+`chord-dict.ts` must not import `define.ts`.
 
-1. Take the sounding classes from `pianoSoundingPitchClasses`, including the slash bass. Shift them by `n` inside 0–11. Call that sequence `shifted`.
-2. Read the candidates on the renamed chord. Keep the absolute list `shifted` when that read returns `shifted` in the same order. Otherwise keep `(shifted - newRoot) mod 12` when that read returns `shifted`.
-3. When neither candidate returns `shifted`, store `60 + pc` for each class in `shifted`, same order. Do not throw.
-4. If the renamed chord does not parse, return `shifted`. Do not throw.
+### Tests that must stay green
 
-`pianoSoundingPitchClasses`: when any key is outside 0–11, return `keys.map(mod12)` in order and do not run the relative-versus-absolute heuristic. Keys that are all inside 0–11 keep the current heuristic. Dictionary rows stay 0–11 intervals.
-
-A later transpose of those MIDI numbers stays on the existing path: add `n`, do not wrap. `chord-dict.ts` must not import `define.ts`.
-
-### Tests that must stay green (do not retarget these key arrays)
-
-- F7sus4 `0 5 10` +2 stores `G7sus4` keys `[7, 0, 5]` and draws G, C, F. Untransposed F7sus4 still draws F, A#, D#.
-- Dsus2 `0 7` +3 stores `Fsus2` keys `[5, 0]` and draws F, C. That result −3 stores `Dsus2` keys `[2, 9]` and draws D, A.
-- Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D (pcs 7, 2). That result −5 stores `Dsus2` keys `[2, 9]` and draws D, A.
-- D `0 4 7` +2 stores `E` keys `[4, 8, 11]` and draws E, G#, B.
-- C `0 4 7` +2 stores `D` keys `[2, 6, 9]` and draws D, F#, A.
-- B `11 3 6` +1 stores `C` keys `[0, 4, 7]`.
-- C `48 52 55` +2 stores keys `[50, 54, 57]`.
-- D7M(9)/B keys `[11, 2, 1, 4]` still draws B, D, C#, E.
+- `{define: C keys 0 2}` +2 does not throw, stores `D` keys `[62, 64]`, and `exportCho` / `transpose` draw D and E (pcs 2, 4). Minus 2 stores `C` keys `[60, 62]` and draws C and D (pcs 0, 2).
+- Dsus2 `0 7` +5 stores `Gsus2` keys `[0, 7]` and draws G, D. Minus 5 stores keys `[2, 9]` and draws D, A.
+- F7sus4 `0 5 10` +2 stores `G7sus4` keys `[7, 0, 5]`. Dsus2 +3 stores `Fsus2` keys `[5, 0]`. D `0 4 7` +2 stores `E` keys `[4, 8, 11]`. C `0 4 7` +2 stores `D` keys `[2, 6, 9]`. B `11 3 6` +1 stores `C` keys `[0, 4, 7]`. C `48 52 55` +2 stores `[50, 54, 57]`.
 - The 408-cell count stays `17 * 12 * 2`.
 
-### Test you must add
+### Tests you must add
 
-`{define: C keys 0 2}` +2 does not throw. `transpose` of a chart that contains that line does not throw. `exportCho(source, { semitones: 2 })` of that chart does not throw, and the parsed define draws D and E (pcs 2, 4). That exported define transposed by −2 draws C and D (pcs 0, 2).
+- `{define: D9 keys 0 4 7 14}` draws D, F#, A, E (pcs 2, 6, 9, 4).
+- `D` keys `[62, 64]` transposed by −60 still draws D and E (pcs 2, 4), and every stored key is `>= 60`.
 
-Put these assertions in `tests/core/define-directive.test.ts` and/or `tests/core/resolve-diagram.test.ts`. Do not add `tests/core/export-cho.test.ts`; it is outside T-002 outputs.
+Put the assertions in `tests/core/define-directive.test.ts` and/or `tests/core/resolve-diagram.test.ts`.
 
 ### Checks
 
@@ -132,7 +125,7 @@ Also:
 
 One T-002 commit. Paths: `src/core/define.ts`, `src/core/chord-dict.ts`, `tests/core/define-directive.test.ts`, `tests/core/resolve-diagram.test.ts`. Do not commit `.atomic-skills/`.
 
-If `node_modules` is missing in this worktree, run `CI=true pnpm install` here only. Do not symlink another worktree's `node_modules`. Run vitest with this worktree as cwd.
+If `node_modules` is missing, run `CI=true pnpm install` in this worktree only. Do not symlink another worktree's `node_modules`. Run vitest with this worktree as cwd.
 
 Write the claim report only to `/Volumes/External/code/titan-chordpro-ui/.worktrees/diagramas-cifra/.atomic-skills/status/automate/diagramas-cifra-claims.json`. Do not `git add` it. Do not edit any other file in the plan worktree.
 

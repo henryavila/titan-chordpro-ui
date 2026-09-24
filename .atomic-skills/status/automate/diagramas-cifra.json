@@ -1,8 +1,8 @@
 {
-  "step": "D.5",
+  "step": "C",
   "phaseId": "F2",
-  "redispatchCount": 8,
-  "updatedAt": "2026-09-24T10:07:02.163Z",
+  "redispatchCount": 9,
+  "updatedAt": "2026-09-24T10:13:55.240Z",
   "operatorOverrides": [
     {
       "at": "2026-09-20T15:41:34.379Z",
@@ -44,6 +44,12 @@
       "at": "2026-09-24T10:00:48.028Z",
       "reason": "Operator said corrigir agora. {define: C keys 0 2} +2 must be written by transpose and exportCho without throwing, and Dsus2 +5 must still draw G and D. Do not start F3.",
       "priorCount": 7,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-24T10:13:55.240Z",
+      "reason": "Operator said corrigir agora. Interval 14 must not be read as MIDI. D9 keys 0 4 7 14 must still draw D F# A E. C keys 0 2 +2 must still draw D E, and Dsus2 +5 must still draw G D. Do not start F3.",
+      "priorCount": 8,
       "gate": "spawn"
     }
   ],
