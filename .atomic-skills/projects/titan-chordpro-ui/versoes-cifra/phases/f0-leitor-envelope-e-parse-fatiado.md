@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-fix20 is merged. Product `833632c70bd0ee8d65a914e26b6622ac603602db`. Plan-tree verifier exit 0, 219 tests: `pnpm exec vitest run tests/core/charts-envelope.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/vue/block-edit-ui.test.ts tests/vue/meta-dialog.test.ts tests/core/no-vue-in-core.test.ts tests/demo/sda-fixtures.test.ts`. A completed chart pair plus any other top-level text is still an error. Do not `done`. Next action is `review-code --mode=both` of `d05cf9f..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`.
+fix21 is merged. Product `591307cad6ae61986c6e6e46351f86097dea20f8`. Plan-tree verifier exit 0, 225 tests, on the seven-file command in the verbatim block below. Both review of `d05cf9f..HEAD` (`src` and `tests`) is recorded at `.atomic-skills/reviews/2026-09-24-2340-versoes-cifra-f0-fix21-both.md`. Codex `gpt-6-astra` informed pass: 0 blocker, 0 critical, 3 major, 1 minor. Local leg: 0 blocker, 1 critical, 2 major. Do not `done`. Next action is the code-only fix22 writer on those findings.
 
 ### Verbatim state
 
@@ -201,4 +201,4 @@ fix20 is merged. Product `833632c70bd0ee8d65a914e26b6622ac603602db`. Plan-tree v
 
 ### Uncommitted changes
 
-`?? .atomic-skills/status/automate/versoes-cifra-F0-prepare.json` and `?? .atomic-skills/status/automate/versoes-cifra-F0-sealed-brief.md`. Do not commit them. No product edits. Lease file absent.
+No product edits. Do not commit `versoes-cifra-F0-prepare.json` or `versoes-cifra-F0-sealed-brief.md`.
