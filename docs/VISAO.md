@@ -11,8 +11,8 @@
 | Campo | Decisão |
 |---|---|
 | **Problema** | Músicos precisam de uma **UI ChordPro profissional**: **ler** (transpor, rolar, exportar, tema) **e editar** (corrigir pós-gen/import e criar do zero). Reuso em SDA / futuro `titan-chordpro` é **canal**, não o problema. |
-| **In-scope** | Camada **autossuficiente** de **1 cifra**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; standalone demo ou **embutida** (`sda-v2` primeiro). Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
-| **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`); diagramas de braço (ainda later). |
+| **In-scope** | Camada **autossuficiente** de **1 música**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; **cifras nomeadas** no mesmo arquivo; standalone demo ou **embutida**. Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
+| **Out-of-scope** | Collab realtime; catálogo do host / qual **música** (string) está na tela; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`); diagramas de braço (ainda later). |
 | **Done-when (esta fase)** | Visão + naming + design do editor alinhados; implementação segue SPEC + gates E0–E4. |
 | **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<ChordproViewer>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
 | **Fontes** | Esta visão; `docs/NAMING.md`; design do editor; `fixtures/`; researches OnSong / auto-ajuste; `SPEC.md` como catálogo técnico. |
@@ -26,7 +26,7 @@
 - Entrada: arquivo/texto **ChordPro** (`.cho` / `.chordpro` / …) **ou OnSong** (normalização na **engine**; a UI não escolhe formato). Em edição, OnSong = **convert-on-edit** → sessão/export ChordPro canônico.
 - Saída: superfície visual profissional + PDF + export de texto + **source editado** de volta ao host.
 - Modos de superfície: **`view`** (leitura limpa) e **`edit`** (visual-first; source pane sob demanda).
-- Hosts: **`sda-v2`** (primeiro) embute a UI; depois app **`titan-chordpro`** (shell próprio — fora deste repo). O consumer fornece shell, multicifra, player/login — **não** reimplementa a experiência da cifra.
+- Hosts: **`sda-v2`** (primeiro) embute a UI; depois app **`titan-chordpro`** (shell próprio — fora deste repo). O consumer fornece shell, **qual música** (1 string), player/login — **não** reimplementa a experiência da cifra. **Cifras nomeadas** dentro do arquivo são da UI.
 
 ```
 ChordPro (1 string)
@@ -48,7 +48,8 @@ ChordPro (1 string)
 | Export CHO / PDF | ✅ | Trigger de download pode ser do host se embutido |
 | Temas claro / escuro (+ auto) | ✅ | Pode remapear tokens se precisar |
 | Seletor de tema | ✅ | |
-| Multi-cifra (qual versão ativa) | ❌ | ✅ passa 1 string |
+| Qual **música** (qual string / `.cho`) | ❌ | ✅ passa 1 `source` |
+| **Cifras nomeadas** no arquivo (`chartId`, seletor) | ✅ | prop opcional `chartId` |
 | Shell, login, navegação | ❌ | ✅ |
 | Player áudio sincronizado | ❌ | ✅ |
 | Áudio de referência (cantado / playback, sem sync) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
@@ -155,7 +156,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 
 - **Design do editor:** aprovado via brainstorm → `projects/titan-chordpro-ui/editor/design.md`.
 - **Próximo:** `project new plan editor` (ou equivalente) a partir do design Approved; scaffold core+Vue; gates E0→…  
-- Non-goals permanentes: multicifra, shell Titan neste repo, áudio sync, collab.
+- Non-goals permanentes: catálogo / qual **música** o host escolhe; shell Titan neste repo; áudio sync; collab. Cifras nomeadas **dentro** do arquivo são in-scope da UI.
 
 **Não entrar com:** implementação SDA; inventar fixtures; tratar SPEC §3 como lei de UI.
 
