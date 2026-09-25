@@ -462,7 +462,7 @@ describe('edit chrome · dedicated metadata door', () => {
     await flushPromises()
     expect((w.vm as { getSource: () => string }).getSource()).toMatch(/\{duration:04:26\}/)
     expect(w.emitted('update:source')?.length ?? 0).toBe(before)
-    expect(storage.get('cpv:my:uma')).toBeTruthy()
+    expect(storage.get('cpv:my:uma:default')).toBeTruthy()
   })
 
   it('flags a missing duration on the dedicated button', async () => {
