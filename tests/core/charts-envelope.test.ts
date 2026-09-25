@@ -1880,3 +1880,65 @@ describe('a reversed paste is not a chart pair', () => {
     expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
   })
 })
+
+describe('parse shares the notation boundary with readMeta', () => {
+  it('keeps a title inside a closed tab or score out of the parsed chart', () => {
+    for (const [open, innerOpen, innerClose, close] of [
+      ['{sot}', '{sos}', '{eos}', '{eot}'],
+      ['{sos}', '{sot}', '{eot}', '{eos}'],
+    ] as const) {
+      const embedded = close === '{eot}' ? '{eot}' : '{eos}'
+      const file = [
+        '{start_of_x_chart:a}',
+        '{title:Real}',
+        '{artist:Shown}',
+        open,
+        '{start_of_x_chart:nota}',
+        innerOpen,
+        embedded,
+        innerClose,
+        '{title:NOTATION}',
+        '{artist:HIDDEN}',
+        close,
+        '{end_of_x_chart}',
+      ].join('\n')
+      expect(readMeta(file).title).toBe('Real')
+      expect(readMeta(file).artist).toBe('Shown')
+      expect(parse(file).meta.title).toBe('Real')
+      expect(parse(file).meta.artist).toBe('Shown')
+
+      const savedTitle = writeSongScopedMeta(file, { title: 'Changed' })
+      expect(readMeta(savedTitle).title).toBe('Changed')
+      expect(parse(savedTitle).meta.title).toBe('Changed')
+      expect(parse(savedTitle).meta.artist).toBe('Shown')
+      expect(savedTitle).toContain('{title:NOTATION}')
+
+      const savedArtist = writeSongScopedMeta(file, { artist: 'Changed' })
+      expect(readMeta(savedArtist).artist).toBe('Changed')
+      expect(parse(savedArtist).meta.artist).toBe('Changed')
+      expect(parse(savedArtist).meta.title).toBe('Real')
+      expect(savedArtist).toContain('{artist:HIDDEN}')
+    }
+  })
+})
+
+describe('alternating notation openers do not grow the call stack', () => {
+  it('lists one implicit chart for 8000 unmatched sos and sot lines', () => {
+    const lines: string[] = []
+    for (let i = 0; i < 8000; i++) lines.push(i % 2 === 0 ? '{sos}' : '{sot}')
+    const file = lines.join('\n')
+    expect(listCharts(file)).toEqual([{ id: 'default', label: 'default', isDefault: true }])
+  })
+})
+
+describe('a stray end in an implicit chart does not hide the title', () => {
+  it('readMeta sees Real, and writing New removes it as the displayed title', () => {
+    const src = ['{sot}', '{end_of_x_chart}', '{eot}', '{title:Real}'].join('\n')
+    expect(parse(src).meta.title).toBe('Real')
+    expect(readMeta(src).title).toBe('Real')
+    const saved = writeSongScopedMeta(src, { title: 'New' })
+    expect(parse(saved).meta.title).toBe('New')
+    expect(readMeta(saved).title).toBe('New')
+    expect(saved).not.toContain('{title:Real}')
+  })
+})

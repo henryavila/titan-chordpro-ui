@@ -296,7 +296,9 @@ export function splitCho(source: string): SplitCho {
       else if (seenChart) outside = true
       continue
     }
-    const inNotation = d ? stepNotation(scan, raws, li, d.name) === 'in' : scan.block.tab || scan.block.score
+    const inNotation = d
+      ? stepNotation(scan, raws, li, d.name, cur ? 1 : 0) === 'in'
+      : scan.block.tab || scan.block.score
     if (!cur) {
       if (raw.trim() !== '') outside = true
       continue
@@ -519,60 +521,167 @@ function closerCache(lines: readonly string[]): Map<string, NotationClose> {
   return hit
 }
 
+function closerKey(openAt: number, kind: 'tab' | 'score', chartDepth: number): string {
+  return String(openAt) + (kind === 'tab' ? 't' : 's') + ':' + String(chartDepth)
+}
+
+/** A closer or a chart end after `from`. Openers alone are not one. */
+function regionCanClose(names: readonly string[], from: number): boolean {
+  for (let j = from; j < names.length; j++) {
+    const name = names[j] ?? ''
+    if (name === 'end_of_x_chart') return true
+    const edge = blockEdge(name)
+    if (edge === 'tab-close' || edge === 'score-close') return true
+  }
+  return false
+}
+
+type CloserFrame = {
+  kind: 'tab' | 'score'
+  j: number
+  depth: number
+  openCharts: number
+  boundary: number
+  chartDepth: number
+  key: string
+}
+
+function closerFrame(kind: 'tab' | 'score', openAt: number, chartDepth: number): CloserFrame {
+  return {
+    kind,
+    j: openAt + 1,
+    depth: 1,
+    openCharts: 0,
+    boundary: -1,
+    chartDepth,
+    key: closerKey(openAt, kind, chartDepth),
+  }
+}
+
 /**
  * Closer of the tab or score opened at `openAt`, or null.
- * Each line and kind is resolved once. `{eot}` inside a finished `{sos}`…`{eos}`
- * is not a tab closer, and `{eos}` inside a finished `{sot}`…`{eot}` is not a score closer.
+ * Each line and kind is resolved once. The call stack does not grow with openers.
+ * `{eot}` inside a finished `{sos}`…`{eos}` is not a tab closer, and the reverse.
  * An other-block that never closes does not hide a later closer.
- * An `{end_of_x_chart}` that closes a chart opened before this block stops the scan.
- * A later `{eot}` or `{eos}` past that end is not cached as the closer.
+ * `{end_of_x_chart}` stops the block only when a chart was already open (`chartDepth`).
+ * A stray end in an implicit chart does not. A closer past that end is not cached as this one.
  */
-function findCloser(lines: readonly string[], openAt: number, kind: 'tab' | 'score'): NotationClose {
+export function notationBlockCloser(
+  lines: readonly string[],
+  openAt: number,
+  kind: 'tab' | 'score',
+  chartDepth = 0,
+): NotationClose {
   const cache = closerCache(lines)
-  const key = String(openAt) + (kind === 'tab' ? 't' : 's')
+  const key = closerKey(openAt, kind, chartDepth)
   if (cache.has(key)) return cache.get(key) ?? null
-  const found = computeCloser(lines, openAt, kind)
+  const names = namesOf(lines)
+  if (!regionCanClose(names, openAt + 1)) {
+    cache.set(key, null)
+    return null
+  }
+  const found = computeCloser(names, cache, openAt, kind, chartDepth)
   cache.set(key, found)
   return found
 }
 
-function computeCloser(lines: readonly string[], openAt: number, kind: 'tab' | 'score'): NotationClose {
-  const openEdge = kind === 'tab' ? 'tab-open' : 'score-open'
-  const closeEdge = kind === 'tab' ? 'tab-close' : 'score-close'
-  const otherOpen = kind === 'tab' ? 'score-open' : 'tab-open'
-  const otherKind: 'tab' | 'score' = kind === 'tab' ? 'score' : 'tab'
-  const names = namesOf(lines)
-  let depth = 1
-  let openCharts = 0
-  let boundary = -1
-  for (let j = openAt + 1; j < lines.length; j++) {
-    const name = names[j] ?? ''
+function computeCloser(
+  names: readonly string[],
+  cache: Map<string, NotationClose>,
+  openAt: number,
+  kind: 'tab' | 'score',
+  chartDepth: number,
+): NotationClose {
+  const stack: CloserFrame[] = [closerFrame(kind, openAt, chartDepth)]
+  let root: NotationClose = null
+  let done = false
+
+  const settle = (result: NotationClose): void => {
+    const frame = stack.pop()
+    if (!frame) return
+    cache.set(frame.key, result)
+    if (stack.length === 0) {
+      root = result
+      done = true
+      return
+    }
+    const parent = stack[stack.length - 1]!
+    if (result?.boundary) {
+      settle(result)
+      return
+    }
+    parent.j = result ? result.at + 1 : parent.j + 1
+  }
+
+  while (stack.length > 0 && !done) {
+    const frame = stack[stack.length - 1]!
+    if (frame.j >= names.length) {
+      settle(null)
+      continue
+    }
+    const name = names[frame.j] ?? ''
     if (name === 'start_of_x_chart') {
-      openCharts++
+      frame.openCharts++
+      frame.j++
       continue
     }
     if (name === 'end_of_x_chart') {
-      // Closes a chart opened before this block. Do not keep a closer past it.
-      if (openCharts === 0) return null
-      openCharts--
-      if (openCharts === 0) boundary = j
+      if (frame.openCharts === 0) {
+        // A chart opened before this block ended. A stray end is not that.
+        if (frame.chartDepth > 0) {
+          settle(null)
+          continue
+        }
+        frame.j++
+        continue
+      }
+      frame.openCharts--
+      if (frame.openCharts === 0) frame.boundary = frame.j
+      frame.j++
       continue
     }
     const edge = blockEdge(name)
+    const openEdge = frame.kind === 'tab' ? 'tab-open' : 'score-open'
+    const closeEdge = frame.kind === 'tab' ? 'tab-close' : 'score-close'
+    const otherOpen = frame.kind === 'tab' ? 'score-open' : 'tab-open'
+    const otherKind: 'tab' | 'score' = frame.kind === 'tab' ? 'score' : 'tab'
     if (edge === otherOpen) {
-      const inner = findCloser(lines, j, otherKind)
-      if (inner?.boundary) return inner
-      if (inner) j = inner.at
+      const childKey = closerKey(frame.j, otherKind, frame.chartDepth)
+      if (!cache.has(childKey) && !regionCanClose(names, frame.j + 1)) cache.set(childKey, null)
+      if (cache.has(childKey)) {
+        const inner = cache.get(childKey) ?? null
+        if (inner?.boundary) {
+          settle(inner)
+          continue
+        }
+        frame.j = inner ? inner.at + 1 : frame.j + 1
+        continue
+      }
+      stack.push(closerFrame(otherKind, frame.j, frame.chartDepth))
       continue
     }
-    if (edge === openEdge) depth++
-    else if (edge === closeEdge && --depth === 0) {
-      // That closer sits in a chart that started after the end. Stop at the end.
-      if (boundary >= 0 && openCharts > 0) return { at: boundary, boundary: true }
-      return { at: j, boundary: false }
+    if (edge === openEdge) {
+      frame.depth++
+      frame.j++
+      continue
     }
+    if (edge === closeEdge) {
+      frame.depth--
+      if (frame.depth === 0) {
+        // That closer sits in a chart that started after the end. Stop at the end.
+        const result: NotationClose =
+          frame.boundary >= 0 && frame.openCharts > 0
+            ? { at: frame.boundary, boundary: true }
+            : { at: frame.j, boundary: false }
+        settle(result)
+        continue
+      }
+      frame.j++
+      continue
+    }
+    frame.j++
   }
-  return null
+  return root
 }
 
 function coversFence(close: NotationClose, li: number): boolean {
@@ -612,7 +721,13 @@ function atRealCloser(scan: NotationScan, li: number, edge: BlockEdge | null) {
 }
 
 /** Opening line is `out`. Lines inside the block, including the real close, are `in`. */
-function stepNotation(scan: NotationScan, lines: readonly string[], li: number, name: string): 'in' | 'out' {
+function stepNotation(
+  scan: NotationScan,
+  lines: readonly string[],
+  li: number,
+  name: string,
+  chartDepth: number,
+): 'in' | 'out' {
   const edge = blockEdge(name)
   if (scan.block.tab || scan.block.score) {
     atRealCloser(scan, li, edge)
@@ -620,12 +735,12 @@ function stepNotation(scan: NotationScan, lines: readonly string[], li: number, 
   }
   if (edge === 'tab-open') {
     scan.block.tab = true
-    scan.tabClose = findCloser(lines, li, 'tab')
+    scan.tabClose = notationBlockCloser(lines, li, 'tab', chartDepth)
     return 'out'
   }
   if (edge === 'score-open') {
     scan.block.score = true
-    scan.scoreClose = findCloser(lines, li, 'score')
+    scan.scoreClose = notationBlockCloser(lines, li, 'score', chartDepth)
     return 'out'
   }
   return 'out'
@@ -845,14 +960,27 @@ function patchIdentityInPlace(inner: string, patch: MetaPatch): string {
 function notationInside(lines: string[]): boolean[] {
   const mask = new Array<boolean>(lines.length).fill(false)
   const scan = freshNotationScan()
+  let chartDepth = 0
   for (let i = 0; i < lines.length; i++) {
     if (leftNotationAtBoundary(scan, i)) resetNotationScan(scan)
     const name = dirOf(lines[i] ?? '')?.name ?? ''
-    if (!name || name === 'start_of_x_chart' || name === 'end_of_x_chart') {
+    if (!name) {
       mask[i] = scan.block.tab || scan.block.score
       continue
     }
-    mask[i] = stepNotation(scan, lines, i, name) === 'in'
+    if (name === 'start_of_x_chart' || name === 'end_of_x_chart') {
+      // A fence the open block does not cover is the chart boundary, not notation.
+      if (notationFence(scan, i)) {
+        mask[i] = true
+        continue
+      }
+      mask[i] = false
+      resetNotationScan(scan)
+      if (name === 'start_of_x_chart') chartDepth++
+      else if (chartDepth > 0) chartDepth--
+      continue
+    }
+    mask[i] = stepNotation(scan, lines, i, name, chartDepth) === 'in'
   }
   return mask
 }
@@ -1088,6 +1216,7 @@ function outsideNamedLines(inner: string, name: string): string[] {
  */
 function walkRealChartFences(lines: readonly string[], stop: (index: number) => boolean): void {
   const scan = freshNotationScan()
+  let chartDepth = 0
   for (let i = 0; i < lines.length; i++) {
     const d = dirOf(lines[i] ?? '')
     if (!d) continue
@@ -1095,9 +1224,11 @@ function walkRealChartFences(lines: readonly string[], stop: (index: number) => 
       if (notationFence(scan, i)) continue
       if (stop(i)) return
       resetNotationScan(scan)
+      if (d.name === 'start_of_x_chart') chartDepth++
+      else if (chartDepth > 0) chartDepth--
       continue
     }
-    stepNotation(scan, lines, i, d.name)
+    stepNotation(scan, lines, i, d.name, chartDepth)
   }
 }
 
