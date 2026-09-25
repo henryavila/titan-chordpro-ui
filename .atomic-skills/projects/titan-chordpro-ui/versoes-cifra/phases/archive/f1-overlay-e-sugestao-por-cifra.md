@@ -7,12 +7,12 @@ goal: overlay key is cpv:my:{songId}:{chartId}; legacy cpv:my:{songId} reads as
   chart default; Suggestion carries chartId; TextOp.at is against the chart
   document; accept splices via replaceChart and save-content emits the whole
   file.
-status: active
+status: done
 branch: plan/versoes-cifra
 started: 2026-09-25T03:35:00.000Z
 startedCommit: e8fc929c5344cd011b9234aa5cf13ab39dbd4ab3
 lastUpdated: 2026-09-25T21:18:00.000Z
-nextAction: Run `phase-done`
+nextAction: null
 parentPlan: versoes-cifra
 phaseId: F1
 businessIntent:
@@ -33,7 +33,7 @@ businessIntent:
     devolvendo o arquivo inteiro.
 tasksDone: 2
 tasksTotal: 2
-gatesMet: 0
+gatesMet: 1
 gatesTotal: 1
 weightDone: 6
 weightTotal: 6
@@ -43,13 +43,22 @@ exitGates:
       from oferta apply into completa, or legacy overlay key is dropped without
       mapping to default, or Suggestion lacks chartId, or accept/save-content
       emits only the visible chart.
-    status: pending
+    status: met
+    metAt: 2026-09-25T21:16:18.000Z
     verifier:
       kind: shell
       command: pnpm exec vitest run tests/core/overlay.test.ts
         tests/vue/overlay-ui.test.ts tests/vue/storage-seam.test.ts
       expectExitCode: 0
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-25T21:16:18.000Z
+      verifiedCommit: 01904a2a9b5c0474ac913e4de3d6137f5d804851
+      passed: true
+      exitCode: 0
+      outputSummary: Test Files 3 passed (3). Tests 92 passed (92). Exit 0.
     verifierLabel: "shell: pnpm exec vitest run tests/core/overlay.test.ts tests/vue/o…"
+    evidenceSummary: passed · 2026-09-25
 stack:
   - id: 1
     title: Overlay e sugestão por cifra
@@ -142,13 +151,21 @@ current: true
 
 ## Session handoff
 
-- **Narrative:** F1 T-001 and T-002 are done. Overlay key is per song+chart, suggestions splice via replaceChart, sibling rascunho survives accept, open chart complete-syncs, capo is the open chart, pinned tune survives the update dialog. Colon/% overlay-key collision stays deferred. F2–F4 product already landed on the same branch. Next is `phase-done`.
-- **Decision log:** Operator 2026-09-25: fecha o F1 no plano. Findings 1–4 of F1-fix30 implemented. Suggestion publish is per-chart splice. Opening a chart fully syncs that chart. File capo is the open chart. TuneOp is not swallowed by the lyric update dialog.
-- **Single nextAction:** Run `phase-done`.
-- **Verbatim state:** T-001 verifier `pnpm exec vitest run tests/core/overlay.test.ts tests/vue/storage-seam.test.ts` Tests 40 passed exit 0 at `3c2be3c216d8ff7d30a74ebeb597a30d1816c58d`. T-002 verifier `pnpm exec vitest run tests/vue/overlay-ui.test.ts` Tests 52 passed exit 0 at the same SHA. F1-G1 same three files 92 passed.
-- **Uncommitted changes:** initiative close in flight; expected clean after checkpoint.
+- **Narrative:** F1 is done and archived. Overlay/suggestion is per chart. F2–F4 product already landed on this branch. Maestro cursor pauses at awaiting-operator-advance. Next is present F2 phase-start package after operator-continue.
+- **Decision log:** Operator 2026-09-25: fecha o F1 no plano. Findings 1–4 implemented. Colon/% overlay-key collision stays deferred. deliveryAuditGate PARTIAL.
+- **Single nextAction:** present phase-start package for F2 validate-only
+- **Verbatim state:** F1-G1 `pnpm exec vitest run tests/core/overlay.test.ts tests/vue/overlay-ui.test.ts tests/vue/storage-seam.test.ts` Tests 92 passed exit 0. Evidence `verifiedCommit: 01904a2a9b5c0474ac913e4de3d6137f5d804851`. Eval `.atomic-skills/reviews/eval-versoes-cifra-F1.md`. Audit `.atomic-skills/reviews/audit-delivery-versoes-cifra-F1.md`.
+- **Uncommitted changes:** phase-done in flight.
+
+## Self-review against code-quality gates
+
+- G1 read-before-claim: applied — T-001 40 tests and T-002 52 tests at `3c2be3c`; F1-G1 92 tests at `01904a2a9b5c0474ac913e4de3d6137f5d804851`
+- G2 soft-language: applied — exit gate `passed: true` exit 0
+- G6 reference-or-strike: applied — handoff literals are verbatim commands and SHAs
+- CROSS-MODEL REVIEW: operator closed F1 after F1-fix30 findings 1–4 were implemented; receipts `.atomic-skills/reviews/2026-09-25-versoes-cifra-f1-close-both.md`
+- Lessons: 4 recorded in `lessons/versoes-cifra-f1-overlay-e-sugestao-por-cifra.md`
 
 ## Links
 
 - Plan: `.atomic-skills/projects/titan-chordpro-ui/versoes-cifra/plan.md`
-- Lessons: `.atomic-skills/projects/titan-chordpro-ui/versoes-cifra/lessons/versoes-cifra-f0-leitor-envelope-e-parse-fatiado.md`
+- Lessons: `.atomic-skills/projects/titan-chordpro-ui/versoes-cifra/lessons/versoes-cifra-f1-overlay-e-sugestao-por-cifra.md`

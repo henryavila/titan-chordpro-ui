@@ -1,6 +1,6 @@
 {
   "schemaVersion": "0.1",
-  "generatedAt": "2026-09-25T21:19:04.757Z",
+  "generatedAt": "2026-09-25T21:26:52.921Z",
   "projectId": "titan-chordpro-ui",
   "plan": {
     "slug": "versoes-cifra",
@@ -8,23 +8,16 @@
     "status": "active"
   },
   "phase": {
-    "id": "F1",
-    "slug": "versoes-cifra-f1-overlay-e-sugestao-por-cifra",
-    "title": "Overlay e sugestão por cifra",
-    "index": 2,
+    "id": "F2",
+    "slug": "versoes-cifra-f2-viewer-seletor-de-cifra",
+    "title": "Viewer: seletor de cifra",
+    "index": 3,
     "total": 5,
-    "status": "active"
+    "status": "pending"
   },
-  "tasks": {
-    "done": 2,
-    "total": 2,
-    "blocked": 0
-  },
-  "gates": {
-    "met": 0,
-    "total": 1
-  },
-  "nextAction": "Run `phase-done`",
+  "tasks": null,
+  "gates": null,
+  "nextAction": null,
   "flags": {
     "drift": false,
     "multipleActivePlans": false,
@@ -33,11 +26,7 @@
   "sources": [
     {
       "path": ".atomic-skills/projects/titan-chordpro-ui/versoes-cifra/plan.md",
-      "lastUpdated": "2026-09-25T03:35:00.000Z"
-    },
-    {
-      "path": ".atomic-skills/projects/titan-chordpro-ui/versoes-cifra/phases/f1-overlay-e-sugestao-por-cifra.md",
-      "lastUpdated": "2026-09-25T21:18:00.000Z"
+      "lastUpdated": "2026-09-25T21:30:00.000Z"
     }
   ]
 }

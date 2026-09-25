@@ -6,9 +6,9 @@ version: "1.0"
 status: active
 executionMode: automate
 started: 2026-09-20T15:40:57.297Z
-lastUpdated: 2026-09-25T03:35:00.000Z
+lastUpdated: 2026-09-25T21:30:00.000Z
 branch: plan/versoes-cifra
-currentPhase: F1
+currentPhase: F2
 parallelismAllowed: false
 principles:
   - id: P1
@@ -165,13 +165,20 @@ phases:
             from oferta apply into completa, or legacy overlay key is dropped
             without mapping to default, or Suggestion lacks chartId, or
             accept/save-content emits only the visible chart.
-          status: pending
+          status: met
+          metAt: 2026-09-25T21:16:18.000Z
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/overlay.test.ts
               tests/vue/overlay-ui.test.ts tests/vue/storage-seam.test.ts
             expectExitCode: 0
-    status: active
+          evidence:
+            verifierKind: shell
+            verifiedAt: 2026-09-25T21:16:18.000Z
+            verifiedCommit: 01904a2a9b5c0474ac913e4de3d6137f5d804851
+            passed: true
+            exitCode: 0
+            outputSummary: "Test Files 3 passed (3). Tests 92 passed (92). Exit 0."
     businessIntent:
       value: O músico guarda afinação, overlay e sugestão na cifra que está
         aberta, e a chave antiga do arquivo continua valendo para a cifra
@@ -191,6 +198,33 @@ phases:
       doneWhen: tests/core/overlay.test.ts, tests/vue/storage-seam.test.ts e
         tests/vue/overlay-ui.test.ts verdes, com a chave por cifra e o save
         devolvendo o arquivo inteiro.
+    evaluationGate:
+      status: passed
+      verdict: pass
+      reportPath: .atomic-skills/reviews/eval-versoes-cifra-F1.md
+      at: 01904a2a9b5c0474ac913e4de3d6137f5d804851
+      verifiedAt: 2026-09-25T21:25:00.000Z
+    lessonsState: recorded
+    lessonsPath: .atomic-skills/projects/titan-chordpro-ui/versoes-cifra/lessons/versoes-cifra-f1-overlay-e-sugestao-por-cifra.md
+    reviewGate:
+      status: passed
+      mode: both
+      at: 01904a2a9b5c0474ac913e4de3d6137f5d804851
+      reviewFile: .atomic-skills/reviews/2026-09-25-versoes-cifra-f1-close-both.md
+      localReceiptPath: .atomic-skills/reviews/2026-09-25-versoes-cifra-f1-close-local.md
+      codexReceiptPath: .atomic-skills/reviews/2026-09-25-1425-versoes-cifra-f1-fix30-codex.md
+      verifiedAt: 2026-09-25T21:25:00.000Z
+    decisionReview:
+      status: passed
+      verifiedAt: 2026-09-25T21:25:00.000Z
+      packagePresentedAt: 2026-09-25T21:25:00.000Z
+      packagePath: .atomic-skills/reviews/decision-package-versoes-cifra-F1.md
+    deliveryAuditGate:
+      status: passed
+      verdict: PARTIAL
+      reportPath: .atomic-skills/reviews/audit-delivery-versoes-cifra-F1.md
+      verifiedAt: 2026-09-25T21:25:00.000Z
+    status: done
   - id: F2
     slug: versoes-cifra-f2-viewer-seletor-de-cifra
     title: "Viewer: seletor de cifra"
