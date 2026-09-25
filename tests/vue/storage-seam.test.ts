@@ -259,3 +259,22 @@ it('stores the personal version on the active chart, not the implicit default sl
   expect(store.get(legacy)).toBeTruthy()
   w.unmount()
 })
+
+it('keeps the legacy overlay when the new key write throws', async () => {
+  const legacy = `${STORE_KEYS.overlayPrefix}uma`
+  const kept = 'legacy-keep'
+  const map = new Map<string, string>([[legacy, kept]])
+  const store: ChartStore = {
+    get: (k) => map.get(k) ?? null,
+    set: () => {
+      throw new Error('denied')
+    },
+    remove: (k) => {
+      map.delete(k)
+    },
+  }
+  const w = mountViewer(store, { songId: 'uma' })
+  await personalise(w)
+  expect(store.get(legacy)).toBe(kept)
+  w.unmount()
+})

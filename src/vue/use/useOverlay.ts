@@ -162,9 +162,22 @@ export function useOverlay(opts: OverlayOpts) {
     }
   }
 
-  /** `cpv:my:{songId}` — the pre-chart key. It belongs to the `default` slot only. */
+  /**
+   * `cpv:my:{songId}` — the pre-chart key. It belongs to the `default` slot only.
+   * A song id with no colon stays literal; encoding it would miss the stored value.
+   */
   function legacyKey(): string {
     return `${STORE_KEYS.overlayPrefix}${opts.songId.value}`
+  }
+
+  /** The id is a chart of this file. No envelope: only `default`. */
+  function chartInFile(file: string, chartId: string): boolean {
+    try {
+      return listCharts(file).some((c) => c.id === chartId)
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return false
+      throw err
+    }
   }
 
   /** The chart document `parse` numbers. Ops never anchor on a sibling. */
@@ -224,18 +237,25 @@ export function useOverlay(opts: OverlayOpts) {
 
   function putOverlay(next: Overlay | null): Overlay | null {
     // Denied or failing storage is not the reader's problem: the overlay stays
-    // live for this session either way.
-    if (next) writeStored(opts.store, ovKey.value, next)
-    else {
+    // live for this session either way. The unsuffixed key is removed only
+    // after the new key reads back the JSON just written.
+    let retireLegacy = next == null
+    if (next) {
+      try {
+        const payload = JSON.stringify(next)
+        opts.store.set(ovKey.value, payload)
+        retireLegacy = opts.store.get(ovKey.value) === payload
+      } catch {
+        retireLegacy = false
+      }
+    } else {
       try {
         opts.store.remove(ovKey.value)
       } catch {
         /* the host's own failure stays with the host */
       }
     }
-    // A write of the implicit chart retires the unsuffixed key. Leaving it
-    // would bring the old ops back the next time the new key is empty.
-    if (chartSlot.value === 'default') {
+    if (retireLegacy && chartSlot.value === 'default') {
       const legacy = legacyKey()
       if (legacy !== ovKey.value) {
         try {
@@ -636,9 +656,11 @@ export function useOverlay(opts: OverlayOpts) {
   const qOps = computed<QueueOpCard[]>(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s) return []
-    const off = chartText(official.value, sugChartId(s))
+    const id = sugChartId(s)
+    const present = chartInFile(official.value, id)
+    const off = chartText(official.value, id)
     return s.ops.map((op) => {
-      const fits = !applyOps(off, [op]).failed.length
+      const fits = present && !applyOps(off, [op]).failed.length
       return {
         id: op.id,
         label: opLabel(op),
@@ -678,7 +700,9 @@ export function useOverlay(opts: OverlayOpts) {
   const qBatchPreview = computed(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s?.ops.length) return null
-    const doc = chartText(official.value, sugChartId(s))
+    const id = sugChartId(s)
+    const doc = chartText(official.value, id)
+    if (!chartInFile(official.value, id)) return { text: doc, count: 0, conflicts: s.ops.length }
     const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
     if (!applies.length) return { text: doc, count: 0, conflicts: s.ops.length }
     const r = applyOps(doc, applies)
@@ -729,13 +753,14 @@ export function useOverlay(opts: OverlayOpts) {
     const s = allSug().find((x) => x.id === sugId)
     const op = s?.ops.find((o) => o.id === opId)
     if (!s || !op) return
-    const doc = chartText(official.value, sugChartId(s))
-    const r = applyOps(doc, [op])
-    if (r.failed.length) {
+    const id = sugChartId(s)
+    const doc = chartText(official.value, id)
+    const r = chartInFile(official.value, id) ? applyOps(doc, [op]) : null
+    if (!r || r.failed.length) {
       opts.toast('Este ajuste não encaixa mais na cifra atual')
       return
     }
-    const full = fileWithChart(official.value, sugChartId(s), r.text)
+    const full = fileWithChart(official.value, id, r.text)
     const next = archiveOp(s, opId, 'accepted')
     const patched = patchSug(sugId, next)
     opts.toast('Aceito — já vale para todos')
@@ -778,14 +803,17 @@ export function useOverlay(opts: OverlayOpts) {
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
     if (!s?.ops.length) return
-    const doc = chartText(official.value, sugChartId(s))
-    const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
+    const id = sugChartId(s)
+    const doc = chartText(official.value, id)
+    const applies = chartInFile(official.value, id)
+      ? s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
+      : []
     if (!applies.length) {
       opts.toast('Nenhum ajuste encaixa na cifra atual')
       return
     }
     const r = applyOps(doc, applies)
-    const full = fileWithChart(official.value, sugChartId(s), r.text)
+    const full = fileWithChart(official.value, id, r.text)
     const okIds = new Set(applies.filter((op) => !r.failed.some((f) => f.id === op.id)).map((o) => o.id))
     let next = s
     for (const op of s.ops) {

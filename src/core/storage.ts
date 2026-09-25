@@ -47,9 +47,17 @@ function overlayChartId(chartId?: string): string {
   return id && id !== 'default' ? id : 'default'
 }
 
+/**
+ * A colon would make this component look like the key separator.
+ * Ids without one stay literal — encoding them would move an existing slot.
+ */
+function overlayPart(id: string): string {
+  return id.includes(':') ? encodeURIComponent(id) : id
+}
+
 /** The key a given chart's personal version is stored under. */
 export function overlayKey(songId: string, chartId?: string): string {
-  return `${STORE_KEYS.overlayPrefix}${songId}:${overlayChartId(chartId)}`
+  return `${STORE_KEYS.overlayPrefix}${overlayPart(songId)}:${overlayPart(overlayChartId(chartId))}`
 }
 
 /**
