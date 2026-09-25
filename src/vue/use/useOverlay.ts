@@ -7,6 +7,7 @@ import {
   isTuneOp,
   opCtxNote,
   opLabel,
+  hasChartEnvelope,
   listCharts,
   overlaid,
   overlayKey,
@@ -162,9 +163,33 @@ export function useOverlay(opts: OverlayOpts) {
     }
   }
 
-  /** `cpv:my:{songId}` — the pre-chart key. It belongs to the `default` slot only. */
+  /**
+   * `cpv:my:{songId}` — the pre-chart key. It is the whole file, and only a
+   * file with no chart envelope. A block whose id is `default` is not this key.
+   * A song id with no colon stays literal; encoding it would miss the stored value.
+   */
   function legacyKey(): string {
     return `${STORE_KEYS.overlayPrefix}${opts.songId.value}`
+  }
+
+  /** No chart blocks. A thrown envelope is not this case. */
+  function plainFile(file: string): boolean {
+    try {
+      return !hasChartEnvelope(file)
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return false
+      throw err
+    }
+  }
+
+  /** The id is a chart of this file. No envelope: only `default`. */
+  function chartInFile(file: string, chartId: string): boolean {
+    try {
+      return listCharts(file).some((c) => c.id === chartId)
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return false
+      throw err
+    }
   }
 
   /** The chart document `parse` numbers. Ops never anchor on a sibling. */
@@ -186,6 +211,16 @@ export function useOverlay(opts: OverlayOpts) {
   function sugChartId(s: Suggestion): string {
     const id = String(s.chartId ?? '').trim()
     return id || 'default'
+  }
+
+  /**
+   * No chartId is a pre-envelope whole-file suggestion. It applies only when
+   * this file has no envelope — not when a block happens to be named `default`.
+   */
+  function sugApplies(file: string, s: Suggestion): boolean {
+    const id = String(s.chartId ?? '').trim()
+    if (!id) return plainFile(file)
+    return chartInFile(file, id)
   }
 
   /** One queue row per chart, not per song. The separator cannot appear in a chart id. */
@@ -224,18 +259,25 @@ export function useOverlay(opts: OverlayOpts) {
 
   function putOverlay(next: Overlay | null): Overlay | null {
     // Denied or failing storage is not the reader's problem: the overlay stays
-    // live for this session either way.
-    if (next) writeStored(opts.store, ovKey.value, next)
-    else {
+    // live for this session either way. The unsuffixed key is removed only
+    // after the new key reads back the JSON just written.
+    let retireLegacy = next == null
+    if (next) {
+      try {
+        const payload = JSON.stringify(next)
+        opts.store.set(ovKey.value, payload)
+        retireLegacy = opts.store.get(ovKey.value) === payload
+      } catch {
+        retireLegacy = false
+      }
+    } else {
       try {
         opts.store.remove(ovKey.value)
       } catch {
         /* the host's own failure stays with the host */
       }
     }
-    // A write of the implicit chart retires the unsuffixed key. Leaving it
-    // would bring the old ops back the next time the new key is empty.
-    if (chartSlot.value === 'default') {
+    if (retireLegacy && plainFile(official.value)) {
       const legacy = legacyKey()
       if (legacy !== ovKey.value) {
         try {
@@ -267,9 +309,9 @@ export function useOverlay(opts: OverlayOpts) {
 
   function load(): TuneOp | null {
     let ov = storedOverlay(ovKey.value)
-    // `cpv:my:{songId}` is the old one-chart key. It is the `default` slot,
-    // never a named chart — those ops are anchored on a different document.
-    if (!ov && chartSlot.value === 'default') {
+    // `cpv:my:{songId}` is the old whole-file key. Adopt it only when this
+    // file has no chart envelope — never onto a block named `default`.
+    if (!ov && plainFile(official.value)) {
       const legacy = legacyKey()
       if (legacy !== ovKey.value) ov = storedOverlay(legacy)
     }
@@ -636,9 +678,11 @@ export function useOverlay(opts: OverlayOpts) {
   const qOps = computed<QueueOpCard[]>(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s) return []
-    const off = chartText(official.value, sugChartId(s))
+    const id = sugChartId(s)
+    const present = sugApplies(official.value, s)
+    const off = chartText(official.value, id)
     return s.ops.map((op) => {
-      const fits = !applyOps(off, [op]).failed.length
+      const fits = present && !applyOps(off, [op]).failed.length
       return {
         id: op.id,
         label: opLabel(op),
@@ -678,7 +722,9 @@ export function useOverlay(opts: OverlayOpts) {
   const qBatchPreview = computed(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s?.ops.length) return null
-    const doc = chartText(official.value, sugChartId(s))
+    const id = sugChartId(s)
+    const doc = chartText(official.value, id)
+    if (!sugApplies(official.value, s)) return { text: doc, count: 0, conflicts: s.ops.length }
     const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
     if (!applies.length) return { text: doc, count: 0, conflicts: s.ops.length }
     const r = applyOps(doc, applies)
@@ -729,13 +775,14 @@ export function useOverlay(opts: OverlayOpts) {
     const s = allSug().find((x) => x.id === sugId)
     const op = s?.ops.find((o) => o.id === opId)
     if (!s || !op) return
-    const doc = chartText(official.value, sugChartId(s))
-    const r = applyOps(doc, [op])
-    if (r.failed.length) {
+    const id = sugChartId(s)
+    const doc = chartText(official.value, id)
+    const r = sugApplies(official.value, s) ? applyOps(doc, [op]) : null
+    if (!r || r.failed.length) {
       opts.toast('Este ajuste não encaixa mais na cifra atual')
       return
     }
-    const full = fileWithChart(official.value, sugChartId(s), r.text)
+    const full = fileWithChart(official.value, id, r.text)
     const next = archiveOp(s, opId, 'accepted')
     const patched = patchSug(sugId, next)
     opts.toast('Aceito — já vale para todos')
@@ -778,14 +825,17 @@ export function useOverlay(opts: OverlayOpts) {
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
     if (!s?.ops.length) return
-    const doc = chartText(official.value, sugChartId(s))
-    const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
+    const id = sugChartId(s)
+    const doc = chartText(official.value, id)
+    const applies = sugApplies(official.value, s)
+      ? s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
+      : []
     if (!applies.length) {
       opts.toast('Nenhum ajuste encaixa na cifra atual')
       return
     }
     const r = applyOps(doc, applies)
-    const full = fileWithChart(official.value, sugChartId(s), r.text)
+    const full = fileWithChart(official.value, id, r.text)
     const okIds = new Set(applies.filter((op) => !r.failed.some((f) => f.id === op.id)).map((o) => o.id))
     let next = s
     for (const op of s.ops) {

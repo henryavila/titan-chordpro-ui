@@ -250,4 +250,13 @@ describe('overlayKey', () => {
     expect(overlayKey('jesus-1', 'default')).toBe(overlayKey('jesus-1'))
     expect(overlayKey('jesus-1', '')).toBe(overlayKey('jesus-1'))
   })
+
+  it('encodes a colon in an id and leaves ids without a colon literal', () => {
+    expect(overlayKey('jesus-1', 'oferta')).toBe('cpv:my:jesus-1:oferta')
+    expect(overlayKey('song')).toBe('cpv:my:song:default')
+    expect(overlayKey('song:default')).not.toBe('cpv:my:song:default')
+    expect(overlayKey('song:default')).toBe(`cpv:my:${encodeURIComponent('song:default')}:default`)
+    expect(overlayKey('jesus-1', 'of:erta')).toBe(`cpv:my:jesus-1:${encodeURIComponent('of:erta')}`)
+    expect(overlayKey('song id')).toBe('cpv:my:song id:default')
+  })
 })

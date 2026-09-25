@@ -259,3 +259,82 @@ it('stores the personal version on the active chart, not the implicit default sl
   expect(store.get(legacy)).toBeTruthy()
   w.unmount()
 })
+
+/** An envelope whose only block id is the string `default` — not a plain file. */
+const DEFAULT_BLOCK = [
+  '{start_of_x_chart:default}',
+  '{title:Bloco}',
+  '{key:G}',
+  '[G]linha do bloco',
+  '{end_of_x_chart}',
+].join('\n')
+
+it('does not adopt a legacy overlay or a chart-less suggestion into a block named default', async () => {
+  const store = hostStore()
+  const songId = 'bloco'
+  const legacy = `${STORE_KEYS.overlayPrefix}${songId}`
+  const changed = DEFAULT_BLOCK.replace('[G]linha do bloco', '[G]linha do bloco (legado)')
+  const ops = diffOps(DEFAULT_BLOCK, changed, { transpose: 0, capo: 0 })
+  const legacyPayload = JSON.stringify({ baseVersion: 'v1', ops, at: 1 })
+  store.set(legacy, legacyPayload)
+  store.set(
+    STORE_KEYS.suggestions,
+    JSON.stringify([
+      {
+        id: 's-legado',
+        songId,
+        title: 'Bloco',
+        at: 1,
+        baseVersion: 'v1',
+        status: 'pending',
+        actorName: 'Ana',
+        ops,
+        resolvedOps: [],
+      },
+    ]),
+  )
+
+  const w = mountViewer(store, { source: DEFAULT_BLOCK, songId, editMode: 'persisted' })
+  await flushPromises()
+  expect(w.html()).not.toContain('(legado)')
+  expect(store.get(legacy)).toBe(legacyPayload)
+  expect(store.get(overlayKey(songId, 'default'))).toBeNull()
+
+  await w.get('[data-queue-chip]').trigger('click')
+  await flushPromises()
+  await w.get('[data-q-song]').trigger('click')
+  await flushPromises()
+  await w.get('[data-q-sug]').trigger('click')
+  await flushPromises()
+  expect(w.get('[data-q-batch]').text()).toMatch(/0 encaixam/)
+  expect(w.get('[data-q-batch]').text()).toMatch(/conflito/)
+
+  await w.get('[data-q-accept]').trigger('click')
+  await flushPromises()
+  const list = JSON.parse(store.get(STORE_KEYS.suggestions) ?? '[]')
+  expect(list[0].ops).toHaveLength(ops.length)
+  expect(list[0].resolvedOps).toHaveLength(0)
+  expect(w.emitted('save-content')).toBeUndefined()
+  expect(store.get(legacy)).toBe(legacyPayload)
+  expect(store.get(overlayKey(songId, 'default'))).toBeNull()
+  w.unmount()
+})
+
+it('keeps the legacy overlay when the new key write throws', async () => {
+  const legacy = `${STORE_KEYS.overlayPrefix}uma`
+  const kept = 'legacy-keep'
+  const map = new Map<string, string>([[legacy, kept]])
+  const store: ChartStore = {
+    get: (k) => map.get(k) ?? null,
+    set: () => {
+      throw new Error('denied')
+    },
+    remove: (k) => {
+      map.delete(k)
+    },
+  }
+  const w = mountViewer(store, { songId: 'uma' })
+  await personalise(w)
+  expect(store.get(legacy)).toBe(kept)
+  w.unmount()
+})

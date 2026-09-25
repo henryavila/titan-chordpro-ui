@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { normalizeSource, overlayKey, parse } from '../../src/core/index'
+import { diffOps, normalizeSource, overlayKey, parse } from '../../src/core/index'
 
 const raw = () => loadFixture(JESUS_1)
 /** The line indices an adjustment anchors on live in the normalised text. */
@@ -698,6 +698,51 @@ describe('suggestion per chart', () => {
     expect(saved).toContain('[C]corpo da oferta')
     expect(chartBlock(saved, 'completa')).toBe(chartBlock(TWO_CHARTS, 'completa'))
     expect(saved).not.toBe(parse(saved, { chartId: 'oferta' }).source)
+    admin.unmount()
+  })
+
+  it('does not accept a suggestion whose chart id is not in the file', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const ops = diffOps(oferta, oferta.replace('[C]corpo da oferta', '[C]corpo da oferta (ok)'), {
+      transpose: 0,
+      capo: 0,
+    })
+    localStorage.setItem(
+      'cpv:sug',
+      JSON.stringify([
+        {
+          id: 's-ghost',
+          songId: 'uma',
+          chartId: 'fantasma',
+          title: 'Uma',
+          at: 1,
+          baseVersion: 'v1',
+          status: 'pending',
+          actorName: 'Bia',
+          ops,
+          resolvedOps: [],
+        },
+      ]),
+    )
+    const admin = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-song]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+    expect(admin.get('[data-q-batch]').text()).toMatch(/0 encaixam/)
+    expect(admin.get('[data-q-batch]').text()).toMatch(/conflito/)
+
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    expect(list[0].ops).toHaveLength(1)
+    expect(list[0].resolvedOps).toHaveLength(0)
+    expect(admin.emitted('save-content')).toBeUndefined()
+    expect(admin.get('.cpv-toast').text()).toMatch(/não encaixa/i)
+    expect(String(admin.emitted('save-content')?.at(-1)?.[0] ?? TWO_CHARTS)).toBe(TWO_CHARTS)
     admin.unmount()
   })
 })
