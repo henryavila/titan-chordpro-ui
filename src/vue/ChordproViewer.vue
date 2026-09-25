@@ -286,6 +286,7 @@ const localMode = ref<'view' | 'edit' | null>(null)
 const wMode = ref<WriteMode | null>(null)
 const confirmDiscard = ref(false)
 const metaOpen = ref(false)
+const identityLost = ref(false)
 
 const session = createSourceSession({ source: props.source ?? '' })
 /** Working source: the draft while editing, the host source otherwise. */
@@ -293,6 +294,7 @@ const working = ref(props.source ?? '')
 const rev = ref(0)
 let lastSrc: string | null = null
 let lastSongId: string | null = null
+let lastExplicit = false
 function touch() {
   working.value = session.getSource()
   rev.value += 1
@@ -323,8 +325,8 @@ function publishContentSource() {
  * the reader's version a different text — the draft cannot survive it, which
  * is why reverting an adjustment drops what was typed on top of it.
  */
-function forceBase() {
-  const b = ov.baseFor(wMode.value)
+function forceBase(file?: string) {
+  const b = ov.baseFor(wMode.value, file)
   // Also when the text already matches: `reset` is what moves the saved
   // baseline, and a local edit that ends level with its base is not a draft.
   if (session.getSource() === b && !session.dirty()) return
@@ -450,6 +452,7 @@ const audioArt = computed(() => (isEdit.value ? null : readChartFile(() => audio
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {
+  if (identityLost.value) return 'A identidade da música mudou.'
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
   if (parsedState.value.envelopeError) return parsedState.value.envelopeError
   return isParseFatal(liveSource.value, parsed.value)
@@ -2400,13 +2403,33 @@ function explicitSongChanged(): boolean {
   return songId.value !== lastSongId
 }
 
+function explicitNow(): boolean {
+  return setlist.on.value || !!props.songId
+}
+
 function syncHostSource() {
   const raw = hostSource.value
   const song = songId.value
+  // The explicit id disappeared and the text did not. Forget the in-memory
+  // version. Do not write either storage key and do not load the title key.
+  if (raw === lastSrc && lastExplicit && !explicitNow() && song !== lastSongId) {
+    ov.holdChartLoad()
+    try {
+      ov.discardMemory()
+      lastSongId = song
+      lastExplicit = false
+      identityLost.value = true
+      forceBase()
+    } finally {
+      ov.releaseChartLoad()
+    }
+    return
+  }
   // Same text is not a new chart unless a setlist or props.songId actually
   // changed. A title-only identity moves with the editor's own echo. The other
   // watch in this flush sees both already recorded and stops.
   if (raw === lastSrc && !explicitSongChanged()) return
+  identityLost.value = false
   // Until ov.load(), the chart slot can move onto the next song while
   // officialSrc is still the file just saved.
   ov.holdChartLoad()
@@ -2417,6 +2440,7 @@ function syncHostSource() {
     const lost = !first && session.dirty()
     lastSrc = raw
     lastSongId = song
+    lastExplicit = explicitNow()
     const src = normalizeSource(raw)
     session.reset(src)
     metaOpen.value = false
@@ -2461,6 +2485,9 @@ function syncHostSource() {
     // officialSrc is clear. A chart the overlay itself opens must still load.
     ov.releaseChartLoad()
     forceBase()
+    // The opened chart's overlay loads during the pass above. Paint its lyric
+    // onto that file — the official text still carries the marker just removed.
+    forceBase(session.getSource())
     // The stored BPM belongs to the song: it reloads with the chart.
     met.loadBpm()
     if (spot) {
