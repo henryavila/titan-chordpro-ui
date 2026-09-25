@@ -36,6 +36,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
   - Capa do host (quadrado 256–512 px + `width`/`height`); sem capa, arte genérica 512×512
   - O host grava no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6
 - Lista: anterior / próxima, lugar guardado por música
+- **Cifras nomeadas** no mesmo arquivo — chip **Cifra** ao lado do título (`chartId`); troca de arranjo não é troca de música. **Minha versão** continua o overlay pessoal, não o arranjo
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
 
@@ -52,7 +53,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
-Fora: login, multicifra do site, player de áudio **sincronizado**, diagramas de braço, collab em tempo real.
+Fora: login, catálogo do site (qual **música**), player de áudio **sincronizado**, diagramas de braço, collab em tempo real. Cifras nomeadas **dentro** do arquivo são da UI.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
@@ -129,7 +130,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 
 | Prop | Default | Papel |
 |---|---|---|
-| `source` | `''` | Texto ChordPro/OnSong da cifra ativa (host escolhe qual) |
+| `source` | `''` | Arquivo ChordPro/OnSong da **música** (1 string; pode ter cifras nomeadas) |
+| `chartId` | default do arquivo | Cifra nomeada inicial; o músico troca; emit `update:chartId` |
 | `mode` | `'view'` | `view` \| `edit`; a UI também alterna sozinha (`update:mode`) |
 | `theme` | `'auto'` | `auto` \| `light` \| `dark`; o leitor pode trocar |
 | `lens` | `'none'` | `none` \| `letra` \| `nashville` — projeção de leitura; `letra` = só a letra (cantor). Persiste entre músicas do ensaio |
@@ -144,7 +146,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
 | `persistSuggestion` | — | `(s) => Promise<void>` — o host confirma o POST (`return` da Promise), lida na hora do envio. reject ou sem Promise = nada na fila, retry. Fila só depois do ack. `@suggestion-created` é notify depois do ack, não o save |
-| `songId` | título da cifra | Identidade da música, chave da versão pessoal |
+| `songId` | título da cifra | Identidade da **música** (não muda ao trocar cifra). Overlay = Minha versão |
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
@@ -157,7 +159,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `storage` | `localStorage` | Onde o que o viewer lembra é gravado — ver abaixo |
 | `surfaceGuard` | `true` | Avisa (console + tela) quando o host embute sem dar altura ao pai |
 
-Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
+Emite `update:source` (arquivo inteiro), `update:chartId`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content` (arquivo inteiro), `suggestion-created` (`chartId` da cifra), `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
 Não há prop de áudio. Cantado, playback e capa vão no texto ChordPro (`setRehearsalAudio`) e entram em `source`. Guia: [Áudio de referência](#áudio-de-referência-no-ensaio) e [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
 

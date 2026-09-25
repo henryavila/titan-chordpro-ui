@@ -15,8 +15,12 @@ import {
   hasSongDuration,
   inferWrittenKey,
   ChartEnvelopeError,
+  addChart,
   commitChartDocument,
+  deleteChart,
   listCharts,
+  renameChart,
+  setDefaultChart,
   lintSource,
   storedTransposeSemis,
   isParseFatal,
@@ -185,6 +189,7 @@ const props = withDefaults(
 // `ChordproViewerEmits` alone can omit new keys from the runtime emits list).
 const emit = defineEmits<{
   'update:source': [value: string]
+  'update:chartId': [value: string]
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
   'update:lens': [value: Lens]
@@ -282,6 +287,32 @@ const srcOpen = ref(false)
  * move the source pane onto the sibling.
  */
 const pinnedChartId = ref<string | null>(null)
+/** Musician/host pick. Null follows the file default until someone chooses. */
+const musicianChartId = ref<string | null>(String(props.chartId ?? '').trim() || null)
+type LiveChartSpot = {
+  offset: number
+  capo: number
+  dual: boolean
+  mul: number
+  top: number
+  u: number
+}
+const chartSpots: Record<string, LiveChartSpot> = {}
+function liveChartKey(song: string, chart: string) {
+  return `${song}\t${chart}`
+}
+watch(
+  () => props.chartId,
+  (id) => {
+    const next = String(id ?? '').trim() || null
+    if (next === musicianChartId.value) return
+    rememberOpenChart()
+    stopScroll()
+    met.stop()
+    musicianChartId.value = next
+    applyChartSpot()
+  },
+)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
 const wMode = ref<WriteMode | null>(null)
@@ -289,7 +320,10 @@ const confirmDiscard = ref(false)
 const metaOpen = ref(false)
 const identityLost = ref(false)
 
-const session = createSourceSession({ source: props.source ?? '' })
+const session = createSourceSession({
+  source: props.source ?? '',
+  chartId: () => pinnedChartId.value ?? musicianChartId.value ?? undefined,
+})
 /** Working source: the draft while editing, the host source otherwise. */
 const working = ref(props.source ?? '')
 const rev = ref(0)
@@ -342,7 +376,15 @@ function fileCapo(src: string): number {
 
 function preloadTune() {
   offset.value = 0
-  capo.value = fileCapo(normalizeSource(hostSource.value))
+  const file = normalizeSource(session.getSource() || hostSource.value)
+  const chosen = String(pinnedChartId.value ?? musicianChartId.value ?? '').trim()
+  const id = readChartFile(() => {
+    const charts = listCharts(file)
+    if (chosen && charts.some((c) => c.id === chosen)) return chosen
+    return charts.find((c) => c.isDefault)?.id
+  }, chosen || undefined)
+  const doc = readChartFile(() => parse(file, id ? { chartId: id } : undefined).source, file)
+  capo.value = fileCapo(doc)
   if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
   capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
 }
@@ -430,10 +472,58 @@ const EMPTY_CHART: ReturnType<typeof parse> = {
   eocOf: {},
 }
 
+function pinEditedChart() {
+  const charts = readChartFile(() => listCharts(session.getSource()), [])
+  const open = String(screenChartId.value ?? '').trim()
+  pinnedChartId.value =
+    (open && charts.some((c) => c.id === open) ? open : charts.find((c) => c.isDefault)?.id) ??
+    charts[0]?.id ??
+    null
+}
+
+function commitOpenChart(next: string): string {
+  if (pinnedChartId.value == null) pinEditedChart()
+  return commitChartDocument(session.getSource(), next, pinnedChartId.value ?? undefined)
+}
+
+const fileCharts = computed(() => readChartFile(() => listCharts(liveSource.value), []))
+
+/**
+ * Chart on screen. The edit pin wins while that id is still in this text;
+ * else the musician/host pick; else the file default. An id the source does
+ * not contain is not passed.
+ */
+const screenChartId = computed((): string | undefined => {
+  const charts = fileCharts.value
+  if (!charts.length) return undefined
+  const pinned = String(pinnedChartId.value ?? '').trim()
+  if (pinned && charts.some((c) => c.id === pinned)) return pinned
+  const chosen = String(musicianChartId.value ?? '').trim()
+  if (chosen && charts.some((c) => c.id === chosen)) return chosen
+  return charts.find((c) => c.isDefault)?.id ?? charts[0]?.id
+})
+
+function openChartDocument(file: string): string {
+  const id = screenChartId.value
+  return readChartFile(() => parse(file, id ? { chartId: id } : undefined).source, file)
+}
+
+function songHeaderOf(file: string): string {
+  const cut = String(file ?? '').search(/\{\s*start_of_x_chart\s*:/i)
+  return cut < 0 ? file : file.slice(0, cut)
+}
+
 const audioTracks = computed(() =>
   isEdit.value
     ? { sung: null, playback: null }
-    : readChartFile(() => audioTracksOf(liveSource.value), { sung: null, playback: null }),
+    : readChartFile(() => {
+        const file = liveSource.value
+        const own = audioTracksOf(openChartDocument(file))
+        if (own.sung || own.playback) return own
+        const header = songHeaderOf(file)
+        if (!header.trim()) return own
+        return audioTracksOf(header)
+      }, { sung: null, playback: null }),
 )
 const audioKinds = computed(() => audioKindsOf(audioTracks.value))
 const audioKind = ref<AudioKind>('sung')
@@ -449,20 +539,62 @@ watch(
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
 const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
 const audio = useAudioRef(audioUrl)
-function pinEditedChart() {
-  const charts = readChartFile(() => listCharts(session.getSource()), [])
-  pinnedChartId.value = charts.find((c) => c.isDefault)?.id ?? charts[0]?.id ?? null
+
+function rememberOpenChart() {
+  const chart = screenChartId.value
+  if (!chart) return
+  chartSpots[liveChartKey(songId.value, chart)] = {
+    offset: offset.value,
+    capo: capo.value,
+    dual: capoMap.value,
+    mul: mul.value,
+    top: scroller.value?.scrollTop ?? 0,
+    u: playhead,
+  }
 }
 
-function commitOpenChart(next: string): string {
-  if (pinnedChartId.value == null) pinEditedChart()
-  return commitChartDocument(session.getSource(), next, pinnedChartId.value ?? undefined)
+function applyChartSpot() {
+  const chart = screenChartId.value
+  const spot = chart ? chartSpots[liveChartKey(songId.value, chart)] : undefined
+  if (spot) {
+    offset.value = spot.offset
+    capo.value = spot.capo
+    capoMap.value = spot.dual
+    mul.value = spot.mul
+    playhead = spot.u
+    progress.value = spot.u
+    timeline = null
+    const top = spot.top
+    requestAnimationFrame(() => {
+      if (scroller.value) scroller.value.scrollTop = top
+    })
+  } else {
+    mul.value = 1
+    playhead = 0
+    progress.value = 0
+    timeline = null
+    etaLabel.value = '—'
+    if (scroller.value) scroller.value.scrollTop = 0
+  }
+  met.loadBpm()
+}
+
+function selectChart(id: string) {
+  const next = String(id ?? '').trim()
+  if (!next || !fileCharts.value.some((c) => c.id === next)) return
+  if (musicianChartId.value === next) return
+  rememberOpenChart()
+  stopScroll()
+  met.stop()
+  musicianChartId.value = next
+  emit('update:chartId', next)
+  applyChartSpot()
 }
 
 const parsedState = computed(() => {
   try {
     return {
-      view: parse(liveSource.value, pinnedChartId.value ? { chartId: pinnedChartId.value } : undefined),
+      view: parse(liveSource.value, screenChartId.value ? { chartId: screenChartId.value } : undefined),
       envelopeError: '',
     }
   } catch (err) {
@@ -471,7 +603,14 @@ const parsedState = computed(() => {
   }
 })
 const parsed = computed(() => parsedState.value.view)
-const audioArt = computed(() => (isEdit.value ? null : readChartFile(() => audioArtOf(liveSource.value), null)))
+const audioArt = computed(() =>
+  isEdit.value
+    ? null
+    : readChartFile(() => {
+        const file = liveSource.value
+        return audioArtOf(openChartDocument(file)) ?? audioArtOf(songHeaderOf(file))
+      }, null),
+)
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {
@@ -802,19 +941,6 @@ const offerBottom = computed(() =>
     : `${scrolling.value ? 148 : 90}px`,
 )
 
-/**
- * Chart on screen. The edit pin wins while that id is still in this text;
- * otherwise the chart that opens. An id the source does not contain is not passed.
- */
-const screenChartId = computed((): string | undefined => {
-  const pinned = String(pinnedChartId.value ?? '').trim()
-  return readChartFile(() => {
-    const charts = listCharts(liveSource.value)
-    if (pinned && charts.some((c) => c.id === pinned)) return pinned
-    return charts.find((c) => c.isDefault)?.id
-  }, undefined)
-})
-
 // In a rehearsal the identity is the song's, so a personal version follows
 // the right one through the list. Outside a list, the host id / official
 // title is the key — never the draft title, or a local meta edit would move
@@ -1112,10 +1238,13 @@ const exportKeyNote = computed(() =>
   meta.value.key ? `em ${playingKey.value}${capo.value ? ` · capo ${capo.value}` : ''}` : '',
 )
 
-/** Identity of the song for the per-song tempo memory. */
-const songKey = computed(() =>
-  [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo',
-)
+/** Identity of the song for the per-song tempo memory. N>1 keys the chart too. */
+const songKey = computed(() => {
+  const base = [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo'
+  const chart = screenChartId.value
+  if (fileCharts.value.length > 1 && chart) return `${base}|${chart}`
+  return base
+})
 const met = useMetronome({
   songKey,
   tempo: computed(() => meta.value.tempo),
@@ -1907,6 +2036,9 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   nextChip: setlist.nextChip.value,
   title: meta.value.title || 'Sem título',
   subtitle: meta.value.subtitle || '',
+  charts: fileCharts.value.length > 1 ? fileCharts.value.map((c) => ({ id: c.id, label: c.label })) : [],
+  chartId: screenChartId.value ?? '',
+  chartLabel: fileCharts.value.find((c) => c.id === screenChartId.value)?.label ?? '',
   phoneSub: phoneSub.value,
   hasKey: hasKey.value,
   hasReset: hasReset.value,
@@ -2179,6 +2311,46 @@ function applyMeta(next: string) {
   touch()
 }
 
+function onChartAdd(opts: { id: string; label: string }) {
+  const from = screenChartId.value ?? 'default'
+  const next = addChart(session.getSource(), from, opts)
+  if (next === session.getSource()) return
+  session.replace(next)
+  musicianChartId.value = opts.id
+  pinnedChartId.value = opts.id
+  touch()
+}
+
+function onChartRename(label: string) {
+  const id = screenChartId.value
+  if (!id) return
+  const next = renameChart(session.getSource(), id, label)
+  if (next === session.getSource()) return
+  session.replace(next)
+  touch()
+}
+
+function onChartDelete() {
+  const id = screenChartId.value
+  if (!id) return
+  const next = deleteChart(session.getSource(), id)
+  if (next === session.getSource()) return
+  session.replace(next)
+  pinnedChartId.value = null
+  musicianChartId.value = null
+  pinEditedChart()
+  touch()
+}
+
+function onChartDefault() {
+  const id = screenChartId.value
+  if (!id) return
+  const next = setDefaultChart(session.getSource(), id)
+  if (next === session.getSource()) return
+  session.replace(next)
+  touch()
+}
+
 // ------------------------------------------------------------------- exports
 
 function download(name: string, blob: Blob) {
@@ -2192,6 +2364,19 @@ function download(name: string, blob: Blob) {
 /** What leaves the app: the reader's version, or the official one. */
 function exportSource(): string {
   return ov.exportOrig.value ? ov.official.value : liveSource.value
+}
+
+function exportChartOpts() {
+  return {
+    semitones: offset.value,
+    capo: capo.value,
+    scope: 'chart' as const,
+    chartId: screenChartId.value,
+  }
+}
+
+function pdfChartId(): string | undefined {
+  return fileCharts.value.length > 1 ? screenChartId.value : undefined
 }
 
 function doExportCho() {
@@ -2214,7 +2399,7 @@ async function doExportPdf() {
     if (props.pdfShouldFail) throw new Error('simulado')
     const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
     // The PDF always uses the default scale: fit mode serves the screen, not paper.
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = parse(exportCho(exportSource(), exportChartOpts()))
     // A personal version leaves marked on paper too: it must not circulate as
     // the team's chart.
     const bytes = await renderPdf(view, {
@@ -2222,7 +2407,7 @@ async function doExportPdf() {
       accent: props.accent,
     })
     download(
-      buildPdfFilename(meta.value.title ?? 'cifra', shownKey.value || null),
+      buildPdfFilename(meta.value.title ?? 'cifra', shownKey.value || null, pdfChartId()),
       new Blob([bytes as BlobPart], { type: 'application/pdf' }),
     )
     pdf.value = 'idle'
@@ -2249,7 +2434,7 @@ async function doExportSlides() {
   try {
     if (props.slidesShouldFail) throw new Error('simulado')
     const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = parse(exportCho(exportSource(), exportChartOpts()))
     const bytes = await renderSlja(view, {
       title: meta.value.title ?? 'cifra',
       coverImage: await imageBytes(props.coverImage),
@@ -2477,6 +2662,7 @@ function syncHostSource() {
     confirmDiscard.value = false
     wMode.value = null
     pinnedChartId.value = null
+    musicianChartId.value = String(props.chartId ?? '').trim() || null
     preloadTune()
     stopScroll()
     mul.value = 1
@@ -2945,6 +3131,7 @@ defineExpose({
         @toggle-map="toggleMap"
         @capo-zero="setCapo(0)"
         @bind-capo="bindCapoBox"
+        @select-chart="selectChart"
       />
     </div>
     <div
@@ -2978,6 +3165,9 @@ defineExpose({
       :can-redo="canRedo"
       :confirm-discard="confirmDiscard"
       :discard-label="discardLabel"
+      :charts="fileCharts"
+      :chart-id="screenChartId ?? ''"
+      :chart-label="fileCharts.find((c) => c.id === screenChartId)?.label ?? ''"
       @bind-head="bindHead"
       @open-meta="openMeta"
       @undo="undo"
@@ -2985,6 +3175,10 @@ defineExpose({
       @discard="discard"
       @save="save"
       @read="exitEdit"
+      @chart-add="onChartAdd"
+      @chart-rename="onChartRename"
+      @chart-delete="onChartDelete"
+      @chart-default="onChartDefault"
     />
 
     <CpvWideDock

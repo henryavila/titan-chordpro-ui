@@ -51,7 +51,8 @@ O pacote UI continua **autossuficiente na cifra** (1 string ChordPro in → supe
 
 Directive **names** in the file are English (`x_source`, `x_audio_sung`,
 `x_audio_playback`, `x_audio_art`, `x_audio_art_w`, `x_audio_art_h`,
-`x_youtube`, `x_strum`, `x_strum_set`).
+`x_youtube`, `x_strum`, `x_strum_set`,
+`start_of_x_chart` / `end_of_x_chart`, `x_chart_label`, `x_chart_default`).
 Portuguese belongs in the **UI** (Origem, Cantado, Playback). Legacy
 `{x_origem:}` / `{x_audio_cantado:}` / `{x_audio:}` still **read**; the next
 `writeMeta` emits the English key.

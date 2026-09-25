@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import type { WriteMode } from '../public'
 
-defineProps<{
+const props = defineProps<{
   phone: boolean
   compact: boolean
   contentEdit: boolean
@@ -20,6 +21,9 @@ defineProps<{
   canRedo: boolean
   confirmDiscard: boolean
   discardLabel: string
+  charts: { id: string; label: string; isDefault: boolean }[]
+  chartId: string
+  chartLabel: string
 }>()
 
 const emit = defineEmits<{
@@ -30,7 +34,47 @@ const emit = defineEmits<{
   discard: []
   save: []
   read: []
+  'chart-add': [value: { id: string; label: string }]
+  'chart-rename': [label: string]
+  'chart-delete': []
+  'chart-default': []
 }>()
+
+const addOpen = ref(false)
+const renameOpen = ref(false)
+const addId = ref('')
+const addLabel = ref('')
+const renameLabel = ref('')
+
+const named = () => props.charts.length > 1
+
+function openAdd() {
+  addOpen.value = true
+  renameOpen.value = false
+  addId.value = ''
+  addLabel.value = ''
+}
+
+function openRename() {
+  renameOpen.value = true
+  addOpen.value = false
+  renameLabel.value = props.chartLabel
+}
+
+function goAdd() {
+  const id = addId.value.trim()
+  const label = addLabel.value.trim()
+  if (!id || !label) return
+  emit('chart-add', { id, label })
+  addOpen.value = false
+}
+
+function goRename() {
+  const label = renameLabel.value.trim()
+  if (!label) return
+  emit('chart-rename', label)
+  renameOpen.value = false
+}
 </script>
 
 <template>
@@ -136,6 +180,78 @@ const emit = defineEmits<{
           style="padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
           @click="emit('read')"
         >Ler</button>
+      </div>
+    </div>
+    <div
+      class="cpv-veil"
+      data-chart-manage
+      style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;padding:6px 8px;border-radius:12px;max-width:100%;"
+      :style="{ width: phone ? '100%' : 'var(--cpv-page-max)' }"
+    >
+      <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra</span>
+      <span data-chart-edit-label style="font-size:12.5px;font-weight:700;color:var(--text);">{{ chartLabel || 'cifra' }}</span>
+      <button
+        data-chart-add
+        type="button"
+        style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+        @click="openAdd"
+      >Adicionar cifra</button>
+      <button
+        v-if="named()"
+        data-chart-rename
+        type="button"
+        style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+        @click="openRename"
+      >Renomear</button>
+      <button
+        v-if="named()"
+        data-chart-delete
+        type="button"
+        style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+        @click="emit('chart-delete')"
+      >Apagar</button>
+      <button
+        v-if="named()"
+        data-chart-default
+        type="button"
+        style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+        @click="emit('chart-default')"
+      >Padrão</button>
+      <div v-if="addOpen" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;">
+        <input
+          data-chart-id
+          v-model="addId"
+          placeholder="id"
+          aria-label="Id da cifra"
+          style="height:28px;width:8rem;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px;"
+        />
+        <input
+          data-chart-label
+          v-model="addLabel"
+          placeholder="rótulo"
+          aria-label="Rótulo da cifra"
+          style="height:28px;width:8rem;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px;"
+        />
+        <button
+          data-chart-add-go
+          type="button"
+          style="height:28px;padding:0 10px;border:0;border-radius:8px;background:var(--chord-fill);color:var(--chord);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+          @click="goAdd"
+        >Adicionar</button>
+      </div>
+      <div v-else-if="renameOpen" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;">
+        <input
+          data-chart-rename-input
+          v-model="renameLabel"
+          aria-label="Novo rótulo"
+          style="height:28px;width:10rem;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px;"
+        />
+        <button
+          data-chart-rename-go
+          type="button"
+          style="height:28px;padding:0 10px;border:0;border-radius:8px;background:var(--chord-fill);color:var(--chord);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+          @click="goRename"
+        >Renomear</button>
       </div>
     </div>
   </div>

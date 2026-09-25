@@ -25,7 +25,7 @@ Older drafts treated toolbar/RAF as host-only. **VISAO + interview supersede tha
 - This product ships a **complete 1-cifra viewer UI** (transpose, font, auto-scroll, themes light/dark/auto, export CHO/PDF).
 - **Core** stays framework-free (testable, CLI, future React port).
 - **Vue package** owns cifra chrome + RAF (official binding v0.1).
-- **Host (sda-v2)** owns shell, which ChordPro string is active (multi-cifra), login, audio sync, i18n copy, sanitize policy.
+- **Host (sda-v2)** owns shell, which **song** ChordPro string is active, login, audio sync, i18n copy, sanitize policy. Named charts (**cifras nomeadas**) inside that string are the UI’s (`listCharts`, `chartId`).
 - **Not** a runtime multi-stack `VisualAdapter` in v0.1 — expansion = new binding against core/controller (see `docs/analysis-expansao-futura.md`).
 
 ---
@@ -53,7 +53,8 @@ Ship:
 | Titan ML / writer profiles | Generator stays in Titan |
 | React / Lit / CE official package | Later binding — not v0.1 |
 | Runtime VisualAdapter / plugin registry | YAGNI — see expansion analysis |
-| Multi-cifra selection UI | Host state |
+| Multi-cifra **which song string** | Host state |
+| Named charts in the file (`chartId`) | Vue package (title chip); host may pass `chartId` |
 | i18n string catalogs | Host owns copy (Vue UI may accept label props) |
 | HTML sanitize policy | Host owns (`DOMPurify` etc.) before `innerHTML` when embedding |
 
@@ -71,7 +72,8 @@ Ship:
 | Filenames + scroll **math** | ✅ | | |
 | Auto-scroll **RAF** / scrollTop | optional `attachScroll` helper on controller | ✅ wires + controls | |
 | Cifra toolbar (tom, fonte, tema, export, scroll) | ❌ | ✅ | |
-| Multi-cifra which string is active | ❌ | ❌ | ✅ |
+| Which **song** string is active | ❌ | ❌ | ✅ |
+| Which named chart (`chartId`) in the file | `listCharts` / `parse(source, { chartId })` | ✅ title chip + `chartId` prop | optional `chartId` |
 | Login, shell, synced audio player, i18n catalogs | ❌ | ❌ | ✅ |
 | Rehearsal reference audio (unsynced) | `setRehearsalAudio` | ✅ player | URLs + cover |
 
@@ -83,8 +85,10 @@ Ship:
 
 ```ts
 // @henryavila/titan-chordpro-ui (core — export ".")
-export function parse(source: string): ChordProView
+export function parse(source: string, opts?: { chartId?: string }): ChordProView
+export function listCharts(source: string): { id: string; label: string; isDefault: boolean }[]
 // parse() accepts ChordPro, OnSong, or mixed text; detection/normalization is internal.
+// N>1 file: parse without chartId uses the file default. `{start_of_x_chart:}` is Titan.
 export function transpose(view: ChordProView, semitones: number): ChordProView
 export function setKey(view: ChordProView, targetKey: string): ChordProView  // or throw if unsupported
 export function renderHtml(view: ChordProView, opts?: { theme?: string }): string

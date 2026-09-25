@@ -1,13 +1,20 @@
+import { chartDocument } from './charts'
 import { transposeToken, usesFlats } from './transpose'
 
 export function exportCho(
   source: string,
-  opts?: { key?: string | null; semitones?: number; capo?: number },
+  opts?: {
+    key?: string | null
+    semitones?: number
+    capo?: number
+    scope?: 'file' | 'chart'
+    chartId?: string
+  },
 ): string {
   const n = opts?.semitones ?? 0
   const capo = opts?.capo ?? 0
-  let out = source
-  const keyMatch = source.match(/\{\s*key\s*:\s*([^}]*)\}/i)
+  let out = opts?.scope === 'chart' ? chartDocument(source, opts.chartId) : source
+  const keyMatch = out.match(/\{\s*key\s*:\s*([^}]*)\}/i)
   const sourceKey = keyMatch?.[1]?.trim() ?? opts?.key ?? null
   const flats = usesFlats(sourceKey)
   if (n) {

@@ -56,6 +56,12 @@ export default defineNuxtConfig({
 
 `vue` é peer. Uma segunda cópia de Vue no bundle quebra o componente.
 
+`source` é o **arquivo** da música (uma string). Pode trazer **cifras nomeadas**
+(`{start_of_x_chart:}`). O host escolhe a música; o pacote escolhe a cifra
+(`chartId`, chip no título). `update:source` / `save-content` devolvem o
+arquivo inteiro. Sugestão leva `chartId`. **Minha versão** é overlay, não o
+arranjo.
+
 ---
 
 ## 2. O que o Titan é (e o que não é)
@@ -63,8 +69,8 @@ export default defineNuxtConfig({
 | É | Não é |
 |---|---|
 | Um SFC: `<ChordproViewer>` | Um `<iframe src="…">` |
-| Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, áudio de referência) | Shell do app (login, nav, lista de músicas do site, player **sincronizado**) |
+| Superfície de **1 música** (cifras nomeadas no arquivo) com scroller próprio | Um artigo que cresce com a página |
+| Chrome do músico (tom, capo, cifra, rolagem, tema, export CHO/PDF/slides, ensaio, áudio de referência) | Shell do app (login, nav, catálogo de **músicas**, player **sincronizado**) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -92,7 +98,7 @@ moldura do Titan); o toque na cifra só esconde/mostra os controles.
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import '@henryavila/titan-chordpro-ui/vue/style.css'
 
-defineProps<{ source: string; songId: string }>()
+defineProps<{ source: string; songId: string; chartId?: string }>()
 </script>
 
 <template>
@@ -170,7 +176,7 @@ const liveTo = computed(() => `/cifras/${props.songId}`)
 
     <div class="cifra-frame">
       <ClientOnly>
-        <ChordproViewer :source="source" :song-id="songId" edit-mode="local" />
+        <ChordproViewer :source="source" :song-id="songId" :chart-id="chartId" edit-mode="local" />
       </ClientOnly>
     </div>
 
