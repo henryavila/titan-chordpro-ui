@@ -259,4 +259,8 @@ describe('overlayKey', () => {
     expect(overlayKey('jesus-1', 'of:erta')).toBe(`cpv:my:jesus-1:${encodeURIComponent('of:erta')}`)
     expect(overlayKey('song id')).toBe('cpv:my:song id:default')
   })
+
+  it('encodes a percent so an encoded colon is not another id', () => {
+    expect(overlayKey('a:b')).not.toBe(overlayKey('a%3Ab'))
+  })
 })

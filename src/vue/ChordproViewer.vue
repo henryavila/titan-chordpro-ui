@@ -775,6 +775,19 @@ const offerBottom = computed(() =>
     : `${scrolling.value ? 148 : 90}px`,
 )
 
+/**
+ * Chart on screen. The edit pin wins while that id is still in this text;
+ * otherwise the chart that opens. An id the source does not contain is not passed.
+ */
+const screenChartId = computed((): string | undefined => {
+  const pinned = String(pinnedChartId.value ?? '').trim()
+  return readChartFile(() => {
+    const charts = listCharts(liveSource.value)
+    if (pinned && charts.some((c) => c.id === pinned)) return pinned
+    return charts.find((c) => c.isDefault)?.id
+  }, undefined)
+})
+
 const ov = useOverlay({
   // In a rehearsal the identity is the song's, so a personal version follows
   // the right one through the list. Outside a list, the host id / official
@@ -789,6 +802,7 @@ const ov = useOverlay({
   // Line indices are what an adjustment anchors on: the overlay lives in the
   // same normalised text the parser numbers.
   hostSource: computed(() => normalizeSource(hostSource.value)),
+  chartId: screenChartId,
   title: computed(() => meta.value.title ?? ''),
   suggestions: computed(() => props.suggestions !== false),
   actorKey: computed(() => props.actorKey),

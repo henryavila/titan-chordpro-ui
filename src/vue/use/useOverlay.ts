@@ -11,6 +11,7 @@ import {
   listCharts,
   overlaid,
   overlayKey,
+  songLegacyKey,
   parse,
   replaceChart,
   STORE_KEYS,
@@ -166,10 +167,10 @@ export function useOverlay(opts: OverlayOpts) {
   /**
    * `cpv:my:{songId}` — the pre-chart key. It is the whole file, and only a
    * file with no chart envelope. A block whose id is `default` is not this key.
-   * A song id with no colon stays literal; encoding it would miss the stored value.
+   * Colon and percent use the same encoding as `overlayKey`; anything else stays literal.
    */
   function legacyKey(): string {
-    return `${STORE_KEYS.overlayPrefix}${opts.songId.value}`
+    return songLegacyKey(opts.songId.value)
   }
 
   /** No chart blocks. A thrown envelope is not this case. */
@@ -563,7 +564,7 @@ export function useOverlay(opts: OverlayOpts) {
     const created: Suggestion = {
       id: `s${Date.now()}`,
       songId: opts.songId.value,
-      chartId: chartSlot.value,
+      ...(plainFile(official.value) ? {} : { chartId: chartSlot.value }),
       title: opts.title.value || opts.songId.value,
       at: Date.now(),
       baseVersion: officialVersion.value,
@@ -773,8 +774,9 @@ export function useOverlay(opts: OverlayOpts) {
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
-    const op = s?.ops.find((o) => o.id === opId)
-    if (!s || !op) return
+    if (!s || s.songId !== opts.songId.value) return
+    const op = s.ops.find((o) => o.id === opId)
+    if (!op) return
     const id = sugChartId(s)
     const doc = chartText(official.value, id)
     const r = sugApplies(official.value, s) ? applyOps(doc, [op]) : null
@@ -824,7 +826,7 @@ export function useOverlay(opts: OverlayOpts) {
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
-    if (!s?.ops.length) return
+    if (!s?.ops.length || s.songId !== opts.songId.value) return
     const id = sugChartId(s)
     const doc = chartText(official.value, id)
     const applies = sugApplies(official.value, s)

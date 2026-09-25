@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { STORE_KEYS, diffOps, memoryStore, normalizeSource, overlayKey, parse } from '../../src/core/index'
+import { STORE_KEYS, diffOps, memoryStore, normalizeSource, overlayKey, parse, songLegacyKey } from '../../src/core/index'
 import type { ChartStore } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -317,6 +317,24 @@ it('does not adopt a legacy overlay or a chart-less suggestion into a block name
   expect(w.emitted('save-content')).toBeUndefined()
   expect(store.get(legacy)).toBe(legacyPayload)
   expect(store.get(overlayKey(songId, 'default'))).toBeNull()
+  w.unmount()
+})
+
+it('the legacy key of song id a:default is not overlayKey(a)', async () => {
+  expect(songLegacyKey('a:default')).not.toBe(overlayKey('a'))
+  expect(songLegacyKey('a:default')).not.toBe('cpv:my:a:default')
+  expect(songLegacyKey('jesus-1')).toBe(`${STORE_KEYS.overlayPrefix}jesus-1`)
+
+  const store = hostStore()
+  const official = src()
+  const mine = official.replace(UNIQUE, `${UNIQUE} (meu)`)
+  const ops = diffOps(official, mine, { transpose: 0, capo: 0 })
+  store.set(overlayKey('a'), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+  const w = mountViewer(store, { songId: 'a:default' })
+  await flushPromises()
+  expect(w.html()).not.toContain('(meu)')
+  expect(store.get(overlayKey('a'))).toBeTruthy()
+  expect(store.get(songLegacyKey('a:default'))).toBeNull()
   w.unmount()
 })
 
