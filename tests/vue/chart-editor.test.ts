@@ -124,3 +124,85 @@ describe('session edits the chart document', () => {
     expect(saved).not.toMatch(/corpo da completa\n/)
   })
 })
+
+describe('add rename delete default in edit', () => {
+  it('adds a cifra from the open chart and keeps the sibling', async () => {
+    const w = await mountViewer()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-add]').text()).toMatch(/Adicionar cifra/)
+    await w.get('[data-chart-add]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-id]').setValue('louvor')
+    await w.get('[data-chart-label]').setValue('Louvor')
+    await w.get('[data-chart-add-go]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    const saved = String(
+      w.emitted('update:source')?.at(-1)?.[0] ?? (w.vm as { getSource: () => string }).getSource(),
+    )
+    expect(saved).toContain('{start_of_x_chart:louvor}')
+    expect(saved).toContain('{x_chart_label:Louvor}')
+    expect(saved).toContain('{start_of_x_chart:completa}')
+    expect(saved).toContain('corpo da oferta')
+  })
+
+  it('renames the label without changing chartId', async () => {
+    const w = await mountViewer()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-rename]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-rename-input]').setValue('Oferta curta')
+    await w.get('[data-chart-rename-go]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-edit-label]').text()).toBe('Oferta curta')
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    const saved = String(
+      w.emitted('update:source')?.at(-1)?.[0] ?? (w.vm as { getSource: () => string }).getSource(),
+    )
+    expect(saved).toContain('{start_of_x_chart:oferta}')
+    expect(saved).toContain('{x_chart_label:Oferta curta}')
+    expect(saved).toContain('{start_of_x_chart:completa}')
+  })
+
+  it('marks the open chart as default', async () => {
+    const w = await mountViewer({ chartId: 'completa' })
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-default]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    const saved = String(
+      w.emitted('update:source')?.at(-1)?.[0] ?? (w.vm as { getSource: () => string }).getSource(),
+    )
+    expect(saved).toMatch(/start_of_x_chart:completa[\s\S]*x_chart_default:completa/)
+  })
+
+  it('deleting one of two remaining writes a one-chart file', async () => {
+    const w = await mountViewer()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-delete]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    const saved = String(
+      w.emitted('update:source')?.at(-1)?.[0] ?? (w.vm as { getSource: () => string }).getSource(),
+    )
+    expect(saved).not.toMatch(/start_of_x_chart/)
+    expect(saved).toContain('corpo da completa')
+    expect(saved).not.toContain('corpo da oferta')
+  })
+
+  it('does not show chart management in view mode', async () => {
+    const w = await mountViewer()
+    expect(w.find('[data-chart-add]').exists()).toBe(false)
+    expect(w.find('[data-chart-rename]').exists()).toBe(false)
+    expect(w.find('[data-chart-delete]').exists()).toBe(false)
+    expect(w.find('[data-chart-default]').exists()).toBe(false)
+  })
+})

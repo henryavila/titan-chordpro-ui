@@ -11,8 +11,10 @@ import {
   ChartEnvelopeError,
   applyCifraClubEnrich,
   audioUrlOf,
+  addChart,
   commitChartDocument,
   createSourceSession,
+  deleteChart,
   deleteBlock,
   inferWrittenKey,
   layoutChart,
@@ -20,7 +22,9 @@ import {
   lintSource,
   parse,
   parseXStrum,
+  renameChart,
   replaceChart,
+  setDefaultChart,
   rewriteToKey,
   setAudioUrl,
   storedTransposeSemis,
@@ -2147,4 +2151,59 @@ describe('a nested boundary does not answer a root closer lookup', () => {
       expect(listCharts(out).map((c) => c.id)).toEqual(['completa', 'verso', 'nota', 'oferta'])
     })
   }
+})
+
+describe('add rename delete default chart', () => {
+  it('addChart duplicates the active document with a new id and label', () => {
+    const out = addChart(TWO_CHART_SOURCE, 'oferta', { id: 'louvor', label: 'Louvor' })
+    expect(listCharts(out).map((c) => c.id)).toEqual(['completa', 'oferta', 'louvor'])
+    expect(listCharts(out).find((c) => c.id === 'louvor')).toEqual({
+      id: 'louvor',
+      label: 'Louvor',
+      isDefault: false,
+    })
+    expect(parse(out, { chartId: 'louvor' }).source).toContain('corpo da oferta')
+    expect(parse(out, { chartId: 'louvor' }).source).not.toContain('corpo da completa')
+    expect(parse(out, { chartId: 'oferta' }).source).toContain('corpo da oferta')
+    expect(listCharts(out).find((c) => c.isDefault)?.id).toBe('oferta')
+  })
+
+  it('addChart wraps a one-chart file into an envelope', () => {
+    const one = '{title:Uma}\n{key:C}\n[C]letra\n'
+    const out = addChart(one, 'default', { id: 'oferta', label: 'Oferta' })
+    expect(listCharts(out).map((c) => c.id)).toEqual(['default', 'oferta'])
+    expect(parse(out, { chartId: 'oferta' }).source).toContain('[C]letra')
+    expect(out).toMatch(/start_of_x_chart:default/)
+    expect(out).toMatch(/start_of_x_chart:oferta/)
+  })
+
+  it('addChart refuses a bad or duplicate id', () => {
+    expect(addChart(TWO_CHART_SOURCE, 'oferta', { id: 'Oferta', label: 'X' })).toBe(TWO_CHART_SOURCE)
+    expect(addChart(TWO_CHART_SOURCE, 'oferta', { id: 'oferta', label: 'X' })).toBe(TWO_CHART_SOURCE)
+    expect(addChart(TWO_CHART_SOURCE, 'ausente', { id: 'nova', label: 'Nova' })).toBe(TWO_CHART_SOURCE)
+  })
+
+  it('renameChart changes x_chart_label only', () => {
+    const out = renameChart(TWO_CHART_SOURCE, 'oferta', 'Oferta curta')
+    expect(listCharts(out).find((c) => c.id === 'oferta')?.label).toBe('Oferta curta')
+    expect(listCharts(out).map((c) => c.id)).toEqual(['completa', 'oferta'])
+    expect(parse(out, { chartId: 'oferta' }).source).toContain('corpo da oferta')
+    expect(parse(out, { chartId: 'completa' }).source).toContain('corpo da completa')
+  })
+
+  it('deleteChart of one of two writes a one-chart file with no envelope', () => {
+    const out = deleteChart(TWO_CHART_SOURCE, 'oferta')
+    expect(out).not.toMatch(/start_of_x_chart/)
+    expect(out).not.toMatch(/end_of_x_chart/)
+    expect(listCharts(out)).toEqual([{ id: 'default', label: 'default', isDefault: true }])
+    expect(out).toContain('corpo da completa')
+    expect(out).not.toContain('corpo da oferta')
+  })
+
+  it('setDefaultChart writes x_chart_default on that chart', () => {
+    const out = setDefaultChart(TWO_CHART_SOURCE, 'completa')
+    expect(listCharts(out).find((c) => c.isDefault)?.id).toBe('completa')
+    expect(chartDocument(out, 'completa')).toContain('{x_chart_default:completa}')
+    expect(chartDocument(out, 'oferta')).not.toContain('x_chart_default')
+  })
 })

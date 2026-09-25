@@ -15,8 +15,12 @@ import {
   hasSongDuration,
   inferWrittenKey,
   ChartEnvelopeError,
+  addChart,
   commitChartDocument,
+  deleteChart,
   listCharts,
+  renameChart,
+  setDefaultChart,
   lintSource,
   storedTransposeSemis,
   isParseFatal,
@@ -2307,6 +2311,46 @@ function applyMeta(next: string) {
   touch()
 }
 
+function onChartAdd(opts: { id: string; label: string }) {
+  const from = screenChartId.value ?? 'default'
+  const next = addChart(session.getSource(), from, opts)
+  if (next === session.getSource()) return
+  session.replace(next)
+  musicianChartId.value = opts.id
+  pinnedChartId.value = opts.id
+  touch()
+}
+
+function onChartRename(label: string) {
+  const id = screenChartId.value
+  if (!id) return
+  const next = renameChart(session.getSource(), id, label)
+  if (next === session.getSource()) return
+  session.replace(next)
+  touch()
+}
+
+function onChartDelete() {
+  const id = screenChartId.value
+  if (!id) return
+  const next = deleteChart(session.getSource(), id)
+  if (next === session.getSource()) return
+  session.replace(next)
+  pinnedChartId.value = null
+  musicianChartId.value = null
+  pinEditedChart()
+  touch()
+}
+
+function onChartDefault() {
+  const id = screenChartId.value
+  if (!id) return
+  const next = setDefaultChart(session.getSource(), id)
+  if (next === session.getSource()) return
+  session.replace(next)
+  touch()
+}
+
 // ------------------------------------------------------------------- exports
 
 function download(name: string, blob: Blob) {
@@ -3108,6 +3152,9 @@ defineExpose({
       :can-redo="canRedo"
       :confirm-discard="confirmDiscard"
       :discard-label="discardLabel"
+      :charts="fileCharts"
+      :chart-id="screenChartId ?? ''"
+      :chart-label="fileCharts.find((c) => c.id === screenChartId)?.label ?? ''"
       @bind-head="bindHead"
       @open-meta="openMeta"
       @undo="undo"
@@ -3115,6 +3162,10 @@ defineExpose({
       @discard="discard"
       @save="save"
       @read="exitEdit"
+      @chart-add="onChartAdd"
+      @chart-rename="onChartRename"
+      @chart-delete="onChartDelete"
+      @chart-default="onChartDefault"
     />
 
     <CpvWideDock

@@ -1397,3 +1397,90 @@ export function commitChartDocument(file: string, document: string, chartId?: st
   const pinned = chartId && split.charts.some((c) => c.id === chartId) ? chartId : split.defaultId
   return replaceChart(file, pinned, document)
 }
+
+function withChartLabel(inner: string, label: string): string {
+  const lines = inner ? inner.split('\n') : []
+  const inside = notationInside(lines)
+  let found = false
+  const next = lines.map((line, i) => {
+    if (found || inside[i] || dirOf(line)?.name !== 'x_chart_label') return line
+    found = true
+    return `{x_chart_label:${label}}`
+  })
+  if (!found) next.unshift(`{x_chart_label:${label}}`)
+  return next.join('\n')
+}
+
+function renderChartBlock(id: string, inner: string): string {
+  const body = inner.replace(/^\n+|\n+$/g, '')
+  return `{start_of_x_chart:${id}}\n${body}\n{end_of_x_chart}`
+}
+
+/** Duplicate `fromId` as a new named chart. Invalid/duplicate id leaves the file. */
+export function addChart(file: string, fromId: string, opts: { id: string; label: string }): string {
+  const src = String(file ?? '').replace(/\r\n?/g, '\n')
+  const id = String(opts.id ?? '').trim()
+  const label = String(opts.label ?? '').trim()
+  if (!isChartId(id) || !label) return src
+  const split = splitCho(src)
+  if (split.charts.some((c) => c.id === id)) return src
+  const from = split.charts.find((c) => c.id === fromId)
+  if (!from) return src
+  const copy = withChartLabel(stripDefaultMarkers(from.inner), label)
+  const block = renderChartBlock(id, copy)
+  if (!split.hasEnvelope) {
+    const original = renderChartBlock(from.id, from.inner)
+    return `${original}\n\n${block}\n`
+  }
+  const trimmed = src.replace(/\n+$/g, '')
+  return `${trimmed}\n\n${block}\n`
+}
+
+/** Change `{x_chart_label}` only. `chartId` and overlay key stay. */
+export function renameChart(file: string, chartId: string, label: string): string {
+  const src = String(file ?? '').replace(/\r\n?/g, '\n')
+  const name = String(label ?? '').trim()
+  if (!name) return src
+  const split = splitCho(src)
+  if (!split.hasEnvelope) return src
+  const index = split.charts.findIndex((c) => c.id === chartId)
+  if (index < 0) return src
+  const inners = split.charts.map((c) => c.inner)
+  inners[index] = withChartLabel(inners[index] ?? '', name)
+  return withChartInners(split, inners)
+}
+
+/**
+ * Remove one named chart. Two remaining → one-chart file with no envelope.
+ * The last remaining chart is not deleted; it collapses to an implicit file.
+ */
+export function deleteChart(file: string, chartId: string): string {
+  const src = String(file ?? '').replace(/\r\n?/g, '\n')
+  const split = splitCho(src)
+  if (!split.hasEnvelope) return src
+  const index = split.charts.findIndex((c) => c.id === chartId)
+  if (index < 0) return src
+  if (split.charts.length <= 2) {
+    const keep = split.charts[index === 0 ? 1 : 0] ?? split.charts[0]
+    return keep ? keep.inner.replace(/^\n+/, '') : src
+  }
+  const chart = split.charts[index]!
+  const from = chart.startLi
+  const to = Math.min(chart.endLi, split.raws.length - 1)
+  const raws = [...split.raws.slice(0, from), ...split.raws.slice(to + 1)]
+  while (raws[0] === '') raws.shift()
+  while (raws[raws.length - 1] === '') raws.pop()
+  return raws.join('\n').replace(/\n{3,}/g, '\n\n') + (src.endsWith('\n') ? '\n' : '')
+}
+
+/** Mark `chartId` as `{x_chart_default}`. Sibling markers go. */
+export function setDefaultChart(file: string, chartId: string): string {
+  const src = String(file ?? '').replace(/\r\n?/g, '\n')
+  const split = splitCho(src)
+  if (!split.hasEnvelope) return src
+  if (!split.charts.some((c) => c.id === chartId)) return src
+  const inners = split.charts.map((c) =>
+    c.id === chartId ? withSelfMarker(c.inner, c.id) : stripDefaultMarkers(c.inner),
+  )
+  return withChartInners(split, inners)
+}

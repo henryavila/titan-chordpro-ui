@@ -36,7 +36,17 @@ export {
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export type { ParseOpts } from './parse'
-export { ChartEnvelopeError, commitChartDocument, hasChartEnvelope, listCharts, replaceChart } from './charts'
+export {
+  ChartEnvelopeError,
+  addChart,
+  commitChartDocument,
+  deleteChart,
+  hasChartEnvelope,
+  listCharts,
+  renameChart,
+  replaceChart,
+  setDefaultChart,
+} from './charts'
 export type { ChartInfo } from './charts'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
