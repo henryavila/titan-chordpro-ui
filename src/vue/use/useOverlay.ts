@@ -344,6 +344,19 @@ export function useOverlay(opts: OverlayOpts) {
     return (ov?.ops.find(isTuneOp) as TuneOp | undefined) ?? null
   }
 
+  // The viewer calls load when the host source changes. A chart-only change
+  // does not, and the previous chart's ops must not stay in memory. Sync so
+  // the new chart's overlay is already loaded before that switch re-baselines.
+  // The initial run would load twice.
+  watch(
+    ovKey,
+    (_key, prev) => {
+      if (prev === undefined) return
+      load()
+    },
+    { immediate: true, flush: 'sync' },
+  )
+
   /** A local edit saves itself: it is the musician's phone, there is no "save". */
   function commitLocalFrom(text: string, ctx: ReadingCtx) {
     const tune = (overlay.value?.ops ?? []).filter(isTuneOp)
