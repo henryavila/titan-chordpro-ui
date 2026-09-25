@@ -21,3 +21,11 @@ export function corsHeaders(origin: string | null): HeadersInit {
     Vary: 'Origin',
   }
 }
+
+/** DOM `Response` vs `@cloudflare/workers-types` `Response` in the same tsconfig. */
+export function workerResponse(
+  body: BodyInit | null,
+  init?: ResponseInit,
+): import('@cloudflare/workers-types').Response {
+  return new Response(body, init) as unknown as import('@cloudflare/workers-types').Response
+}

@@ -51,6 +51,12 @@ function mod12(n: number): number {
   return ((n % 12) + 12) % 12
 }
 
+function at(row: readonly number[], i: number): number {
+  const v = row[i]
+  if (v === undefined) throw new RangeError(`open string ${i}`)
+  return v
+}
+
 function fingersOf(frets: readonly FretSlot[]): number {
   const played: { s: number; f: number }[] = []
   for (let s = 0; s < frets.length; s++) {
@@ -117,7 +123,8 @@ export function slashGrip(
   const plainFrets = plain.frets
   const bassStrings = instrument === 'guitar' ? [0, 1, 2] : [0, 1, 2, 3]
 
-  let best: { frets: FretSlot[]; score: number[] } | null = null
+  let bestFrets: FretSlot[] | null = null
+  let bestScore: number[] | null = null
   const acc: FretSlot[] = []
 
   const consider = (bassString: number, bassFret: number) => {
@@ -127,12 +134,13 @@ export function slashGrip(
     let spanHi = 0
     let fretted = 0
     const rel = new Set<number>()
+    const bassOpen = at(openMidi, bassString)
     for (let s = 0; s < strings; s++) {
       const fret = acc[s]
       if (fret === 'x' || fret === undefined) continue
-      const midi = openMidi[s] + fret
-      const pc = mod12(openPc[s] + fret)
-      if (!allowed.has(pc) || midi < openMidi[bassString] + bassFret) return
+      const midi = at(openMidi, s) + fret
+      const pc = mod12(at(openPc, s) + fret)
+      if (!allowed.has(pc) || midi < bassOpen + bassFret) return
       if (midi < minMidi) minMidi = midi
       sounding++
       rel.add(mod12(pc - rootPc))
@@ -149,8 +157,8 @@ export function slashGrip(
     for (let s = 0; s < strings; s++) {
       const fret = acc[s]
       if (fret === 'x' || fret === undefined) continue
-      if (openMidi[s] + fret !== minMidi) continue
-      const pc = mod12(openPc[s] + fret)
+      if (at(openMidi, s) + fret !== minMidi) continue
+      const pc = mod12(at(openPc, s) + fret)
       if (lowest === -1) lowest = pc
       else if (lowest !== pc) return
     }
@@ -161,7 +169,10 @@ export function slashGrip(
     if (fingers > MAX_FINGERS) return
     const frets = acc.slice()
     const score = [hamming(frets, plainFrets), span, fretted ? spanHi : 0, -sounding, fingers, bassString, bassFret]
-    if (!best || less(score, best.score)) best = { frets, score }
+    if (!bestScore || less(score, bestScore)) {
+      bestFrets = frets
+      bestScore = score
+    }
   }
 
   const walk = (s: number, options: FretSlot[][], bassString: number, bassFret: number) => {
@@ -190,8 +201,8 @@ export function slashGrip(
 
   for (const bassString of bassStrings) {
     for (let bassFret = 0; bassFret <= MAX_FRET; bassFret++) {
-      if (mod12(openPc[bassString] + bassFret) !== mod12(bassPc)) continue
-      const bassMidi = openMidi[bassString] + bassFret
+      if (mod12(at(openPc, bassString) + bassFret) !== mod12(bassPc)) continue
+      const bassMidi = at(openMidi, bassString) + bassFret
       const options: FretSlot[][] = []
       for (let s = 0; s < strings; s++) {
         if (s === bassString) {
@@ -200,9 +211,9 @@ export function slashGrip(
         }
         const slots: FretSlot[] = ['x']
         for (let fret = 0; fret <= MAX_FRET; fret++) {
-          const midi = openMidi[s] + fret
+          const midi = at(openMidi, s) + fret
           if (midi < bassMidi) continue
-          if (!allowed.has(mod12(openPc[s] + fret))) continue
+          if (!allowed.has(mod12(at(openPc, s) + fret))) continue
           slots.push(fret)
         }
         options.push(slots)
@@ -212,7 +223,7 @@ export function slashGrip(
     }
   }
 
-  if (best) return { frets: best.frets }
+  if (bestFrets) return { frets: bestFrets }
   return { frets: [...plainFrets], bassIgnored: bassName }
 }
 

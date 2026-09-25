@@ -1019,7 +1019,9 @@ describe('resolveDiagram', () => {
     expect(emd).toHaveLength(4)
     expect(emd[0]?.degree).toBe('b7')
     expect(emd[0]?.midi).toBe(Math.min(...emd.map((tone) => tone.midi)))
-    expect(emd[0]?.midi % 12).toBe(2)
+    const bassMidi = emd[0]?.midi
+    expect(bassMidi).toBeTypeOf('number')
+    expect((bassMidi ?? 0) % 12).toBe(2)
   })
 
   it('draws D9 keys 0 4 7 14 transposed +2 as E G# B F#', () => {
