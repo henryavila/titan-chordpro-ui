@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { drawDiagram, parseDefineDirective, resolveDiagram, type DiagramDraw, type FretDraw } from '../../src/core/index'
+import { DIAGRAM_GEOMETRY as GEO } from '../../src/core/diagram-draw'
 import { keyIndex } from '../../src/core/transpose'
 
 const AM_FRETS = ['x', 0, 2, 2, 1, 0] as const
@@ -22,22 +23,26 @@ function stringYRange(svg: string): { y0: number; yMax: number } {
   return { y0: Number(m[1]), yMax: Number(m[2]) }
 }
 
-/** Dots sit in one coordinate space: cy between yOf(0) and yOf(maxFret). */
+/** Finger dots sit in the middle of a casa. Open strings at the nut sit above it. */
 function expectDotsOnFretboard(d: FretDraw): void {
   const maxFret = Math.max(4, d.capoFret, ...d.dots.map((x) => x.fret))
   const { y0, yMax } = stringYRange(d.svg)
-  const padY = 28
-  const fretH = 18
-  const yOf = (fret: number) => padY + fret * fretH
   expect(y0).toBe(yOf(0))
   expect(yMax).toBe(yOf(maxFret))
-  const cys = diagramDotCys(d.svg)
-  expect(cys).toHaveLength(d.dots.length)
-  for (const cy of cys) {
-    expect(cy).toBeGreaterThanOrEqual(yOf(0))
-    expect(cy).toBeLessThanOrEqual(yOf(maxFret))
-    expect(cy).toBeGreaterThanOrEqual(y0)
-    expect(cy).toBeLessThanOrEqual(yMax)
+  const marks = [
+    ...d.svg.matchAll(/class="diagram-dot"[^>]*data-fret="(\d+)"[^>]*\bcy="([\d.]+)"/g),
+  ]
+  expect(marks).toHaveLength(d.dots.length + d.opens.length)
+  for (const mark of marks) {
+    const fret = Number(mark[1])
+    const cy = Number(mark[2])
+    if (fret === 0) {
+      expect(cy).toBeLessThan(yOf(0))
+      continue
+    }
+    expect(cy).toBe(yOf(fret) - GEO.fretH / 2)
+    expect(cy).toBeGreaterThan(y0)
+    expect(cy).toBeLessThan(yMax)
   }
 }
 
@@ -54,9 +59,9 @@ describe('drawDiagram', () => {
     expect(d.kind).toBe('frets')
     if (d.kind !== 'frets') return
     expect(d.hasCapoBar).toBe(true)
-    expect(d.capoLabel).toBe('Capo 2')
+    expect(d.capoLabel).toBe('CAPO 2')
     expect(d.capoFret).toBe(2)
-    expect(d.svg).toContain('Capo 2')
+    expect(d.svg).toContain('CAPO 2')
     expect(d.tuning).toBe('EADGBE')
     expect(d.strings).toBe(6)
   })
@@ -115,8 +120,8 @@ describe('drawDiagram', () => {
     expect(d.tuning).toBe('GCEA')
     expect(d.strings).toBe(4)
     expect(d.hasCapoBar).toBe(true)
-    expect(d.capoLabel).toBe('Capo 2')
-    expect(d.svg).toContain('Capo 2')
+    expect(d.capoLabel).toBe('CAPO 2')
+    expect(d.svg).toContain('CAPO 2')
     expect(d.opens).toEqual([0, 1, 2])
     expect(d.nutOpens).toEqual([])
     expect(d.dots).toEqual([
@@ -161,11 +166,10 @@ describe('drawDiagram', () => {
     expect(dotsOnly.fingersRendered).toBe(false)
     expect(withFingers.dots.map((x) => x.finger)).toEqual([2, 3, 1])
     expect(dotsOnly.dots.every((x) => x.finger == null)).toBe(true)
-    expect(withFingers.svg).toMatch(/>1</)
-    expect(withFingers.svg).toMatch(/>2</)
-    expect(withFingers.svg).toMatch(/>3</)
-    expect(dotsOnly.svg).not.toMatch(/>1</)
-    expect(dotsOnly.svg).not.toMatch(/>2</)
+    expect(withFingers.svg).not.toContain('diagram-finger')
+    expect(dotsOnly.svg).not.toContain('diagram-finger')
+    expect(withFingers.svg).toContain('data-note=')
+    expect(dotsOnly.svg).toContain('data-note=')
   })
 
   it('keeps every diagram-dot cy between yOf(0) and yOf(maxFret) for capo 0/2, uke C capo 2, and baseFret>1', () => {
@@ -229,8 +233,8 @@ describe('drawDiagram', () => {
       [4, 1],
     ])
     expectDotsOnFretboard(d)
-    expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length)
-    expect(diagramDotCys(d.svg)).not.toContain(yOf(lines.length) - 9)
+    expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length + d.opens.length)
+    expect(d.svg).not.toContain(`data-fret="${lines.length}"`)
   })
 
   it('does not hang when a fret token is hundreds of nines', () => {
@@ -252,8 +256,8 @@ describe('drawDiagram', () => {
       expect(d.dots.some((dot) => dot.string === 1 || !Number.isFinite(dot.fret) || dot.fret > 24)).toBe(false)
       expect(d.mutes).toEqual([0, 1])
       expect(d.opens).toEqual([3, 5])
-      expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length)
-      expect(diagramDotCys(d.svg)).not.toContain(yOf(lines.length) - 9)
+      expect(diagramDotCys(d.svg)).toHaveLength(d.dots.length + d.opens.length)
+      expect(d.svg).not.toContain(`data-fret="${lines.length}"`)
     }
   })
 
@@ -290,7 +294,7 @@ describe('drawDiagram', () => {
     )
     expect(onCap.dots).toEqual([expect.objectContaining({ string: 1, fret: 24, relativeFret: 24 })])
     expect(onCap.svg.match(/class="diagram-fret"/g)).toHaveLength(24)
-    expect(diagramDotCys(onCap.svg)).toEqual([yOf(24) - 9])
+    expect(diagramDotCys(onCap.svg)).toContain(yOf(24) - GEO.fretH / 2)
 
     const past = asFrets(
       drawDiagram({
@@ -301,7 +305,9 @@ describe('drawDiagram', () => {
     expect(past.dots).toEqual([])
     expect(past.mutes).toEqual([0, 1])
     expect(past.opens).toEqual([2, 3, 4, 5])
-    expect(past.svg).not.toContain('diagram-dot')
+    expect(past.svg).not.toContain('data-fret="24"')
+    expect(past.svg).not.toContain('data-fret="25"')
+    expect(diagramDotCys(past.svg)).toHaveLength(past.opens.length)
     expect(past.dots.some((dot) => dot.fret === 24)).toBe(false)
     const lines = past.svg.match(/class="diagram-fret"/g) ?? []
     expect(lines.length).toBeLessThanOrEqual(24)
@@ -317,29 +323,30 @@ describe('drawDiagram', () => {
     expect(d.kind).toBe('frets')
     if (d.kind !== 'frets') return
     expect(d.hasCapoBar).toBe(true)
-    expect(d.capoLabel).toBe('Capo 2')
-    expect(d.svg).toContain('Capo 2')
+    expect(d.capoLabel).toBe('CAPO 2')
+    expect(d.svg).toContain('CAPO 2')
     expect(d.svg).toContain('diagram-capo-bar')
-    const bar = d.svg.match(/class="diagram-capo-bar"[^>]*\by="([\d.]+)"/)
-    expect(bar?.[1]).toBeDefined()
-    const barTop = Number(bar?.[1])
-    const opens = [...d.svg.matchAll(/class="diagram-open"[^>]*\bcy="([\d.]+)"/g)].map((m) => Number(m[1]))
+    expect(d.svg).not.toContain('diagram-open')
+    const center = yOf(2) - GEO.fretH / 2
+    const opens = [...d.svg.matchAll(/data-string="([15])"[^>]*data-fret="2"[^>]*cy="([\d.]+)"/g)]
     expect(opens).toHaveLength(2)
-    for (const cy of opens) {
-      expect(cy + 4).toBeLessThan(barTop)
-    }
+    for (const mark of opens) expect(Number(mark[2])).toBe(center)
   })
 
-  it('paints finger numbers in var(--canvas), not white on the dot', () => {
+  it('paints the cipher note on the dot, not a finger number', () => {
     const d = drawDiagram({
       instrument: 'guitar',
       voicing: { baseFret: 1, frets: [...AM_FRETS], fingers: [...AM_FINGERS] },
       capoFret: 0,
+      token: 'Am',
     })
     expect(d.kind).toBe('frets')
     if (d.kind !== 'frets') return
-    expect(d.svg).toContain('fill="var(--canvas)"')
+    expect(d.svg).not.toContain('diagram-finger')
     expect(d.svg).not.toContain('fill="#fff"')
+    expect(d.svg).toContain('fill="var(--canvas)"')
+    expect(d.svg).toContain('stroke="currentColor"')
+    expect(d.svg).toContain('data-note="A"')
   })
 
   it('does not default piano root to C when token is missing', () => {
@@ -412,7 +419,7 @@ const FRET_SUFFIXES = ['', 'm', '5', '6', '6(9)', '7', '7(9)', '9', 'maj7', '7M(
 const PIANO_SUFFIXES = [...FRET_SUFFIXES, 'm7(11)'] as const
 
 function yOf(fret: number): number {
-  return 28 + fret * 18
+  return GEO.padY + fret * GEO.fretH
 }
 
 describe('dictionary draw grid', () => {
@@ -454,8 +461,8 @@ describe('dictionary draw grid', () => {
             ).toEqual(dots)
             if (capoFret > 0) {
               expect(d.hasCapoBar, label).toBe(true)
-              expect(d.capoLabel, label).toBe(`Capo ${capoFret}`)
-              expect(d.svg, label).toContain(`Capo ${capoFret}`)
+              expect(d.capoLabel, label).toBe(`CAPO ${capoFret}`)
+              expect(d.svg, label).toContain(`CAPO ${capoFret}`)
             } else {
               expect(d.hasCapoBar, label).toBe(false)
               expect(d.capoLabel, label).toBeNull()
@@ -466,7 +473,13 @@ describe('dictionary draw grid', () => {
             expect(y0, label).toBe(yOf(0))
             expect(yMax, label).toBe(yOf(maxFret))
             for (const dot of d.dots) expect(dot.fret, label).toBeLessThanOrEqual(maxFret)
-            expect(diagramDotCys(d.svg), label).toEqual(d.dots.map((dot) => yOf(dot.fret) - 9))
+            const fingerMarks = d.dots.map((dot) => {
+              const found = d.svg.match(
+                new RegExp(`data-string="${dot.string}" data-fret="${dot.fret}"[^>]*cy="([\\d.]+)"`),
+              )
+              return Number(found?.[1])
+            })
+            expect(fingerMarks, label).toEqual(d.dots.map((dot) => yOf(dot.fret) - GEO.fretH / 2))
             drawn++
           }
         }
@@ -499,5 +512,148 @@ describe('dictionary draw grid', () => {
       }
     }
     expect(drawn).toBe(18 * 12)
+  })
+})
+
+const OPEN_PC = {
+  guitar: [4, 9, 2, 7, 11, 4],
+  ukulele: [7, 0, 4, 9],
+} as const
+const CIPHER = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
+const DEGREE = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', '#5', '6', 'b7', '7'] as const
+
+function mod12(n: number): number {
+  return ((n % 12) + 12) % 12
+}
+
+describe('neck consistency', () => {
+  it('draws Bm under capo 2 as the approved hand of Am', () => {
+    const d = asFrets(
+      drawDiagram({
+        instrument: 'guitar',
+        voicing: { baseFret: 1, frets: [...AM_FRETS] },
+        capoFret: 2,
+        token: 'Am',
+      }),
+    )
+    const marks = [
+      [1, 'B', '1'],
+      [2, 'F#', '5'],
+      [3, 'B', '1'],
+      [4, 'D', 'b3'],
+      [5, 'F#', '5'],
+    ] as const
+    for (const [string, note, degree] of marks) {
+      expect(d.svg).toContain(
+        `data-string="${string}" data-fret="${string === 1 || string === 5 ? 2 : string === 4 ? 3 : 4}" data-note="${note}" data-degree="${degree}"`,
+      )
+    }
+    expect(d.svg).not.toContain('data-string="0" data-fret=')
+    expect(d.svg).toContain('CAPO 2')
+    expect(d.svg).toContain('data-fret="3"')
+    expect(d.svg).toContain('data-fret="4"')
+    expect(d.svg).not.toContain('data-fret="1"')
+    expect(d.svg).toContain('class="diagram-capo-label"')
+    expect(d.svg).toMatch(/class="diagram-capo-label"[^>]*font-size="7"[^>]*fill="var\(--muted\)"/)
+    expect(d.svg).not.toContain('diagram-open')
+  })
+
+  it('keeps one neck for every guitar and ukulele chord', () => {
+    let drawn = 0
+    for (const instrument of ['guitar', 'ukulele'] as const) {
+      const openPc = OPEN_PC[instrument]
+      for (const root of ROOTS) {
+        const rootPc = keyIndex(root)
+        expect(rootPc, root).not.toBeNull()
+        if (rootPc === null) continue
+        for (const suffix of FRET_SUFFIXES) {
+          const token = `${root}${suffix}`
+          const hit = resolveDiagram({ token, instrument })
+          expect(hit.class, `${instrument} ${token}`).toBe('hit')
+          if (hit.class !== 'hit') continue
+          for (const capo of [0, 2] as const) {
+            const d = asFrets(drawDiagram({ instrument, voicing: hit.voicing, capoFret: capo, token }))
+            const label = `${instrument} ${token} capo ${capo}`
+            expect(d.svg, label).not.toContain('diagram-open')
+            expect(d.svg, label).not.toContain('fill="none"')
+            expect(d.svg, label).not.toContain('diagram-finger')
+            expect(d.svg, label).not.toMatch(/Fá|Dó|Ré|Sol|Lá|Mi|Si/)
+            const degreeRoot = mod12(rootPc + capo)
+            const sounding = new Map<number, { fret: number; note: string; degree: string }>()
+            for (const s of d.opens) {
+              const pc = mod12(openPc[s]! + capo)
+              sounding.set(s, {
+                fret: capo,
+                note: CIPHER[pc]!,
+                degree: DEGREE[mod12(pc - degreeRoot)]!,
+              })
+            }
+            for (const dot of d.dots) {
+              const pc = mod12(openPc[dot.string]! + dot.fret)
+              sounding.set(dot.string, {
+                fret: dot.fret,
+                note: CIPHER[pc]!,
+                degree: DEGREE[mod12(pc - degreeRoot)]!,
+              })
+            }
+            expect(sounding.size, label).toBe(d.strings - d.mutes.length)
+            for (const [s, mark] of sounding) {
+              expect(d.svg, label).toContain(
+                `data-string="${s}" data-fret="${mark.fret}" data-note="${mark.note}" data-degree="${mark.degree}"`,
+              )
+            }
+            for (const s of d.mutes) {
+              expect(d.svg, label).toMatch(
+                new RegExp(`class="diagram-string" data-string="${s}"[^>]*opacity="0.28"`),
+              )
+              expect(d.svg, label).not.toContain(`data-string="${s}" data-fret=`)
+            }
+            const balls = [...d.svg.matchAll(/class="diagram-dot"[^>]*cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/g)].map(
+              (m) => ({ x: Number(m[1]), y: Number(m[2]), r: Number(m[3]) }),
+            )
+            for (let i = 0; i < balls.length; i++) {
+              for (let j = i + 1; j < balls.length; j++) {
+                const a = balls[i]!
+                const b = balls[j]!
+                const dist = Math.hypot(a.x - b.x, a.y - b.y)
+                expect(dist, label).toBeGreaterThanOrEqual(a.r + b.r + 2)
+              }
+            }
+            const widths = [...d.svg.matchAll(/class="diagram-string"[^>]*stroke-width="([^"]+)"/g)].map(
+              (m) => m[1],
+            )
+            expect(new Set(widths).size, label).toBe(1)
+            expect(widths[0], label).toBe(String(GEO.stringW))
+            const nutW = (d.strings - 1) * GEO.stringGap
+            expect(d.svg, label).toContain(
+              `class="diagram-nut" x="${GEO.padX}" y="${GEO.padY - GEO.nutH / 2}" width="${nutW}" height="${GEO.nutH}"`,
+            )
+            expect(d.svg, label).toContain(`fill="${GEO.fret}"`)
+            expect(d.svg, label).toContain(`width="${nutW}" height="${GEO.fretBarH}"`)
+            if (capo > 0) {
+              expect(d.svg, label).toContain(`width="${nutW + GEO.capoOver * 2}"`)
+              expect(d.svg, label).toContain(`CAPO ${capo}`)
+              const center = yOf(capo) - GEO.fretH / 2
+              expect(d.svg, label).toContain(
+                `class="diagram-capo-bar" x="${GEO.padX - GEO.capoOver}" y="${center - GEO.capoH / 2}"`,
+              )
+            } else {
+              expect(d.svg, label).not.toContain('diagram-capo-bar')
+              expect(d.svg, label).not.toContain('CAPO')
+              const right = GEO.padX + (d.strings - 1) * GEO.stringGap + GEO.capoOver + 8
+              const fingerFrets = [...new Set(d.dots.map((dot) => dot.fret))]
+                .filter((fret) => fret !== capo)
+                .sort((a, b) => a - b)
+              for (const fret of fingerFrets) {
+                expect(d.svg, label).toContain(`class="diagram-fret-no" data-fret="${fret}" x="${right}"`)
+              }
+              expect(d.svg.match(/class="diagram-fret-no"/g)?.length ?? 0, label).toBe(fingerFrets.length)
+            }
+            drawn++
+          }
+        }
+      }
+    }
+    expect(drawn).toBe(17 * 12 * 2 * 2)
   })
 })
