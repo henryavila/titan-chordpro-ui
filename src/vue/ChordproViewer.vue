@@ -369,6 +369,20 @@ function forceBase(file?: string) {
   touch()
 }
 
+/**
+ * Official + Minha versão of the open chart, spliced into that block only.
+ * A rascunho of this chart stays on screen. A sibling rascunho does not skip.
+ */
+function syncOpenChart() {
+  if (isEdit.value && wMode.value === 'persisted') return
+  const openId = String(screenChartId.value ?? '').trim()
+  if (!openId) return
+  if (session.chartDirty(openId)) return
+  const painted = ov.baseFor(null, session.getSource())
+  session.spliceChart(openId, parse(painted, { chartId: openId }).source)
+  touch()
+}
+
 function fileCapo(src: string): number {
   const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
   return m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
@@ -967,18 +981,17 @@ const ov = useOverlay({
   toast: (m) => toastMsg(m),
   // Overlay paints of the open chart. A published chart is spliced below —
   // never reset the whole file because a sibling became official.
-  onBaseChange: (origin) => {
-    if (isEdit.value || session.dirty()) return
-    forceBase(origin === 'official' ? undefined : session.getSource())
+  onBaseChange: () => {
+    syncOpenChart()
   },
   onChartPublished: ({ chartId, file, open }) => {
     session.spliceChart(chartId, parse(file, { chartId }).source)
     touch()
-    if (open && !isEdit.value && !session.dirty()) forceBase(session.getSource())
+    if (open) syncOpenChart()
   },
   onChartLoad: (tune) => {
     applyChartTune(tune)
-    if (!session.dirty()) forceBase(session.getSource())
+    syncOpenChart()
   },
   onSaveContent: (text) => emit('save-content', text),
   persistSuggestion: computed(() => props.persistSuggestion),
