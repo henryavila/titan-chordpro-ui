@@ -1,0 +1,121 @@
+{
+  "planSlug": "versoes-cifra",
+  "phaseId": "F2-F4",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F2",
+  "writerBranch": "impl/versoes-cifra-F2",
+  "finishedAt": "2026-09-25T15:30:30Z",
+  "tasks": [
+    {
+      "taskId": "F2-T-001",
+      "status": "claimed-pass",
+      "commitShas": ["75d3e39a6212c7db7b8f57e8c24ed8e8974bb727"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/vue/public.ts",
+        "src/vue/ChordproViewer.vue",
+        "src/vue/chrome/CpvViewHead.vue",
+        "src/vue/chrome/view-head.ts",
+        "tests/vue/chart-switcher.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/chart-switcher.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/vue/chart-switcher.test.ts (14 tests) 367ms\n Test Files  1 passed (1)\n      Tests  14 passed (14)\n   Start at  12:30:21\n   Duration  1.27s"
+    },
+    {
+      "taskId": "F2-T-002",
+      "status": "claimed-pass",
+      "commitShas": ["158b56ee120f17024ae9bfbd719f6b589c818947"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/vue/ChordproViewer.vue",
+        "tests/vue/chart-switcher.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/chart-switcher.test.ts tests/vue/setlist.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/vue/chart-switcher.test.ts (14 tests) 435ms\n ✓ tests/vue/setlist.test.ts (45 tests) 741ms\n Test Files  2 passed (2)\n      Tests  59 passed (59)\n   Start at  12:30:22\n   Duration  1.65s"
+    },
+    {
+      "taskId": "F2-T-003",
+      "status": "claimed-pass",
+      "commitShas": ["15685c5011db6ff44eb7f96bc8e6faad1a8f224a"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/vue/ChordproViewer.vue",
+        "tests/vue/chart-switcher.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/chart-switcher.test.ts tests/vue/audio-ref.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/vue/audio-ref.test.ts (16 tests) 314ms\n ✓ tests/vue/chart-switcher.test.ts (14 tests) 397ms\n Test Files  2 passed (2)\n      Tests  30 passed (30)\n   Start at  12:30:24\n   Duration  1.32s"
+    },
+    {
+      "taskId": "F3-T-001",
+      "status": "claimed-pass",
+      "commitShas": ["a5ff4ded9e8481e01fa1041fda9e1d9643393fc3"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/source-session.ts",
+        "src/vue/ChordproViewer.vue",
+        "tests/vue/chart-editor.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/chart-editor.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/vue/chart-editor.test.ts (7 tests) 170ms\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  12:30:26\n   Duration  1.06s"
+    },
+    {
+      "taskId": "F3-T-002",
+      "status": "claimed-pass",
+      "commitShas": ["3ce63c2d2b7d9610e8f75a429ee444c59ed7148a"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/charts.ts",
+        "src/core/index.ts",
+        "src/vue/ChordproViewer.vue",
+        "src/vue/chrome/CpvEditHead.vue",
+        "tests/vue/chart-editor.test.ts",
+        "tests/core/charts-envelope.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/chart-editor.test.ts tests/core/charts-envelope.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/core/charts-envelope.test.ts (110 tests) 41ms\n ✓ tests/vue/chart-editor.test.ts (7 tests) 162ms\n Test Files  2 passed (2)\n      Tests  117 passed (117)\n   Start at  12:30:27\n   Duration  1.08s"
+    },
+    {
+      "taskId": "F4-T-001",
+      "status": "claimed-pass",
+      "commitShas": ["c2d4a697a2f7269c42c79809057e0658b3755507"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "src/core/export-cho.ts",
+        "src/core/filenames.ts",
+        "src/vue/ChordproViewer.vue",
+        "tests/core/export-cho-charts.test.ts",
+        "tests/core/filenames.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/export-cho-charts.test.ts tests/core/filenames.test.ts",
+      "exitCode": 0,
+      "transcript": "✓ tests/core/filenames.test.ts (11 tests) 2ms\n ✓ tests/core/export-cho-charts.test.ts (3 tests) 2ms\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  12:30:29\n   Duration  329ms"
+    },
+    {
+      "taskId": "F4-T-002",
+      "status": "claimed-pass",
+      "commitShas": ["d27286262f9a73c6dd34bc03d82a7d238e97c01e"],
+      "base": null,
+      "head": null,
+      "paths": [
+        "docs/VISAO.md",
+        "SPEC.md",
+        "docs/CONSUMER.md",
+        "docs/NAMING.md",
+        "README.md"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/export-cho-charts.test.ts tests/core/filenames.test.ts && node -e 'const fs=require(\"fs\"); const files=[\"docs/VISAO.md\",\"SPEC.md\",\"docs/CONSUMER.md\",\"docs/NAMING.md\",\"README.md\"]; for (const f of files) { const t=fs.readFileSync(f,\"utf8\"); if (!/start_of_x_chart|chartId|cifras nomeadas/.test(t)) throw new Error(f+\" missing in-file chart contract\"); }'",
+      "exitCode": 0,
+      "transcript": "✓ tests/core/filenames.test.ts (11 tests) 2ms\n ✓ tests/core/export-cho-charts.test.ts (3 tests) 2ms\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  12:30:30\n   Duration  325ms\ndocs contract: ok"
+    }
+  ]
+}
