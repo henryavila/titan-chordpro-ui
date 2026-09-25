@@ -604,8 +604,9 @@ function computeCloser(
   let root: NotationClose = null
   let done = false
 
-  const settle = (result: NotationClose): void => {
+  const settle = (result: NotationClose, fenceStopped = false): void => {
     let current = result
+    let stopped = fenceStopped
     for (;;) {
       const frame = stack.pop()
       if (!frame) return
@@ -615,7 +616,13 @@ function computeCloser(
         done = true
         return
       }
-      if (current?.boundary) continue
+      if (stopped || current?.boundary) {
+        // The closer sits in a later chart. Ancestors did not close before that
+        // fence, so they must not cover the chart the fence opens.
+        current = null
+        stopped = true
+        continue
+      }
       const parent = stack[stack.length - 1]!
       parent.j = current ? current.at + 1 : parent.j + 1
       return
@@ -660,7 +667,7 @@ function computeCloser(
       if (cache.has(childKey)) {
         const inner = cache.get(childKey) ?? null
         if (inner?.boundary) {
-          settle(inner)
+          settle(null, true)
           continue
         }
         frame.j = inner ? inner.at + 1 : frame.j + 1

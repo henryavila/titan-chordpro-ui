@@ -98,7 +98,8 @@ function parseRaw(src: string): {
           kind: 'tab',
           text: raws.slice(li + 1, bodyEnd).join('\n'),
           li0: li,
-          li1: close ? cut : raws.length - 1,
+          // A chart fence ends the block. It is not a line of the tab.
+          li1: !close ? raws.length - 1 : boundary ? Math.max(li, cut - 1) : cut,
         })
       } else {
         const bodyEnd = !close ? raws.length : boundary ? cut : cut + 1

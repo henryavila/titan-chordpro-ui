@@ -4,6 +4,7 @@ import CpvIcon from '../icon/CpvIcon.vue'
 import {
   applyCifraClubEnrich,
   durationFromYoutubeHtml,
+  formatDurationFromSec,
   hasChartEnvelope,
   hostOk,
   maskDurationMmSs,
@@ -377,10 +378,10 @@ async function fillDuration(id: string, m: ChartMeta): Promise<ChartMeta> {
   if (String(m.duration ?? '').trim()) return m
   try {
     const raw = await props.fetchYoutubeDuration(id)
-    const dur =
-      /^\d{1,2}:\d{2}$/.test(raw.trim()) || /^\d+:\d{2}:\d{2}$/.test(raw.trim())
-        ? normalizeDurationMmSs(raw.trim())
-        : durationFromYoutubeHtml(raw)
+    // A fetched length already has its seconds. The four-digit mask is only for typing.
+    const trimmed = raw.trim()
+    const sec = songDurationSec(trimmed)
+    const dur = sec != null ? formatDurationFromSec(sec) : durationFromYoutubeHtml(raw)
     if (dur) return { ...m, duration: dur }
   } catch {
     /* keep asking on the form */
