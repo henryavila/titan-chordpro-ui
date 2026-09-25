@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 25,
-  "updatedAt": "2026-09-25T01:41:39.311Z",
+  "redispatchCount": 26,
+  "updatedAt": "2026-09-25T01:48:36.599Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -140,6 +140,12 @@
       "at": "2026-09-25T01:26:28.362Z",
       "reason": "fix25 after both review of 0d27d18..HEAD: hour duration becomes 10:42, an unclosed tab hides nota, and the tab span includes the chart fence",
       "priorCount": 24,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-25T01:48:36.599Z",
+      "reason": "fix26 after both review of b114a12..HEAD: a fence stop cached as null hides the nota chart",
+      "priorCount": 25,
       "gate": "spawn"
     }
   ],
