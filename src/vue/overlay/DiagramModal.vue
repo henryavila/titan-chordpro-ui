@@ -89,6 +89,8 @@ const inversionLayout = computed(() => ({
   '--inv-count': String(frames.value.length),
 }))
 
+const soloFrame = computed(() => (frames.value.length === 1 ? frames.value[0] : undefined))
+
 const sounds = computed(
   () => props.instrument !== 'piano' && props.capoFret > 0 && props.concert && props.concert !== playable.value,
 )
@@ -226,12 +228,12 @@ onBeforeUnmount(() => {
           </figure>
         </div>
         <div
-          v-else-if="frames.length === 1"
+          v-else-if="soloFrame"
           class="cpv-diagram-draw"
           data-diagram-draw
           :data-diagram-kind="instrument"
-          :style="{ '--draw-ratio': String(frames[0].ratio) }"
-          v-html="frames[0].svg"
+          :style="{ '--draw-ratio': String(soloFrame.ratio) }"
+          v-html="soloFrame.svg"
         />
         <p v-else class="cpv-diagram-miss" data-diagram-miss>Sem forma neste instrumento</p>
       </div>

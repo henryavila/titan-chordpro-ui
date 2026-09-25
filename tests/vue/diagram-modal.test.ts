@@ -197,7 +197,7 @@ describe('diagram modal', () => {
     await flushPromises()
     await w.get('[data-diagram-hit]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-diagram-grab] [data-icon="chevronDown"]').exists()).toBe(true)
+    expect(w.find('[data-diagram-grab] [data-icon="chevronDown"]').exists()).toBe(true)
     const panel = w.get('[data-diagram-panel]').element
 
     pointer('pointerdown', 40, 80, panel)
