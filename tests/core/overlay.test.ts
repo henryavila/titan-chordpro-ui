@@ -7,6 +7,7 @@ import {
   checkUpdate,
   diffOps,
   diffStrumPattern,
+  hashText,
   lcsHunks,
   opCtxNote,
   opLabel,
@@ -123,6 +124,16 @@ describe('absorbing and updating', () => {
 
   it('says nothing when the version has not moved', () => {
     expect(checkUpdate(overlay, official, 'v1')).toBeNull()
+  })
+
+  it('compares overlay.baseVersion to the chart document hash', () => {
+    const rev = hashText(official)
+    const hashed: Overlay = { ...overlay, baseVersion: rev }
+    expect(checkUpdate(hashed, official, rev)).toBeNull()
+    expect(absorbInto(hashed, official, rev).absorbed).toBe(0)
+    const next = `${official}\n`
+    expect(checkUpdate(hashed, next, hashText(next))?.items).toHaveLength(1)
+    expect(absorbInto(hashed, mine, hashText(mine)).absorbed).toBe(1)
   })
 })
 

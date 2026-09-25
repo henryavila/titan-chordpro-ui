@@ -789,6 +789,144 @@ describe('suggestion per chart', () => {
     admin.unmount()
   })
 
+  it('keeps an unsaved oferta rascunho when accepting a sibling chart', async () => {
+    localStorage.setItem(
+      'cpv:sug',
+      JSON.stringify([
+        {
+          id: 's-completa',
+          songId: 'uma',
+          chartId: 'completa',
+          title: 'Uma',
+          at: 1,
+          baseVersion: 'v1',
+          status: 'pending',
+          actorName: 'Bia',
+          ops: [
+            {
+              id: 'op-c',
+              type: 'replace',
+              at: 0,
+              anchor: '',
+              anchorHash: '0',
+              before: ['{title:Uma}'],
+              after: ['{title:Completa nova}'],
+              ctx: { transpose: 0, capo: 0 },
+            },
+          ],
+          resolvedOps: [],
+        },
+      ]),
+    )
+
+    const admin = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    await admin.get('[data-edit]').trigger('click')
+    await flushPromises()
+    const row = admin.findAll('[data-row]').find((r) => r.text().includes('corpo da oferta'))
+    expect(row).toBeTruthy()
+    await row!.trigger('click')
+    await flushPromises()
+    const input = admin.get('input[aria-label="Letra desta linha"]')
+    await input.setValue('corpo da oferta (rascunho)')
+    await input.trigger('blur')
+    await flushPromises()
+    await admin.get('[data-read]').trigger('click')
+    await flushPromises()
+    expect(admin.text()).toMatch(/Rascunho não salvo/)
+    expect((admin.vm as { getSource: () => string }).getSource()).toContain('corpo da oferta (rascunho)')
+
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    const qRow = admin.findAll('[data-q-song]').find((s) => s.text().includes('Uma · Completa'))
+    expect(qRow).toBeTruthy()
+    await qRow!.trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+
+    const working = (admin.vm as { getSource: () => string }).getSource()
+    expect(working).toContain('corpo da oferta (rascunho)')
+    expect(parse(working, { chartId: 'completa' }).meta.title).toBe('Completa nova')
+    expect(working).toContain('{start_of_x_chart:completa}')
+    expect(working).toContain('{start_of_x_chart:oferta}')
+    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta (rascunho)')
+    expect(admin.get('[data-cpv-scroll]').text()).not.toContain('corpo da completa')
+    const saved = String(admin.emitted('save-content')?.at(-1)?.[0] ?? '')
+    expect(saved).toContain('{start_of_x_chart:completa}')
+    expect(saved).toContain('{start_of_x_chart:oferta}')
+    expect(parse(saved, { chartId: 'completa' }).meta.title).toBe('Completa nova')
+    expect(saved).not.toContain('(rascunho)')
+    expect(saved).not.toBe(working)
+    admin.unmount()
+  })
+
+  it('does not treat a sibling overlay as stale when another chart is published', async () => {
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const mine = completa.replace('{title:Uma}', '{title:Uma minha}')
+    const completaOps = diffOps(completa, mine, { transpose: 0, capo: 0 })
+    localStorage.setItem(
+      overlayKey('uma', 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 1 }),
+    )
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const ofertaOps = diffOps(oferta, oferta.replace('{title:Uma}', '{title:Oferta nova}'), {
+      transpose: 0,
+      capo: 0,
+    })
+    localStorage.setItem(
+      'cpv:sug',
+      JSON.stringify([
+        {
+          id: 's-oferta',
+          songId: 'uma',
+          chartId: 'oferta',
+          title: 'Uma',
+          at: 1,
+          baseVersion: 'v1',
+          status: 'pending',
+          actorName: 'Bia',
+          ops: ofertaOps,
+          resolvedOps: [],
+        },
+      ]),
+    )
+
+    const admin = mountViewer({
+      source: TWO_CHARTS,
+      songId: 'uma',
+      editMode: 'persisted',
+      chartId: 'completa',
+    })
+    await flushPromises()
+    expect(admin.get('[data-chart-title]').text()).toBe('Uma minha')
+    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    const qRow = admin.findAll('[data-q-song]').find((s) => s.text().includes('Oferta'))
+    expect(qRow).toBeTruthy()
+    await qRow!.trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+
+    expect(admin.find('[data-upd-dlg]').exists()).toBe(false)
+    expect(JSON.parse(localStorage.getItem(overlayKey('uma', 'completa')) ?? 'null').ops).toHaveLength(1)
+    const saved = String(admin.emitted('save-content')?.at(-1)?.[0] ?? '')
+    expect(parse(saved, { chartId: 'completa' }).meta.title).toBe('Uma')
+    expect(parse(saved, { chartId: 'oferta' }).meta.title).toBe('Oferta nova')
+    expect(admin.get('[data-chart-title]').text()).toBe('Uma minha')
+    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(admin.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    admin.unmount()
+  })
+
   it('does not accept a suggestion whose chart id is not in the file', async () => {
     const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
     const ops = diffOps(oferta, oferta.replace('[C]corpo da oferta', '[C]corpo da oferta (ok)'), {
