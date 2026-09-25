@@ -1785,7 +1785,7 @@ describe('alternating notation opens stay bounded', () => {
 })
 
 describe('a later bare closer does not swallow the next chart', () => {
-  it('stops at the end that closes the chart opened before the inner fence', () => {
+  it('lists the middle chart and leaves the bare closer in the next chart', () => {
     for (const [open, close] of [
       ['{sot}', '{eot}'],
       ['{sos}', '{eos}'],
@@ -1799,11 +1799,14 @@ describe('a later bare closer does not swallow the next chart', () => {
         '{x_chart_default:oferta}',
         close,
       ].join('\n')
-      expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'oferta'])
+      expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'nota', 'oferta'])
       expect(listCharts(file).find((c) => c.isDefault)?.id).toBe('oferta')
       const completa = splitCho(file).charts.find((c) => c.id === 'completa')?.inner ?? ''
+      const nota = splitCho(file).charts.find((c) => c.id === 'nota')?.inner ?? ''
       const oferta = splitCho(file).charts.find((c) => c.id === 'oferta')?.inner ?? ''
       expect(completa).not.toContain('oferta')
+      expect(completa).not.toContain('{start_of_x_chart')
+      expect(nota).not.toContain(close)
       expect(oferta).toContain('{x_chart_default:oferta}')
       expect(oferta).toContain(close)
     }
@@ -1819,6 +1822,42 @@ describe('a later bare closer does not swallow the next chart', () => {
       '{end_of_x_chart}',
     ].join('\n')
     expect(() => listCharts(file)).toThrow(/outside chart blocks/)
+  })
+})
+
+describe('a later closer does not cover the next chart', () => {
+  it('lists completa, nota, and oferta when the closer sits in oferta', () => {
+    for (const [open, close] of [
+      ['{sot}', '{eot}'],
+      ['{sos}', '{eos}'],
+    ] as const) {
+      const file = [
+        '{start_of_x_chart:completa}',
+        '{title:Completa}',
+        open,
+        'e|-----0-----|',
+        '{start_of_x_chart:nota}',
+        '{title:Nota}',
+        '[G]nota',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        '{title:Oferta}',
+        close,
+        '[C]oferta',
+        '{end_of_x_chart}',
+      ].join('\n')
+      expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'nota', 'oferta'])
+      const split = splitCho(file)
+      const completa = split.charts.find((c) => c.id === 'completa')?.inner ?? ''
+      const nota = split.charts.find((c) => c.id === 'nota')?.inner ?? ''
+      const oferta = split.charts.find((c) => c.id === 'oferta')?.inner ?? ''
+      expect(completa).toContain('e|-----0-----|')
+      expect(completa).not.toContain('[G]nota')
+      expect(completa).not.toContain('{title:Nota}')
+      expect(nota).toContain('[G]nota')
+      expect(oferta).toContain(close)
+      expect(oferta).toContain('[C]oferta')
+    }
   })
 })
 

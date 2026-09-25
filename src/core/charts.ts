@@ -593,6 +593,7 @@ function closerFrame(kind: 'tab' | 'score', openAt: number, chartDepth: number):
  * `{end_of_x_chart}` stops the block only when a chart was already open (`chartDepth`).
  * A stray end in an implicit chart does not. A closer past that end is not cached as this one.
  * A fence stop is cached as such, so a later hit stops instead of scanning on.
+ * A closer in a chart opened after this block does not cover that chart when this frame is the root.
  */
 export function notationBlockCloser(
   lines: readonly string[],
@@ -703,12 +704,17 @@ function computeCloser(
     if (edge === closeEdge) {
       frame.depth--
       if (frame.depth === 0) {
-        // That closer sits in a chart that started after the end. Stop at the end.
-        const result: NotationClose =
-          frame.boundary >= 0 && frame.openCharts > 0
-            ? { at: frame.boundary, boundary: true }
-            : { at: frame.j, boundary: false }
-        settle(result)
+        // The closer is in a chart opened after this block. The root must not
+        // cover that chart. A nested frame still reports the boundary so its parent stops.
+        if (frame.boundary >= 0 && frame.openCharts > 0) {
+          if (stack.length === 1) {
+            settle(null, true)
+            continue
+          }
+          settle({ at: frame.boundary, boundary: true })
+          continue
+        }
+        settle({ at: frame.j, boundary: false })
         continue
       }
       frame.j++
