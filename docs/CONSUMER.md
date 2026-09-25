@@ -565,8 +565,8 @@ O POST é `persistSuggestion` (`return` da Promise), lida na hora do envio. `@su
 
 1. Músico edita em `local` (overlay no device).
 2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve. Titan **espera** `persistSuggestion`: resolve → enfileira + emit `suggestion-created` (`actorName` + `actorKey` opcional) + toast “Sugestão enviada”; reject ou `void` (sem Promise) → nada na fila, mantém Minha versão, “Não foi possível enviar. Tente de novo.” Sem a prop, o toast “enviada” é otimista (só neste aparelho). Reverter fica bloqueado enquanto envia.
-3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, preview da batida (faixa) e encaixa / conflito → Aceitar lote ou item a item.
-4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save).
+3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, a faixa da batida só quando ela mudou, e encaixa / conflito → Aceitar lote ou item a item. Aceitar um item deixa a revisão aberta no que ainda falta.
+4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save). Devolver esse texto em `source` não troca de cifra: a revisão continua.
 5. Status (`pendente` / `aceita` / `recusada` / `parcial`) aparece na Minha versão do músico na próxima visita (host devolve a fila).
 
 **Deprecated:** `modes` (`content` → `persisted`; `both` → `local` + warning no console).

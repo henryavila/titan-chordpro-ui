@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Na revisão de sugestões, a faixa de batida no topo do lote só aparece quando o pedido muda a batida. Apagar letra numa cifra que já tem batida não mostra mais a batida como se fizesse parte do pedido.
+
+Aceitar um ajuste, quando ainda há outros, deixa a tela de sugestões aberta. Gravar a cifra não fecha a revisão no meio.
+
 ## [0.8.0] - 2026-09-24
 
 ### No celular, o áudio de referência fechado é um fone

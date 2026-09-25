@@ -734,7 +734,14 @@ const ov = useOverlay({
   onBaseChange: () => {
     if (!isEdit.value) forceBase()
   },
-  onSaveContent: (text) => emit('save-content', text),
+  onSaveContent: (text) => {
+    // The host persists this by writing it back into `source` (the demo does).
+    // That echo is the chart just saved, not a different song: without this
+    // the source watcher resets the screen and closes the suggestion review
+    // while other requests are still open.
+    lastSrc = text
+    emit('save-content', text)
+  },
   persistSuggestion: computed(() => props.persistSuggestion),
   onSuggestionCreated: (s) => emit('suggestion-created', s),
   onSuggestionAccepted: (p) => emit('suggestion-accepted', p),
