@@ -516,6 +516,40 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     expect(fetchYoutubeDuration).toHaveBeenCalled()
   })
 
+  it('writes a fetched hour duration as 1:04:26, not the four-digit mask', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const fetchChart = vi.fn(async () => '"youtubeID":"dQw4w9WgXcQ"')
+    const fetchYoutubeDuration = vi.fn(async () => '1:04:26')
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: src, fetchChart, fetchYoutubeDuration },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    await w.get('[data-meta-enrich-url]').setValue('https://www.cifraclub.com.br/example/song/')
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-enrich-yt-pick-remote]').trigger('click')
+    await w.get('[data-meta-enrich-apply]').trigger('click')
+    await flushPromises()
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    const oferta = splitCho(next).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    const completa = splitCho(next).charts.find((c) => c.id === 'completa')?.inner ?? ''
+    expect(oferta).toContain('{duration:1:04:26}')
+    expect(oferta).not.toContain('{duration:10:42}')
+    expect(completa).not.toContain('{duration:')
+    expect(parse(next).meta.duration).toBe('1:04:26')
+  })
+
   it('asks for YouTube, then applies meta without replacing the body', async () => {
     const fetchChart = vi.fn(async () => TU_ES)
     const url = 'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/'

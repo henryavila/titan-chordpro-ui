@@ -6,7 +6,9 @@ import {
   audioUrlOf,
   commitChartDocument,
   createSourceSession,
+  deleteBlock,
   inferWrittenKey,
+  layoutChart,
   listCharts,
   lintSource,
   parse,
@@ -1943,9 +1945,13 @@ describe('alternating notation openers do not grow the call stack', () => {
     return lines.join('\n')
   }
 
-  it('lists completa and oferta for 20 and 16000 alternating openers', () => {
-    expect(listCharts(openersThenCharts(20)).map((c) => c.id)).toEqual(['completa', 'oferta'])
-    expect(listCharts(openersThenCharts(16000)).map((c) => c.id)).toEqual(['completa', 'oferta'])
+  it('lists completa, nota, and oferta for 20 and 16000 alternating openers', () => {
+    for (const n of [20, 16000]) {
+      const file = openersThenCharts(n)
+      expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'nota', 'oferta'])
+      const completa = splitCho(file).charts.find((c) => c.id === 'completa')?.inner ?? ''
+      expect(completa).not.toContain('oferta')
+    }
   })
 })
 
@@ -1958,6 +1964,18 @@ describe('a stray end in an implicit chart does not hide the title', () => {
     expect(parse(saved).meta.title).toBe('New')
     expect(readMeta(saved).title).toBe('New')
     expect(saved).not.toContain('{title:Real}')
+  })
+
+  it('ends the tab before the chart fence, so deleting it leaves the fence', () => {
+    const src = '{sot}\n{end_of_x_chart}\n{title:Real}'
+    const view = parse(src)
+    const line = view.sections.find((s) => s.kind === 'tab')?.lines[0]
+    expect(line?.li0).toBe(0)
+    expect(line?.li1).toBe(0)
+    const blocks = layoutChart(view)
+    const bi = blocks.findIndex((b) => b.kind === 'tab')
+    const removed = deleteBlock(src.split('\n'), blocks, bi)
+    expect(removed?.lines.join('\n')).toBe('{end_of_x_chart}\n{title:Real}')
   })
 
   it('parse sees Real after a stray end with no tab closer, before any save', () => {
