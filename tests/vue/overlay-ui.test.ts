@@ -310,6 +310,53 @@ describe('the official chart moved', () => {
     expect(next.find('[data-mine-switch]').exists()).toBe(false)
     next.unmount()
   })
+
+  async function pinArrivedKey(w: ReturnType<typeof mountViewer>) {
+    await w.get('[data-transpose-up]').trigger('click')
+    await w.get('[data-transpose-up]').trigger('click')
+    await flushPromises()
+    await w.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await w.get('[data-fix-tune]').trigger('click')
+    await flushPromises()
+  }
+
+  it('keeps the pinned key on screen while the lyric-update dialog is open, and after Keep', async () => {
+    const w = mountViewer()
+    await flushPromises()
+    await personalise(w)
+    await pinArrivedKey(w)
+    w.unmount()
+
+    const next = mountViewer({ version: 'v2' })
+    await flushPromises()
+    expect(next.find('[data-upd-dlg]').exists()).toBe(true)
+    expect(next.get('[data-display-key]').text()).toBe('A')
+
+    await next.get('[data-upd-keep]').trigger('click')
+    await flushPromises()
+    expect(next.find('[data-upd-dlg]').exists()).toBe(false)
+    expect(next.get('[data-display-key]').text()).toBe('A')
+    expect(next.get('[data-cpv-scroll]').text()).toContain('(meu)')
+    next.unmount()
+  })
+
+  it('Adopt of the official update restores the file key and drops the personal version', async () => {
+    const w = mountViewer()
+    await flushPromises()
+    await personalise(w)
+    await pinArrivedKey(w)
+    w.unmount()
+
+    const next = mountViewer({ version: 'v2' })
+    await flushPromises()
+    await next.get('[data-upd-adopt]').trigger('click')
+    await flushPromises()
+    expect(next.find('[data-upd-dlg]').exists()).toBe(false)
+    expect(next.get('[data-display-key]').text()).toBe('G')
+    expect(next.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    next.unmount()
+  })
 })
 
 async function identify(w: ReturnType<typeof mountViewer>, name = 'Ana Souza') {

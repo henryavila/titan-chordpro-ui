@@ -372,7 +372,8 @@ export function useOverlay(opts: OverlayOpts) {
         30,
       )
     }
-    if (upd) return null
+    // The lyric-update dialog does not swallow a pinned key: the pin is not a
+    // line conflict, and the screen still needs it while the reader decides.
     return (ov?.ops.find(isTuneOp) as TuneOp | undefined) ?? null
   }
 
@@ -513,6 +514,7 @@ export function useOverlay(opts: OverlayOpts) {
     saveOverlay(ops.length ? { baseVersion: officialVersion.value, ops, at: Date.now() } : null)
     updDlg.value = null
     opts.toast(ops.length ? 'Ajustes reaplicados na versão nova' : 'Você está na versão nova')
+    opts.onChartLoad?.((ops.find(isTuneOp) as TuneOp | undefined) ?? null)
   }
 
   function updAdopt() {
@@ -520,6 +522,7 @@ export function useOverlay(opts: OverlayOpts) {
     updDlg.value = null
     showOriginal.value = false
     opts.toast('Versão nova adotada')
+    opts.onChartLoad?.(null)
   }
 
   // ------------------------------------------------------------ suggestions
