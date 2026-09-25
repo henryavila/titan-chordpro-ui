@@ -83,7 +83,8 @@ describe('diagram modal', () => {
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
     const pianoRule = css.split('}').find((block) => block.includes('data-diagram-kind') && block.includes('piano'))
     expect(pianoRule).toBeTruthy()
-    expect(pianoRule).toContain('32rem')
+    expect(pianoRule).toContain('20rem')
+    expect(pianoRule).toContain('border')
     expect(pianoRule).not.toMatch(/width:\s*100%/)
     const close = w.get('[data-diagram-close]')
     expect(close.attributes('aria-label')).toBe('Fechar')
@@ -99,6 +100,42 @@ describe('diagram modal', () => {
     await flushPromises()
     expect(again.w.get('[data-diagram-instrument="piano"]').attributes('aria-pressed')).toBe('true')
     expect(again.w.get('[data-diagram-name]').text()).toBe('G')
+  })
+
+  it('lays piano inversions in the stage, and a written bass beside the plain chord', async () => {
+    const { w } = mountViewer()
+    await flushPromises()
+    await w.get('[data-diagram-hit]').trigger('click')
+    await w.get('[data-diagram-instrument="piano"]').trigger('click')
+    await flushPromises()
+    const cards = w.findAll('[data-piano-inversion]')
+    expect(cards).toHaveLength(3)
+    expect(cards.map((card) => card.get('figcaption').text())).toEqual(['C', 'C/E', 'C/G'])
+    for (const card of cards) {
+      const html = card.html()
+      expect(html).toContain('diagram-piano-degree')
+      expect(html).toContain('data-degree="1"')
+      expect(html).not.toContain('diagram-dot-note')
+    }
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
+    const stageRule = css.split('}').find((block) => block.includes('cpv-diagram-stage'))
+    expect(stageRule).toContain('overflow: hidden')
+    const grid = w.get('[data-diagram-draw]').element as HTMLElement
+    const overflow = `${getComputedStyle(grid).overflow} ${getComputedStyle(grid).overflowY}`
+    expect(overflow).not.toMatch(/auto|scroll/)
+
+    w.unmount()
+    const slash = mountViewer({
+      source: '{title: Teste}\n{key: E}\n{duration: 2:00}\n[Em/D]casa\n',
+    })
+    await flushPromises()
+    await slash.w.get('[data-diagram-hit]').trigger('click')
+    await slash.w.get('[data-diagram-instrument="piano"]').trigger('click')
+    await flushPromises()
+    const slashCards = slash.w.findAll('[data-piano-inversion]')
+    expect(slashCards.map((card) => card.get('figcaption').text())).toEqual(['Em/D', 'Em'])
+    expect(slashCards[0]?.html()).toContain('data-degree="b7"')
+    expect(slash.w.get('[data-diagram-draw]').html()).not.toMatch(/<text[^>]*>[A-G]/)
   })
 
   it('never scrolls the diagram, including a tall ukulele shape', async () => {

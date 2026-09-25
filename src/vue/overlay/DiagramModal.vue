@@ -48,16 +48,46 @@ const resolved = computed(() =>
   }),
 )
 
-const svg = computed(() => {
+type PianoFrame = { label: string; svg: string; ratio: number }
+
+function frameRatio(svg: string): number {
+  const box = /viewBox="0 0 ([0-9.]+) ([0-9.]+)"/.exec(svg)
+  if (!box) return 1.75
+  const w = Number(box[1])
+  const h = Number(box[2])
+  if (!w || !h) return 1.75
+  return w / h
+}
+
+const frames = computed((): PianoFrame[] => {
   const hit = resolved.value
-  if (hit.class !== 'hit') return ''
+  if (hit.class !== 'hit') return []
+  const inversions = props.instrument === 'piano' ? hit.inversions : undefined
+  if (inversions && inversions.length > 1) {
+    return inversions.map((inv) => {
+      const drawn = drawDiagram({
+        instrument: 'piano',
+        voicing: { ...hit.voicing, pianoTones: inv.tones },
+        capoFret: 0,
+        token: token.value,
+      })
+      return { label: inv.label, svg: drawn.svg, ratio: frameRatio(drawn.svg) }
+    })
+  }
   const drawn = drawDiagram({
     instrument: props.instrument,
     voicing: hit.voicing,
     capoFret: props.instrument === 'piano' ? 0 : props.capoFret,
     token: token.value,
   })
-  return drawn.svg
+  if (!drawn.svg) return []
+  return [{ label: '', svg: drawn.svg, ratio: frameRatio(drawn.svg) }]
+})
+
+const inversionGrid = computed(() => {
+  const n = frames.value.length
+  const cols = n <= 3 ? n : n === 4 ? 2 : 3
+  return { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
 })
 
 const sounds = computed(
@@ -178,11 +208,30 @@ onBeforeUnmount(() => {
       </div>
       <div class="cpv-diagram-stage" data-diagram-stage>
         <div
-          v-if="svg"
+          v-if="frames.length > 1"
+          class="cpv-diagram-inversions"
+          data-diagram-draw
+          data-diagram-kind="piano"
+          :data-inversion-count="frames.length"
+          :style="inversionGrid"
+        >
+          <figure
+            v-for="frame in frames"
+            :key="frame.label"
+            class="cpv-diagram-inversion"
+            data-piano-inversion
+          >
+            <div class="cpv-diagram-inversion-keys" v-html="frame.svg" />
+            <figcaption class="cpv-diagram-inversion-name">{{ frame.label }}</figcaption>
+          </figure>
+        </div>
+        <div
+          v-else-if="frames.length === 1"
           class="cpv-diagram-draw"
           data-diagram-draw
           :data-diagram-kind="instrument"
-          v-html="svg"
+          :style="instrument === 'piano' ? { '--piano-ratio': String(frames[0].ratio) } : undefined"
+          v-html="frames[0].svg"
         />
         <p v-else class="cpv-diagram-miss" data-diagram-miss>Sem forma neste instrumento</p>
       </div>
@@ -281,12 +330,16 @@ onBeforeUnmount(() => {
   overflow: hidden;
   color: var(--text);
 }
-/* One octave stretched to the stage width reads as a banner on a tablet. */
+/* One keyboard is a card, not a banner. The three-inversion row already holds the eye. */
 .cpv-diagram-draw[data-diagram-kind='piano'] {
-  width: min(100cqi, 32rem, calc(100cqh * 1.75));
+  width: min(20rem, 72cqi, calc(100cqh * var(--piano-ratio, 1.75) * 0.62));
   height: auto;
-  aspect-ratio: 126 / 72;
+  aspect-ratio: var(--piano-ratio, 1.75);
   max-height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  overflow: visible;
+  background: var(--canvas);
 }
 .cpv-diagram-draw :deep(svg) {
   display: block;
@@ -294,6 +347,43 @@ onBeforeUnmount(() => {
   height: 100%;
   max-width: 100%;
   max-height: 100%;
+}
+.cpv-diagram-inversions {
+  width: min(100cqi, 40rem);
+  max-height: 100%;
+  min-height: 0;
+  display: grid;
+  gap: 10px 14px;
+  align-content: center;
+  overflow: hidden;
+}
+.cpv-diagram-inversion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  gap: 8px;
+}
+.cpv-diagram-inversion-keys {
+  width: 100%;
+  min-height: 0;
+}
+.cpv-diagram-inversion-keys :deep(svg) {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+.cpv-diagram-inversion-name {
+  flex: none;
+  margin: 0;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--muted);
 }
 .cpv-diagram-head {
   position: absolute;

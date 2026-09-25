@@ -511,7 +511,12 @@ describe('dictionary draw grid', () => {
         expect(d.hasCapoBar, token).toBe(false)
         expect(d.svg, token).not.toMatch(/Capo/)
         const keys = hit.voicing.keys ?? []
-        expect(d.lit, token).toEqual(keys.map((k) => ((rootPc + k) % 12 + 12) % 12))
+        const want = [...new Set(keys.map((k) => ((rootPc + k) % 12 + 12) % 12))].sort((a, b) => a - b)
+        const got = [...new Set(d.lit)].sort((a, b) => a - b)
+        expect(got, token).toEqual(want)
+        expect(d.svg, token).toContain('diagram-piano-degree')
+        expect(d.svg, token).toContain('data-degree="1"')
+        expect(d.svg, token).not.toContain('diagram-dot-note')
         drawn++
       }
     }

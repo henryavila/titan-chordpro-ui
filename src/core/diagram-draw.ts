@@ -6,8 +6,9 @@
  * Piano lights concert keys and ignores the capo.
  */
 
-import type { DiagramInstrument, DiagramVoicing } from './resolve-diagram'
+import type { DiagramInstrument, DiagramVoicing, PianoTone } from './resolve-diagram'
 import { parseChordToken } from './parse-chord'
+import { pianoDegreeFor } from './piano-voicing'
 import { keyIndex } from './transpose'
 
 export type FretDot = {
@@ -311,13 +312,51 @@ function pianoRootPc(token: string | undefined): number | null {
   return keyIndex(token)
 }
 
+const WHITE_W = 18
+const WHITE_H = 72
+const BLACK_W = 12
+const BLACK_H = 44
+const WHITE_PCS = [0, 2, 4, 5, 7, 9, 11]
+/** Unlit accidental. Lit keys overlay `var(--chord)` on the key’s own paper. */
+const PIANO_BLACK_FILL = '#141820'
+/** Chord over the light white key — a lighter wash of the theme colour. */
+const PIANO_WHITE_LIT_OPACITY = 0.5
+/** Chord over the black key — a darker wash of the same colour. */
+const PIANO_BLACK_LIT_OPACITY = 0.22
+/** Degree label. The accidental size is the source; white keys match it. */
+const PIANO_DEGREE_SIZE = 8
+
+function isWhitePc(pc: number): boolean {
+  return WHITE_PCS.includes(pc)
+}
+
+function whiteOrdinal(midi: number): number {
+  const pc = mod12(midi)
+  const oct = Math.floor(midi / 12)
+  const at = WHITE_PCS.indexOf(pc)
+  if (at >= 0) return oct * 7 + at
+  return whiteOrdinal(midi - 1)
+}
+
 function drawPiano(voicing: DiagramVoicing, token: string | undefined): PianoDraw {
+  const tones = voicing.pianoTones
+  if (tones?.length) return drawPianoTones(tones)
   const root = pianoRootPc(token)
   const rel = voicing.keys ?? []
-  const lit = root == null ? [] : rel.map((k) => (((root + k) % 12) + 12) % 12)
+  const lit = root == null ? [] : rel.map((k) => mod12(root + k))
   const litNotes = lit.map((pc) => NOTE[pc] ?? 'C')
-  const litSet = new Set(lit)
-  const svg = pianoSvg(litSet)
+  const degrees = new Map<number, string>()
+  if (root != null) {
+    for (const k of rel) {
+      const pc = mod12(root + k)
+      if (!degrees.has(pc) || k >= 12) degrees.set(pc, pianoDegreeFor(k))
+    }
+  }
+  const svg = pianoOctaveSvg(new Set(lit), degrees)
+  return pianoDraw(lit, litNotes, svg)
+}
+
+function pianoDraw(lit: number[], litNotes: string[], svg: string): PianoDraw {
   return {
     kind: 'piano',
     capoFret: 0,
@@ -329,30 +368,135 @@ function drawPiano(voicing: DiagramVoicing, token: string | undefined): PianoDra
   }
 }
 
-function pianoSvg(lit: Set<number>): string {
-  const whites = [0, 2, 4, 5, 7, 9, 11]
+function degreeText(
+  x: number,
+  y: number,
+  size: number,
+  degree: string,
+  midi: number,
+  pc: number,
+  ink: string,
+): string {
+  return `<text class="diagram-piano-degree" data-midi="${midi}" data-pc="${pc}" data-degree="${escapeXml(degree)}" x="${x}" y="${y}" text-anchor="middle" font-size="${size}" font-weight="650" fill="${ink}">${escapeXml(degree)}</text>`
+}
+
+function midiAttr(midi: number | undefined): string {
+  return midi == null ? '' : ` data-midi="${midi}"`
+}
+
+function whiteKeySvg(opts: {
+  pc: number
+  midi?: number
+  x: number
+  on: boolean
+  lowest: boolean
+}): string {
+  const midi = midiAttr(opts.midi)
+  const lowest = opts.lowest ? ' data-lowest="true"' : ''
+  const base = `<rect class="diagram-piano-white" data-pc="${opts.pc}"${midi}${lowest} x="${opts.x}" y="0" width="${WHITE_W}" height="${WHITE_H}" fill="var(--beat-rest)" stroke="var(--muted)"/>`
+  if (!opts.on) return base
+  return `${base}<rect class="diagram-piano-white-on" data-pc="${opts.pc}"${midi} x="${opts.x}" y="0" width="${WHITE_W}" height="${WHITE_H}" fill="var(--chord)" fill-opacity="${PIANO_WHITE_LIT_OPACITY}" stroke="var(--muted)"/>`
+}
+
+function blackKeySvg(opts: {
+  pc: number
+  midi?: number
+  x: number
+  on: boolean
+  lowest: boolean
+}): string {
+  const midi = midiAttr(opts.midi)
+  const lowest = opts.lowest ? ' data-lowest="true"' : ''
+  const base = `<rect class="diagram-piano-black" data-pc="${opts.pc}"${midi}${lowest} x="${opts.x}" y="0" width="${BLACK_W}" height="${BLACK_H}" fill="${PIANO_BLACK_FILL}"/>`
+  if (!opts.on) return base
+  return `${base}<rect class="diagram-piano-black-on" data-pc="${opts.pc}"${midi} x="${opts.x}" y="0" width="${BLACK_W}" height="${BLACK_H}" fill="var(--chord)" fill-opacity="${PIANO_BLACK_LIT_OPACITY}"/>`
+}
+
+/** One C-to-B octave. Used when a `{define}` names keys and not a close voicing. */
+function pianoOctaveSvg(lit: Set<number>, degrees: Map<number, string>): string {
+  const whites = WHITE_PCS
   const blacks = [1, 3, 6, 8, 10]
-  const w = 18
-  const h = 72
-  const width = whites.length * w
+  const width = whites.length * WHITE_W
   const parts: string[] = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${h}" width="${width}" height="${h}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${WHITE_H}" width="${width}" height="${WHITE_H}">`,
   ]
   whites.forEach((pc, i) => {
-    const fill = lit.has(pc) ? 'var(--chord)' : 'var(--beat-rest)'
-    parts.push(
-      `<rect class="diagram-piano-white" data-pc="${pc}" x="${i * w}" y="0" width="${w}" height="${h}" fill="${fill}" stroke="var(--muted)"/>`,
-    )
+    const x = i * WHITE_W
+    parts.push(whiteKeySvg({ pc, x, on: lit.has(pc), lowest: false }))
+    const degree = degrees.get(pc)
+    if (degree) parts.push(degreeText(x + WHITE_W / 2, WHITE_H - 8, PIANO_DEGREE_SIZE, degree, pc, pc, 'var(--beat-rest-ink)'))
   })
   const blackX: Record<number, number> = { 1: 12, 3: 30, 6: 66, 8: 84, 10: 102 }
   for (const pc of blacks) {
-    const fill = lit.has(pc) ? 'var(--chord)' : '#141820'
-    parts.push(
-      `<rect class="diagram-piano-black" data-pc="${pc}" x="${blackX[pc]}" y="0" width="12" height="44" fill="${fill}"/>`,
-    )
+    const x = blackX[pc] ?? 0
+    parts.push(blackKeySvg({ pc, x, on: lit.has(pc), lowest: false }))
+    const degree = degrees.get(pc)
+    if (degree) parts.push(degreeText(x + BLACK_W / 2, BLACK_H - 8, PIANO_DEGREE_SIZE, degree, pc, pc, 'var(--beat-rest)'))
   }
   parts.push('</svg>')
   return parts.join('')
+}
+
+/** C, F, or B. Those are the only whites that start a 2+3 or 3+2 black-key run. */
+function snapWhiteToLegal(midi: number, dir: 1 | -1): number {
+  let w = midi
+  while (!isWhitePc(mod12(w))) w += dir
+  while (mod12(w) !== 0 && mod12(w) !== 5 && mod12(w) !== 11) w += dir
+  return w
+}
+
+/**
+ * A real piano slice: starts and ends on C, F, or B so the black keys
+ * stay in groups of 2 and 3. The bass is the lowest *sounding* note;
+ * an unlit white may sit to its left so F# is not torn off the F# G# A# group.
+ */
+function drawPianoTones(tones: readonly PianoTone[]): PianoDraw {
+  const ordered = [...tones].sort((a, b) => a.midi - b.midi)
+  const low = ordered[0]?.midi ?? 60
+  const high = ordered[ordered.length - 1]?.midi ?? low
+  const litMidi = new Set(ordered.map((tone) => tone.midi))
+  const degreeAt = new Map(ordered.map((tone) => [tone.midi, tone.degree]))
+  const firstWhite = snapWhiteToLegal(low, -1)
+  let lastWhite = snapWhiteToLegal(high, 1)
+  const octave = firstWhite + 12
+  if (lastWhite < octave) lastWhite = octave
+  const origin = whiteOrdinal(firstWhite)
+  const whites: number[] = []
+  for (let midi = firstWhite; midi <= lastWhite; midi++) {
+    if (isWhitePc(mod12(midi))) whites.push(midi)
+  }
+  let width = whites.length * WHITE_W
+  const blackX = (midi: number) => (whiteOrdinal(midi - 1) - origin) * WHITE_W + WHITE_W - BLACK_W / 2
+  const blacks: number[] = []
+  for (let midi = firstWhite + 1; midi < lastWhite; midi++) {
+    if (isWhitePc(mod12(midi))) continue
+    blacks.push(midi)
+    const right = blackX(midi) + BLACK_W
+    if (right > width) width = right
+  }
+  const parts: string[] = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${WHITE_H}" width="${width}" height="${WHITE_H}">`,
+  ]
+  for (const midi of whites) {
+    const pc = mod12(midi)
+    const on = litMidi.has(midi)
+    const x = (whiteOrdinal(midi) - origin) * WHITE_W
+    parts.push(whiteKeySvg({ pc, midi, x, on, lowest: midi === low }))
+    const degree = degreeAt.get(midi)
+    if (degree) parts.push(degreeText(x + WHITE_W / 2, WHITE_H - 8, PIANO_DEGREE_SIZE, degree, midi, pc, 'var(--beat-rest-ink)'))
+  }
+  for (const midi of blacks) {
+    const pc = mod12(midi)
+    const on = litMidi.has(midi)
+    const x = blackX(midi)
+    parts.push(blackKeySvg({ pc, midi, x, on, lowest: midi === low }))
+    const degree = degreeAt.get(midi)
+    if (degree) parts.push(degreeText(x + BLACK_W / 2, BLACK_H - 8, PIANO_DEGREE_SIZE, degree, midi, pc, 'var(--beat-rest)'))
+  }
+  parts.push('</svg>')
+  const lit = ordered.map((tone) => mod12(tone.midi))
+  const litNotes = lit.map((pc) => NOTE[pc] ?? 'C')
+  return pianoDraw(lit, litNotes, parts.join(''))
 }
 
 export function drawDiagram(opts: DrawDiagramOpts): DiagramDraw {

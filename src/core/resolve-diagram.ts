@@ -6,6 +6,9 @@
 import { lookupDict, pianoKeysOf, pianoKeysToRelative, type DictInstrument, type DictVoicing } from './chord-dict'
 import type { ChordDefine, DefineInstrument } from './define'
 import { parseChordToken } from './parse-chord'
+import { pianoInversions, type PianoInversion, type PianoTone } from './piano-voicing'
+
+export type { PianoInversion, PianoTone }
 import { slashGrip } from './slash-voicing'
 import { keyIndex } from './transpose'
 
@@ -16,6 +19,8 @@ export type DiagramVoicing = {
   frets?: Array<number | 'x'>
   fingers?: Array<number | 'x'>
   keys?: number[]
+  /** Close-position piano notes. The first sounding midi is the bass. */
+  pianoTones?: PianoTone[]
   /** Bass spelling left out of the grip. The diagram names it. */
   bassIgnored?: string
 }
@@ -26,6 +31,8 @@ export type DiagramHit = {
   token: string
   source: 'override' | 'dictionary'
   voicing: DiagramVoicing
+  /** Piano dictionary only. One entry when the bass is written. */
+  inversions?: PianoInversion[]
 }
 
 export type DiagramMiss = {
@@ -172,10 +179,34 @@ function mod12(n: number): number {
   return ((n % 12) + 12) % 12
 }
 
+function pianoHit(
+  token: string,
+  root: string,
+  rootPc: number,
+  quality: string,
+  bassPc: number | null,
+  keys: number[],
+): DiagramHit {
+  const inversions =
+    pianoInversions({ token, root, rootPc, quality, bassPc }) ?? []
+  const voicing: DiagramVoicing = { keys }
+  const primary = inversions[0]
+  if (primary) voicing.pianoTones = primary.tones
+  return {
+    class: 'hit',
+    instrument: 'piano',
+    token,
+    source: 'dictionary',
+    voicing,
+    inversions,
+  }
+}
+
 /** Piano always sounds the bass. Frets use a playable grip, or the plain chord. */
 function slashHit(
   instrument: DiagramInstrument,
   token: string,
+  root: string,
   rootPc: number,
   quality: string,
   bassPc: number,
@@ -186,13 +217,7 @@ function slashHit(
     if (!keys) return { class: 'miss', reason: 'no-shape' }
     const rel = mod12(bassPc - rootPc)
     const has = keys.some((k) => mod12(k) === rel)
-    return {
-      class: 'hit',
-      instrument,
-      token,
-      source: 'dictionary',
-      voicing: { keys: has ? [...keys] : [...keys, rel] },
-    }
+    return pianoHit(token, root, rootPc, quality, bassPc, has ? [...keys] : [...keys, rel])
   }
   const grip = slashGrip(instrument, rootPc, quality, bassPc, bassName)
   if (!grip) return { class: 'miss', reason: 'no-shape' }
@@ -256,10 +281,13 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
     }
   }
 
-  if (want.bassPc != null) return slashHit(instrument, token, want.rootPc, want.quality, want.bassPc, parsed.bass ?? '')
+  if (want.bassPc != null) {
+    return slashHit(instrument, token, parsed.root, want.rootPc, want.quality, want.bassPc, parsed.bass ?? '')
+  }
 
   const found = lookupDict(instrument, want.rootPc, want.quality)
   if (!found) return { class: 'miss', reason: 'no-shape' }
+  if (instrument === 'piano') return pianoHit(token, parsed.root, want.rootPc, want.quality, null, found.keys ?? [])
   return {
     class: 'hit',
     instrument,

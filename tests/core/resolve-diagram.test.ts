@@ -999,16 +999,27 @@ describe('resolveDiagram', () => {
     expect(transposeDefine(raw, 2, false)).toMatchObject({ name: 'E', keys: [19, 24, 28] })
   })
 
-  it('lights G/B on piano as G major, and adds a foreign bass', () => {
+  it('puts a written piano bass lowest, and adds it when the chord did not have it', () => {
     const g = resolveDiagram({ token: 'G/B', instrument: 'piano' })
     expect(g.class).toBe('hit')
     if (g.class !== 'hit') return
     expect(g.voicing.keys).toEqual([0, 4, 7])
     expect(g.voicing.bassIgnored).toBeUndefined()
+    expect(g.inversions?.map((inv) => inv.label)).toEqual(['G/B', 'G'])
+    const gb = g.inversions?.[0]?.tones ?? []
+    expect(gb.map((tone) => tone.midi % 12)).toEqual([11, 2, 7])
+    expect(Math.min(...gb.map((tone) => tone.midi)) % 12).toBe(11)
+
     const em = resolveDiagram({ token: 'Em/D', instrument: 'piano' })
     expect(em.class).toBe('hit')
     if (em.class !== 'hit') return
     expect(em.voicing.keys).toEqual([0, 3, 7, 10])
+    expect(em.inversions?.map((inv) => inv.label)).toEqual(['Em/D', 'Em'])
+    const emd = em.inversions?.[0]?.tones ?? []
+    expect(emd).toHaveLength(4)
+    expect(emd[0]?.degree).toBe('b7')
+    expect(emd[0]?.midi).toBe(Math.min(...emd.map((tone) => tone.midi)))
+    expect(emd[0]?.midi % 12).toBe(2)
   })
 
   it('draws D9 keys 0 4 7 14 transposed +2 as E G# B F#', () => {

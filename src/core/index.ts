@@ -45,6 +45,8 @@ export type {
   DiagramMiss,
   DiagramResolve,
   DiagramVoicing,
+  PianoInversion,
+  PianoTone,
   ResolveDiagramOpts,
 } from './resolve-diagram'
 export { drawDiagram } from './diagram-draw'
