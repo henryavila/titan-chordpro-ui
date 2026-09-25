@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { diffOps, overlayKey, parse } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -117,5 +118,137 @@ describe('title chip and chartId prop', () => {
     expect(w.get('.cpv-keypill').classes()).toContain('cpv-head-chip')
     expect(w.get('.cpv-keypill').text()).toMatch(/Tom/i)
     expect(chip.text()).not.toMatch(/Tom/i)
+  })
+})
+
+async function frames() {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
+  await flushPromises()
+}
+
+describe('chart switch is not a song change', () => {
+  it('does not call setlist go and leaves songId on the same item', async () => {
+    const other = loadFixture('sda/084-escuta-meu-clamor.cho')
+    const w = await mountViewer({
+      source: '',
+      songs: [
+        { id: 'uma', title: 'Uma', source: TWO_CHART_SOURCE },
+        { id: 'escuta', title: 'Escuta meu clamor', source: other },
+      ],
+    })
+    expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
+    expect(w.get('[data-chart-title]').text()).toMatch(/Uma/)
+    await pickChart(w, 'completa')
+    expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
+    expect(w.get('[data-chart-title]').text()).toMatch(/Uma/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.find('[data-chart-switch]').exists()).toBe(true)
+
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-setlist-open]').text()).toMatch(/2\/2/)
+    expect(w.get('[data-chart-title]').text()).toMatch(/Escuta/i)
+    expect(w.find('[data-chart-switch]').exists()).toBe(false)
+  })
+
+  it('keeps the sibling overlay in storage and reloads it on return', async () => {
+    const oferta = parse(TWO_CHART_SOURCE, { chartId: 'oferta' }).source
+    const mine = oferta.replace('[C]corpo da oferta', '[C]corpo da oferta (meu)')
+    const ops = diffOps(oferta, mine, { transpose: 0, capo: 0 })
+    const seeded = JSON.stringify({ baseVersion: 'v1', ops, at: 1 })
+    localStorage.setItem(overlayKey('uma', 'oferta'), seeded)
+
+    const w = await mountViewer()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta (meu)')
+    await pickChart(w, 'completa')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    expect(localStorage.getItem(overlayKey('uma', 'oferta'))).toBe(seeded)
+    expect(localStorage.getItem(overlayKey('uma', 'completa'))).toBeNull()
+
+    await pickChart(w, 'oferta')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta (meu)')
+    expect(localStorage.getItem(overlayKey('uma', 'oferta'))).toBe(seeded)
+  })
+
+  it('restores live transpose, capo, speed and scroll per chartId', async () => {
+    const w = await mountViewer()
+    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+    observers.forEach((cb) => cb([{ contentRect: { width: 800, height: 800 } }]))
+    await flushPromises()
+
+    expect(w.get('[data-display-key]').text()).toBe('C')
+    await w.get('[data-transpose-up]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-display-key]').text()).toBe('C#')
+    await w.get('[data-capo]').trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Capo acima"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-capo]').text()).toMatch(/1/)
+    el.scrollTop = 180
+
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.get('[data-met-follow]').trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Mais rápido"]').trigger('click')
+    await flushPromises()
+    expect(w.text()).toMatch(/1\.12/)
+
+    await pickChart(w, 'completa')
+    expect(w.get('[data-display-key]').text()).toBe('G')
+    expect(w.get('[data-capo]').text()).not.toMatch(/1/)
+    expect(el.scrollTop).toBe(0)
+
+    await pickChart(w, 'oferta')
+    await frames()
+    expect(w.get('[data-display-key]').text()).toBe('C#')
+    expect(w.get('[data-capo]').text()).toMatch(/1/)
+    expect(el.scrollTop).toBe(180)
+    observers.forEach((cb) => cb([{ contentRect: { width: 800, height: 800 } }]))
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    expect(w.text()).toMatch(/1\.12/)
+  })
+
+  it('keeps metronome BPM per chart so oferta does not leak onto completa', async () => {
+    const w = await mountViewer()
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-bpm]').text()).toBe('100')
+    await w.get('[aria-label="+5 BPM"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-bpm]').text()).toBe('105')
+
+    await pickChart(w, 'completa')
+    expect(w.get('[data-bpm]').text()).toBe('100')
+
+    await pickChart(w, 'oferta')
+    expect(w.get('[data-bpm]').text()).toBe('105')
+  })
+
+  it('does not reset lens or hideComments on chart switch', async () => {
+    const w = await mountViewer()
+    await w.get('[data-reading=letra]').trigger('click')
+    await flushPromises()
+    await w.get('[data-comments-toggle]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
+    expect(w.get('[data-comments-toggle]').attributes('aria-pressed')).toBe('true')
+
+    await pickChart(w, 'completa')
+    expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
+    expect(w.get('[data-comments-toggle]').attributes('aria-pressed')).toBe('true')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
   })
 })

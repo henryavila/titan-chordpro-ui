@@ -285,10 +285,28 @@ const srcOpen = ref(false)
 const pinnedChartId = ref<string | null>(null)
 /** Musician/host pick. Null follows the file default until someone chooses. */
 const musicianChartId = ref<string | null>(String(props.chartId ?? '').trim() || null)
+type LiveChartSpot = {
+  offset: number
+  capo: number
+  dual: boolean
+  mul: number
+  top: number
+  u: number
+}
+const chartSpots: Record<string, LiveChartSpot> = {}
+function liveChartKey(song: string, chart: string) {
+  return `${song}\t${chart}`
+}
 watch(
   () => props.chartId,
   (id) => {
-    musicianChartId.value = String(id ?? '').trim() || null
+    const next = String(id ?? '').trim() || null
+    if (next === musicianChartId.value) return
+    rememberOpenChart()
+    stopScroll()
+    met.stop()
+    musicianChartId.value = next
+    applyChartSpot()
   },
 )
 const localMode = ref<'view' | 'edit' | null>(null)
@@ -351,7 +369,10 @@ function fileCapo(src: string): number {
 
 function preloadTune() {
   offset.value = 0
-  capo.value = fileCapo(normalizeSource(hostSource.value))
+  const file = normalizeSource(hostSource.value)
+  const id = String(musicianChartId.value ?? '').trim()
+  const doc = readChartFile(() => parse(file, id ? { chartId: id } : undefined).source, file)
+  capo.value = fileCapo(doc)
   if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
   capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
 }
@@ -485,11 +506,55 @@ const screenChartId = computed((): string | undefined => {
   return charts.find((c) => c.isDefault)?.id ?? charts[0]?.id
 })
 
+function rememberOpenChart() {
+  const chart = screenChartId.value
+  if (!chart) return
+  chartSpots[liveChartKey(songId.value, chart)] = {
+    offset: offset.value,
+    capo: capo.value,
+    dual: capoMap.value,
+    mul: mul.value,
+    top: scroller.value?.scrollTop ?? 0,
+    u: playhead,
+  }
+}
+
+function applyChartSpot() {
+  const chart = screenChartId.value
+  const spot = chart ? chartSpots[liveChartKey(songId.value, chart)] : undefined
+  if (spot) {
+    offset.value = spot.offset
+    capo.value = spot.capo
+    capoMap.value = spot.dual
+    mul.value = spot.mul
+    playhead = spot.u
+    progress.value = spot.u
+    timeline = null
+    const top = spot.top
+    requestAnimationFrame(() => {
+      if (scroller.value) scroller.value.scrollTop = top
+    })
+  } else {
+    mul.value = 1
+    playhead = 0
+    progress.value = 0
+    timeline = null
+    etaLabel.value = '—'
+    if (scroller.value) scroller.value.scrollTop = 0
+  }
+  met.loadBpm()
+}
+
 function selectChart(id: string) {
   const next = String(id ?? '').trim()
   if (!next || !fileCharts.value.some((c) => c.id === next)) return
+  if (musicianChartId.value === next) return
+  rememberOpenChart()
+  stopScroll()
+  met.stop()
   musicianChartId.value = next
   emit('update:chartId', next)
+  applyChartSpot()
 }
 
 const parsedState = computed(() => {
@@ -1132,10 +1197,13 @@ const exportKeyNote = computed(() =>
   meta.value.key ? `em ${playingKey.value}${capo.value ? ` · capo ${capo.value}` : ''}` : '',
 )
 
-/** Identity of the song for the per-song tempo memory. */
-const songKey = computed(() =>
-  [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo',
-)
+/** Identity of the song for the per-song tempo memory. N>1 keys the chart too. */
+const songKey = computed(() => {
+  const base = [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo'
+  const chart = screenChartId.value
+  if (fileCharts.value.length > 1 && chart) return `${base}|${chart}`
+  return base
+})
 const met = useMetronome({
   songKey,
   tempo: computed(() => meta.value.tempo),
