@@ -1761,3 +1761,122 @@ describe('a notation closer stops at the next chart fence', () => {
     }
   })
 })
+
+describe('alternating notation opens stay bounded', () => {
+  it('lists a and b without rescanning each unmatched sos and sot', () => {
+    const lines = ['{start_of_x_chart:a}', '{sot}', '{start_of_x_chart:b}']
+    for (let i = 0; i < 36; i++) lines.push(i % 2 === 0 ? '{sos}' : '{sot}')
+    const file = lines.join('\n')
+    const started = performance.now()
+    const charts = listCharts(file)
+    const elapsed = performance.now() - started
+    expect(charts.map((c) => c.id)).toEqual(['a', 'b'])
+    expect(elapsed).toBeLessThan(500)
+  })
+})
+
+describe('a later bare closer does not swallow the next chart', () => {
+  it('stops at the end that closes the chart opened before the inner fence', () => {
+    for (const [open, close] of [
+      ['{sot}', '{eot}'],
+      ['{sos}', '{eos}'],
+    ] as const) {
+      const file = [
+        '{start_of_x_chart:completa}',
+        open,
+        '{start_of_x_chart:nota}',
+        '{end_of_x_chart}',
+        '{start_of_x_chart:oferta}',
+        '{x_chart_default:oferta}',
+        close,
+      ].join('\n')
+      expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'oferta'])
+      expect(listCharts(file).find((c) => c.isDefault)?.id).toBe('oferta')
+      const completa = splitCho(file).charts.find((c) => c.id === 'completa')?.inner ?? ''
+      const oferta = splitCho(file).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+      expect(completa).not.toContain('oferta')
+      expect(oferta).toContain('{x_chart_default:oferta}')
+      expect(oferta).toContain(close)
+    }
+  })
+
+  it('an end before the tab closer still leaves the following lyric outside', () => {
+    const file = [
+      '{start_of_x_chart:a}',
+      '{sot}',
+      '{end_of_x_chart}',
+      '{eot}',
+      '[G]fora',
+      '{end_of_x_chart}',
+    ].join('\n')
+    expect(() => listCharts(file)).toThrow(/outside chart blocks/)
+  })
+})
+
+describe('meta after an embedded closer stays notation', () => {
+  it('does not read title, artist, audio, or the default marker before the real closer', () => {
+    for (const [open, innerOpen, innerClose, close] of [
+      ['{sot}', '{sos}', '{eos}', '{eot}'],
+      ['{sos}', '{sot}', '{eot}', '{eos}'],
+    ] as const) {
+      const embedded = close === '{eot}' ? '{eot}' : '{eos}'
+      const file = [
+        '{start_of_x_chart:a}',
+        '{title:Real}',
+        '{artist:Shown}',
+        '{x_audio_sung:https://cdn.example/real.m4a}',
+        open,
+        '{start_of_x_chart:nota}',
+        innerOpen,
+        embedded,
+        innerClose,
+        '{title:NOTATION}',
+        '{artist:HIDDEN}',
+        '{x_audio_sung:https://cdn.example/hidden.m4a}',
+        '{x_chart_default:b}',
+        close,
+        '{end_of_x_chart}',
+        '{start_of_x_chart:b}',
+        '{title:Other}',
+        '[C]b',
+        '{end_of_x_chart}',
+      ].join('\n')
+      expect(() => listCharts(file)).not.toThrow()
+      expect(listCharts(file).map((c) => c.id)).toEqual(['a', 'b'])
+      expect(listCharts(file).find((c) => c.isDefault)?.id).toBe('a')
+      const meta = readMeta(file)
+      expect(meta.title).toBe('Real')
+      expect(meta.artist).toBe('Shown')
+      expect(meta.x_audio_sung).toBe('https://cdn.example/real.m4a')
+      expect(meta.x_chart_default).toBeUndefined()
+      expect(splitCho(file).charts.find((c) => c.id === 'a')?.inner).toContain('{title:NOTATION}')
+    }
+  })
+})
+
+describe('a reversed paste is not a chart pair', () => {
+  it('leaves the file unchanged when the end comes before the start', () => {
+    const doc = ['{comment:antes}', '{end_of_x_chart}', '{start_of_x_chart:oferta}', '{comment:depois}'].join('\n')
+    expect(replaceChart(TWO_CHART_SOURCE, 'oferta', doc)).toBe(TWO_CHART_SOURCE)
+  })
+
+  it('still strips one pair that has other lines around it', () => {
+    const doc = [
+      '{comment:antes}',
+      '{start_of_x_chart:x}',
+      '{comment:meio}',
+      '{end_of_x_chart}',
+      '{comment:depois}',
+    ].join('\n')
+    const out = replaceChart(TWO_CHART_SOURCE, 'oferta', doc)
+    expect(out).not.toBe(TWO_CHART_SOURCE)
+    const inner = splitCho(out).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    expect(inner).toContain('{comment:antes}')
+    expect(inner).toContain('{comment:meio}')
+    expect(inner).toContain('{comment:depois}')
+    expect(inner).not.toContain('{start_of_x_chart:')
+    expect(inner).not.toContain('{end_of_x_chart}')
+    expect(chartBlock(out, 'completa')).toContain('corpo da completa')
+    expect(out.slice(0, out.indexOf('{start_of_x_chart')).trim()).toBe('')
+  })
+})

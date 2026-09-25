@@ -175,13 +175,14 @@ function ignoredInsideNotation(name: string): boolean {
 
 function readMetaLines(source: string): ChartMeta {
   const meta: ChartMeta = {}
-  const block = { tab: false, score: false }
-  for (const l of String(source ?? '').split('\n')) {
+  const lines = String(source ?? '').split('\n')
+  const inside = notationInside(lines)
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i] ?? ''
     const d = dirOf(l)
     if (!d) continue
-    const where = stepBlock(d.name, block)
     // Title, artist, audio, and `{x_chart_default}` inside tab or score are notation.
-    if (where === 'in' && ignoredInsideNotation(d.name)) continue
+    if (inside[i] && ignoredInsideNotation(d.name)) continue
     // Raw song identity may omit the colon (`{title Uma}`) or use `{composer:}`.
     // Sound keys still need a colon, so `{key C}` is not a second header key.
     const colonForm = /^\s*\{\s*[a-zA-Z_]+\s*:/.test(l)
@@ -268,7 +269,7 @@ export function splitCho(source: string): SplitCho {
     if (d?.name === 'start_of_x_chart' || d?.name === 'end_of_x_chart') {
       // A fence inside a tab or score that still closes is notation.
       // An unclosed tab does not hide the next chart.
-      if (notationFence(scan, raws, li)) {
+      if (notationFence(scan, li)) {
         if (!cur) {
           if (raw.trim() !== '') outside = true
         } else cur.inner.push(raw)
@@ -295,7 +296,7 @@ export function splitCho(source: string): SplitCho {
       else if (seenChart) outside = true
       continue
     }
-    const inNotation = d ? stepNotation(scan, d.name) === 'in' : scan.block.tab || scan.block.score
+    const inNotation = d ? stepNotation(scan, raws, li, d.name) === 'in' : scan.block.tab || scan.block.score
     if (!cur) {
       if (raw.trim() !== '') outside = true
       continue
@@ -376,12 +377,13 @@ function readKeyed(text: string, which: 'song' | 'chart'): Record<string, string
   const out: Record<string, string> = {}
   const keys = which === 'song' ? SONG_META_KEYS : CHART_SOUND_KEYS
   const resolve = which === 'song' ? songMetaKey : chartSoundKey
-  const block = { tab: false, score: false }
-  for (const line of text.split('\n')) {
-    const d = dirOf(line)
+  const lines = text.split('\n')
+  const inside = notationInside(lines)
+  for (let i = 0; i < lines.length; i++) {
+    const d = dirOf(lines[i] ?? '')
     if (!d) continue
     // A name inside tab or score is notation. Do not copy it out.
-    if (stepBlock(d.name, block) === 'in') continue
+    if (inside[i]) continue
     const canon = resolve(d.name)
     if (!canon) continue
     const exact = (keys as readonly string[]).includes(d.name)
@@ -427,14 +429,13 @@ export function writeMetaOneHeader(
   const setsDefault = Object.prototype.hasOwnProperty.call(meta, 'x_chart_default')
   const lines = String(source ?? '').split('\n')
   const dropBlank = blanksOnlyBetweenLeadingSoundKeys(lines)
-  const block = { tab: false, score: false }
+  const inside = notationInside(lines)
   const body = lines.filter((l, i) => {
       if (dropBlank[i]) return false
       const parsed = dirOf(l)
       if (!parsed) return true
-      const where = stepBlock(parsed.name, block)
       // A credit, audio URL, or default marker inside tab or score stays put.
-      if (where === 'in' && ignoredInsideNotation(parsed.name)) return true
+      if (inside[i] && ignoredInsideNotation(parsed.name)) return true
       // parse uses the last title, subtitle, or artist outside tab and score.
       // An unrelated save keeps those lines, including a later short alias.
       if (identityLineKept(parsed.name, keep)) return true
@@ -477,11 +478,13 @@ function blockEdge(name: string): BlockEdge | null {
   return null
 }
 
+/** Closer of one open block. `boundary` is `{end_of_x_chart}`, not a tab or score closer. */
+type NotationClose = { at: number; boundary: boolean } | null
+
 type NotationScan = {
   block: { tab: boolean; score: boolean }
-  /** Closer line for the open tab, -1 if none, null if not resolved yet. */
-  tabClose: number | null
-  scoreClose: number | null
+  tabClose: NotationClose
+  scoreClose: NotationClose
 }
 
 function freshNotationScan(): NotationScan {
@@ -495,88 +498,143 @@ function resetNotationScan(scan: NotationScan) {
   scan.scoreClose = null
 }
 
+const directiveNames = new WeakMap<readonly string[], string[]>()
+
+function namesOf(lines: readonly string[]): string[] {
+  const hit = directiveNames.get(lines)
+  if (hit) return hit
+  const names = lines.map((line) => dirOf(line)?.name ?? '')
+  directiveNames.set(lines, names)
+  return names
+}
+
+const closerMemo = new WeakMap<readonly string[], Map<string, NotationClose>>()
+
+function closerCache(lines: readonly string[]): Map<string, NotationClose> {
+  let hit = closerMemo.get(lines)
+  if (!hit) {
+    hit = new Map()
+    closerMemo.set(lines, hit)
+  }
+  return hit
+}
+
 /**
- * Line of the closer for the tab or score already open at `lineIndex`, or -1.
- * `{eot}` inside a finished `{sos}`…`{eos}` is not the end of a tab, and
- * `{eos}` inside a finished `{sot}`…`{eot}` is not the end of a score.
+ * Closer of the tab or score opened at `openAt`, or null.
+ * Each line and kind is resolved once. `{eot}` inside a finished `{sos}`…`{eos}`
+ * is not a tab closer, and `{eos}` inside a finished `{sot}`…`{eot}` is not a score closer.
  * An other-block that never closes does not hide a later closer.
- * A closer counts only before the next real chart fence. `{end_of_x_chart}`
- * on this line is that fence, so a closer after it is another chart.
- * One forward scan from this line. Callers cache the result for the open block.
+ * An `{end_of_x_chart}` that closes a chart opened before this block stops the scan.
+ * A later `{eot}` or `{eos}` past that end is not cached as the closer.
  */
-function notationCloserAfter(lines: readonly string[], lineIndex: number, kind: 'tab' | 'score'): number {
+function findCloser(lines: readonly string[], openAt: number, kind: 'tab' | 'score'): NotationClose {
+  const cache = closerCache(lines)
+  const key = String(openAt) + (kind === 'tab' ? 't' : 's')
+  if (cache.has(key)) return cache.get(key) ?? null
+  const found = computeCloser(lines, openAt, kind)
+  cache.set(key, found)
+  return found
+}
+
+function computeCloser(lines: readonly string[], openAt: number, kind: 'tab' | 'score'): NotationClose {
   const openEdge = kind === 'tab' ? 'tab-open' : 'score-open'
   const closeEdge = kind === 'tab' ? 'tab-close' : 'score-close'
   const otherOpen = kind === 'tab' ? 'score-open' : 'tab-open'
   const otherKind: 'tab' | 'score' = kind === 'tab' ? 'score' : 'tab'
-  const here = dirOf(lines[lineIndex] ?? '')?.name ?? ''
-  // The chart ended on this line. Do not keep `{end_of_x_chart}` as tab or score text.
-  if (here === 'end_of_x_chart') return -1
+  const names = namesOf(lines)
   let depth = 1
-  // A start here opened inside the block. The end that closes it is still notation.
-  let openCharts = here === 'start_of_x_chart' ? 1 : 0
-  for (let j = lineIndex + 1; j < lines.length; j++) {
-    const name = dirOf(lines[j] ?? '')?.name ?? ''
+  let openCharts = 0
+  let boundary = -1
+  for (let j = openAt + 1; j < lines.length; j++) {
+    const name = names[j] ?? ''
     if (name === 'start_of_x_chart') {
       openCharts++
       continue
     }
     if (name === 'end_of_x_chart') {
-      if (openCharts === 0) return -1
+      // Closes a chart opened before this block. Do not keep a closer past it.
+      if (openCharts === 0) return null
       openCharts--
+      if (openCharts === 0) boundary = j
       continue
     }
     const edge = blockEdge(name)
     if (edge === otherOpen) {
-      const end = notationCloserAfter(lines, j, otherKind)
-      if (end >= 0) j = end
+      const inner = findCloser(lines, j, otherKind)
+      if (inner?.boundary) return inner
+      if (inner) j = inner.at
       continue
     }
     if (edge === openEdge) depth++
-    else if (edge === closeEdge && --depth === 0) return j
+    else if (edge === closeEdge && --depth === 0) {
+      // That closer sits in a chart that started after the end. Stop at the end.
+      if (boundary >= 0 && openCharts > 0) return { at: boundary, boundary: true }
+      return { at: j, boundary: false }
+    }
   }
-  return -1
+  return null
 }
 
-/** Drop a cached closer once that block has closed, so the next one is scanned again. */
-function stepNotation(scan: NotationScan, name: string): 'in' | 'out' {
-  const where = stepBlock(name, scan.block)
-  if (!scan.block.tab) scan.tabClose = null
-  if (!scan.block.score) scan.scoreClose = null
-  return where
+function coversFence(close: NotationClose, li: number): boolean {
+  if (!close) return false
+  return close.boundary ? li < close.at : li <= close.at
 }
 
-/** Chart fence is notation when the open tab or score still has its closer. */
-function notationFence(scan: NotationScan, lines: readonly string[], li: number): boolean {
-  if (!scan.block.tab) scan.tabClose = null
-  if (!scan.block.score) scan.scoreClose = null
-  if (scan.block.tab && scan.tabClose === null) scan.tabClose = notationCloserAfter(lines, li, 'tab')
-  if (scan.block.score && scan.scoreClose === null) scan.scoreClose = notationCloserAfter(lines, li, 'score')
-  const tabHides = scan.block.tab && scan.tabClose !== null && scan.tabClose >= 0
-  const scoreHides = scan.block.score && scan.scoreClose !== null && scan.scoreClose >= 0
-  return tabHides || scoreHides
+/** Chart fence is notation when the open tab or score still covers this line. */
+function notationFence(scan: NotationScan, li: number): boolean {
+  if (scan.block.tab && coversFence(scan.tabClose, li)) return true
+  if (scan.block.score && coversFence(scan.scoreClose, li)) return true
+  return false
 }
 
-/** Opening line is `out`. Lines inside the block, including the close, are `in`. */
-function stepBlock(name: string, block: { tab: boolean; score: boolean }): 'in' | 'out' {
+function atRealCloser(scan: NotationScan, li: number, edge: BlockEdge | null) {
+  if (
+    scan.block.tab &&
+    edge === 'tab-close' &&
+    scan.tabClose &&
+    !scan.tabClose.boundary &&
+    scan.tabClose.at === li
+  ) {
+    scan.block.tab = false
+    scan.tabClose = null
+    return
+  }
+  if (
+    scan.block.score &&
+    edge === 'score-close' &&
+    scan.scoreClose &&
+    !scan.scoreClose.boundary &&
+    scan.scoreClose.at === li
+  ) {
+    scan.block.score = false
+    scan.scoreClose = null
+  }
+}
+
+/** Opening line is `out`. Lines inside the block, including the real close, are `in`. */
+function stepNotation(scan: NotationScan, lines: readonly string[], li: number, name: string): 'in' | 'out' {
   const edge = blockEdge(name)
-  if (block.tab) {
-    if (edge === 'tab-close') block.tab = false
-    return 'in'
-  }
-  if (block.score) {
-    if (edge === 'score-close') block.score = false
+  if (scan.block.tab || scan.block.score) {
+    atRealCloser(scan, li, edge)
     return 'in'
   }
   if (edge === 'tab-open') {
-    block.tab = true
+    scan.block.tab = true
+    scan.tabClose = findCloser(lines, li, 'tab')
     return 'out'
   }
   if (edge === 'score-open') {
-    block.score = true
+    scan.block.score = true
+    scan.scoreClose = findCloser(lines, li, 'score')
     return 'out'
   }
   return 'out'
+}
+
+function leftNotationAtBoundary(scan: NotationScan, li: number): boolean {
+  if (scan.block.tab && scan.tabClose?.boundary && li >= scan.tabClose.at) return true
+  if (scan.block.score && scan.scoreClose?.boundary && li >= scan.scoreClose.at) return true
+  return false
 }
 
 /**
@@ -585,11 +643,11 @@ function stepBlock(name: string, block: { tab: boolean; score: boolean }): 'in' 
  */
 function visibleIdentityIn(text: string): Partial<Record<ParseIdentityKey, string>> {
   const out: Partial<Record<ParseIdentityKey, string>> = {}
-  const block = { tab: false, score: false }
-  for (const line of text.split('\n')) {
-    const d = dirOf(line)
-    if (!d) continue
-    if (stepBlock(d.name, block) === 'in') continue
+  const lines = text.split('\n')
+  const inside = notationInside(lines)
+  for (let i = 0; i < lines.length; i++) {
+    const d = dirOf(lines[i] ?? '')
+    if (!d || inside[i]) continue
     const ident = songIdentityMetaKey(d.name)
     if (ident === 'title' || ident === 'subtitle' || ident === 'artist') out[ident] = d.value
   }
@@ -751,16 +809,17 @@ function patchIdentityInPlace(inner: string, patch: MetaPatch): string {
   }
   if (!wanted.size) return inner
   const lines = inner.length ? inner.split('\n') : []
-  const block = { tab: false, score: false }
+  const inside = notationInside(lines)
   const replaced = new Set<string>()
   const out: string[] = []
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
     const d = dirOf(line)
     if (!d) {
       out.push(line)
       continue
     }
-    if (stepBlock(d.name, block) === 'in') {
+    if (inside[i]) {
       out.push(line)
       continue
     }
@@ -784,12 +843,18 @@ function patchIdentityInPlace(inner: string, patch: MetaPatch): string {
 }
 
 function notationInside(lines: string[]): boolean[] {
-  const block = { tab: false, score: false }
-  return lines.map((line) => {
-    const d = dirOf(line)
-    if (!d) return block.tab || block.score
-    return stepBlock(d.name, block) === 'in'
-  })
+  const mask = new Array<boolean>(lines.length).fill(false)
+  const scan = freshNotationScan()
+  for (let i = 0; i < lines.length; i++) {
+    if (leftNotationAtBoundary(scan, i)) resetNotationScan(scan)
+    const name = dirOf(lines[i] ?? '')?.name ?? ''
+    if (!name || name === 'start_of_x_chart' || name === 'end_of_x_chart') {
+      mask[i] = scan.block.tab || scan.block.score
+      continue
+    }
+    mask[i] = stepNotation(scan, lines, i, name) === 'in'
+  }
+  return mask
 }
 
 function stripDefaultMarkers(inner: string): string {
@@ -892,20 +957,15 @@ function blanksOnlyBetweenLeadingSoundKeys(lines: string[]): boolean[] {
   const isSound = new Array<boolean>(n)
   let lastNonBlank = -1
   let seenBody = false
-  const block = { tab: false, score: false }
+  const inside = notationInside(lines)
   for (let i = 0; i < n; i++) {
     prev[i] = lastNonBlank
     bodyBefore[i] = seenBody
     const line = lines[i] ?? ''
     if (line.trim() === '') continue
     lastNonBlank = i
+    if (inside[i]) continue
     const directive = dirOf(line)
-    if (directive) {
-      if (stepBlock(directive.name, block) === 'in') continue
-    } else if (block.tab || block.score) {
-      // A staff or score row is notation, not the lyric that starts the body.
-      continue
-    }
     isSound[i] = !!(directive && chartSoundKey(directive.name))
     if (lineStartsChartBody(directive)) seenBody = true
   }
@@ -1032,12 +1092,12 @@ function walkRealChartFences(lines: readonly string[], stop: (index: number) => 
     const d = dirOf(lines[i] ?? '')
     if (!d) continue
     if (d.name === 'start_of_x_chart' || d.name === 'end_of_x_chart') {
-      if (notationFence(scan, lines, i)) continue
+      if (notationFence(scan, i)) continue
       if (stop(i)) return
       resetNotationScan(scan)
       continue
     }
-    stepNotation(scan, d.name)
+    stepNotation(scan, lines, i, d.name)
   }
 }
 
@@ -1053,8 +1113,8 @@ function hasRealChartFence(lines: readonly string[]): boolean {
 
 /**
  * Drop one real start and one real end, even when other lines sit before or
- * after that pair. Null when a second real chart fence remains: do not splice.
- * Fences inside tab or score stay.
+ * after that pair. Null when a second real chart fence remains, or when the
+ * end comes first: that is not a pair. Fences inside tab or score stay.
  */
 function stripEnvelopeFences(document: string): string | null {
   if (!document) return ''
@@ -1066,14 +1126,21 @@ function stripEnvelopeFences(document: string): string | null {
   })
   let starts = 0
   let ends = 0
+  let startAt = -1
+  let endAt = -1
   for (const index of real) {
     const name = dirOf(lines[index] ?? '')?.name
-    if (name === 'start_of_x_chart') starts++
-    else if (name === 'end_of_x_chart') ends++
+    if (name === 'start_of_x_chart') {
+      starts++
+      startAt = index
+    } else if (name === 'end_of_x_chart') {
+      ends++
+      endAt = index
+    }
   }
   if (real.length === 0) return lines.join('\n')
-  // One pair only. A second start or end would still be a chart fence after the strip.
-  if (starts !== 1 || ends !== 1) return null
+  // One pair only, and the start must come before the end.
+  if (starts !== 1 || ends !== 1 || startAt >= endAt) return null
   const drop = new Set(real)
   const kept = lines.filter((_, i) => !drop.has(i))
   if (hasRealChartFence(kept)) return null
