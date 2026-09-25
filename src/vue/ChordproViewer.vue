@@ -335,8 +335,23 @@ function forceBase(file?: string) {
   touch()
 }
 
+function fileCapo(src: string): number {
+  const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
+  return m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
+}
+
+function preloadTune() {
+  offset.value = 0
+  capo.value = fileCapo(normalizeSource(hostSource.value))
+  if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
+  capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
+}
+
 function applyChartTune(tune: TuneOp | null) {
-  if (!tune) return
+  if (!tune) {
+    preloadTune()
+    return
+  }
   offset.value = tune.transpose || 0
   capo.value = tune.capo || 0
   capoMap.value = !!tune.dual
@@ -826,12 +841,12 @@ const ov = useOverlay({
   toast: (m) => toastMsg(m),
   // While an edit is in flight the draft is the truth; anything else that
   // moves the base has to reach the screen at once.
-  onBaseChange: () => {
-    if (!isEdit.value) forceBase(session.getSource())
+  onBaseChange: (origin) => {
+    if (!isEdit.value) forceBase(origin === 'official' ? undefined : session.getSource())
   },
   onChartLoad: (tune) => {
     applyChartTune(tune)
-    forceBase(session.getSource())
+    if (!session.dirty()) forceBase(session.getSource())
   },
   onSaveContent: (text) => emit('save-content', text),
   persistSuggestion: computed(() => props.persistSuggestion),
@@ -2033,7 +2048,7 @@ function exitEdit() {
 
 /** "For everyone" has no server draft: saving IS publishing. */
 function save() {
-  if (wMode.value === 'local') return
+  if (wMode.value !== 'persisted' || identityLost.value) return
   session.commit()
   touch()
   const cur = session.getSource()
@@ -2428,11 +2443,13 @@ function syncHostSource() {
     ov.holdChartLoad()
     try {
       wMode.value = null
+      localMode.value = 'view'
       ov.discardMemory()
       lastSongId = song
       lastExplicit = false
       identityLost.value = true
       forceBase()
+      emit('update:mode', 'view')
     } finally {
       ov.releaseChartLoad()
     }
@@ -2460,10 +2477,8 @@ function syncHostSource() {
     confirmDiscard.value = false
     wMode.value = null
     pinnedChartId.value = null
-    const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
-    capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
+    preloadTune()
     stopScroll()
-    offset.value = 0
     mul.value = 1
     // Coming back to a song already rehearsed: tone, capo and speed are picked
     // back up. A tone the reader pinned still wins, just below.
@@ -2476,7 +2491,7 @@ function syncHostSource() {
     // Reading lens and comment filter stay: they are the reader's choice for the
     // rehearsal, not part of the chart. Song switch must not kick a singer out
     // of Só letra (or Nashville) mid-set.
-    capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
+    if (typeof props.initialDual === 'boolean') capoMap.value = props.initialDual
     metOpen.value = false
     met.stop()
     playhead = spot ? spot.u || 0 : 0
@@ -2489,7 +2504,8 @@ function syncHostSource() {
     touch()
     // The reader's own version of THIS chart, and the key they pinned to it.
     ov.reset()
-    applyChartTune(ov.load())
+    const tune = ov.load()
+    if (tune) applyChartTune(tune)
     // officialSrc is clear. A chart the overlay itself opens must still load.
     ov.releaseChartLoad()
     forceBase()

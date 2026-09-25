@@ -732,6 +732,63 @@ describe('suggestion per chart', () => {
     admin.unmount()
   })
 
+  it('puts an accepted sibling chart into the working file', async () => {
+    localStorage.setItem(
+      'cpv:sug',
+      JSON.stringify([
+        {
+          id: 's-completa',
+          songId: 'uma',
+          chartId: 'completa',
+          title: 'Uma',
+          at: 1,
+          baseVersion: 'v1',
+          status: 'pending',
+          actorName: 'Bia',
+          ops: [
+            {
+              id: 'op-c',
+              type: 'replace',
+              at: 0,
+              anchor: '',
+              anchorHash: '0',
+              before: ['{title:Uma}'],
+              after: ['{title:Completa nova}'],
+              ctx: { transpose: 0, capo: 0 },
+            },
+          ],
+          resolvedOps: [],
+        },
+      ]),
+    )
+
+    const admin = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    const row = admin.findAll('[data-q-song]').find((s) => s.text().includes('Uma · Completa'))
+    expect(row).toBeTruthy()
+    await row!.trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+
+    const working = (admin.vm as { getSource: () => string }).getSource()
+    expect(parse(working, { chartId: 'completa' }).meta.title).toBe('Completa nova')
+    expect(parse(working, { chartId: 'oferta' }).meta.title).toBe('Uma')
+    expect(working).toContain('{start_of_x_chart:completa}')
+    expect(working).toContain('{start_of_x_chart:oferta}')
+    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(admin.get('[data-cpv-scroll]').text()).not.toContain('corpo da completa')
+    const saved = String(admin.emitted('save-content')?.at(-1)?.[0] ?? '')
+    expect(saved).toBe(working)
+    expect(saved).not.toBe(parse(saved, { chartId: 'oferta' }).source)
+    admin.unmount()
+  })
+
   it('does not accept a suggestion whose chart id is not in the file', async () => {
     const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
     const ops = diffOps(oferta, oferta.replace('[C]corpo da oferta', '[C]corpo da oferta (ok)'), {
@@ -1007,6 +1064,83 @@ describe('switching the chart on screen', () => {
     expect(w.get('[data-capo]').text()).toMatch(/Dual · capo 2/i)
     w.unmount()
   })
+
+  it('resets transpose, capo and dual when the opened chart has no tune', async () => {
+    const source = TWO_CHARTS.replace('{key:G}', '{key:G}\n{capo:3}')
+    const oferta = parse(source, { chartId: 'oferta' }).source
+    const semMarcador = oferta.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', '')
+    const ofertaOps = diffOps(oferta, semMarcador, { transpose: 0, capo: 0 })
+    const completa = parse(source, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(
+      overlayKey(song, 'oferta'),
+      JSON.stringify({
+        baseVersion: 'v1',
+        ops: [
+          {
+            id: 'tune',
+            type: 'tune',
+            transpose: 2,
+            capo: 2,
+            dual: true,
+            ctx: { transpose: 2, capo: 2 },
+          },
+          ...ofertaOps,
+        ],
+        at: 1,
+      }),
+    )
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 2 }),
+    )
+
+    const w = mountViewer({ source, songId: song })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
+    expect(w.get('[data-display-key]').text()).toBe('G')
+    expect(w.get('[data-capo]').text()).toMatch(/capo 3/i)
+    expect(w.get('[data-capo]').text()).not.toMatch(/Dual · capo 2/i)
+    w.unmount()
+  })
+
+  it('keeps an unsaved persisted edit when leaving changes the open chart', async () => {
+    const w = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-source]').trigger('click')
+    await flushPromises()
+    const area = w.get('textarea[aria-label="Fonte ChordPro"]')
+    const shown = String((area.element as HTMLTextAreaElement).value)
+    await area.setValue(
+      shown.replace('{x_chart_default:oferta}\n', '').replace('[C]corpo da oferta', '[C]corpo da oferta (rascunho)'),
+    )
+    await flushPromises()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+
+    expect(w.text()).toMatch(/Rascunho não salvo/)
+    const draft = (w.vm as { getSource: () => string }).getSource()
+    expect(draft).toContain('(rascunho)')
+    expect(draft).not.toMatch(/x_chart_default:\s*oferta/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.find('[data-save]').exists()).toBe(false)
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    expect((w.vm as { getSource: () => string }).getSource()).toContain('(rascunho)')
+    expect(w.get('[data-undo]').attributes('disabled')).toBeUndefined()
+    await w.get('[data-undo]').trigger('click')
+    await flushPromises()
+    expect((w.vm as { getSource: () => string }).getSource()).toContain('{x_chart_default:oferta}')
+    expect((w.vm as { getSource: () => string }).getSource()).not.toContain('(rascunho)')
+    w.unmount()
+  })
 })
 
 describe('switching the song on screen', () => {
@@ -1205,6 +1339,27 @@ describe('switching the song on screen', () => {
     expect(w.text()).not.toContain('(titulo)')
     expect(localStorage.getItem(overlayKey('jesus-1'))).toBe(idKey)
     expect(localStorage.getItem(overlayKey(title))).toBe(titleKey)
+    w.unmount()
+  })
+
+  it('does not publish after the song id disappears', async () => {
+    const w = mountViewer({ editMode: 'persisted' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    await w.setProps({ songId: '' })
+    await flushPromises()
+
+    expect(w.text()).toContain('A identidade da música mudou.')
+    expect(w.emitted('update:mode')?.at(-1)?.[0]).toBe('view')
+    expect(w.find('[data-save]').exists()).toBe(false)
+    const saves = w.emitted('save')?.length ?? 0
+    const contents = w.emitted('save-content')?.length ?? 0
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }))
+    await flushPromises()
+    expect(w.emitted('save')?.length ?? 0).toBe(saves)
+    expect(w.emitted('save-content')?.length ?? 0).toBe(contents)
     w.unmount()
   })
 })

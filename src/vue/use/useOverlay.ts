@@ -58,8 +58,12 @@ export type OverlayOpts = {
   toast: (msg: string) => void
   /** Where the overlay and the queue are kept — the host's call, not ours. */
   store: ChartStore
-  /** The base text changed under the reader: the editor has to re-baseline. */
-  onBaseChange: () => void
+  /**
+   * The base text changed under the reader. Official file updates rebase on
+   * that file so a sibling accept is in the working text; overlay updates keep
+   * the file already on screen.
+   */
+  onBaseChange: (origin?: 'official') => void
   /**
    * Another chart of this song opened. The viewer applies that overlay's
    * transpose/capo/dual and paints from the file already on screen.
@@ -956,7 +960,7 @@ export function useOverlay(opts: OverlayOpts) {
     // A save from inside the editor keeps the draft: only a change that came
     // from elsewhere re-reads what the reader still holds over it.
     if (reconcile) load()
-    opts.onBaseChange()
+    opts.onBaseChange('official')
   }
 
   /** A new chart arrived: everything held about the previous one goes. */
