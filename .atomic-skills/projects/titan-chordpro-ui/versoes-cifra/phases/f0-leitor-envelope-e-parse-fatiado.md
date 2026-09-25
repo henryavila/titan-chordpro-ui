@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-fix26 is merged. Product `29d0fc05eb697b13d809b113e3eac15ce3d7fc9e`. Plan-tree verifier exit 0, 244 tests, on the seven-file command in the verbatim block below. Both review of `b114a12..d09ea27` is at `.atomic-skills/reviews/2026-09-24-fix25-both.md`. A single `{sot}` or `{sos}` still hides the middle chart when the closer sits in a later chart. Do not `done`. Next action is the code-only fix27 writer for that case.
+fix27 is merged. Product `bfa9b4ef322accf4901d45fc593217628627d28a`. Plan-tree verifier exit 0, 245 tests, on the seven-file command in the verbatim block below. Both review of `b114a12..5b2ba91` is at `.atomic-skills/reviews/2026-09-24-fix25-both.md`. Do not `done`. Next action is `review-code --mode=both` of `5b2ba91..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`.
 
 ### Verbatim state
 

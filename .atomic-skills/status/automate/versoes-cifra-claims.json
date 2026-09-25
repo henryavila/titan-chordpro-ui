@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix26",
-  "writerBranch": "impl/versoes-cifra-F0-fix26",
-  "finishedAt": "2026-09-25T02:00:31Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix27",
+  "writerBranch": "impl/versoes-cifra-F0-fix27",
+  "finishedAt": "2026-09-25T02:12:55Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -14,7 +14,7 @@
       "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "CI=true pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\n      Tests  244 passed (244)\n   Start at  22:59:14\n   Duration  3.14s (transform 3.06s, setup 90ms, import 3.70s, tests 2.82s, environment 2.06s)"
+      "transcript": "Test Files  7 passed (7)\n      Tests  245 passed (245)\n   Start at  23:12:23\n   Duration  3.21s (transform 3.18s, setup 46ms, import 3.94s, tests 2.89s, environment 1.98s)"
     },
     {
       "taskId": "T-002",
@@ -25,18 +25,18 @@
       "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "CI=true pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\n      Tests  244 passed (244)\n   Start at  22:59:14\n   Duration  3.14s (transform 3.06s, setup 90ms, import 3.70s, tests 2.82s, environment 2.06s)"
+      "transcript": "Test Files  7 passed (7)\n      Tests  245 passed (245)\n   Start at  23:12:23\n   Duration  3.21s (transform 3.18s, setup 46ms, import 3.94s, tests 2.89s, environment 1.98s)"
     },
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["29d0fc05eb697b13d809b113e3eac15ce3d7fc9e"],
+      "commitShas": ["bfa9b4ef322accf4901d45fc593217628627d28a"],
       "base": null,
       "head": null,
       "paths": ["src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
       "verifierCommand": "CI=true pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\n      Tests  244 passed (244)\n   Start at  22:59:14\n   Duration  3.14s (transform 3.06s, setup 90ms, import 3.70s, tests 2.82s, environment 2.06s)"
+      "transcript": "Test Files  7 passed (7)\n      Tests  245 passed (245)\n   Start at  23:12:23\n   Duration  3.21s (transform 3.18s, setup 46ms, import 3.94s, tests 2.89s, environment 1.98s)"
     }
   ]
 }
