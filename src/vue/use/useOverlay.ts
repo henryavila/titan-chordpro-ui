@@ -10,6 +10,8 @@ import {
   listCharts,
   overlaid,
   overlayKey,
+  parse,
+  replaceChart,
   STORE_KEYS,
   strumReviewFromOp,
   tuneText,
@@ -165,7 +167,43 @@ export function useOverlay(opts: OverlayOpts) {
     return `${STORE_KEYS.overlayPrefix}${opts.songId.value}`
   }
 
-  const applied = computed(() => overlaid(official.value, overlay.value))
+  /** The chart document `parse` numbers. Ops never anchor on a sibling. */
+  function chartText(file: string, chartId: string): string {
+    try {
+      return parse(file, { chartId }).source
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return file
+      throw err
+    }
+  }
+
+  /** Splice one chart back. An unchanged document does not rewrite the file. */
+  function fileWithChart(file: string, chartId: string, doc: string): string {
+    if (doc === chartText(file, chartId)) return file
+    return replaceChart(file, chartId, doc)
+  }
+
+  function sugChartId(s: Suggestion): string {
+    const id = String(s.chartId ?? '').trim()
+    return id || 'default'
+  }
+
+  /** One queue row per chart, not per song. The separator cannot appear in a chart id. */
+  function queueGroupKey(s: Suggestion): string {
+    return `${s.songId}\u001f${sugChartId(s)}`
+  }
+
+  function chartLabelOf(chartId: string): string {
+    try {
+      const hit = listCharts(official.value).find((c) => c.id === chartId)
+      if (hit?.label) return hit.label
+    } catch (err) {
+      if (!(err instanceof ChartEnvelopeError)) throw err
+    }
+    return chartId
+  }
+
+  const applied = computed(() => overlaid(chartText(official.value, chartSlot.value), overlay.value))
   /** Line index → id of the op that put it there, in the text being read. */
   const mineLines = computed(() => (showOriginal.value ? null : applied.value.mine))
   const ovFailedCount = computed(() => (showOriginal.value ? 0 : applied.value.failed.length))
@@ -181,7 +219,7 @@ export function useOverlay(opts: OverlayOpts) {
    */
   function baseFor(wMode: WriteMode | null): string {
     if (wMode === 'persisted' || showOriginal.value) return official.value
-    return applied.value.text
+    return fileWithChart(official.value, chartSlot.value, applied.value.text)
   }
 
   function putOverlay(next: Overlay | null): Overlay | null {
@@ -235,7 +273,7 @@ export function useOverlay(opts: OverlayOpts) {
       const legacy = legacyKey()
       if (legacy !== ovKey.value) ov = storedOverlay(legacy)
     }
-    const base = official.value
+    const base = chartText(official.value, chartSlot.value)
 
     const abs = absorbInto(ov, base, officialVersion.value)
     if (abs.absorbed) ov = putOverlay(abs.overlay)
@@ -266,7 +304,11 @@ export function useOverlay(opts: OverlayOpts) {
   /** A local edit saves itself: it is the musician's phone, there is no "save". */
   function commitLocalFrom(text: string, ctx: ReadingCtx) {
     const tune = (overlay.value?.ops ?? []).filter(isTuneOp)
-    const ops: OverlayOp[] = [...tune, ...diffOps(official.value, text, ctx)]
+    const id = chartSlot.value
+    const ops: OverlayOp[] = [
+      ...tune,
+      ...diffOps(chartText(official.value, id), chartText(text, id), ctx),
+    ]
     saveOverlay({ baseVersion: officialVersion.value, ops, at: Date.now() })
   }
 
@@ -479,6 +521,7 @@ export function useOverlay(opts: OverlayOpts) {
     const created: Suggestion = {
       id: `s${Date.now()}`,
       songId: opts.songId.value,
+      chartId: chartSlot.value,
       title: opts.title.value || opts.songId.value,
       at: Date.now(),
       baseVersion: officialVersion.value,
@@ -552,16 +595,17 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   const qSongs = computed<QueueRow[]>(() => {
-    const by = new Map<string, { title: string; pedidos: number; ajustes: number }>()
+    const by = new Map<string, { title: string; chart: string; pedidos: number; ajustes: number }>()
     for (const s of openSugs.value) {
-      const e = by.get(s.songId) ?? { title: s.title, pedidos: 0, ajustes: 0 }
+      const key = queueGroupKey(s)
+      const e = by.get(key) ?? { title: s.title, chart: chartLabelOf(sugChartId(s)), pedidos: 0, ajustes: 0 }
       e.pedidos += 1
       e.ajustes += s.ops.length
-      by.set(s.songId, e)
+      by.set(key, e)
     }
     return [...by.entries()].map(([key, e]) => ({
       key,
-      label: e.title,
+      label: `${e.title} · ${e.chart}`,
       hint: `${e.pedidos} ${e.pedidos === 1 ? 'pedido' : 'pedidos'} · ${e.ajustes} ${e.ajustes === 1 ? 'ajuste' : 'ajustes'}`,
     }))
   })
@@ -570,7 +614,7 @@ export function useOverlay(opts: OverlayOpts) {
     const id = qSong.value
     if (!id) return []
     return openSugs.value
-      .filter((s) => s.songId === id)
+      .filter((s) => queueGroupKey(s) === id)
       .map((s) => {
         const when = new Date(s.at).toLocaleDateString('pt-BR', {
           day: '2-digit',
@@ -592,7 +636,7 @@ export function useOverlay(opts: OverlayOpts) {
   const qOps = computed<QueueOpCard[]>(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s) return []
-    const off = official.value
+    const off = chartText(official.value, sugChartId(s))
     return s.ops.map((op) => {
       const fits = !applyOps(off, [op]).failed.length
       return {
@@ -625,16 +669,19 @@ export function useOverlay(opts: OverlayOpts) {
   })
 
   const qOfficialStrum = computed(() => {
-    const set = readStrumPatterns(official.value)
+    const s = allSug().find((x) => x.id === qSug.value)
+    const text = s ? chartText(official.value, sugChartId(s)) : chartText(official.value, chartSlot.value)
+    const set = readStrumPatterns(text)
     return set.patterns
   })
 
   const qBatchPreview = computed(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s?.ops.length) return null
-    const applies = s.ops.filter((op) => !applyOps(official.value, [op]).failed.length)
-    if (!applies.length) return { text: official.value, count: 0, conflicts: s.ops.length }
-    const r = applyOps(official.value, applies)
+    const doc = chartText(official.value, sugChartId(s))
+    const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
+    if (!applies.length) return { text: doc, count: 0, conflicts: s.ops.length }
+    const r = applyOps(doc, applies)
     return {
       text: r.text,
       count: applies.length - r.failed.length,
@@ -682,22 +729,24 @@ export function useOverlay(opts: OverlayOpts) {
     const s = allSug().find((x) => x.id === sugId)
     const op = s?.ops.find((o) => o.id === opId)
     if (!s || !op) return
-    const r = applyOps(official.value, [op])
+    const doc = chartText(official.value, sugChartId(s))
+    const r = applyOps(doc, [op])
     if (r.failed.length) {
       opts.toast('Este ajuste não encaixa mais na cifra atual')
       return
     }
+    const full = fileWithChart(official.value, sugChartId(s), r.text)
     const next = archiveOp(s, opId, 'accepted')
     const patched = patchSug(sugId, next)
     opts.toast('Aceito — já vale para todos')
-    if (!isTuneOp(op)) setOfficial(r.text, true)
+    if (!isTuneOp(op)) setOfficial(full, true)
     try {
       opts.onSuggestionAccepted?.({
         id: sugId,
         songId: s.songId,
         opIds: [opId],
         status: patched.status ?? 'accepted',
-        officialText: isTuneOp(op) ? official.value : r.text,
+        officialText: isTuneOp(op) ? official.value : full,
       })
     } catch {
       /* host failure */
@@ -729,19 +778,21 @@ export function useOverlay(opts: OverlayOpts) {
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
     if (!s?.ops.length) return
-    const applies = s.ops.filter((op) => !applyOps(official.value, [op]).failed.length)
+    const doc = chartText(official.value, sugChartId(s))
+    const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
     if (!applies.length) {
       opts.toast('Nenhum ajuste encaixa na cifra atual')
       return
     }
-    const r = applyOps(official.value, applies)
+    const r = applyOps(doc, applies)
+    const full = fileWithChart(official.value, sugChartId(s), r.text)
     const okIds = new Set(applies.filter((op) => !r.failed.some((f) => f.id === op.id)).map((o) => o.id))
     let next = s
     for (const op of s.ops) {
       if (okIds.has(op.id)) next = archiveOp(next, op.id, 'accepted')
     }
     const patched = patchSug(sugId, next)
-    setOfficial(r.text, true)
+    setOfficial(full, true)
     opts.toast(`Aceitos ${okIds.size} ajuste${okIds.size === 1 ? '' : 's'}`)
     try {
       opts.onSuggestionAccepted?.({
@@ -749,7 +800,7 @@ export function useOverlay(opts: OverlayOpts) {
         songId: s.songId,
         opIds: [...okIds],
         status: patched.status ?? 'accepted',
-        officialText: r.text,
+        officialText: full,
       })
     } catch {
       /* host failure */
