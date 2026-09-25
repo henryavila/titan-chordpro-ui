@@ -112,6 +112,29 @@ html, body, #app { height: 100%; margin: 0; overflow: hidden; }
 </style>
 ```
 
+A página precisa de `viewport-fit=cover` no meta viewport. Sem isso o iOS
+devolve `env(safe-area-inset-*)` = 0 no PWA / Add to Home Screen, e o dock
+do Titan senta no indicador de início.
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+```
+
+Se o host tem barra própria em cima da cifra:
+
+```css
+.cifra-live {
+  height: 100dvh;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+}
+```
+
+O padding de baixo do dock é do Titan (`env(safe-area-inset-bottom)`). Não
+some `padding-bottom` no frame — dobra a folga e empurra a cifra. `100dvh`
+sozinho não liga os `env()`; só `viewport-fit=cover` faz o iOS devolver
+inset ≠ 0.
+
 ### Nuxt (rota sem layout)
 
 ```vue
@@ -213,6 +236,9 @@ de `.cpv-root` são só o `min-height` interno — não use como altura do host.
 | Sobrescrever `height` / `overflow` / `position` de `.cpv-root` ou `.cpv-scroll` | Desmonta o containing block |
 | `<iframe>` | `position:fixed` não escapa do frame; no iPhone não há Fullscreen API |
 | `position:fixed` no host para “resolver” a cifra | O viewer já pina a própria raiz |
+| Standalone / PWA / `100dvh` **sem** `viewport-fit=cover` no viewport | `env(safe-area-inset-*)` fica 0 no iPhone; o dock do Titan senta no indicador de início e o toque em Rolar/Mais morre |
+| Recortar `.cpv-swipe-rail` (`bottom: 180px` etc.) para “liberar o dock” | Geometria do trilho é do pacote; o recorte quebra quando o dock cresce |
+| `padding-bottom: env(safe-area-inset-bottom)` no frame **e** no dock | Folga duplicada; a última linha da cifra sobe à toa |
 
 Quando o ancestral não tem altura, o viewer avisa no console e na tela
 (`surfaceGuard`, ligado por padrão).
@@ -245,6 +271,12 @@ botão some: o toque na cifra é o que esconde a moldura.
 Safari no iPhone **não tem** Fullscreen API para elemento (só `<video>`; flag
 experimental na 17.2, desligada). Os ~110px de chrome do Safari não são de
 ninguém. PWA `display: standalone` é o único caminho, e é do host.
+
+Em **toda** rota que monta o viewer em tela cheia / PWA / Add to Home Screen,
+o meta viewport leva `viewport-fit=cover`. Sem isso o padding de safe-area
+do dock do Titan é zero e Rolar/Mais caem na zona morta do indicador de
+início. Header do host usa `env(safe-area-inset-top)`. `apple-mobile-web-app-capable`
+e `display: standalone` no manifest são do host; o pacote não instala PWA.
 
 **Tela ligada.** Enquanto o `<ChordproViewer>` está montado, o pacote pede
 `navigator.wakeLock` (`screen`) para o aparelho não apagar no ensaio. Sem
@@ -671,6 +703,9 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Vue 3 único no bundle; CSS do pacote no app
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
 - [ ] Ancestral com altura (`100dvh` standalone, ou bloco `100dvh` no fluxo)
+- [ ] Rota palco / PWA: `<meta name="viewport" … viewport-fit=cover>`
+- [ ] Header do host usa `env(safe-area-inset-top)`; **não** duplicar inset inferior no frame
+- [ ] Não sobrescrever `.cpv-swipe-rail` nem `.cpv-scroll { touch-action }`
 - [ ] Não sobrescrever `.cpv-root` / `.cpv-scroll`
 - [ ] Sem iframe
 - [ ] Ficha real: conteúdo acima **e** abaixo; snap no frame
