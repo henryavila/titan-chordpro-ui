@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 23,
-  "updatedAt": "2026-09-25T00:55:12.625Z",
+  "redispatchCount": 24,
+  "updatedAt": "2026-09-25T01:05:36.893Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -128,6 +128,12 @@
       "at": "2026-09-25T00:33:13.902Z",
       "reason": "fix23 after both review of 95f9d1a..HEAD: parse and readMeta disagree on notation titles, untouched duration is rewritten, alternating notation openers overflow the stack",
       "priorCount": 22,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-25T01:05:36.889Z",
+      "reason": "fix24 after both review of 689a6bf..HEAD: fetched duration dropped, boundary unwind overflows, parse misses a title after a stray end",
+      "priorCount": 23,
       "gate": "spawn"
     }
   ],
