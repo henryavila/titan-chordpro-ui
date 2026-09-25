@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { STORE_KEYS, memoryStore, normalizeSource, overlayKey } from '../../src/core/index'
+import { STORE_KEYS, diffOps, memoryStore, normalizeSource, overlayKey, parse } from '../../src/core/index'
 import type { ChartStore } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -172,5 +172,90 @@ it('keeps the overlay and free theme preference while the host controls appearan
   expect(w.get('[data-cpv-root]').attributes('data-theme')).toBe('dark')
   expect(w.html()).toContain('(meu)')
   expect(store.get(key)).toBe(overlay)
+  w.unmount()
+})
+
+const TWO_CHARTS = [
+  '{start_of_x_chart:completa}',
+  '{title:Uma}',
+  '{x_chart_label:Completa}',
+  '{key:G}',
+  '{duration:04:26}',
+  '[G]corpo da completa',
+  '{end_of_x_chart}',
+  '',
+  '{start_of_x_chart:oferta}',
+  '{title:Uma}',
+  '{x_chart_label:Oferta}',
+  '{x_chart_default:oferta}',
+  '{key:C}',
+  '{duration:02:00}',
+  '[C]corpo da oferta',
+  '{end_of_x_chart}',
+].join('\n')
+
+it('loads a legacy overlay for the default chart and writes the default slot', async () => {
+  const store = hostStore()
+  const official = src()
+  const mine = official.replace(UNIQUE, `${UNIQUE} (meu)`)
+  const ops = diffOps(official, mine, { transpose: 0, capo: 0 })
+  const legacy = `${STORE_KEYS.overlayPrefix}jesus-1`
+  store.set(legacy, JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+  const w = mountViewer(store)
+  await flushPromises()
+  expect(w.html()).toContain('(meu)')
+  expect(store.get(overlayKey('jesus-1'))).toBeNull()
+  expect(store.get(legacy)).toBeTruthy()
+
+  await w.get('[data-transpose-up]').trigger('click')
+  await w.get('[data-transpose-up]').trigger('click')
+  await flushPromises()
+  await w.get('[data-open-my]').trigger('click')
+  await flushPromises()
+  await w.get('[data-fix-tune]').trigger('click')
+  await flushPromises()
+
+  const saved = JSON.parse(store.get(overlayKey('jesus-1', 'default')) ?? 'null')
+  expect(saved.ops.some((o: { type: string }) => o.type === 'tune')).toBe(true)
+  expect(saved.ops.find((o: { type: string }) => o.type === 'tune')).toMatchObject({ transpose: 2 })
+  expect(saved.ops.some((o: { type: string }) => o.type === 'replace')).toBe(true)
+  expect(store.get(legacy)).toBeNull()
+  expect(store.get(overlayKey('jesus-1'))).toBe(store.get(overlayKey('jesus-1', 'default')))
+  w.unmount()
+})
+
+it('stores the personal version on the active chart, not the implicit default slot', async () => {
+  const store = hostStore()
+  const legacy = `${STORE_KEYS.overlayPrefix}uma`
+  store.set(
+    legacy,
+    JSON.stringify({
+      baseVersion: 'v1',
+      at: 1,
+      ops: diffOps(TWO_CHARTS, TWO_CHARTS.replace('[G]corpo da completa', '[G]corpo da completa (legado)'), {
+        transpose: 0,
+        capo: 0,
+      }),
+    }),
+  )
+  const w = mountViewer(store, { source: TWO_CHARTS, songId: 'uma' })
+  await flushPromises()
+  expect(w.html()).not.toContain('(legado)')
+
+  const doc = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+  const li = doc.split('\n').findIndex((l) => l.includes('corpo da oferta'))
+  await w.get('[data-edit]').trigger('click')
+  await flushPromises()
+  await w.get(`[data-row="${li}"]`).trigger('click')
+  await flushPromises()
+  const input = w.get('input[aria-label="Letra desta linha"]')
+  await input.setValue('corpo da oferta (meu)')
+  await input.trigger('blur')
+  await flushPromises()
+
+  expect(store.get(overlayKey('uma', 'oferta'))).toBeTruthy()
+  expect(store.get(overlayKey('uma', 'default'))).toBeNull()
+  expect(store.get(legacy)).toBeTruthy()
   w.unmount()
 })

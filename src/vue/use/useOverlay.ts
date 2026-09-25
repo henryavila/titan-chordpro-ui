@@ -7,6 +7,7 @@ import {
   isTuneOp,
   opCtxNote,
   opLabel,
+  listCharts,
   overlaid,
   overlayKey,
   STORE_KEYS,
@@ -15,6 +16,7 @@ import {
   readStrumPatterns,
   readStoredJson as readStored,
   writeStoredJson as writeStored,
+  ChartEnvelopeError,
 } from '@henryavila/titan-chordpro-ui'
 import type {
   ChartStore,
@@ -36,6 +38,11 @@ export type OverlayOpts = {
   version: Ref<string>
   /** The chart as the host handed it. */
   hostSource: Ref<string>
+  /**
+   * Chart on screen. Absent: the file's default chart. An id the file does
+   * not contain is ignored, so a half-typed marker cannot move the overlay.
+   */
+  chartId?: Ref<string | undefined>
   title: Ref<string>
   /** Sending suggestions is a host capability, not a reader preference. */
   suggestions: Ref<boolean>
@@ -137,7 +144,26 @@ export function useOverlay(opts: OverlayOpts) {
   // "for everyone" save takes over from here on.
   const official = computed(() => officialSrc.value ?? opts.hostSource.value ?? '')
   const officialVersion = computed(() => officialV.value || opts.version.value || 'v1')
-  const ovKey = computed(() => overlayKey(opts.songId.value))
+  /** The chart whose overlay this screen reads. Implicit files use `default`. */
+  const chartSlot = computed(() => activeChartId(official.value))
+  const ovKey = computed(() => overlayKey(opts.songId.value, chartSlot.value))
+
+  function activeChartId(file: string): string {
+    const requested = String(opts.chartId?.value ?? '').trim()
+    try {
+      const charts = listCharts(file)
+      if (requested && charts.some((c) => c.id === requested)) return requested
+      return charts.find((c) => c.isDefault)?.id || 'default'
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return requested || 'default'
+      throw err
+    }
+  }
+
+  /** `cpv:my:{songId}` — the pre-chart key. It belongs to the `default` slot only. */
+  function legacyKey(): string {
+    return `${STORE_KEYS.overlayPrefix}${opts.songId.value}`
+  }
 
   const applied = computed(() => overlaid(official.value, overlay.value))
   /** Line index → id of the op that put it there, in the text being read. */
@@ -169,6 +195,18 @@ export function useOverlay(opts: OverlayOpts) {
         /* the host's own failure stays with the host */
       }
     }
+    // A write of the implicit chart retires the unsuffixed key. Leaving it
+    // would bring the old ops back the next time the new key is empty.
+    if (chartSlot.value === 'default') {
+      const legacy = legacyKey()
+      if (legacy !== ovKey.value) {
+        try {
+          opts.store.remove(legacy)
+        } catch {
+          /* the host's own failure stays with the host */
+        }
+      }
+    }
     return next
   }
 
@@ -183,9 +221,20 @@ export function useOverlay(opts: OverlayOpts) {
    * Reading a chart: adopt what was stored, drop what the official text has
    * since absorbed, and ask before reapplying anything onto a new version.
    */
+  function storedOverlay(key: string): Overlay | null {
+    const ov = readJson<Overlay | null>(key, null)
+    if (!ov || !Array.isArray(ov.ops) || !ov.ops.length) return null
+    return ov
+  }
+
   function load(): TuneOp | null {
-    let ov = readJson<Overlay | null>(ovKey.value, null)
-    if (!ov || !Array.isArray(ov.ops) || !ov.ops.length) ov = null
+    let ov = storedOverlay(ovKey.value)
+    // `cpv:my:{songId}` is the old one-chart key. It is the `default` slot,
+    // never a named chart — those ops are anchored on a different document.
+    if (!ov && chartSlot.value === 'default') {
+      const legacy = legacyKey()
+      if (legacy !== ovKey.value) ov = storedOverlay(legacy)
+    }
     const base = official.value
 
     const abs = absorbInto(ov, base, officialVersion.value)
