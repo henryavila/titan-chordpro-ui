@@ -28,6 +28,11 @@ export type SourceSession = {
   canUndo: () => boolean
   canRedo: () => boolean
   dirty: () => boolean
+  /**
+   * Working text of this chart differs from the last commit. A sibling
+   * rascunho does not make another chart dirty.
+   */
+  chartDirty: (chartId: string) => boolean
   commit: () => void
   discard: () => void
   lint: () => ReturnType<typeof lintSource>
@@ -103,6 +108,15 @@ export function createSourceSession(opts: {
     canUndo: () => undoStack.length > 0,
     canRedo: () => redoStack.length > 0,
     dirty: () => source !== committed,
+    chartDirty: (chartId) => {
+      const id = String(chartId ?? '').trim()
+      if (!id) return source !== committed
+      try {
+        return parse(source, { chartId: id }).source !== parse(committed, { chartId: id }).source
+      } catch {
+        return source !== committed
+      }
+    },
     commit: () => {
       committed = source
     },
