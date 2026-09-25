@@ -68,6 +68,7 @@ import type {
   ThemeId,
   Timeline,
   TimelineBlock,
+  TuneOp,
 } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
@@ -332,6 +333,13 @@ function forceBase(file?: string) {
   if (session.getSource() === b && !session.dirty()) return
   session.reset(b)
   touch()
+}
+
+function applyChartTune(tune: TuneOp | null) {
+  if (!tune) return
+  offset.value = tune.transpose || 0
+  capo.value = tune.capo || 0
+  capoMap.value = !!tune.dual
 }
 
 let raf = 0
@@ -819,7 +827,11 @@ const ov = useOverlay({
   // While an edit is in flight the draft is the truth; anything else that
   // moves the base has to reach the screen at once.
   onBaseChange: () => {
-    if (!isEdit.value) forceBase()
+    if (!isEdit.value) forceBase(session.getSource())
+  },
+  onChartLoad: (tune) => {
+    applyChartTune(tune)
+    forceBase(session.getSource())
   },
   onSaveContent: (text) => emit('save-content', text),
   persistSuggestion: computed(() => props.persistSuggestion),
@@ -1992,7 +2004,7 @@ function beginEdit(kind: WriteMode) {
   scoreEd.value = null
   wMode.value = kind
   localMode.value = 'edit'
-  if (!session.dirty()) forceBase()
+  if (!session.dirty()) forceBase(session.getSource())
   pinEditedChart()
   emit('update:mode', 'edit')
   toastMsg(
@@ -2015,7 +2027,7 @@ function exitEdit() {
   localMode.value = 'view'
   // The local draft has already become the overlay; a "for everyone" draft
   // that was never saved stays on screen, so it cannot be lost by leaving.
-  if (local || !session.dirty()) forceBase()
+  if (local || !session.dirty()) forceBase(session.getSource())
   emit('update:mode', 'view')
 }
 
@@ -2038,7 +2050,7 @@ function save() {
 function toggleOriginal(orig: boolean) {
   stopScroll()
   ov.showOriginal.value = orig
-  forceBase()
+  forceBase(session.getSource())
 }
 
 watch(
@@ -2415,6 +2427,7 @@ function syncHostSource() {
   if (raw === lastSrc && lastExplicit && !explicitNow() && song !== lastSongId) {
     ov.holdChartLoad()
     try {
+      wMode.value = null
       ov.discardMemory()
       lastSongId = song
       lastExplicit = false
@@ -2476,12 +2489,7 @@ function syncHostSource() {
     touch()
     // The reader's own version of THIS chart, and the key they pinned to it.
     ov.reset()
-    const tune = ov.load()
-    if (tune) {
-      offset.value = tune.transpose || 0
-      capo.value = tune.capo || 0
-      capoMap.value = !!tune.dual
-    }
+    applyChartTune(ov.load())
     // officialSrc is clear. A chart the overlay itself opens must still load.
     ov.releaseChartLoad()
     forceBase()

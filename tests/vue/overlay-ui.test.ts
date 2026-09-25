@@ -908,6 +908,103 @@ describe('switching the chart on screen', () => {
     // Revert targets that visible op. Oferta keeps its own op; completa is not replaced by it.
     expect(localStorage.getItem(overlayKey(song, 'oferta'))).toBe(seededOferta)
     expect(localStorage.getItem(overlayKey(song, 'completa'))).toBeNull()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    w.unmount()
+  })
+
+  it('keeps the opened chart when reading the original', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const semMarcador = oferta.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', '')
+    const ofertaOps = diffOps(oferta, semMarcador, { transpose: 0, capo: 0 })
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(overlayKey(song, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops: ofertaOps, at: 1 }))
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 2 }),
+    )
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: song })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
+
+    await w.get('[data-read-orig]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+
+    await w.get('[data-read-mine]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    w.unmount()
+  })
+
+  it('keeps the opened chart when local editing starts', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const semMarcador = oferta.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', '')
+    const ofertaOps = diffOps(oferta, semMarcador, { transpose: 0, capo: 0 })
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(overlayKey(song, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops: ofertaOps, at: 1 }))
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 2 }),
+    )
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: song })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+
+    expect(w.get('[data-edit-badge]').text()).toBe('Só para mim')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    w.unmount()
+  })
+
+  it('applies the opened chart transpose, capo and dual', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const semMarcador = oferta.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', '')
+    const ofertaOps = diffOps(oferta, semMarcador, { transpose: 0, capo: 0 })
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(overlayKey(song, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops: ofertaOps, at: 1 }))
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({
+        baseVersion: 'v1',
+        ops: [
+          {
+            id: 'tune',
+            type: 'tune',
+            transpose: 2,
+            capo: 2,
+            dual: true,
+            ctx: { transpose: 2, capo: 2 },
+          },
+          ...completaOps,
+        ],
+        at: 2,
+      }),
+    )
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: song })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
+    expect(w.get('[data-display-key]').text()).toBe('A')
+    expect(w.get('[data-capo]').text()).toMatch(/Dual · capo 2/i)
     w.unmount()
   })
 })
@@ -1074,6 +1171,32 @@ describe('switching the song on screen', () => {
 
     const w = mountViewer()
     await flushPromises()
+    await w.setProps({ songId: '' })
+    await flushPromises()
+
+    expect(w.text()).toContain('A identidade da música mudou.')
+    expect(w.text()).not.toContain('(id)')
+    expect(w.text()).not.toContain('(titulo)')
+    expect(localStorage.getItem(overlayKey('jesus-1'))).toBe(idKey)
+    expect(localStorage.getItem(overlayKey(title))).toBe(titleKey)
+    w.unmount()
+  })
+
+  it('does not write overlay keys when a local edit loses the song id', async () => {
+    const official = src()
+    const title = parse(official).meta.title || 'song'
+    const idOps = diffOps(official, official.replace(UNIQUE, `${UNIQUE} (id)`), { transpose: 0, capo: 0 })
+    const titleOps = diffOps(official, official.replace(UNIQUE, `${UNIQUE} (titulo)`), { transpose: 0, capo: 0 })
+    localStorage.setItem(overlayKey('jesus-1'), JSON.stringify({ baseVersion: 'v1', ops: idOps, at: 1 }))
+    localStorage.setItem(overlayKey(title), JSON.stringify({ baseVersion: 'v1', ops: titleOps, at: 2 }))
+    const idKey = localStorage.getItem(overlayKey('jesus-1'))
+    const titleKey = localStorage.getItem(overlayKey(title))
+
+    const w = mountViewer()
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-edit-badge]').text()).toBe('Só para mim')
     await w.setProps({ songId: '' })
     await flushPromises()
 
