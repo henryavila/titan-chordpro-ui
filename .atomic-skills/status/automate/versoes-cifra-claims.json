@@ -1,9 +1,9 @@
 {
   "planSlug": "versoes-cifra",
   "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix21",
-  "writerBranch": "impl/versoes-cifra-F0-fix21",
-  "finishedAt": "2026-09-24T23:15:15Z",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix22",
+  "writerBranch": "impl/versoes-cifra-F0-fix22",
+  "finishedAt": "2026-09-25T00:14:08Z",
   "tasks": [
     {
       "taskId": "T-001",
@@ -30,20 +30,18 @@
     {
       "taskId": "T-003",
       "status": "claimed-pass",
-      "commitShas": ["591307cad6ae61986c6e6e46351f86097dea20f8"],
+      "commitShas": ["1e262c4ccbd389384c5b36f8e6e3c442d4470bc2"],
       "base": null,
       "head": null,
       "paths": [
         "src/core/charts.ts",
-        "src/vue/ChordproViewer.vue",
         "src/vue/edit/MetaDialog.vue",
         "tests/core/charts-envelope.test.ts",
-        "tests/vue/block-edit-ui.test.ts",
         "tests/vue/meta-dialog.test.ts"
       ],
-      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/demo/sda-fixtures.test.ts",
+      "verifierCommand": "pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files 5 passed (5). Tests 181 passed (181). charts-envelope 84, meta-dialog 32, block-edit-ui 30, audio-url 31, sda-fixtures 4. Exit 0."
+      "transcript": "Test Files  7 passed (7). Tests  232 passed (232)."
     }
   ]
 }
