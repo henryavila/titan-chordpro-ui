@@ -94,3 +94,67 @@ test('scrolling the chart down from the centre does not change song', async ({ p
   await liftFrom(page, 18, 180, 0.5)
   await expect(page.locator('[data-chart-title]').first()).toContainText(/Rei/i)
 })
+
+async function touchDownOnRootAt(
+  page: import('@playwright/test').Page,
+  sel: string,
+) {
+  return page.evaluate((selector) => {
+    const btn = document.querySelector(selector) as HTMLElement
+    const root = document.querySelector('[data-cpv-root]') as HTMLElement
+    const r = btn.getBoundingClientRect()
+    const x = r.left + Math.min(12, r.width / 2)
+    const y = r.top + r.height / 2
+    const base = {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 9,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      clientX: x,
+      clientY: y,
+    }
+    const ev = new PointerEvent('pointerdown', base)
+    root.dispatchEvent(ev)
+    const prevented = ev.defaultPrevented
+    window.dispatchEvent(new PointerEvent('pointerup', base))
+    window.dispatchEvent(new PointerEvent('pointercancel', base))
+    return prevented
+  }, sel)
+}
+
+test('rails stop above the phone dock so Rolar and Mais keep their rectangle', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1')
+  await page.locator('[data-scroll]').waitFor()
+  const overlap = await page.evaluate(() => {
+    const stack = document.querySelector('.cpv-phone-stack') as HTMLElement
+    const s = stack.getBoundingClientRect()
+    return [...document.querySelectorAll('.cpv-swipe-rail')].some((rail) => {
+      const r = rail.getBoundingClientRect()
+      return r.bottom > s.top + 0.5 && r.top < s.bottom && r.right > s.left && r.left < s.right
+    })
+  })
+  expect(overlap).toBe(false)
+})
+
+test('a touch on Rolar at the left rail x does not arm swipe and still rolls', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1')
+  await page.locator('[data-scroll]').waitFor()
+  expect(await touchDownOnRootAt(page, '[data-scroll]')).toBe(false)
+  await expect(page.locator('[data-song-swipe]')).toHaveCount(0)
+  await page.locator('[data-scroll]').evaluate((el) => (el as HTMLButtonElement).click())
+  await expect(page.locator('[data-scroll]')).toHaveAttribute('aria-label', 'Parar')
+})
+
+test('a touch on Mais at the right rail x opens the sheet', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1')
+  await page.locator('[data-more]').waitFor()
+  expect(await touchDownOnRootAt(page, '[data-more]')).toBe(false)
+  await expect(page.locator('[data-song-swipe]')).toHaveCount(0)
+  await page.locator('[data-more]').evaluate((el) => (el as HTMLButtonElement).click())
+  await expect(page.getByRole('dialog', { name: 'Mais controles' })).toBeVisible()
+})

@@ -129,7 +129,7 @@
 .cpv-swipe-rail {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: var(--cpv-swipe-rail-bottom, 0px);
   z-index: 11;
   width: var(--cpv-swipe-rail, 64px);
   touch-action: none;
@@ -181,7 +181,7 @@
 .cpv-swipe-debug-dead {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: var(--cpv-swipe-rail-bottom, 0px);
   left: 0;
   width: var(--cpv-swipe-edge, 24px);
   background: color-mix(in srgb, #6b7280 42%, transparent);
@@ -199,7 +199,7 @@
 .cpv-swipe-debug-center {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: var(--cpv-swipe-rail-bottom, 0px);
   left: calc(var(--cpv-swipe-edge, 24px) + var(--cpv-swipe-rail, 64px));
   right: var(--cpv-swipe-rail, 64px);
   background: color-mix(in srgb, #059669 18%, transparent);

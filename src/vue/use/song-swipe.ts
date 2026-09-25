@@ -98,6 +98,43 @@ export function swipeZone(x: number, width: number): SwipeZone {
   return 'center'
 }
 
+/**
+ * Event target is already a control — do not start a rail session.
+ * Includes generic `button` because the dock's Rolar/Mais are buttons.
+ */
+export const SWIPE_CHROME_SEL =
+  "button,input,textarea,select,a,[role='dialog'],[role='button'],.cpv-chrome,[data-end-offer],.cpv-scrim,.cpv-phone-stack,.cpv-hit,[data-scroll],[data-more]"
+
+/**
+ * Paint stack under an iOS rail hit. Must not include generic `button`:
+ * reading chords are buttons (diagrams) and sit under the rail.
+ */
+export const SWIPE_DOCK_SEL =
+  ".cpv-phone-stack,.cpv-chrome,.cpv-hit,[data-scroll],[data-more],[data-end-offer],.cpv-scrim,[role='dialog']"
+
+function closestSel(node: EventTarget | null, sel: string): boolean {
+  return !!(node instanceof Element && node.closest(sel))
+}
+
+export function elementsAtPoint(x: number, y: number): Element[] {
+  if (typeof document === 'undefined') return []
+  if (typeof document.elementsFromPoint === 'function') {
+    return document.elementsFromPoint(x, y)
+  }
+  const one = document.elementFromPoint?.(x, y)
+  return one ? [one] : []
+}
+
+export function swipeIgnoresPointer(
+  target: EventTarget | null,
+  clientX: number,
+  clientY: number,
+  hitTest: (x: number, y: number) => Element[] = elementsAtPoint,
+): boolean {
+  if (closestSel(target, SWIPE_CHROME_SEL)) return true
+  return hitTest(clientX, clientY).some((el) => closestSel(el, SWIPE_DOCK_SEL))
+}
+
 export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
   const threshold = swipeThreshold(opts.width)
   const x0 = opts.x
