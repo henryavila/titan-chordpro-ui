@@ -643,6 +643,13 @@ function chartBlock(file: string, id: string): string {
   return file.slice(start, end + '{end_of_x_chart}'.length)
 }
 
+async function pickChart(w: ReturnType<typeof mountViewer>, id: string) {
+  await w.get('[data-chart-switch]').trigger('click')
+  await flushPromises()
+  await w.get(`[data-chart-option="${id}"]`).trigger('click')
+  await flushPromises()
+}
+
 describe('suggestion per chart', () => {
   it('stamps the active chart, diffs that document, and splices the whole file on accept', async () => {
     const local = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'local' })
@@ -1277,6 +1284,57 @@ describe('switching the chart on screen', () => {
     await flushPromises()
     expect((w.vm as { getSource: () => string }).getSource()).toContain('{x_chart_default:oferta}')
     expect((w.vm as { getSource: () => string }).getSource()).not.toContain('(rascunho)')
+    w.unmount()
+  })
+
+  it('paints Minha versão of the opened chart while a sibling rascunho stays', async () => {
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const mine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const ops = [
+      {
+        id: 'tune',
+        type: 'tune',
+        transpose: 2,
+        capo: 0,
+        dual: false,
+        ctx: { transpose: 2, capo: 0 },
+      },
+      ...diffOps(completa, mine, { transpose: 0, capo: 0 }),
+    ]
+    localStorage.setItem(
+      overlayKey('uma', 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops, at: 1 }),
+    )
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da completa')
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    const row = w.findAll('[data-row]').find((r) => r.text().includes('corpo da oferta'))
+    expect(row).toBeTruthy()
+    await row!.trigger('click')
+    await flushPromises()
+    const input = w.get('input[aria-label="Letra desta linha"]')
+    await input.setValue('corpo da oferta (rascunho)')
+    await input.trigger('blur')
+    await flushPromises()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    expect(w.text()).toMatch(/Rascunho não salvo/)
+    expect((w.vm as { getSource: () => string }).getSource()).toContain('corpo da oferta (rascunho)')
+
+    await pickChart(w, 'completa')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa (meu)')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect((w.vm as { getSource: () => string }).getSource()).toContain('corpo da oferta (rascunho)')
+    expect(w.get('[data-display-key]').text()).toBe('A')
+
+    await pickChart(w, 'oferta')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta (rascunho)')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da completa')
     w.unmount()
   })
 })
