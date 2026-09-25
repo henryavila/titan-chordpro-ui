@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartDocument, readMeta, splitCho, writeSongScopedMeta } from '../../src/core/charts'
+import { chartDocument, readMeta, splitCho, writeChartScopedMeta, writeSongScopedMeta } from '../../src/core/charts'
 import {
   ChartEnvelopeError,
   applyCifraClubEnrich,
@@ -1929,6 +1929,24 @@ describe('alternating notation openers do not grow the call stack', () => {
     const file = lines.join('\n')
     expect(listCharts(file)).toEqual([{ id: 'default', label: 'default', isDefault: true }])
   })
+
+  function openersThenCharts(openers: number): string {
+    const lines = ['{start_of_x_chart:completa}']
+    for (let i = 0; i < openers; i++) lines.push(i % 2 === 0 ? '{sos}' : '{sot}')
+    lines.push(
+      '{start_of_x_chart:nota}',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{eot}',
+      '{end_of_x_chart}',
+    )
+    return lines.join('\n')
+  }
+
+  it('lists completa and oferta for 20 and 16000 alternating openers', () => {
+    expect(listCharts(openersThenCharts(20)).map((c) => c.id)).toEqual(['completa', 'oferta'])
+    expect(listCharts(openersThenCharts(16000)).map((c) => c.id)).toEqual(['completa', 'oferta'])
+  })
 })
 
 describe('a stray end in an implicit chart does not hide the title', () => {
@@ -1940,5 +1958,15 @@ describe('a stray end in an implicit chart does not hide the title', () => {
     expect(parse(saved).meta.title).toBe('New')
     expect(readMeta(saved).title).toBe('New')
     expect(saved).not.toContain('{title:Real}')
+  })
+
+  it('parse sees Real after a stray end with no tab closer, before any save', () => {
+    const src = ['{sot}', '{end_of_x_chart}', '{title:Real}'].join('\n')
+    expect(readMeta(src).title).toBe('Real')
+    expect(parse(src).meta.title).toBe('Real')
+    const saved = writeChartScopedMeta(src, { tempo: '100' })
+    expect(parse(saved).meta.title).toBe('Real')
+    expect(readMeta(saved).title).toBe('Real')
+    expect(saved).toMatch(/\{tempo:100\}/)
   })
 })

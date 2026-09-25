@@ -52,6 +52,15 @@ function splitLyricLine(raw: string): Array<{ chord?: string; lyric: string }> {
   return words
 }
 
+/** First chart fence at or after `from`. An unclosed tab or score does not cover it. */
+function nextUncoveredChartFence(raws: readonly string[], from: number): number {
+  for (let j = from; j < raws.length; j++) {
+    const name = ((raws[j] ?? '').match(DIR)?.[1] ?? '').toLowerCase()
+    if (name === 'start_of_x_chart' || name === 'end_of_x_chart') return j
+  }
+  return -1
+}
+
 function parseRaw(src: string): {
   meta: ChordProView['meta']
   lines: RawLine[]
@@ -75,7 +84,12 @@ function parseRaw(src: string): {
     // Same closer as readMeta. `{eot}` inside a finished score is not the tab closer.
     if (d && /^(sos|start_of_score|sot|start_of_tab)$/i.test(d[1] ?? '')) {
       const isTab = /^(sot|start_of_tab)$/i.test(d[1] ?? '')
-      const close = notationBlockCloser(raws, li, isTab ? 'tab' : 'score', 0)
+      let close = notationBlockCloser(raws, li, isTab ? 'tab' : 'score', 0)
+      // No `{eot}`/`{eos}`: a stray chart fence still ends the block. It is not tab text.
+      if (!close) {
+        const fence = nextUncoveredChartFence(raws, li + 1)
+        if (fence >= 0) close = { at: fence, boundary: true }
+      }
       const boundary = close?.boundary === true
       const cut = close ? close.at : -1
       if (isTab) {
