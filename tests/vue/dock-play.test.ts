@@ -64,4 +64,10 @@ describe('dock Rolar label', () => {
     expect(w.get('[data-scroll]').text().trim()).toBe('')
     expect(w.get('[data-scroll]').attributes('aria-label')).toBe('Rolar')
   })
+
+  it('keeps Rolar clickable inside the chrome that lets taps through to the chart', async () => {
+    const w = await viewerAt(390)
+    const btn = w.get('[data-scroll]').element as HTMLElement
+    expect(getComputedStyle(btn).pointerEvents).not.toBe('none')
+  })
 })
