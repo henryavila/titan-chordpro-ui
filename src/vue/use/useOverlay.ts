@@ -10,6 +10,7 @@ import {
   overlaid,
   overlayKey,
   STORE_KEYS,
+  formatXStrum,
   strumReviewFromOp,
   tuneText,
   readStrumPatterns,
@@ -571,8 +572,16 @@ export function useOverlay(opts: OverlayOpts) {
   const qPreviewStrum = computed(() => {
     const text = qBatchPreview.value?.text
     if (!text) return null
-    const set = readStrumPatterns(text)
-    return set.patterns.length ? set.patterns : null
+    const proposed = readStrumPatterns(text)
+    const current = readStrumPatterns(official.value)
+    const sameBatida =
+      proposed.activeIndex === current.activeIndex &&
+      proposed.patterns.length === current.patterns.length &&
+      proposed.patterns.every((p, i) => formatXStrum(p) === formatXStrum(current.patterns[i]!))
+    // The preview text still carries the chart's batida when the request
+    // only rewrote lyrics. The strip at the top of the batch is the change.
+    if (sameBatida) return null
+    return proposed.patterns.length ? proposed.patterns : null
   })
 
   const qOfficialStrum = computed(() => {
