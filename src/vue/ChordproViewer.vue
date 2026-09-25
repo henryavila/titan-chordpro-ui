@@ -2394,13 +2394,19 @@ function onMq() {
  * A new source (host or fixture) stops the scroll, resets tone and position and
  * adopts the `{capo:}` declared in the file, when there is one.
  */
+/** Setlist id or props.songId. A title parsed from the text is not an identity. */
+function explicitSongChanged(): boolean {
+  if (!setlist.on.value && !props.songId) return false
+  return songId.value !== lastSongId
+}
+
 function syncHostSource() {
   const raw = hostSource.value
   const song = songId.value
-  // Same text and same song: nothing to adopt. A new song with the same
-  // ChordPro still has to load its own overlay. The other watch in this flush
-  // sees both already recorded and stops.
-  if (raw === lastSrc && song === lastSongId) return
+  // Same text is not a new chart unless a setlist or props.songId actually
+  // changed. A title-only identity moves with the editor's own echo. The other
+  // watch in this flush sees both already recorded and stops.
+  if (raw === lastSrc && !explicitSongChanged()) return
   // Until ov.load(), the chart slot can move onto the next song while
   // officialSrc is still the file just saved.
   ov.holdChartLoad()
@@ -2452,6 +2458,8 @@ function syncHostSource() {
       capo.value = tune.capo || 0
       capoMap.value = !!tune.dual
     }
+    // officialSrc is clear. A chart the overlay itself opens must still load.
+    ov.releaseChartLoad()
     forceBase()
     // The stored BPM belongs to the song: it reloads with the chart.
     met.loadBpm()

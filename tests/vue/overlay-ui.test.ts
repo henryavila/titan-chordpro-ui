@@ -137,6 +137,37 @@ describe('choosing where a save lands', () => {
     expect(String(w.emitted('save-content')?.at(-1)?.[0] ?? '')).toMatch(/\{title:\s*Oficial agora\}/)
     w.unmount()
   })
+
+  it('keeps persisted editing when the host echoes a title change', async () => {
+    const w = mountViewer({ songId: '', editMode: 'persisted' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Titulo ecoado')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    const echoed = String(w.emitted('update:source')?.at(-1)?.[0] ?? '')
+    expect(echoed).toMatch(/\{title:\s*Titulo ecoado\}/)
+    await w.setProps({ source: echoed })
+    await flushPromises()
+
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    expect(w.find('[data-save]').exists()).toBe(true)
+    expect(w.text()).not.toMatch(/rascunho anterior foi descartado/)
+
+    const emitted = w.emitted('update:source')?.length ?? 0
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Titulo de novo')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('update:source')?.length ?? 0).toBeGreaterThan(emitted)
+    expect(String(w.emitted('update:source')?.at(-1)?.[0] ?? '')).toMatch(/\{title:\s*Titulo de novo\}/)
+    w.unmount()
+  })
 })
 
 describe('a version of my own', () => {
@@ -837,6 +868,45 @@ describe('switching the chart on screen', () => {
     expect(parse(reading, { chartId: 'completa' }).meta.title).toBe('Uma')
     expect(localStorage.getItem(overlayKey('uma', 'completa'))).toBeNull()
     expect(JSON.parse(localStorage.getItem(overlayKey('uma', 'oferta')) ?? 'null').ops).toHaveLength(1)
+    w.unmount()
+  })
+
+  it('reloads the chart that opens when the default overlay removes its marker', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const semMarcador = oferta.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', '')
+    const ofertaOps = diffOps(oferta, semMarcador, { transpose: 0, capo: 0 })
+    expect(ofertaOps.some((op) => op.before.some((line) => line.includes('x_chart_default:oferta')))).toBe(true)
+
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(overlayKey(song, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops: ofertaOps, at: 1 }))
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 2 }),
+    )
+    const seededCompleta = localStorage.getItem(overlayKey(song, 'completa'))
+    const seededOferta = localStorage.getItem(overlayKey(song, 'oferta'))
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: song })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+
+    await w.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    // The opened chart's own op, not the marker removal that is still stored on oferta.
+    expect(w.get('[data-my-op]').text()).toContain('(meu)')
+    expect(localStorage.getItem(overlayKey(song, 'completa'))).toBe(seededCompleta)
+    expect(localStorage.getItem(overlayKey(song, 'oferta'))).toBe(seededOferta)
+
+    await w.get('[data-revert]').trigger('click')
+    await flushPromises()
+
+    // Revert targets that visible op. Oferta keeps its own op; completa is not replaced by it.
+    expect(localStorage.getItem(overlayKey(song, 'oferta'))).toBe(seededOferta)
+    expect(localStorage.getItem(overlayKey(song, 'completa'))).toBeNull()
     w.unmount()
   })
 })

@@ -356,10 +356,10 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   // Reloads a chart slot of the same song, before that switch re-baselines.
-  // A song change is loaded by the viewer once it releases the hold — loading
-  // here would reconcile the next key against the file just saved. The initial
-  // run would load twice. reset()'s flag ends before touch(), so the hold has
-  // to cover the whole transition.
+  // Held until the viewer releases after ov.load() — loading before officialSrc
+  // is cleared would reconcile the next key against the file just saved.
+  // forceBase runs after the release, so a chart the overlay opens still loads.
+  // The initial run would load twice.
   let resetting = false
   let chartLoadHold = 0
   function holdChartLoad() {
