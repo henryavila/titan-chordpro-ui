@@ -60,6 +60,11 @@ export type OverlayOpts = {
   store: ChartStore
   /** The base text changed under the reader: the editor has to re-baseline. */
   onBaseChange: () => void
+  /**
+   * Another chart of this song opened. The viewer applies that overlay's
+   * transpose/capo/dual and paints from the file already on screen.
+   */
+  onChartLoad?: (tune: TuneOp | null) => void
   onSaveContent?: (text: string) => void
   onSuggestionCreated?: (s: Suggestion) => void
   /**
@@ -261,12 +266,18 @@ export function useOverlay(opts: OverlayOpts) {
   )
 
   /**
-   * The screen's base: "for everyone" and reading the original see the raw
-   * official text; reading and local editing see it with the overlay applied.
+   * The screen's base. "For everyone" is the host file. Original is that
+   * chart's official document spliced into the file already on screen, so a
+   * personal overlay that opened another chart does not restore the marker.
+   * Reading and local editing splice the overlay onto that same file.
    */
   function baseFor(wMode: WriteMode | null, file?: string): string {
-    if (wMode === 'persisted' || showOriginal.value) return official.value
-    return fileWithChart(file ?? official.value, chartSlot.value, applied.value.text)
+    if (wMode === 'persisted') return official.value
+    const src = file ?? official.value
+    if (showOriginal.value) {
+      return fileWithChart(src, chartSlot.value, chartText(official.value, chartSlot.value))
+    }
+    return fileWithChart(src, chartSlot.value, applied.value.text)
   }
 
   function putOverlay(next: Overlay | null): Overlay | null {
@@ -374,7 +385,7 @@ export function useOverlay(opts: OverlayOpts) {
       if (!prev || resetting || chartLoadHold > 0) return
       const [prevSong, prevSlot] = prev
       if (song !== prevSong || slot === prevSlot) return
-      load()
+      opts.onChartLoad?.(load())
     },
     { immediate: true, flush: 'sync' },
   )
