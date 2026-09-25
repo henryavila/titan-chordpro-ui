@@ -1,0 +1,16 @@
+{
+  "taskId": "F1-sync",
+  "status": "claimed-pass",
+  "commitShas": [
+    "d39ca7875855eacda580a9751e61eccd9e93f233",
+    "49846f8d5173faa9fc2f7d8ab54fcb6d4d02fb14"
+  ],
+  "paths": [
+    "src/core/source-session.ts",
+    "src/vue/ChordproViewer.vue",
+    "tests/vue/overlay-ui.test.ts"
+  ],
+  "verifierCommand": "pnpm exec vitest run tests/vue/overlay-ui.test.ts tests/vue/chart-switcher.test.ts tests/vue/chart-editor.test.ts",
+  "exitCode": 0,
+  "transcript": "RUN  v4.1.11 /Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F1-sync\n\n ✓ tests/vue/chart-editor.test.ts (7 tests) 202ms\nstderr | tests/vue/overlay-ui.test.ts > choosing where a save lands > modes=\"both\" is deprecated and opens as local (no ModePick)\n[titan-chordpro-ui] modes=\"both\" is deprecated; use editMode=\"local\" or editMode=\"persisted\". Treating as local.\n\n ✓ tests/vue/chart-switcher.test.ts (14 tests) 415ms\n ✓ tests/vue/overlay-ui.test.ts (48 tests) 2986ms\n\n Test Files  3 passed (3)\n      Tests  69 passed (69)\n   Start at  14:52:19\n   Duration  3.91s (transform 1.63s, setup 38ms, import 2.12s, tests 3.60s, environment 432ms)"
+}
