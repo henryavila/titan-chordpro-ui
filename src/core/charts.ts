@@ -483,6 +483,25 @@ function blockEdge(name: string): BlockEdge | null {
 /** Closer of one open block. `boundary` is `{end_of_x_chart}`, not a tab or score closer. */
 type NotationClose = { at: number; boundary: boolean } | null
 
+/**
+ * A chart fence stopped this block. Not a closer, and not "no closer":
+ * a later hit must stop too, instead of scanning past the fence.
+ */
+const FENCE_STOP = { fence: true } as const
+type CachedClose = NotationClose | typeof FENCE_STOP
+
+function isFenceStop(value: CachedClose | undefined): value is typeof FENCE_STOP {
+  return value === FENCE_STOP
+}
+
+function isNotationClose(value: CachedClose | undefined): value is { at: number; boundary: boolean } {
+  return !!value && !isFenceStop(value)
+}
+
+function publishedCloser(value: CachedClose | undefined): NotationClose {
+  return isNotationClose(value) ? value : null
+}
+
 type NotationScan = {
   block: { tab: boolean; score: boolean }
   tabClose: NotationClose
@@ -510,9 +529,9 @@ function namesOf(lines: readonly string[]): string[] {
   return names
 }
 
-const closerMemo = new WeakMap<readonly string[], Map<string, NotationClose>>()
+const closerMemo = new WeakMap<readonly string[], Map<string, CachedClose>>()
 
-function closerCache(lines: readonly string[]): Map<string, NotationClose> {
+function closerCache(lines: readonly string[]): Map<string, CachedClose> {
   let hit = closerMemo.get(lines)
   if (!hit) {
     hit = new Map()
@@ -573,6 +592,7 @@ function closerFrame(kind: 'tab' | 'score', openAt: number, chartDepth: number):
  * An other-block that never closes does not hide a later closer.
  * `{end_of_x_chart}` stops the block only when a chart was already open (`chartDepth`).
  * A stray end in an implicit chart does not. A closer past that end is not cached as this one.
+ * A fence stop is cached as such, so a later hit stops instead of scanning on.
  */
 export function notationBlockCloser(
   lines: readonly string[],
@@ -582,20 +602,19 @@ export function notationBlockCloser(
 ): NotationClose {
   const cache = closerCache(lines)
   const key = closerKey(openAt, kind, chartDepth)
-  if (cache.has(key)) return cache.get(key) ?? null
+  if (cache.has(key)) return publishedCloser(cache.get(key))
   const names = namesOf(lines)
   if (!regionCanClose(names, openAt + 1)) {
     cache.set(key, null)
     return null
   }
-  const found = computeCloser(names, cache, openAt, kind, chartDepth)
-  cache.set(key, found)
-  return found
+  computeCloser(names, cache, openAt, kind, chartDepth)
+  return publishedCloser(cache.get(key))
 }
 
 function computeCloser(
   names: readonly string[],
-  cache: Map<string, NotationClose>,
+  cache: Map<string, CachedClose>,
   openAt: number,
   kind: 'tab' | 'score',
   chartDepth: number,
@@ -610,7 +629,7 @@ function computeCloser(
     for (;;) {
       const frame = stack.pop()
       if (!frame) return
-      cache.set(frame.key, current)
+      cache.set(frame.key, stopped ? FENCE_STOP : current)
       if (stack.length === 0) {
         root = current
         done = true
@@ -665,12 +684,12 @@ function computeCloser(
       const childKey = closerKey(frame.j, otherKind, frame.chartDepth)
       if (!cache.has(childKey) && !regionCanClose(names, frame.j + 1)) cache.set(childKey, null)
       if (cache.has(childKey)) {
-        const inner = cache.get(childKey) ?? null
-        if (inner?.boundary) {
+        const inner = cache.get(childKey)
+        if (isFenceStop(inner) || (isNotationClose(inner) && inner.boundary)) {
           settle(null, true)
           continue
         }
-        frame.j = inner ? inner.at + 1 : frame.j + 1
+        frame.j = isNotationClose(inner) ? inner.at + 1 : frame.j + 1
         continue
       }
       stack.push(closerFrame(otherKind, frame.j, frame.chartDepth))
