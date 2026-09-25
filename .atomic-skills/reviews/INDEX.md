@@ -18,3 +18,4 @@
 | 2026-09-24 22:30 | [versoes-cifra-f0-fix24](2026-09-24-fix24-both.md) | code | codex | needs_changes | 0B/0C/2M/1m/0n | 0d/2=/1+ |
 | 2026-09-24 22:50 | [versoes-cifra-f0-fix25](2026-09-24-fix25-both.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
 | 2026-09-24 23:20 | [versoes-cifra-f0-fix27](2026-09-24-fix27-both.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
+| 2026-09-24 23:40 | [versoes-cifra-f0-fix28](2026-09-24-fix28-both.md) | code | codex | approve | 0B/0C/0M/0m/0n | 0d/0=/0+ |
