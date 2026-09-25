@@ -965,10 +965,16 @@ const ov = useOverlay({
   suggestionQueue: computed(() => props.suggestionQueue),
   store,
   toast: (m) => toastMsg(m),
-  // While an edit is in flight the draft is the truth; anything else that
-  // moves the base has to reach the screen at once.
+  // Overlay paints of the open chart. A published chart is spliced below —
+  // never reset the whole file because a sibling became official.
   onBaseChange: (origin) => {
-    if (!isEdit.value) forceBase(origin === 'official' ? undefined : session.getSource())
+    if (isEdit.value || session.dirty()) return
+    forceBase(origin === 'official' ? undefined : session.getSource())
+  },
+  onChartPublished: ({ chartId, file, open }) => {
+    session.spliceChart(chartId, parse(file, { chartId }).source)
+    touch()
+    if (open && !isEdit.value && !session.dirty()) forceBase(session.getSource())
   },
   onChartLoad: (tune) => {
     applyChartTune(tune)
