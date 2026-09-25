@@ -316,7 +316,10 @@ const confirmDiscard = ref(false)
 const metaOpen = ref(false)
 const identityLost = ref(false)
 
-const session = createSourceSession({ source: props.source ?? '' })
+const session = createSourceSession({
+  source: props.source ?? '',
+  chartId: () => pinnedChartId.value ?? musicianChartId.value ?? undefined,
+})
 /** Working source: the draft while editing, the host source otherwise. */
 const working = ref(props.source ?? '')
 const rev = ref(0)
@@ -369,8 +372,13 @@ function fileCapo(src: string): number {
 
 function preloadTune() {
   offset.value = 0
-  const file = normalizeSource(hostSource.value)
-  const id = String(musicianChartId.value ?? '').trim()
+  const file = normalizeSource(session.getSource() || hostSource.value)
+  const chosen = String(pinnedChartId.value ?? musicianChartId.value ?? '').trim()
+  const id = readChartFile(() => {
+    const charts = listCharts(file)
+    if (chosen && charts.some((c) => c.id === chosen)) return chosen
+    return charts.find((c) => c.isDefault)?.id
+  }, chosen || undefined)
   const doc = readChartFile(() => parse(file, id ? { chartId: id } : undefined).source, file)
   capo.value = fileCapo(doc)
   if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
@@ -462,7 +470,11 @@ const EMPTY_CHART: ReturnType<typeof parse> = {
 
 function pinEditedChart() {
   const charts = readChartFile(() => listCharts(session.getSource()), [])
-  pinnedChartId.value = charts.find((c) => c.isDefault)?.id ?? charts[0]?.id ?? null
+  const open = String(screenChartId.value ?? '').trim()
+  pinnedChartId.value =
+    (open && charts.some((c) => c.id === open) ? open : charts.find((c) => c.isDefault)?.id) ??
+    charts[0]?.id ??
+    null
 }
 
 function commitOpenChart(next: string): string {

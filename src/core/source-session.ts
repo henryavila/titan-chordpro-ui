@@ -34,7 +34,11 @@ export type SourceSession = {
   reset: (next: string) => void
 }
 
-export function createSourceSession(opts: { source: string }): SourceSession {
+export function createSourceSession(opts: {
+  source: string
+  /** Named chart inside an N>1 file. Absent → parse uses the file default. */
+  chartId?: () => string | undefined
+}): SourceSession {
   let source = opts.source
   let committed = opts.source
   const undoStack: string[] = []
@@ -50,7 +54,10 @@ export function createSourceSession(opts: { source: string }): SourceSession {
 
   return {
     getSource: () => source,
-    getView: () => parse(source),
+    getView: () => {
+      const id = String(opts.chartId?.() ?? '').trim()
+      return parse(source, id ? { chartId: id } : undefined)
+    },
     replace: (next) => push(next),
     edit: (next) => {
       source = next
