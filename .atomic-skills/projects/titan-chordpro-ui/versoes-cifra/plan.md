@@ -6,7 +6,7 @@ version: "1.0"
 status: active
 executionMode: automate
 started: 2026-09-20T15:40:57.297Z
-lastUpdated: 2026-09-25T03:25:00.000Z
+lastUpdated: 2026-09-25T03:35:00.000Z
 branch: plan/versoes-cifra
 currentPhase: F1
 parallelismAllowed: false
@@ -156,7 +156,7 @@ phases:
       file.
     dependsOn:
       - F0
-    subPhaseCount: 0
+    subPhaseCount: 2
     exitGate:
       summary: 1 criterion to meet
       criteria:
@@ -171,7 +171,26 @@ phases:
             command: pnpm exec vitest run tests/core/overlay.test.ts
               tests/vue/overlay-ui.test.ts tests/vue/storage-seam.test.ts
             expectExitCode: 0
-    status: pending
+    status: active
+    businessIntent:
+      value: O músico guarda afinação, overlay e sugestão na cifra que está
+        aberta, e a chave antiga do arquivo continua valendo para a cifra
+        default.
+      workflow: overlayKey passa a incluir o chartId. A chave legada
+        cpv:my:{songId} é lida como a cifra default e a gravação seguinte usa
+        cpv:my:{songId}:default. Suggestion carrega chartId. acceptOp chama
+        replaceChart e save-content devolve o arquivo inteiro, com as cifras
+        irmãs.
+      rules: Não criar o chip de título. Não criar CRUD de cifra. Não mudar o
+        uniquify da setlist. Não emitir save-content só da cifra visível. Não
+        postar sugestão para um host. Identidade dentro de tab ou partitura
+        continua notação.
+      outOfScope: Chip no título, escrita de cifras no editor, export por
+        arquivo ou por cifra, e a reescrita de VISAO, SPEC e NAMING. Isso fica
+        nas fases F2, F3 e F4.
+      doneWhen: tests/core/overlay.test.ts, tests/vue/storage-seam.test.ts e
+        tests/vue/overlay-ui.test.ts verdes, com a chave por cifra e o save
+        devolvendo o arquivo inteiro.
   - id: F2
     slug: versoes-cifra-f2-viewer-seletor-de-cifra
     title: "Viewer: seletor de cifra"
@@ -352,5 +371,5 @@ F0 está fechada e arquivada (`phases/archive/f0-leitor-envelope-e-parse-fatiado
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=55b5cd1dd50f | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=cc88c8b4fb82 | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.
