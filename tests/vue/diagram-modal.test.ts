@@ -81,11 +81,12 @@ describe('diagram modal', () => {
     expect(w.get('[data-diagram-draw]').html()).toContain('diagram-piano-white')
     expect(w.get('[data-diagram-draw]').attributes('data-diagram-kind')).toBe('piano')
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
+    expect(css).toContain('--diagram-card: min(20rem, 100cqi)')
     const pianoRule = css.split('}').find((block) => block.includes('data-diagram-kind') && block.includes('piano'))
     expect(pianoRule).toBeTruthy()
-    expect(pianoRule).toContain('20rem')
     expect(pianoRule).toContain('border')
     expect(pianoRule).not.toMatch(/width:\s*100%/)
+    expect(css).toContain('--draw-ratio')
     const close = w.get('[data-diagram-close]')
     expect(close.attributes('aria-label')).toBe('Fechar')
     expect(close.text().replace(/\s/g, '')).toBe('')
@@ -120,7 +121,15 @@ describe('diagram modal', () => {
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
     const stageRule = css.split('}').find((block) => block.includes('cpv-diagram-stage'))
     expect(stageRule).toContain('overflow: hidden')
+    expect(css).toContain('--inv-cols: 1')
+    expect(css).toContain('width: var(--diagram-card)')
+    expect(css).toContain('@container (min-width: 42rem)')
+    expect(css).toContain('@container (min-width: 62rem)')
+    expect(css).toContain('--keys-max-h')
     const grid = w.get('[data-diagram-draw]').element as HTMLElement
+    expect(grid.style.gridTemplateColumns).toBe('')
+    expect(grid.getAttribute('data-inversion-count')).toBe('3')
+    expect(grid.style.getPropertyValue('--inv-count')).toBe('3')
     const overflow = `${getComputedStyle(grid).overflow} ${getComputedStyle(grid).overflowY}`
     expect(overflow).not.toMatch(/auto|scroll/)
 
@@ -136,6 +145,19 @@ describe('diagram modal', () => {
     expect(slashCards.map((card) => card.get('figcaption').text())).toEqual(['Em/D', 'Em'])
     expect(slashCards[0]?.html()).toContain('data-degree="b7"')
     expect(slash.w.get('[data-diagram-draw]').html()).not.toMatch(/<text[^>]*>[A-G]/)
+    expect(slash.w.get('[data-diagram-draw]').attributes('data-inversion-count')).toBe('2')
+
+    slash.w.unmount()
+    const seventh = mountViewer({
+      source: '{title: Teste}\n{key: C}\n{duration: 2:00}\n[C7]casa\n',
+    })
+    await flushPromises()
+    await seventh.w.get('[data-diagram-hit]').trigger('click')
+    await seventh.w.get('[data-diagram-instrument="piano"]').trigger('click')
+    await flushPromises()
+    const seventhCards = seventh.w.findAll('[data-piano-inversion]')
+    expect(seventhCards).toHaveLength(4)
+    expect(seventh.w.get('[data-diagram-draw]').attributes('data-inversion-count')).toBe('4')
   })
 
   it('never scrolls the diagram, including a tall ukulele shape', async () => {
@@ -154,7 +176,7 @@ describe('diagram modal', () => {
     expect(svgRule).toContain('max-height: 100%')
     expect(svgRule).toContain('max-width: 100%')
     expect(svgRule).toContain('width: 100%')
-    expect(svgRule).toContain('height: 100%')
+    expect(svgRule).toContain('height: auto')
     for (const sel of ['[data-diagram-modal]', '[data-diagram-stage]', '[data-diagram-draw]']) {
       const el = w.get(sel).element as HTMLElement
       const overflow = `${getComputedStyle(el).overflow} ${getComputedStyle(el).overflowY}`

@@ -84,11 +84,10 @@ const frames = computed((): PianoFrame[] => {
   return [{ label: '', svg: drawn.svg, ratio: frameRatio(drawn.svg) }]
 })
 
-const inversionGrid = computed(() => {
-  const n = frames.value.length
-  const cols = n <= 3 ? n : n === 4 ? 2 : 3
-  return { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
-})
+/** Stack count for the height cap. Column count is CSS, by stage width. */
+const inversionLayout = computed(() => ({
+  '--inv-count': String(frames.value.length),
+}))
 
 const sounds = computed(
   () => props.instrument !== 'piano' && props.capoFret > 0 && props.concert && props.concert !== playable.value,
@@ -213,13 +212,14 @@ onBeforeUnmount(() => {
           data-diagram-draw
           data-diagram-kind="piano"
           :data-inversion-count="frames.length"
-          :style="inversionGrid"
+          :style="inversionLayout"
         >
           <figure
             v-for="frame in frames"
             :key="frame.label"
             class="cpv-diagram-inversion"
             data-piano-inversion
+            :style="{ '--draw-ratio': String(frame.ratio) }"
           >
             <div class="cpv-diagram-inversion-keys" v-html="frame.svg" />
             <figcaption class="cpv-diagram-inversion-name">{{ frame.label }}</figcaption>
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
           class="cpv-diagram-draw"
           data-diagram-draw
           :data-diagram-kind="instrument"
-          :style="instrument === 'piano' ? { '--piano-ratio': String(frames[0].ratio) } : undefined"
+          :style="{ '--draw-ratio': String(frames[0].ratio) }"
           v-html="frames[0].svg"
         />
         <p v-else class="cpv-diagram-miss" data-diagram-miss>Sem forma neste instrumento</p>
@@ -313,6 +313,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 .cpv-diagram-stage {
+  --diagram-card: min(20rem, 100cqi);
   position: absolute;
   inset: 0;
   display: grid;
@@ -321,21 +322,22 @@ onBeforeUnmount(() => {
   padding: 72px 12px 60px;
   container-type: size;
 }
+/*
+ * One diagram card for every instrument. The SVG keeps its viewBox; the
+ * box never grows past 20rem and never stretches to fill leftover stage.
+ */
 .cpv-diagram-draw {
-  width: 100%;
-  height: 100%;
+  width: min(var(--diagram-card), calc(100cqh * var(--draw-ratio, 1.25)));
+  height: auto;
+  aspect-ratio: var(--draw-ratio, 1.25);
+  max-height: 100%;
   min-height: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
   color: var(--text);
 }
-/* One keyboard is a card, not a banner. The three-inversion row already holds the eye. */
 .cpv-diagram-draw[data-diagram-kind='piano'] {
-  width: min(20rem, 72cqi, calc(100cqh * var(--piano-ratio, 1.75) * 0.62));
-  height: auto;
-  aspect-ratio: var(--piano-ratio, 1.75);
-  max-height: 100%;
   border: 1px solid var(--line);
   border-radius: 0;
   overflow: visible;
@@ -344,37 +346,84 @@ onBeforeUnmount(() => {
 .cpv-diagram-draw :deep(svg) {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
 }
+/*
+ * Inversions are a grid of the same card. Stack until two (42rem) or three
+ * (62rem) cards fit. A short landscape stage rows three even if they shrink.
+ */
 .cpv-diagram-inversions {
-  width: min(100cqi, 40rem);
+  --inv-cols: 1;
+  --inv-rows: var(--inv-count, 1);
+  width: var(--diagram-card);
   max-height: 100%;
   min-height: 0;
   display: grid;
-  gap: 10px 14px;
+  grid-template-columns: repeat(var(--inv-cols), minmax(0, 1fr));
+  gap: 12px 14px;
   align-content: center;
+  justify-items: center;
   overflow: hidden;
 }
+@container (min-width: 42rem) {
+  .cpv-diagram-inversions[data-inversion-count='2'] {
+    --inv-cols: 2;
+    --inv-rows: 1;
+    width: min(100cqi, calc(2 * 20rem + 14px));
+  }
+  .cpv-diagram-inversions[data-inversion-count='4'] {
+    --inv-cols: 2;
+    --inv-rows: 2;
+    width: min(100cqi, calc(2 * 20rem + 14px));
+  }
+}
+@container (min-width: 62rem) {
+  .cpv-diagram-inversions[data-inversion-count='3'] {
+    --inv-cols: 3;
+    --inv-rows: 1;
+    width: min(100cqi, calc(3 * 20rem + 28px));
+  }
+  .cpv-diagram-inversions[data-inversion-count='5'],
+  .cpv-diagram-inversions[data-inversion-count='6'] {
+    --inv-cols: 3;
+    --inv-rows: 2;
+    width: min(100cqi, calc(3 * 20rem + 28px));
+  }
+}
+@container (max-height: 28rem) and (min-width: 36rem) {
+  .cpv-diagram-inversions[data-inversion-count='3'] {
+    --inv-cols: 3;
+    --inv-rows: 1;
+    width: min(100cqi, calc(3 * 20rem + 28px));
+  }
+}
 .cpv-diagram-inversion {
+  --keys-max-h: calc((100cqh - (var(--inv-rows) - 1) * 12px) / var(--inv-rows) - 1.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   min-width: 0;
+  min-height: 0;
   margin: 0;
   gap: 8px;
+  width: 100%;
+  max-width: var(--diagram-card);
 }
 .cpv-diagram-inversion-keys {
   width: 100%;
   min-height: 0;
+  display: grid;
+  place-items: center;
 }
 .cpv-diagram-inversion-keys :deep(svg) {
   display: block;
-  width: 100%;
+  width: min(100%, calc(var(--keys-max-h) * var(--draw-ratio, 2)));
   height: auto;
   max-width: 100%;
-  max-height: 100%;
+  max-height: var(--keys-max-h);
 }
 .cpv-diagram-inversion-name {
   flex: none;
