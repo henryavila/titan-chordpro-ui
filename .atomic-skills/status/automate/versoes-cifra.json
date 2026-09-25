@@ -2,7 +2,7 @@
   "step": "E",
   "phaseId": "F1",
   "redispatchCount": 4,
-  "updatedAt": "2026-09-25T14:22:32.416Z",
+  "updatedAt": "2026-09-25T21:17:55.228Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -173,5 +173,10 @@
       "gate": "spawn"
     }
   ],
-  "claimReportPath": ".atomic-skills/status/automate/versoes-cifra-claims.json"
+  "claimReportPath": ".atomic-skills/status/automate/versoes-cifra-claims.json",
+  "lastAssert": {
+    "gate": "done",
+    "ok": true,
+    "at": "2026-09-25T21:17:55.228Z"
+  }
 }

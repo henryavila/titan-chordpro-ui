@@ -1,6 +1,6 @@
 {
   "schemaVersion": "0.1",
-  "generatedAt": "2026-09-20T18:50:51.624Z",
+  "generatedAt": "2026-09-25T21:19:04.757Z",
   "projectId": "titan-chordpro-ui",
   "plan": {
     "slug": "versoes-cifra",
@@ -8,23 +8,23 @@
     "status": "active"
   },
   "phase": {
-    "id": "F0",
-    "slug": "versoes-cifra-f0-leitor-envelope-e-parse-fatiado",
-    "title": "Leitor: envelope e parse fatiado",
-    "index": 1,
+    "id": "F1",
+    "slug": "versoes-cifra-f1-overlay-e-sugestao-por-cifra",
+    "title": "Overlay e sugestão por cifra",
+    "index": 2,
     "total": 5,
     "status": "active"
   },
   "tasks": {
-    "done": 0,
-    "total": 3,
+    "done": 2,
+    "total": 2,
     "blocked": 0
   },
   "gates": {
     "met": 0,
-    "total": 2
+    "total": 1
   },
-  "nextAction": "Start T-001: listCharts and implicit default",
+  "nextAction": "Run `phase-done`",
   "flags": {
     "drift": false,
     "multipleActivePlans": false,
@@ -33,11 +33,11 @@
   "sources": [
     {
       "path": ".atomic-skills/projects/titan-chordpro-ui/versoes-cifra/plan.md",
-      "lastUpdated": "2026-09-20T16:15:00.000Z"
+      "lastUpdated": "2026-09-25T03:35:00.000Z"
     },
     {
-      "path": ".atomic-skills/projects/titan-chordpro-ui/versoes-cifra/phases/f0-leitor-envelope-e-parse-fatiado.md",
-      "lastUpdated": "2026-09-20T15:40:57.297Z"
+      "path": ".atomic-skills/projects/titan-chordpro-ui/versoes-cifra/phases/f1-overlay-e-sugestao-por-cifra.md",
+      "lastUpdated": "2026-09-25T21:18:00.000Z"
     }
   ]
 }
