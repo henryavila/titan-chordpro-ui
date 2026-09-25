@@ -12,6 +12,7 @@
  * together on the case they share, so they cannot drift apart unnoticed.
  */
 
+import { DIR, rewriteDefineLines } from './define'
 import {
   isLegalStrumPattern,
   parseXStrum,
@@ -454,7 +455,7 @@ export function readMeta(source: string): ChartMeta {
   String(source ?? '')
     .split('\n')
     .forEach((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*([^}]*)\}\s*$/)
+      const d = l.match(DIR)
       if (!d) return
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
@@ -518,7 +519,7 @@ export function writeMeta(source: string, meta: ChartMeta): string {
   const body = String(source ?? '')
     .split('\n')
     .filter((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
+      const d = l.match(DIR)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
       return canonicalMetaKey(k) === null
@@ -665,8 +666,10 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
   if (!fromRoot || !toRoot || keyIndex(fromRoot) === null || keyIndex(toRoot) === null) return null
 
   const bodyDelta = signedSemitoneDelta(fromRoot, toRoot)
+  const flats = usesFlats(to)
+  const movedChords = bodyDelta ? transposeTextChords(src, bodyDelta, flats) : src
+  const moved = rewriteDefineLines(movedChords, bodyDelta, flats)
   const playing = signedSemitoneDelta(toRoot, fromRoot)
-  const moved = bodyDelta ? transposeTextChords(src, bodyDelta, usesFlats(to)) : src
   const next: ChartMeta = { ...readMeta(moved), key: to }
   if (playing) next.transpose = String(playing)
   else delete next.transpose
@@ -1075,7 +1078,7 @@ export function toPlain(source: string): string {
   String(source ?? '')
     .split('\n')
     .forEach((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/)
+      const d = l.match(DIR)
       if (d) {
         const k = (d[1] ?? '').toLowerCase()
         const v = (d[2] ?? '').trim()
@@ -1125,7 +1128,7 @@ export function chartBody(source: string): string {
   return String(source ?? '')
     .split('\n')
     .filter((l) => {
-      const d = l.match(/^\s*\{\s*([a-zA-Z_]+)\s*:\s*[^}]*\}\s*$/)
+      const d = l.match(DIR)
       if (!d) return true
       const k = (d[1] ?? '').toLowerCase()
       return canonicalMetaKey(k) === null

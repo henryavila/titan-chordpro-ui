@@ -1,3 +1,11 @@
+import {
+  asChordDefine,
+  DIR,
+  isDefineKey,
+  parseDefineDirective,
+  transposeDefines,
+  type ChordDefine,
+} from './define'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
 import type { ChordProLine, ChordProSection, ChordProView, SectionKind } from './types'
@@ -25,7 +33,6 @@ type RawLine = { li0: number; li1: number } & (
   | { kind: 'empty' }
 )
 
-const DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/
 /** `#~ …` — hidden by the editor, still in the file. */
 const HIDDEN = /^#~ ?(.*)$/
 /** `#^+2` — section transpose already applied to the chords below. */
@@ -56,9 +63,11 @@ function parseRaw(src: string): {
   lines: RawLine[]
   /** `{soc}` line → the `{eoc}` line that closes it. */
   eocOf: Record<number, number>
+  defines: ChordDefine[]
 } {
   const meta: ChordProView['meta'] = {}
   const lines: RawLine[] = []
+  const defines: ChordDefine[] = []
   const raws = src.split('\n')
   let chorus = false
   let socLi: number | null = null
@@ -139,6 +148,11 @@ function parseRaw(src: string): {
         socLi = null
         continue
       }
+      if (isDefineKey(k)) {
+        const def = asChordDefine(parseDefineDirective(raw))
+        if (def) defines.push(def)
+        continue
+      }
       if (k === 'image' || k === 'img') {
         lines.push({ kind: 'image', src: v, li0: li, li1: li })
         continue
@@ -189,7 +203,7 @@ function parseRaw(src: string): {
   if (tab !== null) lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: raws.length - 1 })
   if (score !== null)
     lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: raws.length - 1 })
-  return { meta, lines, eocOf }
+  return { meta, lines, eocOf, defines }
 }
 
 function toSections(raw: RawLine[]): ChordProSection[] {
@@ -274,7 +288,10 @@ function applyShape(view: ChordProView, semis: number): ChordProView {
     }),
   }))
   const displayKey = view.meta.key ? transposeToken(view.meta.key, semis, flats) : null
-  return { ...view, sections, transposeSemitones: semis, displayKey }
+  const defines = transposeDefines(view.defines, semis, flats).filter(
+    (d): d is ChordDefine => d !== null,
+  )
+  return { ...view, sections, transposeSemitones: semis, displayKey, defines }
 }
 
 /**
@@ -300,7 +317,7 @@ export function normalizeSource(source: string): string {
 export function parse(source: string): ChordProView {
   const text = normalizeEol(source ?? '')
   const normalized = looksLikeOnSong(text) ? normalizeOnSong(text) : text
-  const { meta, lines, eocOf } = parseRaw(normalized)
+  const { meta, lines, eocOf, defines } = parseRaw(normalized)
   return {
     meta,
     displayKey: meta.key ?? null,
@@ -308,6 +325,7 @@ export function parse(source: string): ChordProView {
     source: normalized,
     sections: toSections(lines),
     eocOf,
+    defines,
   }
 }
 

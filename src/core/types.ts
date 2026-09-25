@@ -1,3 +1,5 @@
+import type { ChordDefine } from './define'
+
 export type ChordProView = {
   meta: {
     title?: string
@@ -17,6 +19,8 @@ export type ChordProView = {
   sections: ChordProSection[]
   /** `{soc}` line → its `{eoc}`: what makes a chorus move with its envelope. */
   eocOf: Record<number, number>
+  /** `{define}` / `{define-guitar}` / `{define-ukulele}` overrides in this file. */
+  defines: ChordDefine[]
 }
 
 export type SectionKind =
@@ -114,6 +118,21 @@ export type ChartSeg = {
   /** Capo shape drawn above the concert chord when dual is on. */
   shape: string
   hasShape: boolean
+  /**
+   * Sounding name after transpose, before dual/Nashville rewrite.
+   * Filled on every playable seg — even in edit or Nashville.
+   */
+  concert?: string
+  /**
+   * Hand-shape name (`transposeToken(source, semis - capoFret)`).
+   * Equals `concert` when `capoFret` is 0. Guitar/ukulele lookup key.
+   */
+  shapeName?: string
+  /**
+   * Fret from song `{capo:}` or `#capo:n` (`0` = nut). Draw source — not
+   * `shapeCapo`, which is 0 when dual is off.
+   */
+  capoFret?: number
   text: string
   tight: boolean
   loose: boolean

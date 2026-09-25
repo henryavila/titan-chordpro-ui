@@ -53,6 +53,14 @@ export function keyIndex(key: string): number | null {
   return IDX[m[1]] ?? null
 }
 
+/** Pitch a given number of semitones above `root`, spelled like the root. */
+export function noteAtSemitones(root: string, semis: number): string | null {
+  const i = keyIndex(root)
+  if (i === null) return null
+  const n = (((i + semis) % 12) + 12) % 12
+  return (usesFlats(root) ? FLAT : SHARP)[n] ?? null
+}
+
 export function semitoneDelta(fromKey: string, toKey: string): number {
   const a = keyIndex(fromKey)
   const b = keyIndex(toKey)

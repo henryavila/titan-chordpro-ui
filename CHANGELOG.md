@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Diagramas de acorde:** toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele mostram a forma da mão (capo no braço quando há). Piano mostra as teclas no tom que soa, com inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. O host desliga com `capabilities.diagrams: false`.
+
 Na revisão de sugestões, a faixa de batida no topo do lote só aparece quando o pedido muda a batida. Apagar letra numa cifra que já tem batida não mostra mais a batida como se fizesse parte do pedido.
 
 Aceitar um ajuste, quando ainda há outros, deixa a tela de sugestões aberta. Gravar a cifra não fecha a revisão no meio.

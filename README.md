@@ -20,6 +20,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Acorde acima da letra; comentários de ensaio
 - Transposição e capotraste. `{key:}` é o tom original; `{transpose:}` é a leitura. `{capo:}` no arquivo é dica — o capotraste ao vivo começa em 0
 - **Modo dual (capo)** — o capo muda as *formas*, não o tom que a banda ouve. Sem dual, a cifra vira só as formas (quem toca sozinho). Com dual, cada acorde mostra os dois nomes na mesma linha: forma com capo + o que soa sem capo. Teclado, baixo e voz leem o tom real; o violão lê a forma. A legenda marca as duas cores.
+- **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele: forma da mão (capo no braço quando há). Piano: teclas no tom que soa, inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. Host desliga com `capabilities.diagrams: false`
 - Cifra · só letra · Nashville
 - Tema claro / escuro / auto; cor de acento do host
 - Tipografia e ajuste ao espaço
@@ -52,7 +53,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
-Fora: login, multicifra do site, player de áudio **sincronizado**, diagramas de braço, collab em tempo real.
+Fora: login, multicifra do site, player de áudio **sincronizado**, collab em tempo real.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
@@ -63,7 +64,7 @@ Fora: login, multicifra do site, player de áudio **sincronizado**, diagramas de
 
 ## Status
 
-`0.8.0` — leitura, ensaio (lista, swipe nas bordas, tela ligada, áudio de referência com fone no celular), tom original + `{transpose:}`, overlay, `persistSuggestion`, edição por bloco, batida, partitura e import do Cifra Club pelo texto. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto.
+`0.8.0` no npm — leitura, ensaio (lista, swipe nas bordas, tela ligada, áudio de referência com fone no celular), tom original + `{transpose:}`, overlay, `persistSuggestion`, edição por bloco, batida, partitura e import do Cifra Club pelo texto. **Diagramas de acorde** (violão, ukulele, piano) estão na leitura, ainda sem tag. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto. O editor de forma no modal (grelha gravável) ainda não.
 
 ```bash
 pnpm install
@@ -80,7 +81,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama**, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -139,6 +140,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `resolveImage` | identidade | `{image: assets/x.png}` → URL que o host serve |
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |
+| `capabilities.diagrams` | `true` | `false` tira o toque no acorde e o modal de forma (violão / ukulele / piano) |
 | `capabilities.debugSwipe` | `false` | `true` pinta as zonas do swipe no ensaio (Safari / anterior / rolar / próxima). Demo: `?zonas=1` |
 | `editMode` | `'local'` | `local` \| `persisted` \| `none`. Um papel por mount (frontend vs backend). Ortogonal a `mode` view\|edit |
 | `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |

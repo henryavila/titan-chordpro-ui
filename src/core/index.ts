@@ -34,6 +34,23 @@ export {
 } from './storage'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
+export { parseDefineDirective, serializeDefine, writeDefines } from './define'
+export type { ChordDefine, DefineDirective, DefineInstrument, DefineResult } from './define'
+export { parseChordToken } from './parse-chord'
+export type { ChordParseClass, ChordTokenMiss, ChordTokenParse, ChordTokenResult } from './parse-chord'
+export { resolveDiagram } from './resolve-diagram'
+export type {
+  DiagramHit,
+  DiagramInstrument,
+  DiagramMiss,
+  DiagramResolve,
+  DiagramVoicing,
+  PianoInversion,
+  PianoTone,
+  ResolveDiagramOpts,
+} from './resolve-diagram'
+export { drawDiagram } from './diagram-draw'
+export type { DiagramDraw, DrawDiagramOpts, FretDot, FretDraw, PianoDraw } from './diagram-draw'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'

@@ -12,7 +12,7 @@
 |---|---|
 | **Problema** | Músicos precisam de uma **UI ChordPro profissional**: **ler** (transpor, rolar, exportar, tema) **e editar** (corrigir pós-gen/import e criar do zero). Reuso em SDA / futuro `titan-chordpro` é **canal**, não o problema. |
 | **In-scope** | Camada **autossuficiente** de **1 cifra**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; standalone demo ou **embutida** (`sda-v2` primeiro). Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
-| **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`); diagramas de braço (ainda later). |
+| **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`). |
 | **Done-when (esta fase)** | Visão + naming + design do editor alinhados; implementação segue SPEC + gates E0–E4. |
 | **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<ChordproViewer>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
 | **Fontes** | Esta visão; `docs/NAMING.md`; design do editor; `fixtures/`; researches OnSong / auto-ajuste; `SPEC.md` como catálogo técnico. |
@@ -53,7 +53,7 @@ ChordPro (1 string)
 | Player áudio sincronizado | ❌ | ✅ |
 | Áudio de referência (cantado / playback, sem sync) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
 | Edição (source SoT; gates E0–E4) | ✅ | recebe `source` atualizado / dirty / media |
-| Fret diagrams | ❌ (later) | — |
+| Diagramas de acorde (violão, ukulele, piano) | ✅ modal no acorde; instrumento na prefs | pode desligar (`capabilities.diagrams: false`) |
 
 **Leitura da entrevista:** “sem toolbar/shell de **app**” ≠ “sem controles da cifra”. Controles do **músico na cifra** (tom, rolagem, fonte, tema, export) são **nossos**. Chrome do **produto** (menu, lista de músicas, auth) é do consumer.
 
@@ -70,6 +70,7 @@ ChordPro (1 string)
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
 6. **Temas:** claro e escuro, com opção de **troca automática**.
 7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.
+8. **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano (mesmo cartão, tela cheia no ensaio). Instrumento é preferência do aparelho. Violão/ukulele: forma da mão + capo no desenho. Piano: teclas concert, inversões e baixo escrito. `{define}` no arquivo é override. Sem forma: “Sem forma neste instrumento”. Só letra não abre. Editor de grelha (F4) ainda não.
 
 ### 4.2 Edição (edit) — mapa + gates
 
@@ -147,7 +148,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
    ~~Host: iframe vs página.~~ **Locked 2026-09-10:** componente Vue na ficha **e/ou** rota `100dvh`; iframe cancelado (`docs/CONSUMER.md`).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
 4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `@henryavila/titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
-5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING).
+5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING). Diagramas de acorde saíram de *later* (leitura).
 
 ---
 

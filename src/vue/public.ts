@@ -65,6 +65,11 @@ export type ViewerCapabilities = {
    * Off by default. Demo: `?zonas=1`.
    */
   debugSwipe?: boolean
+  /**
+   * Chord-shape modal. On unless the host passes `false`.
+   * The instrument switch lives on that screen, not in Mais.
+   */
+  diagrams?: boolean
 }
 
 /** Cover or lyric-slide background the host wants in the `.slja`. */

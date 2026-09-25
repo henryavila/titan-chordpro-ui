@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { layoutChartFull, parse, type ChartLayout, type ChartSeg } from '../../src/core'
+import { layoutChartFull, parse, transpose, type ChartLayout, type ChartSeg } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 function songSegs(laid: ChartLayout): ChartSeg[] {
@@ -126,5 +126,131 @@ describe('capo dual vs capo sozinho', () => {
     expect(marked.rows[0]?.segs.map((s) => s.chord)).toEqual(['F', 'A#'])
     expect(marked.rows[0]?.segs.every((s) => !s.hasShape)).toBe(true)
     expect(rest.rows[0]?.segs.map((s) => s.chord)).toEqual(['D'])
+  })
+})
+
+describe('playable concert / shapeName / capoFret', () => {
+  const view = parse(['{title: T}', '{key: A}', '', '[Bm]hey'].join('\n'))
+
+  function firstPlayable(laid: ChartLayout): ChartSeg {
+    const s = songSegs(laid).find((x) => x.chord)
+    if (!s) throw new Error('expected a playable seg')
+    return s
+  }
+
+  it('fills concert, shapeName and capoFret on every playable seg', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: true })
+    const segs = songSegs(laid).filter((s) => s.chord)
+    expect(segs.length).toBeGreaterThan(0)
+    for (const s of segs) {
+      expect(s.concert).toBeTruthy()
+      expect(s.shapeName).toBeTruthy()
+      expect(typeof s.capoFret).toBe('number')
+    }
+  })
+
+  it('capo 2 dual on source Bm yields concert Bm, shapeName Am and capoFret 2', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: true })
+    expect(firstPlayable(laid)).toMatchObject({
+      chord: 'Bm',
+      shape: 'Am',
+      concert: 'Bm',
+      shapeName: 'Am',
+      capoFret: 2,
+    })
+  })
+
+  it('capo 2 dual off still has capoFret 2 and shapeName Am', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: false })
+    expect(laid.twin).toBe(false)
+    expect(firstPlayable(laid)).toMatchObject({
+      chord: 'Am',
+      shape: '',
+      hasShape: false,
+      concert: 'Bm',
+      shapeName: 'Am',
+      capoFret: 2,
+    })
+  })
+
+  it('does not use shapeCapo as the draw source when dual is off', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: false })
+    const block = laid.blocks.find((b) => b.kind === 'stanza')
+    expect(block && 'shapeCapo' in block ? block.shapeCapo : undefined).toBe(0)
+    expect(firstPlayable(laid).capoFret).toBe(2)
+    expect(firstPlayable(laid).shapeName).toBe('Am')
+  })
+
+  it('nashville changes the chart label only', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: true, lens: 'nashville' })
+    const s = firstPlayable(laid)
+    expect(s.chord).toBe('2m')
+    expect(s.shape).toBe('')
+    expect(s.hasShape).toBe(false)
+    expect(s).toMatchObject({ concert: 'Bm', shapeName: 'Am', capoFret: 2 })
+  })
+
+  it('edit still exposes playable fields even though display stays the source', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: false, editing: true })
+    const s = firstPlayable(laid)
+    expect(s.chord).toBe('Bm')
+    expect(s.shape).toBe('')
+    expect(s).toMatchObject({ concert: 'Bm', shapeName: 'Am', capoFret: 2 })
+  })
+
+  it('lens letra still drops chords from the reading blocks', () => {
+    const laid = layoutChartFull(view, { capo: 2, dual: true, lens: 'letra' })
+    const segs = songSegs(laid)
+    expect(segs.some((s) => /hey/i.test(s.text))).toBe(true)
+    for (const s of segs) {
+      expect(s.chord).toBe('')
+      expect(s.shape).toBe('')
+      expect(s.hasShape).toBe(false)
+    }
+  })
+
+  it('#capo:2 on a block fills capoFret from that block, not the song', () => {
+    const src = ['{title: T}', '{key: A}', '', '#capo:2', '[Bm]hey', '', '[D]plain'].join('\n')
+    const laid = layoutChartFull(parse(src), {})
+    const blocks = laid.blocks.filter((b) => b.kind === 'stanza')
+    expect(blocks).toHaveLength(2)
+    const marked = blocks[0]!
+    const rest = blocks[1]!
+    if (marked.kind !== 'stanza' || rest.kind !== 'stanza') throw new Error('expected stanzas')
+    expect(marked.rows[0]?.segs.find((s) => s.chord)).toMatchObject({
+      concert: 'Bm',
+      shapeName: 'Am',
+      capoFret: 2,
+    })
+    expect(rest.rows[0]?.segs.find((s) => s.chord)).toMatchObject({
+      concert: 'D',
+      shapeName: 'D',
+      capoFret: 0,
+    })
+  })
+})
+
+describe('transpose is applied once', () => {
+  const src = ['{title: T}', '{key: G}', '', '[C]hey'].join('\n')
+
+  function firstChord(laid: ChartLayout): ChartSeg {
+    const s = songSegs(laid).find((x) => x.chord)
+    if (!s) throw new Error('expected a lyric chord')
+    return s
+  }
+
+  it('does not add transposeSemitones again when semitones is omitted', () => {
+    const laid = layoutChartFull(transpose(parse(src), 2))
+    const s = firstChord(laid)
+    expect(s.chord).toBe('D')
+    expect(s.concert).toBe('D')
+    expect(s.chord).not.toBe('E')
+  })
+
+  it('shifts a parsed view once when semitones is passed', () => {
+    const laid = layoutChartFull(parse(src), { semitones: 2 })
+    const s = firstChord(laid)
+    expect(s.chord).toBe('D')
+    expect(s.concert).toBe('D')
   })
 })

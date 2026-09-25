@@ -779,6 +779,17 @@
   font-weight: 700;
   color: var(--chord);
 }
+.cpv-chord-hit {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 /* Dual capo shape: quieter than the sounding chord so the green stays the read. */
 .cpv-shape {
   font-weight: 500;

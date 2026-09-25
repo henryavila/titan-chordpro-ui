@@ -283,7 +283,11 @@ function musicOf(block: ChartBlockDraft, srcLines: string[]): BlockMusic {
 }
 
 export type LayoutOpts = {
-  /** Global transpose, in semitones (defaults to the view's own). */
+  /**
+   * Semitones applied once to a view still in the written key.
+   * Omitted means 0: `transpose()` already rewrote the chords and stored
+   * the same count on `view.transposeSemitones`.
+   */
   semitones?: number
   /** Capo of the song. */
   capo?: number
@@ -442,7 +446,7 @@ export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlo
  * not change.
  */
 export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): ChartLayout {
-  const semis = opts.semitones ?? view.transposeSemitones
+  const semis = opts.semitones ?? 0
   const capo = Math.max(0, opts.capo ?? 0)
   const editing = !!opts.editing
   const flats = usesFlats(view.meta.key)
@@ -452,15 +456,21 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
 
   const drafts = groupChorus(groupNotes(flatten(view)), view.eocOf ?? {})
 
-  // A capo chosen for ONE block follows that block's own dual mark (`#capo:n`
-  // vs `#capo:n!`). The song-wide switch only applies when the block has none.
-  const capoReadOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
-    if (editing || nash) return { fret: 0, dual: false }
+  // Song or `#capo:n` fret — the draw source. Edit/Nashville still need this;
+  // they only zero the *display* projection (`capoReadOf`), not the playable fields.
+  const playableCapoOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
     const own = marks.blockCapo != null
     const fret = own ? (marks.blockCapo ?? 0) : capo
     if (fret <= 0) return { fret: 0, dual: false }
     const dual = own ? marks.blockCapoMap !== false : opts.dual !== false
     return { fret, dual }
+  }
+
+  // A capo chosen for ONE block follows that block's own dual mark (`#capo:n`
+  // vs `#capo:n!`). The song-wide switch only applies when the block has none.
+  const capoReadOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
+    if (editing || nash) return { fret: 0, dual: false }
+    return playableCapoOf(marks)
   }
 
   const nashRoot = transposeToken(keyRoot, semis, flats)
@@ -486,13 +496,27 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
     if (draft.kind !== 'stanza' && draft.kind !== 'chorus') return { ...draft, music }
 
     const read = capoReadOf(draft)
+    const playable = playableCapoOf(draft)
     const shapeCapo = read.dual ? read.fret : 0
     if (draft.blockCapo != null && draft.blockCapo > 0) anyBlockCapo = true
     if (shapeCapo > 0) twin = true
     const rows: ChartRow[] = draft.rows.map((row) => {
       const segs = row.segs.map((s): ChartSeg => {
         const d = display(s.chord, read)
-        return { ...s, chord: d.name, shape: d.shape, hasShape: !!d.shape }
+        const concert = s.chord ? (semis ? transposeToken(s.chord, semis, flats) : s.chord) : ''
+        const shapeName =
+          s.chord && playable.fret > 0
+            ? transposeToken(s.chord, semis - playable.fret, flats)
+            : concert
+        return {
+          ...s,
+          chord: d.name,
+          shape: d.shape,
+          hasShape: !!d.shape,
+          concert,
+          shapeName,
+          capoFret: playable.fret,
+        }
       })
       markTight(segs)
       return { ...row, segs }

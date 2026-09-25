@@ -1,0 +1,20 @@
+{
+  "T-001": {
+    "mode": "both-claude",
+    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F2-local.md",
+    "disposition": "fix",
+    "reason": "T-001 layout fields not in criticals; F2-fix1 addressed SVG/dict/slash from both-claude review"
+  },
+  "T-002": {
+    "mode": "both-claude",
+    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F2-claude.md",
+    "disposition": "fix",
+    "reason": "dict characteristic-tone + slash bass miss in cbab2b1"
+  },
+  "T-003": {
+    "mode": "both-claude",
+    "reviewFile": ".atomic-skills/reviews/2026-09-20-diagramas-cifra-F2-local.md",
+    "disposition": "fix",
+    "reason": "SVG one coordinate space in 5688727"
+  }
+}

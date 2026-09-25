@@ -1,0 +1,95 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F1",
+  "slug": "diagramas-cifra-f1-d1-define-parse-serialize-round-trip",
+  "title": "D1 {define} parse/serialize/round-trip",
+  "goal": "`{define}`, `{define-guitar}`, `{define-ukulele}` round-trip in parse/write; hyphenated keys are not eaten by DIR; writeMeta does not drop defines; exportCho preserves them; fixture on an existing chart; D4 must not write defines until this gate is green.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Parse and serialize define directives",
+      "scopeBoundary": [
+        "No Vue editor; no dictionary lookup; do not add define to META_KEYS as an x_ key; do not implement the diagram SVG."
+      ],
+      "acceptance": [
+        "DIR accepts define-guitar and define-ukulele as full keys; parseDefineDirective reads frets, fingers, base-fret, keys; serializeDefine emits ChordPro text; generic {define:} infers guitar from 6 frets, ukulele from 4, piano from keys; unknown arity is miss"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/define-directive.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/parse.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/core/define.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/core/index.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/define-directive.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "writeDefines + fixture + exportCho keep",
+      "scopeBoundary": [
+        "Do not invent lyrics; only add define lines to an existing fixture; do not build the shape editor UI; do not change strum meta keys."
+      ],
+      "acceptance": [
+        "writeDefines places the define block after META_KEYS header and before lyrics; writeMeta leaves define lines in place; exportCho of a source with {define-guitar:} still contains that directive; fixture fixtures/define-roundtrip.cho (outside fixtures/sda) has at least one {define-guitar:} used in tests; exportCho({semitones:2}) rewrites define names with the same transpose as the body"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/define.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/core/import-chordpro.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/core/export-cho.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/define-directive.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/export-cho.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "fixtures/define-roundtrip.cho"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F1-G1",
+      "description": "Define parse/serialize and exportCho tests green. FAILS when writeMeta or exportCho strips {define-guitar:}.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/define-directive.test.ts tests/core/export-cho.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}

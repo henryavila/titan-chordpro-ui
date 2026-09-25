@@ -14,6 +14,8 @@ demo/dist/
 .atomic-skills/status/SKIP-EMERGENT
 .atomic-skills/status/reconciliation.log
 .atomic-skills/status/last-session.json
+.atomic-skills/.aideck/
+.atomic-skills/focus.json
 .atomic-skills/projects/**/*.rendered.md
 .atomic-skills/plans/*.rendered.md
 .atomic-skills/initiatives/*.rendered.md

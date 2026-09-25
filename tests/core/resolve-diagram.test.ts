@@ -1,0 +1,1297 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+import {
+  drawDiagram,
+  parseChordToken,
+  resolveDiagram,
+  type ChordDefine,
+} from '../../src/core/index'
+import { parseDefineDirective, transposeDefine } from '../../src/core/define'
+import { keyIndex, noteAtSemitones } from '../../src/core/transpose'
+
+const AM_OVERRIDE: ChordDefine = {
+  name: 'Am',
+  instrument: 'guitar',
+  directive: 'define-guitar',
+  baseFret: 1,
+  frets: ['x', 0, 1, 2, 2, 0],
+  fingers: ['x', 0, 1, 3, 2, 0],
+}
+
+describe('resolveDiagram', () => {
+  it('is exported from src/core/index.ts', () => {
+    expect(typeof resolveDiagram).toBe('function')
+  })
+
+  it('hits C7M as the maj7 voicing', () => {
+    const guitar = resolveDiagram({ token: 'C7M', instrument: 'guitar' })
+    expect(guitar.class).toBe('hit')
+    if (guitar.class !== 'hit') return
+    expect(guitar.source).toBe('dictionary')
+    expect(guitar.voicing.frets).toEqual(['x', 3, 2, 0, 0, 0])
+    expect(guitar.voicing.frets).toHaveLength(6)
+
+    const piano = resolveDiagram({ token: 'C7M', instrument: 'piano' })
+    expect(piano.class).toBe('hit')
+    if (piano.class !== 'hit') return
+    expect(piano.voicing.keys).toEqual([0, 4, 7, 11])
+  })
+
+  it('hits C7+ as the same maj7 voicing as C7M', () => {
+    const plus = resolveDiagram({ token: 'C7+', instrument: 'guitar' })
+    const maj = resolveDiagram({ token: 'C7M', instrument: 'guitar' })
+    expect(plus.class).toBe('hit')
+    expect(maj.class).toBe('hit')
+    if (plus.class !== 'hit' || maj.class !== 'hit') return
+    expect(plus.voicing).toEqual(maj.voicing)
+    expect(plus.source).toBe('dictionary')
+    const piano = resolveDiagram({ token: 'Bb7+', instrument: 'piano' })
+    const named = resolveDiagram({ token: 'Bb7M', instrument: 'piano' })
+    expect(piano.class).toBe('hit')
+    expect(named.class).toBe('hit')
+    if (piano.class !== 'hit' || named.class !== 'hit') return
+    expect(piano.voicing).toEqual(named.voicing)
+  })
+
+  it('uses a C7+ define as the maj7 override', () => {
+    const raw = parseDefineDirective('{define-guitar: C7+ frets x 3 2 1 1 0}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const r = resolveDiagram({ token: 'C7+', instrument: 'guitar', overrides: [raw] })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('override')
+    expect(r.voicing.frets).toEqual(['x', 3, 2, 1, 1, 0])
+  })
+
+  it('misses C+ even when a define uses that name', () => {
+    const raw = parseDefineDirective('{define-guitar: C+ frets x 3 2 1 1 0}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(resolveDiagram({ token: 'C+', instrument: 'guitar', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+  })
+
+  it('hits Caug when the define name matches and the frets are present', () => {
+    expect(parseChordToken('Caug').class).not.toBe('parse')
+    const raw = parseDefineDirective('{define-guitar: Caug frets x 3 2 1 1 0}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const r = resolveDiagram({ token: 'Caug', instrument: 'guitar', overrides: [raw] })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('override')
+    expect(r.voicing.frets).toEqual(['x', 3, 2, 1, 1, 0])
+  })
+
+  it('hits a keys-only Caug define from the leading note, not unknown-token', () => {
+    const keysOnly = parseDefineDirective('{define: Caug keys 0 4 8}')
+    expect(keysOnly.class).toBe('parse')
+    if (keysOnly.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [keysOnly] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.source).toBe('override')
+    expect(hit.voicing.keys).toEqual([0, 4, 8])
+  })
+
+  it('hits Caug frets-plus-keys on piano from the leading note and the keys', () => {
+    const raw = parseDefineDirective('{define: Caug frets x 3 2 1 1 0 keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('piano')
+    const hit = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.source).toBe('override')
+    expect(hit.voicing.keys).toEqual([0, 4, 8])
+    expect(hit.voicing.keys?.length).toBeGreaterThan(0)
+  })
+
+  it('uses six frets from a piano-classified define for guitar, and its keys for piano', () => {
+    const raw = parseDefineDirective('{define: Caug frets x 3 2 1 1 0 keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('piano')
+    const guitar = resolveDiagram({ token: 'Caug', instrument: 'guitar', overrides: [raw] })
+    expect(guitar.class).toBe('hit')
+    if (guitar.class !== 'hit') return
+    expect(guitar.source).toBe('override')
+    expect(guitar.voicing.frets).toEqual(['x', 3, 2, 1, 1, 0])
+    const piano = resolveDiagram({ token: 'Caug', instrument: 'piano', overrides: [raw] })
+    expect(piano.class).toBe('hit')
+    if (piano.class !== 'hit') return
+    expect(piano.source).toBe('override')
+    expect(piano.voicing.keys).toEqual([0, 4, 8])
+  })
+
+  it('uses four frets from a piano-classified define for ukulele', () => {
+    const raw = parseDefineDirective('{define: Caug frets 2 0 0 0 keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('piano')
+    const uke = resolveDiagram({ token: 'Caug', instrument: 'ukulele', overrides: [raw] })
+    expect(uke.class).toBe('hit')
+    if (uke.class !== 'hit') return
+    expect(uke.source).toBe('override')
+    expect(uke.voicing.frets).toEqual([2, 0, 0, 0])
+    expect(
+      resolveDiagram({
+        token: 'Caug',
+        instrument: 'guitar',
+        overrides: [raw],
+      }),
+    ).toEqual({ class: 'miss', reason: 'unknown-token' })
+  })
+
+  it('does not use a keys-only define for guitar or ukulele', () => {
+    const raw = parseDefineDirective('{define: Caug keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(resolveDiagram({ token: 'Caug', instrument: 'guitar', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+    expect(resolveDiagram({ token: 'Caug', instrument: 'ukulele', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+  })
+
+  it('uses keys on a guitar define for piano instead of the package triad', () => {
+    const raw = parseDefineDirective('{define-guitar: C frets x 3 2 0 1 0 keys 0 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(raw.instrument).toBe('guitar')
+    const piano = resolveDiagram({ token: 'C', instrument: 'piano', overrides: [raw] })
+    expect(piano.class).toBe('hit')
+    if (piano.class !== 'hit') return
+    expect(piano.source).toBe('override')
+    expect(piano.voicing.keys).toEqual([0, 7])
+    const uke = parseDefineDirective('{define-ukulele: C frets 0 0 0 3 keys 0 7}')
+    expect(uke.class).toBe('parse')
+    if (uke.class !== 'parse') return
+    expect(uke.instrument).toBe('ukulele')
+    const fromUke = resolveDiagram({ token: 'C', instrument: 'piano', overrides: [uke] })
+    expect(fromUke.class).toBe('hit')
+    if (fromUke.class !== 'hit') return
+    expect(fromUke.source).toBe('override')
+    expect(fromUke.voicing.keys).toEqual([0, 7])
+  })
+
+  it('prefers a piano {define:} over a guitar line that also carries keys, in either order', () => {
+    const guitarLine = '{define-guitar: C frets x 3 2 0 1 0 keys 0 4 7}'
+    const pianoLine = '{define: C keys 0 7}'
+    for (const lines of [
+      [guitarLine, pianoLine],
+      [pianoLine, guitarLine],
+    ]) {
+      const overrides: ChordDefine[] = []
+      for (const line of lines) {
+        const raw = parseDefineDirective(line)
+        expect(raw.class, line).toBe('parse')
+        if (raw.class !== 'parse') continue
+        overrides.push(raw)
+      }
+      const guitar = resolveDiagram({ token: 'C', instrument: 'guitar', overrides })
+      expect(guitar.class).toBe('hit')
+      if (guitar.class !== 'hit') continue
+      expect(guitar.source).toBe('override')
+      expect(guitar.voicing.frets).toEqual(['x', 3, 2, 0, 1, 0])
+      const piano = resolveDiagram({ token: 'C', instrument: 'piano', overrides })
+      expect(piano.class).toBe('hit')
+      if (piano.class !== 'hit') continue
+      expect(piano.source).toBe('override')
+      expect(piano.voicing.keys).toEqual([0, 7])
+    }
+  })
+
+  it('prefers {define-guitar:} frets over a piano line that also has six frets, in either order', () => {
+    const pianoLine = '{define: D frets x 0 0 2 3 2 keys 0 4 7}'
+    const guitarLine = '{define-guitar: D frets 1 3 3 2 1 1}'
+    for (const lines of [
+      [pianoLine, guitarLine],
+      [guitarLine, pianoLine],
+    ]) {
+      const overrides: ChordDefine[] = []
+      for (const line of lines) {
+        const raw = parseDefineDirective(line)
+        expect(raw.class, line).toBe('parse')
+        if (raw.class !== 'parse') continue
+        overrides.push(raw)
+      }
+      const guitar = resolveDiagram({ token: 'D', instrument: 'guitar', overrides })
+      expect(guitar.class).toBe('hit')
+      if (guitar.class !== 'hit') continue
+      expect(guitar.source).toBe('override')
+      expect(guitar.voicing.frets).toEqual([1, 3, 3, 2, 1, 1])
+      const piano = resolveDiagram({ token: 'D', instrument: 'piano', overrides })
+      expect(piano.class).toBe('hit')
+      if (piano.class !== 'hit') continue
+      expect(piano.source).toBe('override')
+      expect(piano.voicing.keys).toEqual([0, 4, 7])
+    }
+  })
+
+  it('misses a piano define whose name has no root letter', () => {
+    const raw = parseDefineDirective('{define: aug keys 0 4 8}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    expect(resolveDiagram({ token: 'aug', instrument: 'piano', overrides: [raw] })).toEqual({
+      class: 'miss',
+      reason: 'unknown-token',
+    })
+  })
+
+  it('ignores quotes and resolves the chord they were wrapped around', () => {
+    const marks = ['\u0027', '\u0022', '\u2018', '\u2019', '\u201C', '\u201D']
+    const plain = resolveDiagram({ token: 'C', instrument: 'guitar' })
+    expect(plain.class).toBe('hit')
+    for (const mark of marks) {
+      const name = `C${mark}`
+      const hit = resolveDiagram({ token: name, instrument: 'guitar' })
+      expect(hit, name).toEqual(plain)
+      const drawn = drawDiagram({ instrument: 'piano', voicing: { keys: [0, 4, 7] }, token: name })
+      expect(drawn.kind, name).toBe('piano')
+      if (drawn.kind !== 'piano') continue
+      expect(drawn.lit, name).toEqual([0, 4, 7])
+    }
+    const sus = resolveDiagram({ token: 'A4"', instrument: 'guitar' })
+    const a4 = resolveDiagram({ token: 'A4', instrument: 'guitar' })
+    expect(sus).toEqual(a4)
+  })
+
+  it('hits C7+ on piano as maj7, including a keys override', () => {
+    const dict = resolveDiagram({ token: 'C7+', instrument: 'piano' })
+    expect(dict.class).toBe('hit')
+    if (dict.class !== 'hit') return
+    expect(dict.voicing.keys).toEqual([0, 4, 7, 11])
+    const raw = parseDefineDirective('{define: C7+ keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'C7+', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.source).toBe('override')
+    expect(hit.voicing.keys).toEqual([0, 4, 7])
+    expect(hit.voicing.keys).not.toEqual([0, 4, 7, 11])
+  })
+
+  it('reads MIDI keys on an unknown piano name from the leading note', () => {
+    const raw = parseDefineDirective('{define: Daug keys 48 52 56}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'Daug', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    expect(hit.voicing.keys).toEqual([10, 2, 6])
+  })
+
+  it('prefers a file override over the package dictionary', () => {
+    const dict = resolveDiagram({ token: 'Am', instrument: 'guitar' })
+    expect(dict.class).toBe('hit')
+    if (dict.class !== 'hit') return
+    expect(dict.source).toBe('dictionary')
+    expect(dict.voicing.frets).toEqual(['x', 0, 2, 2, 1, 0])
+
+    const over = resolveDiagram({
+      token: 'Am',
+      instrument: 'guitar',
+      overrides: [AM_OVERRIDE],
+    })
+    expect(over.class).toBe('hit')
+    if (over.class !== 'hit') return
+    expect(over.source).toBe('override')
+    expect(over.voicing.frets).toEqual(['x', 0, 1, 2, 2, 0])
+    expect(over.voicing.fingers).toEqual(['x', 0, 1, 3, 2, 0])
+    expect(over.voicing.frets).not.toEqual(dict.voicing.frets)
+  })
+
+  it('matches an override by canonical quality so C7M hits a Cmaj7 define', () => {
+    const def: ChordDefine = {
+      name: 'Cmaj7',
+      instrument: 'guitar',
+      directive: 'define-guitar',
+      baseFret: 1,
+      frets: ['x', 3, 2, 0, 0, 3],
+    }
+    const r = resolveDiagram({ token: 'C7M', instrument: 'guitar', overrides: [def] })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('override')
+    expect(r.voicing.frets).toEqual(['x', 3, 2, 0, 0, 3])
+  })
+
+  it('uses the guitar token as shapeName, not the concert lyric', () => {
+    const shape = resolveDiagram({ token: 'Am', instrument: 'guitar' })
+    const concert = resolveDiagram({ token: 'Bm', instrument: 'guitar' })
+    expect(shape.class).toBe('hit')
+    expect(concert.class).toBe('hit')
+    if (shape.class !== 'hit' || concert.class !== 'hit') return
+    expect(shape.voicing.frets).toEqual(['x', 0, 2, 2, 1, 0])
+    expect(concert.voicing.frets).not.toEqual(shape.voicing.frets)
+  })
+
+  it('uses the piano token as concert', () => {
+    const r = resolveDiagram({ token: 'Bm', instrument: 'piano' })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.voicing.keys).toEqual([0, 3, 7])
+    expect(r.voicing.frets).toBeUndefined()
+  })
+
+  it('does not apply a guitar override to piano', () => {
+    const r = resolveDiagram({
+      token: 'Am',
+      instrument: 'piano',
+      overrides: [AM_OVERRIDE],
+    })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('dictionary')
+    expect(r.voicing.keys).toEqual([0, 3, 7])
+  })
+
+  it('returns one voicing per name — the lowest open', () => {
+    const c = resolveDiagram({ token: 'C', instrument: 'guitar' })
+    expect(c.class).toBe('hit')
+    if (c.class !== 'hit') return
+    expect(c.voicing.frets).toEqual(['x', 3, 2, 0, 1, 0])
+    const again = resolveDiagram({ token: 'C', instrument: 'guitar' })
+    expect(again).toEqual(c)
+  })
+
+  it('ships ukulele GCEA (four strings) and not baritone', () => {
+    const uke = resolveDiagram({ token: 'C', instrument: 'ukulele' })
+    expect(uke.class).toBe('hit')
+    if (uke.class !== 'hit') return
+    expect(uke.voicing.frets).toEqual([0, 0, 0, 3])
+    expect(uke.voicing.frets).toHaveLength(4)
+  })
+
+  it('resolves A4" as the A sus4 dictionary grip', () => {
+    const quoted = resolveDiagram({ token: 'A4"', instrument: 'guitar' })
+    const plain = resolveDiagram({ token: 'A4', instrument: 'guitar' })
+    expect(quoted.class).toBe('hit')
+    expect(quoted).toEqual(plain)
+  })
+
+  it('classifies a parsed name with no voicing as no-shape', () => {
+    const r = resolveDiagram({ token: 'Cm7(11)', instrument: 'ukulele' })
+    expect(r.class).toBe('miss')
+    if (r.class !== 'miss') return
+    expect(r.reason).toBe('no-shape')
+  })
+
+  it('does not inherit Object.prototype keys as a dictionary hit', () => {
+    for (const token of ['CtoString', 'Cconstructor']) {
+      const r = resolveDiagram({ token, instrument: 'guitar' })
+      expect(r.class, token).toBe('miss')
+      if (r.class !== 'miss') continue
+      expect(r.reason, token).toBe('unknown-token')
+    }
+  })
+
+  it('builds a playable G/B instead of the plain G grip', () => {
+    const r = resolveDiagram({ token: 'G/B', instrument: 'guitar' })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('dictionary')
+    expect(r.voicing.bassIgnored).toBeUndefined()
+    expect(r.voicing.frets).toEqual(['x', 2, 0, 0, 0, 3])
+    const plain = resolveDiagram({ token: 'G', instrument: 'guitar' })
+    expect(plain.class).toBe('hit')
+    if (plain.class !== 'hit') return
+    expect(r.voicing.frets).not.toEqual(plain.voicing.frets)
+  })
+
+  it('hits G/B from {define-guitar: G/B ...}', () => {
+    const def: ChordDefine = {
+      name: 'G/B',
+      instrument: 'guitar',
+      directive: 'define-guitar',
+      baseFret: 1,
+      frets: ['x', 2, 0, 0, 0, 3],
+    }
+    const r = resolveDiagram({ token: 'G/B', instrument: 'guitar', overrides: [def] })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('override')
+    expect(r.voicing.frets).toEqual(['x', 2, 0, 0, 0, 3])
+  })
+
+  it('draws C/G, A/C#, A/E, D/F# and E/G# with the bass as the lowest note', () => {
+    const grips: Record<string, Array<number | 'x'>> = {
+      'C/G': [3, 3, 2, 0, 1, 0],
+      'A/C#': ['x', 4, 2, 2, 2, 0],
+      'A/E': [0, 0, 2, 2, 2, 0],
+      'D/F#': [2, 'x', 0, 2, 3, 2],
+      'E/G#': [4, 2, 2, 1, 0, 0],
+    }
+    for (const [token, frets] of Object.entries(grips)) {
+      const r = resolveDiagram({ token, instrument: 'guitar' })
+      expect(r.class, token).toBe('hit')
+      if (r.class !== 'hit') continue
+      expect(r.voicing.bassIgnored, token).toBeUndefined()
+      expect(r.voicing.frets, token).toEqual(frets)
+      const drawn = drawDiagram({ instrument: 'guitar', voicing: r.voicing, token })
+      expect(drawn.svg, token).not.toContain('ignorado')
+    }
+  })
+
+  it('says the bass was left out when the ukulele grip does not fit', () => {
+    const r = resolveDiagram({ token: 'G/B', instrument: 'ukulele' })
+    const plain = resolveDiagram({ token: 'G', instrument: 'ukulele' })
+    expect(r.class).toBe('hit')
+    expect(plain.class).toBe('hit')
+    if (r.class !== 'hit' || plain.class !== 'hit') return
+    expect(r.voicing.bassIgnored).toBe('B')
+    expect(r.voicing.frets).toEqual(plain.voicing.frets)
+    const drawn = drawDiagram({ instrument: 'ukulele', voicing: r.voicing, token: 'G/B' })
+    expect(drawn.svg).toContain('diagram-bass-ignored')
+    expect(drawn.svg).toContain('baixo em B ignorado')
+
+    const degree = resolveDiagram({ token: 'D9/4', instrument: 'ukulele' })
+    expect(degree.class).toBe('hit')
+    if (degree.class !== 'hit') return
+    expect(degree.voicing.bassIgnored).toBe('G')
+    const degreeDraw = drawDiagram({ instrument: 'ukulele', voicing: degree.voicing, token: 'D9/4' })
+    expect(degreeDraw.svg).toContain('baixo em G ignorado')
+    expect(degreeDraw.svg).not.toContain('baixo em 4')
+  })
+
+  it('treats every slash like C/G: same pitches, any root, any spelling', () => {
+    const roots = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
+    const open = [40, 45, 50, 55, 59, 64]
+    const pc = [4, 9, 2, 7, 11, 4]
+    const need: Record<string, number[]> = {
+      major: [4],
+      m: [3],
+      '7': [4, 10],
+      maj7: [4, 11],
+      add9: [4, 2],
+    }
+    const suffixes = ['', 'm', '7', '7M', '7+', '9'] as const
+    const problems: string[] = []
+    const lowest = (frets: Array<number | 'x' | undefined>, rootPc: number) => {
+      let min = Infinity
+      let low = -1
+      const rel = new Set<number>()
+      frets.forEach((fret, s) => {
+        if (fret === 'x' || fret === undefined) return
+        const midi = open[s]! + fret
+        const tone = ((pc[s]! + fret) % 12 + 12) % 12
+        rel.add((tone - rootPc + 12) % 12)
+        if (midi < min) {
+          min = midi
+          low = tone
+        }
+      })
+      return { low, rel }
+    }
+    for (const root of roots) {
+      const rootPc = keyIndex(root)
+      if (rootPc === null) {
+        problems.push(`${root} root`)
+        continue
+      }
+      for (const step of [4, 7]) {
+        const bass = noteAtSemitones(root, step)
+        const degree = step === 4 ? '3' : '5'
+        if (!bass) {
+          problems.push(`${root} bass ${step}`)
+          continue
+        }
+        for (const suffix of suffixes) {
+          const letter = `${root}${suffix}/${bass}`
+          const byDegree = `${root}${suffix}/${degree}`
+          const hit = resolveDiagram({ token: letter, instrument: 'guitar' })
+          const alt = resolveDiagram({ token: byDegree, instrument: 'guitar' })
+          if (hit.class !== 'hit' || alt.class !== 'hit') {
+            problems.push(`${letter} miss`)
+            continue
+          }
+          if (JSON.stringify(hit.voicing.frets) !== JSON.stringify(alt.voicing.frets)) {
+            problems.push(`${letter} !== ${byDegree}`)
+          }
+          if (hit.voicing.bassIgnored || alt.voicing.bassIgnored) problems.push(`${letter} ignored`)
+          const heard = lowest(hit.voicing.frets ?? [], rootPc)
+          const bassPc = keyIndex(bass)
+          if (heard.low !== bassPc) problems.push(`${letter} bass ${heard.low}`)
+          if (!heard.rel.has(0)) problems.push(`${letter} no root`)
+          const quality = suffix === '7M' || suffix === '7+' ? 'maj7' : suffix === '9' ? 'add9' : suffix === 'm' ? 'm' : suffix === '7' ? '7' : 'major'
+          for (const tone of need[quality] ?? []) {
+            if (!heard.rel.has(tone)) problems.push(`${letter} missing ${tone}`)
+          }
+        }
+      }
+    }
+    const same = (a: string, b: string) => {
+      const left = resolveDiagram({ token: a, instrument: 'guitar' })
+      const right = resolveDiagram({ token: b, instrument: 'guitar' })
+      if (left.class !== 'hit' || right.class !== 'hit') return false
+      return JSON.stringify(left.voicing.frets) === JSON.stringify(right.voicing.frets)
+    }
+    if (!same('C/G', 'C/5')) problems.push('C/G special-cased')
+    if (!same('"C/G"', 'C/G')) problems.push('quoted C/G')
+    if (!same('C7+/G', 'C7M/G')) problems.push('C7+/G')
+    if (!same('Bb/F', 'A#/F')) problems.push('Bb/F enharmonic')
+    expect(problems).toEqual([])
+    expect(resolveDiagram({ token: 'Gm7(11)/D', instrument: 'guitar' })).toEqual({
+      class: 'miss',
+      reason: 'no-shape',
+    })
+  })
+
+  it('gives every hymnal slash a diagram: bass in the grip, or the plain chord plus the note', () => {
+    const table = JSON.parse(
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'chord-oracle.table.json'), 'utf8'),
+    ) as { name: string; class: string; bass?: string; quality?: string }[]
+    const slashes = table.filter((row) => row.class === 'parse' && row.bass)
+    expect(slashes.length).toBeGreaterThan(80)
+    const ukeLeftOut = [
+      'A/B', 'Am6/B', 'B/Db', 'D/A', 'D7/A', 'D9/4', 'D9/A', 'D9/B', 'E/B', 'E7M/B',
+      'F#/A#', 'F#/B', 'F#m/A', 'G/A', 'G/B', 'G7/B', 'Gb/Bb', 'Gm/A', 'Gm/Bb', 'Gm6/A',
+    ]
+    const left = new Set(ukeLeftOut)
+    const problems: string[] = []
+    for (const row of slashes) {
+      for (const instrument of ['guitar', 'ukulele'] as const) {
+        const hit = resolveDiagram({ token: row.name, instrument })
+        if (hit.class !== 'hit') {
+          problems.push(`${instrument} ${row.name} ${hit.class === 'miss' ? hit.reason : ''}`)
+          continue
+        }
+        const plain = resolveDiagram({ token: row.name.slice(0, row.name.indexOf('/')), instrument })
+        if (hit.voicing.bassIgnored) {
+          if (instrument === 'guitar') problems.push(`guitar left out ${row.name}`)
+          if (!left.has(row.name)) problems.push(`ukulele left out ${row.name} unexpectedly`)
+          if (plain.class !== 'hit' || JSON.stringify(hit.voicing.frets) !== JSON.stringify(plain.voicing.frets)) {
+            problems.push(`${instrument} ${row.name} fallback is not the plain chord`)
+          }
+        } else if (instrument === 'ukulele' && left.has(row.name)) {
+          problems.push(`ukulele ${row.name} grew a bass grip`)
+        } else {
+          const frets = hit.voicing.frets ?? []
+          const open = instrument === 'guitar' ? [40, 45, 50, 55, 59, 64] : [67, 60, 64, 69]
+          const pc = instrument === 'guitar' ? [4, 9, 2, 7, 11, 4] : [7, 0, 4, 9]
+          let min = Infinity
+          let lowest = -1
+          frets.forEach((fret, s) => {
+            if (fret === 'x' || fret === undefined) return
+            const midi = open[s]! + fret
+            if (midi < min) {
+              min = midi
+              lowest = ((pc[s]! + fret) % 12 + 12) % 12
+            }
+          })
+          const bass = keyIndex(row.bass ?? '')
+          if (lowest !== bass) problems.push(`${instrument} ${row.name} lowest ${lowest} want ${bass}`)
+        }
+      }
+      const piano = resolveDiagram({ token: row.name, instrument: 'piano' })
+      if (piano.class !== 'hit') problems.push(`piano ${row.name}`)
+      else if (piano.voicing.bassIgnored) problems.push(`piano left out ${row.name}`)
+    }
+    for (const name of ukeLeftOut) {
+      if (!slashes.some((row) => row.name === name)) problems.push(`missing hymnal name ${name}`)
+    }
+    expect(problems).toEqual([])
+  })
+
+  it('does not use a plain G define as the G/B grip', () => {
+    const def: ChordDefine = {
+      name: 'G',
+      instrument: 'guitar',
+      directive: 'define-guitar',
+      baseFret: 1,
+      frets: [3, 2, 0, 0, 0, 3],
+    }
+    const r = resolveDiagram({ token: 'G/B', instrument: 'guitar', overrides: [def] })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    expect(r.source).toBe('dictionary')
+    expect(r.voicing.frets).toEqual(['x', 2, 0, 0, 0, 3])
+    expect(r.voicing.frets).not.toEqual(def.frets)
+  })
+
+  it('reads Am keys 0 3 7 as A C E and 9 0 4 as distances', () => {
+    const rel = resolveDiagram({
+      token: 'Am',
+      instrument: 'piano',
+      overrides: [{ name: 'Am', instrument: 'piano', directive: 'define', keys: [0, 3, 7] }],
+    })
+    expect(rel.class).toBe('hit')
+    if (rel.class !== 'hit') return
+    expect(rel.source).toBe('override')
+    expect(rel.voicing.keys).toEqual([0, 3, 7])
+    const dRel = drawDiagram({ instrument: 'piano', voicing: rel.voicing, token: 'Am' })
+    expect(dRel.kind).toBe('piano')
+    if (dRel.kind !== 'piano') return
+    expect(dRel.litNotes).toEqual(['A', 'C', 'E'])
+
+    const dist = resolveDiagram({
+      token: 'Am',
+      instrument: 'piano',
+      overrides: [{ name: 'Am', instrument: 'piano', directive: 'define', keys: [9, 0, 4] }],
+    })
+    expect(dist.class).toBe('hit')
+    if (dist.class !== 'hit') return
+    expect(dist.voicing.keys).toEqual([9, 0, 4])
+    const dDist = drawDiagram({ instrument: 'piano', voicing: dist.voicing, token: 'Am' })
+    expect(dDist.kind).toBe('piano')
+    if (dDist.kind !== 'piano') return
+    expect(dDist.lit).toEqual([6, 9, 1])
+    expect(dDist.litNotes).toEqual(['F#', 'A', 'C#'])
+  })
+
+  it('reads 0–17 keys as distances, so 7 0 is not a second spelling', () => {
+    const g7 = resolveDiagram({
+      token: 'G7sus4',
+      instrument: 'piano',
+      overrides: [{ name: 'G7sus4', instrument: 'piano', directive: 'define', keys: [0, 5, 10] }],
+    })
+    expect(g7.class).toBe('hit')
+    if (g7.class !== 'hit') return
+    expect(g7.voicing.keys).toEqual([0, 5, 10])
+    const dG7 = drawDiagram({ instrument: 'piano', voicing: g7.voicing, token: 'G7sus4' })
+    expect(dG7.kind).toBe('piano')
+    if (dG7.kind !== 'piano') return
+    expect(dG7.lit).toEqual([7, 0, 5])
+    expect(dG7.litNotes).toEqual(['G', 'C', 'F'])
+
+    const g7dist = resolveDiagram({
+      token: 'G7sus4',
+      instrument: 'piano',
+      overrides: [{ name: 'G7sus4', instrument: 'piano', directive: 'define', keys: [7, 0, 5] }],
+    })
+    expect(g7dist.class).toBe('hit')
+    if (g7dist.class !== 'hit') return
+    expect(g7dist.voicing.keys).toEqual([7, 0, 5])
+    const d7 = drawDiagram({ instrument: 'piano', voicing: g7dist.voicing, token: 'G7sus4' })
+    expect(d7.kind).toBe('piano')
+    if (d7.kind !== 'piano') return
+    expect(d7.lit).toEqual([2, 7, 0])
+    expect(d7.litNotes).toEqual(['D', 'G', 'C'])
+
+    const gsus = resolveDiagram({
+      token: 'Gsus4',
+      instrument: 'piano',
+      overrides: [{ name: 'Gsus4', instrument: 'piano', directive: 'define', keys: [0, 5] }],
+    })
+    expect(gsus.class).toBe('hit')
+    if (gsus.class !== 'hit') return
+    expect(gsus.voicing.keys).toEqual([0, 5])
+    const dSus = drawDiagram({ instrument: 'piano', voicing: gsus.voicing, token: 'Gsus4' })
+    expect(dSus.kind).toBe('piano')
+    if (dSus.kind !== 'piano') return
+    expect(dSus.litNotes).toEqual(['G', 'C'])
+
+    const gsusDist = resolveDiagram({
+      token: 'Gsus4',
+      instrument: 'piano',
+      overrides: [{ name: 'Gsus4', instrument: 'piano', directive: 'define', keys: [7, 0] }],
+    })
+    expect(gsusDist.class).toBe('hit')
+    if (gsusDist.class !== 'hit') return
+    expect(gsusDist.voicing.keys).toEqual([7, 0])
+    const ds = drawDiagram({ instrument: 'piano', voicing: gsusDist.voicing, token: 'Gsus4' })
+    expect(ds.kind).toBe('piano')
+    if (ds.kind !== 'piano') return
+    expect(ds.lit).toEqual([2, 7])
+    expect(ds.litNotes).toEqual(['D', 'G'])
+
+    const c = resolveDiagram({
+      token: 'C',
+      instrument: 'piano',
+      overrides: [{ name: 'C', instrument: 'piano', directive: 'define', keys: [0, 4, 7] }],
+    })
+    expect(c.class).toBe('hit')
+    if (c.class !== 'hit') return
+    expect(c.voicing.keys).toEqual([0, 4, 7])
+    const dC = drawDiagram({ instrument: 'piano', voicing: c.voicing, token: 'C' })
+    expect(dC.kind).toBe('piano')
+    if (dC.kind !== 'piano') return
+    expect(dC.litNotes).toEqual(['C', 'E', 'G'])
+  })
+
+  it('draws F7sus4 keys 0 5 10 as F A# D#', () => {
+    const f7sus4 = resolveDiagram({
+      token: 'F7sus4',
+      instrument: 'piano',
+      overrides: [
+        { name: 'F7sus4', instrument: 'piano', directive: 'define', keys: [0, 5, 10] },
+      ],
+    })
+    expect(f7sus4.class).toBe('hit')
+    if (f7sus4.class !== 'hit') return
+    expect(f7sus4.voicing.keys).toEqual([0, 5, 10])
+    const d = drawDiagram({ instrument: 'piano', voicing: f7sus4.voicing, token: 'F7sus4' })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.lit).toEqual([5, 10, 3])
+    expect(d.litNotes).toEqual(['F', 'A#', 'D#'])
+  })
+
+  it('reads D7M(9)/B keys 9 0 11 2 as distances from D', () => {
+    const r = resolveDiagram({
+      token: 'D7M(9)/B',
+      instrument: 'piano',
+      overrides: [
+        { name: 'D7M(9)/B', instrument: 'piano', directive: 'define', keys: [9, 0, 11, 2] },
+      ],
+    })
+    expect(r.class).toBe('hit')
+    if (r.class !== 'hit') return
+    const d = drawDiagram({ instrument: 'piano', voicing: r.voicing, token: 'D7M(9)/B' })
+    expect(d.kind).toBe('piano')
+    if (d.kind !== 'piano') return
+    expect(d.lit).toEqual([11, 2, 1, 4])
+    expect(d.litNotes).toEqual(['B', 'D', 'C#', 'E'])
+
+    const notAbs = resolveDiagram({
+      token: 'D7M(9)/B',
+      instrument: 'piano',
+      overrides: [
+        { name: 'D7M(9)/B', instrument: 'piano', directive: 'define', keys: [11, 2, 1, 4] },
+      ],
+    })
+    expect(notAbs.class).toBe('hit')
+    if (notAbs.class !== 'hit') return
+    const absDraw = drawDiagram({ instrument: 'piano', voicing: notAbs.voicing, token: 'D7M(9)/B' })
+    expect(absDraw.kind).toBe('piano')
+    if (absDraw.kind !== 'piano') return
+    expect(absDraw.lit).toEqual([1, 4, 3, 6])
+    expect(absDraw.litNotes).not.toEqual(['B', 'D', 'C#', 'E'])
+  })
+
+  it('draws a transposed relative piano define as the new chord', () => {
+    const raw = parseDefineDirective('{define: D keys 0 4 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const plain = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(plain.class).toBe('hit')
+    if (plain.class !== 'hit') return
+    const plainDraw = drawDiagram({ instrument: 'piano', voicing: plain.voicing, token: 'D' })
+    expect(plainDraw.kind).toBe('piano')
+    if (plainDraw.kind !== 'piano') return
+    expect(plainDraw.litNotes).toEqual(['D', 'F#', 'A'])
+
+    const shifted = transposeDefine(raw, 2, false)
+    expect(shifted).toMatchObject({ name: 'E', keys: [0, 4, 7] })
+    if (!shifted) return
+    const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: shifted.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.litNotes).toEqual(['E', 'G#', 'B'])
+
+    const c = parseDefineDirective('{define: C keys 0 4 7}')
+    expect(c.class).toBe('parse')
+    if (c.class !== 'parse') return
+    const cShift = transposeDefine(c, 2, false)
+    expect(cShift).toMatchObject({ name: 'D', keys: [0, 4, 7] })
+    if (!cShift) return
+    const cHit = resolveDiagram({ token: cShift.name, instrument: 'piano', overrides: [cShift] })
+    expect(cHit.class).toBe('hit')
+    if (cHit.class !== 'hit') return
+    const cDraw = drawDiagram({ instrument: 'piano', voicing: cHit.voicing, token: cShift.name })
+    expect(cDraw.kind).toBe('piano')
+    if (cDraw.kind !== 'piano') return
+    expect(cDraw.litNotes).toEqual(['D', 'F#', 'A'])
+  })
+
+  it('draws F7sus4 and its +2 transpose from the same relative reading', () => {
+    const raw = parseDefineDirective('{define: F7sus4 keys 0 5 10}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const plain = resolveDiagram({ token: 'F7sus4', instrument: 'piano', overrides: [raw] })
+    expect(plain.class).toBe('hit')
+    if (plain.class !== 'hit') return
+    const plainDraw = drawDiagram({ instrument: 'piano', voicing: plain.voicing, token: 'F7sus4' })
+    expect(plainDraw.kind).toBe('piano')
+    if (plainDraw.kind !== 'piano') return
+    expect(plainDraw.lit).toEqual([5, 10, 3])
+    expect(plainDraw.litNotes).toEqual(['F', 'A#', 'D#'])
+
+    const shifted = transposeDefine(raw, 2, false)
+    expect(shifted).toMatchObject({ name: 'G7sus4', keys: [0, 5, 10] })
+    if (!shifted) return
+    const hit = resolveDiagram({ token: shifted.name, instrument: 'piano', overrides: [shifted] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: shifted.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([7, 0, 5])
+    expect(draw.litNotes).toEqual(['G', 'C', 'F'])
+  })
+
+  it('round-trips Dsus2 keys 0 7 through +3 and back to D A', () => {
+    const raw = parseDefineDirective('{define: Dsus2 keys 0 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const up = transposeDefine(raw, 3, false)
+    expect(up).toMatchObject({ name: 'Fsus2', keys: [0, 7] })
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.lit).toEqual([5, 0])
+    expect(upDraw.litNotes).toEqual(['F', 'C'])
+
+    const back = transposeDefine(up, -3, false)
+    expect(back).toMatchObject({ name: 'Dsus2', keys: [0, 7] })
+    if (!back) return
+    const backHit = resolveDiagram({ token: back.name, instrument: 'piano', overrides: [back] })
+    expect(backHit.class).toBe('hit')
+    if (backHit.class !== 'hit') return
+    const backDraw = drawDiagram({ instrument: 'piano', voicing: backHit.voicing, token: back.name })
+    expect(backDraw.kind).toBe('piano')
+    if (backDraw.kind !== 'piano') return
+    expect(backDraw.lit).toEqual([2, 9])
+    expect(backDraw.litNotes).toEqual(['D', 'A'])
+  })
+
+  it('round-trips Dsus2 keys 0 7 through +5 to G D and back to D A', () => {
+    const raw = parseDefineDirective('{define: Dsus2 keys 0 7}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const up = transposeDefine(raw, 5, false)
+    expect(up).toMatchObject({ name: 'Gsus2', keys: [0, 7] })
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.lit).toEqual([7, 2])
+    expect(upDraw.litNotes).toEqual(['G', 'D'])
+
+    const back = transposeDefine(up, -5, false)
+    expect(back).toMatchObject({ name: 'Dsus2', keys: [0, 7] })
+    if (!back) return
+    const backHit = resolveDiagram({ token: back.name, instrument: 'piano', overrides: [back] })
+    expect(backHit.class).toBe('hit')
+    if (backHit.class !== 'hit') return
+    const backDraw = drawDiagram({ instrument: 'piano', voicing: backHit.voicing, token: back.name })
+    expect(backDraw.kind).toBe('piano')
+    if (backDraw.kind !== 'piano') return
+    expect(backDraw.lit).toEqual([2, 9])
+    expect(backDraw.litNotes).toEqual(['D', 'A'])
+  })
+
+  it('draws D9 keys 0 4 7 14 as D F# A E', () => {
+    const raw = parseDefineDirective('{define: D9 keys 0 4 7 14}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D9', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D9' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 6, 9, 4])
+    expect(draw.litNotes).toEqual(['D', 'F#', 'A', 'E'])
+  })
+
+  it('draws D keys 50 52 as MIDI D and E, not a relative reading', () => {
+    const raw = parseDefineDirective('{define: D keys 50 52}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 4])
+    expect(draw.litNotes).toEqual(['D', 'E'])
+  })
+
+  it('reads D keys 12 16 19 and 7 12 16 as distances, not MIDI', () => {
+    const triad = parseDefineDirective('{define: D keys 12 16 19}')
+    expect(triad.class).toBe('parse')
+    if (triad.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [triad] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([2, 6, 9])
+    expect(draw.litNotes).toEqual(['D', 'F#', 'A'])
+    expect(draw.litNotes).not.toEqual(['C', 'E', 'G'])
+
+    const up = transposeDefine(triad, 2, false)
+    expect(up).toMatchObject({ name: 'E', keys: [12, 16, 19] })
+    expect(up?.keys).not.toEqual([26, 30, 33])
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.lit).toEqual([4, 8, 11])
+    expect(upDraw.litNotes).toEqual(['E', 'G#', 'B'])
+
+    const fifth = parseDefineDirective('{define: D keys 7 12 16}')
+    expect(fifth.class).toBe('parse')
+    if (fifth.class !== 'parse') return
+    const fifthHit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [fifth] })
+    expect(fifthHit.class).toBe('hit')
+    if (fifthHit.class !== 'hit') return
+    const fifthDraw = drawDiagram({ instrument: 'piano', voicing: fifthHit.voicing, token: 'D' })
+    expect(fifthDraw.kind).toBe('piano')
+    if (fifthDraw.kind !== 'piano') return
+    expect(fifthDraw.lit).toEqual([9, 2, 6])
+    expect(fifthDraw.litNotes).toEqual(['A', 'D', 'F#'])
+    expect(new Set(fifthDraw.lit)).toEqual(new Set([2, 9, 6]))
+  })
+
+  it('reads D keys 24 28 31 as distances D F# A and keeps them on +2', () => {
+    const raw = parseDefineDirective('{define: D keys 24 28 31}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.litNotes).toEqual(['D', 'F#', 'A'])
+
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({ name: 'E', keys: [24, 28, 31] })
+    if (!up) return
+    const upHit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(upHit.class).toBe('hit')
+    if (upHit.class !== 'hit') return
+    const upDraw = drawDiagram({ instrument: 'piano', voicing: upHit.voicing, token: up.name })
+    expect(upDraw.kind).toBe('piano')
+    if (upDraw.kind !== 'piano') return
+    expect(upDraw.litNotes).toEqual(['E', 'G#', 'B'])
+  })
+
+  it('reads D keys 19 24 28 as distances A D F#', () => {
+    const raw = parseDefineDirective('{define: D keys 19 24 28}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const hit = resolveDiagram({ token: 'D', instrument: 'piano', overrides: [raw] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: 'D' })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([9, 2, 6])
+    expect(draw.litNotes).toEqual(['A', 'D', 'F#'])
+    expect(transposeDefine(raw, 2, false)).toMatchObject({ name: 'E', keys: [19, 24, 28] })
+  })
+
+  it('puts a written piano bass lowest, and adds it when the chord did not have it', () => {
+    const g = resolveDiagram({ token: 'G/B', instrument: 'piano' })
+    expect(g.class).toBe('hit')
+    if (g.class !== 'hit') return
+    expect(g.voicing.keys).toEqual([0, 4, 7])
+    expect(g.voicing.bassIgnored).toBeUndefined()
+    expect(g.inversions?.map((inv) => inv.label)).toEqual(['G/B', 'G'])
+    const gb = g.inversions?.[0]?.tones ?? []
+    expect(gb.map((tone) => tone.midi % 12)).toEqual([11, 2, 7])
+    expect(Math.min(...gb.map((tone) => tone.midi)) % 12).toBe(11)
+
+    const em = resolveDiagram({ token: 'Em/D', instrument: 'piano' })
+    expect(em.class).toBe('hit')
+    if (em.class !== 'hit') return
+    expect(em.voicing.keys).toEqual([0, 3, 7, 10])
+    expect(em.inversions?.map((inv) => inv.label)).toEqual(['Em/D', 'Em'])
+    const emd = em.inversions?.[0]?.tones ?? []
+    expect(emd).toHaveLength(4)
+    expect(emd[0]?.degree).toBe('b7')
+    expect(emd[0]?.midi).toBe(Math.min(...emd.map((tone) => tone.midi)))
+    expect(emd[0]?.midi % 12).toBe(2)
+  })
+
+  it('draws D9 keys 0 4 7 14 transposed +2 as E G# B F#', () => {
+    const raw = parseDefineDirective('{define: D9 keys 0 4 7 14}')
+    expect(raw.class).toBe('parse')
+    if (raw.class !== 'parse') return
+    const up = transposeDefine(raw, 2, false)
+    expect(up).toMatchObject({ name: 'E9', keys: [0, 4, 7, 14] })
+    if (!up) return
+    const hit = resolveDiagram({ token: up.name, instrument: 'piano', overrides: [up] })
+    expect(hit.class).toBe('hit')
+    if (hit.class !== 'hit') return
+    const draw = drawDiagram({ instrument: 'piano', voicing: hit.voicing, token: up.name })
+    expect(draw.kind).toBe('piano')
+    if (draw.kind !== 'piano') return
+    expect(draw.lit).toEqual([4, 8, 11, 6])
+    expect(draw.litNotes).toEqual(['E', 'G#', 'B', 'F#'])
+  })
+})
+
+const TUNING = {
+  guitar: [4, 9, 2, 7, 11, 4],
+  ukulele: [7, 0, 4, 9],
+} as const
+
+const ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
+
+/**
+ * Intervals from the tonic. 14 sounds as 2 and 17 sounds as 5, so those
+ * are already reduced here. A sounding pitch class outside `allowed` is
+ * illegal. `required` must be present. The fifth (7) may be omitted when
+ * it is allowed. The root may be omitted once `required` is present.
+ * Shell (9 and maj9 only): the major third may be omitted when the
+ * characteristic seventh and the ninth are both present.
+ */
+const CHORD_ORACLE: Record<
+  string,
+  { allowed: number[]; required: number[]; shell?: { seventh: number; ninth: number; third: number } }
+> = {
+  major: { allowed: [0, 4, 7], required: [4] },
+  m: { allowed: [0, 3, 7], required: [3] },
+  '5': { allowed: [0, 7], required: [7] },
+  '6': { allowed: [0, 4, 7, 9], required: [4, 9] },
+  '6add9': { allowed: [0, 4, 7, 9, 2], required: [4, 9, 2] },
+  '7': { allowed: [0, 4, 7, 10], required: [4, 10] },
+  '9': { allowed: [0, 4, 7, 10, 2], required: [10, 2], shell: { seventh: 10, ninth: 2, third: 4 } },
+  add9: { allowed: [0, 4, 7, 2], required: [4, 2] },
+  maj7: { allowed: [0, 4, 7, 11], required: [4, 11] },
+  maj9: { allowed: [0, 4, 7, 11, 2], required: [11, 2], shell: { seventh: 11, ninth: 2, third: 4 } },
+  m6: { allowed: [0, 3, 7, 9], required: [3, 9] },
+  m7: { allowed: [0, 3, 7, 10], required: [3, 10] },
+  m9: { allowed: [0, 3, 7, 10, 2], required: [3, 10, 2] },
+  sus2: { allowed: [0, 2, 7], required: [2] },
+  sus4: { allowed: [0, 5, 7], required: [5] },
+  '7sus4': { allowed: [0, 5, 7, 10], required: [5, 10] },
+  dim: { allowed: [0, 3, 6], required: [3, 6] },
+}
+
+const GRID: { quality: string; suffix: string; aliases?: string[] }[] = [
+  { quality: 'major', suffix: '' },
+  { quality: 'm', suffix: 'm' },
+  { quality: '5', suffix: '5' },
+  { quality: '6', suffix: '6' },
+  { quality: '6add9', suffix: '6(9)' },
+  { quality: '7', suffix: '7' },
+  { quality: '9', suffix: '7(9)' },
+  { quality: 'add9', suffix: '9' },
+  { quality: 'maj7', suffix: 'maj7', aliases: ['7M', 'M7', '7+'] },
+  { quality: 'maj9', suffix: '7M(9)' },
+  { quality: 'm6', suffix: 'm6' },
+  { quality: 'm7', suffix: 'm7' },
+  { quality: 'm9', suffix: 'm9' },
+  { quality: 'sus2', suffix: 'sus2', aliases: ['2'] },
+  { quality: 'sus4', suffix: 'sus4', aliases: ['4', 'sus'] },
+  { quality: '7sus4', suffix: '7sus4', aliases: ['7(4)'] },
+  { quality: 'dim', suffix: 'dim', aliases: ['º', '°'] },
+]
+
+/** Parser spellings that share a pitch class. E#=F, Fb=E, B#=C, Cb=B. */
+const ENHARMONIC: ReadonlyArray<readonly [string, string]> = [
+  ['C#', 'Db'],
+  ['D#', 'Eb'],
+  ['F#', 'Gb'],
+  ['G#', 'Ab'],
+  ['A#', 'Bb'],
+  ['E#', 'F'],
+  ['Fb', 'E'],
+  ['B#', 'C'],
+  ['Cb', 'B'],
+]
+
+const M11 = [0, 3, 7, 10, 2, 5] as const
+
+function pitchClasses(instrument: 'guitar' | 'ukulele', frets: Array<number | 'x'>): Set<number> {
+  const open = TUNING[instrument]
+  const pcs = new Set<number>()
+  for (let i = 0; i < open.length; i++) {
+    const fret = frets[i]
+    if (fret === 'x' || fret === undefined) continue
+    pcs.add((open[i]! + fret) % 12)
+  }
+  return pcs
+}
+
+function oracleFailure(quality: string, rootPc: number, sounded: Set<number>): string | null {
+  const spec = CHORD_ORACLE[quality]
+  if (!spec) return `no oracle for ${quality}`
+  const rel = new Set([...sounded].map((pc) => (pc - rootPc + 12) % 12))
+  const allowed = new Set(spec.allowed)
+  const foreign = [...rel].filter((tone) => !allowed.has(tone))
+  if (foreign.length) return `foreign ${foreign.join(',')}`
+  const missing = spec.required.filter((tone) => !rel.has(tone))
+  if (missing.length) return `missing ${missing.join(',')}`
+  if (spec.shell) {
+    const shell = rel.has(spec.shell.seventh) && rel.has(spec.shell.ninth)
+    if (!shell && !rel.has(spec.shell.third)) return 'missing third'
+  }
+  if (rel.size === 0) return 'silent'
+  return null
+}
+
+function dictionaryFrets(
+  token: string,
+  instrument: 'guitar' | 'ukulele',
+): { frets: Array<number | 'x'> } | { error: string } {
+  const r = resolveDiagram({ token, instrument })
+  if (r.class !== 'hit') return { error: r.reason }
+  if (r.source !== 'dictionary') return { error: `source ${r.source}` }
+  const frets = r.voicing.frets
+  if (!frets?.length) return { error: 'no frets' }
+  const want = instrument === 'guitar' ? 6 : 4
+  if (frets.length !== want) return { error: `length ${frets.length}` }
+  for (const fret of frets) {
+    if (fret === 'x') continue
+    if (!Number.isInteger(fret) || fret < 0 || fret > 9) return { error: `fret ${String(fret)}` }
+  }
+  return { frets }
+}
+
+describe('dictionary chord identity', () => {
+  it('hits every dictionary quality on all 12 roots for guitar and ukulele', () => {
+    const failures: string[] = []
+    let checked = 0
+    for (const instrument of ['guitar', 'ukulele'] as const) {
+      for (const root of ROOTS) {
+        const rootPc = keyIndex(root)
+        if (rootPc === null) {
+          failures.push(`${root}: no pitch class`)
+          continue
+        }
+        for (const row of GRID) {
+          const token = `${root}${row.suffix}`
+          const parsed = parseChordToken(token)
+          if (parsed.class !== 'parse' || parsed.quality !== row.quality) {
+            failures.push(`${token}: quality ${parsed.class === 'parse' ? parsed.quality : parsed.class}`)
+            continue
+          }
+          checked++
+          const got = dictionaryFrets(token, instrument)
+          if ('error' in got) {
+            failures.push(`${instrument} ${token}: ${got.error}`)
+            continue
+          }
+          const why = oracleFailure(row.quality, rootPc, pitchClasses(instrument, got.frets))
+          if (why) failures.push(`${instrument} ${token} ${got.frets.join('')}: ${why}`)
+          for (const alias of row.aliases ?? []) {
+            const aliasToken = `${root}${alias}`
+            const aliasParsed = parseChordToken(aliasToken)
+            if (aliasParsed.class !== 'parse' || aliasParsed.quality !== row.quality) {
+              failures.push(`${aliasToken}: quality ${aliasParsed.class === 'parse' ? aliasParsed.quality : aliasParsed.class}`)
+              continue
+            }
+            const alt = dictionaryFrets(aliasToken, instrument)
+            if ('error' in alt) {
+              failures.push(`${instrument} ${aliasToken}: ${alt.error}`)
+              continue
+            }
+            if (alt.frets.join('') !== got.frets.join('')) {
+              failures.push(`${instrument} ${aliasToken} ${alt.frets.join('')} !== ${token} ${got.frets.join('')}`)
+            }
+          }
+        }
+      }
+    }
+    expect({ checked, failures }).toEqual({ checked: 17 * 12 * 2, failures: [] })
+  })
+
+  it('keeps C9 (add9) distinct from C7(9) (dominant 9)', () => {
+    expect(parseChordToken('C9')).toMatchObject({ class: 'parse', quality: 'add9' })
+    expect(parseChordToken('C7(9)')).toMatchObject({ class: 'parse', quality: '9' })
+    for (const instrument of ['guitar', 'ukulele'] as const) {
+      for (const root of ROOTS) {
+        const add = dictionaryFrets(`${root}9`, instrument)
+        const dom = dictionaryFrets(`${root}7(9)`, instrument)
+        expect('error' in add, `${instrument} ${root}9`).toBe(false)
+        expect('error' in dom, `${instrument} ${root}7(9)`).toBe(false)
+        if ('error' in add || 'error' in dom) continue
+        expect(add.frets, `${instrument} ${root}`).not.toEqual(dom.frets)
+      }
+    }
+  })
+
+  it('spells enharmonic roots as the same grip', () => {
+    const failures: string[] = []
+    for (const instrument of ['guitar', 'ukulele'] as const) {
+      for (const [a, b] of ENHARMONIC) {
+        for (const row of GRID) {
+          const left = dictionaryFrets(`${a}${row.suffix}`, instrument)
+          const right = dictionaryFrets(`${b}${row.suffix}`, instrument)
+          if ('error' in left) {
+            failures.push(`${instrument} ${a}/${b} ${row.quality}: ${left.error}`)
+            continue
+          }
+          if ('error' in right) {
+            failures.push(`${instrument} ${a}/${b} ${row.quality}: ${right.error}`)
+            continue
+          }
+          if (left.frets.join('') !== right.frets.join('')) {
+            failures.push(`${instrument} ${a}${row.suffix} ${left.frets.join('')} !== ${b}${row.suffix} ${right.frets.join('')}`)
+          }
+        }
+      }
+    }
+    expect(failures).toEqual([])
+  })
+
+  it('records m7(11) as a fretted miss and a piano hit', () => {
+    for (const instrument of ['guitar', 'ukulele'] as const) {
+      for (const root of ROOTS) {
+        const r = resolveDiagram({ token: `${root}m7(11)`, instrument })
+        expect(r, `${instrument} ${root}m7(11)`).toEqual({ class: 'miss', reason: 'no-shape' })
+      }
+    }
+    for (const root of ROOTS) {
+      const rootPc = keyIndex(root)
+      expect(rootPc, root).not.toBeNull()
+      if (rootPc === null) continue
+      const r = resolveDiagram({ token: `${root}m7(11)`, instrument: 'piano' })
+      expect(r.class, root).toBe('hit')
+      if (r.class !== 'hit') continue
+      expect(r.source).toBe('dictionary')
+      const lit = (r.voicing.keys ?? []).map((k) => ((rootPc + k) % 12 + 12) % 12)
+      const want = M11.map((iv) => (rootPc + iv) % 12)
+      expect(new Set(lit), root).toEqual(new Set(want))
+    }
+  })
+
+  it('rejects the grips that omit the tone the quality is named for', () => {
+    const cmaj9 = resolveDiagram({ token: 'C7M(9)', instrument: 'guitar' })
+    expect(cmaj9.class).toBe('hit')
+    if (cmaj9.class === 'hit' && cmaj9.voicing.frets) {
+      expect(pitchClasses('guitar', cmaj9.voicing.frets).has(11)).toBe(true)
+      expect(cmaj9.voicing.frets).not.toEqual(['x', 3, 2, 0, 3, 0])
+    }
+
+    const a69 = resolveDiagram({ token: 'A6(9)', instrument: 'guitar' })
+    expect(a69.class).toBe('hit')
+    if (a69.class === 'hit' && a69.voicing.frets) {
+      expect(pitchClasses('guitar', a69.voicing.frets).has(11)).toBe(true)
+      expect(a69.voicing.frets).not.toEqual(['x', 0, 2, 2, 2, 2])
+    }
+
+    const am7 = resolveDiagram({ token: 'Am7', instrument: 'ukulele' })
+    expect(am7.class).toBe('hit')
+    if (am7.class === 'hit' && am7.voicing.frets) {
+      expect(pitchClasses('ukulele', am7.voicing.frets).has(7)).toBe(true)
+    }
+
+    const gdim = resolveDiagram({ token: 'Gdim', instrument: 'ukulele' })
+    expect(gdim.class).toBe('hit')
+    if (gdim.class === 'hit' && gdim.voicing.frets) {
+      expect(gdim.voicing.frets).not.toEqual([0, 2, 3, 2])
+    }
+  })
+})
