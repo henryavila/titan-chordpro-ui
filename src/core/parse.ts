@@ -1,4 +1,4 @@
-import { chartDocument } from './charts'
+import { chartDocument, notationBlockCloser } from './charts'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
 import type { ChordProLine, ChordProSection, ChordProView, SectionKind } from './types'
@@ -64,10 +64,6 @@ function parseRaw(src: string): {
   let chorus = false
   let socLi: number | null = null
   const eocOf: Record<number, number> = {}
-  let tab: string[] | null = null
-  let tabStart = 0
-  let score: string[] | null = null
-  let scoreStart = 0
   let pendShift = 0
   let pendCapo: number | null = null
   let pendCapoMap = true
@@ -76,19 +72,32 @@ function parseRaw(src: string): {
     const raw = raws[li] ?? ''
     const d = raw.match(DIR)
 
-    if (score !== null) {
-      score.push(raw)
-      if (d && /^(eos|end_of_score)$/i.test(d[1] ?? '')) {
-        lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: li })
-        score = null
+    // Same closer as readMeta. `{eot}` inside a finished score is not the tab closer.
+    if (d && /^(sos|start_of_score|sot|start_of_tab)$/i.test(d[1] ?? '')) {
+      const isTab = /^(sot|start_of_tab)$/i.test(d[1] ?? '')
+      const close = notationBlockCloser(raws, li, isTab ? 'tab' : 'score', 0)
+      const boundary = close?.boundary === true
+      const cut = close ? close.at : -1
+      if (isTab) {
+        const bodyEnd = close ? cut : raws.length
+        lines.push({
+          kind: 'tab',
+          text: raws.slice(li + 1, bodyEnd).join('\n'),
+          li0: li,
+          li1: close ? cut : raws.length - 1,
+        })
+      } else {
+        const bodyEnd = !close ? raws.length : boundary ? cut : cut + 1
+        lines.push({
+          kind: 'score',
+          text: raws.slice(li, bodyEnd).join('\n'),
+          li0: li,
+          li1: !close ? raws.length - 1 : boundary ? Math.max(li, cut - 1) : cut,
+        })
       }
-      continue
-    }
-    if (tab !== null) {
-      if (d && /^(eot|end_of_tab)$/i.test(d[1] ?? '')) {
-        lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: li })
-        tab = null
-      } else tab.push(raw)
+      if (!close) li = raws.length
+      else if (boundary) li = cut - 1
+      else li = cut
       continue
     }
 
@@ -118,16 +127,6 @@ function parseRaw(src: string): {
     if (d) {
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
-      if (k === 'sos' || k === 'start_of_score') {
-        score = [raw]
-        scoreStart = li
-        continue
-      }
-      if (k === 'sot' || k === 'start_of_tab') {
-        tab = []
-        tabStart = li
-        continue
-      }
       if (k === 'soc' || k === 'start_of_chorus') {
         chorus = true
         socLi = li
@@ -188,10 +187,6 @@ function parseRaw(src: string): {
     pendCapoMap = true
   }
 
-  // Directive left open at EOF: the block still belongs to the reading surface.
-  if (tab !== null) lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: raws.length - 1 })
-  if (score !== null)
-    lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: raws.length - 1 })
   return { meta, lines, eocOf }
 }
 

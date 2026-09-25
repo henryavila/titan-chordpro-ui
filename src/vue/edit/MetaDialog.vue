@@ -213,16 +213,13 @@ function sameField(key: MetaKey, orig: string, next: string): boolean {
 }
 
 /**
- * The mask reads `426` as `04:26`. Leave an untouched second count as stored
- * when that mask would change the length. A duration the user edited is `MM:SS`.
+ * A duration the user edited is `MM:SS`.
+ * Untouched text stays stored, including when it does not parse (`4m26s`)
+ * and when the mask would change the length (`426`).
  */
 function durationToWrite(raw: string): string {
-  const masked = normalizeDurationMmSs(raw)
-  if (touched.value.has('duration')) return masked
-  const origSec = songDurationSec(raw)
-  const maskSec = songDurationSec(masked)
-  if (origSec != null && maskSec != null && origSec !== maskSec) return raw.trim()
-  return masked
+  if (touched.value.has('duration')) return normalizeDurationMmSs(raw)
+  return raw.trim()
 }
 
 function fieldsToWrite(source: string, next: ChartMeta): ChartMeta {
@@ -231,6 +228,8 @@ function fieldsToWrite(source: string, next: ChartMeta): ChartMeta {
   const patch: ChartMeta = {}
   const keys = new Set<MetaKey>([...(Object.keys(orig) as MetaKey[]), ...(Object.keys(next) as MetaKey[])])
   for (const key of keys) {
+    // sameDuration stays false when only one side parses. Leave that duration out.
+    if (key === 'duration' && !touched.value.has('duration')) continue
     const same = sameField(key, orig[key] ?? '', next[key] ?? '')
     if (same && !(touched.value.has(key) && (next[key] ?? '').trim() === '')) continue
     patch[key] = next[key] ?? ''
