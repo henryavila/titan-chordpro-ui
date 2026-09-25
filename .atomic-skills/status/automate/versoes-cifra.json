@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 27,
-  "updatedAt": "2026-09-25T02:14:31.818Z",
+  "redispatchCount": 28,
+  "updatedAt": "2026-09-25T02:20:13.604Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -152,6 +152,12 @@
       "at": "2026-09-25T02:03:38.759Z",
       "reason": "fix27: a single sot or sos still hides the middle chart when the closer sits in a later chart",
       "priorCount": 26,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-25T02:20:13.603Z",
+      "reason": "fix28 after both review of 5b2ba91..HEAD: one cache key stores a nested boundary and a root fence-stop, so nota is deleted with verso",
+      "priorCount": 27,
       "gate": "spawn"
     }
   ],
