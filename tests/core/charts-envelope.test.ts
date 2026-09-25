@@ -2085,3 +2085,66 @@ describe('a cached fence stop does not hide the next chart', () => {
     expect(listCharts(full).map((c) => c.id)).toEqual(['completa', 'verso', 'nota', 'oferta'])
   })
 })
+
+describe('a nested boundary does not answer a root closer lookup', () => {
+  function nestedFile(outerOpen: string, innerOpen: string, innerClose: string): string {
+    return [
+      '{start_of_x_chart:completa}',
+      outerOpen,
+      '{start_of_x_chart:verso}',
+      innerOpen,
+      '{start_of_x_chart:nota}',
+      '{title:Nota}',
+      '[G]nota',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      innerClose,
+      '{end_of_x_chart}',
+    ].join('\n')
+  }
+
+  const shapes = [
+    ['{sos}', '{sot}', '{eot}', 'tab'],
+    ['{sot}', '{sos}', '{eos}', 'score'],
+  ] as const
+
+  for (const [outerOpen, innerOpen, innerClose, innerKind] of shapes) {
+    const outerKind = innerKind === 'tab' ? 'score' : 'tab'
+
+    it(`lists nota for ${outerOpen} outside ${innerOpen}`, () => {
+      const file = nestedFile(outerOpen, innerOpen, innerClose)
+      expect(listCharts(file).map((c) => c.id)).toEqual(['completa', 'verso', 'nota', 'oferta'])
+      const split = splitCho(file)
+      const notaChart = split.charts.find((c) => c.id === 'nota')
+      const nota = chartDocument(file, 'nota')
+      expect(split.raws[notaChart?.startLi ?? -1]).toBe('{start_of_x_chart:nota}')
+      expect(nota).toBe(notaChart?.inner)
+      expect(nota).toContain('[G]nota')
+      expect(nota).toContain('{title:Nota}')
+      expect(nota).not.toBe(outerOpen)
+      const verso = split.charts.find((c) => c.id === 'verso')?.inner ?? ''
+      expect(verso).not.toContain('{start_of_x_chart:nota}')
+      expect(verso).not.toContain('[G]nota')
+      const tail = file.split('\n').slice(2).join('\n')
+      expect(listCharts(tail).map((c) => c.id)).toEqual(['verso', 'nota', 'oferta'])
+      const fresh = file.split('\n')
+      const before = notationBlockCloser(fresh, 3, innerKind, 1)
+      const warmed = file.split('\n')
+      notationBlockCloser(warmed, 1, outerKind, 1)
+      const after = notationBlockCloser(warmed, 3, innerKind, 1)
+      expect(before).toBeNull()
+      expect(after).toEqual(before)
+      expect(listCharts(file).map((c) => c.id)).toEqual(listCharts(warmed.join('\n')).map((c) => c.id))
+    })
+
+    it(`replaceChart of verso leaves nota in place for ${outerOpen} outside ${innerOpen}`, () => {
+      const file = nestedFile(outerOpen, innerOpen, innerClose)
+      const out = replaceChart(file, 'verso', '{comment:vazio}')
+      expect(out).toContain('{comment:vazio}')
+      expect(out).toContain('{start_of_x_chart:nota}')
+      expect(out).toContain('[G]nota')
+      expect(chartDocument(out, 'nota')).toContain('[G]nota')
+      expect(listCharts(out).map((c) => c.id)).toEqual(['completa', 'verso', 'nota', 'oferta'])
+    })
+  }
+})
