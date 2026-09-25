@@ -91,6 +91,7 @@ const lensQ = q.get('lens')
 const lens: Lens =
   lensQ === 'letra' || lensQ === 'nashville' || lensQ === 'none' ? lensQ : 'none'
 const hideComments = q.get('comentarios') === '0'
+const zonas = q.get('zonas') === '1'
 </script>
 <template>
   <div
@@ -145,6 +146,7 @@ const hideComments = q.get('comentarios') === '0'
         :fit-default="fitDefault"
         :initial-capo="initialCapo"
         :initial-dual="initialDual"
+        :capabilities="{ debugSwipe: zonas }"
         song-id="sda-86"
       />
     </div>
