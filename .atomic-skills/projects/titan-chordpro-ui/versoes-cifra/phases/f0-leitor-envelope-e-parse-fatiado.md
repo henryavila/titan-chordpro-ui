@@ -191,7 +191,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-fix24 is merged. Product `b06463d6bd62316dbc64d615a6cd2aa634ca2f1b`. Plan-tree verifier exit 0, 239 tests, on the seven-file command in the verbatim block below. Both review of `689a6bf..0d27d18` is at `.atomic-skills/reviews/2026-09-24-fix23-both.md`. Do not `done`. Next action is `review-code --mode=both` of `0d27d18..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`.
+fix25 is merged. Product `4439371a0f98e9c5d8bd9738a5ed13048c4511f0`. Plan-tree verifier exit 0, 241 tests, on the seven-file command in the verbatim block below. Both review of `0d27d18..b114a12` is at `.atomic-skills/reviews/2026-09-24-fix24-both.md`. Do not `done`. Next action is `review-code --mode=both` of `b114a12..HEAD` for `src` and `tests`, Codex model `gpt-6-astra`.
 
 ### Verbatim state
 
