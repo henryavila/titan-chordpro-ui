@@ -223,7 +223,8 @@ describe('a version of my own', () => {
     w.unmount()
     const again = mountViewer()
     await flushPromises()
-    expect(again.get('[data-display-key]').text()).toBe('A')
+    expect(again.get('[data-display-key]').text()).toBe('G')
+    expect(again.get('[data-tone-shift]').text()).toMatch(/tocando em A/)
     again.unmount()
   })
 })
@@ -581,6 +582,31 @@ describe('host persistSuggestion ack', () => {
     expect(local.findAll('[data-my-op]')).toHaveLength(1)
     expect(String(err.mock.calls.at(0))).toMatch(/Promise|return/i)
     err.mockRestore()
+    local.unmount()
+  })
+
+  it('sends a full key rewrite as one suggestion op, not one per line', async () => {
+    const local = mountViewer({
+      source: loadFixture('sda/082-o-rei-vem-vindo.cho'),
+      songId: '082',
+    })
+    await flushPromises()
+    await local.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await local.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await local.get('[data-meta-rewrite-go]').trigger('click')
+    await flushPromises()
+    await local.get('[data-read]').trigger('click')
+    await flushPromises()
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
+    expect(local.get('[data-my-op]').text()).toMatch(/Cifra reescrita no tom Ab/)
+    await confirmSuggest(local)
+    const sug = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]') as Array<{ ops: unknown[] }>
+    expect(sug).toHaveLength(1)
+    expect(sug[0]?.ops).toHaveLength(1)
     local.unmount()
   })
 })

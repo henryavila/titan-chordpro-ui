@@ -22,6 +22,7 @@ estava aqui foi revista — o que o `.dc.html` faz, o pacote Vue faz.
 | Metrônomo (click, pulso, BPM por música) | pronto |
 | Auto-rolagem em tempo musical (`{duration}`, `x///`) | pronto |
 | Overlay “só para mim” + fila de sugestões | pronto |
+| Diagramas de acorde (violão, ukulele, piano) | pronto |
 | Drag in-place de acorde (E1) | pronto |
 | WYSIWYG de bloco: seleção, reordenar, capo/transpose por bloco (E2) | pronto |
 | Editor de partitura VexFlow (`partitura.js`, `Editor Partitura.dc.html`) | pronto |

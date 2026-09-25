@@ -12,7 +12,6 @@ const emit = defineEmits<{
   'toggle-fs': []
   shift: [n: number]
   'reset-tone': []
-  rewrite: []
   'capo-nudge': [n: number]
   'toggle-map': []
   'capo-zero': []
@@ -100,14 +99,7 @@ const emit = defineEmits<{
           <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:0;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
             {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
           </button>
-          <button v-if="hasReset" title="Voltar ao tom original, sem capo" style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;" @click="emit('reset-tone')">Original</button>
-          <button
-            v-if="canRewrite"
-            data-rewrite-go
-            title="Reescrever os acordes no tom declarado"
-            style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;"
-            @click="emit('rewrite')"
-          >Reescrever em {{ metaKey }}</button>
+          <button v-if="hasReset" title="Voltar ao tom original" style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;" @click="emit('reset-tone')">Original</button>
         </div>
         <div v-if="capoOpen" class="cpv-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:cpv-rise .18s ease-out;">
           <div style="display:flex;align-items:center;justify-content:space-between;">

@@ -3,9 +3,14 @@ import { renderHtml } from './render-html'
 import { resolveTheme } from './themes'
 import type { ThemeId, ViewerAction, ViewerController, ViewerState } from './types'
 
+function fileOffset(src: string): number {
+  const n = Number(parse(src).meta.transpose)
+  return Number.isFinite(n) && n !== 0 ? n : 0
+}
+
 export function createViewerController(opts: { source: string; theme?: ThemeId }): ViewerController {
   let source = opts.source
-  let transposeSemitones = 0
+  let transposeSemitones = fileOffset(source)
   let capo = 0
   let theme: ThemeId = opts.theme ?? 'auto'
   let bias = 0
@@ -72,8 +77,8 @@ export function createViewerController(opts: { source: string; theme?: ThemeId }
           break
         case 'setSource':
           source = action.source
-          transposeSemitones = 0
-          capo = parse(source).meta.capo ?? 0
+          transposeSemitones = fileOffset(source)
+          capo = 0
           break
         case 'setMode':
           mode = action.mode

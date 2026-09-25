@@ -10,7 +10,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Diagramas de acorde:** toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele mostram a forma da mão (capo no braço quando há). Piano mostra as teclas no tom que soa, com inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. O host desliga com `capabilities.diagrams: false`.
 
+Na revisão de sugestões, a faixa de batida no topo do lote só aparece quando o pedido muda a batida. Apagar letra numa cifra que já tem batida não mostra mais a batida como se fizesse parte do pedido.
+
+Aceitar um ajuste, quando ainda há outros, deixa a tela de sugestões aberta. Gravar a cifra não fecha a revisão no meio.
+
+## [0.8.0] - 2026-09-24
+
+### No celular, o áudio de referência fechado é um fone
+
+Na mesma linha de **Cifra** e **Letra** aparece um fone. Toque nele e abre o player, com capa e os botões de tocar.
+
+Enquanto a música toca, o fone fica na cor do acorde e mostra uma onda entre as conchas.
+
+Se você esconde a barra (toque na cifra, ou a rolagem que guarda os controles), o player grande fecha. O fone continua na linha, e a música segue tocando.
+
+No computador o player fechado continua o mesmo de antes: um chip com o título da música, acima da barra.
+
+Tocar a música não deixa mais a barra presa na tela. Dá para esconder os controles com o áudio ligado.
+
+### Importar do Cifra Club
+
+A cifra passa a ser lida pelo que está escrito: acorde, letra e nome da parte. Não depende mais do nome das classes no HTML da página.
+
+Tablatura no meio da música sai fora, junto com a linha de acordes que só mostra o que a tab toca. Visto em Tu És, Tua Vontade, Unidos em Cristo e Meu Farol.
+
+### Demo
+
+Quando a página do Cifra Club não vem (o site responde bloqueado), a demo busca a versão na API e monta a cifra que o leitor já sabe abrir. O tom usado é o das formas da página, não o outro tom que a API manda junto. Se a página chega inteira, ela é usada como veio.
+
+## [0.7.0] - 2026-09-24
+
+### Added
+- **Áudio de referência no ensaio:** `setRehearsalAudio(cho, { sung, playback, art: { url, width, height } })`. Cantado e/ou playback (qualquer combinação, inclusive nenhuma). Chip no dock abre o card (capa, título, artista, play, seek, ±10 s); X fecha sem parar. Não sincroniza letra nem `{duration:}`. Capa: o host manda o arquivo já no tamanho (256–512 px) + `width`/`height`; sem capa, arte genérica 512×512. Arquivo direto ou GET de stream; YouTube recusado. Cache keyed pela URL. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung.
+
+### Changed
+- **Diretivas custom em inglês:** `{x_source:}` (antes `{x_origem:}`), `{x_audio_sung:}` (antes `{x_audio_cantado:}`). Leitura aceita as chaves antigas; a próxima gravação reescreve. UI em português (Origem, Cantado, Playback).
+- **Tom original + transposição gravada.** `{key:}` é o tom original. Reescrever (import e ficha) grava o corpo nesse tom e `{transpose:N}` para a leitura continuar onde estava (082: Ab no arquivo, tela em G). `{capo:}` no arquivo é dica, não liga o capotraste. Overlay não soma no `{transpose:}`. Uma reescrita uniforme da cifra vira um único trecho de sugestão, não um por linha.
+
 ### Fixed
+- **Cantado / Playback:** no card, um rótulo discreto (não tabs), com mais espaço sob o título. Sem capa do host, o player usa uma arte padrão. Com uma faixa só, o rótulo continua mostrando o que está tocando.
+- **Play da referência:** no card aberto o play é o centro do transporte; −10 / +10 ficam mais suaves.
+- **Chip da referência:** sólido sobre a cifra (canvas, sem véu). Mini-player flutuante; toque abre o card.
+- **Player de referência no celular:** o chip e o card ficam no centro do dock, não colados à esquerda.
+- **Comentários de ensaio:** aside da cifra — itálico entre parênteses, menor que a letra, cinza misturado no papel (claro e escuro). Sem card. Colado no bloco de baixo (o que ele rotula). Não usa `--lyric` nem `--chord`. Refrão/TAB mantêm as caixas. Continuam papel no auto-scroll, não relógio.
 - **Auto-rolagem, intro compacta:** a página não anda enquanto a introdução tocada (acordes + `x///`, sem letra) está no topo. A rampa começa na primeira linha cantada, ou na linha de leitura se a intro for mais alta que um terço da tela (TAB). Em *Nasce em Mim* a letra deixava de subir no começo. Relógio e metrônomo seguem no tempo da cifra.
 - **`{tempo:65 BPM}`:** o relógio lê 65, não o default 100.
 
@@ -118,7 +160,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.8.0
+[0.7.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.7.0
 [0.6.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.6.0
 [0.5.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.5.0
 [0.4.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.4.0

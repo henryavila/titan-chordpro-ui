@@ -18,7 +18,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 
 **Leitura**
 - Acorde acima da letra; comentários de ensaio
-- Transposição e capotraste
+- Transposição e capotraste. `{key:}` é o tom original; `{transpose:}` é a leitura. `{capo:}` no arquivo é dica — o capotraste ao vivo começa em 0
 - **Modo dual (capo)** — o capo muda as *formas*, não o tom que a banda ouve. Sem dual, a cifra vira só as formas (quem toca sozinho). Com dual, cada acorde mostra os dois nomes na mesma linha: forma com capo + o que soa sem capo. Teclado, baixo e voz leem o tom real; o violão lê a forma. A legenda marca as duas cores.
 - **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele: forma da mão (capo no braço quando há). Piano: teclas no tom que soa, inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. Host desliga com `capabilities.diagrams: false`
 - Cifra · só letra · Nashville
@@ -31,6 +31,11 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 **Ensaio**
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
+- **Áudio de referência** — arquivo no ensaio, **sem** sync com letra / Rolar / `{duration:}`:
+  - No celular o recolhido é o fone na linha Cifra | Letra: toque abre o card. Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e deixa o fone. No desktop o chip com título fica acima do dock. X fecha sem parar
+  - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
+  - Capa do host (quadrado 256–512 px + `width`/`height`); sem capa, arte genérica 512×512
+  - O host grava no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
@@ -41,14 +46,14 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Fila do responsável: aceitar / recusar, lote, diff visual da batida
 - **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_strum:}` / `{x_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
 - Partitura `{sos}` / TAB `{sot}`
-- Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco
-- Completar metadados / batida pelo Cifra Club sem substituir o corpo
+- Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco. Se `{key:}` não bate com o corpo (capo-truque do Cifra Club), pergunta **Reescrever** — grava o original e `{transpose:}` para continuar tocando onde estava
+- Completar metadados / batida pelo Cifra Club sem substituir o corpo. Cifras já cadastradas: **Reescrever** na ficha. Uma reescrita uniforme vira um trecho só na sugestão
 
 **Pacote**
 - Entradas `core` / `vue` / `pdf` / `slides` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
-Fora: login, multicifra do site, player de áudio sincronizado, collab em tempo real.
+Fora: login, multicifra do site, player de áudio **sincronizado**, collab em tempo real.
 
 - **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md)
 - **Engineering contract:** [`SPEC.md`](./SPEC.md) — acceptance = §9
@@ -59,7 +64,7 @@ Fora: login, multicifra do site, player de áudio sincronizado, collab em tempo 
 
 ## Status
 
-`0.6.0` no npm deste worktree — leitura, ensaio (lista, swipe nas bordas, tela ligada), overlay, `persistSuggestion`, edição por bloco, batida, partitura e import/export. **Diagramas de acorde** (violão, ukulele, piano) estão na leitura, ainda sem tag. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto. O editor de forma no modal (grelha gravável) ainda não.
+`0.8.0` no npm — leitura, ensaio (lista, swipe nas bordas, tela ligada, áudio de referência com fone no celular), tom original + `{transpose:}`, overlay, `persistSuggestion`, edição por bloco, batida, partitura e import do Cifra Club pelo texto. **Diagramas de acorde** (violão, ukulele, piano) estão na leitura, ainda sem tag. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto. O editor de forma no modal (grelha gravável) ainda não.
 
 ```bash
 pnpm install
@@ -76,7 +81,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama** | shell, multi-cifra, sanitize, i18n, audio sync, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama**, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -156,6 +161,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 
 Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
+Não há prop de áudio. Cantado, playback e capa vão no texto ChordPro (`setRehearsalAudio`) e entram em `source`. Guia: [Áudio de referência](#áudio-de-referência-no-ensaio) e [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
+
 ### Cifra nova: importar ou começar em branco
 
 Música sem cifra não é beco. Com `edit-mode="persisted"` (e `canEdit`), o estado vazio
@@ -164,7 +171,9 @@ Cifra nova (`/standalone.html?criar=1`). O importador reconhece sozinho o
 que recebe — ChordPro, OnSong ou acordes sobre a letra — e diz de qual formato
 converteu. Depois vem a ficha (nome, artista, tom, andamento com **tap-tempo**,
 compasso, referência); o que falta é dito, mas não bloqueia — é cobrado de novo
-ao salvar para todos.
+ao salvar para todos. Se o tom declarado e os acordes não batem (corpo em G,
+`{key:Ab}`), o import **pergunta** antes de gravar: reescrever no original e
+guardar `{transpose:}`, ou manter como veio.
 
 Três origens: **link**, **arquivo** (arrastar ou escolher) e **texto colado**.
 As duas que dependem do mundo externo são props, não mágica do pacote:
@@ -177,15 +186,18 @@ As duas que dependem do mundo externo são props, não mágica do pacote:
 />
 ```
 
-`fetchChart` é o **backend do host**: o navegador não alcança outro site de
-dentro do viewer. Sem ela, a aba Link diz isso em vez de fingir. `readPdf` vem
+`fetchChart` é o **backend do host**: o navegador não alcança o Cifra Club
+de dentro do viewer. Sem ela, a aba Cifra Club diz que a busca não está
+disponível — a página precisa ser buscada pelo servidor do site. Se a
+resposta não for a cifra, o HTML que o Titan lê está em
+[`docs/CONSUMER.md`](docs/CONSUMER.md) §11. `readPdf` vem
 de `@henryavila/titan-chordpro-ui/pdf`; é prop para que o `pdfjs-dist` (peer opcional) só
 carregue em host que queira importar PDF. Sem ela, PDF é recusado na entrada —
 e um PDF digitalizado é reconhecido como tal: *"Este PDF não tem texto"*.
 
 Os conversores são públicos no core, se o host quiser usá-los direto:
 `detect`, `convert`, `fromPlain`, `fromOnSong`, `readMeta`, `writeMeta`,
-`missingOf`, `toPlain`.
+`setAudioUrl`, `audioUrlOf`, `setRehearsalAudio`, `setAudioArt`, `audioArtOf`, `missingOf`, `toPlain`.
 
 ### Modo ensaio: uma lista, não uma cifra por vez
 
@@ -231,6 +243,35 @@ lista, se quiser o spinner.
 > Overlays gravados antes sob outra identidade (`songId` ou título) **não são
 > migrados**. Se o host já tinha leitores com versão pessoal, escolha os `id`
 > iguais ao `songId` que usava antes.
+
+### Áudio de referência no ensaio
+
+O viewer **não** recebe URL de áudio por prop. O host escreve as faixas no
+`.cho` e passa o texto em `source`. Qualquer combinação vale (cantado, playback,
+os dois, ou nenhum). Sem faixa, o chip não aparece.
+
+```ts
+import { setRehearsalAudio } from '@henryavila/titan-chordpro-ui'
+
+cho = setRehearsalAudio(cho, {
+  sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
+  playback: 'https://cdn.example/nasce-pb.m4a?h=b2', // opcional
+  art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
+})
+```
+
+```vue
+<ChordproViewer :source="cho" :song-id="id" />
+```
+
+Chave omitida não mexe; `null` apaga. Também vale caminho same-origin
+(`/audio/nasce.m4a`). YouTube, Spotify, `javascript:` e `data:` são recusados.
+O GET precisa de CORS (`Access-Control-Allow-Origin` + `Accept-Ranges: bytes`)
+para o cache e o seek; sem CORS o arquivo toca na rede e o cache vira no-op.
+Persistir é o fluxo de sempre: `update:source` / `save-content`.
+
+Diretivas: `{x_audio_sung:}`, `{x_audio_playback:}`, `{x_audio_art:}` (+ w/h).
+UI em português (Cantado, Playback). Contrato completo: [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
 
 ### O host dá a altura
 
@@ -624,4 +665,4 @@ Instalar:
 pnpm add @henryavila/titan-chordpro-ui
 ```
 
-Pre-1.0: `~0.6.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.6.0`, não `0.5.1`).
+Pre-1.0: `~0.8.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.8.0`, não `0.7.1`).

@@ -212,7 +212,7 @@ async function runUrl() {
     const r = convert(text)
     if (!r.source.trim()) throw new Error('vazio')
     const guess = titleFromUrl(u)
-    let m: ChartMeta = { ...readMeta(r.source), x_origem: u }
+    let m: ChartMeta = { ...readMeta(r.source), x_source: u }
     if (!m.title) m.title = guess.title
     if (!m.subtitle) m.subtitle = guess.subtitle
     m = await fillDurationFromYoutube(m)
@@ -347,7 +347,7 @@ function acceptKeyRewrite() {
     tempo: user.tempo,
     time: user.time,
     duration: user.duration,
-    x_origem: user.x_origem,
+    x_source: user.x_source,
   }
   keyRewrite.value = null
 }
@@ -523,12 +523,18 @@ onMounted(() => {
           data-nova-key-rewrite
           style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;background:var(--chord-soft);border:1px solid var(--chord-edge);"
         >
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom e capo</span>
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom declarado e cifras não batem</span>
           <span style="font-size:13px;line-height:1.5;color:var(--text);text-wrap:pretty;">
-            Tom declarado <strong>{{ keyRewrite.declaredKey }}</strong>, cifra escrita em
-            <strong>{{ keyRewrite.writtenKey }}</strong>, capo {{ keyRewrite.capo }}.
-            Isso parece transposição de banda, não capo de violão.
+            Declarado: <strong>{{ keyRewrite.declaredKey }}</strong>.
+            Escrito: <strong>{{ keyRewrite.writtenKey }}</strong>.
+            Reescrever guarda o original ({{ keyRewrite.declaredKey }}) e continua tocando em {{ keyRewrite.writtenKey }}.
+            Quem quiser {{ keyRewrite.declaredKey }} de verdade usa “Voltar ao tom original”.
           </span>
+          <span
+            v-if="keyRewrite.capo"
+            data-nova-key-rewrite-capo
+            style="font-size:12px;line-height:1.45;color:var(--muted);"
+          >Cifra sugere capo {{ keyRewrite.capo }}. O capo é o seu, no aparelho — começa em 0.</span>
           <div style="display:flex;flex-direction:column;gap:7px;">
             <button
               type="button"
@@ -541,7 +547,7 @@ onMounted(() => {
               data-nova-key-rewrite-keep
               style="height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
               @click="keepKeyRewrite"
-            >Manter escrita em {{ keyRewrite.writtenKey }} e capo {{ keyRewrite.capo }}</button>
+            >Manter</button>
           </div>
         </div>
 
@@ -622,7 +628,7 @@ onMounted(() => {
 
         <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
-          <input :value="meta.x_origem ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_origem', ($event.target as HTMLInputElement).value)" />
+          <input :value="meta.x_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_source', ($event.target as HTMLInputElement).value)" />
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">

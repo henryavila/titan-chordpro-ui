@@ -20,7 +20,8 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`. Alias legado: `modes` (`content`→`persisted`).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (cantado+playback na demo; `audio=cantado` / `audio=playback` só um; `capa=0` = arte genérica).
+Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
 
@@ -63,7 +64,7 @@ export default defineNuxtConfig({
 |---|---|
 | Um SFC: `<ChordproViewer>` | Um `<iframe src="…">` |
 | Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, **diagrama do acorde**) | Shell do app (login, nav, lista de músicas do site, player) |
+| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, **diagrama do acorde**, áudio de referência) | Shell do app (login, nav, lista de músicas do site, player **sincronizado**) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -285,6 +286,12 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 `loadSong`. A atual e as duas vizinhas são buscadas na frente. Uma que não
 chega vira painel *Não carregou*.
 
+`{key:}` no `.cho` é o tom original. `{transpose:N}` hidrata o −/+ ao abrir
+(não soma com o overlay). `{capo:}` no arquivo é dica de arranjo — o capotraste
+ao vivo começa em 0, a não ser que o músico (setlist ou overlay)
+já tenha ligado. Reescrever (import e ficha) é pergunta; o corpo só muda depois
+do Sim.
+
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
 música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
 **não** resetam ao mudar de cifra. No celular, deslize **na borda** da cifra pinta
@@ -292,6 +299,68 @@ um fade + chevron e só confirma ao soltar depois do limiar — o centro só rol
 troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`
 pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
+
+### Áudio de referência
+
+Não é prop do `<ChordproViewer>` (não existe `audioUrl`). O host grava cantado,
+playback e capa **no `.cho`** e passa o texto em `source`. O player aparece
+sozinho quando há pelo menos uma faixa playable. Não sincroniza com a letra,
+o Rolar nem `{duration:}` — player sincronizado continua sendo do host.
+
+```ts
+import { setRehearsalAudio, audioTracksOf, audioArtOf } from '@henryavila/titan-chordpro-ui'
+
+cho = setRehearsalAudio(cho, {
+  sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
+  playback: 'https://cdn.example/nasce-pb.m4a?h=b2', // opcional
+  art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
+})
+```
+
+```vue
+<ChordproViewer :source="cho" :song-id="id" @update:source="cho = $event" />
+```
+
+Chave omitida não mexe; `null` apaga. Qualquer combinação vale (os dois, só um,
+ou nenhum). Sem faixa, o chrome não muda. Caminho same-origin (`/audio/nasce.m4a`)
+também vale. Uma faixa só: `setAudioUrl(cho, url, 'sung' | 'playback')`.
+
+Persistir é o fluxo de sempre (`update:source` / `save-content`). Não chame
+`writeMeta(cho, { x_audio_sung })` sozinho — `writeMeta` substitui o header
+inteiro; use `setRehearsalAudio`.
+
+**Capa:** o host já entrega o arquivo no tamanho certo (quadrado **256–512 px**
+basta; o card mostra 56 px). Passe `width` e `height` **desse arquivo**, não do
+original de 3000 px. Sem `{x_audio_art:}`, o Titan usa uma arte genérica 512×512.
+
+Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
+`{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` /
+`{x_audio_cantado:}` legado lê como sung. UI: Cantado / Playback.
+
+O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
+ou `{subtitle:}`, e a capa. Com as duas faixas, Cantado / Playback são
+pílulas clicáveis; com uma só, só o rótulo. No celular o recolhido é o ícone
+de fone na linha de Cifra | Letra: toque abre o card (capa e transporte).
+Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e
+deixa o fone. No desktop o chip continua acima do dock, com título. X fecha
+o card (sem parar o áudio).
+
+A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
+ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
+**Referência**.
+
+YouTube, Spotify, Apple Music, `javascript:` e `data:` são recusados (throw).
+
+Troca de faixa = **outra URL** (hash na query). O Titan guarda o arquivo no
+Cache Storage keyed pela URL completa; a 1ª vez toca em stream e preenche o
+cache atrás (CORS no GET). Sem CORS, toca e o cache vira no-op. Teto ~100 MB
+LRU; arquivo > 20 MB toca e não guarda. Não usa `ChartStore` / `localStorage`.
+
+O GET precisa de `Access-Control-Allow-Origin` e, na 1ª vez, `Accept-Ranges:
+bytes` para o seek. URL assinada que muda de token a cada hora destrói o
+cache — o hash só muda quando o áudio muda.
+
+Demo: `/standalone.html?song=100-nasce-em-mim&audio=1` (cantado + playback a 65 BPM, 2:41). Arte genérica: `&capa=0`.
 
 ---
 
@@ -501,8 +570,8 @@ O POST é `persistSuggestion` (`return` da Promise), lida na hora do envio. `@su
 
 1. Músico edita em `local` (overlay no device).
 2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve. Titan **espera** `persistSuggestion`: resolve → enfileira + emit `suggestion-created` (`actorName` + `actorKey` opcional) + toast “Sugestão enviada”; reject ou `void` (sem Promise) → nada na fila, mantém Minha versão, “Não foi possível enviar. Tente de novo.” Sem a prop, o toast “enviada” é otimista (só neste aparelho). Reverter fica bloqueado enquanto envia.
-3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, preview da batida (faixa) e encaixa / conflito → Aceitar lote ou item a item.
-4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save).
+3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, a faixa da batida só quando ela mudou, e encaixa / conflito → Aceitar lote ou item a item. Aceitar um item deixa a revisão aberta no que ainda falta.
+4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save). Devolver esse texto em `source` não troca de cifra: a revisão continua.
 5. Status (`pendente` / `aceita` / `recusada` / `parcial`) aparece na Minha versão do músico na próxima visita (host devolve a fila).
 
 **Deprecated:** `modes` (`content` → `persisted`; `both` → `local` + warning no console).
@@ -528,7 +597,76 @@ Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e rev
 
 ---
 
-## 11. Checklist rápido
+## 11. Buscar no Cifra Club (`fetchChart`)
+
+O Titan **não** busca o Cifra Club. `fetchChart(url)` devolve HTML. Na cifra
+nova o Titan chama `convert` (cifra e meta). Em “Completar com Cifra Club” o
+mesmo HTML passa por `fromCifraClubHtml` e só preenche meta — o corpo não
+troca. Sem a prop, a aba Cifra Club diz “Buscar no Cifra Club não está
+disponível” e “A página precisa ser buscada pelo servidor do site.” Na ficha:
+“o site precisa buscar a página.”
+
+O navegador não lê `cifraclub.com.br` nem `api.cifraclub.com.br` a partir do
+seu domínio (CORS). A API só manda `Access-Control-Allow-Origin` para
+`https://www.cifraclub.com.br`. `fetchChart` devolve **HTML**, não JSON. O link é `cifraclub.com.br` ou
+`www.cifraclub.com.br`, em `http` ou `https`.
+
+Se não houver cifra, **rejeite** a Promise. Não resolva com o corpo do erro.
+O Titan mostra “Não deu para ler essa cifra no Cifra Club” (cifra nova) ou
+“Não deu para ler essa página no Cifra Club” (ficha).
+
+Um `GET` da página pública muitas vezes responde **403**, com
+`<TITLE>Access Denied</TITLE>` e sem a cifra. Em outra rede o mesmo endereço
+pode responder 200. 200 na sua máquina não é o contrato.
+
+Quando a resposta não for a cifra, busque a versão e monte o HTML abaixo.
+Não siga redirect dessa API.
+
+```
+GET https://api.cifraclub.com.br/v3/version/{artista}/{musica}
+Referer: https://www.cifraclub.com.br/
+Accept: application/json
+```
+
+`{artista}` e `{musica}` são os dois primeiros segmentos do path
+(`/oasis/wonderwall/simplificada/` → `oasis` e `wonderwall`), em minúsculas,
+só `[a-z0-9-]`. Fora isso, não monte a URL. `/v3/song/…` não é esse
+endpoint. O terceiro segmento não entra: a resposta é a versão principal.
+Sem o `Referer`, alguns servidores respondem 401.
+
+| Campo da API | No HTML |
+|---|---|
+| `music.name` | JSON-LD com `name` logo depois de `@type`, sem espaço: `"@type":"MusicComposition","name":"…"`. Com espaço ou quebra, o título não entra |
+| `artist.name` | `"byArtist":{"name":"…"}` no mesmo objeto. Aqui o espaço pode existir |
+| `stdShapeKey` | `config.keyShape` e `<button data-anchor="--chord-tone">Em</button>`. Este é o tom da página. `key` e `shapeKey` divergem quando há capo (Wonderwall: a página mostra `Em`, a API manda `key` `A`) |
+| `capo` | `config.capo` (número). `0` não vira `{capo:}` |
+| `youtubeId` | `"youtubeID"` (ID maiúsculo), 11 caracteres, antes de um `videoLesson` |
+| `strumming` | array `strummings`. Em cada item, `time_signature` vira `timeSignature`; `pattern`, `bpm` e `section` ficam. Sem `strummings`, tempo, compasso e `{x_strum:}` não entram. Sem `timeSignature`, o compasso cai em 4/4; tempo e batida continuam |
+| `content` | o texto da API, dentro de `<pre>`, do jeito que veio |
+
+O acorde em `content` já é `<b>Bm7</b>`. O parser usa o texto da tag.
+`data-chord-original-text`, quando a tag traz, ganha desse texto. Não
+reescreva para `data-chord-name`.
+
+A tablatura vem entre `#t1#`…`#/t1#` e `#t2#`…`#/t2#`. O parser corta esses
+blocos (teste `drops the raw #t1# block`). Não apague isso antes de devolver.
+
+```html
+<script type="application/ld+json">{"@type":"MusicComposition","name":"Wonderwall","byArtist":{"name":"Oasis"}}</script>
+<script>{"config":{"capo":2,"keyShape":"Em"},"metadata":{"youtubeID":"6hzrDeceEKc"},"strummings":[{"timeSignature":["1","x","x","x","2","x","x","x","3","x","x","x","4","x","x","x"],"pattern":[7,23,23,19,23,19,7,23,23,19,23,19,7,23,7,19],"bpm":87,"section":"Ritmo Padrão"}]}</script>
+<button data-anchor="--chord-tone">Em</button>
+<pre>
+[Intro] <b>Em7</b>  <b>G</b>
+
+…o content da API, inclusive #t1#…
+</pre>
+```
+
+O `pattern` do exemplo é um 4/4 de 16 passos que o parser aceita; na cifra
+real, copie o array que a API mandou (`time_signature` renomeado para
+`timeSignature`). A demo monta essa página em `src/core/cifraclub-api-html.ts`.
+
+## 12. Checklist rápido
 
 - [ ] Vue 3 único no bundle; CSS do pacote no app
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
@@ -539,5 +677,7 @@ Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e rev
 - [ ] Palco: rota própria + “Tocar ao vivo”
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
+- [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek
+- [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
 
 Props, emits e o resto da API: [README](../README.md).

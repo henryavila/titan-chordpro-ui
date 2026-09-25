@@ -41,7 +41,6 @@ em 360px exige rolagem horizontal. Aceitável ou precisa encolher?
 
 ## 4. Fora de escopo desta rodada
 
-- Manter a tela ligada durante o ensaio (Wake Lock).
 - Impressão direta (Ctrl+P) sem passar pelo PDF gerado.
 - i18n: todas as strings estão em português no template.
 
@@ -56,7 +55,8 @@ em 360px exige rolagem horizontal. Aceitável ou precisa encolher?
   recalculada só quando a música ou a altura do conteúdo muda.
 - **Erro de leitura grave**: fonte não-ChordPro ou sem linhas legíveis mostra tela de erro
   (prop `forceParseError` força o estado para revisão).
-- **`{capo:}` do arquivo** é lido e pré-carrega o controle; export não duplica a diretiva.
+- **Tela ligada** no ensaio (Screen Wake Lock): sempre ativa enquanto o viewer está montado; sem botão; HTTPS; no-op se a API faltar.
+- **`{capo:}` do arquivo** é dica de arranjo; **não** pré-carrega o capotraste ao vivo (começa em 0). Export de leitura grava `{transpose:}` e não reescreve `{key:}`.
 - **Acordes dentro de comentários** agora são transpostos junto.
 - **Acorde no meio de palavra** sai do fluxo (largura zero) para não abrir buraco na letra.
 - **Alvos de toque** do transpose: 40×34px dentro de uma pílula de 38px.

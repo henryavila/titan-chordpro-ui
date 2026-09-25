@@ -113,4 +113,51 @@ describe('preview plugin', () => {
     expect(next).toBe(false)
     expect(res.statusCode).toBe(400)
   })
+
+  it('returns chart HTML when the Cifra Club page is denied', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('api.cifraclub.com.br')) {
+        return new Response(
+          JSON.stringify({
+            stdShapeKey: 'Em',
+            capo: 2,
+            music: { name: 'Wonderwall' },
+            artist: { name: 'Oasis' },
+            content: '<b>Em7</b>\nUma letra qualquer\n',
+          }),
+          { status: 200 },
+        )
+      }
+      return new Response('<TITLE>Access Denied</TITLE>', { status: 403 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const res = await new Promise<{ statusCode: number; body: string }>((resolve) => {
+        const out = {
+          statusCode: 0,
+          setHeader() {},
+          end(body?: string) {
+            resolve({ statusCode: out.statusCode, body: body ?? '' })
+          },
+        }
+        handleCifraFetch(
+          {
+            url:
+              '/__cifra_fetch?url=' +
+              encodeURIComponent('https://www.cifraclub.com.br/oasis/wonderwall/'),
+          } as IncomingMessage,
+          out as unknown as ServerResponse,
+          () => {
+            throw new Error('next')
+          },
+        )
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.body).toContain('chord-tone">Em<')
+      expect(res.body).toContain('<b>Em7</b>')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

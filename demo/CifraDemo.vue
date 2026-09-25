@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
+  convert,
   readMeta,
+  setRehearsalAudio,
+  writeMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
 } from '@henryavila/titan-chordpro-ui'
+import refAudioUrl from './ref-nasce-cantado.m4a?url'
+import refPlaybackUrl from './ref-nasce-playback.m4a?url'
+import refArtUrl from './ref-audio-art.jpg?url'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
@@ -52,11 +58,29 @@ const id = ref(
       ? lab.song
       : defaultSongId(fixtures.value),
 )
-const source = ref(lab.criar ? '' : (fixtures.value[id.value] ?? ''))
+function withAudio(cho: string) {
+  if (!lab.audio || !cho.trim()) return cho
+  let next = setRehearsalAudio(cho, {
+    ...(lab.audio === 'cantado' || lab.audio === 'ambos'
+      ? { sung: refAudioUrl }
+      : {}),
+    ...(lab.audio === 'playback' || lab.audio === 'ambos'
+      ? { playback: refPlaybackUrl }
+      : {}),
+    ...(lab.capa ? { art: { url: refArtUrl, width: 512, height: 512 } } : {}),
+  })
+  const m = readMeta(next)
+  if (!m.artist && !m.subtitle) {
+    next = writeMeta(next, { ...m, artist: 'Hinário Adventista' })
+  }
+  return next
+}
+
+const source = ref(lab.criar ? '' : withAudio(fixtures.value[id.value] ?? ''))
 
 function pick(next: string) {
   id.value = next
-  source.value = fixtures.value[next] ?? ''
+  source.value = withAudio(fixtures.value[next] ?? '')
 }
 
 const listaMode = computed(() => {
@@ -68,15 +92,34 @@ const editMode = writeEditMode(lab)
 const actorKey = editMode === 'local' ? 'demo-musico' : undefined
 /** Only the lab `?ensaio=demanda` path asks for charts after open. */
 const lazyLista = computed(() => listaMode.value === 'demanda')
-const songs = computed(() => songsFor(fixtures.value, listaMode.value))
+const songs = computed(() => {
+  const list = songsFor(fixtures.value, listaMode.value)
+  if (!list || !lab.audio) return list
+  return list.map((s) => ({
+    ...s,
+    source: s.source ? withAudio(s.source) : s.source,
+  }))
+})
 const theme = computed(() => hostTheme(props.surface, lab.tema))
 const liveHref = computed(() =>
   palcoHref(props.lista, typeof location === 'undefined' ? '' : location.search),
 )
 const meta = computed(() => readMeta(source.value))
 
-const needsCorpus = !lab.criar && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
-const boot = ref(needsCorpus)
+const ccPages = import.meta.glob('../tests/helpers/cifraclub-pages/*.html', {
+  query: '?raw',
+  import: 'default',
+}) as Record<string, () => Promise<string>>
+
+async function capturedCifra(slug: string): Promise<string | null> {
+  const hit = Object.entries(ccPages).find(([path]) => path.endsWith(`/${slug}.html`))
+  if (!hit) return null
+  return convert(await hit[1]()).source
+}
+
+const needsCorpus =
+  !lab.criar && !lab.cc && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
+const boot = ref(needsCorpus || !!lab.cc)
 
 /**
  * Pretends an external API: a few seconds of wait so the skeleton and the
@@ -87,7 +130,7 @@ const loadSong = (songId: string) =>
     const ms = 2200 + Math.floor(Math.random() * 1400)
     setTimeout(() => {
       if (songId === FAIL_ID) reject(new Error('rede'))
-      else resolve(fixtures.value[songId] ?? '')
+      else resolve(withAudio(fixtures.value[songId] ?? ''))
     }, ms)
   })
 
@@ -110,6 +153,14 @@ const readPdf = async (file: File) => {
 
 onMounted(async () => {
   try {
+    if (lab.cc) {
+      const src = await capturedCifra(lab.cc)
+      if (src) {
+        id.value = lab.cc
+        source.value = src
+        return
+      }
+    }
     if (needsCorpus) {
       fixtures.value = mergeCatalog(fixtures.value, await loadAllFixtures())
       if (!lab.criar) {
@@ -121,6 +172,7 @@ onMounted(async () => {
   } finally {
     boot.value = false
   }
+  if (lab.cc) return
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
   fixtures.value = mergeCatalog(fixtures.value, catalogToFixtures(catalog))

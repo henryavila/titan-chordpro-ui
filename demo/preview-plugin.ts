@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { extname, join } from 'node:path'
 import type { Plugin } from 'vite'
+import { loadCifraClubHtml } from '../src/core/cifraclub-api-html'
 import { hostOk } from '../src/core/import-chordpro'
 import type { PreviewFile } from './preview-catalog'
 
@@ -52,7 +53,8 @@ export function handlePreviewRequest(dir: string | undefined) {
 
 /**
  * The browser cannot read cifraclub.com.br from the demo page. This is the
- * host backend the viewer asks for: fetch the HTML, hand it to convert().
+ * host backend the viewer asks for: HTML for convert(). The public page is
+ * often 403; then the version API is turned into the same HTML shape.
  */
 export function handleCifraFetch(
   req: IncomingMessage,
@@ -73,11 +75,13 @@ export function handleCifraFetch(
   }
   void (async () => {
     try {
-      const r = await fetch(target, {
-        headers: { 'user-agent': 'Mozilla/5.0 (compatible; titan-chordpro-ui)' },
-      })
-      const html = await r.text()
-      res.statusCode = r.ok ? 200 : 502
+      const html = await loadCifraClubHtml(target)
+      if (!html) {
+        res.statusCode = 502
+        res.end()
+        return
+      }
+      res.statusCode = 200
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       res.end(html)
     } catch {

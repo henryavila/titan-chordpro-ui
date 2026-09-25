@@ -91,6 +91,9 @@ export const DEMOS: readonly DemoEntry[] = [
 />`,
     extra: [
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
+      { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
+      { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
+      { href: '/standalone.html?song=100-nasce-em-mim&audio=1', label: 'Nasce em Mim (65 BPM, 2:41)' },
     ],
   },
   {
@@ -282,6 +285,7 @@ const INTENT = new Set([
   'accent',
   'lens',
   'comentarios',
+  'cc',
 ])
 
 /** Old `/` + query bookmarks land on the matching named page. */
@@ -328,6 +332,12 @@ export type LabQuery = {
   hideComments: boolean
   /** Paint swipe rails in the rehearsal chart. */
   zonas: boolean
+  /** Stamp rehearsal audio on the demo chart: one track, both, or none. */
+  audio: false | 'cantado' | 'playback' | 'ambos'
+  /** When false (`capa=0`), skip cover so the packaged generic art shows. */
+  capa: boolean
+  /** Captured Cifra Club page slug under tests/helpers/cifraclub-pages/. */
+  cc: string | null
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -364,7 +374,17 @@ export function labQuery(search: string): LabQuery {
     lens: lens === 'none' || lens === 'letra' || lens === 'nashville' ? lens : null,
     hideComments: p.get('comentarios') === '0',
     zonas: p.get('zonas') === '1',
+    audio: parseDemoAudio(p.get('audio')),
+    capa: p.get('capa') !== '0',
+    cc: p.get('cc'),
   }
+}
+
+function parseDemoAudio(raw: string | null): LabQuery['audio'] {
+  if (raw === '1' || raw === 'ambos') return 'ambos'
+  if (raw === 'cantado' || raw === 'sung') return 'cantado'
+  if (raw === 'playback') return 'playback'
+  return false
 }
 
 /** Creating a chart is always persisted. Otherwise editMode / modes query, or local. */

@@ -1,6 +1,6 @@
 {
   "name": "@henryavila/titan-chordpro-ui",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "description": "UI ChordPro: leitura + edição. Core TypeScript + binding Vue.",
   "type": "module",
   "license": "MIT",

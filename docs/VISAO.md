@@ -51,6 +51,7 @@ ChordPro (1 string)
 | Multi-cifra (qual versão ativa) | ❌ | ✅ passa 1 string |
 | Shell, login, navegação | ❌ | ✅ |
 | Player áudio sincronizado | ❌ | ✅ |
+| Áudio de referência (cantado / playback, sem sync) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
 | Edição (source SoT; gates E0–E4) | ✅ | recebe `source` atualizado / dirty / media |
 | Diagramas de acorde (violão, ukulele, piano) | ✅ modal no acorde; instrumento na prefs | pode desligar (`capabilities.diagrams: false`) |
 
@@ -68,7 +69,7 @@ ChordPro (1 string)
 4. **Export** `.cho` e PDF (nomes estáveis; PDF com tom exibido).
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
 6. **Temas:** claro e escuro, com opção de **troca automática**.
-7. **Modo ajuste ao espaço** opt-in (reflow + leve auto-size; sem colunas) — **só em view**; em edit o layout fica estável.
+7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.
 8. **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano (mesmo cartão, tela cheia no ensaio). Instrumento é preferência do aparelho. Violão/ukulele: forma da mão + capo no desenho. Piano: teclas concert, inversões e baixo escrito. `{define}` no arquivo é override. Sem forma: “Sem forma neste instrumento”. Só letra não abre. Editor de grelha (F4) ainda não.
 
 ### 4.2 Edição (edit) — mapa + gates

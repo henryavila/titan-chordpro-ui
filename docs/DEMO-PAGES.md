@@ -17,6 +17,15 @@ revisar**. Prefs de tema também sobrevivem ao reload.
 
 Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`).
 
+**Áudio de referência (lab)**
+
+| URL | O que mostra |
+|---|---|
+| `?audio=1` | Cantado + playback (demo 2:41 / 65 BPM) |
+| `?audio=cantado` / `?audio=playback` | Só uma faixa |
+| `?audio=1&capa=0` | Sem capa do host — arte genérica do pacote |
+| `?song=100-nasce-em-mim&audio=1` | *Nasce em Mim* + as duas faixas |
+
 ## O que o proxy faz
 
 O navegador **não** consegue buscar `cifraclub.com.br` / YouTube direto (CORS).  
@@ -24,7 +33,7 @@ No `pnpm dev`, o Vite expõe:
 
 | Rota | Papel |
 |---|---|
-| `/__cifra_fetch?url=` | HTML da cifra (só hosts em `SUPPORTED_HOSTS`) |
+| `/__cifra_fetch?url=` | HTML da cifra. Se a resposta não for a cifra, o proxy monta o HTML da [§11](./CONSUMER.md#11-buscar-no-cifra-club-fetchchart) |
 | `/__youtube_duration?id=` | HTML do watch do YouTube (duração → `{duration:}`) |
 
 No Pages, as mesmas rotas vivem em `functions/` (Pages Functions).  
@@ -68,6 +77,6 @@ npx wrangler pages deploy dist-demo
 
 ## Segurança do proxy
 
-- Só `cifraclub.com.br` / `www.cifraclub.com.br` em `/__cifra_fetch`.
+- Só `cifraclub.com.br` / `www.cifraclub.com.br` em `/__cifra_fetch`. Se a página não for a cifra, o proxy monta o HTML descrito na [§11](./CONSUMER.md#11-buscar-no-cifra-club-fetchchart).
 - Só `id` de 11 chars YouTube em `/__youtube_duration`.
-- Sem persistência de body; pass-through.
+- Sem persistência de body.

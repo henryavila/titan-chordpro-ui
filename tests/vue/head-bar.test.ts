@@ -78,7 +78,7 @@ const rehearsal = [
   { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: JESUS },
 ]
 
-async function viewerAt(width: number) {
+async function viewerAt(width: number, extra: Record<string, unknown> = {}) {
   const w = mount(ChordproViewer, {
     props: {
       source: '',
@@ -86,6 +86,7 @@ async function viewerAt(width: number) {
       theme: 'dark',
       autoHide: false,
       storage: memoryStore(),
+      ...extra,
     },
     attachTo: document.body,
   })
@@ -114,13 +115,19 @@ function minWidthPx(el: HTMLElement) {
 }
 
 describe('the identity bar keeps the song name when capo joins the list', () => {
-  it('adopts the capo written in the chart, so the pill really says capo', async () => {
+  it('does not adopt {capo:} from the file', async () => {
     const w = await viewerAt(390)
+    expect(w.get('[data-tone]').text()).not.toMatch(/capo/i)
+    expect(w.get('[data-tone]').text()).toMatch(/Ab/)
+  })
+
+  it('the pill says capo when the musician turns it on', async () => {
+    const w = await viewerAt(390, { initialCapo: 1 })
     expect(w.get('[data-tone]').text()).toMatch(/capo\s*1/i)
   })
 
   it('on a phone, the title cluster cannot shrink to nothing', async () => {
-    const w = await viewerAt(390)
+    const w = await viewerAt(390, { initialCapo: 1 })
     expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
     expect(titleEl(w).textContent).toContain('O Rei vem vindo')
     const name = titleEl(w).parentElement as HTMLElement
@@ -128,7 +135,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
   })
 
   it('on a phone, the bar wraps instead of clipping the name under capo + tela cheia', async () => {
-    const w = await viewerAt(390)
+    const w = await viewerAt(390, { initialCapo: 1 })
     const el = head(w)
     expect(getComputedStyle(el).flexWrap).toBe('wrap')
     expect(getComputedStyle(el).justifyContent).toBe('space-between')
@@ -179,7 +186,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
 
   it('without a list the title still has a floor, so a long capo pill cannot eat it', async () => {
     const w = mount(ChordproViewer, {
-      props: { source: O_REI, theme: 'dark', autoHide: false, storage: memoryStore() },
+      props: { source: O_REI, theme: 'dark', autoHide: false, storage: memoryStore(), initialCapo: 1 },
       attachTo: document.body,
     })
     mounted.push(w)
