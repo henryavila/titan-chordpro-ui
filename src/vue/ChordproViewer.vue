@@ -460,25 +460,6 @@ const EMPTY_CHART: ReturnType<typeof parse> = {
   eocOf: {},
 }
 
-const audioTracks = computed(() =>
-  isEdit.value
-    ? { sung: null, playback: null }
-    : readChartFile(() => audioTracksOf(liveSource.value), { sung: null, playback: null }),
-)
-const audioKinds = computed(() => audioKindsOf(audioTracks.value))
-const audioKind = ref<AudioKind>('sung')
-watch(
-  audioTracks,
-  (t) => {
-    const fallback = defaultAudioKind(t)
-    if (!fallback) return
-    if (!t[audioKind.value]) audioKind.value = fallback
-  },
-  { immediate: true },
-)
-const audioUrl = computed(() => audioTracks.value[audioKind.value])
-const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
-const audio = useAudioRef(audioUrl)
 function pinEditedChart() {
   const charts = readChartFile(() => listCharts(session.getSource()), [])
   pinnedChartId.value = charts.find((c) => c.isDefault)?.id ?? charts[0]?.id ?? null
@@ -505,6 +486,43 @@ const screenChartId = computed((): string | undefined => {
   if (chosen && charts.some((c) => c.id === chosen)) return chosen
   return charts.find((c) => c.isDefault)?.id ?? charts[0]?.id
 })
+
+function openChartDocument(file: string): string {
+  const id = screenChartId.value
+  return readChartFile(() => parse(file, id ? { chartId: id } : undefined).source, file)
+}
+
+function songHeaderOf(file: string): string {
+  const cut = String(file ?? '').search(/\{\s*start_of_x_chart\s*:/i)
+  return cut < 0 ? file : file.slice(0, cut)
+}
+
+const audioTracks = computed(() =>
+  isEdit.value
+    ? { sung: null, playback: null }
+    : readChartFile(() => {
+        const file = liveSource.value
+        const own = audioTracksOf(openChartDocument(file))
+        if (own.sung || own.playback) return own
+        const header = songHeaderOf(file)
+        if (!header.trim()) return own
+        return audioTracksOf(header)
+      }, { sung: null, playback: null }),
+)
+const audioKinds = computed(() => audioKindsOf(audioTracks.value))
+const audioKind = ref<AudioKind>('sung')
+watch(
+  audioTracks,
+  (t) => {
+    const fallback = defaultAudioKind(t)
+    if (!fallback) return
+    if (!t[audioKind.value]) audioKind.value = fallback
+  },
+  { immediate: true },
+)
+const audioUrl = computed(() => audioTracks.value[audioKind.value])
+const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
+const audio = useAudioRef(audioUrl)
 
 function rememberOpenChart() {
   const chart = screenChartId.value
@@ -569,7 +587,14 @@ const parsedState = computed(() => {
   }
 })
 const parsed = computed(() => parsedState.value.view)
-const audioArt = computed(() => (isEdit.value ? null : readChartFile(() => audioArtOf(liveSource.value), null)))
+const audioArt = computed(() =>
+  isEdit.value
+    ? null
+    : readChartFile(() => {
+        const file = liveSource.value
+        return audioArtOf(openChartDocument(file)) ?? audioArtOf(songHeaderOf(file))
+      }, null),
+)
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
 const fatal = computed(() => {

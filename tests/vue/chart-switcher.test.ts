@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { diffOps, overlayKey, parse } from '../../src/core'
 import { ChordproViewer } from '../../src/vue'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
@@ -49,6 +49,7 @@ afterEach(() => {
   mounted.splice(0).forEach((w) => w.unmount())
   globalThis.ResizeObserver = realRO
   localStorage.clear()
+  vi.unstubAllGlobals()
 })
 
 async function mountViewer(props: Record<string, unknown> = {}) {
@@ -250,5 +251,148 @@ describe('chart switch is not a song change', () => {
     expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
     expect(w.get('[data-comments-toggle]').attributes('aria-pressed')).toBe('true')
     expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+  })
+})
+
+const WITH_AUDIO = `{start_of_x_chart:completa}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Completa}
+{key:G}
+{duration:04:26}
+{x_audio_sung:https://cdn.sda/completa.m4a?h=1}
+[G]corpo da completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Oferta}
+{x_chart_default:oferta}
+{key:C}
+{duration:02:00}
+{x_audio_sung:https://cdn.sda/oferta.m4a?h=2}
+[C]corpo da oferta
+{end_of_x_chart}
+`
+
+const AUDIO_INHERIT = `{start_of_x_chart:completa}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Completa}
+{key:G}
+{duration:04:26}
+[G]corpo da completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Oferta}
+{x_chart_default:oferta}
+{key:C}
+{duration:02:00}
+{x_audio_sung:https://cdn.sda/song.m4a?h=9}
+[C]corpo da oferta
+{end_of_x_chart}
+`
+
+describe('timeline and audio follow the chart', () => {
+  it('rebuilds duration from the open chart document', async () => {
+    const w = await mountViewer()
+    expect(w.get('[data-cpv-head]').text()).toContain('02:00')
+    expect(w.get('[data-cpv-head]').text()).not.toContain('04:26')
+    await pickChart(w, 'completa')
+    expect(w.get('[data-cpv-head]').text()).toContain('04:26')
+    expect(w.get('[data-cpv-head]').text()).not.toContain('02:00')
+  })
+
+  it('does not keep the previous chart playhead', async () => {
+    const w = await mountViewer()
+    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+    observers.forEach((cb) => cb([{ contentRect: { width: 800, height: 800 } }]))
+    await flushPromises()
+    await w.get('[data-met-btn]').trigger('click')
+    await flushPromises()
+    await w.get('[data-met-follow]').trigger('click')
+    await flushPromises()
+    await w.get('[aria-label="Fechar"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    el.scrollTop = 220
+    const bar = w.get('.cpv-progress span')
+    bar.element.setAttribute('style', 'width: 40%')
+
+    await pickChart(w, 'completa')
+    expect(el.scrollTop).toBe(0)
+    expect((w.get('.cpv-progress span').element as HTMLElement).style.width).toMatch(/^0/)
+    expect(w.get('[data-scroll]').text()).toMatch(/Rolar/)
+  })
+
+  it('reads x_audio of the open chart, not the sibling', async () => {
+    const created: { src: string }[] = []
+    class SilentAudio {
+      src = ''
+      currentTime = 0
+      duration = Number.NaN
+      paused = true
+      preload = 'metadata'
+      play = async () => {
+        this.paused = false
+      }
+      pause = () => {
+        this.paused = true
+      }
+      load = () => {}
+      removeAttribute() {}
+      addEventListener() {}
+      removeEventListener() {}
+      constructor() {
+        created.push(this)
+      }
+    }
+    vi.stubGlobal('Audio', SilentAudio)
+    const w = await mountViewer({ source: WITH_AUDIO })
+    expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    expect(created.some((a) => a.src.includes('oferta.m4a'))).toBe(true)
+    expect(created.some((a) => a.src.includes('completa.m4a'))).toBe(false)
+
+    await pickChart(w, 'completa')
+    expect(created.some((a) => a.src.includes('completa.m4a'))).toBe(true)
+    const last = created[created.length - 1]
+    expect(last?.src).toContain('completa.m4a')
+    expect(last?.paused).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
+  it('does not leak sibling audio when the open chart omits tracks', async () => {
+    const created: { src: string }[] = []
+    class SilentAudio {
+      src = ''
+      currentTime = 0
+      duration = Number.NaN
+      paused = true
+      preload = 'metadata'
+      play = async () => {}
+      pause = () => {}
+      load = () => {}
+      removeAttribute() {}
+      addEventListener() {}
+      removeEventListener() {}
+      constructor() {
+        created.push(this)
+      }
+    }
+    vi.stubGlobal('Audio', SilentAudio)
+    const w = await mountViewer({ source: AUDIO_INHERIT })
+    expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    expect(created.some((a) => a.src.includes('song.m4a'))).toBe(true)
+
+    await pickChart(w, 'completa')
+    expect(w.find('[data-audio-ref]').exists()).toBe(false)
+    vi.unstubAllGlobals()
   })
 })
