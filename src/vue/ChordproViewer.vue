@@ -391,13 +391,7 @@ function fileCapo(src: string): number {
 function preloadTune() {
   offset.value = 0
   const file = normalizeSource(session.getSource() || hostSource.value)
-  const chosen = String(pinnedChartId.value ?? musicianChartId.value ?? '').trim()
-  const id = readChartFile(() => {
-    const charts = listCharts(file)
-    if (chosen && charts.some((c) => c.id === chosen)) return chosen
-    return charts.find((c) => c.isDefault)?.id
-  }, chosen || undefined)
-  const doc = readChartFile(() => parse(file, id ? { chartId: id } : undefined).source, file)
+  const doc = openChartDocument(file)
   capo.value = fileCapo(doc)
   if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
   capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
