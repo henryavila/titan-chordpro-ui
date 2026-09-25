@@ -104,6 +104,12 @@ phases:
       doneWhen: tests/core/charts-envelope.test.ts verde;
         tests/demo/sda-fixtures.test.ts e tests/core/no-vue-in-core.test.ts
         verdes.
+    evaluationGate:
+      status: passed
+      verdict: pass
+      reportPath: .atomic-skills/reviews/eval-versoes-cifra-F0.md
+      at: c84fdc956fdee4eb16510e1ebbc2e20a44fdc1b0
+      verifiedAt: 2026-09-25T02:53:30.000Z
   - id: F1
     slug: versoes-cifra-f1-overlay-e-sugestao-por-cifra
     title: Overlay e sugestão por cifra
@@ -310,5 +316,5 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=28974b5bc77f | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=85bff34cdecb | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.

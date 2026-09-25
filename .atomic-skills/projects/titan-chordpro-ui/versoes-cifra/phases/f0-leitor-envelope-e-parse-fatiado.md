@@ -11,7 +11,7 @@ status: active
 branch: plan/versoes-cifra
 started: 2026-09-20T15:40:57.297Z
 lastUpdated: 2026-09-25T02:51:12.000Z
-nextAction: "Spawn the read-only F0 evaluation agent and write the evaluation report."
+nextAction: "Present the F0 decision package for decision-review. Do not stamp PASS."
 parentPlan: versoes-cifra
 phaseId: F0
 businessIntent:
@@ -215,7 +215,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-T-001, T-002, and T-003 are done. Verifier `pnpm exec vitest run tests/core/charts-envelope.test.ts` exit 0, 104 tests, at `53d8a8ef42b1f4ad4360ea53ed9246aee62b37b8`. Both review `.atomic-skills/reviews/2026-09-24-fix28-both.md` is approve. Next action is spawn the read-only F0 evaluation agent and write the evaluation report. Do not stamp decision-review PASS. Do not start F1.
+T-001, T-002, and T-003 are done. Verifier exit 0, 104 tests, at `53d8a8ef42b1f4ad4360ea53ed9246aee62b37b8`. Evaluation report `.atomic-skills/reviews/eval-versoes-cifra-F0.md` verdict pass. `evaluationGate` is stamped passed. Next action is present the F0 decision package for decision-review. Do not stamp PASS. Do not start F1.
 
 ### Verbatim state
 
