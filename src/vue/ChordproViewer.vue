@@ -58,6 +58,8 @@ import type {
   TimelineBlock,
 } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
+import DiagramModal from './overlay/DiagramModal.vue'
+import type { DiagramInstrumentChoice } from './overlay/DiagramModal.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
@@ -977,6 +979,41 @@ const exportKeyNote = computed(() =>
 const songKey = computed(() =>
   [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo',
 )
+const diagramOpen = ref(false)
+const diagramInstrument = ref<DiagramInstrumentChoice>('guitar')
+const diagramTarget = ref<{ shapeName: string; concert: string; capoFret: number } | null>(null)
+let resumeScroll = false
+let resumeMet = false
+
+function openDiagram(payload: { shapeName: string; concert: string; capoFret: number }) {
+  if (activeLens.value === 'letra') return
+  if (props.capabilities?.diagrams === false) return
+  if (isEdit.value) return
+  resumeScroll = scrolling.value
+  resumeMet = met.running.value
+  if (resumeScroll) stopScroll()
+  if (met.running.value) met.stop()
+  diagramTarget.value = payload
+  diagramOpen.value = true
+}
+
+function closeDiagram() {
+  if (!diagramOpen.value) return
+  diagramOpen.value = false
+  const scroll = resumeScroll
+  const metOn = resumeMet
+  resumeScroll = false
+  resumeMet = false
+  if (scroll) startScroll()
+  if (metOn && !met.running.value) met.start({ silent: true })
+}
+
+function setDiagramInstrument(next: DiagramInstrumentChoice) {
+  if (diagramInstrument.value === next) return
+  diagramInstrument.value = next
+  persistPrefs()
+}
+
 const met = useMetronome({
   songKey,
   tempo: computed(() => meta.value.tempo),
@@ -1134,7 +1171,7 @@ function persistPrefs() {
     const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
     // Preserve the free theme preference (including older values) while the
     // host controls appearance; other controls must not rewrite that policy.
-    for (const key of ['bias', 'fit', 'metSound', 'metStrumSound', 'metFollow', 'metCountIn', 'metPulseHead', 'lens', 'hideComments']) delete p[key]
+    for (const key of ['bias', 'fit', 'metSound', 'metStrumSound', 'metFollow', 'metCountIn', 'metPulseHead', 'lens', 'hideComments', 'diagramInstrument']) delete p[key]
     if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
     if (bias.value) p.bias = bias.value
     if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
@@ -1147,6 +1184,7 @@ function persistPrefs() {
     // choice is a session preference, not per-chart state.
     if (lens.value !== 'none') p.lens = lens.value
     if (hideComments.value) p.hideComments = true
+    if (diagramInstrument.value !== 'guitar') p.diagramInstrument = diagramInstrument.value
     if (Object.keys(p).length) store.set(STORE_KEYS.prefs, JSON.stringify(p))
     else store.remove(STORE_KEYS.prefs)
   } catch {
@@ -2145,6 +2183,13 @@ function onKey(e: KeyboardEvent) {
   // the same keystroke.
   if (scoreEd.value) return
   const k = e.key
+  if (diagramOpen.value) {
+    if (k === 'Escape') {
+      e.preventDefault()
+      closeDiagram()
+    }
+    return
+  }
   if (isEdit.value) {
     const cmd = e.ctrlKey || e.metaKey
     if (cmd && (k === 'z' || k === 'Z')) {
@@ -2536,6 +2581,7 @@ onMounted(() => {
       metCountIn?: boolean
       lens?: Lens
       hideComments?: boolean
+      diagramInstrument?: DiagramInstrumentChoice
     }
     if (p.theme) theme.value = p.theme
     if (typeof p.bias === 'number') bias.value = p.bias
@@ -2550,6 +2596,9 @@ onMounted(() => {
     else if (p.lens === 'nashville' || p.lens === 'letra') lens.value = p.lens
     if (props.hideComments) hideComments.value = true
     else if (p.hideComments === true) hideComments.value = true
+    if (p.diagramInstrument === 'ukulele' || p.diagramInstrument === 'piano' || p.diagramInstrument === 'guitar') {
+      diagramInstrument.value = p.diagramInstrument
+    }
     fitSeen.value = store.get(STORE_KEYS.fitSeen) === '1'
     editSeen.value = store.get(STORE_KEYS.editSeen) === '1'
   } catch {
@@ -2677,6 +2726,8 @@ defineExpose({
           :chord-edit-px="editScale.chordEditPx"
           @revert-line="ov.revertLine"
           @edit-score="openScore"
+          :diagrams="props.capabilities?.diagrams !== false && activeLens !== 'letra' && !isEdit"
+          @diagram="openDiagram"
         />
         </div>
       </div>
@@ -2725,6 +2776,16 @@ defineExpose({
       class="cpv-swipe-rail"
       data-swipe-rail="next"
       aria-hidden="true"
+    />
+    <DiagramModal
+      v-if="diagramOpen && diagramTarget"
+      :shape-name="diagramTarget.shapeName"
+      :concert="diagramTarget.concert"
+      :capo-fret="diagramTarget.capoFret"
+      :instrument="diagramInstrument"
+      :defines="parsed.defines"
+      @close="closeDiagram"
+      @instrument="setDiagramInstrument"
     />
     <CpvSwipeVeil
       :view="swipeView"

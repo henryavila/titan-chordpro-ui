@@ -31,6 +31,8 @@ const props = withDefaults(
     pillH?: string
     editLineH?: string
     chordEditPx?: string
+    /** View tap opens the shape modal. Off in edit and in só letra. */
+    diagrams?: boolean
   }>(),
   {
     resolveImage: (src: string) => src,
@@ -42,10 +44,15 @@ const props = withDefaults(
     pillH: '23px',
     editLineH: '73px',
     chordEditPx: '13px',
+    diagrams: true,
   },
 )
 
-const emit = defineEmits<{ revertLine: [li: number]; editScore: [bi: number] }>()
+const emit = defineEmits<{
+  revertLine: [li: number]
+  editScore: [bi: number]
+  diagram: [payload: { shapeName: string; concert: string; capoFret: number }]
+}>()
 
 /** Which image blocks the reader opened to full height, keyed by source line. */
 const full = ref<Record<number, boolean>>({})
@@ -437,9 +444,22 @@ watch(
                         class="cpv-chord-box"
                         :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
                       >
-                        <span v-if="c.hasChord" class="cpv-chord-stack">
-                          <!-- Capo shape on top, in the quiet grey; the chord that
-                               actually sounds stays green, glued to the lyric. -->
+                        <button
+                          v-if="diagrams && c.hasChord"
+                          type="button"
+                          class="cpv-chord-hit"
+                          data-diagram-hit
+                          :data-shape="c.shapeName || c.chord"
+                          :data-concert="c.concert || c.chord"
+                          :aria-label="`Forma de ${c.shapeName || c.chord}`"
+                          @click.stop="emit('diagram', { shapeName: c.shapeName || c.chord, concert: c.concert || c.chord, capoFret: c.capoFret || 0 })"
+                        >
+                          <span class="cpv-chord-stack">
+                            <span v-if="c.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
+                            <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
+                          </span>
+                        </button>
+                        <span v-else-if="c.hasChord" class="cpv-chord-stack">
                           <span v-if="c.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
                           <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
                         </span>
