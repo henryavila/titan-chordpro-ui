@@ -52,6 +52,31 @@ async function liftFrom(
   )
 }
 
+test('the next stamp sits above the finger at mid-screen, not under the hand', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1')
+  await page.locator('[data-setlist-open]').first().waitFor()
+
+  const fingerY = await page.evaluate(() => {
+    const el = document.querySelector('[data-cpv-root]') as HTMLElement
+    const r = el.getBoundingClientRect()
+    const x = r.left + r.width * 0.95
+    const y = r.top + r.height * 0.5
+    const down = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', isPrimary: true }
+    el.dispatchEvent(new PointerEvent('pointerdown', { ...down, clientX: x, clientY: y }))
+    window.dispatchEvent(new PointerEvent('pointermove', { ...down, clientX: x - 48, clientY: y + 6 }))
+    window.dispatchEvent(new PointerEvent('pointermove', { ...down, clientX: x - 160, clientY: y + 8 }))
+    return y
+  })
+
+  const stamp = page.locator('.cpv-swipe-stamp')
+  await expect(stamp).toBeVisible()
+  const box = await stamp.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.y + box!.height).toBeLessThan(fingerY - 40)
+  expect(box!.y).toBeGreaterThan(40)
+})
+
 test('swipe left from the right rail paints the next stamp and commits past the line', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?lista=1')

@@ -5,8 +5,13 @@ import { memoryStore } from '../../src/core'
 import {
   beginSongSwipe,
   SWIPE_EDGE_PX,
+  SWIPE_HAND_CLEAR_PX,
+  SWIPE_STAMP_H,
+  SWIPE_STAMP_PAD_BOTTOM,
+  SWIPE_STAMP_PAD_TOP,
   swipeIgnoresPointer,
   swipeRailPx,
+  swipeStampTop,
   swipeThreshold,
   swipeZone,
   type SongSwipeBegin,
@@ -18,11 +23,14 @@ const CHART = withDuration(loadFixture(JESUS_1))
 const OTHER = loadFixture('sda/084-escuta-meu-clamor.cho')
 const PHONE = 390
 
+const PHONE_H = 844
+
 function start(over: Partial<SongSwipeBegin> = {}) {
   return beginSongSwipe({
     canPrev: true,
     canNext: true,
     width: PHONE,
+    height: PHONE_H,
     x: PHONE - 20,
     y: 400,
     pointerKind: 'touch',
@@ -99,6 +107,34 @@ describe('swipeIgnoresPointer', () => {
   })
 })
 
+describe('swipeStampTop', () => {
+  it('parks the whole stamp above a mid-screen finger', () => {
+    const fingerY = 422
+    const top = swipeStampTop(fingerY, PHONE_H)
+    expect(top + SWIPE_STAMP_H).toBeLessThanOrEqual(fingerY - SWIPE_HAND_CLEAR_PX)
+    expect(top).toBe(fingerY - SWIPE_HAND_CLEAR_PX - SWIPE_STAMP_H)
+  })
+
+  it('keeps a low finger from dragging the stamp into the dock', () => {
+    const top = swipeStampTop(800, PHONE_H)
+    expect(top + SWIPE_STAMP_H).toBeLessThanOrEqual(800 - SWIPE_HAND_CLEAR_PX)
+    expect(top).toBeLessThanOrEqual(PHONE_H - SWIPE_STAMP_H - SWIPE_STAMP_PAD_BOTTOM)
+    expect(swipeStampTop(2000, PHONE_H)).toBe(
+      PHONE_H - SWIPE_STAMP_H - SWIPE_STAMP_PAD_BOTTOM,
+    )
+  })
+
+  it('clamps a high finger under the title chrome instead of leaving the screen', () => {
+    expect(swipeStampTop(90, PHONE_H)).toBe(SWIPE_STAMP_PAD_TOP)
+    expect(swipeStampTop(-40, PHONE_H)).toBe(SWIPE_STAMP_PAD_TOP)
+  })
+
+  it('does not go negative when the viewer has no measured height', () => {
+    expect(swipeStampTop(400, 0)).toBeGreaterThanOrEqual(SWIPE_STAMP_PAD_TOP)
+    expect(swipeStampTop(400, Number.NaN)).toBeGreaterThanOrEqual(SWIPE_STAMP_PAD_TOP)
+  })
+})
+
 describe('song swipe recognizer', () => {
   it('ignores a down in the centre even with a long horizontal drag', () => {
     const s = start({ x: PHONE / 2 })
@@ -130,6 +166,7 @@ describe('song swipe recognizer', () => {
     expect(s.view().intent).toBe('next')
     expect(s.view().peeking).toBe(true)
     expect(s.view().armed).toBe(false)
+    expect(s.view().stampTop).toBe(swipeStampTop(400 + 8, PHONE_H))
     s.move(x0 - (need + 8), 400 + 10)
     expect(s.view().armed).toBe(true)
     expect(s.view().progress).toBe(1)
@@ -210,6 +247,15 @@ describe('song swipe recognizer', () => {
     s.move(x0 - 40, 400 + 200)
     expect(s.view().axis).toBe('horizontal')
   })
+
+  it('lifts the stamp as the finger drifts down so the card stays above the hand', () => {
+    const x0 = PHONE - 20
+    const s = start({ x: x0, y: 360 })
+    s.move(x0 - 48, 520)
+    expect(s.view().peeking).toBe(true)
+    expect(s.view().stampTop).toBe(swipeStampTop(520, PHONE_H))
+    expect(s.view().stampTop + SWIPE_STAMP_H).toBeLessThanOrEqual(520 - SWIPE_HAND_CLEAR_PX)
+  })
 })
 
 function songs(): SetlistSong[] {
@@ -289,6 +335,7 @@ describe('rail peek on the rehearsal chart', () => {
     expect(w.find('[data-icon="chevronRight"]').exists()).toBe(true)
     expect(veil.text()).toMatch(/Próxima/i)
     expect(veil.text()).not.toMatch(/Solte para ir/i)
+    expect(veil.attributes('style') ?? '').toMatch(/--cpv-swipe-stamp-top:\s*\d+(\.\d+)?px/)
 
     finger(root, 'pointermove', x - 160, y + 8)
     await w.vm.$nextTick()
