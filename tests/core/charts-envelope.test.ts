@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { chartDocument, readMeta, splitCho, writeChartScopedMeta, writeSongScopedMeta } from '../../src/core/charts'
+import {
+  chartDocument,
+  notationBlockCloser,
+  readMeta,
+  splitCho,
+  writeChartScopedMeta,
+  writeSongScopedMeta,
+} from '../../src/core/charts'
 import {
   ChartEnvelopeError,
   applyCifraClubEnrich,
@@ -1986,5 +1993,56 @@ describe('a stray end in an implicit chart does not hide the title', () => {
     expect(parse(saved).meta.title).toBe('Real')
     expect(readMeta(saved).title).toBe('Real')
     expect(saved).toMatch(/\{tempo:100\}/)
+  })
+})
+
+describe('a cached fence stop does not hide the next chart', () => {
+  const full = [
+    '{start_of_x_chart:completa}',
+    '{sos}',
+    '{start_of_x_chart:verso}',
+    '{sos}',
+    '{sot}',
+    '{sos}',
+    '{start_of_x_chart:nota}',
+    '{end_of_x_chart}',
+    '{start_of_x_chart:oferta}',
+    '{eos}',
+    '{eos}',
+    '{end_of_x_chart}',
+  ].join('\n')
+
+  it('lists nota when the outer score warmed the closer cache', () => {
+    expect(listCharts(full).map((c) => c.id)).toEqual(['completa', 'verso', 'nota', 'oferta'])
+    const split = splitCho(full)
+    const verso = split.charts.find((c) => c.id === 'verso')?.inner ?? ''
+    const notaChart = split.charts.find((c) => c.id === 'nota')
+    const nota = chartDocument(full, 'nota')
+    expect(split.raws[notaChart?.startLi ?? -1]).toBe('{start_of_x_chart:nota}')
+    expect(nota).toBe(notaChart?.inner)
+    expect(nota).not.toBe(verso)
+    expect(nota).not.toContain('{sos}')
+    expect(verso).not.toContain('{start_of_x_chart:nota}')
+  })
+
+  it('lists verso, nota, and oferta when the outer score is absent', () => {
+    const tail = full.split('\n').slice(2).join('\n')
+    expect(listCharts(tail).map((c) => c.id)).toEqual(['verso', 'nota', 'oferta'])
+    const nota = chartDocument(tail, 'nota')
+    const verso = splitCho(tail).charts.find((c) => c.id === 'verso')?.inner ?? ''
+    expect(nota).not.toBe(verso)
+    expect(verso).not.toContain('{start_of_x_chart:nota}')
+  })
+
+  it('resolves the verso score the same before and after the outer score', () => {
+    const fresh = full.split('\n')
+    const before = notationBlockCloser(fresh, 3, 'score', 1)
+    notationBlockCloser(fresh, 1, 'score', 1)
+    const warmed = full.split('\n')
+    notationBlockCloser(warmed, 1, 'score', 1)
+    const after = notationBlockCloser(warmed, 3, 'score', 1)
+    expect(before).toBeNull()
+    expect(after).toEqual(before)
+    expect(listCharts(full).map((c) => c.id)).toEqual(['completa', 'verso', 'nota', 'oferta'])
   })
 })
