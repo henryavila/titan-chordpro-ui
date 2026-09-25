@@ -141,6 +141,7 @@ export type ChordproViewerProps = {
    * resolve → enqueue + toast “Sugestão enviada” and emit `suggestion-created`;
    * reject or a void return → keep Minha versão, toast retry, nothing queued.
    * The POST lives here (`return` the Promise). `suggestion-created` is notify-after-ack.
+   * `chartId` on the suggestion is the chart the ops were diffed against.
    * Omit for local-only (demo / no backend).
    */
   persistSuggestion?: (suggestion: Suggestion) => Promise<void>

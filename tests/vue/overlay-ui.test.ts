@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { normalizeSource } from '../../src/core/index'
+import { normalizeSource, overlayKey, parse } from '../../src/core/index'
 
 const raw = () => loadFixture(JESUS_1)
 /** The line indices an adjustment anchors on live in the normalised text. */
@@ -145,7 +145,7 @@ describe('a version of my own', () => {
     await flushPromises()
     await personalise(w)
 
-    const stored = JSON.parse(localStorage.getItem('cpv:my:jesus-1') ?? 'null')
+    const stored = JSON.parse(localStorage.getItem(overlayKey('jesus-1')) ?? 'null')
     expect(stored.ops).toHaveLength(1)
     expect(stored.ops[0].type).toBe('replace')
     expect(w.text()).toContain('Minha versão · 1 ajuste')
@@ -164,7 +164,7 @@ describe('a version of my own', () => {
     await flushPromises()
     expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
     expect(w.findAll('[data-mine-dot]')).toHaveLength(0)
-    expect(localStorage.getItem('cpv:my:jesus-1')).not.toBeNull()
+    expect(localStorage.getItem(overlayKey('jesus-1'))).not.toBeNull()
 
     await w.get('[data-read-mine]').trigger('click')
     await flushPromises()
@@ -179,7 +179,7 @@ describe('a version of my own', () => {
 
     await w.get('[data-mine-dot]').trigger('click')
     await flushPromises()
-    expect(localStorage.getItem('cpv:my:jesus-1')).toBeNull()
+    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
     expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
     expect(w.find('[data-mine-switch]').exists()).toBe(false)
     w.unmount()
@@ -200,7 +200,7 @@ describe('a version of my own', () => {
     expect(w.get('[data-revert-all]').text()).toBe('Confirmar — descartar tudo')
     await w.get('[data-revert-all]').trigger('click')
     await flushPromises()
-    expect(localStorage.getItem('cpv:my:jesus-1')).toBeNull()
+    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
     w.unmount()
   })
 
@@ -216,7 +216,7 @@ describe('a version of my own', () => {
     await flushPromises()
     await w.get('[data-fix-tune]').trigger('click')
     await flushPromises()
-    const ops = JSON.parse(localStorage.getItem('cpv:my:jesus-1') ?? 'null').ops
+    const ops = JSON.parse(localStorage.getItem(overlayKey('jesus-1')) ?? 'null').ops
     expect(ops.find((o: { type: string }) => o.type === 'tune')).toMatchObject({ transpose: 2 })
 
     // Reopening the chart adopts the pinned key.
@@ -245,7 +245,7 @@ describe('the official chart moved', () => {
     await flushPromises()
     expect(next.find('[data-upd-dlg]').exists()).toBe(false)
     expect(next.get('[data-cpv-scroll]').text()).toContain('(meu)')
-    expect(JSON.parse(localStorage.getItem('cpv:my:jesus-1') ?? 'null').baseVersion).toBe('v2')
+    expect(JSON.parse(localStorage.getItem(overlayKey('jesus-1')) ?? 'null').baseVersion).toBe('v2')
     next.unmount()
   })
 
@@ -259,7 +259,7 @@ describe('the official chart moved', () => {
     await flushPromises()
     await next.get('[data-upd-adopt]').trigger('click')
     await flushPromises()
-    expect(localStorage.getItem('cpv:my:jesus-1')).toBeNull()
+    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
     expect(next.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
     next.unmount()
   })
@@ -275,7 +275,7 @@ describe('the official chart moved', () => {
     const next = mountViewer({ source: adopted, version: 'v2' })
     await flushPromises()
     expect(next.find('[data-upd-dlg]').exists()).toBe(false)
-    expect(localStorage.getItem('cpv:my:jesus-1')).toBeNull()
+    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
     expect(next.find('[data-mine-switch]').exists()).toBe(false)
     next.unmount()
   })
@@ -582,5 +582,122 @@ describe('host persistSuggestion ack', () => {
     expect(String(err.mock.calls.at(0))).toMatch(/Promise|return/i)
     err.mockRestore()
     local.unmount()
+  })
+})
+
+/** Two named charts. The default chart is oferta — not the implicit `default` slot. */
+const TWO_CHARTS = [
+  '{start_of_x_chart:completa}',
+  '{title:Uma}',
+  '{artist:Alguém}',
+  '{x_chart_label:Completa}',
+  '{key:G}',
+  '{duration:04:26}',
+  '[G]corpo da completa',
+  '{end_of_x_chart}',
+  '{start_of_x_chart:oferta}',
+  '{title:Uma}',
+  '{artist:Alguém}',
+  '{x_chart_label:Oferta}',
+  '{x_chart_default:oferta}',
+  '{key:C}',
+  '{duration:02:00}',
+  '[C]corpo da oferta',
+  '{end_of_x_chart}',
+].join('\n')
+
+function chartBlock(file: string, id: string): string {
+  const start = file.indexOf(`{start_of_x_chart:${id}}`)
+  const end = file.indexOf('{end_of_x_chart}', start)
+  return file.slice(start, end + '{end_of_x_chart}'.length)
+}
+
+describe('suggestion per chart', () => {
+  it('stamps the active chart, diffs that document, and splices the whole file on accept', async () => {
+    const local = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'local' })
+    await flushPromises()
+    await local.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await local.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await local.get('[data-meta-title]').setValue('Oferta nova')
+    await local.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    await local.get('[data-read]').trigger('click')
+    await flushPromises()
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await confirmSuggest(local)
+
+    const created = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0]
+    const chart = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const titleAt = chart.split('\n').findIndex((l) => l === '{title:Uma}')
+    expect(created.chartId).toBe('oferta')
+    expect(created.songId).toBe('uma')
+    const titleOp = created.ops.find((op: { before?: string[] }) => op.before?.includes('{title:Uma}'))
+    expect(titleOp.at).toBe(titleAt)
+    expect(titleAt).not.toBe(TWO_CHARTS.split('\n').findIndex((l) => l === '{title:Uma}'))
+    expect(local.emitted('suggestion-created')?.[0]?.[0]).toMatchObject({ chartId: 'oferta' })
+    local.unmount()
+
+    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    list.push({
+      id: 's-completa',
+      songId: 'uma',
+      chartId: 'completa',
+      title: 'Uma',
+      at: 1,
+      baseVersion: 'v1',
+      status: 'pending',
+      actorName: 'Bia',
+      ops: [
+        {
+          id: 'op-c',
+          type: 'replace',
+          at: 0,
+          anchor: '',
+          anchorHash: '0',
+          before: ['{title:Uma}'],
+          after: ['{title:Completa nova}'],
+          ctx: { transpose: 0, capo: 0 },
+        },
+      ],
+      resolvedOps: [],
+    })
+    list.push({
+      ...created,
+      id: 's-oferta-2',
+      at: 2,
+    })
+    localStorage.setItem('cpv:sug', JSON.stringify(list))
+
+    const admin = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    const songs = admin.findAll('[data-q-song]')
+    expect(songs).toHaveLength(2)
+    expect(songs.map((s) => s.text()).join('\n')).toContain('Oferta nova · Oferta')
+    expect(songs.map((s) => s.text()).join('\n')).toContain('Uma · Completa')
+    const ofertaRow = songs.find((s) => s.text().includes('Oferta nova · Oferta'))
+    expect(ofertaRow?.text()).toContain('2 pedidos')
+
+    await ofertaRow!.trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+
+    const saved = String(admin.emitted('save-content')?.at(-1)?.[0] ?? '')
+    expect(saved).toContain('{start_of_x_chart:completa}')
+    expect(saved).toContain('{start_of_x_chart:oferta}')
+    expect(parse(saved, { chartId: 'completa' }).meta.title).toBe('Uma')
+    expect(parse(saved, { chartId: 'oferta' }).meta.title).toBe('Oferta nova')
+    expect(saved).toContain('[G]corpo da completa')
+    expect(saved).toContain('[C]corpo da oferta')
+    expect(chartBlock(saved, 'completa')).toBe(chartBlock(TWO_CHARTS, 'completa'))
+    expect(saved).not.toBe(parse(saved, { chartId: 'oferta' }).source)
+    admin.unmount()
   })
 })

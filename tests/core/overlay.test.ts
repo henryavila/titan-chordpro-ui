@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseXStrum, writeStrumPatterns } from '../../src/core'
+import { overlayKey, parseXStrum, writeStrumPatterns } from '../../src/core'
 import {
   absorbInto,
   absorbedOp,
@@ -240,5 +240,14 @@ describe('merge mask includes batida', () => {
     const del = strumReviewFromOp(diffOps(mine, cleared, CTX)[0]!)
     const gone = diffStrumPattern(del?.previous[0], del?.proposed[0])
     expect(gone?.marks.every((m) => m === 'removed')).toBe(true)
+  })
+})
+
+describe('overlayKey', () => {
+  it('names the chart slot and shares default for an omitted id', () => {
+    expect(overlayKey('jesus-1', 'oferta')).toBe('cpv:my:jesus-1:oferta')
+    expect(overlayKey('jesus-1')).toBe('cpv:my:jesus-1:default')
+    expect(overlayKey('jesus-1', 'default')).toBe(overlayKey('jesus-1'))
+    expect(overlayKey('jesus-1', '')).toBe(overlayKey('jesus-1'))
   })
 })

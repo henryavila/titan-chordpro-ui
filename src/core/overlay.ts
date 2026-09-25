@@ -413,6 +413,11 @@ export type ResolvedOp = OverlayOp & { disposition: 'accepted' | 'refused' }
 export type Suggestion = {
   id: string
   songId: string
+  /**
+   * Chart the ops were diffed against. Absent on a row written before charts:
+   * that row is the implicit `default` chart.
+   */
+  chartId?: string
   title: string
   at: number
   baseVersion: string

@@ -34,13 +34,22 @@ export const STORE_KEYS = {
   suggestions: 'cpv:sug',
   /** Last display name typed when sending a suggestion. */
   actorName: 'cpv:actor-name',
-  /** Prefix of the reader's personal version: `cpv:my:{songId}`. */
+  /** Prefix of the reader's personal version: `cpv:my:{songId}:{chartId}`. */
   overlayPrefix: 'cpv:my:',
 } as const
 
+/**
+ * Chart slot on the overlay key. An omitted id and `default` are one slot —
+ * the implicit chart of a file with no envelope.
+ */
+function overlayChartId(chartId?: string): string {
+  const id = String(chartId ?? '').trim()
+  return id && id !== 'default' ? id : 'default'
+}
+
 /** The key a given chart's personal version is stored under. */
-export function overlayKey(songId: string): string {
-  return `${STORE_KEYS.overlayPrefix}${songId}`
+export function overlayKey(songId: string, chartId?: string): string {
+  return `${STORE_KEYS.overlayPrefix}${songId}:${overlayChartId(chartId)}`
 }
 
 /**
