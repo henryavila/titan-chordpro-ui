@@ -893,6 +893,7 @@ describe('switching the chart on screen', () => {
     await flushPromises()
     expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
     expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
 
     await w.get('[data-open-my]').trigger('click')
     await flushPromises()
@@ -1058,6 +1059,29 @@ describe('switching the song on screen', () => {
     expect(w.text()).toContain('linha unica da cifra (de B)')
     expect(w.text()).not.toContain('(de A)')
     expect(localStorage.getItem(keyA)).toBe(storedA)
+    w.unmount()
+  })
+
+  it('drops a removed song id without writing either overlay key', async () => {
+    const official = src()
+    const title = parse(official).meta.title || 'song'
+    const idOps = diffOps(official, official.replace(UNIQUE, `${UNIQUE} (id)`), { transpose: 0, capo: 0 })
+    const titleOps = diffOps(official, official.replace(UNIQUE, `${UNIQUE} (titulo)`), { transpose: 0, capo: 0 })
+    localStorage.setItem(overlayKey('jesus-1'), JSON.stringify({ baseVersion: 'v1', ops: idOps, at: 1 }))
+    localStorage.setItem(overlayKey(title), JSON.stringify({ baseVersion: 'v1', ops: titleOps, at: 2 }))
+    const idKey = localStorage.getItem(overlayKey('jesus-1'))
+    const titleKey = localStorage.getItem(overlayKey(title))
+
+    const w = mountViewer()
+    await flushPromises()
+    await w.setProps({ songId: '' })
+    await flushPromises()
+
+    expect(w.text()).toContain('A identidade da música mudou.')
+    expect(w.text()).not.toContain('(id)')
+    expect(w.text()).not.toContain('(titulo)')
+    expect(localStorage.getItem(overlayKey('jesus-1'))).toBe(idKey)
+    expect(localStorage.getItem(overlayKey(title))).toBe(titleKey)
     w.unmount()
   })
 })

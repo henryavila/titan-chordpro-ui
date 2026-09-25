@@ -264,9 +264,9 @@ export function useOverlay(opts: OverlayOpts) {
    * The screen's base: "for everyone" and reading the original see the raw
    * official text; reading and local editing see it with the overlay applied.
    */
-  function baseFor(wMode: WriteMode | null): string {
+  function baseFor(wMode: WriteMode | null, file?: string): string {
     if (wMode === 'persisted' || showOriginal.value) return official.value
-    return fileWithChart(official.value, chartSlot.value, applied.value.text)
+    return fileWithChart(file ?? official.value, chartSlot.value, applied.value.text)
   }
 
   function putOverlay(next: Overlay | null): Overlay | null {
@@ -967,6 +967,13 @@ export function useOverlay(opts: OverlayOpts) {
     }
   }
 
+  /** Drop the personal version from memory. Storage keys stay untouched. */
+  function discardMemory() {
+    overlay.value = null
+    updDlg.value = null
+    showOriginal.value = false
+  }
+
   function dispose() {
     window.clearTimeout(revertT)
     window.clearTimeout(suggestT)
@@ -1030,6 +1037,7 @@ export function useOverlay(opts: OverlayOpts) {
     setOfficial,
     exportOrig,
     reset,
+    discardMemory,
     holdChartLoad,
     releaseChartLoad,
     dispose,
