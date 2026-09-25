@@ -793,3 +793,45 @@ describe('suggestion per chart', () => {
     admin.unmount()
   })
 })
+
+describe('switching the chart on screen', () => {
+  it('does not carry the default chart overlay onto the chart that opens once its default marker is removed', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const mine = oferta.replace('{title:Uma}', '{title:Uma minha}')
+    const ops = diffOps(oferta, mine, { transpose: 0, capo: 0 })
+    localStorage.setItem(
+      overlayKey('uma', 'oferta'),
+      JSON.stringify({ baseVersion: 'v1', ops, at: 1 }),
+    )
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
+    await flushPromises()
+    expect(w.get('[data-chart-title]').text()).toBe('Uma minha')
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-source]').trigger('click')
+    await flushPromises()
+    const area = w.get('textarea[aria-label="Fonte ChordPro"]')
+    const shown = String((area.element as HTMLTextAreaElement).value)
+    expect(shown).toContain('{x_chart_default:oferta}')
+    await area.setValue(shown.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', ''))
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+
+    expect(w.get('[data-chart-title]').text()).toBe('Uma')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.text()).not.toContain('Uma minha')
+    expect(w.text()).not.toContain('Minha versão')
+    const reading = (w.vm as { getSource: () => string }).getSource()
+    expect(parse(reading).meta.title).toBe('Uma')
+    expect(parse(reading, { chartId: 'completa' }).meta.title).toBe('Uma')
+    expect(localStorage.getItem(overlayKey('uma', 'completa'))).toBeNull()
+    expect(JSON.parse(localStorage.getItem(overlayKey('uma', 'oferta')) ?? 'null').ops).toHaveLength(1)
+    w.unmount()
+  })
+})
