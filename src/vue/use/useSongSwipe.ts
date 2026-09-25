@@ -3,6 +3,7 @@ import {
   beginSongSwipe,
   idleSwipeView,
   pointerKindOf,
+  swipeIgnoresPointer,
   swipeZone,
   type SongSwipeSession,
   type SongSwipeView,
@@ -77,14 +78,7 @@ export function useSongSwipe(opts: {
     if (!opts.enabled() || opts.blocked()) return
     if (e.isPrimary === false) return
     if (typeof e.button === 'number' && e.button !== 0) return
-    const t = e.target as HTMLElement | null
-    if (
-      t?.closest?.(
-        "button,input,textarea,select,a,[role='dialog'],[role='button'],.cpv-chrome,[data-end-offer],.cpv-scrim",
-      )
-    ) {
-      return
-    }
+    if (swipeIgnoresPointer(e.target, e.clientX, e.clientY)) return
     const kind = pointerKindOf(e.pointerType)
     const { x, width, origin } = localPoint(e)
     const zone = swipeZone(x, width)
@@ -100,7 +94,7 @@ export function useSongSwipe(opts: {
     })
     pid = e.pointerId
     originX = origin
-    captured = e.currentTarget instanceof Element ? e.currentTarget : t
+    captured = e.currentTarget instanceof Element ? e.currentTarget : (e.target as Element | null)
     view.value = session.view()
     if (captured && 'setPointerCapture' in captured) {
       try {

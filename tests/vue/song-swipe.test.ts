@@ -1,10 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import {
   beginSongSwipe,
   SWIPE_EDGE_PX,
+  swipeIgnoresPointer,
   swipeRailPx,
   swipeThreshold,
   swipeZone,
@@ -53,6 +54,48 @@ describe('swipeZone', () => {
     expect(swipeZone(SWIPE_EDGE_PX + rail - 1, tablet)).toBe('prev-rail')
     expect(swipeZone(SWIPE_EDGE_PX + rail, tablet)).toBe('center')
     expect(swipeZone(tablet - rail, tablet)).toBe('next-rail')
+  })
+})
+
+describe('swipeIgnoresPointer', () => {
+  function node(tag: string, attrs: Record<string, string> = {}) {
+    const el = document.createElement(tag)
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    return el
+  }
+
+  it('keeps a rail down when the paint stack is only the rail', () => {
+    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    expect(swipeIgnoresPointer(rail, 370, 400, () => [rail])).toBe(false)
+  })
+
+  it('yields when the event target is already a control', () => {
+    const more = node('button', { 'data-more': '' })
+    expect(swipeIgnoresPointer(more, 370, 800, () => [])).toBe(true)
+  })
+
+  it('yields when iOS names the rail as target but Mais is under the finger', () => {
+    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    const more = node('button', { 'data-more': '' })
+    expect(swipeIgnoresPointer(rail, 370, 800, () => [rail, more])).toBe(true)
+  })
+
+  it('yields when Rolar sits in the paint stack under a left-rail down', () => {
+    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'prev' })
+    const roll = node('button', { 'data-scroll': '' })
+    expect(swipeIgnoresPointer(rail, 40, 800, () => [rail, roll])).toBe(true)
+  })
+
+  it('yields when the phone stack is in the paint stack', () => {
+    const rail = node('div', { class: 'cpv-swipe-rail' })
+    const stack = node('div', { class: 'cpv-phone-stack' })
+    expect(swipeIgnoresPointer(rail, 40, 800, () => [rail, stack])).toBe(true)
+  })
+
+  it('keeps a rail swipe when a reading-chord button sits under the rail', () => {
+    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    const chord = node('button', { 'aria-label': 'Forma de G' })
+    expect(swipeIgnoresPointer(rail, 370, 400, () => [rail, chord])).toBe(false)
   })
 })
 
@@ -278,6 +321,27 @@ describe('rail peek on the rehearsal chart', () => {
     await flushPromises()
     expect(w.get('[data-chart-title]').text()).toMatch(/Jesus/i)
     expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
+  })
+
+  it('does not start a swipe when the finger is on Mais under the right rail', async () => {
+    const w = viewer()
+    await flushPromises()
+    const root = w.get('[data-cpv-root]').element as HTMLElement
+    const more = document.createElement('button')
+    more.setAttribute('data-more', '')
+    const rail = document.createElement('div')
+    rail.className = 'cpv-swipe-rail'
+    const hit = vi.fn(() => [rail, more])
+    Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: hit })
+    try {
+      finger(root, 'pointerdown', 880, 200)
+      finger(root, 'pointermove', 840, 206)
+      await w.vm.$nextTick()
+      expect(w.find('[data-song-swipe]').exists()).toBe(false)
+      expect(hit).toHaveBeenCalled()
+    } finally {
+      delete (document as { elementsFromPoint?: unknown }).elementsFromPoint
+    }
   })
 
   it('hides the fade and stays on the song when the rail swipe is aborted', async () => {

@@ -232,6 +232,7 @@ const page = ref<HTMLElement | null>(null)
 const head = ref<HTMLElement | null>(null)
 const capoBox = ref<HTMLElement | null>(null)
 const width = ref(900)
+const swipeRailBottom = ref(0)
 const headH = ref(72)
 const offset = ref(0)
 const capo = ref(0)
@@ -337,6 +338,7 @@ let mq: MediaQueryList | null = null
 let ro: ResizeObserver | null = null
 let headRo: ResizeObserver | null = null
 let pageRo: ResizeObserver | null = null
+let dockRo: ResizeObserver | null = null
 let zenSeen = false
 let idleSeen = false
 
@@ -2478,6 +2480,47 @@ const swipeDebug = computed(
   () => setlist.on.value && props.capabilities?.debugSwipe === true,
 )
 
+function dockLiftEl(): HTMLElement | null {
+  const rootEl = root.value
+  if (!rootEl) return null
+  return (
+    (rootEl.querySelector('.cpv-phone-stack') as HTMLElement | null) ??
+    (rootEl.querySelector('[data-scroll]')?.closest('.cpv-chrome') as HTMLElement | null)
+  )
+}
+
+function measureSwipeRailBottom() {
+  const rootEl = root.value
+  const dock = dockLiftEl()
+  if (!rootEl || !dock) {
+    swipeRailBottom.value = 0
+    return
+  }
+  const a = rootEl.getBoundingClientRect()
+  const b = dock.getBoundingClientRect()
+  swipeRailBottom.value = Math.max(0, Math.round(a.bottom - b.top))
+}
+
+function bindDockLift() {
+  dockRo?.disconnect()
+  dockRo = null
+  const dock = dockLiftEl()
+  if (!dock) {
+    swipeRailBottom.value = 0
+    return
+  }
+  measureSwipeRailBottom()
+  dockRo = new ResizeObserver(() => measureSwipeRailBottom())
+  dockRo.observe(dock)
+}
+
+watch(
+  [() => setlist.on.value, phone, chromeHidden, isPopulated, isEdit],
+  () => {
+    void nextTick(bindDockLift)
+  },
+)
+
 function bindPage(el: unknown) {
   const node = el as HTMLElement | null
   pageRo?.disconnect()
@@ -2621,6 +2664,7 @@ onMounted(() => {
     guard.check()
     measurePinGain()
     syncScrollRoom()
+    measureSwipeRailBottom()
     const w = entries[0]?.contentRect.width ?? 900
     if (Math.abs(w - width.value) <= 4) return
     width.value = w
@@ -2652,6 +2696,7 @@ onMounted(() => {
   guard.start()
   songSwipe.attach()
   wakeLock.start()
+  void nextTick(bindDockLift)
 })
 
 onUnmounted(() => {
@@ -2683,6 +2728,7 @@ onUnmounted(() => {
   headRo?.disconnect()
   strumRo?.disconnect()
   pageRo?.disconnect()
+  dockRo?.disconnect()
 })
 
 defineExpose({
@@ -2708,6 +2754,7 @@ defineExpose({
       '--cpv-met-hit': metHitMs,
       '--cpv-swipe-edge': `${SWIPE_EDGE_PX}px`,
       '--cpv-swipe-rail': `${swipeRailPx(width)}px`,
+      '--cpv-swipe-rail-bottom': `${swipeRailBottom}px`,
     }"
     @pointerdown="songSwipe.onDown"
   >
