@@ -29,6 +29,7 @@ export {
   browserStore,
   memoryStore,
   overlayKey,
+  songLegacyKey,
   readJson as readStoredJson,
   writeJson as writeStoredJson,
 } from './storage'

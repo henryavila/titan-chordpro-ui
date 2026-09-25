@@ -745,4 +745,51 @@ describe('suggestion per chart', () => {
     expect(String(admin.emitted('save-content')?.at(-1)?.[0] ?? TWO_CHARTS)).toBe(TWO_CHARTS)
     admin.unmount()
   })
+
+  it('does not accept a suggestion whose song is not the open file', async () => {
+    const official = src()
+    const changed = official.replace(UNIQUE, `${UNIQUE} (outro)`)
+    const ops = diffOps(official, changed, { transpose: 0, capo: 0 })
+    localStorage.setItem(
+      'cpv:sug',
+      JSON.stringify([
+        {
+          id: 's-outra',
+          songId: 'outra',
+          title: 'Outra',
+          at: 1,
+          baseVersion: 'v1',
+          status: 'pending',
+          actorName: 'Bia',
+          ops,
+          resolvedOps: [],
+        },
+      ]),
+    )
+    const admin = mountViewer({ editMode: 'persisted' })
+    await flushPromises()
+    await admin.get('[data-queue-chip]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-song]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-sug]').trigger('click')
+    await flushPromises()
+
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+    await admin.get('[data-q-accept-batch]').trigger('click')
+    await flushPromises()
+
+    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    expect(list[0].songId).toBe('outra')
+    expect(list[0].status).toBe('pending')
+    expect(list[0].ops).toHaveLength(ops.length)
+    expect(list[0].resolvedOps).toHaveLength(0)
+    expect(admin.emitted('save-content')).toBeUndefined()
+    expect(admin.emitted('suggestion-accepted')).toBeUndefined()
+    expect((admin.vm as { getSource: () => string }).getSource()).not.toContain('(outro)')
+    expect(admin.get('.cpv-chart').text()).not.toContain('(outro)')
+    expect(admin.text()).not.toContain('Aceito — já vale para todos')
+    admin.unmount()
+  })
 })

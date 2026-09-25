@@ -49,15 +49,21 @@ function overlayChartId(chartId?: string): string {
 
 /**
  * A colon would make this component look like the key separator.
- * Ids without one stay literal — encoding them would move an existing slot.
+ * A percent would look like an encoded colon. Ids with neither stay literal —
+ * encoding them would move an existing slot.
  */
 function overlayPart(id: string): string {
-  return id.includes(':') ? encodeURIComponent(id) : id
+  return id.includes(':') || id.includes('%') ? encodeURIComponent(id) : id
 }
 
 /** The key a given chart's personal version is stored under. */
 export function overlayKey(songId: string, chartId?: string): string {
   return `${STORE_KEYS.overlayPrefix}${overlayPart(songId)}:${overlayPart(overlayChartId(chartId))}`
+}
+
+/** `cpv:my:{songId}` before chart slots, with the same song encoding as `overlayKey`. */
+export function songLegacyKey(songId: string): string {
+  return `${STORE_KEYS.overlayPrefix}${overlayPart(songId)}`
 }
 
 /**
