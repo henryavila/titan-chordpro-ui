@@ -71,6 +71,32 @@ describe('diagram modal', () => {
     expect(scroller.scrollHeight).toBe(before)
   })
 
+  it('Space starts Rolar when no diagram is open', async () => {
+    const { w } = mountViewer()
+    await roomy(w)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+    await flushPromises()
+    expect(w.find('[data-diagram-modal]').exists()).toBe(false)
+    expect(w.get('[data-scroll]').text()).toMatch(/Parar/)
+  })
+
+  it('Space does not start Rolar while the diagram is open', async () => {
+    const { w } = mountViewer()
+    await roomy(w)
+    await w.get('[data-diagram-hit]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-diagram-modal]').exists()).toBe(true)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+    await flushPromises()
+    expect(w.get('[data-scroll]').text()).toMatch(/Rolar/)
+    expect(w.find('[data-diagram-modal]').exists()).toBe(true)
+    await w.get('[data-diagram-close]').trigger('click')
+    await flushPromises()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+    await flushPromises()
+    expect(w.get('[data-scroll]').text()).toMatch(/Parar/)
+  })
+
   it('switches instrument in place and keeps it on the next chart', async () => {
     const store = memoryStore()
     const { w } = mountViewer({}, store)
