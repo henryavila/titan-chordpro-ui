@@ -770,10 +770,14 @@ describe('suggestion per chart', () => {
     await flushPromises()
     await admin.get('[data-queue-chip]').trigger('click')
     await flushPromises()
-    await admin.get('[data-q-song]').trigger('click')
+    const row = admin.get('[data-q-song]')
+    expect(row.text()).toContain('Outra')
+    expect(row.text()).not.toContain('default')
+    await row.trigger('click')
     await flushPromises()
     await admin.get('[data-q-sug]').trigger('click')
     await flushPromises()
+    expect(admin.get('[data-q-batch]').text()).toMatch(/0 encaixam/)
 
     await admin.get('[data-q-accept]').trigger('click')
     await flushPromises()
@@ -790,6 +794,7 @@ describe('suggestion per chart', () => {
     expect((admin.vm as { getSource: () => string }).getSource()).not.toContain('(outro)')
     expect(admin.get('.cpv-chart').text()).not.toContain('(outro)')
     expect(admin.text()).not.toContain('Aceito — já vale para todos')
+    expect(admin.get('.cpv-toast').text()).toMatch(/Abra essa música/)
     admin.unmount()
   })
 })
@@ -832,6 +837,69 @@ describe('switching the chart on screen', () => {
     expect(parse(reading, { chartId: 'completa' }).meta.title).toBe('Uma')
     expect(localStorage.getItem(overlayKey('uma', 'completa'))).toBeNull()
     expect(JSON.parse(localStorage.getItem(overlayKey('uma', 'oferta')) ?? 'null').ops).toHaveLength(1)
+    w.unmount()
+  })
+})
+
+describe('switching the song on screen', () => {
+  it('does not reconcile the next song overlay against the save just made', async () => {
+    const songA = '{title:Alpha}\n[G]linha da primeira'
+    const songB = '{title:Beta}\n[C]linha exclusiva da segunda\n[D]fica'
+    const songBId = 'beta'
+    const dropped = songB.replace('[C]linha exclusiva da segunda\n', '')
+    const ops = diffOps(songB, dropped, { transpose: 0, capo: 0 })
+    expect(ops.some((op) => op.type === 'delete')).toBe(true)
+    expect(songA).not.toContain('linha exclusiva da segunda')
+    expect(overlayKey(songBId)).toBe(overlayKey(songBId, 'default'))
+    localStorage.setItem(overlayKey(songBId), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+    const w = mountViewer({
+      source: '',
+      editMode: 'persisted',
+      songs: [
+        { id: 'alpha', title: 'Alpha', source: songA },
+        { id: songBId, title: 'Beta', source: songB },
+      ],
+    })
+    await flushPromises()
+    expect(w.text()).toContain('linha da primeira')
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Alpha oficial')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-content')).toBeTruthy()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(w.text()).toContain('fica')
+    expect(w.text()).not.toMatch(/virou oficial|viraram oficiais/)
+    const stored = JSON.parse(localStorage.getItem(overlayKey(songBId)) ?? 'null')
+    expect(stored.ops).toEqual(ops)
+    w.unmount()
+  })
+})
+
+describe('a broken envelope with an overlay', () => {
+  it('does not throw, and shows the Portuguese envelope message', async () => {
+    const source = ['{title:Fora}', '{start_of_x_chart:a}', '{title:Dentro}', '[G]ola', '{end_of_x_chart}'].join(
+      '\n',
+    )
+    const changed = source.replace('[G]ola', '[G]ola minha')
+    const ops = diffOps(source, changed, { transpose: 0, capo: 0 })
+    localStorage.setItem(overlayKey('ruim'), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+    const w = mountViewer({ source, songId: 'ruim' })
+    await flushPromises()
+    expect(w.text()).toContain('Há texto fora dos blocos de cifra.')
     w.unmount()
   })
 })
