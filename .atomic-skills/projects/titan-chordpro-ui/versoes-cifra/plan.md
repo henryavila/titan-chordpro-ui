@@ -371,5 +371,5 @@ F0 está fechada e arquivada (`phases/archive/f0-leitor-envelope-e-parse-fatiado
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=cc88c8b4fb82 | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=eb37d7ad1003 | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.

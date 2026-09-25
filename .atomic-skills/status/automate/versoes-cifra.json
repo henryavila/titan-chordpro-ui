@@ -1,8 +1,8 @@
 {
   "step": "C",
   "phaseId": "F1",
-  "redispatchCount": 0,
-  "updatedAt": "2026-09-25T03:31:30.563Z",
+  "redispatchCount": 3,
+  "updatedAt": "2026-09-25T05:05:42.548Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -158,6 +158,12 @@
       "at": "2026-09-25T02:20:13.603Z",
       "reason": "fix28 after both review of 5b2ba91..HEAD: one cache key stores a nested boundary and a root fence-stop, so nota is deleted with verso",
       "priorCount": 27,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-25T05:05:42.548Z",
+      "reason": "operator continue sem esperar: reload overlay when the chart slot changes so one chart does not wear another chart personal edits",
+      "priorCount": 2,
       "gate": "spawn"
     }
   ],

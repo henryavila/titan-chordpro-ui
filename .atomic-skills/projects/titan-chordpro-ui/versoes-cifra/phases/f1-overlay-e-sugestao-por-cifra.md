@@ -9,7 +9,7 @@ branch: plan/versoes-cifra
 started: 2026-09-25T03:35:00.000Z
 startedCommit: e8fc929c5344cd011b9234aa5cf13ab39dbd4ab3
 lastUpdated: 2026-09-25T03:35:00.000Z
-nextAction: "Spawn the F1 code-only writer on a sibling worktree. Do not edit product source on the plan branch."
+nextAction: "Re-review the merged F1 tree with local and Codex. Close T-001 and T-002 only after that review has no open blocker, critical, or major. The colon-in-song-id key collision stays deferred."
 parentPlan: versoes-cifra
 phaseId: F1
 businessIntent:
