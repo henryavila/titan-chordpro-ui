@@ -196,13 +196,15 @@ const IDENTITY_CLEAR = ['title', 'subtitle', 'artist'] as const
  */
 /**
  * `4:26` and `04:26` are one duration (same parsed seconds).
- * `426` is 426 seconds, not 4:26. Aplicar must not treat those as equal.
+ * `426` is 426 seconds, not 4:26. If only one side parses, they differ.
+ * If neither parses, compare the stored text, not the mask.
  */
 function sameDuration(orig: string, next: string): boolean {
   const a = songDurationSec(orig)
   const b = songDurationSec(next)
   if (a != null && b != null) return a === b
-  return normalizeDurationMmSs(orig) === normalizeDurationMmSs(next)
+  if (a == null && b == null) return orig.trim() === next.trim()
+  return false
 }
 
 function sameField(key: MetaKey, orig: string, next: string): boolean {

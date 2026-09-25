@@ -242,6 +242,32 @@ describe('MetaDialog', () => {
     )
   })
 
+  it('applying 04:26 replaces a stored 4m26s the mask would hide', async () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:Completa}',
+      '{duration:4m26s}',
+      '[G]completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Oferta}',
+      '{x_chart_default:oferta}',
+      '{duration:4m26s}',
+      '{tempo:80}',
+      '[C]oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const w = dialog(src)
+    await w.get('[data-meta-duration]').setValue('04:26')
+    await w.get('[data-meta-apply]').trigger('click')
+    const next = w.emitted('apply')?.at(-1)?.[0] as string
+    const oferta = splitCho(next).charts.find((c) => c.id === 'oferta')?.inner ?? ''
+    const completa = splitCho(next).charts.find((c) => c.id === 'completa')?.inner ?? ''
+    expect(oferta).toContain('{duration:04:26}')
+    expect(oferta).not.toContain('4m26s')
+    expect(completa).toContain('{duration:4m26s}')
+  })
+
   it('applying 04:26 replaces a duration stored as 426 seconds', async () => {
     const src = [
       '{start_of_x_chart:completa}',
