@@ -355,15 +355,23 @@ export function useOverlay(opts: OverlayOpts) {
     return (ov?.ops.find(isTuneOp) as TuneOp | undefined) ?? null
   }
 
-  // The viewer loads a song change after reset(). This watch only reloads a
-  // chart slot of the same song, before that switch re-baselines. The initial
-  // run would load twice. It must not run while reset() drops the previous
-  // save: the next key would be reconciled against the file just saved.
+  // Reloads a chart slot of the same song, before that switch re-baselines.
+  // A song change is loaded by the viewer once it releases the hold — loading
+  // here would reconcile the next key against the file just saved. The initial
+  // run would load twice. reset()'s flag ends before touch(), so the hold has
+  // to cover the whole transition.
   let resetting = false
+  let chartLoadHold = 0
+  function holdChartLoad() {
+    chartLoadHold += 1
+  }
+  function releaseChartLoad() {
+    if (chartLoadHold > 0) chartLoadHold -= 1
+  }
   watch(
     [() => opts.songId.value, chartSlot],
     ([song, slot], prev) => {
-      if (!prev || resetting) return
+      if (!prev || resetting || chartLoadHold > 0) return
       const [prevSong, prevSlot] = prev
       if (song !== prevSong || slot === prevSlot) return
       load()
@@ -1022,6 +1030,8 @@ export function useOverlay(opts: OverlayOpts) {
     setOfficial,
     exportOrig,
     reset,
+    holdChartLoad,
+    releaseChartLoad,
     dispose,
   }
 }

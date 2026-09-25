@@ -886,6 +886,110 @@ describe('switching the song on screen', () => {
     expect(stored.ops).toEqual(ops)
     w.unmount()
   })
+
+  it('does not drop the next song overlay when both files contain that chart id', async () => {
+    const songA = [
+      '{start_of_x_chart:completa}',
+      '{title:Alpha}',
+      '{x_chart_label:Completa}',
+      '{x_chart_default:completa}',
+      '{key:G}',
+      '[G]corpo da completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Alpha}',
+      '{x_chart_label:Oferta}',
+      '{key:C}',
+      '[C]corpo da oferta A',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const songB = [
+      '{start_of_x_chart:oferta}',
+      '{title:Beta}',
+      '{x_chart_label:Oferta}',
+      '{x_chart_default:oferta}',
+      '{key:C}',
+      '[C]linha exclusiva da oferta B',
+      '[D]fica na oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const ofertaB = parse(songB, { chartId: 'oferta' }).source
+    const dropped = ofertaB.replace('[C]linha exclusiva da oferta B\n', '')
+    const ops = diffOps(ofertaB, dropped, { transpose: 0, capo: 0 })
+    expect(ops.some((op) => op.type === 'delete')).toBe(true)
+    expect(parse(songA, { chartId: 'oferta' }).source).not.toContain('linha exclusiva da oferta B')
+    const songBId = 'beta-env'
+    localStorage.setItem(overlayKey(songBId, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+    const w = mountViewer({
+      source: '',
+      editMode: 'persisted',
+      songs: [
+        { id: 'alpha-env', title: 'Alpha', source: songA },
+        { id: songBId, title: 'Beta', source: songB },
+      ],
+    })
+    await flushPromises()
+    expect(w.get('[data-chart-title]').text()).toBe('Alpha')
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Alpha oficial')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-content')).toBeTruthy()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(w.get('[data-chart-title]').text()).toBe('Beta')
+    expect(w.text()).not.toMatch(/virou oficial|viraram oficiais/)
+    const stored = JSON.parse(localStorage.getItem(overlayKey(songBId, 'oferta')) ?? 'null')
+    expect(stored.ops).toEqual(ops)
+    w.unmount()
+  })
+
+  it('loads the next song overlay when the ChordPro text is the same', async () => {
+    const shared = normalizeSource('{title:Igual}\n[G]linha unica da cifra')
+    const opsA = diffOps(shared, shared.replace('linha unica da cifra', 'linha unica da cifra (de A)'), {
+      transpose: 0,
+      capo: 0,
+    })
+    const opsB = diffOps(shared, shared.replace('linha unica da cifra', 'linha unica da cifra (de B)'), {
+      transpose: 0,
+      capo: 0,
+    })
+    const keyA = overlayKey('igual-a')
+    const keyB = overlayKey('igual-b')
+    localStorage.setItem(keyA, JSON.stringify({ baseVersion: 'v1', ops: opsA, at: 1 }))
+    localStorage.setItem(keyB, JSON.stringify({ baseVersion: 'v1', ops: opsB, at: 2 }))
+    const storedA = localStorage.getItem(keyA)
+
+    const w = mountViewer({
+      source: '',
+      songs: [
+        { id: 'igual-a', title: 'A', source: shared },
+        { id: 'igual-b', title: 'B', source: shared },
+      ],
+    })
+    await flushPromises()
+    expect(w.text()).toContain('linha unica da cifra (de A)')
+    expect(w.text()).not.toContain('(de B)')
+
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+
+    expect(w.text()).toContain('linha unica da cifra (de B)')
+    expect(w.text()).not.toContain('(de A)')
+    expect(localStorage.getItem(keyA)).toBe(storedA)
+    w.unmount()
+  })
 })
 
 describe('a broken envelope with an overlay', () => {
