@@ -1,42 +1,47 @@
 {
   "planSlug": "versoes-cifra",
-  "phaseId": "F0",
-  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F0-fix28",
-  "writerBranch": "impl/versoes-cifra-F0-fix28",
-  "finishedAt": "2026-09-25T02:32:20Z",
+  "phaseId": "F1",
+  "worktreePath": "/Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F1-fix30",
+  "writerBranch": "impl/versoes-cifra-F1-fix30",
+  "finishedAt": "2026-09-25T14:21:30Z",
   "tasks": [
     {
       "taskId": "T-001",
       "status": "claimed-pass",
-      "commitShas": ["275abe489d77d53c88d0d0e8a4207619b044edaa"],
+      "commitShas": [
+        "9626ef6be36c6ea8b84abc9d666a1f1242c595d2",
+        "2920f3cbcba6a5edd001edb7aadaf300a8464287",
+        "48d2d9c845b56289cb4e8b29e6f61dde4364305d",
+        "2ba17201f2d9e09b8ed2235363530d7324e3dc13"
+      ],
       "base": null,
       "head": null,
-      "paths": ["src/core/charts.ts", "src/core/index.ts", "tests/core/charts-envelope.test.ts"],
-      "verifierCommand": "CI=true pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
+      "paths": [
+        "src/core/storage.ts",
+        "src/vue/use/useOverlay.ts",
+        "tests/core/overlay.test.ts",
+        "tests/vue/storage-seam.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/overlay.test.ts tests/vue/storage-seam.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\n      Tests  249 passed (249)\n   Start at  23:31:06\n   Duration  3.38s (transform 2.47s, setup 85ms, import 3.60s, tests 3.35s, environment 2.19s)"
+      "transcript": "RUN  v4.1.11\n ✓ tests/core/overlay.test.ts (27 tests) 6ms\n ✓ tests/vue/storage-seam.test.ts (12 tests) 733ms\n\n Test Files  2 passed (2)\n      Tests  39 passed (39)\n   Start at  11:19:56\n   Duration  1.62s (transform 876ms, setup 25ms, import 980ms, tests 739ms, environment 274ms)"
     },
     {
       "taskId": "T-002",
       "status": "claimed-pass",
-      "commitShas": ["064926f71aba1ad9cb569ddef50aa550971e092e"],
-      "base": null,
-      "head": null,
-      "paths": ["src/core/parse.ts", "src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
-      "verifierCommand": "CI=true pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
+      "commitShas": [
+        "18392db9da20d06f1787ebe8f307c9a497341250"
+      ],
+      "base": "c79a7c5fe0b2e027c4af2f411631267b33d6c524",
+      "head": "18392db9da20d06f1787ebe8f307c9a497341250",
+      "paths": [
+        "src/vue/ChordproViewer.vue",
+        "src/vue/use/useOverlay.ts",
+        "tests/vue/overlay-ui.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/overlay-ui.test.ts",
       "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\n      Tests  249 passed (249)\n   Start at  23:31:06\n   Duration  3.38s (transform 2.47s, setup 85ms, import 3.60s, tests 3.35s, environment 2.19s)"
-    },
-    {
-      "taskId": "T-003",
-      "status": "claimed-pass",
-      "commitShas": ["904c00673a08fe93ba6c1a767ff9a6a2ac776bf4"],
-      "base": null,
-      "head": null,
-      "paths": ["src/core/charts.ts", "tests/core/charts-envelope.test.ts"],
-      "verifierCommand": "CI=true pnpm exec vitest run tests/core/charts-envelope.test.ts tests/vue/meta-dialog.test.ts tests/vue/block-edit-ui.test.ts tests/core/audio-url.test.ts tests/core/import-chordpro.test.ts tests/demo/sda-fixtures.test.ts tests/core/no-vue-in-core.test.ts",
-      "exitCode": 0,
-      "transcript": "Test Files  7 passed (7)\n      Tests  249 passed (249)\n   Start at  23:31:06\n   Duration  3.38s (transform 2.47s, setup 85ms, import 3.60s, tests 3.35s, environment 2.19s)"
+      "transcript": "RUN  v4.1.11\nstderr | modes=\"both\" is deprecated; use editMode=\"local\" or editMode=\"persisted\". Treating as local.\n ✓ tests/vue/overlay-ui.test.ts (45 tests) 2854ms\n\n Test Files  1 passed (1)\n      Tests  45 passed (45)\n   Start at  11:20:47\n   Duration  3.72s (transform 596ms, setup 12ms, import 679ms, tests 2.85s, environment 122ms)"
     }
   ]
 }

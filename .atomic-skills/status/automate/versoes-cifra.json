@@ -1,8 +1,8 @@
 {
-  "step": "C",
+  "step": "E",
   "phaseId": "F1",
-  "redispatchCount": 3,
-  "updatedAt": "2026-09-25T05:05:42.548Z",
+  "redispatchCount": 4,
+  "updatedAt": "2026-09-25T14:22:32.416Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -164,6 +164,12 @@
       "at": "2026-09-25T05:05:42.548Z",
       "reason": "operator continue sem esperar: reload overlay when the chart slot changes so one chart does not wear another chart personal edits",
       "priorCount": 2,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-25T14:07:01.769Z",
+      "reason": "operator continue a implementação; F1-fix both review of 320d92a..HEAD still has three majors plus destination-chart tune reset",
+      "priorCount": 3,
       "gate": "spawn"
     }
   ],
