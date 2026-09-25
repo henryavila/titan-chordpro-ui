@@ -1,8 +1,8 @@
 {
-  "step": "E",
+  "step": "C",
   "phaseId": "F0",
-  "redispatchCount": 22,
-  "updatedAt": "2026-09-25T00:16:18.516Z",
+  "redispatchCount": 23,
+  "updatedAt": "2026-09-25T00:33:13.903Z",
   "operatorOverrides": [
     {
       "at": "2026-09-23T14:02:14.912Z",
@@ -122,6 +122,12 @@
       "at": "2026-09-24T23:46:42.194Z",
       "reason": "fix22 after both review of d05cf9f..HEAD: exponential notation scan, reversed paste pair, tab closer that swallows the next chart, duration inequality",
       "priorCount": 21,
+      "gate": "spawn"
+    },
+    {
+      "at": "2026-09-25T00:33:13.902Z",
+      "reason": "fix23 after both review of 95f9d1a..HEAD: parse and readMeta disagree on notation titles, untouched duration is rewritten, alternating notation openers overflow the stack",
+      "priorCount": 22,
       "gate": "spawn"
     }
   ],
