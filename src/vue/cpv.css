@@ -231,8 +231,9 @@
   z-index: 12;
   pointer-events: none;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: var(--cpv-swipe-stamp-top, 80px);
   opacity: calc(0.22 + var(--cpv-swipe-p, 0) * 0.78);
   transition: opacity 180ms linear;
 }

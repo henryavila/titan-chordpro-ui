@@ -2468,6 +2468,7 @@ const songSwipe = useSongSwipe({
   canPrev: () => !setlist.noPrev.value,
   canNext: () => !setlist.noNext.value,
   width: () => width.value || root.value?.getBoundingClientRect().width || 390,
+  height: () => root.value?.getBoundingClientRect().height || 844,
   onCommit: (intent) => {
     void playSwipeCommit(intent)
   },

@@ -16,7 +16,10 @@ defineProps<{
     data-song-swipe
     :data-intent="view.intent"
     :data-armed="view.armed ? '1' : '0'"
-    :style="{ '--cpv-swipe-p': String(view.progress) }"
+    :style="{
+      '--cpv-swipe-p': String(view.progress),
+      '--cpv-swipe-stamp-top': `${view.stampTop}px`,
+    }"
     aria-hidden="true"
   >
     <div class="cpv-swipe-stamp">

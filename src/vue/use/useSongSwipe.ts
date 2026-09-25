@@ -31,6 +31,7 @@ export function useSongSwipe(opts: {
   canPrev: () => boolean
   canNext: () => boolean
   width: () => number
+  height: () => number
   onCommit: (intent: Exclude<SwipeIntent, 'none'>) => void
   onPeek?: (peeking: boolean) => void
 }): SongSwipeHandlers {
@@ -41,6 +42,7 @@ export function useSongSwipe(opts: {
   let captured: Element | null = null
   let armedBuzz = false
   let originX = 0
+  let originY = 0
 
   function reset() {
     session = null
@@ -48,6 +50,7 @@ export function useSongSwipe(opts: {
     captured = null
     armedBuzz = false
     originX = 0
+    originY = 0
     view.value = idleSwipeView()
   }
 
@@ -66,12 +69,28 @@ export function useSongSwipe(opts: {
     }
   }
 
-  function localPoint(e: PointerEvent): { x: number; width: number; origin: number } {
+  function localPoint(e: PointerEvent): {
+    x: number
+    y: number
+    width: number
+    height: number
+    originX: number
+    originY: number
+  } {
     const el = e.currentTarget instanceof Element ? e.currentTarget : captured
     const box = el && 'getBoundingClientRect' in el ? el.getBoundingClientRect() : null
     const width = box && box.width > 0 ? box.width : opts.width()
-    const origin = box && box.width > 0 ? box.left : 0
-    return { x: e.clientX - origin, width, origin }
+    const height = box && box.height > 0 ? box.height : opts.height()
+    const originX = box && box.width > 0 ? box.left : 0
+    const originY = box && box.height > 0 ? box.top : 0
+    return {
+      x: e.clientX - originX,
+      y: e.clientY - originY,
+      width,
+      height,
+      originX,
+      originY,
+    }
   }
 
   function onDown(e: PointerEvent) {
@@ -80,7 +99,7 @@ export function useSongSwipe(opts: {
     if (typeof e.button === 'number' && e.button !== 0) return
     if (swipeIgnoresPointer(e.target, e.clientX, e.clientY)) return
     const kind = pointerKindOf(e.pointerType)
-    const { x, width, origin } = localPoint(e)
+    const { x, y, width, height, originX: ox, originY: oy } = localPoint(e)
     const zone = swipeZone(x, width)
     if (kind !== 'touch' && kind !== 'pen') return
     if (zone !== 'prev-rail' && zone !== 'next-rail') return
@@ -88,12 +107,14 @@ export function useSongSwipe(opts: {
       canPrev: opts.canPrev(),
       canNext: opts.canNext(),
       width,
+      height,
       x,
-      y: e.clientY,
+      y,
       pointerKind: kind,
     })
     pid = e.pointerId
-    originX = origin
+    originX = ox
+    originY = oy
     captured = e.currentTarget instanceof Element ? e.currentTarget : (e.target as Element | null)
     view.value = session.view()
     if (captured && 'setPointerCapture' in captured) {
@@ -108,7 +129,7 @@ export function useSongSwipe(opts: {
 
   function onMove(e: PointerEvent) {
     if (!session || e.pointerId !== pid) return
-    const next = session.move(e.clientX - originX, e.clientY)
+    const next = session.move(e.clientX - originX, e.clientY - originY)
     view.value = next
     opts.onPeek?.(next.peeking)
     if (next.armed) buzzArmed()
