@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import type { ViewHeadModel } from './view-head'
 
 defineProps<ViewHeadModel>()
 
 const capoOpen = defineModel<boolean>('capoOpen', { default: false })
+const chartOpen = ref(false)
 
 const emit = defineEmits<{
   'open-setlist': []
@@ -17,7 +19,13 @@ const emit = defineEmits<{
   'toggle-map': []
   'capo-zero': []
   'bind-capo': [el: unknown]
+  'select-chart': [id: string]
 }>()
+
+function pickChart(id: string) {
+  chartOpen.value = false
+  emit('select-chart', id)
+}
 </script>
 
 <template>
@@ -51,6 +59,46 @@ const emit = defineEmits<{
         <span data-chart-title class="cpv-head-title">{{ title }}</span>
         <span v-if="subtitle" class="cpv-head-sub">{{ subtitle }}</span>
       </span>
+    </div>
+
+    <div v-if="charts.length > 1" style="position:relative;flex:none;">
+      <button
+        type="button"
+        data-chart-switch
+        class="cpv-head-chip"
+        aria-label="Cifra"
+        title="Cifra"
+        :aria-expanded="chartOpen"
+        aria-haspopup="listbox"
+        style="flex:none;display:flex;align-items:center;gap:5px;height:28px;padding:0 8px;border:1px solid var(--chord-edge);border-radius:9px;color:var(--chord);cursor:pointer;font-family:inherit;"
+        @click="chartOpen = !chartOpen"
+      >
+        <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra</span>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ chartLabel }}</span>
+        <CpvIcon name="chevronDown" :size="10" />
+      </button>
+      <div
+        v-if="chartOpen"
+        class="cpv-veil-2"
+        role="listbox"
+        aria-label="Cifra"
+        style="position:absolute;top:calc(100% + 8px);left:0;z-index:22;min-width:max(100%, 140px);padding:6px;border-radius:12px;display:flex;flex-direction:column;gap:2px;animation:cpv-rise .18s ease-out;"
+      >
+        <button
+          v-for="c in charts"
+          :key="c.id"
+          type="button"
+          role="option"
+          :data-chart-option="c.id"
+          :aria-selected="c.id === chartId"
+          :style="{
+            background: c.id === chartId ? 'var(--chord-fill)' : 'transparent',
+            color: 'var(--chord)',
+          }"
+          style="display:block;width:100%;text-align:left;height:30px;padding:0 10px;border:0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;"
+          @click="pickChart(c.id)"
+        >{{ c.label }}</button>
+      </div>
     </div>
 
     <template v-if="variant === 'phone'">

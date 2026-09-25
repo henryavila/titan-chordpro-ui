@@ -185,6 +185,7 @@ const props = withDefaults(
 // `ChordproViewerEmits` alone can omit new keys from the runtime emits list).
 const emit = defineEmits<{
   'update:source': [value: string]
+  'update:chartId': [value: string]
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
   'update:lens': [value: Lens]
@@ -282,6 +283,14 @@ const srcOpen = ref(false)
  * move the source pane onto the sibling.
  */
 const pinnedChartId = ref<string | null>(null)
+/** Musician/host pick. Null follows the file default until someone chooses. */
+const musicianChartId = ref<string | null>(String(props.chartId ?? '').trim() || null)
+watch(
+  () => props.chartId,
+  (id) => {
+    musicianChartId.value = String(id ?? '').trim() || null
+  },
+)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
 const wMode = ref<WriteMode | null>(null)
@@ -459,10 +468,34 @@ function commitOpenChart(next: string): string {
   return commitChartDocument(session.getSource(), next, pinnedChartId.value ?? undefined)
 }
 
+const fileCharts = computed(() => readChartFile(() => listCharts(liveSource.value), []))
+
+/**
+ * Chart on screen. The edit pin wins while that id is still in this text;
+ * else the musician/host pick; else the file default. An id the source does
+ * not contain is not passed.
+ */
+const screenChartId = computed((): string | undefined => {
+  const charts = fileCharts.value
+  if (!charts.length) return undefined
+  const pinned = String(pinnedChartId.value ?? '').trim()
+  if (pinned && charts.some((c) => c.id === pinned)) return pinned
+  const chosen = String(musicianChartId.value ?? '').trim()
+  if (chosen && charts.some((c) => c.id === chosen)) return chosen
+  return charts.find((c) => c.isDefault)?.id ?? charts[0]?.id
+})
+
+function selectChart(id: string) {
+  const next = String(id ?? '').trim()
+  if (!next || !fileCharts.value.some((c) => c.id === next)) return
+  musicianChartId.value = next
+  emit('update:chartId', next)
+}
+
 const parsedState = computed(() => {
   try {
     return {
-      view: parse(liveSource.value, pinnedChartId.value ? { chartId: pinnedChartId.value } : undefined),
+      view: parse(liveSource.value, screenChartId.value ? { chartId: screenChartId.value } : undefined),
       envelopeError: '',
     }
   } catch (err) {
@@ -801,19 +834,6 @@ const offerBottom = computed(() =>
     ? `calc(env(safe-area-inset-bottom) + ${scrolling.value ? 186 : 130}px)`
     : `${scrolling.value ? 148 : 90}px`,
 )
-
-/**
- * Chart on screen. The edit pin wins while that id is still in this text;
- * otherwise the chart that opens. An id the source does not contain is not passed.
- */
-const screenChartId = computed((): string | undefined => {
-  const pinned = String(pinnedChartId.value ?? '').trim()
-  return readChartFile(() => {
-    const charts = listCharts(liveSource.value)
-    if (pinned && charts.some((c) => c.id === pinned)) return pinned
-    return charts.find((c) => c.isDefault)?.id
-  }, undefined)
-})
 
 // In a rehearsal the identity is the song's, so a personal version follows
 // the right one through the list. Outside a list, the host id / official
@@ -1907,6 +1927,9 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   nextChip: setlist.nextChip.value,
   title: meta.value.title || 'Sem título',
   subtitle: meta.value.subtitle || '',
+  charts: fileCharts.value.length > 1 ? fileCharts.value.map((c) => ({ id: c.id, label: c.label })) : [],
+  chartId: screenChartId.value ?? '',
+  chartLabel: fileCharts.value.find((c) => c.id === screenChartId.value)?.label ?? '',
   phoneSub: phoneSub.value,
   hasKey: hasKey.value,
   hasReset: hasReset.value,
@@ -2477,6 +2500,7 @@ function syncHostSource() {
     confirmDiscard.value = false
     wMode.value = null
     pinnedChartId.value = null
+    musicianChartId.value = String(props.chartId ?? '').trim() || null
     preloadTune()
     stopScroll()
     mul.value = 1
@@ -2945,6 +2969,7 @@ defineExpose({
         @toggle-map="toggleMap"
         @capo-zero="setCapo(0)"
         @bind-capo="bindCapoBox"
+        @select-chart="selectChart"
       />
     </div>
     <div
