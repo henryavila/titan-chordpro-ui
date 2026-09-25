@@ -1252,6 +1252,45 @@ describe('switching the chart on screen', () => {
     w.unmount()
   })
 
+  it('does not apply a sibling {capo:} when the opened chart has none', async () => {
+    const source = TWO_CHARTS.replace('{key:C}', '{key:C}\n{capo:3}')
+    const completa = parse(source, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 2 }),
+    )
+
+    const w = mountViewer({ source, songId: song, chartId: 'completa' })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-capo]').text()).not.toMatch(/capo 3/i)
+    expect(w.get('[data-capo]').text().trim()).toMatch(/^Capo$/i)
+    w.unmount()
+  })
+
+  it('reads {capo:} of the chart on screen when siblings differ', async () => {
+    const source = TWO_CHARTS.replace('{key:G}', '{key:G}\n{capo:1}').replace('{key:C}', '{key:C}\n{capo:3}')
+
+    const w = mountViewer({ source, songId: 'uma' })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-capo]').text()).toMatch(/Capo 3/i)
+
+    await pickChart(w, 'completa')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-capo]').text()).toMatch(/Capo 1/i)
+    expect(w.get('[data-capo]').text()).not.toMatch(/capo 3/i)
+
+    await pickChart(w, 'oferta')
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-capo]').text()).toMatch(/Capo 3/i)
+    w.unmount()
+  })
+
   it('keeps an unsaved persisted edit when leaving changes the open chart', async () => {
     const w = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
     await flushPromises()
