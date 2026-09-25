@@ -60,18 +60,23 @@ describe('chord oracle from fixtures/sda', () => {
     expect(bad).toEqual([])
   })
 
-  it('keeps 7+ and quote-junk as AMBIGUOUS or UNPARSED', () => {
+  it('reads 7+ as maj7 and ignores quotes around a name', () => {
     const table = loadTable()
-    const plus = table.filter((r) => /7\+/.test(r.name))
+    const plus = table.filter((r) => r.name.includes('7+'))
     expect(plus.length).toBeGreaterThan(0)
     for (const row of plus) {
-      expect(['AMBIGUOUS', 'UNPARSED'], row.name).toContain(row.class)
+      expect(row.class, row.name).toBe('parse')
+      expect(row.quality, row.name).toBe('maj7')
     }
-    const junk = table.filter((r) => /["'’]/.test(r.name))
-    expect(junk.some((r) => r.name.includes('A4"'))).toBe(true)
-    for (const row of junk) {
-      expect(['AMBIGUOUS', 'UNPARSED'], row.name).toContain(row.class)
+    const quoted = table.filter((r) => /["'’‘“”]/.test(r.name))
+    expect(quoted.some((r) => r.name.includes('A4"'))).toBe(true)
+    for (const row of quoted) {
+      const bare = parseChordToken(row.name.replace(/["'’‘“”]/g, ''))
+      expect(row.class, row.name).toBe(bare.class)
+      if (bare.class === 'parse') expect(row.quality, row.name).toBe(bare.quality)
     }
+    const cx = table.find((r) => r.name === 'Cx')
+    expect(cx?.class).toBe('UNPARSED')
   })
 })
 

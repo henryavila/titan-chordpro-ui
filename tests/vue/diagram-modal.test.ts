@@ -11,7 +11,7 @@ const SRC = `{title: Teste}
 
 const MISS = `{title: Teste}
 {key: C}
-[C7+]
+[C+]
 la
 `
 
@@ -178,6 +178,44 @@ describe('diagram modal', () => {
     await flushPromises()
     expect(w.get('[data-diagram-miss]').text()).toBe('Sem forma neste instrumento')
     expect(w.find('[data-diagram-instrument="ukulele"]').exists()).toBe(true)
+  })
+
+  it('draws C7+, a slash chord, and a quoted name', async () => {
+    const { w } = mountViewer({
+      source: `{title: Teste}\n{key: C}\n{duration: 2:00}\n[C7+] [C/G] [G/B] [A4"]\nla\n`,
+    })
+    await flushPromises()
+    const hits = w.findAll('[data-diagram-hit]')
+    const byText = (name: string) => hits.find((el) => el.text() === name)
+    expect(byText('C7+')).toBeTruthy()
+    await byText('C7+')!.trigger('click')
+    await flushPromises()
+    expect(w.find('[data-diagram-miss]').exists()).toBe(false)
+    expect(w.get('[data-diagram-name]').text()).toBe('C7+')
+    expect(w.get('[data-diagram-draw]').html()).toContain('diagram-dot')
+    await w.get('[data-diagram-close]').trigger('click')
+    await flushPromises()
+
+    await byText('C/G')!.trigger('click')
+    await flushPromises()
+    expect(w.get('[data-diagram-draw]').html()).not.toContain('ignorado')
+    expect(w.get('[data-diagram-draw]').html()).toContain('data-note="G"')
+    await w.get('[data-diagram-close]').trigger('click')
+    await flushPromises()
+
+    await byText('G/B')!.trigger('click')
+    await flushPromises()
+    await w.get('[data-diagram-instrument="ukulele"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-diagram-draw]').html()).toContain('baixo em B ignorado')
+    await w.get('[data-diagram-close]').trigger('click')
+    await flushPromises()
+
+    await byText('A4"')!.trigger('click')
+    await flushPromises()
+    expect(w.get('[data-diagram-name]').text()).toBe('A4')
+    expect(w.find('[data-diagram-miss]').exists()).toBe(false)
+    expect(w.get('[data-diagram-draw]').html()).toContain('diagram-dot')
   })
 
   it('does not open from só letra or when diagrams are off', async () => {

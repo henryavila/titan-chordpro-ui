@@ -362,7 +362,7 @@ describe('drawDiagram', () => {
     expect(d.litNotes).toEqual([])
   })
 
-  it('does not light keys when the piano name contains a quote', () => {
+  it('lights the chord when quotes wrap the piano name, and stays dark for a bare plus', () => {
     for (const mark of ['\u0027', '\u0022', '\u2018', '\u2019', '\u201C', '\u201D']) {
       const token = `C${mark}`
       const d = drawDiagram({
@@ -372,9 +372,13 @@ describe('drawDiagram', () => {
       })
       expect(d.kind, token).toBe('piano')
       if (d.kind !== 'piano') continue
-      expect(d.lit, token).toEqual([])
-      expect(d.litNotes, token).toEqual([])
+      expect(d.lit, token).toEqual([0, 4, 7])
+      expect(d.litNotes, token).toEqual(['C', 'E', 'G'])
     }
+    const plus = drawDiagram({ instrument: 'piano', voicing: { keys: [0, 4, 8] }, token: 'C+' })
+    expect(plus.kind).toBe('piano')
+    if (plus.kind !== 'piano') return
+    expect(plus.lit).toEqual([])
   })
 
   it('lights Caug from the leading note and its keys', () => {

@@ -1,5 +1,8 @@
 /**
- * Brazilian chord names (7M, 4, 9, 2, slash). `7+` is not aug or maj7.
+ * Brazilian chord names (7M, 7+, 4, 9, 2, slash).
+ * `7+` is the hymnal spelling of `7M` (maj7), not augmented.
+ * A bare `+` stays ambiguous. `Caug` is not a quality.
+ * Quotes are junk around a name and are ignored.
  * Slash after `/` is bass: a pitch (G/B) or a degree of the chord tonic (D9/4 → G).
  */
 import { noteAtSemitones } from './transpose'
@@ -32,6 +35,7 @@ const QUALITY: Record<string, string> = {
   '7': '7',
   '7(4)': '7sus4',
   '7(9)': '9',
+  '7+': 'maj7',
   '7M': 'maj7',
   '7M(9)': 'maj9',
   '7sus4': '7sus4',
@@ -50,12 +54,13 @@ const QUALITY: Record<string, string> = {
   '°': 'dim',
 }
 
-const AMBIGUOUS_SUFFIX = new Set(['7+'])
-
 const ROOT = /^([A-G](?:#|b)?)(.*)$/
 const BASS_PITCH = /^[A-G](?:#|b)?$/
 /** Slash degree relative to the chord tonic — `/4` on D is G, not song key. */
 const BASS_DEGREE = /^(?:[1-7]|9)$/
+/** Straight and curly quotes. They are not part of the chord name. */
+const CHORD_NAME_QUOTE = /[\u0022\u0027\u2018\u2019\u201C\u201D]/g
+
 const DEGREE_SEMIS: Record<string, number> = {
   '1': 0,
   '2': 2,
@@ -68,8 +73,8 @@ const DEGREE_SEMIS: Record<string, number> = {
 }
 
 export function parseChordToken(raw: string): ChordTokenResult {
-  const token = String(raw ?? '').trim()
-  if (!token || /["'’]/.test(token)) return { class: 'UNPARSED' }
+  const token = String(raw ?? '').replace(CHORD_NAME_QUOTE, '').trim()
+  if (!token) return { class: 'UNPARSED' }
 
   let chord = token
   let bass: string | undefined
@@ -82,7 +87,7 @@ export function parseChordToken(raw: string): ChordTokenResult {
   const m = chord.match(ROOT)
   if (!m || m[1] === undefined || m[2] === undefined) return { class: 'UNPARSED' }
   const suffix = m[2]
-  if (AMBIGUOUS_SUFFIX.has(suffix) || suffix.includes('+')) return { class: 'AMBIGUOUS' }
+  if (suffix.includes('+') && suffix !== '7+') return { class: 'AMBIGUOUS' }
   if (!Object.hasOwn(QUALITY, suffix)) return { class: 'UNPARSED' }
   const quality = QUALITY[suffix]
   if (quality === undefined) return { class: 'UNPARSED' }

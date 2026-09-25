@@ -35,14 +35,25 @@ describe('parseChordToken BR aliases', () => {
     expect(r).toMatchObject({ root: 'G', bass: 'B' })
   })
 
-  it('does not guess 7+ as aug or maj7', () => {
-    const r = parseChordToken('C7+')
-    expect(r.class).toBe('AMBIGUOUS')
-    expect(r).not.toHaveProperty('quality')
+  it('maps 7+ to maj7, the same quality as 7M', () => {
+    expect(qualityOf('C7+')).toBe('maj7')
+    expect(qualityOf('Bb7+')).toBe('maj7')
+    expect(qualityOf('F#7+')).toBe(qualityOf('F#7M'))
   })
 
-  it('leaves quote junk unparsed', () => {
-    expect(parseChordToken('A4"').class).toBe('UNPARSED')
+  it('does not read a bare plus as maj7 or augmented', () => {
+    expect(parseChordToken('C+').class).toBe('AMBIGUOUS')
+    expect(parseChordToken('Caug').class).toBe('UNPARSED')
+    expect(parseChordToken('C7+(9)').class).toBe('AMBIGUOUS')
+  })
+
+  it('ignores quotes around a chord name', () => {
+    expect(qualityOf('A4"')).toBe('sus4')
+    expect(qualityOf("Bm7'''")).toBe('m7')
+    expect(qualityOf('A9’')).toBe('add9')
+    expect(parseChordToken('C"').class).toBe('parse')
+    expect(parseChordToken("'").class).toBe('UNPARSED')
+    expect(parseChordToken('Cx').class).toBe('UNPARSED')
   })
 
   it('is exported from src/core/index.ts', () => {

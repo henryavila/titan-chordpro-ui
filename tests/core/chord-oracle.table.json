@@ -6,11 +6,13 @@
   },
   {
     "name": "A'",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "A’",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "A/B",
@@ -109,7 +111,8 @@
   },
   {
     "name": "A4\"",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "sus4"
   },
   {
     "name": "A4/E",
@@ -140,7 +143,8 @@
   },
   {
     "name": "A9'",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "add9"
   },
   {
     "name": "A9/C#",
@@ -217,7 +221,8 @@
   },
   {
     "name": "Am\"",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "m"
   },
   {
     "name": "Am/F#",
@@ -304,7 +309,8 @@
   },
   {
     "name": "B7+",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "maj7"
   },
   {
     "name": "B7sus4",
@@ -357,7 +363,8 @@
   },
   {
     "name": "Bb7+",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "maj7"
   },
   {
     "name": "Bb7M",
@@ -408,7 +415,8 @@
   },
   {
     "name": "Bm\"",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "m"
   },
   {
     "name": "Bm6/D",
@@ -423,7 +431,8 @@
   },
   {
     "name": "Bm7'''",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "m7"
   },
   {
     "name": "Bsus",
@@ -442,11 +451,13 @@
   },
   {
     "name": "C’",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "C\"",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "C/D",
@@ -531,7 +542,8 @@
   },
   {
     "name": "C7+",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "maj7"
   },
   {
     "name": "C7M",
@@ -598,11 +610,13 @@
   },
   {
     "name": "D'",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "D’",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "D/A",
@@ -676,7 +690,8 @@
   },
   {
     "name": "D7’",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "7"
   },
   {
     "name": "D7/A",
@@ -692,7 +707,8 @@
   },
   {
     "name": "D7+",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "maj7"
   },
   {
     "name": "D7M",
@@ -773,7 +789,8 @@
   },
   {
     "name": "Db7+",
-    "class": "AMBIGUOUS"
+    "class": "parse",
+    "quality": "maj7"
   },
   {
     "name": "Db7M",
@@ -808,7 +825,8 @@
   },
   {
     "name": "Dm\"",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "m"
   },
   {
     "name": "Dm(3b)/F#",
@@ -854,7 +872,8 @@
   },
   {
     "name": "E'",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "E/Ab",
@@ -1061,7 +1080,8 @@
   },
   {
     "name": "F#m'",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "m"
   },
   {
     "name": "F#m/A",
@@ -1148,7 +1168,8 @@
   },
   {
     "name": "G\"",
-    "class": "UNPARSED"
+    "class": "parse",
+    "quality": "major"
   },
   {
     "name": "G/A",

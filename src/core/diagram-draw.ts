@@ -65,9 +65,6 @@ const OPEN_PC = {
   ukulele: [7, 0, 4, 9],
 } as const
 
-/** U+0022 U+0027 U+2018 U+2019 U+201C U+201D. Same marks resolveDiagram refuses. */
-const CHORD_NAME_QUOTE = /[\u0022\u0027\u2018\u2019\u201C\u201D]/
-
 /** Neck window. A fret of 10000 or hundreds of nines must not draw a line each. */
 const FRET_LINE_CAP = 24
 
@@ -157,6 +154,7 @@ function drawFrets(
     opens,
     dots: drawnDots,
     token,
+    bassIgnored: voicing.bassIgnored,
   })
 
   return {
@@ -205,8 +203,9 @@ function fretSvg(opts: {
   opens: number[]
   dots: FretDot[]
   token: string | undefined
+  bassIgnored?: string
 }): string {
-  const { strings, tuning, capoFret, capoLabel, mutes, opens, dots, token } = opts
+  const { strings, tuning, capoFret, capoLabel, mutes, opens, dots, token, bassIgnored } = opts
   const span = fretSpan(capoFret, dots)
   const openPc = tuning === 'EADGBE' ? OPEN_PC.guitar : OPEN_PC.ukulele
   const root = pianoRootPc(token)
@@ -215,7 +214,8 @@ function fretSvg(opts: {
   const yOf = (fret: number) => G.padY + fret * G.fretH
   const spanX = (strings - 1) * G.stringGap
   const width = G.padX + spanX + G.padX + 56
-  const height = G.padY + span * G.fretH + 16
+  const caption = bassIgnored ? `baixo em ${bassIgnored} ignorado` : ''
+  const height = G.padY + span * G.fretH + 16 + (caption ? 22 : 0)
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">`,
   ]
@@ -292,17 +292,22 @@ function fretSvg(opts: {
     if (!fretOnNeck(dot.fret) || dot.fret > span) continue
     paint(dot.string, yOf(dot.fret) - G.fretH / 2, dot.fret)
   }
+  if (caption) {
+    parts.push(
+      `<text class="diagram-bass-ignored" x="${width / 2}" y="${height - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${escapeXml(caption)}</text>`,
+    )
+  }
   parts.push('</svg>')
   return parts.join('')
 }
 
 function pianoRootPc(token: string | undefined): number | null {
   if (!token) return null
-  // `Caug` does not parse, but the leading note is still the root.
-  // `+` and quotes are not a root, on any spelling of the mark.
-  if (token.includes('+') || CHORD_NAME_QUOTE.test(token)) return null
   const parsed = parseChordToken(token)
   if (parsed.class === 'parse') return keyIndex(parsed.root)
+  // `Caug` does not parse, but the leading note still roots a {define}.
+  // A bare `+` (`C+`) does not.
+  if (token.includes('+')) return null
   return keyIndex(token)
 }
 

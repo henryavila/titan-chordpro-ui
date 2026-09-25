@@ -38,6 +38,7 @@ const token = computed(() => {
 })
 
 const playable = computed(() => token.value)
+const shownName = computed(() => playable.value.replace(/[\u0022\u0027\u2018\u2019\u201C\u201D]/g, '').trim())
 
 const resolved = computed(() =>
   resolveDiagram({
@@ -188,7 +189,7 @@ onBeforeUnmount(() => {
 
       <header class="cpv-diagram-head">
         <div>
-          <h2 id="cpv-diagram-title" data-diagram-name>{{ playable }}</h2>
+          <h2 id="cpv-diagram-title" data-diagram-name>{{ shownName }}</h2>
           <p v-if="sounds" data-diagram-sounds>soa {{ concert }}</p>
         </div>
         <button type="button" class="cpv-diagram-close" data-diagram-close aria-label="Fechar" @click="emit('close')">

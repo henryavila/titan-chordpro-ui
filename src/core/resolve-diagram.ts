@@ -3,9 +3,10 @@
  * Guitar/ukulele token is shapeName; piano token is concert.
  */
 
-import { lookupDict, pianoKeysToRelative, type DictInstrument, type DictVoicing } from './chord-dict'
+import { lookupDict, pianoKeysOf, pianoKeysToRelative, type DictInstrument, type DictVoicing } from './chord-dict'
 import type { ChordDefine, DefineInstrument } from './define'
 import { parseChordToken } from './parse-chord'
+import { slashGrip } from './slash-voicing'
 import { keyIndex } from './transpose'
 
 export type DiagramInstrument = DictInstrument
@@ -15,6 +16,8 @@ export type DiagramVoicing = {
   frets?: Array<number | 'x'>
   fingers?: Array<number | 'x'>
   keys?: number[]
+  /** Bass spelling left out of the grip. The diagram names it. */
+  bassIgnored?: string
 }
 
 export type DiagramHit = {
@@ -103,22 +106,15 @@ function fromDefine(def: ChordDefine, rootPc: number | null): DiagramVoicing {
 }
 
 /**
- * Straight and curly quotes. A token that contains one is not a chord name
- * on guitar, ukulele, or piano — checked before any file override.
- * U+0022 U+0027 U+2018 U+2019 U+201C U+201D.
- */
-const CHORD_NAME_QUOTE = /[\u0022\u0027\u2018\u2019\u201C\u201D]/
-
-/**
  * Parser-unknown piano name that still starts with a note (`Caug`).
  * Keys are read from that root. No root letter, or no keys, is a miss.
- * `+` and quotes never hit.
+ * A `+` that did not parse (`C+`) never hits.
  */
 function pianoUnknownOverride(
   overrides: readonly ChordDefine[],
   token: string,
 ): DiagramHit | null {
-  if (token.includes('+') || CHORD_NAME_QUOTE.test(token)) return null
+  if (token.includes('+')) return null
   const rootPc = keyIndex(token)
   if (rootPc == null) return null
   const matches: ChordDefine[] = []
@@ -138,7 +134,7 @@ function pianoUnknownOverride(
   }
 }
 
-/** Parser-unknown name: exact `{define}` name plus a fret shape. `+` never hits. */
+/** Parser-unknown name: exact `{define}` name plus a fret shape. A bare `+` never hits. */
 function exactFretOverride(
   overrides: readonly ChordDefine[],
   instrument: DiagramInstrument,
@@ -172,6 +168,39 @@ function fromDict(found: DictVoicing): DiagramVoicing {
   return voicing
 }
 
+function mod12(n: number): number {
+  return ((n % 12) + 12) % 12
+}
+
+/** Piano always sounds the bass. Frets use a playable grip, or the plain chord. */
+function slashHit(
+  instrument: DiagramInstrument,
+  token: string,
+  rootPc: number,
+  quality: string,
+  bassPc: number,
+  bassName: string,
+): DiagramResolve {
+  if (instrument === 'piano') {
+    const keys = pianoKeysOf(quality)
+    if (!keys) return { class: 'miss', reason: 'no-shape' }
+    const rel = mod12(bassPc - rootPc)
+    const has = keys.some((k) => mod12(k) === rel)
+    return {
+      class: 'hit',
+      instrument,
+      token,
+      source: 'dictionary',
+      voicing: { keys: has ? [...keys] : [...keys, rel] },
+    }
+  }
+  const grip = slashGrip(instrument, rootPc, quality, bassPc, bassName)
+  if (!grip) return { class: 'miss', reason: 'no-shape' }
+  const voicing: DiagramVoicing = { baseFret: 1, frets: grip.frets }
+  if (grip.bassIgnored) voicing.bassIgnored = grip.bassIgnored
+  return { class: 'hit', instrument, token, source: 'dictionary', voicing }
+}
+
 function overrideMatch(
   def: ChordDefine,
   instrument: DefineInstrument,
@@ -185,18 +214,20 @@ function overrideMatch(
 }
 
 export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
-  const token = String(opts.token ?? '').trim()
+  const token = String(opts.token ?? '')
+    .replace(/[\u0022\u0027\u2018\u2019\u201C\u201D]/g, '')
+    .trim()
   const instrument = opts.instrument
   if (!token || !isInstrument(instrument)) {
     return { class: 'miss', reason: 'unknown-token' }
   }
 
-  // Quotes and `+` are not chord names. A define does not make them a hit.
-  if (CHORD_NAME_QUOTE.test(token) || token.includes('+')) {
+  const parsed = parseChordToken(token)
+  // `C+` is not `C7+`. A plus that the catalog does not name never hits.
+  if (token.includes('+') && parsed.class !== 'parse') {
     return { class: 'miss', reason: 'unknown-token' }
   }
 
-  const parsed = parseChordToken(token)
   const overrides = opts.overrides ?? []
   if (parsed.class !== 'parse') {
     if (instrument === 'piano') {
@@ -225,7 +256,7 @@ export function resolveDiagram(opts: ResolveDiagramOpts): DiagramResolve {
     }
   }
 
-  if (want.bassPc != null) return { class: 'miss', reason: 'no-shape' }
+  if (want.bassPc != null) return slashHit(instrument, token, want.rootPc, want.quality, want.bassPc, parsed.bass ?? '')
 
   const found = lookupDict(instrument, want.rootPc, want.quality)
   if (!found) return { class: 'miss', reason: 'no-shape' }
