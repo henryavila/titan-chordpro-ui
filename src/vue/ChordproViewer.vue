@@ -292,6 +292,7 @@ const session = createSourceSession({ source: props.source ?? '' })
 const working = ref(props.source ?? '')
 const rev = ref(0)
 let lastSrc: string | null = null
+let lastSongId: string | null = null
 function touch() {
   working.value = session.getSource()
   rev.value += 1
@@ -788,16 +789,18 @@ const screenChartId = computed((): string | undefined => {
   }, undefined)
 })
 
+// In a rehearsal the identity is the song's, so a personal version follows
+// the right one through the list. Outside a list, the host id / official
+// title is the key — never the draft title, or a local meta edit would move
+// the overlay and orphan the reader's version.
+const songId = computed(() => {
+  if (setlist.on.value) return setlist.current.value?.id ?? 'song'
+  if (props.songId) return props.songId
+  return readChartFile(() => parse(normalizeSource(hostSource.value)).meta.title || 'song', 'song')
+})
+
 const ov = useOverlay({
-  // In a rehearsal the identity is the song's, so a personal version follows
-  // the right one through the list. Outside a list, the host id / official
-  // title is the key — never the draft title, or a local meta edit would move
-  // the overlay and orphan the reader's version.
-  songId: computed(() => {
-    if (setlist.on.value) return setlist.current.value?.id ?? 'song'
-    if (props.songId) return props.songId
-    return readChartFile(() => parse(normalizeSource(hostSource.value)).meta.title || 'song', 'song')
-  }),
+  songId,
   version: computed(() => props.version || 'v1'),
   // Line indices are what an adjustment anchors on: the overlay lives in the
   // same normalised text the parser numbers.
@@ -2391,73 +2394,93 @@ function onMq() {
  * A new source (host or fixture) stops the scroll, resets tone and position and
  * adopts the `{capo:}` declared in the file, when there is one.
  */
+/** Setlist id or props.songId. A title parsed from the text is not an identity. */
+function explicitSongChanged(): boolean {
+  if (!setlist.on.value && !props.songId) return false
+  return songId.value !== lastSongId
+}
+
 function syncHostSource() {
   const raw = hostSource.value
-  if (raw === lastSrc) return
-  // Where the song being opened was left, when it has been read before.
-  const spot: SongSpot | null = setlist.takeRestore()
-  const first = lastSrc === null
-  const lost = !first && session.dirty()
-  lastSrc = raw
-  const src = normalizeSource(raw)
-  session.reset(src)
-  metaOpen.value = false
-  confirmDiscard.value = false
-  wMode.value = null
-  pinnedChartId.value = null
-  const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
-  capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
-  stopScroll()
-  offset.value = 0
-  mul.value = 1
-  // Coming back to a song already rehearsed: tone, capo and speed are picked
-  // back up. A tone the reader pinned still wins, just below.
-  if (spot) {
-    offset.value = spot.offset
-    capo.value = spot.capo
-    mul.value = spot.mul
-  }
-  if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
-  // Reading lens and comment filter stay: they are the reader's choice for the
-  // rehearsal, not part of the chart. Song switch must not kick a singer out
-  // of Só letra (or Nashville) mid-set.
-  capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
-  metOpen.value = false
-  met.stop()
-  playhead = spot ? spot.u || 0 : 0
-  timeline = null
-  progress.value = spot ? spot.u || 0 : 0
-  etaLabel.value = '—'
-  pdf.value = 'idle'
-  slides.value = 'idle'
-  sheet.value = false
-  touch()
-  // The reader's own version of THIS chart, and the key they pinned to it.
-  ov.reset()
-  const tune = ov.load()
-  if (tune) {
-    offset.value = tune.transpose || 0
-    capo.value = tune.capo || 0
-    capoMap.value = !!tune.dual
-  }
-  forceBase()
-  // The stored BPM belongs to the song: it reloads with the chart.
-  met.loadBpm()
-  if (spot) {
-    // The saved place only exists once the new chart has painted.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (scroller.value) scroller.value.scrollTop = spot.top
-      }),
-    )
-  } else if (!first && scroller.value) scroller.value.scrollTop = 0
-  // Swapping the chart drops the draft — but the loss has to be said, not silent.
-  if (lost) {
-    toastMsg(
-      setlist.on.value
-        ? 'Você trocou de música — o rascunho anterior foi descartado'
-        : 'Nova cifra recebida — o rascunho anterior foi descartado',
-    )
+  const song = songId.value
+  // Same text is not a new chart unless a setlist or props.songId actually
+  // changed. A title-only identity moves with the editor's own echo. The other
+  // watch in this flush sees both already recorded and stops.
+  if (raw === lastSrc && !explicitSongChanged()) return
+  // Until ov.load(), the chart slot can move onto the next song while
+  // officialSrc is still the file just saved.
+  ov.holdChartLoad()
+  try {
+    // Where the song being opened was left, when it has been read before.
+    const spot: SongSpot | null = setlist.takeRestore()
+    const first = lastSrc === null
+    const lost = !first && session.dirty()
+    lastSrc = raw
+    lastSongId = song
+    const src = normalizeSource(raw)
+    session.reset(src)
+    metaOpen.value = false
+    confirmDiscard.value = false
+    wMode.value = null
+    pinnedChartId.value = null
+    const m = src.match(/\{\s*capo\s*:\s*(\d+)\s*\}/i)
+    capo.value = m ? Math.max(0, Math.min(9, Number(m[1]))) : 0
+    stopScroll()
+    offset.value = 0
+    mul.value = 1
+    // Coming back to a song already rehearsed: tone, capo and speed are picked
+    // back up. A tone the reader pinned still wins, just below.
+    if (spot) {
+      offset.value = spot.offset
+      capo.value = spot.capo
+      mul.value = spot.mul
+    }
+    if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
+    // Reading lens and comment filter stay: they are the reader's choice for the
+    // rehearsal, not part of the chart. Song switch must not kick a singer out
+    // of Só letra (or Nashville) mid-set.
+    capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
+    metOpen.value = false
+    met.stop()
+    playhead = spot ? spot.u || 0 : 0
+    timeline = null
+    progress.value = spot ? spot.u || 0 : 0
+    etaLabel.value = '—'
+    pdf.value = 'idle'
+    slides.value = 'idle'
+    sheet.value = false
+    touch()
+    // The reader's own version of THIS chart, and the key they pinned to it.
+    ov.reset()
+    const tune = ov.load()
+    if (tune) {
+      offset.value = tune.transpose || 0
+      capo.value = tune.capo || 0
+      capoMap.value = !!tune.dual
+    }
+    // officialSrc is clear. A chart the overlay itself opens must still load.
+    ov.releaseChartLoad()
+    forceBase()
+    // The stored BPM belongs to the song: it reloads with the chart.
+    met.loadBpm()
+    if (spot) {
+      // The saved place only exists once the new chart has painted.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (scroller.value) scroller.value.scrollTop = spot.top
+        }),
+      )
+    } else if (!first && scroller.value) scroller.value.scrollTop = 0
+    // Swapping the chart drops the draft — but the loss has to be said, not silent.
+    if (lost) {
+      toastMsg(
+        setlist.on.value
+          ? 'Você trocou de música — o rascunho anterior foi descartado'
+          : 'Nova cifra recebida — o rascunho anterior foi descartado',
+      )
+    }
+  } finally {
+    ov.releaseChartLoad()
   }
 }
 
@@ -2577,6 +2600,7 @@ function syncHeadH() {
 }
 
 watch(hostSource, syncHostSource)
+watch(songId, syncHostSource)
 watch([theme, bias, fit, lens, hideComments, met.sound, strumSound.enabled, met.pulseHead, met.follow, met.countInOn], persistPrefs)
 watch(lens, (v) => {
   if (v !== 'letra') chordLens.value = v

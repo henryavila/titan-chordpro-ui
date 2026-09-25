@@ -137,6 +137,37 @@ describe('choosing where a save lands', () => {
     expect(String(w.emitted('save-content')?.at(-1)?.[0] ?? '')).toMatch(/\{title:\s*Oficial agora\}/)
     w.unmount()
   })
+
+  it('keeps persisted editing when the host echoes a title change', async () => {
+    const w = mountViewer({ songId: '', editMode: 'persisted' })
+    await flushPromises()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Titulo ecoado')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    const echoed = String(w.emitted('update:source')?.at(-1)?.[0] ?? '')
+    expect(echoed).toMatch(/\{title:\s*Titulo ecoado\}/)
+    await w.setProps({ source: echoed })
+    await flushPromises()
+
+    expect(w.get('[data-edit-badge]').text()).toBe('Para todos')
+    expect(w.find('[data-save]').exists()).toBe(true)
+    expect(w.text()).not.toMatch(/rascunho anterior foi descartado/)
+
+    const emitted = w.emitted('update:source')?.length ?? 0
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Titulo de novo')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('update:source')?.length ?? 0).toBeGreaterThan(emitted)
+    expect(String(w.emitted('update:source')?.at(-1)?.[0] ?? '')).toMatch(/\{title:\s*Titulo de novo\}/)
+    w.unmount()
+  })
 })
 
 describe('a version of my own', () => {
@@ -770,10 +801,14 @@ describe('suggestion per chart', () => {
     await flushPromises()
     await admin.get('[data-queue-chip]').trigger('click')
     await flushPromises()
-    await admin.get('[data-q-song]').trigger('click')
+    const row = admin.get('[data-q-song]')
+    expect(row.text()).toContain('Outra')
+    expect(row.text()).not.toContain('default')
+    await row.trigger('click')
     await flushPromises()
     await admin.get('[data-q-sug]').trigger('click')
     await flushPromises()
+    expect(admin.get('[data-q-batch]').text()).toMatch(/0 encaixam/)
 
     await admin.get('[data-q-accept]').trigger('click')
     await flushPromises()
@@ -790,6 +825,7 @@ describe('suggestion per chart', () => {
     expect((admin.vm as { getSource: () => string }).getSource()).not.toContain('(outro)')
     expect(admin.get('.cpv-chart').text()).not.toContain('(outro)')
     expect(admin.text()).not.toContain('Aceito — já vale para todos')
+    expect(admin.get('.cpv-toast').text()).toMatch(/Abra essa música/)
     admin.unmount()
   })
 })
@@ -832,6 +868,212 @@ describe('switching the chart on screen', () => {
     expect(parse(reading, { chartId: 'completa' }).meta.title).toBe('Uma')
     expect(localStorage.getItem(overlayKey('uma', 'completa'))).toBeNull()
     expect(JSON.parse(localStorage.getItem(overlayKey('uma', 'oferta')) ?? 'null').ops).toHaveLength(1)
+    w.unmount()
+  })
+
+  it('reloads the chart that opens when the default overlay removes its marker', async () => {
+    const oferta = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+    const semMarcador = oferta.replace('{x_chart_default:oferta}\n', '').replace('{x_chart_default:oferta}', '')
+    const ofertaOps = diffOps(oferta, semMarcador, { transpose: 0, capo: 0 })
+    expect(ofertaOps.some((op) => op.before.some((line) => line.includes('x_chart_default:oferta')))).toBe(true)
+
+    const completa = parse(TWO_CHARTS, { chartId: 'completa' }).source
+    const completaMine = completa.replace('[G]corpo da completa', '[G]corpo da completa (meu)')
+    const completaOps = diffOps(completa, completaMine, { transpose: 0, capo: 0 })
+    const song = 'uma'
+    localStorage.setItem(overlayKey(song, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops: ofertaOps, at: 1 }))
+    localStorage.setItem(
+      overlayKey(song, 'completa'),
+      JSON.stringify({ baseVersion: 'v1', ops: completaOps, at: 2 }),
+    )
+    const seededCompleta = localStorage.getItem(overlayKey(song, 'completa'))
+    const seededOferta = localStorage.getItem(overlayKey(song, 'oferta'))
+
+    const w = mountViewer({ source: TWO_CHARTS, songId: song })
+    await flushPromises()
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+
+    await w.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    // The opened chart's own op, not the marker removal that is still stored on oferta.
+    expect(w.get('[data-my-op]').text()).toContain('(meu)')
+    expect(localStorage.getItem(overlayKey(song, 'completa'))).toBe(seededCompleta)
+    expect(localStorage.getItem(overlayKey(song, 'oferta'))).toBe(seededOferta)
+
+    await w.get('[data-revert]').trigger('click')
+    await flushPromises()
+
+    // Revert targets that visible op. Oferta keeps its own op; completa is not replaced by it.
+    expect(localStorage.getItem(overlayKey(song, 'oferta'))).toBe(seededOferta)
+    expect(localStorage.getItem(overlayKey(song, 'completa'))).toBeNull()
+    w.unmount()
+  })
+})
+
+describe('switching the song on screen', () => {
+  it('does not reconcile the next song overlay against the save just made', async () => {
+    const songA = '{title:Alpha}\n[G]linha da primeira'
+    const songB = '{title:Beta}\n[C]linha exclusiva da segunda\n[D]fica'
+    const songBId = 'beta'
+    const dropped = songB.replace('[C]linha exclusiva da segunda\n', '')
+    const ops = diffOps(songB, dropped, { transpose: 0, capo: 0 })
+    expect(ops.some((op) => op.type === 'delete')).toBe(true)
+    expect(songA).not.toContain('linha exclusiva da segunda')
+    expect(overlayKey(songBId)).toBe(overlayKey(songBId, 'default'))
+    localStorage.setItem(overlayKey(songBId), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+    const w = mountViewer({
+      source: '',
+      editMode: 'persisted',
+      songs: [
+        { id: 'alpha', title: 'Alpha', source: songA },
+        { id: songBId, title: 'Beta', source: songB },
+      ],
+    })
+    await flushPromises()
+    expect(w.text()).toContain('linha da primeira')
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Alpha oficial')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-content')).toBeTruthy()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(w.text()).toContain('fica')
+    expect(w.text()).not.toMatch(/virou oficial|viraram oficiais/)
+    const stored = JSON.parse(localStorage.getItem(overlayKey(songBId)) ?? 'null')
+    expect(stored.ops).toEqual(ops)
+    w.unmount()
+  })
+
+  it('does not drop the next song overlay when both files contain that chart id', async () => {
+    const songA = [
+      '{start_of_x_chart:completa}',
+      '{title:Alpha}',
+      '{x_chart_label:Completa}',
+      '{x_chart_default:completa}',
+      '{key:G}',
+      '[G]corpo da completa',
+      '{end_of_x_chart}',
+      '{start_of_x_chart:oferta}',
+      '{title:Alpha}',
+      '{x_chart_label:Oferta}',
+      '{key:C}',
+      '[C]corpo da oferta A',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const songB = [
+      '{start_of_x_chart:oferta}',
+      '{title:Beta}',
+      '{x_chart_label:Oferta}',
+      '{x_chart_default:oferta}',
+      '{key:C}',
+      '[C]linha exclusiva da oferta B',
+      '[D]fica na oferta',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const ofertaB = parse(songB, { chartId: 'oferta' }).source
+    const dropped = ofertaB.replace('[C]linha exclusiva da oferta B\n', '')
+    const ops = diffOps(ofertaB, dropped, { transpose: 0, capo: 0 })
+    expect(ops.some((op) => op.type === 'delete')).toBe(true)
+    expect(parse(songA, { chartId: 'oferta' }).source).not.toContain('linha exclusiva da oferta B')
+    const songBId = 'beta-env'
+    localStorage.setItem(overlayKey(songBId, 'oferta'), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+    const w = mountViewer({
+      source: '',
+      editMode: 'persisted',
+      songs: [
+        { id: 'alpha-env', title: 'Alpha', source: songA },
+        { id: songBId, title: 'Beta', source: songB },
+      ],
+    })
+    await flushPromises()
+    expect(w.get('[data-chart-title]').text()).toBe('Alpha')
+
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-meta-title]').setValue('Alpha oficial')
+    await w.get('[data-meta-apply]').trigger('click')
+    await flushPromises()
+    await w.get('[data-save]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('save-content')).toBeTruthy()
+    await w.get('[data-read]').trigger('click')
+    await flushPromises()
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(w.get('[data-chart-title]').text()).toBe('Beta')
+    expect(w.text()).not.toMatch(/virou oficial|viraram oficiais/)
+    const stored = JSON.parse(localStorage.getItem(overlayKey(songBId, 'oferta')) ?? 'null')
+    expect(stored.ops).toEqual(ops)
+    w.unmount()
+  })
+
+  it('loads the next song overlay when the ChordPro text is the same', async () => {
+    const shared = normalizeSource('{title:Igual}\n[G]linha unica da cifra')
+    const opsA = diffOps(shared, shared.replace('linha unica da cifra', 'linha unica da cifra (de A)'), {
+      transpose: 0,
+      capo: 0,
+    })
+    const opsB = diffOps(shared, shared.replace('linha unica da cifra', 'linha unica da cifra (de B)'), {
+      transpose: 0,
+      capo: 0,
+    })
+    const keyA = overlayKey('igual-a')
+    const keyB = overlayKey('igual-b')
+    localStorage.setItem(keyA, JSON.stringify({ baseVersion: 'v1', ops: opsA, at: 1 }))
+    localStorage.setItem(keyB, JSON.stringify({ baseVersion: 'v1', ops: opsB, at: 2 }))
+    const storedA = localStorage.getItem(keyA)
+
+    const w = mountViewer({
+      source: '',
+      songs: [
+        { id: 'igual-a', title: 'A', source: shared },
+        { id: 'igual-b', title: 'B', source: shared },
+      ],
+    })
+    await flushPromises()
+    expect(w.text()).toContain('linha unica da cifra (de A)')
+    expect(w.text()).not.toContain('(de B)')
+
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+
+    expect(w.text()).toContain('linha unica da cifra (de B)')
+    expect(w.text()).not.toContain('(de A)')
+    expect(localStorage.getItem(keyA)).toBe(storedA)
+    w.unmount()
+  })
+})
+
+describe('a broken envelope with an overlay', () => {
+  it('does not throw, and shows the Portuguese envelope message', async () => {
+    const source = ['{title:Fora}', '{start_of_x_chart:a}', '{title:Dentro}', '[G]ola', '{end_of_x_chart}'].join(
+      '\n',
+    )
+    const changed = source.replace('[G]ola', '[G]ola minha')
+    const ops = diffOps(source, changed, { transpose: 0, capo: 0 })
+    localStorage.setItem(overlayKey('ruim'), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+    const w = mountViewer({ source, songId: 'ruim' })
+    await flushPromises()
+    expect(w.text()).toContain('Há texto fora dos blocos de cifra.')
     w.unmount()
   })
 })

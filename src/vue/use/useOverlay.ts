@@ -203,10 +203,19 @@ export function useOverlay(opts: OverlayOpts) {
     }
   }
 
-  /** Splice one chart back. An unchanged document does not rewrite the file. */
+  /**
+   * Splice one chart back. An unchanged document does not rewrite the file.
+   * A broken envelope cannot be spliced: the original file stays, so the
+   * viewer can show its own message instead of throwing out of the source watch.
+   */
   function fileWithChart(file: string, chartId: string, doc: string): string {
     if (doc === chartText(file, chartId)) return file
-    return replaceChart(file, chartId, doc)
+    try {
+      return replaceChart(file, chartId, doc)
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return file
+      throw err
+    }
   }
 
   function sugChartId(s: Suggestion): string {
@@ -217,8 +226,10 @@ export function useOverlay(opts: OverlayOpts) {
   /**
    * No chartId is a pre-envelope whole-file suggestion. It applies only when
    * this file has no envelope — not when a block happens to be named `default`.
+   * Another song's ops never apply to the chart on screen.
    */
   function sugApplies(file: string, s: Suggestion): boolean {
+    if (s.songId !== opts.songId.value) return false
     const id = String(s.chartId ?? '').trim()
     if (!id) return plainFile(file)
     return chartInFile(file, id)
@@ -344,14 +355,25 @@ export function useOverlay(opts: OverlayOpts) {
     return (ov?.ops.find(isTuneOp) as TuneOp | undefined) ?? null
   }
 
-  // The viewer calls load when the host source changes. A chart-only change
-  // does not, and the previous chart's ops must not stay in memory. Sync so
-  // the new chart's overlay is already loaded before that switch re-baselines.
+  // Reloads a chart slot of the same song, before that switch re-baselines.
+  // Held until the viewer releases after ov.load() — loading before officialSrc
+  // is cleared would reconcile the next key against the file just saved.
+  // forceBase runs after the release, so a chart the overlay opens still loads.
   // The initial run would load twice.
+  let resetting = false
+  let chartLoadHold = 0
+  function holdChartLoad() {
+    chartLoadHold += 1
+  }
+  function releaseChartLoad() {
+    if (chartLoadHold > 0) chartLoadHold -= 1
+  }
   watch(
-    ovKey,
-    (_key, prev) => {
-      if (prev === undefined) return
+    [() => opts.songId.value, chartSlot],
+    ([song, slot], prev) => {
+      if (!prev || resetting || chartLoadHold > 0) return
+      const [prevSong, prevSlot] = prev
+      if (song !== prevSong || slot === prevSlot) return
       load()
     },
     { immediate: true, flush: 'sync' },
@@ -650,18 +672,26 @@ export function useOverlay(opts: OverlayOpts) {
     else qSong.value = null
   }
 
+  /** Missing chart id is the whole file: no ` · default`. Another song is not labeled from the file on screen. */
+  function queueChartLabel(s: Suggestion): string | null {
+    const id = String(s.chartId ?? '').trim()
+    if (!id) return null
+    if (s.songId !== opts.songId.value) return id
+    return chartLabelOf(id)
+  }
+
   const qSongs = computed<QueueRow[]>(() => {
-    const by = new Map<string, { title: string; chart: string; pedidos: number; ajustes: number }>()
+    const by = new Map<string, { title: string; chart: string | null; pedidos: number; ajustes: number }>()
     for (const s of openSugs.value) {
       const key = queueGroupKey(s)
-      const e = by.get(key) ?? { title: s.title, chart: chartLabelOf(sugChartId(s)), pedidos: 0, ajustes: 0 }
+      const e = by.get(key) ?? { title: s.title, chart: queueChartLabel(s), pedidos: 0, ajustes: 0 }
       e.pedidos += 1
       e.ajustes += s.ops.length
       by.set(key, e)
     }
     return [...by.entries()].map(([key, e]) => ({
       key,
-      label: `${e.title} · ${e.chart}`,
+      label: e.chart ? `${e.title} · ${e.chart}` : e.title,
       hint: `${e.pedidos} ${e.pedidos === 1 ? 'pedido' : 'pedidos'} · ${e.ajustes} ${e.ajustes === 1 ? 'ajuste' : 'ajustes'}`,
     }))
   })
@@ -787,7 +817,11 @@ export function useOverlay(opts: OverlayOpts) {
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
-    if (!s || s.songId !== opts.songId.value) return
+    if (!s) return
+    if (s.songId !== opts.songId.value) {
+      opts.toast('Abra essa música para aceitar o pedido')
+      return
+    }
     const op = s.ops.find((o) => o.id === opId)
     if (!op) return
     const id = sugChartId(s)
@@ -839,7 +873,11 @@ export function useOverlay(opts: OverlayOpts) {
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
-    if (!s?.ops.length || s.songId !== opts.songId.value) return
+    if (!s?.ops.length) return
+    if (s.songId !== opts.songId.value) {
+      opts.toast('Abra essa música para aceitar o pedido')
+      return
+    }
     const id = sugChartId(s)
     const doc = chartText(official.value, id)
     const applies = sugApplies(official.value, s)
@@ -912,16 +950,21 @@ export function useOverlay(opts: OverlayOpts) {
 
   /** A new chart arrived: everything held about the previous one goes. */
   function reset() {
-    officialSrc.value = null
-    officialV.value = null
-    overlay.value = null
-    updDlg.value = null
-    showOriginal.value = false
-    myPanel.value = false
-    exportOrig.value = false
-    confirmRevert.value = false
-    confirmSuggest.value = false
-    closeQueue()
+    resetting = true
+    try {
+      officialSrc.value = null
+      officialV.value = null
+      overlay.value = null
+      updDlg.value = null
+      showOriginal.value = false
+      myPanel.value = false
+      exportOrig.value = false
+      confirmRevert.value = false
+      confirmSuggest.value = false
+      closeQueue()
+    } finally {
+      resetting = false
+    }
   }
 
   function dispose() {
@@ -987,6 +1030,8 @@ export function useOverlay(opts: OverlayOpts) {
     setOfficial,
     exportOrig,
     reset,
+    holdChartLoad,
+    releaseChartLoad,
     dispose,
   }
 }
