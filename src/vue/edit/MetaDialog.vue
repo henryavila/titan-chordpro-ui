@@ -228,8 +228,13 @@ function fieldsToWrite(source: string, next: ChartMeta): ChartMeta {
   const patch: ChartMeta = {}
   const keys = new Set<MetaKey>([...(Object.keys(orig) as MetaKey[]), ...(Object.keys(next) as MetaKey[])])
   for (const key of keys) {
-    // sameDuration stays false when only one side parses. Leave that duration out.
-    if (key === 'duration' && !touched.value.has('duration')) continue
+    // An untouched stored duration stays, even when only one side parses.
+    // A chart with none still takes a duration that enrich just filled in.
+    if (key === 'duration' && !touched.value.has('duration')) {
+      const had = (orig.duration ?? '').trim()
+      const got = (next.duration ?? '').trim()
+      if (had || !got) continue
+    }
     const same = sameField(key, orig[key] ?? '', next[key] ?? '')
     if (same && !(touched.value.has(key) && (next[key] ?? '').trim() === '')) continue
     patch[key] = next[key] ?? ''

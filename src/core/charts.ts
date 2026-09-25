@@ -525,15 +525,23 @@ function closerKey(openAt: number, kind: 'tab' | 'score', chartDepth: number): s
   return String(openAt) + (kind === 'tab' ? 't' : 's') + ':' + String(chartDepth)
 }
 
-/** A closer or a chart end after `from`. Openers alone are not one. */
+const closeSuffix = new WeakMap<readonly string[], boolean[]>()
+
+/** True from `from` onward when a closer or `{end_of_x_chart}` exists. One backward pass. */
 function regionCanClose(names: readonly string[], from: number): boolean {
-  for (let j = from; j < names.length; j++) {
-    const name = names[j] ?? ''
-    if (name === 'end_of_x_chart') return true
-    const edge = blockEdge(name)
-    if (edge === 'tab-close' || edge === 'score-close') return true
+  let suffix = closeSuffix.get(names)
+  if (!suffix) {
+    suffix = new Array<boolean>(names.length + 1)
+    suffix[names.length] = false
+    for (let j = names.length - 1; j >= 0; j--) {
+      const name = names[j] ?? ''
+      const edge = blockEdge(name)
+      suffix[j] =
+        name === 'end_of_x_chart' || edge === 'tab-close' || edge === 'score-close' || suffix[j + 1] === true
+    }
+    closeSuffix.set(names, suffix)
   }
-  return false
+  return suffix[from] === true
 }
 
 type CloserFrame = {
@@ -597,20 +605,21 @@ function computeCloser(
   let done = false
 
   const settle = (result: NotationClose): void => {
-    const frame = stack.pop()
-    if (!frame) return
-    cache.set(frame.key, result)
-    if (stack.length === 0) {
-      root = result
-      done = true
+    let current = result
+    for (;;) {
+      const frame = stack.pop()
+      if (!frame) return
+      cache.set(frame.key, current)
+      if (stack.length === 0) {
+        root = current
+        done = true
+        return
+      }
+      if (current?.boundary) continue
+      const parent = stack[stack.length - 1]!
+      parent.j = current ? current.at + 1 : parent.j + 1
       return
     }
-    const parent = stack[stack.length - 1]!
-    if (result?.boundary) {
-      settle(result)
-      return
-    }
-    parent.j = result ? result.at + 1 : parent.j + 1
   }
 
   while (stack.length > 0 && !done) {
