@@ -10,8 +10,8 @@ goal: "`listCharts` e `parse(source, { chartId })` fatiam o arquivo; 1 cifra
 status: active
 branch: plan/versoes-cifra
 started: 2026-09-20T15:40:57.297Z
-lastUpdated: 2026-09-20T15:40:57.297Z
-nextAction: "Start T-001: listCharts and implicit default"
+lastUpdated: 2026-09-25T02:51:12.000Z
+nextAction: "Spawn the read-only F0 evaluation agent and write the evaluation report."
 parentPlan: versoes-cifra
 phaseId: F0
 businessIntent:
@@ -61,8 +61,9 @@ tasks:
     title: listCharts and implicit default
     summary: Listar cifras do arquivo e tratar arquivo antigo como cifra default.
     weight: 2
-    status: pending
-    lastUpdated: 2026-09-20T15:40:57.297Z
+    status: done
+    closedAt: 2026-09-25T02:51:12.000Z
+    lastUpdated: 2026-09-25T02:51:12.000Z
     scopeBoundary:
       - Do not change Vue; do not write N-chart files into fixtures/sda; do not
         implement overlay keys; do not add the title chip.
@@ -76,6 +77,13 @@ tasks:
       kind: shell
       command: pnpm exec vitest run tests/core/charts-envelope.test.ts
       expectExitCode: 0
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-25T02:51:12.000Z
+      verifiedCommit: 53d8a8ef42b1f4ad4360ea53ed9246aee62b37b8
+      passed: true
+      exitCode: 0
+      outputSummary: "Test Files 1 passed (1). Tests 104 passed (104). Exit 0."
     outputs:
       - kind: file
         path: src/core/charts.ts
@@ -87,11 +95,19 @@ tasks:
     title: parse fatiado does not concatenate
     summary: parse de N cifras devolve só a cifra pedida, nunca os corpos colados.
     weight: 3
-    status: pending
-    lastUpdated: 2026-09-20T15:40:57.297Z
+    status: done
+    closedAt: 2026-09-25T02:51:12.000Z
+    lastUpdated: 2026-09-25T02:51:12.000Z
     scopeBoundary:
       - Do not drop soc/eoc/tab/score behaviour; do not invent SDA lyrics; do
         not migrate overlay storage.
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-25T02:51:12.000Z
+      verifiedCommit: 53d8a8ef42b1f4ad4360ea53ed9246aee62b37b8
+      passed: true
+      exitCode: 0
+      outputSummary: "Test Files 1 passed (1). Tests 104 passed (104). Exit 0."
     acceptance:
       - 'parse(twoChartSource) without opts uses the default chart only;
         parse(twoChartSource, { chartId: "oferta" }) meta.key and duration are
@@ -114,11 +130,19 @@ tasks:
     title: writeMeta target and replaceChart
     summary: Reescrever meta da música ou da cifra sem apagar a irmã.
     weight: 3
-    status: pending
-    lastUpdated: 2026-09-20T15:40:57.297Z
+    status: done
+    closedAt: 2026-09-25T02:51:12.000Z
+    lastUpdated: 2026-09-25T02:51:12.000Z
     scopeBoundary:
       - Do not change Vue; do not add META_KEYS that collide with
         start_of_x_chart; do not rewrite fixtures/sda.
+    evidence:
+      verifierKind: shell
+      verifiedAt: 2026-09-25T02:51:12.000Z
+      verifiedCommit: 53d8a8ef42b1f4ad4360ea53ed9246aee62b37b8
+      passed: true
+      exitCode: 0
+      outputSummary: "Test Files 1 passed (1). Tests 104 passed (104). Exit 0."
     acceptance:
       - 'writeMeta(file, { title: "X" }, { target: "song" }) changes the song
         header and leaves both chart keys intact; writeMeta(file, { key: "G",
@@ -191,7 +215,7 @@ Paused 2026-09-23 because the operator's context was full. Continue `atomic-skil
 
 ### Single nextAction
 
-fix28 is merged. Product `904c00673a08fe93ba6c1a767ff9a6a2ac776bf4`. Plan-tree verifier exit 0, 249 tests, on the seven-file command in the verbatim block below. Both review of `a4cc4f2..HEAD` is at `.atomic-skills/reviews/2026-09-24-fix28-both.md`: Codex `gpt-6-astra` informed pass approve, zero findings; local leg clean. Do not `done`. Do not start F1. The operator validates at the end.
+T-001, T-002, and T-003 are done. Verifier `pnpm exec vitest run tests/core/charts-envelope.test.ts` exit 0, 104 tests, at `53d8a8ef42b1f4ad4360ea53ed9246aee62b37b8`. Both review `.atomic-skills/reviews/2026-09-24-fix28-both.md` is approve. Next action is spawn the read-only F0 evaluation agent and write the evaluation report. Do not stamp decision-review PASS. Do not start F1.
 
 ### Verbatim state
 
