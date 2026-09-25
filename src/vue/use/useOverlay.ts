@@ -7,6 +7,7 @@ import {
   isTuneOp,
   opCtxNote,
   opLabel,
+  hasChartEnvelope,
   listCharts,
   overlaid,
   overlayKey,
@@ -163,11 +164,22 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   /**
-   * `cpv:my:{songId}` — the pre-chart key. It belongs to the `default` slot only.
+   * `cpv:my:{songId}` — the pre-chart key. It is the whole file, and only a
+   * file with no chart envelope. A block whose id is `default` is not this key.
    * A song id with no colon stays literal; encoding it would miss the stored value.
    */
   function legacyKey(): string {
     return `${STORE_KEYS.overlayPrefix}${opts.songId.value}`
+  }
+
+  /** No chart blocks. A thrown envelope is not this case. */
+  function plainFile(file: string): boolean {
+    try {
+      return !hasChartEnvelope(file)
+    } catch (err) {
+      if (err instanceof ChartEnvelopeError) return false
+      throw err
+    }
   }
 
   /** The id is a chart of this file. No envelope: only `default`. */
@@ -199,6 +211,16 @@ export function useOverlay(opts: OverlayOpts) {
   function sugChartId(s: Suggestion): string {
     const id = String(s.chartId ?? '').trim()
     return id || 'default'
+  }
+
+  /**
+   * No chartId is a pre-envelope whole-file suggestion. It applies only when
+   * this file has no envelope — not when a block happens to be named `default`.
+   */
+  function sugApplies(file: string, s: Suggestion): boolean {
+    const id = String(s.chartId ?? '').trim()
+    if (!id) return plainFile(file)
+    return chartInFile(file, id)
   }
 
   /** One queue row per chart, not per song. The separator cannot appear in a chart id. */
@@ -255,7 +277,7 @@ export function useOverlay(opts: OverlayOpts) {
         /* the host's own failure stays with the host */
       }
     }
-    if (retireLegacy && chartSlot.value === 'default') {
+    if (retireLegacy && plainFile(official.value)) {
       const legacy = legacyKey()
       if (legacy !== ovKey.value) {
         try {
@@ -287,9 +309,9 @@ export function useOverlay(opts: OverlayOpts) {
 
   function load(): TuneOp | null {
     let ov = storedOverlay(ovKey.value)
-    // `cpv:my:{songId}` is the old one-chart key. It is the `default` slot,
-    // never a named chart — those ops are anchored on a different document.
-    if (!ov && chartSlot.value === 'default') {
+    // `cpv:my:{songId}` is the old whole-file key. Adopt it only when this
+    // file has no chart envelope — never onto a block named `default`.
+    if (!ov && plainFile(official.value)) {
       const legacy = legacyKey()
       if (legacy !== ovKey.value) ov = storedOverlay(legacy)
     }
@@ -657,7 +679,7 @@ export function useOverlay(opts: OverlayOpts) {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s) return []
     const id = sugChartId(s)
-    const present = chartInFile(official.value, id)
+    const present = sugApplies(official.value, s)
     const off = chartText(official.value, id)
     return s.ops.map((op) => {
       const fits = present && !applyOps(off, [op]).failed.length
@@ -702,7 +724,7 @@ export function useOverlay(opts: OverlayOpts) {
     if (!s?.ops.length) return null
     const id = sugChartId(s)
     const doc = chartText(official.value, id)
-    if (!chartInFile(official.value, id)) return { text: doc, count: 0, conflicts: s.ops.length }
+    if (!sugApplies(official.value, s)) return { text: doc, count: 0, conflicts: s.ops.length }
     const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
     if (!applies.length) return { text: doc, count: 0, conflicts: s.ops.length }
     const r = applyOps(doc, applies)
@@ -755,7 +777,7 @@ export function useOverlay(opts: OverlayOpts) {
     if (!s || !op) return
     const id = sugChartId(s)
     const doc = chartText(official.value, id)
-    const r = chartInFile(official.value, id) ? applyOps(doc, [op]) : null
+    const r = sugApplies(official.value, s) ? applyOps(doc, [op]) : null
     if (!r || r.failed.length) {
       opts.toast('Este ajuste não encaixa mais na cifra atual')
       return
@@ -805,7 +827,7 @@ export function useOverlay(opts: OverlayOpts) {
     if (!s?.ops.length) return
     const id = sugChartId(s)
     const doc = chartText(official.value, id)
-    const applies = chartInFile(official.value, id)
+    const applies = sugApplies(official.value, s)
       ? s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
       : []
     if (!applies.length) {

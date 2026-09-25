@@ -415,7 +415,7 @@ export type Suggestion = {
   songId: string
   /**
    * Chart the ops were diffed against. Absent on a row written before charts:
-   * that row is the implicit `default` chart.
+   * those ops are the whole file and apply only when it has no envelope.
    */
   chartId?: string
   title: string
