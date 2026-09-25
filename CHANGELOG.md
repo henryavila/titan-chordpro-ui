@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Diagramas de acorde:** toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele mostram a forma da mão (capo no braço quando há). Piano mostra as teclas no tom que soa, com inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. O host desliga com `capabilities.diagrams: false`.
+
 ### Fixed
 - **Auto-rolagem, intro compacta:** a página não anda enquanto a introdução tocada (acordes + `x///`, sem letra) está no topo. A rampa começa na primeira linha cantada, ou na linha de leitura se a intro for mais alta que um terço da tela (TAB). Em *Nasce em Mim* a letra deixava de subir no começo. Relógio e metrônomo seguem no tempo da cifra.
 - **`{tempo:65 BPM}`:** o relógio lê 65, não o default 100.

@@ -48,7 +48,6 @@ Ship:
 | Out | Why |
 |---|---|
 | Audio sync / SyncedPlayer | Belongs to SDA host |
-| Chord fret diagrams | Later |
 | ChordPro **editor** / drag-to-correct | Future / Titan sibling |
 | Titan ML / writer profiles | Generator stays in Titan |
 | React / Lit / CE official package | Later binding — not v0.1 |

@@ -63,7 +63,7 @@ export default defineNuxtConfig({
 |---|---|
 | Um SFC: `<ChordproViewer>` | Um `<iframe src="…">` |
 | Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio) | Shell do app (login, nav, lista de músicas do site, player) |
+| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, **diagrama do acorde**) | Shell do app (login, nav, lista de músicas do site, player) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -75,6 +75,11 @@ Duas composições, o **mesmo** componente:
 Não existe terceira: cifra fluindo como texto da página. Auto-scroll, zen e
 linha de leitura exigem viewport próprio. Achatar `.cpv-scroll` para
 `overflow: visible` desmonta o produto.
+
+Toque no acorde abre o diagrama (violão, ukulele, piano), em tela cheia no
+ensaio. Ligado por omissão. Para desligar: `:capabilities="{ diagrams: false }"`.
+O instrumento é preferência do aparelho, não da cifra. Só letra não abre o
+modal.
 
 ---
 
