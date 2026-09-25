@@ -1,4 +1,4 @@
-import { hasChartEnvelope } from './charts'
+import { hasChartEnvelope, replaceChart } from './charts'
 import { parse } from './parse'
 import { readMeta, writeMeta, type ChartMeta, type MetaKey } from './import-chordpro'
 import { lintSource } from './lint'
@@ -32,6 +32,11 @@ export type SourceSession = {
   discard: () => void
   lint: () => ReturnType<typeof lintSource>
   reset: (next: string) => void
+  /**
+   * Put one chart document into the working file and the last commit, without
+   * dropping undo or a draft that still lives on a sibling.
+   */
+  spliceChart: (chartId: string, doc: string) => void
 }
 
 export function createSourceSession(opts: {
@@ -111,6 +116,10 @@ export function createSourceSession(opts: {
       committed = next
       undoStack.length = 0
       redoStack.length = 0
+    },
+    spliceChart: (chartId, doc) => {
+      source = replaceChart(source, chartId, doc)
+      committed = replaceChart(committed, chartId, doc)
     },
     lint: () => lintSource(source),
   }

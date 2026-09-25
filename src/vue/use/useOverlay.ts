@@ -4,6 +4,7 @@ import {
   applyOps,
   checkUpdate,
   diffOps,
+  hashText,
   isTuneOp,
   opCtxNote,
   opLabel,
@@ -59,11 +60,15 @@ export type OverlayOpts = {
   /** Where the overlay and the queue are kept — the host's call, not ours. */
   store: ChartStore
   /**
-   * The base text changed under the reader. Official file updates rebase on
-   * that file so a sibling accept is in the working text; overlay updates keep
-   * the file already on screen.
+   * Overlay of the open chart changed. The viewer paints it onto the file
+   * already on screen. A published chart uses `onChartPublished` instead.
    */
   onBaseChange: (origin?: 'official') => void
+  /**
+   * One chart was published. `file` is the official whole song; `open` is
+   * whether that chart is the one on screen.
+   */
+  onChartPublished?: (p: { chartId: string; file: string; open: boolean }) => void
   /**
    * Another chart of this song opened. The viewer applies that overlay's
    * transpose/capo/dual and paints from the file already on screen.
@@ -334,7 +339,7 @@ export function useOverlay(opts: OverlayOpts) {
     return ov
   }
 
-  function load(): TuneOp | null {
+  function load(against?: string): TuneOp | null {
     let ov = storedOverlay(ovKey.value)
     // `cpv:my:{songId}` is the old whole-file key. Adopt it only when this
     // file has no chart envelope — never onto a block named `default`.
@@ -343,14 +348,15 @@ export function useOverlay(opts: OverlayOpts) {
       if (legacy !== ovKey.value) ov = storedOverlay(legacy)
     }
     const base = chartText(official.value, chartSlot.value)
+    const version = against ?? officialVersion.value
 
-    const abs = absorbInto(ov, base, officialVersion.value)
+    const abs = absorbInto(ov, base, version)
     if (abs.absorbed) ov = putOverlay(abs.overlay)
 
-    const upd = checkUpdate(ov, base, officialVersion.value)
+    const upd = checkUpdate(ov, base, version)
     // Nothing of ours moved: silently follow the new version.
-    if (!upd && ov && ov.baseVersion !== officialVersion.value) {
-      ov = putOverlay({ ...ov, baseVersion: officialVersion.value })
+    if (!upd && ov && ov.baseVersion !== version) {
+      ov = putOverlay({ ...ov, baseVersion: version })
     }
     overlay.value = ov
     updDlg.value = upd
@@ -825,8 +831,9 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   /**
-   * Accepting writes the official text and bumps the version: anyone holding an
-   * overlay meets the update dialog on their next read. Ops are archived, not deleted.
+   * Accepting splices that chart into the official file. Overlay of the
+   * published chart is reconciled against the chart document hash; a sibling
+   * overlay is left alone. Ops are archived, not deleted.
    */
   function acceptOp(opId: string) {
     const sugId = qSug.value
@@ -850,7 +857,7 @@ export function useOverlay(opts: OverlayOpts) {
     const next = archiveOp(s, opId, 'accepted')
     const patched = patchSug(sugId, next)
     opts.toast('Aceito — já vale para todos')
-    if (!isTuneOp(op)) setOfficial(full, true)
+    if (!isTuneOp(op)) publishChart(full, id)
     try {
       opts.onSuggestionAccepted?.({
         id: sugId,
@@ -910,7 +917,7 @@ export function useOverlay(opts: OverlayOpts) {
       if (okIds.has(op.id)) next = archiveOp(next, op.id, 'accepted')
     }
     const patched = patchSug(sugId, next)
-    setOfficial(full, true)
+    publishChart(full, id)
     opts.toast(`Aceitos ${okIds.size} ajuste${okIds.size === 1 ? '' : 's'}`)
     try {
       opts.onSuggestionAccepted?.({
@@ -961,6 +968,28 @@ export function useOverlay(opts: OverlayOpts) {
     // from elsewhere re-reads what the reader still holds over it.
     if (reconcile) load()
     opts.onBaseChange('official')
+  }
+
+  /**
+   * Publish one chart. The host file is the spliced official text; the
+   * working session keeps a sibling draft. File etag is not bumped.
+   */
+  function publishChart(text: string, chartId: string) {
+    officialSrc.value = text
+    if (opts.onSaveContent) {
+      try {
+        opts.onSaveContent(text)
+      } catch {
+        /* the host's own failure is not the reader's problem */
+      }
+    }
+    const open = chartSlot.value === chartId
+    if (open) load(hashText(chartText(text, chartId)))
+    try {
+      opts.onChartPublished?.({ chartId, file: text, open })
+    } catch {
+      /* the host's own failure is not the reader's problem */
+    }
   }
 
   /** A new chart arrived: everything held about the previous one goes. */
