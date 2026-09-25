@@ -18,10 +18,11 @@ export function buildChoFilename(title: string, key: string | null): string {
   return `${slug}${suffix}.cho`
 }
 
-export function buildPdfFilename(title: string, key: string | null): string {
+export function buildPdfFilename(title: string, key: string | null, chartId?: string): string {
   const slug = slugify(title)
+  const chart = chartId && chartId !== 'default' ? `-${slugify(chartId)}` : ''
   const suffix = key ? `-tom-${keyPart(key)}` : ''
-  return `cifra-${slug}${suffix}.pdf`
+  return `cifra-${slug}${chart}${suffix}.pdf`
 }
 
 export function buildSljaFilename(title: string): string {

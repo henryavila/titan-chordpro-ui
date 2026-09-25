@@ -2366,6 +2366,19 @@ function exportSource(): string {
   return ov.exportOrig.value ? ov.official.value : liveSource.value
 }
 
+function exportChartOpts() {
+  return {
+    semitones: offset.value,
+    capo: capo.value,
+    scope: 'chart' as const,
+    chartId: screenChartId.value,
+  }
+}
+
+function pdfChartId(): string | undefined {
+  return fileCharts.value.length > 1 ? screenChartId.value : undefined
+}
+
 function doExportCho() {
   const text = exportCho(exportSource(), { semitones: offset.value, capo: capo.value })
   // A personal version leaves marked: it must not circulate as the team's chart.
@@ -2386,7 +2399,7 @@ async function doExportPdf() {
     if (props.pdfShouldFail) throw new Error('simulado')
     const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
     // The PDF always uses the default scale: fit mode serves the screen, not paper.
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = parse(exportCho(exportSource(), exportChartOpts()))
     // A personal version leaves marked on paper too: it must not circulate as
     // the team's chart.
     const bytes = await renderPdf(view, {
@@ -2394,7 +2407,7 @@ async function doExportPdf() {
       accent: props.accent,
     })
     download(
-      buildPdfFilename(meta.value.title ?? 'cifra', shownKey.value || null),
+      buildPdfFilename(meta.value.title ?? 'cifra', shownKey.value || null, pdfChartId()),
       new Blob([bytes as BlobPart], { type: 'application/pdf' }),
     )
     pdf.value = 'idle'
@@ -2421,7 +2434,7 @@ async function doExportSlides() {
   try {
     if (props.slidesShouldFail) throw new Error('simulado')
     const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-    const view = parse(exportCho(exportSource(), { semitones: offset.value, capo: capo.value }))
+    const view = parse(exportCho(exportSource(), exportChartOpts()))
     const bytes = await renderSlja(view, {
       title: meta.value.title ?? 'cifra',
       coverImage: await imageBytes(props.coverImage),

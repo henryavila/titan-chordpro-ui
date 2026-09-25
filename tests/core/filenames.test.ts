@@ -37,6 +37,15 @@ describe('buildPdfFilename', () => {
       'cifra-jesus-tu-es-a-minha-vida-tom-a.pdf',
     )
   })
+
+  it('includes chartId when a named cifra is passed', () => {
+    expect(buildPdfFilename('Uma', 'C', 'oferta')).toBe('cifra-uma-oferta-tom-c.pdf')
+  })
+
+  it('omits implicit default from the filename', () => {
+    expect(buildPdfFilename('Uma', 'C', 'default')).toBe('cifra-uma-tom-c.pdf')
+    expect(buildPdfFilename('Uma', 'C')).toBe('cifra-uma-tom-c.pdf')
+  })
 })
 
 describe('buildSljaFilename', () => {
