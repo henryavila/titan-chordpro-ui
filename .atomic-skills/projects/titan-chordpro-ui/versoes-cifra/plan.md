@@ -6,9 +6,9 @@ version: "1.0"
 status: active
 executionMode: automate
 started: 2026-09-20T15:40:57.297Z
-lastUpdated: 2026-09-20T16:15:00.000Z
+lastUpdated: 2026-09-25T03:25:00.000Z
 branch: plan/versoes-cifra
-currentPhase: F0
+currentPhase: F1
 parallelismAllowed: false
 principles:
   - id: P1
@@ -76,21 +76,37 @@ phases:
           description: Envelope tests green. FAILS when parse of a two-chart source
             concatenates both bodies or last-write-wins key/duration across
             charts.
-          status: pending
+          status: met
+          metAt: 2026-09-25T03:20:00.000Z
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/charts-envelope.test.ts
             expectExitCode: 0
+          evidence:
+            verifierKind: shell
+            verifiedAt: 2026-09-25T03:10:28.000Z
+            verifiedCommit: a6110ebe5601b8e1777cc5e57011295becf1c4fc
+            passed: true
+            exitCode: 0
+            outputSummary: "Test Files 1 passed (1). Tests 104 passed (104). Exit 0."
         - id: F0-G2
           description: Existing one-chart parse still green on SDA fixtures and no Vue in
             core.
-          status: pending
+          status: met
+          metAt: 2026-09-25T03:20:00.000Z
           verifier:
             kind: shell
             command: pnpm exec vitest run tests/core/no-vue-in-core.test.ts
               tests/demo/sda-fixtures.test.ts
             expectExitCode: 0
-    status: active
+          evidence:
+            verifierKind: shell
+            verifiedAt: 2026-09-25T03:10:36.000Z
+            verifiedCommit: a6110ebe5601b8e1777cc5e57011295becf1c4fc
+            passed: true
+            exitCode: 0
+            outputSummary: "Test Files 2 passed (2). Tests 5 passed (5). Exit 0."
+    status: done
     businessIntent:
       value: O músico lê N cifras nomeadas da mesma música no mesmo arquivo, sem
         concatenar corpos nem last-write de tom/duração.
@@ -110,6 +126,26 @@ phases:
       reportPath: .atomic-skills/reviews/eval-versoes-cifra-F0.md
       at: c84fdc956fdee4eb16510e1ebbc2e20a44fdc1b0
       verifiedAt: 2026-09-25T02:53:30.000Z
+    lessonsState: recorded
+    lessonsPath: .atomic-skills/projects/titan-chordpro-ui/versoes-cifra/lessons/versoes-cifra-f0-leitor-envelope-e-parse-fatiado.md
+    reviewGate:
+      status: passed
+      mode: both
+      at: a6110ebe5601b8e1777cc5e57011295becf1c4fc
+      reviewFile: .atomic-skills/reviews/2026-09-24-fix28-both.md
+      localReceiptPath: .atomic-skills/reviews/2026-09-25-fix28-local.md
+      codexReceiptPath: .atomic-skills/reviews/2026-09-24-fix28-codex-pass2.md
+      verifiedAt: 2026-09-25T03:20:00.000Z
+    decisionReview:
+      status: passed
+      verifiedAt: 2026-09-25T03:20:00.000Z
+      packagePresentedAt: 2026-09-25T03:15:00.000Z
+      packagePath: .atomic-skills/reviews/decision-package-versoes-cifra-F0.md
+    deliveryAuditGate:
+      status: passed
+      verdict: PARTIAL
+      reportPath: .atomic-skills/reviews/audit-delivery-versoes-cifra-F0.md
+      verifiedAt: 2026-09-25T03:20:00.000Z
   - id: F1
     slug: versoes-cifra-f1-overlay-e-sugestao-por-cifra
     title: Overlay e sugestão por cifra
@@ -255,7 +291,7 @@ Uma música tem várias cifras (oferta, completa, simplificada, louvor). Este pl
 
 _(Canonical list in frontmatter `phases:`. aiDeck renders the tree visually when running.)_
 
-F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatiado.md`, 3 tasks). F1–F4 live as `phases/f*.source.json` until those phases start. verified_by: frontmatter `currentPhase: F0`; `phases/` directory.
+F0 está fechada e arquivada (`phases/archive/f0-leitor-envelope-e-parse-fatiado.md`). F1–F4 continuam descritor-only até o pacote de cada fase ser materializado. verified_by: frontmatter `currentPhase: F1`; `phases/` directory.
 
 ## Ground-truth review
 
@@ -316,5 +352,5 @@ F0 is the only materialized initiative (`phases/f0-leitor-envelope-e-parse-fatia
 ## Reviews
 
 - internal: clean | mode=local | @ 2026-09-20T15:58:00Z
-- ground-truth: complete-with-findings | mode=ground-truth | fp=85bff34cdecb | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
+- ground-truth: complete-with-findings | mode=ground-truth | fp=55b5cd1dd50f | premises=25 | impacts=11 @ 59984b3 (2026-09-23T22:29:56-03:00)
 - cross-model: SKIPPED — operator: estou sem créditos para usar outro modelo de ar vamos continuar sem revisão externa.
