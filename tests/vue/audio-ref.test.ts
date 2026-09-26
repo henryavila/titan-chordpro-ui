@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, type Ref } from 'vue'
-import { setAudioUrl } from '../../src/core/index'
+import { setAudioUrl, setRehearsalAudio } from '../../src/core/index'
 import { ChordproViewer } from '../../src/vue/index'
 import CpvAudioRef from '../../src/vue/chrome/CpvAudioRef.vue'
 import { AUDIO_SKIP_SEC, useAudioRef, type AudioRefOpts } from '../../src/vue/use/useAudioRef'
@@ -45,6 +45,8 @@ afterEach(() => {
   mounted.splice(0).forEach((w) => w.unmount())
   globalThis.ResizeObserver = realRO
   localStorage.clear()
+  Reflect.deleteProperty(navigator, 'mediaSession')
+  vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
@@ -396,7 +398,101 @@ describe('CpvAudioRef', () => {
   })
 })
 
+function installMediaSession() {
+  const handlers = new Map<string, MediaSessionActionHandler | null>()
+  const api = {
+    metadata: null as {
+      title?: string
+      artist?: string
+      album?: string
+      artwork?: { src: string; sizes: string; type?: string }[]
+    } | null,
+    playbackState: 'none' as MediaSessionPlaybackState,
+    setActionHandler: vi.fn((action: string, handler: MediaSessionActionHandler | null) => {
+      handlers.set(action, handler)
+    }),
+    setPositionState: vi.fn(),
+    handlers,
+  }
+  Object.defineProperty(navigator, 'mediaSession', {
+    configurable: true,
+    value: api,
+  })
+  vi.stubGlobal(
+    'MediaMetadata',
+    class {
+      constructor(init: object) {
+        Object.assign(this, init)
+      }
+    },
+  )
+  return api
+}
+
 describe('viewer referência chrome', () => {
+  it('publishes the song name and 1024 cover on the media session', async () => {
+    const session = installMediaSession()
+    const source = setRehearsalAudio(loadFixture(JESUS_1), {
+      sung: 'https://cdn.sda/jesus.m4a?h=1',
+      art: { url: 'https://cdn.sda/jesus.jpg?h=9', width: 1024, height: 1024 },
+    })
+    const w = await viewerAt(390, { source })
+    expect(session.metadata).toMatchObject({
+      title: 'Jesus, Tu És a minha vida',
+      artist: 'Adoradores 1',
+      album: 'Cantado',
+      artwork: [
+        {
+          src: 'https://cdn.sda/jesus.jpg?h=9',
+          sizes: '1024x1024',
+          type: 'image/jpeg',
+        },
+      ],
+    })
+    expect(session.playbackState).toBe('paused')
+    w.unmount()
+    expect(session.metadata).toBeNull()
+  })
+
+  it('uses the packaged cover on the media session when the chart has no art', async () => {
+    const session = installMediaSession()
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(390, { source })
+    expect(session.metadata?.artwork?.[0]?.sizes).toBe('512x512')
+    expect(session.metadata?.artwork?.[0]?.src).toBeTruthy()
+    w.unmount()
+  })
+
+  it('uses the consumer default cover when the chart has no art', async () => {
+    const session = installMediaSession()
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(390, {
+      source,
+      defaultAudioArt: { url: 'https://cdn.sda/marca.jpg', width: 1024, height: 1024 },
+    })
+    expect(session.metadata?.artwork).toEqual([
+      { src: 'https://cdn.sda/marca.jpg', sizes: '1024x1024', type: 'image/jpeg' },
+    ])
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.get('[data-audio-art] img').attributes('src')).toBe('https://cdn.sda/marca.jpg')
+    expect(w.find('[data-audio-art] img').attributes('data-audio-art-default')).toBeUndefined()
+    w.unmount()
+  })
+
+  it('keeps the chart cover over the consumer default', async () => {
+    const session = installMediaSession()
+    const source = setRehearsalAudio(loadFixture(JESUS_1), {
+      sung: 'https://cdn.sda/jesus.m4a?h=1',
+      art: { url: 'https://cdn.sda/album.jpg', width: 1024, height: 1024 },
+    })
+    const w = await viewerAt(390, {
+      source,
+      defaultAudioArt: { url: 'https://cdn.sda/marca.jpg', width: 1024, height: 1024 },
+    })
+    expect(session.metadata?.artwork?.[0]?.src).toBe('https://cdn.sda/album.jpg')
+    w.unmount()
+  })
+
   it('hides the player when the chart has no sung or playback track', async () => {
     const w = await viewerAt(390)
     expect(w.find('[data-audio-ref]').exists()).toBe(false)

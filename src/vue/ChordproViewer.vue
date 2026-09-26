@@ -38,8 +38,11 @@ import {
   viewerMulStep,
   writeMeta,
   writeStrumPatterns,
+  AUDIO_ART_DEFAULT_PX,
+  AUDIO_KIND_LABEL,
   audioArtOf,
   audioArtistOf,
+  resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
   defaultAudioKind,
@@ -109,6 +112,8 @@ import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
+import { mediaSessionArtwork, useMediaSession } from './use/useMediaSession'
+import defaultArt from './assets/audio-ref-default.jpg'
 import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
@@ -169,6 +174,7 @@ const props = withDefaults(
     slidesShouldFail: false,
     capabilities: () => ({ sourcePane: true }),
     strumPresets: () => [],
+    defaultAudioArt: undefined,
   },
 )
 
@@ -384,9 +390,40 @@ const audioUrl = computed(() => audioTracks.value[audioKind.value])
 const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
 const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
-const audioArt = computed(() => (isEdit.value ? null : audioArtOf(liveSource.value)))
+const audioArt = computed(() => {
+  if (isEdit.value) return null
+  return resolveRehearsalArt(audioArtOf(liveSource.value), props.defaultAudioArt)
+})
 const audioTitle = computed(() => displaySongTitle(parsed.value.meta.title))
 const audioArtist = computed(() => audioArtistOf(parsed.value.meta))
+const audioAlbum = computed(() => AUDIO_KIND_LABEL[audioKind.value])
+const audioArtwork = computed(() => {
+  const resolved = resolveRehearsalArt(audioArtOf(liveSource.value), props.defaultAudioArt)
+  if (resolved?.url) {
+    return mediaSessionArtwork({ url: resolved.url, width: resolved.width, height: resolved.height })
+  }
+  return mediaSessionArtwork({
+    url: defaultArt,
+    width: AUDIO_ART_DEFAULT_PX,
+    height: AUDIO_ART_DEFAULT_PX,
+  })
+})
+useMediaSession({
+  enabled: computed(() => !!audioUrl.value),
+  playing: audio.playing,
+  current: audio.current,
+  duration: audio.duration,
+  title: audioTitle,
+  artist: audioArtist,
+  album: audioAlbum,
+  artwork: audioArtwork,
+  play: () => {
+    void audio.play()
+  },
+  pause: () => audio.pause(),
+  skip: (dir) => audio.skip(dir),
+  seek: (t) => audio.seek(t),
+})
 const fatal = computed(() => {
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
   return isParseFatal(liveSource.value, parsed.value)

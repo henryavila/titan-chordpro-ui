@@ -3,6 +3,11 @@ import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 export const AUDIO_KINDS = ['sung', 'playback'] as const
 export type AudioKind = (typeof AUDIO_KINDS)[number]
 
+export const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
+  sung: 'Cantado',
+  playback: 'Playback',
+}
+
 export type AudioTracks = { sung: string | null; playback: string | null }
 
 /** Cover the consumer already resized. Pass the file’s real pixel size. */
@@ -10,6 +15,9 @@ export type AudioArt = { url: string; width: number; height: number }
 
 /** Pixel size of the packaged fallback cover. */
 export const AUDIO_ART_DEFAULT_PX = 512
+
+/** Square cover the lock screen / Media Session uses. Host should send this size. */
+export const AUDIO_ART_MEDIA_PX = 1024
 
 const ART_DIM_MAX = 4096
 
@@ -111,8 +119,9 @@ function artDim(raw: string | undefined): number | null {
 }
 
 /**
- * Cover for the reference player. The consumer serves an already-optimized
- * file and must pass that file’s width/height (square 256–512 is enough).
+ * Cover for the reference player and Media Session. The consumer serves an
+ * already-optimized square file; 1024 px is the size the lock screen uses.
+ * Pass that file’s width/height (not the 3000 px original).
  */
 export function setAudioArt(source: string, art: AudioArt | null): string {
   const cur: ChartMeta = { ...readMeta(source) }
@@ -146,6 +155,28 @@ export function audioArtOf(source: string): AudioArt | null {
     width: artDim(m.x_audio_art_w) ?? AUDIO_ART_DEFAULT_PX,
     height: artDim(m.x_audio_art_h) ?? AUDIO_ART_DEFAULT_PX,
   }
+}
+
+function normalizeArt(art: AudioArt | null | undefined): AudioArt | null {
+  if (!art) return null
+  const url = playableAudioUrl(art.url)
+  if (!url) return null
+  return {
+    url,
+    width: artDim(String(art.width)) ?? AUDIO_ART_MEDIA_PX,
+    height: artDim(String(art.height)) ?? AUDIO_ART_MEDIA_PX,
+  }
+}
+
+/**
+ * Cover for the player and Media Session: chart `{x_audio_art:}` first, then
+ * the consumer default. `null` means the Vue player uses the packaged 512 art.
+ */
+export function resolveRehearsalArt(
+  chart: AudioArt | null | undefined,
+  hostDefault?: AudioArt | null,
+): AudioArt | null {
+  return normalizeArt(chart) ?? normalizeArt(hostDefault)
 }
 
 /**

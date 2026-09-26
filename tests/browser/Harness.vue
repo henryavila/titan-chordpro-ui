@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { setAudioArt, setAudioUrl } from '../../src/core'
+import { AUDIO_ART_MEDIA_PX, setAudioArt, setAudioUrl } from '../../src/core'
 import type { Lens } from '../../src/vue'
 import { ChordproViewer } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
@@ -46,14 +46,22 @@ const source = (() => {
   if (mode === '1' || mode === 'ambos' || mode === 'playback') {
     next = setAudioUrl(next, refPlayback, 'playback')
   }
-  return setAudioArt(next, { url: refArt, width: 512, height: 512 })
+  if (q.get('capa') === '0') return next
+  return setAudioArt(next, { url: refArt, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX })
 })()
 const fitDefault = q.get('fit') !== '0'
 const capoQ = q.get('capo')
 const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined
 const dualQ = q.get('dual')
 const initialDual = dualQ === '0' ? false : dualQ === '1' ? true : undefined
-const editMode = ref<'local' | 'persisted'>('persisted')
+const editQ = q.get('editMode')
+const editMode = ref<'none' | 'local' | 'persisted'>(
+  editQ === 'none' || editQ === 'local' || editQ === 'persisted' ? editQ : 'persisted',
+)
+const defaultAudioArt =
+  q.get('artDefault') === '1'
+    ? { url: refArt, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX }
+    : undefined
 const fonts = ref('fallback')
 async function loadFonts() {
   await Promise.all([import('@fontsource/figtree/400.css'), import('@fontsource/sora/400.css'), import('@fontsource/space-mono/700.css')])
@@ -124,7 +132,7 @@ const zonas = q.get('zonas') === '1'
     >
       <button id="load-fonts" @click="loadFonts">Load fonts</button>
       <span id="fonts-state">{{ fonts }}</span>
-      <select id="host-modes" v-model="editMode"><option>persisted</option><option>local</option></select>
+      <select id="host-modes" v-model="editMode"><option>persisted</option><option>local</option><option>none</option></select>
       <select id="host-theme" v-model="theme"><option>light</option><option>dark</option><option>auto</option></select>
       <select id="host-control" v-model="themeControl"><option>host</option><option>preference</option></select>
     </div>
@@ -146,6 +154,7 @@ const zonas = q.get('zonas') === '1'
         :fit-default="fitDefault"
         :initial-capo="initialCapo"
         :initial-dual="initialDual"
+        :default-audio-art="defaultAudioArt"
         :capabilities="{ debugSwipe: zonas }"
         song-id="sda-86"
       />

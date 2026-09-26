@@ -95,7 +95,27 @@ export const DEMOS: readonly DemoEntry[] = [
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
       { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
       { href: '/standalone.html?song=100-nasce-em-mim&audio=1', label: 'Nasce em Mim (65 BPM, 2:41)' },
+      { href: '/media.html', label: 'Central de Mídia (1024)' },
+      { href: '/media.html?capa=0', label: 'Capa padrão do consumer' },
     ],
+  },
+  {
+    id: 'media-session',
+    href: '/media.html',
+    group: 'incorporar',
+    kicker: 'Consumer',
+    title: 'Central de Mídia',
+    blurb: 'Host completo: cifra em leitura, cantado e playback, capa quadrada 1024 px. O título da página é o do consumer; a tela de bloqueio mostra a música.',
+    call: `cho = setRehearsalAudio(cho, {
+  sung, playback,
+  art: { url, width: 1024, height: 1024 },
+})
+<ChordproViewer
+  :source="cho"
+  :default-audio-art="{ url, width: 1024, height: 1024 }"
+  song-id="nasce-em-mim"
+  edit-mode="none"
+/>`,
   },
   {
     id: 'standalone-apresentacao',

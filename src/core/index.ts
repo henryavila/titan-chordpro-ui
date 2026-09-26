@@ -237,9 +237,12 @@ export {
 } from './import-chordpro'
 export {
   AUDIO_ART_DEFAULT_PX,
+  AUDIO_ART_MEDIA_PX,
+  AUDIO_KIND_LABEL,
   AUDIO_KINDS,
   audioArtOf,
   audioArtistOf,
+  resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
   audioUrlOf,

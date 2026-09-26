@@ -14,13 +14,14 @@ a chamada resumida.
 | `/` | Índice das demos |
 | `/standalone.html` | Standalone: a cifra é a página |
 | `/standalone-lista.html` | Standalone com apresentação (`songs`) |
+| `/media.html` | Host completo da Central de Mídia (leitura + áudio + capa 1024) |
 | `/site.html` | Vue no shell do consumer (conteúdo acima e abaixo) |
 | `/site-lista.html` | Shell com apresentação |
 
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (cantado+playback na demo; `audio=cantado` / `audio=playback` só um; `capa=0` = arte genérica).
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (cantado+playback na demo; `audio=cantado` / `audio=playback` só um; `capa=0` = arte genérica). Host completo da Central de Mídia: `/media.html`.
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
@@ -346,12 +347,17 @@ import { setRehearsalAudio, audioTracksOf, audioArtOf } from '@henryavila/titan-
 cho = setRehearsalAudio(cho, {
   sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
   playback: 'https://cdn.example/nasce-pb.m4a?h=b2', // opcional
-  art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
+  art: { url: 'https://cdn.example/nasce-1024.jpg?h=c3', width: 1024, height: 1024 },
 })
 ```
 
 ```vue
-<ChordproViewer :source="cho" :song-id="id" @update:source="cho = $event" />
+<ChordproViewer
+  :source="cho"
+  :song-id="id"
+  :default-audio-art="{ url: '/marca-1024.jpg', width: 1024, height: 1024 }"
+  @update:source="cho = $event"
+/>
 ```
 
 Chave omitida não mexe; `null` apaga. Qualquer combinação vale (os dois, só um,
@@ -362,21 +368,38 @@ Persistir é o fluxo de sempre (`update:source` / `save-content`). Não chame
 `writeMeta(cho, { x_audio_sung })` sozinho — `writeMeta` substitui o header
 inteiro; use `setRehearsalAudio`.
 
-**Capa:** o host já entrega o arquivo no tamanho certo (quadrado **256–512 px**
-basta; o card mostra 56 px). Passe `width` e `height` **desse arquivo**, não do
-original de 3000 px. Sem `{x_audio_art:}`, o Titan usa uma arte genérica 512×512.
+**Capa da cifra:** quadrado **1024 × 1024 px** em `{x_audio_art:}`. A Central
+de Mídia mostra a capa em 1:1. Passe `width` e `height` **desse arquivo**,
+não do original de 3000 px. A URL precisa ser fetchável (CORS).
+
+**Capa padrão da marca:** prop `defaultAudioArt` (`{ url, width, height }`).
+Vale quando a cifra não tem `{x_audio_art:}`. A arte da cifra vence. Sem as
+duas, o Titan usa a arte genérica 512×512. Também 1024 × 1024.
+
+Enquanto o áudio toca, o Titan publica na Central de Mídia o `{title:}` (sem
+o prefixo `001 - ` do hinário), o `{artist:}` ou `{subtitle:}`, Cantado ou
+Playback, e a capa. Play, pause e ±10 s nos botões do sistema controlam este
+player. O título da **página** (`document.title`) continua sendo o do seu
+app — a Central de Mídia usa o da música. No iOS, o toque no cartão (fora
+dos botões) pode abrir outro PWA instalado — limitação do sistema; o Titan
+não escolhe esse destino.
+
+Host de referência neste repo: **`/media.html`**. Leitura (`edit-mode="none"`),
+cantado + playback, capa 1024 px e `defaultAudioArt`. A faixa no topo mostra
+o nome da página do consumer e, ao lado, o que a Central de Mídia recebeu.
+Sem arte na cifra: `/media.html?capa=0` (vale a capa padrão do host). No
+celular, toque play e bloqueie a tela.
 
 Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
 `{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` /
 `{x_audio_cantado:}` legado lê como sung. UI: Cantado / Playback.
 
-O player mostra `{title:}` (sem o prefixo `001 - ` do hinário), `{artist:}`
-ou `{subtitle:}`, e a capa. Com as duas faixas, Cantado / Playback são
-pílulas clicáveis; com uma só, só o rótulo. No celular o recolhido é o ícone
-de fone na linha de Cifra | Letra: toque abre o card (capa e transporte).
-Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e
-deixa o fone. No desktop o chip continua acima do dock, com título. X fecha
-o card (sem parar o áudio).
+O player na cifra mostra o mesmo título, artista e capa. Com as duas faixas,
+Cantado / Playback são pílulas clicáveis; com uma só, só o rótulo. No celular
+o recolhido é o ícone de fone na linha de Cifra | Letra: toque abre o card
+(capa e transporte). Enquanto toca, o fone anima uma onda. Recolher o chrome
+esconde o card e deixa o fone. No desktop o chip continua acima do dock, com
+título. X fecha o card (sem parar o áudio).
 
 A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
 ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
@@ -393,7 +416,7 @@ O GET precisa de `Access-Control-Allow-Origin` e, na 1ª vez, `Accept-Ranges:
 bytes` para o seek. URL assinada que muda de token a cada hora destrói o
 cache — o hash só muda quando o áudio muda.
 
-Demo: `/standalone.html?song=100-nasce-em-mim&audio=1` (cantado + playback a 65 BPM, 2:41). Arte genérica: `&capa=0`.
+Demo: `/media.html` (host completo). Lab: `/standalone.html?song=100-nasce-em-mim&audio=1` (cantado + playback a 65 BPM, 2:41). Arte genérica: `&capa=0`.
 
 ---
 
@@ -726,7 +749,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Link de cantor: query `lens=letra` → prop `lens="letra"` ([§8](#8-tema-fonte-acento-cifra-ou-letra))
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
-- [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek
+- [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek; capa da cifra **1024 × 1024**; `defaultAudioArt` para a marca. Referência: `/media.html`
 - [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
 
 Props, emits e o resto da API: [README](../README.md).

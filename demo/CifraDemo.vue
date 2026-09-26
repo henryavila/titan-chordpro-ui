@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
+  AUDIO_ART_MEDIA_PX,
   convert,
   readMeta,
   setRehearsalAudio,
@@ -67,7 +68,9 @@ function withAudio(cho: string) {
     ...(lab.audio === 'playback' || lab.audio === 'ambos'
       ? { playback: refPlaybackUrl }
       : {}),
-    ...(lab.capa ? { art: { url: refArtUrl, width: 512, height: 512 } } : {}),
+    ...(lab.capa
+      ? { art: { url: refArtUrl, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX } }
+      : {}),
   })
   const m = readMeta(next)
   if (!m.artist && !m.subtitle) {
