@@ -11,6 +11,11 @@ export type AudioRefOpts = {
   createAudio?: () => HTMLAudioElement
   cacheMatch?: (url: string) => Promise<Blob | null>
   cacheFill?: (url: string) => Promise<void>
+  /**
+   * Setlist song (or host song id). A new value reloads from 0 even when the
+   * URL is the same, so skip-song does not keep playing the previous place.
+   */
+  identity?: Ref<string>
 }
 
 /**
@@ -78,6 +83,11 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
     const node = el
     if (node) {
       node.pause()
+      try {
+        node.currentTime = 0
+      } catch {
+        /* not seekable yet */
+      }
       node.removeAttribute('src')
       node.load()
     }
@@ -101,6 +111,12 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
     }
     srcGen = gen
     error.value = false
+    try {
+      audio.currentTime = 0
+    } catch {
+      /* not seekable yet */
+    }
+    current.value = 0
     if (resume && gen === generation) void play()
   }
 
@@ -137,7 +153,11 @@ export function useAudioRef(url: Ref<string | null>, opts: AudioRefOpts = {}) {
     seek((el?.currentTime ?? current.value) + dir * AUDIO_SKIP_SEC)
   }
 
-  watch(url, (u) => void load(u), { immediate: true })
+  watch(
+    [url, () => opts.identity?.value ?? ''],
+    ([u]) => void load(u),
+    { immediate: true },
+  )
 
   onUnmounted(() => {
     generation += 1

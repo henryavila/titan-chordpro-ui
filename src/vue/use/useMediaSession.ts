@@ -15,6 +15,13 @@ export type MediaSessionInput = {
   pause: () => void
   skip: (dir: -1 | 1) => void
   seek: (t: number) => void
+  /**
+   * Rehearsal list (two or more songs). iOS lock screen shows either
+   * skip-song or ±10 s, never both — a set takes skip-song.
+   */
+  playlist?: Ref<boolean>
+  prevTrack?: () => void
+  nextTrack?: () => void
 }
 
 const ACTIONS = [
@@ -24,6 +31,8 @@ const ACTIONS = [
   'seekforward',
   'seekto',
   'stop',
+  'previoustrack',
+  'nexttrack',
 ] as const
 
 function mimeFromUrl(url: string): string | undefined {
@@ -115,12 +124,29 @@ function setHandler(
 function bindHandlers(ms: MediaSession, opts: MediaSessionInput) {
   setHandler(ms, 'play', () => opts.play())
   setHandler(ms, 'pause', () => opts.pause())
-  setHandler(ms, 'seekbackward', () => opts.skip(-1))
-  setHandler(ms, 'seekforward', () => opts.skip(1))
   setHandler(ms, 'seekto', (d) => {
     if (typeof d.seekTime === 'number') opts.seek(d.seekTime)
   })
   setHandler(ms, 'stop', () => opts.pause())
+  const playlist = !!opts.playlist?.value && !!opts.prevTrack && !!opts.nextTrack
+  if (playlist) {
+    // iOS Control Center hides skip-song when ±10 s is also bound.
+    setHandler(ms, 'seekbackward', null)
+    setHandler(ms, 'seekforward', null)
+    setHandler(ms, 'previoustrack', () => {
+      if (!opts.playlist?.value) return
+      opts.prevTrack?.()
+    })
+    setHandler(ms, 'nexttrack', () => {
+      if (!opts.playlist?.value) return
+      opts.nextTrack?.()
+    })
+  } else {
+    setHandler(ms, 'seekbackward', () => opts.skip(-1))
+    setHandler(ms, 'seekforward', () => opts.skip(1))
+    setHandler(ms, 'previoustrack', null)
+    setHandler(ms, 'nexttrack', null)
+  }
 }
 
 function clear(ms: MediaSession) {
@@ -179,11 +205,20 @@ function publish(opts: MediaSessionInput) {
 
 /**
  * Pushes rehearsal title, artist, cover and transport onto the OS media
- * session (lock screen / Control Center). Missing API is a silent no-op.
+ * session (lock screen / Control Center). A set binds previous/next and
+ * drops ±10 s there so iOS shows skip-song. Missing API is a silent no-op.
  */
 export function useMediaSession(opts: MediaSessionInput) {
   watch(
-    [opts.enabled, opts.playing, opts.title, opts.artist, opts.album, opts.artwork],
+    [
+      opts.enabled,
+      opts.playing,
+      opts.title,
+      opts.artist,
+      opts.album,
+      opts.artwork,
+      () => opts.playlist?.value,
+    ],
     () => publish(opts),
     { immediate: true, deep: true },
   )

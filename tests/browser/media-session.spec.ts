@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+type HandlerKind = 'none' | 'fn'
+
 async function mediaSnap(page: Page) {
   return page.evaluate(() => {
     const ms = navigator.mediaSession
@@ -14,6 +16,54 @@ async function mediaSnap(page: Page) {
       pageTitle: document.title,
     }
   })
+}
+
+async function captureMediaHandlers(page: Page) {
+  await page.addInitScript(`(() => {
+    const capture = Object.create(null)
+    window.__cpvMediaHandlers = capture
+    function install(target) {
+      if (!target || typeof target.setActionHandler !== 'function') return
+      if (target.setActionHandler.__cpvWrapped) return
+      const orig = target.setActionHandler
+      const wrapped = function (action, handler) {
+        capture[action] = handler
+        return orig.call(this, action, handler)
+      }
+      wrapped.__cpvWrapped = true
+      try {
+        target.setActionHandler = wrapped
+      } catch (e) {
+        Object.defineProperty(target, 'setActionHandler', { configurable: true, value: wrapped })
+      }
+    }
+    if (window.MediaSession) install(window.MediaSession.prototype)
+    install(navigator.mediaSession)
+  })()`)
+}
+
+async function handlerKind(page: Page, action: string): Promise<HandlerKind> {
+  return page.evaluate(
+    `(() => {
+      const capture = window.__cpvMediaHandlers
+      const h = capture && capture[${JSON.stringify(action)}]
+      return h == null ? 'none' : 'fn'
+    })()`,
+  )
+}
+
+async function fireAction(page: Page, action: string) {
+  await page.evaluate(
+    `(() => {
+      const capture = window.__cpvMediaHandlers
+      const fn = capture && capture[${JSON.stringify(action)}]
+      if (typeof fn === 'function') fn({ action: ${JSON.stringify(action)} })
+    })()`,
+  )
+}
+
+async function waitBound(page: Page, action: string) {
+  await expect.poll(async () => handlerKind(page, action)).toBe('fn')
 }
 
 test('complete rehearsal publishes song title and 1024 cover, not the page name', async ({
@@ -79,4 +129,87 @@ test('consumer defaultAudioArt fills the session when the chart has no cover', a
   const src = await page.locator('[data-audio-art] img').getAttribute('src')
   expect(src).toBeTruthy()
   await expect(page.locator('[data-audio-art] img')).not.toHaveAttribute('data-audio-art-default')
+})
+
+test('a single chart does not bind lock-screen skip-song', async ({ page }) => {
+  await captureMediaHandlers(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?audio=1&editMode=none&chart=100-nasce-em-mim.cho')
+  await page.locator('[data-audio-ref]').waitFor()
+  await waitBound(page, 'play')
+  expect(await handlerKind(page, 'previoustrack')).toBe('none')
+  expect(await handlerKind(page, 'nexttrack')).toBe('none')
+})
+
+test('setlist nexttrack on the lock screen opens the next song', async ({ page }) => {
+  await captureMediaHandlers(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1&audio=1&editMode=none')
+  await page.locator('[data-audio-ref]').waitFor()
+  await expect.poll(async () => (await mediaSnap(page)).title).toBe('O Rei vem vindo')
+  await waitBound(page, 'play')
+  await waitBound(page, 'previoustrack')
+  await waitBound(page, 'nexttrack')
+  expect(await handlerKind(page, 'seekforward')).toBe('none')
+  expect(await handlerKind(page, 'seekbackward')).toBe('none')
+
+  await fireAction(page, 'nexttrack')
+  await expect.poll(async () => (await mediaSnap(page)).title).toBe('Jesus, Tu És a minha vida')
+  expect(await handlerKind(page, 'previoustrack')).toBe('fn')
+  expect(await handlerKind(page, 'nexttrack')).toBe('fn')
+})
+
+test('setlist previoustrack returns to the song that was playing', async ({ page }) => {
+  await captureMediaHandlers(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1&audio=1&editMode=none')
+  await page.locator('[data-audio-ref]').waitFor()
+  await fireAction(page, 'nexttrack')
+  await expect.poll(async () => (await mediaSnap(page)).title).toBe('Jesus, Tu És a minha vida')
+  await fireAction(page, 'previoustrack')
+  await expect.poll(async () => (await mediaSnap(page)).title).toBe('O Rei vem vindo')
+  expect(await handlerKind(page, 'previoustrack')).toBe('fn')
+  expect(await handlerKind(page, 'nexttrack')).toBe('fn')
+})
+
+test('setlist nexttrack restarts the clock on a different track', async ({ page }) => {
+  await captureMediaHandlers(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1&audio=1&editMode=none')
+  const player = page.locator('[data-audio-ref]')
+  await player.waitFor()
+  await player.locator('[data-audio-open]').click()
+  await player.locator('[data-audio-play]').click()
+  await expect(player.locator('[data-icon=pause]')).toBeVisible()
+  await player.locator('[data-audio-skip="1"]').click()
+  const clock = player.locator('[data-audio-clock]')
+  await expect(clock).not.toHaveText('0:00')
+  const before = await mediaSnap(page)
+  expect(before.title).toBe('O Rei vem vindo')
+  await waitBound(page, 'nexttrack')
+  await fireAction(page, 'nexttrack')
+  await expect.poll(async () => (await mediaSnap(page)).title).toBe('Jesus, Tu És a minha vida')
+  if (!(await player.locator('[data-audio-clock]').isVisible())) {
+    await player.locator('[data-audio-open]').click()
+  }
+  await expect(player.locator('[data-audio-clock]')).toHaveText('0:00')
+})
+
+test('a set keeps ±10 s on the in-app player and skip-song on the lock screen', async ({
+  page,
+}) => {
+  await captureMediaHandlers(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?lista=1&audio=1&editMode=none')
+  const player = page.locator('[data-audio-ref]')
+  await player.waitFor()
+  await waitBound(page, 'nexttrack')
+  expect(await handlerKind(page, 'seekforward')).toBe('none')
+  await player.locator('[data-audio-open]').click()
+  await player.locator('[data-audio-play]').click()
+  await expect(player.locator('[data-icon=pause]')).toBeVisible()
+  expect((await mediaSnap(page)).title).toBe('O Rei vem vindo')
+  await player.locator('[data-audio-skip="1"]').click()
+  await expect(player.locator('[data-audio-clock]')).not.toHaveText('0:00')
+  await expect.poll(async () => (await mediaSnap(page)).title).toBe('O Rei vem vindo')
 })

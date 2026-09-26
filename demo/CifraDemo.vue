@@ -11,6 +11,8 @@ import {
 } from '@henryavila/titan-chordpro-ui'
 import refAudioUrl from './ref-nasce-cantado.m4a?url'
 import refPlaybackUrl from './ref-nasce-playback.m4a?url'
+import altAudioUrl from './ref-audio.wav?url'
+import altPlaybackUrl from './ref-audio-playback.wav?url'
 import refArtUrl from './ref-audio-art.jpg?url'
 import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
@@ -59,14 +61,15 @@ const id = ref(
       ? lab.song
       : defaultSongId(fixtures.value),
 )
-function withAudio(cho: string) {
+function withAudio(cho: string, slot = 0) {
   if (!lab.audio || !cho.trim()) return cho
+  const alt = slot % 2 === 1
   let next = setRehearsalAudio(cho, {
     ...(lab.audio === 'cantado' || lab.audio === 'ambos'
-      ? { sung: refAudioUrl }
+      ? { sung: alt ? altAudioUrl : refAudioUrl }
       : {}),
     ...(lab.audio === 'playback' || lab.audio === 'ambos'
-      ? { playback: refPlaybackUrl }
+      ? { playback: alt ? altPlaybackUrl : refPlaybackUrl }
       : {}),
     ...(lab.capa
       ? { art: { url: refArtUrl, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX } }
@@ -98,9 +101,9 @@ const lazyLista = computed(() => listaMode.value === 'demanda')
 const songs = computed(() => {
   const list = songsFor(fixtures.value, listaMode.value)
   if (!list || !lab.audio) return list
-  return list.map((s) => ({
+  return list.map((s, i) => ({
     ...s,
-    source: s.source ? withAudio(s.source) : s.source,
+    source: s.source ? withAudio(s.source, i) : s.source,
   }))
 })
 const theme = computed(() => hostTheme(props.surface, lab.tema))
@@ -133,7 +136,11 @@ const loadSong = (songId: string) =>
     const ms = 2200 + Math.floor(Math.random() * 1400)
     setTimeout(() => {
       if (songId === FAIL_ID) reject(new Error('rede'))
-      else resolve(withAudio(fixtures.value[songId] ?? ''))
+      else {
+        const list = songsFor(fixtures.value, listaMode.value) ?? []
+        const slot = Math.max(0, list.findIndex((s) => s.id === songId))
+        resolve(withAudio(fixtures.value[songId] ?? '', slot))
+      }
     }, ms)
   })
 

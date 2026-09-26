@@ -159,6 +159,30 @@ describe('useAudioRef', () => {
     expect(audio.current.value).toBe(0)
   })
 
+  it('restarts from 0 when the song changes even if the file URL is the same', async () => {
+    const url = ref<string | null>('https://cdn.sda/same.m4a?h=1')
+    const identity = ref('s0')
+    const el = fakeAudio()
+    const audio = hookOf(url, {
+      identity,
+      createAudio: () => el as unknown as HTMLAudioElement,
+      cacheMatch: async () => null,
+      cacheFill: async () => {},
+    })
+    await flushPromises()
+    await audio.play()
+    audio.skip(1)
+    expect(el.currentTime).toBe(AUDIO_SKIP_SEC)
+    expect(audio.current.value).toBe(AUDIO_SKIP_SEC)
+
+    identity.value = 's1'
+    await flushPromises()
+    expect(el.currentTime).toBe(0)
+    expect(audio.current.value).toBe(0)
+    expect(el.src).toBe('https://cdn.sda/same.m4a?h=1')
+    expect(audio.playing.value).toBe(true)
+  })
+
   it('prefers a cached blob over the network URL', async () => {
     const url = ref<string | null>('https://cdn.sda/a.m4a?h=1')
     const el = fakeAudio()

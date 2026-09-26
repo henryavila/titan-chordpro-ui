@@ -35,20 +35,21 @@ function pickSource(): string {
   /** Scroll is gated on `{duration:}`. The default fixture has none; the harness adds one so layout tests can still roll. */
   return `{duration: 04:26}\n${raw}`
 }
-const source = (() => {
-  const rawCho = pickSource()
+function stampAudio(cho: string, slot = 0): string {
   const mode = q.get('audio')
-  if (!mode) return rawCho
-  let next = rawCho
+  if (!mode) return cho
+  const alt = slot % 2 === 1
+  let next = cho
   if (mode === '1' || mode === 'ambos' || mode === 'cantado' || mode === 'sung') {
-    next = setAudioUrl(next, refAudio, 'sung')
+    next = setAudioUrl(next, alt ? refPlayback : refAudio, 'sung')
   }
   if (mode === '1' || mode === 'ambos' || mode === 'playback') {
-    next = setAudioUrl(next, refPlayback, 'playback')
+    next = setAudioUrl(next, alt ? refAudio : refPlayback, 'playback')
   }
   if (q.get('capa') === '0') return next
   return setAudioArt(next, { url: refArt, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX })
-})()
+}
+const source = stampAudio(pickSource())
 const fitDefault = q.get('fit') !== '0'
 const capoQ = q.get('capo')
 const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined
@@ -79,16 +80,16 @@ const songs = computed(() => {
     // Search only appears above 10 songs — enough real fixtures for the keyboard overlay test.
     return Object.entries(catalog)
       .slice(0, 12)
-      .map(([path, source], i) => ({
+      .map(([path, cho], i) => ({
         id: `s${i}`,
         title: path.split('/').pop()?.replace(/\.cho$/, '') ?? `Música ${i + 1}`,
-        source: String(source),
+        source: stampAudio(String(cho), i),
       }))
   }
   if (lista === '1') {
     return [
-      { id: 'o-rei', title: '082 - O Rei vem vindo', source: oRei },
-      { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: jesus },
+      { id: 'o-rei', title: '082 - O Rei vem vindo', source: stampAudio(oRei, 0) },
+      { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: stampAudio(jesus, 1) },
     ]
   }
   return undefined

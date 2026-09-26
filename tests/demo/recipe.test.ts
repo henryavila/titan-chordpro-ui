@@ -103,6 +103,7 @@ describe('the catalog', () => {
     expect(extra).toContain('/standalone.html?song=013-ele-vive-em-mim')
     expect(extra).toContain('/standalone-lista.html?lens=letra')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
+    expect(extra).toContain('/standalone-lista.html?audio=1')
     expect(extra).toContain('/standalone.html?editMode=none&lens=letra')
     expect(extra).toContain('/media.html')
     expect(extra).toContain('/media.html?capa=0')
@@ -372,6 +373,28 @@ describe('CifraDemo', () => {
     const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
     w.unmount()
+  })
+
+  it('stamps rehearsal audio onto each setlist chart', async () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?audio=1')
+    try {
+      const w = await mountReady({ surface: 'standalone', lista: true })
+      const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as {
+        source?: string
+      }[]
+      expect(songs.length).toBeGreaterThanOrEqual(2)
+      expect(songs[0]?.source).toContain('{x_audio_sung:')
+      expect(songs[1]?.source).toContain('{x_audio_sung:')
+      const sungOf = (cho: string | undefined) =>
+        String(cho ?? '').match(/\{x_audio_sung:\s*([^}]+)\}/)?.[1]?.trim() ?? ''
+      expect(sungOf(songs[0]?.source)).toBeTruthy()
+      expect(sungOf(songs[1]?.source)).toBeTruthy()
+      expect(sungOf(songs[0]?.source)).not.toBe(sungOf(songs[1]?.source))
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
   })
 
   it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
