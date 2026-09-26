@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-26
+
 ### Added
 - **Anterior e próxima na Central de Mídia:** num ensaio com duas ou mais músicas, os botões de pular da tela de bloqueio, da Central de Mídia e do fone passam para a cifra seguinte (ou a de trás) da lista. No iPhone esses botões só aparecem no lugar dos ±10 s — os ±10 s continuam no player da cifra. No Chrome do Android, a notificação mostra o mesmo par. Sem áudio na cifra da vez, a sessão some. Demo: `/standalone-lista.html?audio=1`.
 
@@ -176,7 +178,8 @@ Quando a página do Cifra Club não vem (o site responde bloqueado), a demo busc
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.10.0
 [0.9.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.9.0
 [0.8.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.8.0
 [0.7.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.7.0

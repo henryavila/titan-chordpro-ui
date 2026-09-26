@@ -65,7 +65,7 @@ Fora: login, multicifra do site, player de áudio **sincronizado**, collab em te
 
 ## Status
 
-`0.9.0` no npm — leitura (diagramas de acorde), ensaio (lista, swipe nas bordas, tela ligada, áudio de referência com fone no celular e Central de Mídia), tom original + `{transpose:}`, overlay, `persistSuggestion`, edição por bloco, batida, partitura e import do Cifra Club pelo texto. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto. O editor de forma no modal (grelha gravável) ainda não.
+`0.10.0` no npm — leitura (diagramas de acorde), ensaio (lista, swipe, tela ligada, áudio de referência, Central de Mídia com anterior/próxima no set), tom original + `{transpose:}`, overlay, `persistSuggestion`, edição por bloco, batida, partitura e import do Cifra Club pelo texto. Visual SoT: `design-source/`. Gates do editor E3–E4 ainda não são DONE de produto. O editor de forma no modal (grelha gravável) ainda não.
 
 ```bash
 pnpm install
@@ -675,4 +675,4 @@ Instalar:
 pnpm add @henryavila/titan-chordpro-ui
 ```
 
-Pre-1.0: `~0.9.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.9.0`, não `0.8.1`).
+Pre-1.0: `~0.10.0` (só patch) se o host não puder absorver minor. Feature sobe MINOR (`0.10.0`, não `0.9.1`).
