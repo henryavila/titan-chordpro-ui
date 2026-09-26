@@ -35,6 +35,7 @@ Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`
 | `?audio=cantado` / `?audio=playback` | Só uma faixa |
 | `?audio=1&capa=0` | Sem capa do host — arte genérica do pacote (512) |
 | `?song=100-nasce-em-mim&audio=1` | *Nasce em Mim* + as duas faixas |
+| `/standalone-lista.html?audio=1` | Set com áudio: anterior/próxima na Central de Mídia; cada cifra uma faixa; pular recomeça do zero |
 
 ## O que o proxy faz
 

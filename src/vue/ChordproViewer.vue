@@ -387,8 +387,6 @@ watch(
   { immediate: true },
 )
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
-const audioKey = computed(() => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`)
-const audio = useAudioRef(audioUrl)
 const parsed = computed(() => parse(liveSource.value))
 const audioArt = computed(() => {
   if (isEdit.value) return null
@@ -407,22 +405,6 @@ const audioArtwork = computed(() => {
     width: AUDIO_ART_DEFAULT_PX,
     height: AUDIO_ART_DEFAULT_PX,
   })
-})
-useMediaSession({
-  enabled: computed(() => !!audioUrl.value),
-  playing: audio.playing,
-  current: audio.current,
-  duration: audio.duration,
-  title: audioTitle,
-  artist: audioArtist,
-  album: audioAlbum,
-  artwork: audioArtwork,
-  play: () => {
-    void audio.play()
-  },
-  pause: () => audio.pause(),
-  skip: (dir) => audio.skip(dir),
-  seek: (t) => audio.seek(t),
 })
 const fatal = computed(() => {
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
@@ -720,6 +702,13 @@ const setlist = useSetlist({
   songs: computed(() => props.songs),
   loadSong: computed(() => props.loadSong),
 })
+const audioIdentity = computed(
+  () => (setlist.on.value ? (setlist.current.value?.id ?? '') : props.songId || ''),
+)
+const audioKey = computed(
+  () => `${audioTracks.value.sung ?? ''}|${audioTracks.value.playback ?? ''}`,
+)
+const audio = useAudioRef(audioUrl, { identity: audioIdentity })
 
 /**
  * What the viewer is reading. In a rehearsal the list decides; otherwise the
@@ -2453,6 +2442,25 @@ function goSong(i: number) {
 }
 const goPrev = () => goSong(setlist.si.value - 1)
 const goNext = () => goSong(setlist.si.value + 1)
+useMediaSession({
+  enabled: computed(() => !!audioUrl.value),
+  playing: audio.playing,
+  current: audio.current,
+  duration: audio.duration,
+  title: audioTitle,
+  artist: audioArtist,
+  album: audioAlbum,
+  artwork: audioArtwork,
+  play: () => {
+    void audio.play()
+  },
+  pause: () => audio.pause(),
+  skip: (dir) => audio.skip(dir),
+  seek: (t) => audio.seek(t),
+  playlist: computed(() => setlist.on.value),
+  prevTrack: goPrev,
+  nextTrack: goNext,
+})
 const endNext = () => {
   setlist.dismissEnd()
   goNext()

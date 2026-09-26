@@ -123,11 +123,12 @@ export const DEMOS: readonly DemoEntry[] = [
     group: 'incorporar',
     kicker: 'Standalone',
     title: 'Apresentação',
-    blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Cada item já traz o ChordPro.',
+    blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Com áudio, a Central de Mídia também troca de cifra.',
     call: `<ChordproViewer :songs="songs" edit-mode="local" />`,
     extra: [
       { href: '/standalone-lista.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
+      { href: '/standalone-lista.html?audio=1', label: 'Áudio na lista' },
     ],
   },
   {

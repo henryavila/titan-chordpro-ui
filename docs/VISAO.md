@@ -51,7 +51,7 @@ ChordPro (1 string)
 | Multi-cifra (qual versão ativa) | ❌ | ✅ passa 1 string |
 | Shell, login, navegação | ❌ | ✅ |
 | Player áudio sincronizado | ❌ | ✅ |
-| Áudio de referência (cantado / playback, sem sync) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
+| Áudio de referência (cantado / playback, sem sync; Central de Mídia; no set, anterior/próxima no aparelho) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
 | Edição (source SoT; gates E0–E4) | ✅ | recebe `source` atualizado / dirty / media |
 | Diagramas de acorde (violão, ukulele, piano) | ✅ modal no acorde; instrumento na prefs | pode desligar (`capabilities.diagrams: false`) |
 
