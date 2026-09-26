@@ -87,8 +87,11 @@ export type ChordproViewerProps = {
   themeControl?: 'preference' | 'host'
   /**
    * Reading lens: chord names, Nashville degrees, or lyrics only.
-   * `'letra'` is the singer view (no chords / tab / score). Survives song
-   * changes in a setlist; the musician can still switch from the UI.
+   * `'letra'` is the singer view (no chords / tab / score). Pass the prop to
+   * open already on that projection (share URL for a vocalist). `'none'` opens
+   * Cifra. Omit the prop to restore the last Cifra | Letra choice on this
+   * device. Survives song changes in a setlist; the musician can still switch
+   * from the UI.
    */
   lens?: Lens
   /**

@@ -71,6 +71,7 @@ ChordPro (1 string)
 6. **Temas:** claro e escuro, com opção de **troca automática**.
 7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.
 8. **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano (mesmo cartão, tela cheia no ensaio). Instrumento é preferência do aparelho. Violão/ukulele: forma da mão + capo no desenho. Piano: teclas concert, inversões e baixo escrito. `{define}` no arquivo é override. Sem forma: “Sem forma neste instrumento”. Só letra não abre. Editor de grelha (F4) ainda não.
+9. **Cifra ou letra** — o músico troca no interruptor. O host pode abrir já na letra (link de cantor) ou já na cifra.
 
 ### 4.2 Edição (edit) — mapa + gates
 

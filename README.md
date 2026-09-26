@@ -21,7 +21,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Transposição e capotraste. `{key:}` é o tom original; `{transpose:}` é a leitura. `{capo:}` no arquivo é dica — o capotraste ao vivo começa em 0
 - **Modo dual (capo)** — o capo muda as *formas*, não o tom que a banda ouve. Sem dual, a cifra vira só as formas (quem toca sozinho). Com dual, cada acorde mostra os dois nomes na mesma linha: forma com capo + o que soa sem capo. Teclado, baixo e voz leem o tom real; o violão lê a forma. A legenda marca as duas cores.
 - **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele: forma da mão (capo no braço quando há). Piano: teclas no tom que soa, inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. Host desliga com `capabilities.diagrams: false`
-- Cifra · só letra · Nashville
+- **Cifra | Letra** — o host abre já na letra (`lens="letra"`) para um link de cantor, ou já na cifra (`lens="none"`). Sem a prop, vale a última escolha deste aparelho. Nashville no mesmo ensaio. [`docs/CONSUMER.md`](docs/CONSUMER.md) §8
 - Tema claro / escuro / auto; cor de acento do host
 - Tipografia e ajuste ao espaço
 - Auto-rolagem no relógio da cifra (`{duration:}`, `{tempo:}`, `x///`)
@@ -97,6 +97,9 @@ Exemplos completos (Nuxt/Vue, ficha real, palco, ensaio, gestos):
   <ChordproViewer :source="cho" :song-id="id" />
 </div>
 
+<!-- Link de cantor: /cifras/[id]?lens=letra -->
+<ChordproViewer :source="cho" :song-id="id" :lens="lens" edit-mode="none" />
+
 <!-- Na página: bloco 100dvh no fluxo (conteúdo acima e abaixo) -->
 <div class="ficha">
   <!-- letra, vídeo… -->
@@ -133,7 +136,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `source` | `''` | Texto ChordPro/OnSong da cifra ativa (host escolhe qual) |
 | `mode` | `'view'` | `view` \| `edit`; a UI também alterna sozinha (`update:mode`) |
 | `theme` | `'auto'` | `auto` \| `light` \| `dark`; o leitor pode trocar |
-| `lens` | `'none'` | `none` \| `letra` \| `nashville` — projeção de leitura; `letra` = só a letra (cantor). Persiste entre músicas do ensaio |
+| `lens` | omitir | `none` \| `letra` \| `nashville` — abrir já nessa projeção (`letra` = cantor). Sem a prop, vale a última Cifra \| Letra deste aparelho. Persiste entre músicas do ensaio |
 | `hideComments` | `false` | `true` esconde `{c:}` de ensaio só na leitura (mesmo lifetime que `lens`) |
 | `canEdit` | `true` | `false` remove toda entrada para o editor |
 | `fitDefault` / `autoHide` | `true` / `true` | Ajuste ao espaço inicial · esconder moldura na rolagem |

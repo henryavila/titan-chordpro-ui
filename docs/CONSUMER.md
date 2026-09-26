@@ -88,7 +88,8 @@ modal.
 
 Use quando o músico vai **tocar**: ensaio, culto, palco. A cifra já é a tela
 do site. No iPhone não há botão de tela cheia (não há o que ganhar além da
-moldura do Titan); o toque na cifra só esconde/mostra os controles.
+moldura do Titan); o toque na cifra só esconde/mostra os controles. Link de
+cantor (abrir já na letra): [§8](#8-tema-fonte-acento-cifra-ou-letra).
 
 ### Vue (SPA)
 
@@ -441,20 +442,29 @@ SoT, gramática, 6/8, lente Só letra, lint e o que a IA **não** pode apagar:
 
 ### Cifra ou letra (cantores)
 
-Na UI o músico troca com o interruptor **Cifra | Letra** (tecla `L`). Nashville
-e os comentários de ensaio ficam na barra (desktop) ou no menu Mais (celular).
-Não há mais um menu chamado “Lentes”.
+O músico troca no interruptor **Cifra | Letra** (tecla `L`). Você decide o que
+aparece **ao abrir**: um link de cantor já chega na letra.
+
+| Você passa | Abre em |
+|---|---|
+| `lens="letra"` | Letra — sem acordes, tab, partitura nem marcas `x///` |
+| `lens="none"` | Cifra |
+| `lens="nashville"` | Cifra com graus Nashville |
+| omitir a prop | última escolha deste aparelho |
+
+Nashville e os comentários de ensaio ficam na barra (desktop) ou no menu Mais
+(celular). Não há menu chamado “Lentes”.
 
 | Prop | Valores | Papel |
 |---|---|---|
-| `lens` | `none` \| `letra` \| `nashville` | Projeção. `letra` = só a letra (sem acordes, tab, partitura nem marcas `x///`) |
+| `lens` | `none` \| `letra` \| `nashville` | Projeção ao abrir. `letra` = só a letra. `none` = cifra. Omitir = última escolha do aparelho |
 | `hideComments` | `boolean` | Esconde `{c:}` de ensaio **só** na leitura |
 | `rehearsalFocus` | `off` \| `batida` | Perfil de chrome **Ensaio Batida** (strip + som da batida no Rolar). Ortogonal a `lens`. Reseta ao trocar de música no setlist, salvo se o host mantiver a prop. |
 
 `lens` / `hideComments` sobrevivem à troca de música no ensaio (`songs`) e emitem
 `update:lens` / `update:hideComments` (dá para `v-model:lens`). `rehearsalFocus`
-emite `update:rehearsalFocus`. O músico ainda pode mudar pelo UI. O `.cho`
-**não** é reescrito — marcas e comentários continuam no arquivo.
+emite `update:rehearsalFocus`. O músico ainda pode mudar pelo interruptor. O
+`.cho` **não** é reescrito — marcas e comentários continuam no arquivo.
 
 **Som no ensaio:** no painel Metrônomo a **Fonte** é `Mudo | Click | Batida`
 (prefs `metSound` / `metStrumSound`). O botão **Rolar** fora do Ensaio Batida
@@ -471,11 +481,10 @@ URL típica para o cantor (o host lê a query e passa a prop):
 <!-- /cifras/[id]?lens=letra  →  pages/cifras/[id].vue -->
 <script setup lang="ts">
 const route = useRoute()
-const lens = computed(() =>
-  route.query.lens === 'letra' || route.query.lens === 'nashville'
-    ? route.query.lens
-    : 'none',
-)
+const lens = computed(() => {
+  const q = route.query.lens
+  return q === 'letra' || q === 'nashville' || q === 'none' ? q : undefined
+})
 </script>
 
 <template>
@@ -493,8 +502,12 @@ const lens = computed(() =>
 </template>
 ```
 
-Na demo deste repo: `/standalone-lista.html?lens=letra` (opcional:
-`&comentarios=0`).
+`?lens=letra` abre na letra (cantor). `?lens=none` abre na cifra, mesmo se este
+aparelho tinha ficado em Letra. Sem `lens` na URL, a prop fica omitida e vale
+a última escolha.
+
+Na demo deste repo: `/standalone.html?lens=letra` (opcional: `&comentarios=0`).
+Lista: `/standalone-lista.html?lens=letra`.
 
 ```css
 .host-cifra {
@@ -710,6 +723,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Sem iframe
 - [ ] Ficha real: conteúdo acima **e** abaixo; snap no frame
 - [ ] Palco: rota própria + “Tocar ao vivo”
+- [ ] Link de cantor: query `lens=letra` → prop `lens="letra"` ([§8](#8-tema-fonte-acento-cifra-ou-letra))
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
 - [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek

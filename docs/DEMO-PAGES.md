@@ -17,6 +17,14 @@ revisar**. Prefs de tema também sobrevivem ao reload.
 
 Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`).
 
+**Cifra ou letra (lab)**
+
+| URL | O que abre |
+|---|---|
+| `?lens=letra` | Já na letra — link de cantor |
+| `?lens=none` | Já na cifra, mesmo se este aparelho tinha ficado em Letra |
+| sem `lens` | última escolha deste aparelho |
+
 **Áudio de referência (lab)**
 
 | URL | O que mostra |

@@ -97,8 +97,11 @@ describe('the catalog', () => {
     expect(hrefs).toContain('/standalone.html?accent=verde')
     expect(hrefs).toContain('/standalone.html?accent=teal')
     expect(hrefs.some((h) => h.includes('accent=') && h.includes('4F46E5'))).toBe(true)
+    expect(extra).toContain('/standalone.html?lens=letra')
     expect(extra).toContain('/standalone.html?song=013-ele-vive-em-mim')
+    expect(extra).toContain('/standalone-lista.html?lens=letra')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
+    expect(extra).toContain('/standalone.html?editMode=none&lens=letra')
   })
 
   it('ships a compact ChordproViewer call on every catalog entry', () => {
