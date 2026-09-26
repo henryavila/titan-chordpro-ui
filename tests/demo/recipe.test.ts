@@ -55,6 +55,7 @@ describe('the four HTML mounts', () => {
       'standalone-lista.html',
       'site.html',
       'site-lista.html',
+      'media.html',
       'index.html',
     ]
     for (const name of pages) {
@@ -74,6 +75,7 @@ describe('the catalog', () => {
     expect(DEMOS.map((d) => d.id).length).toBe(new Set(DEMOS.map((d) => d.id)).size)
     expect(demosOf('incorporar').map((d) => d.id)).toEqual([
       'standalone',
+      'media-session',
       'standalone-apresentacao',
       'shell',
       'shell-apresentacao',
@@ -102,6 +104,9 @@ describe('the catalog', () => {
     expect(extra).toContain('/standalone-lista.html?lens=letra')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
     expect(extra).toContain('/standalone.html?editMode=none&lens=letra')
+    expect(extra).toContain('/media.html')
+    expect(extra).toContain('/media.html?capa=0')
+    expect(hrefs).toContain('/media.html')
   })
 
   it('ships a compact ChordproViewer call on every catalog entry', () => {
@@ -117,14 +122,24 @@ describe('the catalog', () => {
     expect(DEMOS.find((d) => d.id === 'accent-hex')?.call).toMatch(/accent="#4F46E5"/)
   })
 
-  it('only links the four mounts, with query flags', () => {
-    const pages = new Set(PAGES.map((p) => p.href))
+  it('only links the four mounts plus the Media Session host, with query flags', () => {
+    const pages = new Set([...PAGES.map((p) => p.href), '/media.html'])
     for (const demo of DEMOS) {
       expect(pages.has(demo.href.split('?')[0] ?? ''), demo.href).toBe(true)
       for (const link of demo.extra ?? []) {
         expect(pages.has(link.href.split('?')[0] ?? ''), link.href).toBe(true)
       }
     }
+  })
+
+  it('ships the Media Session host as a complete consumer example', () => {
+    const demo = DEMOS.find((d) => d.id === 'media-session')
+    expect(demo?.href).toBe('/media.html')
+    expect(demo?.call).toMatch(/setRehearsalAudio/)
+    expect(demo?.call).toMatch(/width: 1024/)
+    expect(demo?.call).toMatch(/edit-mode="none"/)
+    expect(demo?.call).toMatch(/default-audio-art/)
+    expect(existsSync(join(root, 'demo/media.html'))).toBe(true)
   })
 
   it('keeps each group non-empty', () => {

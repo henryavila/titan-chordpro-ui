@@ -23,6 +23,7 @@ export default defineConfig({
         'standalone-lista': `${root}demo/standalone-lista.html`,
         site: `${root}demo/site.html`,
         'site-lista': `${root}demo/site-lista.html`,
+        media: `${root}demo/media.html`,
       },
     },
   },

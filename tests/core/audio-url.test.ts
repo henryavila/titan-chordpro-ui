@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUDIO_ART_MEDIA_PX,
   audioArtOf,
   audioArtistOf,
+  resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
   audioUrlOf,
@@ -129,6 +131,20 @@ describe('setAudioUrl / audioUrlOf', () => {
 describe('setAudioArt / identity', () => {
   const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_audio:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
 
+  it('recommends 1024 px so Media Session has a lock-screen cover', () => {
+    expect(AUDIO_ART_MEDIA_PX).toBe(1024)
+    const next = setAudioArt(cho, {
+      url: 'https://cdn.sda/a.jpg?h=9',
+      width: AUDIO_ART_MEDIA_PX,
+      height: AUDIO_ART_MEDIA_PX,
+    })
+    expect(audioArtOf(next)).toEqual({
+      url: 'https://cdn.sda/a.jpg?h=9',
+      width: 1024,
+      height: 1024,
+    })
+  })
+
   it('writes cover URL plus pixel size for the host-optimized file', () => {
     const next = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 512, height: 512 })
     expect(next).toContain('{x_audio_art:https://cdn.sda/a.jpg?h=9}')
@@ -180,6 +196,32 @@ describe('setAudioArt / identity', () => {
     expect(audioArtistOf({ artist: 'Adoradores', subtitle: 'SDA' })).toBe('Adoradores')
     expect(audioArtistOf({ subtitle: 'Ministério Jovem' })).toBe('Ministério Jovem')
     expect(audioArtistOf({})).toBe('Referência')
+  })
+})
+
+describe('resolveRehearsalArt', () => {
+  const chart = { url: 'https://cdn.sda/album.jpg', width: 1024, height: 1024 }
+  const brand = { url: 'https://cdn.sda/marca.jpg', width: 1024, height: 1024 }
+
+  it('uses the chart cover when both exist', () => {
+    expect(resolveRehearsalArt(chart, brand)).toEqual(chart)
+  })
+
+  it('uses the consumer default when the chart has no cover', () => {
+    expect(resolveRehearsalArt(null, brand)).toEqual(brand)
+  })
+
+  it('fills missing size with 1024 for the consumer default', () => {
+    expect(resolveRehearsalArt(null, { url: '/marca.jpg', width: 0, height: 0 })).toEqual({
+      url: '/marca.jpg',
+      width: 1024,
+      height: 1024,
+    })
+  })
+
+  it('returns null when neither cover is playable', () => {
+    expect(resolveRehearsalArt(null, null)).toBeNull()
+    expect(resolveRehearsalArt(null, { url: 'javascript:x', width: 1024, height: 1024 })).toBeNull()
   })
 })
 

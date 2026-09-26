@@ -1,5 +1,6 @@
 import type {
   AccentProp,
+  AudioArt,
   ChartStore,
   Lens,
   SaveStrumPresetPayload,
@@ -216,6 +217,11 @@ export type ChordproViewerProps = {
    * PDF import. Without it, PDFs are refused up front.
    */
   readPdf?: (file: File) => Promise<string>
+  /**
+   * Cover when the chart has no `{x_audio_art:}`. Square 1024 px for the
+   * lock screen. Chart art still wins. Omit → packaged 512 art.
+   */
+  defaultAudioArt?: AudioArt | null
   /**
    * Cover JPEG/PNG for the `.slja` (LouvorJA `imagens\Capa.jpg`).
    * Omitted → the package default.
