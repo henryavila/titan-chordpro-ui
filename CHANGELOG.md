@@ -12,9 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Link de cantor ou de cifra:** o site pode abrir o Titan já em **Letra** ou já em **Cifra** (`lens="letra"` / `lens="none"`). Um endereço com a letra já na tela serve para o vocal. Sem a prop, continua valendo a última escolha deste aparelho.
 - **Diagramas de acorde:** toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele mostram a forma da mão (capo no braço quando há). Piano mostra as teclas no tom que soa, com inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. O host desliga com `capabilities.diagrams: false`.
 
+### Changed
+- **Capa da cifra:** o host manda um quadrado **1024 × 1024** (antes 256–512) para a tela de bloqueio e a Central de Mídia.
+
 ### Fixed
 - **Troca de música no ensaio:** o selo (Próxima / Anterior) sobe e fica acima do dedo, para não sumir atrás da mão.
 - **Ensaio no iPhone:** toque em Rolar e em Mais volta a funcionar na setlist. Os trilhos de troca de música terminam acima do dock e um toque nesses botões não arma o swipe.
+- Com o diagrama do acorde aberto, a barra de espaço não começa a rolagem.
 - Na revisão de sugestões, a faixa de batida no topo do lote só aparece quando o pedido muda a batida. Apagar letra numa cifra que já tem batida não mostra mais a batida como se fizesse parte do pedido.
 - Aceitar um ajuste, quando ainda há outros, deixa a tela de sugestões aberta. Gravar a cifra não fecha a revisão no meio.
 

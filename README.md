@@ -32,12 +32,12 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
 - Batida visual (setas + pulso) e ensaio com som
 - **Áudio de referência** — arquivo no ensaio, **sem** sync com letra / Rolar / `{duration:}`:
-  - No celular o recolhido é o fone na linha Cifra | Letra: toque abre o card. Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e deixa o fone. No desktop o chip com título fica acima do dock. X fecha sem parar
+  - Na linha de Cifra e Letra aparece um fone; toque abre o player. Enquanto toca, o fone anima uma onda. Esconder a barra fecha o player grande e deixa o fone; a música segue. No computador o chip com título fica acima da barra. X fecha sem parar
   - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
   - Capa da cifra (quadrado **1024 × 1024 px** + `width`/`height`, para a Central de Mídia). Sem arte na cifra, `defaultAudioArt` da marca; sem as duas, arte genérica 512×512
   - O host grava faixas e capa no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6. Demo completa: `/media.html`
 - Lista: anterior / próxima, lugar guardado por música
-- **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
+- **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. O selo Próxima / Anterior sobe e fica acima do dedo. Sem flick, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
 
 **Edição**

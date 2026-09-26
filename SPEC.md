@@ -73,6 +73,7 @@ Ship:
 | Multi-cifra which string is active | ❌ | ❌ | ✅ |
 | Login, shell, synced audio player, i18n catalogs | ❌ | ❌ | ✅ |
 | Rehearsal reference audio (unsynced) | `setRehearsalAudio` | ✅ player | URLs + cover |
+| Chord diagrams (guitar, ukulele, piano) | dictionary / `{define}` / draw | fullscreen modal; instrument in prefs | `capabilities.diagrams: false` |
 
 **Auto-rolagem:** in product scope. Core: speed math (+ optional attach helper). Vue package: controls + RAF against `[data-cpv-scroll]`.
 
