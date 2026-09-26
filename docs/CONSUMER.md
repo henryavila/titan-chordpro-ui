@@ -329,8 +329,8 @@ do Sim.
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
 música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
 **não** resetam ao mudar de cifra. No celular, deslize **na borda** da cifra pinta
-um fade + chevron e só confirma ao soltar depois do limiar — o centro só rola, não
-troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`
+um fade + chevron e o selo Próxima / Anterior sobe acima do dedo; só confirma ao
+soltar depois do limiar — o centro só rola, não troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`
 pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
 
@@ -372,9 +372,9 @@ inteiro; use `setRehearsalAudio`.
 de Mídia mostra a capa em 1:1. Passe `width` e `height` **desse arquivo**,
 não do original de 3000 px. A URL precisa ser fetchável (CORS).
 
-**Capa padrão da marca:** prop `defaultAudioArt` (`{ url, width, height }`).
-Vale quando a cifra não tem `{x_audio_art:}`. A arte da cifra vence. Sem as
-duas, o Titan usa a arte genérica 512×512. Também 1024 × 1024.
+**Capa padrão da marca:** prop `defaultAudioArt` (`{ url, width, height }`),
+quadrado **1024 × 1024**. Vale quando a cifra não tem `{x_audio_art:}`. A arte
+da cifra vence. Sem as duas, o Titan usa a arte genérica 512×512.
 
 Enquanto o áudio toca, o Titan publica na Central de Mídia o `{title:}` (sem
 o prefixo `001 - ` do hinário), o `{artist:}` ou `{subtitle:}`, Cantado ou
@@ -396,10 +396,10 @@ Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
 
 O player na cifra mostra o mesmo título, artista e capa. Com as duas faixas,
 Cantado / Playback são pílulas clicáveis; com uma só, só o rótulo. No celular
-o recolhido é o ícone de fone na linha de Cifra | Letra: toque abre o card
-(capa e transporte). Enquanto toca, o fone anima uma onda. Recolher o chrome
-esconde o card e deixa o fone. No desktop o chip continua acima do dock, com
-título. X fecha o card (sem parar o áudio).
+o ícone de fone na linha de Cifra | Letra: toque abre o player
+(capa e transporte). Enquanto toca, o fone anima uma onda. Esconder a barra
+fecha o player grande e deixa o fone. No computador o chip continua acima da
+barra, com título. X fecha o player (sem parar o áudio).
 
 A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
 ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
