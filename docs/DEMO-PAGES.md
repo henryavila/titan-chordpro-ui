@@ -29,9 +29,11 @@ Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`
 
 | URL | O que mostra |
 |---|---|
-| `?audio=1` | Cantado + playback (demo 2:41 / 65 BPM) |
+| `/media.html` | Host completo: leitura, cantado + playback, capa **1024 × 1024** e `defaultAudioArt`. O título da página é o do consumer; a Central de Mídia mostra a música |
+| `/media.html?capa=0` | Sem `{x_audio_art:}` na cifra — vale a capa padrão do consumer |
+| `?audio=1` | Cantado + playback (demo 2:41 / 65 BPM), capa 1024 |
 | `?audio=cantado` / `?audio=playback` | Só uma faixa |
-| `?audio=1&capa=0` | Sem capa do host — arte genérica do pacote |
+| `?audio=1&capa=0` | Sem capa do host — arte genérica do pacote (512) |
 | `?song=100-nasce-em-mim&audio=1` | *Nasce em Mim* + as duas faixas |
 
 ## O que o proxy faz

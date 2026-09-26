@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Central de Mídia:** com o áudio de referência tocando, a tela de bloqueio e a Central de Mídia mostram o nome da música, o artista e a capa. Play, pause e ±10 s nos botões do aparelho. Capa da cifra: quadrado **1024 × 1024 px**. Sem arte na cifra, o consumer manda a da marca (`defaultAudioArt`); sem as duas, o Titan usa a arte genérica. Demo: `/media.html` (e `/media.html?capa=0` para a capa padrão).
 - **Link de cantor ou de cifra:** o site pode abrir o Titan já em **Letra** ou já em **Cifra** (`lens="letra"` / `lens="none"`). Um endereço com a letra já na tela serve para o vocal. Sem a prop, continua valendo a última escolha deste aparelho.
 - **Diagramas de acorde:** toque no acorde abre violão, ukulele ou piano em tela cheia. O instrumento fica no aparelho. Violão e ukulele mostram a forma da mão (capo no braço quando há). Piano mostra as teclas no tom que soa, com inversões e o baixo escrito. Fecha com X, Escape ou puxar para baixo. Só letra não abre. O host desliga com `capabilities.diagrams: false`.
 

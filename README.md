@@ -34,8 +34,8 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - **Áudio de referência** — arquivo no ensaio, **sem** sync com letra / Rolar / `{duration:}`:
   - No celular o recolhido é o fone na linha Cifra | Letra: toque abre o card. Enquanto toca, o fone anima uma onda. Recolher o chrome esconde o card e deixa o fone. No desktop o chip com título fica acima do dock. X fecha sem parar
   - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
-  - Capa do host (quadrado 256–512 px + `width`/`height`); sem capa, arte genérica 512×512
-  - O host grava no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6
+  - Capa da cifra (quadrado **1024 × 1024 px** + `width`/`height`, para a Central de Mídia). Sem arte na cifra, `defaultAudioArt` da marca; sem as duas, arte genérica 512×512
+  - O host grava faixas e capa no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6. Demo completa: `/media.html`
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
@@ -154,6 +154,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
+| `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
 | `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `@henryavila/titan-chordpro-ui/slides` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o host serve — o que “Inserir · Imagem” oferece |
@@ -164,7 +165,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 
 Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
-Não há prop de áudio. Cantado, playback e capa vão no texto ChordPro (`setRehearsalAudio`) e entram em `source`. Guia: [Áudio de referência](#áudio-de-referência-no-ensaio) e [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
+Não há prop de URL de áudio. Cantado, playback e capa da cifra vão no ChordPro (`setRehearsalAudio`) e entram em `source`. Capa padrão da marca: `defaultAudioArt`. Guia: [Áudio de referência](#áudio-de-referência-no-ensaio) e [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
 
 ### Cifra nova: importar ou começar em branco
 
@@ -259,12 +260,16 @@ import { setRehearsalAudio } from '@henryavila/titan-chordpro-ui'
 cho = setRehearsalAudio(cho, {
   sung: 'https://cdn.example/nasce-voz.m4a?h=a1',
   playback: 'https://cdn.example/nasce-pb.m4a?h=b2', // opcional
-  art: { url: 'https://cdn.example/nasce-512.jpg?h=c3', width: 512, height: 512 },
+  art: { url: 'https://cdn.example/nasce-1024.jpg?h=c3', width: 1024, height: 1024 },
 })
 ```
 
 ```vue
-<ChordproViewer :source="cho" :song-id="id" />
+<ChordproViewer
+  :source="cho"
+  :song-id="id"
+  :default-audio-art="{ url: '/marca-1024.jpg', width: 1024, height: 1024 }"
+/>
 ```
 
 Chave omitida não mexe; `null` apaga. Também vale caminho same-origin
@@ -275,6 +280,7 @@ Persistir é o fluxo de sempre: `update:source` / `save-content`.
 
 Diretivas: `{x_audio_sung:}`, `{x_audio_playback:}`, `{x_audio_art:}` (+ w/h).
 UI em português (Cantado, Playback). Contrato completo: [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
+Demo de referência (leitura, cantado + playback, capa 1024 × 1024): `/media.html`.
 
 ### O host dá a altura
 
