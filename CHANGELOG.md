@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-25
+
 ### Added
 - **Central de Mídia:** com o áudio de referência tocando, a tela de bloqueio e a Central de Mídia mostram o nome da música, o artista e a capa. Play, pause e ±10 s nos botões do aparelho. Capa da cifra: quadrado **1024 × 1024 px**. Sem arte na cifra, o consumer manda a da marca (`defaultAudioArt`); sem as duas, o Titan usa a arte genérica. Demo: `/media.html` (e `/media.html?capa=0` para a capa padrão).
 - **Link de cantor ou de cifra:** o site pode abrir o Titan já em **Letra** ou já em **Cifra** (`lens="letra"` / `lens="none"`). Um endereço com a letra já na tela serve para o vocal. Sem a prop, continua valendo a última escolha deste aparelho.
@@ -168,7 +170,8 @@ Quando a página do Cifra Club não vem (o site responde bloqueado), a demo busc
 - **Import Cifra Club:** ignora tablaturas `.tabs`, não perde rótulos de seção no `.kvMV` aninhado, normaliza Intro → INTRODUÇÃO.
 - **Metrônomo:** só o tempo 1 usa a cor do tema; 2–4 pulsam com `--beat-rest` no claro e no escuro.
 
-[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/henryavila/titan-chordpro-ui/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.9.0
 [0.8.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.8.0
 [0.7.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.7.0
 [0.6.0]: https://github.com/henryavila/titan-chordpro-ui/releases/tag/v0.6.0
