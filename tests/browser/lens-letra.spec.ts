@@ -22,6 +22,17 @@ test('host lens=letra opens already in Só letra', async ({ page }) => {
   await expect(page.locator('.cpv-chord')).toHaveCount(0)
 })
 
+test('host lens=none opens Cifra even when prefs were Letra', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 800 })
+  await page.addInitScript(() => {
+    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'letra' }))
+  })
+  await page.goto('/?lens=none')
+  await page.locator('.cpv-chord').first().waitFor()
+  await expect(page.locator('[data-reading=cifra]')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('[data-reading=letra]')).toHaveAttribute('aria-pressed', 'false')
+})
+
 test('phone Letra is one tap on the dock, not through Mais', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 })
   await page.goto('/')

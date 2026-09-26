@@ -159,6 +159,36 @@ describe('lens Só letra', () => {
     expect(w.text()).toMatch(/Jesus/i)
   })
 
+  it('opens already in Letra even when this device last used Cifra', async () => {
+    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'none' }))
+    const w = await viewerAt(1024, { lens: 'letra' })
+    expect(pressed(w, 'letra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(false)
+  })
+
+  it('opens already in Cifra when the host passes lens=none, even if prefs were Letra', async () => {
+    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'letra' }))
+    const w = await viewerAt(1024, { lens: 'none' })
+    expect(pressed(w, 'cifra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(true)
+  })
+
+  it('restores the last Letra choice when the host omits lens', async () => {
+    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'letra' }))
+    const w = await viewerAt(1024)
+    expect(pressed(w, 'letra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(false)
+  })
+
+  it('follows the host when the lens prop changes to Cifra', async () => {
+    const w = await viewerAt(1024, { lens: 'letra' })
+    expect(pressed(w, 'letra')).toBe('true')
+    await w.setProps({ lens: 'none' })
+    await flushPromises()
+    expect(pressed(w, 'cifra')).toBe('true')
+    expect(w.find('.cpv-chord').exists()).toBe(true)
+  })
+
   it('opens with Nashville when the host passes lens=nashville', async () => {
     const w = await viewerAt(1024, { lens: 'nashville' })
     expect(pressed(w, 'cifra')).toBe('true')

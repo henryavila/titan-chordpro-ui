@@ -138,7 +138,6 @@ const props = withDefaults(
     mode: 'view',
     theme: 'auto',
     themeControl: 'preference',
-    lens: 'none',
     hideComments: false,
     rehearsalFocus: 'off',
     loading: false,
@@ -265,7 +264,7 @@ const toneOpen = ref(false)
 const moreOpen = ref(false)
 
 const metOpen = ref(false)
-const lens = ref<Lens>(props.lens)
+const lens = ref<Lens>(props.lens ?? 'none')
 /** Dual chart: show the capo shape above the real chord, song-wide. */
 const capoMap = ref(true)
 const hideComments = ref(props.hideComments)
@@ -2565,6 +2564,7 @@ watch(lens, (v) => {
 watch(
   () => props.lens,
   (next) => {
+    if (next === undefined) return
     if (next === lens.value) return
     lens.value = next
   },
@@ -2641,8 +2641,9 @@ onMounted(() => {
     if (typeof p.metPulseHead === 'boolean') met.pulseHead.value = p.metPulseHead
     if (typeof p.metFollow === 'boolean') met.follow.value = p.metFollow
     if (typeof p.metCountIn === 'boolean') met.countInOn.value = p.metCountIn
-    // Host prop wins when it asks for a lens; otherwise restore the last choice.
-    if (props.lens !== 'none') lens.value = props.lens
+    // Host prop (including `none` = Cifra) wins on this mount. Omit the prop
+    // to restore the last Cifra | Letra choice on this device.
+    if (props.lens !== undefined) lens.value = props.lens
     else if (p.lens === 'nashville' || p.lens === 'letra') lens.value = p.lens
     if (props.hideComments) hideComments.value = true
     else if (p.hideComments === true) hideComments.value = true
