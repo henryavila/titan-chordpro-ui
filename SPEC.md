@@ -212,7 +212,7 @@ The chart’s only **exact** duration on a line is the `x///` convention: `x` is
 - Auto-scroll still requires `{duration:}` (hard gate). BPM + unmarked chords do not open it.
 - Compound meters use `beatsPerBar` + `marksPerBeat` (6/8 → 2 pulses, 3 marks per pulse).
 - `lintSource` warns on a voiceless chord line with `lineBeats === 0`.
-- Agents must not delete `x///` from source to clean lyrics. Só letra is a reading lens (`layout.ts`: `stripChordClock` + `stripBeatMarks`); marks glued after a removed chord (`razão.[E]//`, `Amém[G]x`, `/_`) must not leak into the lyric projection. Host may open that lens with prop `lens="letra"` (persists across setlist song changes).
+- Agents must not delete `x///` from source to clean lyrics. Só letra is a reading lens (`layout.ts`: `stripChordClock` + `stripBeatMarks`); marks glued after a removed chord (`razão.[E]//`, `Amém[G]x`, `/_`) must not leak into the lyric projection. Host may open already on that lens with prop `lens="letra"`, or on Cifra with `lens="none"` (persists across setlist song changes). Omit the prop to restore the last device choice.
 
 ---
 

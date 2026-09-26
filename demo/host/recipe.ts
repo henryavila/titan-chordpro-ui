@@ -90,6 +90,7 @@ export const DEMOS: readonly DemoEntry[] = [
   edit-mode="local"
 />`,
     extra: [
+      { href: '/standalone.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
       { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
@@ -105,6 +106,7 @@ export const DEMOS: readonly DemoEntry[] = [
     blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Cada item já traz o ChordPro.',
     call: `<ChordproViewer :songs="songs" edit-mode="local" />`,
     extra: [
+      { href: '/standalone-lista.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
     ],
   },
@@ -178,6 +180,9 @@ export const DEMOS: readonly DemoEntry[] = [
   :song-id="id"
   edit-mode="none"
 />`,
+    extra: [
+      { href: '/standalone.html?editMode=none&lens=letra', label: 'Letra (cantor)' },
+    ],
   },
   {
     id: 'criar',
