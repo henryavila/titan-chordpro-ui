@@ -78,6 +78,12 @@ describe('media demo host', () => {
     expect(MEDIA_DEMO_SONG_ID).toBe('100-nasce-em-mim')
   })
 
+  it('boots as a module so the top-level await typechecks', () => {
+    const boot = readFileSync(join(root, 'demo/media.ts'), 'utf8')
+    expect(boot).toContain("from './media-host'")
+    expect(boot).toContain('MEDIA_DEMO_PAGE_TITLE')
+  })
+
   it('ships a real 1024×1024 JPEG for the lock screen', () => {
     const buf = readFileSync(join(root, 'demo/ref-audio-art.jpg'))
     expect(jpegSize(buf)).toEqual({ width: 1024, height: 1024 })
