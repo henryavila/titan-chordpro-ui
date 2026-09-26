@@ -36,6 +36,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
   - **Cantado** e **Playback**, qualquer combinação (só um, os dois, ou nenhum)
   - Capa da cifra (quadrado **1024 × 1024 px** + `width`/`height`, para a Central de Mídia). Sem arte na cifra, `defaultAudioArt` da marca; sem as duas, arte genérica 512×512
   - O host grava faixas e capa no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6. Demo completa: `/media.html`
+  - Num ensaio, anterior e próxima na tela de bloqueio / Central de Mídia / fone trocam a cifra da lista (no iPhone no lugar dos ±10 s; ±10 s continua no player da cifra). Demo: `/standalone-lista.html?audio=1`
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. O selo Próxima / Anterior sobe e fica acima do dedo. Sem flick, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)

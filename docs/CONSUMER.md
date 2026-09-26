@@ -21,7 +21,10 @@ a chamada resumida.
 Query nas mesmas páginas: `criar=1`, `editMode` (local / persisted / none),
 `ensaio=demanda` (fontes sob demanda), `song`, `tema`, `accent` (`verde` /
 `teal` / `#hex`), `lens` (`none` / `letra` / `nashville`), `comentarios=0`
-(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (cantado+playback na demo; `audio=cantado` / `audio=playback` só um; `capa=0` = arte genérica). Host completo da Central de Mídia: `/media.html`.
+(oculta `{c:}` de ensaio), `quebrar=1`, `audio=1` (cantado+playback na demo;
+`audio=cantado` / `audio=playback` só um; `capa=0` = arte genérica). Lista
+com áudio e anterior/próxima na Central de Mídia:
+`/standalone-lista.html?audio=1`. Host de uma cifra: `/media.html`.
 Alias legado: `modes` (`content`→`persisted`).
 
 Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página nova.
@@ -378,17 +381,24 @@ da cifra vence. Sem as duas, o Titan usa a arte genérica 512×512.
 
 Enquanto o áudio toca, o Titan publica na Central de Mídia o `{title:}` (sem
 o prefixo `001 - ` do hinário), o `{artist:}` ou `{subtitle:}`, Cantado ou
-Playback, e a capa. Play, pause e ±10 s nos botões do sistema controlam este
-player. O título da **página** (`document.title`) continua sendo o do seu
-app — a Central de Mídia usa o da música. No iOS, o toque no cartão (fora
-dos botões) pode abrir outro PWA instalado — limitação do sistema; o Titan
-não escolhe esse destino.
+Playback, e a capa. Play e pause nos botões do sistema controlam este
+player. Sem lista, também ±10 s. Num ensaio (`songs` com duas ou mais
+entradas), anterior e próxima no aparelho e no fone trocam a cifra da lista
+— o mesmo caminho do dock. Pular recomeça o áudio do zero, mesmo se as duas
+cifras apontam para o mesmo arquivo. O iPhone só mostra um dos dois pares:
+no set valem anterior/próxima; os ±10 s ficam no player da cifra. No Chrome
+do Android a notificação e a tela de bloqueio mostram o mesmo par. Sem
+faixa na cifra da vez, a sessão some. O título da **página**
+(`document.title`) continua sendo o do seu app — a Central de Mídia usa o
+da música. No iOS, o toque no cartão (fora dos botões) pode abrir outro PWA
+instalado — limitação do sistema; o Titan não escolhe esse destino.
 
-Host de referência neste repo: **`/media.html`**. Leitura (`edit-mode="none"`),
-cantado + playback, capa 1024 px e `defaultAudioArt`. A faixa no topo mostra
-o nome da página do consumer e, ao lado, o que a Central de Mídia recebeu.
-Sem arte na cifra: `/media.html?capa=0` (vale a capa padrão do host). No
-celular, toque play e bloqueie a tela.
+Host de uma cifra: **`/media.html`**. Leitura (`edit-mode="none"`), cantado +
+playback, capa 1024 px e `defaultAudioArt`. A faixa no topo mostra o nome da
+página do consumer e, ao lado, o que a Central de Mídia recebeu. Sem arte
+na cifra: `/media.html?capa=0`. Ensaio com lista: **`/standalone-lista.html?audio=1`**
+(cada cifra leva uma faixa diferente, para ouvir a troca). No celular, toque
+play e bloqueie a tela.
 
 Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
 `{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` /
@@ -749,7 +759,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Link de cantor: query `lens=letra` → prop `lens="letra"` ([§8](#8-tema-fonte-acento-cifra-ou-letra))
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
-- [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek; capa da cifra **1024 × 1024**; `defaultAudioArt` para a marca. Referência: `/media.html`
+- [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek; capa da cifra **1024 × 1024**; `defaultAudioArt` para a marca. Uma cifra: `/media.html`. Lista + Central de Mídia: `/standalone-lista.html?audio=1`
 - [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
 
 Props, emits e o resto da API: [README](../README.md).

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Anterior e próxima na Central de Mídia:** num ensaio com duas ou mais músicas, os botões de pular da tela de bloqueio, da Central de Mídia e do fone passam para a cifra seguinte (ou a de trás) da lista. No iPhone esses botões só aparecem no lugar dos ±10 s — os ±10 s continuam no player da cifra. No Chrome do Android, a notificação mostra o mesmo par. Sem áudio na cifra da vez, a sessão some. Demo: `/standalone-lista.html?audio=1`.
+
+### Fixed
+- **Troca de música no ensaio:** pular para a próxima recomeça o áudio do zero. Cada cifra da lista de demo com `?audio=1` leva uma faixa diferente, para ouvir a troca.
+
 ## [0.9.0] - 2026-09-25
 
 ### Added
