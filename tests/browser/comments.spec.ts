@@ -42,7 +42,7 @@ test.describe('rehearsal comments on the reading surface', () => {
     expect(report.length).toBeGreaterThan(0)
     expect(report.some((c) => c.copy.length > 40)).toBe(true)
     for (const c of report) {
-      expect(c.fontSize, c.copy).toBeGreaterThanOrEqual(11)
+      expect(c.fontSize, c.copy).toBeGreaterThanOrEqual(13)
       expect(c.transform, c.copy).not.toBe('uppercase')
       expect(c.position, c.copy).toMatch(/^(static|relative)$/)
       expect(c.clipped, c.copy).toBe(false)
@@ -74,7 +74,7 @@ test.describe('rehearsal comments on the reading surface', () => {
     expect(pair.commentRadius === '0px' || pair.commentRadius === '0').toBe(true)
   })
 
-  test('a comment is smaller and paler than the lyric it sits above', async ({ page }) => {
+  test('a comment is near the lyric size, upright, and still the washed ink', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
     await page.locator('.cpv-comment-text').first().waitFor()
@@ -82,20 +82,18 @@ test.describe('rehearsal comments on the reading surface', () => {
     const pair = await page.evaluate(() => {
       const comment = getComputedStyle(document.querySelector('.cpv-comment-text') as HTMLElement)
       const lyric = getComputedStyle(document.querySelector('.cpv-stanza .cpv-lyric') as HTMLElement)
-      const rgb = (c: string): [number, number, number] => {
-        const n = (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number)
-        return [n[0] ?? 0, n[1] ?? 0, n[2] ?? 0]
-      }
-      const lum = ([r, g, b]: [number, number, number]) =>
-        (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
       return {
         commentPx: parseFloat(comment.fontSize),
         lyricPx: parseFloat(lyric.fontSize),
-        commentLum: lum(rgb(comment.color)),
-        lyricLum: lum(rgb(lyric.color)),
+        fontStyle: comment.fontStyle,
+        commentColor: comment.color,
+        lyricColor: lyric.color,
       }
     })
-    expect(pair.commentPx).toBeLessThan(pair.lyricPx - 2)
+    expect(pair.commentPx).toBeGreaterThanOrEqual(pair.lyricPx * 0.85)
+    expect(pair.commentPx).toBeLessThan(pair.lyricPx)
+    expect(pair.fontStyle).not.toMatch(/italic/)
+    expect(pair.commentColor).not.toBe(pair.lyricColor)
   })
 
   test('a comment sits against the block it labels, not in the section gap', async ({ page }) => {
@@ -116,7 +114,7 @@ test.describe('rehearsal comments on the reading surface', () => {
       return out
     })
     expect(gaps.length).toBeGreaterThan(0)
-    for (const g of gaps) expect(g, `gap ${g}`).toBeLessThanOrEqual(8)
+    for (const g of gaps) expect(g, `gap ${g}`).toBeLessThanOrEqual(2)
   })
 
   test('execução notes wrap and read as body text, not tiny mono', async ({ page }) => {
