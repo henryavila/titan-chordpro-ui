@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Rolar no tablet e no computador:** o botão Rolar na barra de baixo fica na cor do acorde, como no celular. Enquanto a cifra sobe, o botão vira Parar na cor da pílula.
+
 ## [0.10.0] - 2026-09-26
 
 ### Added

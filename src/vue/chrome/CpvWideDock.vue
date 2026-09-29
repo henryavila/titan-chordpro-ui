@@ -153,7 +153,7 @@ const emit = defineEmits<{
         data-scroll
         :title="scrollTitle"
         :disabled="scrollOff"
-        :style="{ background: rollLive ? 'var(--pill)' : 'transparent', color: rollLive ? 'var(--pill-ink)' : 'var(--text)', border: `1px solid ${rollLive ? 'var(--pill)' : 'var(--line)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
+        :style="{ background: rollLive ? 'var(--pill)' : 'var(--chord)', color: rollLive ? 'var(--pill-ink)' : 'var(--chord-ink)', border: `1px solid ${rollLive ? 'var(--pill)' : 'var(--chord)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
         class="cpv-bar-btn"
         style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:9px;"
         @click="emit('toggleScroll')"
