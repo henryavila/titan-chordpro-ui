@@ -13,16 +13,16 @@ function rule(selector: string): string {
 }
 
 describe('rehearsal comments are readable stage directions', () => {
-  it('comment type is body size, not an 11px muted uppercase label', () => {
+  it('comment type is near lyric size, upright, washed — not tiny italic or uppercase', () => {
     const text = rule('.cpv-comment-text')
     expect(text, 'still the 11px canvas label').not.toMatch(/font-size:\s*11px/)
     expect(text).not.toMatch(/text-transform:\s*uppercase/)
     expect(text).not.toMatch(/letter-spacing:\s*0\.14em/)
-    expect(text).toMatch(/color:\s*color-mix\(in srgb,\s*var\(--muted\).*var\(--canvas\)/)
+    expect(text).toMatch(/color:\s*color-mix\(in srgb,\s*var\(--muted\) 62%,\s*var\(--canvas\)/)
     expect(text).toMatch(/font-weight:\s*600/)
-    expect(text).toMatch(/font-style:\s*italic/)
+    expect(text).not.toMatch(/font-style:\s*italic/)
     expect(text).toMatch(/overflow-wrap:\s*anywhere/)
-    expect(text).toMatch(/font-size:\s*max\(\s*11px,\s*calc\(\s*var\(--cpv-lyric-px/)
+    expect(text).toMatch(/font-size:\s*calc\(\s*var\(--cpv-lyric-px[^)]*\)\s*\*\s*0\.88/)
     expect(css).toMatch(/\.cpv-comment-text::before\s*\{[^}]*content:\s*'\('/)
     expect(css).toMatch(/\.cpv-comment-text::after\s*\{[^}]*content:\s*'\)'/)
   })
@@ -42,21 +42,25 @@ describe('rehearsal comments are readable stage directions', () => {
     expect(note).toMatch(/border:\s*0/)
     expect(note).not.toMatch(/border-radius:/)
     expect(rule('.cpv-comment-dot')).toMatch(/display:\s*none/)
-    expect(box).toMatch(/margin:\s*0 16px 4px/)
+    expect(box).toMatch(/margin:\s*0 16px 0/)
+    expect(css).toMatch(
+      /\.cpv-blockrow:has\(\.cpv-comment\)\s*\+\s*\.cpv-blockrow \.cpv-block[^}]*padding-top:\s*1px/,
+    )
   })
 
   it('the hairline does not steal the row from a long comment', () => {
     expect(rule('.cpv-comment-line')).toMatch(/display:\s*none/)
   })
 
-  it('execução items are readable prose, not tiny muted mono', () => {
+  it('execução items are readable prose, not tiny italic mono', () => {
     const item = rule('.cpv-note-item')
     expect(item).not.toMatch(/font-size:\s*11\.5px/)
-    expect(item).toMatch(/color:\s*color-mix\(in srgb,\s*var\(--muted\).*var\(--canvas\)/)
+    expect(item).toMatch(/color:\s*color-mix\(in srgb,\s*var\(--muted\) 62%,\s*var\(--canvas\)/)
     expect(item).toMatch(/font-weight:\s*600/)
-    expect(item).toMatch(/font-style:\s*italic/)
+    expect(item).not.toMatch(/font-style:\s*italic/)
     expect(item).not.toMatch(/font-family:\s*'Space Mono'/)
     expect(item).toMatch(/overflow-wrap:\s*anywhere/)
+    expect(item).toMatch(/font-size:\s*calc\(\s*var\(--cpv-lyric-px[^)]*\)\s*\*\s*0\.88/)
   })
 })
 

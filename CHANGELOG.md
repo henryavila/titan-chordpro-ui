@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Comentário de ensaio:** o texto de `{c:}` (e as notas de execução) fica maior e reto, para ler de pé, colado no bloco de baixo — é o rótulo daquele trecho. Continua cinza lavado, menor que a letra, sem caixa alta forçada — a música segue na frente.
 - **Rolar no tablet e no computador:** o botão Rolar na barra de baixo fica na cor do acorde, como no celular. Enquanto a cifra sobe, o botão vira Parar na cor da pílula.
 
 ## [0.10.0] - 2026-09-26
