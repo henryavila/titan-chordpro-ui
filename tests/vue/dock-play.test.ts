@@ -71,3 +71,69 @@ describe('dock Rolar label', () => {
     expect(getComputedStyle(btn).pointerEvents).not.toBe('none')
   })
 })
+
+function idleRollPaint(style: string) {
+  return {
+    chordFill: /background:\s*var\(--chord\)/.test(style),
+    chordInk: /color:\s*var\(--chord-ink\)/.test(style),
+    ghost: /background:\s*transparent/.test(style),
+  }
+}
+
+describe('dock Rolar fill', () => {
+  it.each([
+    [390, 'phone'],
+    [768, 'tablet'],
+    [1280, 'desktop'],
+  ] as const)('idle Rolar is the chord colour at %ipx (%s)', async (width) => {
+    const w = await viewerAt(width)
+    const paint = idleRollPaint(w.get('[data-scroll]').attributes('style') ?? '')
+    expect(paint.ghost, 'Rolar is still a ghost on this width').toBe(false)
+    expect(paint.chordFill, 'idle fill is not --chord').toBe(true)
+    expect(paint.chordInk, 'idle ink is not --chord-ink').toBe(true)
+  })
+
+  it('Parar on the wide bar uses the pill, so rolling is not the same green', async () => {
+    const { default: CpvWideDock } = await import('../../src/vue/chrome/CpvWideDock.vue')
+    const w = mount(CpvWideDock, {
+      props: {
+        hidden: false,
+        showMine: false,
+        mineLabel: '',
+        showOriginal: false,
+        hintFit: false,
+        scrolling: true,
+        mul: 1,
+        etaLabel: '0:00',
+        progress: 0,
+        setlistOn: false,
+        noPrev: true,
+        noNext: true,
+        posLabel: '',
+        scrollTitle: 'Parar',
+        scrollOff: false,
+        rollLive: true,
+        fitOn: false,
+        letra: false,
+        hasKey: true,
+        nashvilleOn: false,
+        hideComments: false,
+        metRunning: false,
+        metBpm: 80,
+        hasStrum: false,
+        strumOn: false,
+        ensaioBatida: false,
+        themeTitle: '',
+        themeIcon: 'square',
+        themeLabel: '',
+        canEdit: false,
+        dirty: false,
+      },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    const style = w.get('[data-scroll]').attributes('style') ?? ''
+    expect(style).toMatch(/background:\s*var\(--pill\)/)
+    expect(style).not.toMatch(/background:\s*var\(--chord\)/)
+  })
+})

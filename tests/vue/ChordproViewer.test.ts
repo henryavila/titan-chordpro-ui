@@ -71,7 +71,7 @@ describe('ChordproViewer', () => {
     })
     await flushPromises()
     const btn = w.get('[data-scroll]')
-    expect(btn.attributes('style') || '').toMatch(/--text|--pill-ink/)
+    expect(btn.attributes('style') || '').toMatch(/--text|--pill-ink|--chord-ink/)
     w.unmount()
   })
 
