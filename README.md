@@ -158,7 +158,8 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
 | `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `@henryavila/titan-chordpro-ui/slides` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
-| `images` | `[]` | Partituras que o host serve — o que “Inserir · Imagem” oferece |
+| `images` | `[]` | Partituras que o app já tem, oferecidas além do envio |
+| `uploadImage` | — | `(file) => Promise<{ ref }>` — o app grava a imagem e devolve o nome que entra em `{image:}`. A cifra não leva o arquivo. reject ou `ref` vazio = nada é inserido. Sem isto e sem `images`, o item Imagem não aparece |
 | `accent` | `'verde'` | `verde` \| `teal` \| `#hex` \| `rgb()`: a cor dos acordes e tudo que deriva dela |
 | `accentStrength` | `1` | 0.5–1.5 sobre os preenchimentos derivados; a matiz não se move |
 | `storage` | `localStorage` | Onde o que o viewer lembra é gravado — ver abaixo |

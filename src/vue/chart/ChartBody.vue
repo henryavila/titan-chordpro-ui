@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 import type { ChartBlock } from '@henryavila/titan-chordpro-ui'
+import type { CpvIconName } from '../icon/paths'
+import InsertSlot from '../edit/InsertSlot.vue'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import ScoreFigure from './ScoreFigure.vue'
 import { readingWords, type ReadingWord } from './readingWords'
@@ -33,6 +35,8 @@ const props = withDefaults(
     chordEditPx?: string
     /** View tap opens the shape modal. Off in edit and in só letra. */
     diagrams?: boolean
+    /** What a + between blocks can insert. Empty outside edit. */
+    insertItems?: Array<{ icon: CpvIconName; label: string; go: () => void }>
   }>(),
   {
     resolveImage: (src: string) => src,
@@ -45,8 +49,24 @@ const props = withDefaults(
     editLineH: '73px',
     chordEditPx: '13px',
     diagrams: true,
+    insertItems: () => [],
   },
 )
+
+/** A rehearsal label is glued to the block under it — no + in that seam. */
+function slotBefore(i: number): boolean {
+  if (i === 0) return true
+  const prev = props.blocks[i - 1]
+  return prev?.kind !== 'comment' && prev?.kind !== 'note'
+}
+
+function onInsertChord(e: Event) {
+  const host = (e.currentTarget as HTMLElement | null) ?? (e.target as HTMLElement | null)
+  const input = host?.closest('.cpv-row-edit')?.querySelector('input')
+  const caret = input?.selectionStart
+  const fallback = props.edit?.rowCaret.value ?? input?.value.length ?? 0
+  props.edit?.insertChordAtCaret(caret ?? fallback)
+}
 
 const emit = defineEmits<{
   revertLine: [li: number]
@@ -214,10 +234,10 @@ watch(
   () => [props.lyricPx, props.blocks],
   () => placePills(),
 )
-// The row input replaces the text in place: it has to take the caret with it,
-// but never on a phone, where that would throw the keyboard over the chart.
-// The caret goes to the END and nothing is selected — a line is opened to be
-// fixed, and selecting it all puts the whole lyric one keystroke from gone.
+// The row input replaces the text in place and takes the caret with it.
+// The caret sits on the syllable that was tapped — nothing is selected, so
+// one keystroke cannot wipe the line. A tap that missed every letter goes
+// to the end.
 watch(
   () => props.edit?.editRow.value,
   async () => {
@@ -227,8 +247,11 @@ watch(
     const el = bodyEl.value?.querySelector<HTMLInputElement>('.cpv-row-input')
     if (!el) return
     el.focus()
+    const lyric = !el.classList.contains('cpv-row-input--comment') && !el.classList.contains('cpv-row-input--note')
+    const caret = lyric ? props.edit.rowCaret.value : null
+    const at = caret == null ? el.value.length : Math.max(0, Math.min(caret, el.value.length))
     try {
-      el.setSelectionRange(el.value.length, el.value.length)
+      el.setSelectionRange(at, at)
     } catch {
       /* an input type that has no caret range */
     }
@@ -239,6 +262,12 @@ watch(
 <template>
   <div ref="bodyEl" class="cpv-chart" :style="{ '--cpv-lyric-px': lyricPx }">
     <template v-for="(block, i) in blocks" :key="i">
+      <InsertSlot
+        v-if="edit && slotBefore(i)"
+        :at="block.li0"
+        :edit="edit"
+        :items="insertItems"
+      />
       <div :data-block="i" class="cpv-blockrow">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
         <span v-if="edit && edit.dropAt.value === i" class="cpv-drop-line" />
@@ -485,16 +514,31 @@ watch(
                  the syllable it belongs on. -->
             <template v-else>
               <div v-for="(row, ri) in block.rows" :key="ri">
-                <input
+                <div
                   v-if="edit.editRow.value === row.li && edit.editKind.value === 'lyric'"
-                  class="cpv-row-input"
-                  :value="edit.rowText.value"
-                  aria-label="Letra desta linha"
-                  :style="{ margin: `${pillLane} 0 4px`, fontSize: lyricPx }"
-                  @input="edit.rowText.value = ($event.target as HTMLInputElement).value"
-                  @keydown="edit.onRowKey"
-                  @blur="edit.commitRow"
+                  class="cpv-row-edit"
+                  :style="{ margin: `${pillLane} 0 4px` }"
                 >
+                  <input
+                    class="cpv-row-input"
+                    :value="edit.rowText.value"
+                    aria-label="Letra desta linha"
+                    :style="{ fontSize: lyricPx }"
+                    @input="edit.rowText.value = ($event.target as HTMLInputElement).value"
+                    @keydown="edit.onRowKey"
+                    @blur="edit.commitRow"
+                  >
+                  <button
+                    type="button"
+                    class="cpv-insert-chord"
+                    data-insert-chord
+                    title="Inserir cifra onde está o cursor"
+                    aria-label="Inserir cifra onde está o cursor"
+                    @pointerdown.prevent="onInsertChord"
+                    @keydown.enter.prevent="onInsertChord"
+                    @keydown.space.prevent="onInsertChord"
+                  >Cifra</button>
+                </div>
                 <div
                   v-else-if="rowOf(row.li).played"
                   :data-row="row.li"
@@ -587,7 +631,14 @@ watch(
         </div>
       </div>
     </template>
-    <!-- Room under the last block for the selection bar and the dock. -->
-    <div v-if="edit" style="height:110px;" />
+    <InsertSlot
+      v-if="edit"
+      :at="blocks.length ? (blocks[blocks.length - 1]?.li1 ?? 0) + 1 : 0"
+      :edit="edit"
+      :items="insertItems"
+      up
+    />
+    <!-- Room under the last block so a new one can sit above the selection bar and the dock. -->
+    <div v-if="edit" style="height:240px;" />
   </div>
 </template>

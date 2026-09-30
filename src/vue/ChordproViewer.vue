@@ -169,6 +169,7 @@ const props = withDefaults(
     readPdf: undefined,
     version: 'v1',
     images: () => [],
+    uploadImage: undefined,
     forceParseError: false,
     pdfShouldFail: false,
     slidesShouldFail: false,
@@ -893,9 +894,9 @@ const insertItems = computed(() => {
   const out: Array<{ icon: CpvIconName; label: string; go: () => void }> = [
     { icon: 'music2', label: 'Partitura ou solo', go: () => newScore() },
   ]
-  // Without a catalogue from the host there is nothing to pick from, and an
-  // entry that opens an empty dialog is worse than no entry.
-  if (props.images.length)
+  // An upload goes to the host. A catalogue is the scores it already has.
+  // Neither means the entry would open an empty dialog.
+  if (props.uploadImage || props.images.length)
     out.push({ icon: 'image', label: 'Imagem de partitura', go: () => bedit.openPicker('insert') })
   out.push(
     { icon: 'msgQuote', label: 'Coment\u00e1rio de ensaio', go: () => bedit.insertBlock('comment') },
@@ -2816,6 +2817,7 @@ defineExpose({
           :pill-h="editScale.pillH"
           :edit-line-h="editScale.editLineH"
           :chord-edit-px="editScale.chordEditPx"
+          :insert-items="isEdit ? insertItems : []"
           @revert-line="ov.revertLine"
           @edit-score="openScore"
           :diagrams="props.capabilities?.diagrams !== false && activeLens !== 'letra' && !isEdit"
@@ -3115,9 +3117,6 @@ defineExpose({
       :clip-label="bedit.clip.value?.label ?? null"
       :edit="bedit"
       :w-mode="wMode"
-      :insert-where="bedit.insertWhere.value"
-      :insert-open="bedit.insertMenu.value"
-      :insert-items="insertItems"
       :show-source="isContentEdit && capabilities.sourcePane !== false"
       :lint-ok="lint.ok"
       :theme-title="themeTitle"
@@ -3126,7 +3125,6 @@ defineExpose({
       @seen-hint="markEditSeen()"
       @drop-clip="bedit.clip.value = null"
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
-      @insert="bedit.toggleInsertMenu()"
       @source="srcOpen = true"
       @smaller-type="bias = Math.max(-3, bias - 1)"
       @bigger-type="bias = Math.min(5, bias + 1)"
@@ -3158,6 +3156,7 @@ defineExpose({
       v-if="isEdit && bedit.picker.value"
       :items="images"
       :resolve-image="resolveImage"
+      :upload-image="uploadImage"
       :replacing="bedit.picker.value === 'replace'"
       @pick="bedit.pickImage"
       @close="bedit.picker.value = null"

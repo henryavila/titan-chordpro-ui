@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Imagem na cifra:** em Inserir, dá para enviar uma foto ou um arquivo (JPG, PNG, WebP ou GIF). O app guarda o arquivo; a cifra fica só com o nome. Sem um app para guardar, o item não aparece.
+- **Inserir no lugar:** no modo de edição, o + fica entre os blocos, no ponto em que o trecho novo entra. O botão Inserir solto da barra saiu.
+- **Cifra no meio da linha:** ao editar a letra, o botão Cifra coloca o acorde onde o cursor está.
+- **Arrastar o acorde no toque:** a letra em volta não fica mais selecionada enquanto o acorde se move.
 - **Comentário de ensaio:** o texto de `{c:}` (e as notas de execução) fica maior e reto, para ler de pé, colado no bloco de baixo — é o rótulo daquele trecho. Continua cinza lavado, menor que a letra, sem caixa alta forçada — a música segue na frente.
 - **Rolar no tablet e no computador:** o botão Rolar na barra de baixo fica na cor do acorde, como no celular. Enquanto a cifra sobe, o botão vira Parar na cor da pílula.
 - **Metrônomo marca tempo e contratempo:** no painel, ligue **Faixa do título** e inicie. A barra do título acende na cabeça de cada tempo e apaga no meio — o pulso e o contratempo do compasso. No 1 a faixa inverte (preto ou branco do tema); nos 2, 3 e 4 pinta na cor do acorde. Na coluna à esquerda o 1 é preto ou branco; 2, 3 e 4 pulsam na cor do tema e ficam visíveis. Rolar sozinho não liga a faixa.
