@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Zoom dos solos:** ao abrir o zoom de um trecho Guitar Pro/MusicXML, as opções seguem o tema claro ou escuro do Titan e destacam o tamanho selecionado. Também é possível escolher pelas setas do teclado e fechar com Escape.
+
 ### Added
 - **Ocultar TAB e partitura durante o ensaio:** cada bloco tem um botão para recolher a referência e abrir de novo. A rolagem continua no mesmo ponto da música, mesmo quando o trecho ocultado ocupa várias telas; com a rolagem parada, a letra que você estava lendo permanece no lugar. Ocultar não altera a cifra nem o PDF.
 - **Solo com o visual do Titan:** o trecho mostra somente os compassos escolhidos, sem diagramas de acordes, capa, afinação ou rodapé do arquivo. TAB e partitura acompanham as cores claras/escuras da cifra. Ao importar, a prévia começa com até quatro compassos para você ajustar o trecho. O PDF usa o mesmo desenho enxuto em cores para papel.

@@ -5,6 +5,7 @@ import type { model } from '@coderline/alphatab'
 import type { ScoreReference } from '@henryavila/titan-chordpro-ui'
 import { drawNotation, type NotationSystem } from './notation-renderer'
 import { excerptTrack, hasTab, loadNotation } from './notation-loader'
+import ScoreZoom from './ScoreZoom.vue'
 
 const props = defineProps<{
   text: string
@@ -124,10 +125,7 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
         :disabled="option === 'tab' && !tabAvailable" :aria-pressed="view === option" @click="view = option">
         {{ option === 'tab' ? 'TAB' : 'Partitura' }}
       </button>
-      <label>Zoom <select v-model.number="zoom" aria-label="Zoom do solo">
-        <option :value="0">Automático ({{ zoomLabel }})</option>
-        <option :value="1.1">110%</option><option :value="1.3">130%</option><option :value="1.5">150%</option><option :value="2">200%</option>
-      </select></label>
+      <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
       <button v-if="canEdit" type="button" class="cpv-figure-btn" @click="emit('editScore')">Editar trecho</button>
     </figcaption>
     <p v-if="loading && !error" role="status">Abrindo solo…</p>

@@ -23,7 +23,7 @@ createApp({ render: () => new URLSearchParams(location.search).has('pdf') ? h(No
   ? h(ImportScoreDialog, { text, uploadScore, resolveScore: (src: string) => stored.get(src) ?? src, onSave: (value: string) => { document.body.dataset.saved = value } })
   : h('div', { style: {
     '--text': dark.value ? '#EAECF2' : '#13161d', '--muted': dark.value ? '#9ca5b8' : '#737b88',
-    '--chord': dark.value ? '#84DFA6' : '#17713c', '--bg': dark.value ? '#171b24' : '#ffffff',
+    '--chord': dark.value ? '#84DFA6' : '#17713c', '--canvas': dark.value ? '#171b24' : '#ffffff',
     background: dark.value ? '#171b24' : '#ffffff', color: dark.value ? '#EAECF2' : '#13161d', minHeight: '100vh',
   } }, [h('button', { id: 'toggle-theme', onClick: () => { dark.value = !dark.value } }, 'Tema'),
     h(ExternalScore, { text, blockGap: '16px', theme: dark.value ? 'dark' : 'light' })]) }).mount('#app')

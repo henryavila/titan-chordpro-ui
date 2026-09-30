@@ -3458,7 +3458,33 @@ div.cpv-head-id {
 .cpv-external-score .cpv-figure-cap { flex-wrap: wrap; gap: 8px; }
 .cpv-notation-paper { background: transparent; color: var(--text); overflow-x: auto; border-radius: 6px; }
 .cpv-external-score p { font-size: 13px; line-height: 1.5; }
-.cpv-external-score select { color: var(--text); background: var(--bg); }
+.cpv-score-zoom { position: relative; max-width: 100%; }
+.cpv-score-zoom-trigger, .cpv-score-zoom-option {
+  display: flex; align-items: center; gap: 8px; min-height: 40px;
+  padding: 8px 10px; color: var(--text); font: inherit; font-size: 12px;
+  cursor: pointer; text-align: left;
+}
+.cpv-score-zoom-trigger {
+  max-width: 100%; border: 1px solid var(--line, var(--muted)); border-radius: 10px;
+  background: var(--canvas, var(--bg));
+}
+.cpv-score-zoom-label { color: var(--muted); }
+.cpv-score-zoom-trigger[aria-expanded="true"] { border-color: var(--chord); }
+.cpv-score-zoom-trigger[aria-expanded="true"] > .cpv-ico { transform: rotate(180deg); }
+.cpv-score-zoom-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20;
+  width: max-content; min-width: 100%; max-width: calc(100vw - 48px);
+  padding: 5px; border: 1px solid var(--line, var(--muted)); border-radius: 12px;
+  background: var(--canvas, var(--bg)); color: var(--text); box-shadow: var(--shadow);
+}
+.cpv-score-zoom-option { width: 100%; justify-content: space-between; border: 0; border-radius: 7px; background: transparent; }
+.cpv-score-zoom-option[aria-selected="true"] { color: var(--chord); font-weight: 600; }
+.cpv-score-zoom-option:hover, .cpv-score-zoom-option:focus-visible {
+  background: color-mix(in srgb, var(--chord) 12%, var(--canvas, var(--bg)));
+}
+.cpv-score-zoom-trigger:focus-visible, .cpv-score-zoom-option:focus-visible {
+  outline: 2px solid var(--chord); outline-offset: 2px;
+}
 .cpv-import-score { width: min(900px, 100%); max-height: 90%; overflow: auto; padding: 20px; border-radius: 18px; }
 .cpv-import-score h2 { font-size: 20px; }
 .cpv-import-score fieldset { border: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
