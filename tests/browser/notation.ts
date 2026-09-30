@@ -20,7 +20,7 @@ const uploadScore = async (file: File) => {
   return { ref: 'stored/solo.gp' }
 }
 createApp({ render: () => new URLSearchParams(location.search).has('pdf') ? h(NotationPdfHarness) : new URLSearchParams(location.search).has('edit')
-  ? h(ImportScoreDialog, { text, uploadScore, resolveScore: (src: string) => stored.get(src) ?? src, onSave: (value: string) => { document.body.dataset.saved = value } })
+  ? h('div', { class: 'cpv-root', 'data-theme': dark.value ? 'dark' : 'light', style: { height: '100dvh' } }, [h(ImportScoreDialog, { text: params.has('new') ? undefined : text, theme: dark.value ? 'dark' : 'light', uploadScore, resolveScore: (src: string) => stored.get(src) ?? src, onSave: (value: string) => { document.body.dataset.saved = value } })])
   : h('div', { style: {
     '--text': dark.value ? '#EAECF2' : '#13161d', '--muted': dark.value ? '#9ca5b8' : '#737b88',
     '--chord': dark.value ? '#84DFA6' : '#17713c', '--canvas': dark.value ? '#171b24' : '#ffffff',

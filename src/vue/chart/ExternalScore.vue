@@ -5,22 +5,31 @@ import type { model } from '@coderline/alphatab'
 import type { ScoreReference } from '@henryavila/titan-chordpro-ui'
 import { drawNotation, type NotationSystem } from './notation-renderer'
 import { excerptTrack, hasTab, loadNotation } from './notation-loader'
+import ScoreChoice from './ScoreChoice.vue'
+import { useTabRhythm, TAB_RHYTHM_OPTIONS } from '../use/useTabRhythm'
 import ScoreZoom from './ScoreZoom.vue'
 
 const props = defineProps<{
   text: string
   blockGap: string
   canEdit?: boolean
+  hideTitle?: boolean
+  /** Editor preview always shows the authored default. */
+  preview?: boolean
   theme?: 'light' | 'dark'
   resolveScore?: (src: string) => string
 }>()
 const emit = defineEmits<{ editScore: [] }>()
 const host = ref<HTMLElement | null>(null)
+const preference = useTabRhythm()
+const rhythmOptions = [{ value: 'default', label: 'Padrão do trecho' }, ...TAB_RHYTHM_OPTIONS]
 const view = ref<'tab' | 'score'>('tab')
 const tabAvailable = ref(false)
 const error = ref('')
 const loading = ref(true)
-const label = ref('Solo')
+const label = computed(() => {
+  try { return readScoreReference(props.text)?.name ?? 'Solo' } catch { return 'Solo' }
+})
 const zoom = ref(0) // 0 = automatic
 const scale = ref(1.1)
 const resolvedUrl = computed(() => {
@@ -49,7 +58,7 @@ async function redraw() {
   scale.value = zoom.value || scoreAutoScale(host.value.clientWidth)
   try {
     const rendered = await drawNotation(score, reference, {
-      mode: view.value, width: host.value.clientWidth || 320, scale: scale.value,
+      mode: view.value, rhythm: props.preview ? reference.rhythm : preference.value.value ?? reference.rhythm, width: host.value.clientWidth || 320, scale: scale.value,
       palette: { ink: value('--text', '#13161d'), secondary: value('--text', '#13161d'),
         line: value('--muted', '#737b88'), accent: value('--chord', '#17713c') },
     })
@@ -88,7 +97,6 @@ async function load() {
     const track = excerptTrack(score, reference.track, reference.start, reference.end)
     tabAvailable.value = hasTab(track)
     if (!tabAvailable.value) view.value = 'score'
-    label.value = `${track.name || 'Solo'} · compassos ${reference.start}–${reference.end ?? score.masterBars.length}`
     scale.value = zoom.value || scoreAutoScale(host.value.clientWidth)
     await redraw()
 
@@ -99,7 +107,7 @@ async function load() {
   }
 }
 watch([() => props.text, resolvedUrl], load)
-watch([view, zoom, () => props.theme], redraw, { flush: 'post' })
+watch([view, zoom, preference.value, () => props.theme], redraw, { flush: 'post' })
 onMounted(() => {
   load()
   observer = new ResizeObserver(() => {
@@ -117,16 +125,21 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
 </script>
 
 <template>
-  <figure class="cpv-figure cpv-external-score" data-external-score :style="{ marginBottom: blockGap }">
+  <figure class="cpv-figure cpv-external-score" data-external-score :style="{ margin: `0 0 ${blockGap}` }">
     <figcaption class="cpv-figure-cap">
-      <span class="cpv-figure-kind">{{ label }}</span>
-      <span class="cpv-figure-meta">Tom do arquivo</span>
+      <div v-if="!hideTitle" class="cpv-score-heading">
+        <span class="cpv-figure-kind">{{ label }}</span>
+        <button v-if="canEdit" type="button" class="cpv-figure-btn" @click="emit('editScore')">Ajustar trecho</button>
+      </div>
+      <div class="cpv-score-controls">
       <button v-for="option in (['tab', 'score'] as const)" :key="option" type="button" class="cpv-figure-btn"
         :disabled="option === 'tab' && !tabAvailable" :aria-pressed="view === option" @click="view = option">
         {{ option === 'tab' ? 'TAB' : 'Partitura' }}
       </button>
+      <ScoreChoice v-if="view === 'tab' && tabAvailable && !preview" :model-value="preference.value.value ?? 'default'"
+        label="Ritmo da TAB" caption="Ritmo" compact :options="rhythmOptions" @update:model-value="preference.set" />
       <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
-      <button v-if="canEdit" type="button" class="cpv-figure-btn" @click="emit('editScore')">Ajustar trecho</button>
+      </div>
     </figcaption>
     <p v-if="loading && !error" role="status">Abrindo solo…</p>
     <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">Tentar novamente</button></p>

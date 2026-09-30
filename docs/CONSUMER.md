@@ -798,8 +798,25 @@ Props, emits e o resto da API: [README](../README.md).
 ## Solos em Guitar Pro / MusicXML
 
 Em **Editar → + entre blocos → Guitar Pro / MusicXML**, escolha um arquivo no
-aparelho, selecione a faixa e o primeiro/último compasso, confira o desenho e salve.
-Na leitura, o próprio trecho oferece **TAB / Partitura** e **Zoom automático**.
+aparelho, informe o **Nome do trecho** (começa como **Solo**), selecione a faixa
+e o intervalo de compassos, confira o desenho e salve.
+Arraste as duas alças para marcar início e fim, ou digite os números exatos.
+O intervalo fica entre 1 e o total de compassos do arquivo; **Selecionar tudo**
+inclui o arquivo inteiro. Os controles ficam ao lado da prévia no computador
+e acima dela no celular, com as ações de salvar e cancelar sempre acessíveis.
+Novos solos começam com **Ritmo na base** selecionado. Na criação ou em
+**Ajustar trecho**, escolha o **Ritmo padrão da TAB**:
+**Ritmo estendido** (hastes até as notas), **Ritmo na base** (hastes somente
+abaixo das cordas) ou **Sem ritmo** (sem hastes e barras de duração).
+Na leitura, o próprio trecho oferece **TAB / Partitura**, **Ritmo da TAB** e **Zoom Auto**. Os quatro controles ficam na mesma linha; no celular,
+os detalhes de ritmo e zoom aparecem somente ao abrir o menu.
+A escolha de ritmo na leitura vale para os solos neste navegador, persiste entre
+visitas e não altera o source, o estado de edição nem o padrão definido pelo autor.
+**Padrão do trecho** remove a preferência e volta a respeitar cada trecho.
+A chave `STORE_KEYS.tabRhythm` (`cpv:tab-rhythm`) usa o `storage` do host quando
+fornecido; o host pode separá-la por conta. Por padrão, é uma preferência do navegador,
+sem identificação de usuário. Se o armazenamento estiver bloqueado, vale na sessão.
+A prévia do editor sempre mostra o padrão que está sendo editado.
 O desenho SVG reorganiza os compassos conforme a largura e mantém escala mínima
 de 110%; um compasso muito denso pode rolar horizontalmente sem diminuir as notas.
 O zoom manual vai até 200%. A notação conserva o tom do arquivo original.
@@ -820,13 +837,30 @@ worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
 O source usa uma diretiva única para cada referência externa:
 
 ```chordpro
-{x_titan_score: src="solos/guitarra.gp" track=1 start=17 end=24}
+{x_titan_score: src="solos/guitarra.gp" track=1 start=17 end=24 rhythm=base name="Solo de entrada"}
 ```
 
 `{x_titan_score: ...}` não possui conteúdo interno nem tag de fechamento.
 `{x_titan_start_of_score}…{x_titan_end_of_score}` fica reservado à notação escrita dentro da própria cifra.
 
-Faixa e compassos começam em 1; `end` omitido vai até o fim. Os helpers
+O atributo opcional `name="Solo de entrada"` (`ScoreReference.name`) identifica
+o trecho na cifra e no PDF. Referências antigas, sem nome, mostram **Solo**.
+Na leitura, o cabeçalho mostra somente esse nome, sem faixa, intervalo ou aviso
+de tom original. A notação continua no tom do arquivo. A seta no canto do card
+oculta ou mostra o conteúdo, mantendo o título visível; não flutua sobre a cifra.
+O card aproveita uma área mais larga que a coluna da letra no desktop e respeita
+a largura disponível no celular e no componente incorporado.
+
+Faixa e compassos começam em 1; `end` omitido vai até o fim.
+O atributo opcional `rhythm=extended|base|none` salva o padrão de apresentação;
+omitido, mantém o ritmo estendido. `ScoreReference.rhythm` usa o tipo `TabRhythm`.
+O padrão visual segue o perfil Guitar Pro do Titan: uma haste por nota;
+na base, a mínima tem **50%** da altura da semínima. No modo estendido, a mínima
+mantém o tamanho e a semínima cresce até a nota. A semibreve não tem haste.
+A regra vale para tela e PDF; barras, pontos e quiálteras permanecem preservados.
+Fontes, diferenças entre convenções e critérios de aceite estão em
+[`NOTACAO-VISUAL.md`](NOTACAO-VISUAL.md).
+O arquivo Guitar Pro/MusicXML e suas durações não são modificados. Os helpers
 `readScoreReference`/`writeScoreReference` validam a referência. Não se converte
 para a notação simplificada do editor; bends, vozes e durações permanecem no
 arquivo. Alterar ou cancelar o trecho não modifica os bytes originais.
@@ -845,7 +879,7 @@ Ao tocar **Exportar → Documento PDF**, uma cifra com solos Guitar Pro/MusicXML
 pede **TAB**, **Partitura** ou **Nenhum**, e só baixa após **Gerar PDF**. O desenho
 é preparado para papel, em preto no branco, no tom original do arquivo, com os
 compassos selecionados e quebra de página entre sistemas completos. Não depende
-do zoom, tema ou da parte visível na tela. Se um arquivo não tiver TAB, a escolha
+do zoom, tema ou da parte visível na tela. Em TAB, respeita a preferência pessoal de ritmo ou, sem ela, o padrão de cada trecho. Se um arquivo não tiver TAB, a escolha
 continua aberta com uma mensagem para escolher Partitura ou Nenhum. Falhas de
 leitura/desenho interrompem o download; não se gera um PDF com o solo faltando.
 Nenhum omite os blocos TAB/partitura. TABs em texto e partituras da sintaxe antiga

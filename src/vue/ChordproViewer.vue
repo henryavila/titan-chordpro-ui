@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { provide } from 'vue'
+import { createTabRhythmPreference, tabRhythmKey } from './use/useTabRhythm'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   blockSpan,
@@ -234,6 +236,9 @@ const store: ChartStore = {
   set: (k, v) => (props.storage ?? deviceStore).set(k, v),
   remove: (k) => (props.storage ?? deviceStore).remove(k),
 }
+
+const tabRhythmPreference = createTabRhythmPreference(store)
+provide(tabRhythmKey, tabRhythmPreference)
 
 const root = ref<HTMLElement | null>(null)
 const scroller = ref<HTMLElement | null>(null)
@@ -664,6 +669,11 @@ watch(strumVisible, async (on) => {
 /** Gap between the identity bar and the first lyric. */
 const pageGap = computed(() => (fs.value ? 6 : compact.value ? 10 : 14))
 const strumSpacer = computed(() => (strumVisible.value ? Math.max(72, strumH.value + 10) : 0))
+const notationOutset = computed(() => {
+  const pageWidth = pageMax.value === '100%' ? width.value : Math.min(width.value, parseFloat(pageMax.value))
+  const contentWidth = pageWidth - 2 * parseFloat(padX.value)
+  return `${Math.max(0, (Math.min(width.value, 1280) - 32 - contentWidth) / 2)}px`
+})
 const pagePad = computed(() => {
   // Head is overlay-only. Top pad keeps the lyric under the card (and under
   // the batida dock when it is open). Zen drops a plain name into that band —
@@ -2275,7 +2285,7 @@ async function doExportPdf(notation: 'tab' | 'score' | 'none' = 'score') {
       notation,
       renderNotation: async (text, mode) => {
         const { renderPdfNotation } = await import('./chart/pdf-notation')
-        return renderPdfNotation(text, mode, props.resolveScore)
+        return renderPdfNotation(text, mode, props.resolveScore, tabRhythmPreference.value.value)
       },
       personal: !ov.exportOrig.value && ov.hasOverlay.value,
       accent: props.accent,
@@ -2935,7 +2945,6 @@ defineExpose({
     :class="[rootHitClass, { 'is-setlist': setlist.on.value, 'is-swipe-debug': swipeDebug }]"
     :style="{
       '--cpv-met-hit': metHitMs,
-      '--cpv-notation-fold-top': `${headHidden ? 8 : chromeTop + Math.max(40, headH || 56) + 8 + strumSpacer}px`,
       '--cpv-swipe-edge': `${SWIPE_EDGE_PX}px`,
       '--cpv-swipe-rail': `${swipeRailPx(width)}px`,
       '--cpv-swipe-rail-bottom': `${swipeRailBottom}px`,
@@ -2946,7 +2955,7 @@ defineExpose({
 
     <div class="cpv-stage">
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
-      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
+      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad, '--cpv-notation-outset': notationOutset }">
         <div :style="{ padding: pageBodyPad }">
         <CpvCapoLegend v-if="legend" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
         <ChartBody

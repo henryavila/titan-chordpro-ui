@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
-import { readScoreReference, writeScoreReference } from '@henryavila/titan-chordpro-ui'
+import { readScoreReference, writeScoreReference, isTabRhythm } from '@henryavila/titan-chordpro-ui'
 import { excerptTrack, loadNotation } from '../chart/notation-loader'
 import type { model } from '@coderline/alphatab'
+import type { TabRhythm } from '@henryavila/titan-chordpro-ui'
+import { TAB_RHYTHM_OPTIONS } from '../use/useTabRhythm'
+import ScoreChoice from '../chart/ScoreChoice.vue'
+import ScoreBarRange from './ScoreBarRange.vue'
+import CpvIcon from '../icon/CpvIcon.vue'
 import ExternalScore from '../chart/ExternalScore.vue'
 
 const props = defineProps<{
@@ -13,10 +18,13 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ save: [text: string]; close: [] }>()
 const dialog = ref<HTMLElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 const src = ref('')
+const name = ref('Solo')
 const track = ref(1)
 const start = ref(1)
 const end = ref(1)
+const rhythm = ref<TabRhythm>('base')
 const file = ref<File | null>(null)
 const previewUrl = ref('')
 const tracks = ref<Array<{ id: number; name: string }>>([])
@@ -24,18 +32,22 @@ const total = ref(0)
 const error = ref('')
 const busy = ref(false)
 const score = shallowRef<model.Score | null>(null)
+const trackOptions = computed(() => tracks.value.map(t => ({ value: t.id, label: t.name })))
+const fileName = computed(() => file.value?.name || src.value.split('/').at(-1) || 'Arquivo musical')
+function changeRange(first: number, last: number) { start.value = first; end.value = last }
 let generation = 0
 let controller: AbortController | null = null
 let previousFocus: HTMLElement | null = null
 const preview = computed(() => {
   if (!score.value || !previewUrl.value || start.value < 1 || end.value < start.value || end.value > total.value) return ''
-  try { return writeScoreReference({ src: previewUrl.value, track: track.value, start: start.value, end: end.value }) } catch { return '' }
+  try { return writeScoreReference({ src: previewUrl.value, track: track.value, start: start.value, end: end.value, rhythm: rhythm.value, name: name.value.trim() }) } catch { return '' }
 })
 function clear() {
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
   previewUrl.value = ''
   score.value = null
   tracks.value = []
+  total.value = 0
 }
 async function openFile(chosen?: File) {
   const ticket = ++generation
@@ -79,29 +91,29 @@ async function save() {
   try {
     excerptTrack(score.value, track.value, start.value, end.value)
     // Validate before uploading, so an invalid interval never stores a file.
-    writeScoreReference({ src: src.value || file.value?.name || '', track: track.value, start: start.value, end: end.value })
+    writeScoreReference({ src: src.value || file.value?.name || '', track: track.value, start: start.value, end: end.value, rhythm: rhythm.value, name: name.value.trim() })
     const reference = file.value ? (await props.uploadScore?.(file.value))?.ref : src.value.trim()
     if (!reference?.trim()) throw new Error('Não foi possível guardar o arquivo do solo.')
     if (ticket !== generation) return
-    emit('save', writeScoreReference({ src: reference.trim(), track: track.value, start: start.value, end: end.value }))
+    emit('save', writeScoreReference({ src: reference.trim(), track: track.value, start: start.value, end: end.value, rhythm: rhythm.value, name: name.value.trim() }))
   } catch (e) { if (ticket === generation) error.value = e instanceof Error ? e.message : 'Não foi possível guardar o solo.' }
   finally { if (ticket === generation) busy.value = false }
 }
 function keydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && !busy.value) emit('close')
   if (e.key !== 'Tab') return
-  const elements = Array.from(dialog.value?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]') ?? [])
+  const elements = Array.from(dialog.value?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex="0"]') ?? []).filter(el => el.tabIndex >= 0 && !el.hidden && el.getClientRects().length > 0)
   const first = elements[0]; const last = elements.at(-1)
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus() }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
 }
 onMounted(() => {
   previousFocus = document.activeElement as HTMLElement | null
-  dialog.value?.querySelector<HTMLInputElement>('input')?.focus()
+  dialog.value?.querySelector<HTMLButtonElement>('button')?.focus()
   if (props.text) {
     try {
       const value = readScoreReference(props.text)
-      if (value) { src.value = value.src; track.value = value.track; start.value = value.start; end.value = value.end ?? 1; openFile().then(() => { if (value.end === undefined) end.value = Math.min(4, total.value) }) }
+      if (value) { name.value = value.name ?? 'Solo'; rhythm.value = value.rhythm ?? 'extended'; src.value = value.src; track.value = value.track; start.value = value.start; end.value = value.end ?? 1; openFile().then(() => { if (value.end === undefined) end.value = total.value || 1 }) }
     } catch (e) { error.value = String(e) }
   }
 })
@@ -109,27 +121,51 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
 </script>
 
 <template>
-  <div class="cpv-modal" style="align-items:center;padding:16px" @keydown.stop="keydown">
+  <div class="cpv-modal cpv-import-score-modal" @keydown.stop="keydown">
     <div class="cpv-scrim" />
     <form ref="dialog" class="cpv-veil-2 cpv-modal-card cpv-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save">
-      <h2>Solo de Guitar Pro ou MusicXML</h2>
-      <p>Abra o arquivo, escolha a faixa e os compassos que entram na cifra.</p>
-      <fieldset :disabled="busy">
-        <label v-if="uploadScore">Escolha o arquivo no aparelho <input type="file" accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl" @change="selectFile"></label>
-        <template v-if="tracks.length">
-          <p>{{ total }} compassos no arquivo. Só o intervalo escolhido entra na cifra.</p>
-          <label>Faixa <select v-model.number="track" aria-label="Faixa"><option v-for="t in tracks" :key="t.id" :value="t.id">{{ t.name }}</option></select></label>
-          <label>Primeiro compasso <input v-model.number="start" aria-label="Primeiro compasso" type="number" min="1" :max="total" required></label>
-          <label>Último compasso <input v-model.number="end" aria-label="Último compasso" type="number" :min="start" :max="total" required></label>
-        </template>
-      </fieldset>
-      <p v-if="busy" role="status">Abrindo ou guardando arquivo…</p>
-      <p v-if="error" role="alert">{{ error }}</p>
-      <ExternalScore v-if="preview" :text="preview" block-gap="12px" :theme="theme" />
-      <div class="cpv-import-score-actions">
+      <header class="cpv-import-score-head">
+        <div><span class="cpv-modal-kicker">Guitar Pro · MusicXML</span><h2>{{ text ? 'Ajustar trecho' : 'Importar solo' }}</h2><p>Escolha o que entra na cifra e confira a prévia.</p></div>
+        <button type="button" class="cpv-import-score-close" aria-label="Fechar importação" :disabled="busy" @click="emit('close')"><CpvIcon name="x" :size="20" /></button>
+      </header>
+      <div class="cpv-import-score-body">
+        <fieldset class="cpv-import-score-controls" :disabled="busy">
+          <div class="cpv-import-score-file">
+            <span class="cpv-import-score-file-icon"><CpvIcon name="fileInput" :size="22" /></span>
+            <div><strong>{{ file || src ? fileName : 'Seu arquivo musical' }}</strong><p>{{ total ? `${total} compassos disponíveis` : 'GP, GPX, GP3–5, XML ou MXL' }}</p></div>
+            <input v-if="uploadScore" ref="fileInput" type="file" hidden accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl" @change="selectFile">
+            <button v-if="uploadScore" type="button" class="cpv-modal-btn" @click="fileInput?.click()">{{ file || src ? 'Trocar arquivo' : 'Escolher arquivo' }}</button>
+          </div>
+          <template v-if="tracks.length">
+            <label class="cpv-import-score-field"><span class="cpv-import-score-label">Nome do trecho</span>
+              <input v-model="name" class="cpv-import-score-name" aria-label="Nome do trecho" required placeholder="Solo">
+            </label>
+            <div class="cpv-import-score-field">
+              <span class="cpv-import-score-label">Instrumento / faixa</span>
+              <ScoreChoice :model-value="track" label="Faixa" caption="" :options="trackOptions" @update:model-value="track = Number($event)" />
+            </div>
+            <ScoreBarRange :start="start" :end="end" :total="total" @change="changeRange" />
+            <div class="cpv-import-score-field">
+              <span class="cpv-import-score-label">Ritmo padrão da TAB</span>
+              <ScoreChoice :model-value="rhythm" label="Ritmo padrão da TAB" caption="" :options="TAB_RHYTHM_OPTIONS"
+                @update:model-value="value => { if (isTabRhythm(value)) rhythm = value }" />
+              <p>Quem lê pode escolher outro visual, sem alterar este padrão.</p>
+            </div>
+          </template>
+          <p v-if="busy" class="cpv-import-score-status" role="status">Abrindo ou guardando arquivo…</p>
+          <p v-if="error" class="cpv-import-score-error" role="alert">{{ error }}</p>
+        </fieldset>
+        <section class="cpv-import-score-preview" aria-label="Prévia do trecho">
+          <div class="cpv-import-score-preview-head"><span class="cpv-modal-kicker">Prévia do trecho</span><span v-if="preview">{{ start === end ? `Compasso ${start}` : `Compassos ${start}–${end}` }}</span></div>
+          <ExternalScore v-if="preview" :text="preview" preview block-gap="0" :theme="theme" />
+          <div v-else class="cpv-import-score-empty"><CpvIcon name="fileInput" :size="32" /><p>{{ busy ? 'Preparando a prévia…' : 'Abra um arquivo para visualizar e selecionar seu trecho.' }}</p></div>
+        </section>
+      </div>
+      <footer class="cpv-import-score-actions">
+        <span v-if="preview">{{ end - start + 1 }} {{ end === start ? 'compasso selecionado' : 'compassos selecionados' }}</span>
         <button type="button" class="cpv-modal-btn" :disabled="busy" @click="emit('close')">Cancelar</button>
         <button type="submit" class="cpv-modal-btn cpv-modal-btn--primary" :disabled="busy || !preview">Salvar trecho na cifra</button>
-      </div>
+      </footer>
     </form>
   </div>
 </template>

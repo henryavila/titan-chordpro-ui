@@ -3,6 +3,8 @@
 Unmodified alphaTab interoperability samples, revision `212f2ece99303eb09abc925e6192900e672531d0`.
 Source: https://github.com/CoderLine/alphaTab/tree/212f2ece99303eb09abc925e6192900e672531d0/packages/alphatab/test-data
 
+- `rhythm.gp`: `visual-tests/guitar-tabs/rhythm.gp` (beams, dotted notes and triplets)
+- `tuplets.gp`: `guitarpro7/tuplets.gp` (triplets and quintuplets)
 - `piano.musicxml`: `musicxml-samples/MozartPianoSonata.xml`
 - `chords.gp`: `guitarpro7/chords.gp`
 - `bends.gp`: `guitarpro7/bends.gp`

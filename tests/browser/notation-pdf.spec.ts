@@ -48,3 +48,20 @@ test('a long MusicXML excerpt continues on multiple PDF pages', async ({ page },
   expect((data.match(/\/Type \/Page\b/g) ?? []).length).toBeGreaterThan(2)
   expect((data.match(/\/Subtype \/Image/g) ?? []).length).toBeGreaterThan(3)
 })
+
+for (const rhythm of ['base', 'none']) {
+  test(`PDF renders personal TAB rhythm ${rhythm}`, async ({ page }, info) => {
+    await page.goto('/notation.html?pdf=1&file=gp')
+    await page.evaluate(value => localStorage.setItem('cpv:tab-rhythm', value), rhythm)
+    await page.reload()
+    await page.getByRole('button', { name: 'Exportar', exact: true }).click({ force: true })
+    await page.locator('[data-export="pdf"]').click()
+    await page.getByRole('radio', { name: 'TAB', exact: true }).check()
+    const downloaded = page.waitForEvent('download')
+    await page.locator('[data-pdf-download]').click()
+    const download = await downloaded
+    const path = info.outputPath(`tab-${rhythm}.pdf`)
+    await download.saveAs(path)
+    expect((await readFile(path)).includes(Buffer.from('/Subtype /Image'))).toBe(true)
+  })
+}

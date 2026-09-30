@@ -7,7 +7,8 @@ import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import EditLyric from './EditLyric.vue'
 import ScoreFigure from './ScoreFigure.vue'
 import ExternalScore from './ExternalScore.vue'
-import { isInlineScore, isScoreReference } from '@henryavila/titan-chordpro-ui'
+import CpvIcon from '../icon/CpvIcon.vue'
+import { isInlineScore, isScoreReference, readScoreReference } from '@henryavila/titan-chordpro-ui'
 import { readingWords, type ReadingWord } from './readingWords'
 
 const props = withDefaults(
@@ -81,6 +82,12 @@ const emit = defineEmits<{
 const notationId = useId()
 function canFold(block: ChartBlock): boolean {
   return block.kind === 'tab' || block.kind === 'score' || block.kind === 'image'
+}
+function notationTitle(block: ChartBlock): string {
+  if (block.kind === 'score' && isScoreReference(block.text)) {
+    try { return readScoreReference(block.text)?.name ?? 'Solo' } catch { return 'Solo' }
+  }
+  return block.kind === 'tab' ? 'Tablatura' : 'Partitura'
 }
 function isFolded(block: ChartBlock): boolean {
   return !props.edit && !!props.collapsedNotation?.has(block.li0)
@@ -288,7 +295,7 @@ watch(
         :edit="edit"
         :items="insertItems"
       />
-      <div :data-block="i" class="cpv-blockrow" :data-notation-collapsed="canFold(block) ? isFolded(block) : undefined">
+      <div :data-block="i" class="cpv-blockrow" :class="{ 'cpv-notation-row': !edit && canFold(block) }" :data-notation-collapsed="canFold(block) ? isFolded(block) : undefined">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
         <span v-if="edit && edit.dropAt.value === i" class="cpv-drop-line" />
         <span
@@ -307,15 +314,19 @@ watch(
 
         <div
           class="cpv-blockbody"
+          :class="{ 'cpv-notation-card': !edit && canFold(block) }"
           :style="{
             outline: edit && edit.inSel(i) ? '2px solid var(--chord-edge)' : 'none',
             opacity: edit && edit.inDrag(i) ? '0.45' : '1',
           }"
         >
-          <div v-if="!edit && canFold(block)" class="cpv-notation-fold" :class="{ 'is-folded': isFolded(block) }">
+          <div v-if="!edit && canFold(block)" class="cpv-notation-fold">
+            <span class="cpv-notation-title">{{ notationTitle(block) }}</span>
             <button type="button" :data-toggle-notation="i" :aria-expanded="!isFolded(block)" :aria-controls="`${notationId}-${block.li0}`"
+              :aria-label="`${isFolded(block) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
+              :title="isFolded(block) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
               @click.stop="emit('toggleNotation', i)">
-              {{ isFolded(block) ? 'Mostrar TAB / partitura' : 'Ocultar TAB / partitura' }}
+              <CpvIcon name="chevronDown" :size="18" />
             </button>
           </div>
           <div v-if="edit?.canDelete.value && block.kind === 'score'" class="cpv-figure-cap">
@@ -435,7 +446,7 @@ watch(
           <ExternalScore
             v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score' && isScoreReference(block.text)"
-            :text="block.text" :block-gap="blockGap" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme"
+            :text="block.text" :hide-title="!edit" :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme"
             @edit-score="emit('editScore', i)"
           />
           <div v-else-if="block.kind === 'score' && !isInlineScore(block.text)"

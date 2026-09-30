@@ -234,6 +234,15 @@ The chart’s only **exact** duration on a line is the `x///` convention: `x` is
 
 ---
 
+### 4.8 Notation appearance
+
+The visual contract for imported TAB/score is [`docs/NOTACAO-VISUAL.md`](docs/NOTACAO-VISUAL.md).
+In the base rhythm mode, half notes have one stem at 50% of the quarter-note
+stem height. Extending rhythm preserves the half-note stem and extends the
+quarter-note stem toward the fret number. Do not use LilyPond's double stem.
+SVG and PDF canvas share this geometry; durations in the original file remain
+unchanged. The document separates official sources from Titan product choices.
+
 ## 5. Transpose rules
 
 - One step = **1 semitone**.

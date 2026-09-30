@@ -61,7 +61,12 @@ async function uploadImage(file: File): Promise<{ ref: string }> {
 async function uploadScore(file: File): Promise<{ ref: string }> {
   const ext = file.name.match(/\.(gp[345]?|gpx|xml|musicxml|mxl)$/i)?.[0]?.toLowerCase()
   if (!ext) throw new Error('Escolha um arquivo Guitar Pro ou MusicXML.')
-  const refName = `solos/${crypto.randomUUID()}${ext}`
+  // randomUUID can be absent on HTTP/LAN previews. The reference is an
+  // opaque filename; getRandomValues also works without a secure context.
+  const id = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('')
+  const refName = `solos/${id}${ext}`
   await persistScoreImage(refName, file)
   const next = new Map(uploadedUrls.value)
   next.set(refName, URL.createObjectURL(file))

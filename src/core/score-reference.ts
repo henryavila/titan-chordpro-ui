@@ -1,5 +1,10 @@
+export type TabRhythm = 'extended' | 'base' | 'none'
+export function isTabRhythm(value: unknown): value is TabRhythm {
+  return value === 'extended' || value === 'base' || value === 'none'
+}
+
 /** External notation stays in its original format; ChordPro stores the excerpt. */
-export type ScoreReference = { src: string; track: number; start: number; end?: number }
+export type ScoreReference = { src: string; track: number; start: number; end?: number; rhythm?: TabRhythm; name?: string }
 
 export function isScoreReference(text: string): boolean {
   return /^\s*\{x_titan_score\s*:/i.test(text)
@@ -20,7 +25,16 @@ export function readScoreReference(text: string): ScoreReference | null {
   const src: unknown = JSON.parse(match[1]!)
   if (typeof src !== 'string' || !src.trim() || /[\r\n{}]/.test(src))
     throw new Error('Referência do solo inválida.')
-  const rest = head.replace(match[0], '')
+  let rest = head.replace(match[0], '')
+  const nameMatch = rest.match(/\bname\s*=\s*("(?:[^"\\]|\\.)*")/)
+  let name: string | undefined
+  if (/\bname\s*=/.test(rest)) {
+    if (!nameMatch) throw new Error('Informe o nome do trecho entre aspas.')
+    const value: unknown = JSON.parse(nameMatch[1]!)
+    if (typeof value !== 'string' || !value.trim() || /[\r\n{}]/.test(value)) throw new Error('Nome do trecho inválido.')
+    name = value.trim()
+    rest = rest.replace(nameMatch[0], '')
+  }
   const number = (key: string, fallback?: number): number | undefined => {
     const m = rest.match(new RegExp(`\\b${key}\\s*=\\s*([^\\s}]+)`))
     if (!m) return fallback
@@ -32,11 +46,13 @@ export function readScoreReference(text: string): ScoreReference | null {
   const start = number('start', 1)!
   const end = number('end')
   if (end !== undefined && end < start) throw new Error('O último compasso deve vir depois do primeiro.')
-  return { src: src.trim(), track, start, ...(end === undefined ? {} : { end }) }
+  const rhythm = rest.match(/\brhythm\s*=\s*([^\s}]+)/)?.[1]
+  if (rhythm !== undefined && !isTabRhythm(rhythm)) throw new Error('Ritmo da TAB inválido: use extended, base ou none.')
+  return { ...(name === undefined ? {} : { name }), ...(rhythm === undefined ? {} : { rhythm: rhythm as TabRhythm }), src: src.trim(), track, start, ...(end === undefined ? {} : { end }) }
 }
 
 export function writeScoreReference(ref: ScoreReference): string {
-  const text = `{x_titan_score: src=${JSON.stringify(ref.src)} track=${ref.track} start=${ref.start}${ref.end === undefined ? '' : ` end=${ref.end}`}}`
+  const text = `{x_titan_score: src=${JSON.stringify(ref.src)} track=${ref.track} start=${ref.start}${ref.end === undefined ? '' : ` end=${ref.end}`}${ref.rhythm === undefined ? '' : ` rhythm=${ref.rhythm}`}${ref.name === undefined ? '' : ` name=${JSON.stringify(ref.name)}`}}`
   readScoreReference(text)
   return text
 }
@@ -51,6 +67,6 @@ export function scoreReferenceCaption(text: string): string {
   try {
     const ref = readScoreReference(text)
     if (!ref) return text
-    return `Solo: ${ref.src} · faixa ${ref.track} · compassos ${ref.start}–${ref.end ?? 'fim'} (tom do arquivo; abra na cifra para ver a partitura)`
+    return `${ref.name ?? 'Solo'}: ${ref.src} · faixa ${ref.track} · compassos ${ref.start}–${ref.end ?? 'fim'} (tom do arquivo; abra na cifra para ver a partitura)`
   } catch { return 'Solo: referência inválida — abra a cifra para corrigir o trecho.' }
 }

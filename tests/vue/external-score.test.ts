@@ -71,7 +71,7 @@ describe('external solo integration', () => {
       const input = wrapper.get('input[type="file"]')
       Object.defineProperty(input.element, 'files', { value: [chosen] })
       await input.trigger('change')
-      await vi.waitFor(() => expect(wrapper.find('select').exists()).toBe(true))
+      await vi.waitFor(() => expect(wrapper.find('button[aria-label="Faixa"]').exists()).toBe(true))
       await flushPromises()
       await wrapper.get('form').trigger('submit')
       await flushPromises()

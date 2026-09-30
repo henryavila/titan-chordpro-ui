@@ -87,21 +87,30 @@ test('folding while the playhead is inside the reference retains its remaining t
   await expect(page.getByRole('button', { name: 'Parar', exact: true }).first()).toBeVisible()
 })
 
-test('the fold button is reachable by touch midway through a long reference', async ({ page }, info) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/notation.html?pdf=1&file=piano-long')
-  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
-  await page.locator('[data-external-score]').evaluate(el => {
-    const scroll = el.closest('.cpv-scroll')!
-    scroll.scrollTop = el.getBoundingClientRect().height * 0.4
+for (const width of [390, 1280]) {
+  test(`fold control stays inside a wide card with its title at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/notation.html?pdf=1&file=piano-long')
+    const card = page.locator('.cpv-notation-card').first()
+    await expect(card.locator('.cpv-notation-system').first()).toBeVisible()
+    const button = card.locator('[data-toggle-notation]')
+    await expect(card.locator('.cpv-notation-title')).toHaveText('Solo')
+    await expect(card).not.toContainText(/Tom do arquivo|compassos/)
+    const bounds = (await card.boundingBox())!
+    const content = await page.locator('.cpv-page').evaluate(el => el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight))
+    if (width === 1280) expect(bounds.width).toBeGreaterThan(content + 100)
+    expect(bounds.x).toBeGreaterThanOrEqual(0)
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
+    expect(await button.locator('..').evaluate(el => getComputedStyle(el).position)).toBe('static')
+    await button.click()
+    await expect(button).toHaveAttribute('aria-expanded', 'false')
+    await expect(card.locator('.cpv-notation-title')).toBeVisible()
+    await expect(card.locator('[data-external-score]')).toBeHidden()
+    expect((await card.boundingBox())!.height).toBeLessThan(80)
+    await page.screenshot({ path: info.outputPath(`named-folded-${width}.png`) })
+    await button.click()
+    await expect(button).toHaveAttribute('aria-expanded', 'true')
+    await expect(card.locator('.cpv-notation-system').first()).toBeVisible()
+    await page.screenshot({ path: info.outputPath(`named-expanded-${width}.png`) })
   })
-  const button = page.locator('[data-toggle-notation]').first()
-  await button.click()
-  await expect(button).toHaveAttribute('aria-expanded', 'false')
-  const rect = await button.boundingBox()
-  expect(rect!.y).toBeGreaterThan(60)
-  expect(rect!.y).toBeLessThan(600)
-  await page.screenshot({ path: info.outputPath('reference-folded.png') })
-  await button.click()
-  await expect(button).toHaveAttribute('aria-expanded', 'true')
-})
+}

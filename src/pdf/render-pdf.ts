@@ -1,4 +1,4 @@
-import { isScoreReference, scoreReferenceCaption } from '../core/score-reference'
+import { isScoreReference, readScoreReference, scoreReferenceCaption } from '../core/score-reference'
 import { jsPDF } from 'jspdf'
 import { layoutChartFull } from '../core/layout'
 import { readingWords, type ReadingWord } from '../core/reading-words'
@@ -564,7 +564,7 @@ export async function renderPdf(view: ChordProView, opts: PdfOptions = {}): Prom
           room(height + 24)
           if (heading || previousPage !== page) {
             face(doc, SANS, 'normal', 8, INK.muted)
-            doc.text(`${opts.notation === 'tab' ? 'TAB' : 'PARTITURA'} · tom do arquivo`, ML, y + 9)
+            doc.text(readScoreReference(block.text)?.name ?? 'Solo', ML, y + 9)
             y += 16
             heading = false
           }

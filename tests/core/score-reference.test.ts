@@ -5,6 +5,18 @@ import { excerptTrack, loadNotation } from '../../src/vue/chart/notation-loader'
 
 const fixture = readFileSync('fixtures/013-ele-vive-em-mim-partitura.cho', 'utf8')
 describe('external solo reference', () => {
+  it('round trips the title without interpreting its words as attributes', () => {
+    const ref = { src: 'fixtures/notation/notes.gp', track: 1, start: 1, name: 'Solo "track=99" · rhythm=none' }
+    expect(readScoreReference(writeScoreReference(ref))).toEqual(ref)
+    for (const name of ['', '  ', 'Solo\nOutro', '{title: outro}']) {
+      expect(() => writeScoreReference({ ...ref, name })).toThrow()
+    }
+  })
+  it.each(['extended', 'base', 'none'] as const)('round trips the authored %s rhythm', rhythm => {
+    const ref = { src: 'fixtures/notation/notes.gp', track: 1, start: 1, rhythm }
+    expect(readScoreReference(writeScoreReference(ref))).toEqual(ref)
+    expect(() => readScoreReference(writeScoreReference(ref).replace(`rhythm=${rhythm}`, 'rhythm=invalid'))).toThrow()
+  })
   it('round trips escaped references and preserves the real chart and lyrics', () => {
     const ref = { src: 'solos/intro "guitarra".gp', track: 2, start: 3, end: 7 }
     const text = writeScoreReference(ref)

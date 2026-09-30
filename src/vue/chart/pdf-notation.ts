@@ -1,4 +1,4 @@
-import { readScoreReference } from '@henryavila/titan-chordpro-ui'
+import { readScoreReference, type TabRhythm } from '@henryavila/titan-chordpro-ui'
 import type { PdfNotationImage } from '@henryavila/titan-chordpro-ui/pdf'
 import { drawNotation, PAPER_PALETTE } from './notation-renderer'
 import { loadNotation } from './notation-loader'
@@ -8,6 +8,7 @@ export async function renderPdfNotation(
   text: string,
   mode: 'tab' | 'score',
   resolveScore?: (src: string) => string,
+  rhythm?: TabRhythm,
 ): Promise<PdfNotationImage[]> {
   const reference = readScoreReference(text)
   if (!reference) throw new Error('Este trecho não contém um arquivo Guitar Pro ou MusicXML.')
@@ -23,7 +24,7 @@ export async function renderPdfNotation(
   } finally { clearTimeout(fetchTimer) }
   const score = await loadNotation(bytes)
   const systems = await drawNotation(score, reference, {
-    mode, width: 2012, scale: 3, palette: PAPER_PALETTE, engine: 'html5',
+    mode, rhythm, width: 2012, scale: 3, palette: PAPER_PALETTE, engine: 'html5',
   })
   return systems.map(system => ({
     data: (system.content as HTMLCanvasElement).toDataURL('image/png'),

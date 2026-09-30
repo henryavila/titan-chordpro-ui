@@ -1,7 +1,7 @@
 /** Titan's excerpt compositor. The importer/engraver provides musical geometry;
  * Titan owns the systems, colors and layout, without mounting a document viewer. */
 import type { model } from '@coderline/alphatab'
-import type { ScoreReference } from '@henryavila/titan-chordpro-ui'
+import type { ScoreReference, TabRhythm } from '@henryavila/titan-chordpro-ui'
 import bravuraUrl from '@coderline/alphatab/font/Bravura.woff2?url'
 import { excerptTrack, hasTab } from './notation-loader'
 
@@ -16,7 +16,7 @@ function loadFont(): Promise<void> {
 }
 
 export async function drawNotation(score: model.Score, reference: ScoreReference, options: {
-  mode: 'tab' | 'score'; width: number; scale: number; palette: NotationPalette; engine?: 'svg' | 'html5'
+  mode: 'tab' | 'score'; rhythm?: TabRhythm; width: number; scale: number; palette: NotationPalette; engine?: 'svg' | 'html5'
 }): Promise<NotationSystem[]> {
   await loadFont()
   const alpha = await import('@coderline/alphatab')
@@ -39,6 +39,8 @@ export async function drawNotation(score: model.Score, reference: ScoreReference
   settings.display.barCount = reference.end === undefined ? -1 : reference.end - reference.start + 1
   settings.display.padding = [8, 8, 8, 8]
   settings.display.staveProfile = alpha.StaveProfile.Default
+  const rhythm = options.rhythm ?? reference.rhythm ?? 'extended'
+  settings.notation.rhythmMode = rhythm === 'none' ? alpha.TabRhythmMode.Hidden : alpha.TabRhythmMode.ShowWithBars
   const resources = settings.display.resources
   // The low-level canvas uses the same font-family field as alphaTab's browser facade.
   Object.assign(resources, { smuflFontFamilyName: 'TitanNotation' })
@@ -57,6 +59,7 @@ export async function drawNotation(score: model.Score, reference: ScoreReference
     alpha.NotationElement.EffectChordNames, alpha.NotationElement.EffectLyrics, alpha.NotationElement.EffectText,
     alpha.NotationElement.EffectMarker]) settings.notation.elements.set(element, false)
   const renderer = new alpha.rendering.ScoreRenderer(settings)
+  if (options.mode === 'tab' && rhythm !== 'none') useTabRhythm(renderer, track, rhythm, alpha.model.Duration.Half)
   renderer.width = Math.max(240, options.width)
   const systems: NotationSystem[] = []
   let failure: Error | undefined
@@ -77,4 +80,44 @@ export async function drawNotation(score: model.Score, reference: ScoreReference
     if (!systems.length) throw new Error('O trecho não contém notas para desenhar.')
     return systems
   } finally { renderer.destroy() }
+}
+
+/** alphaTab 1.8 has neither a short-stem setting nor distinct half-note stems. Keep this internal geometry seam local
+ * to this renderer (no prototype/global changes), before each system is painted.
+ * Both SVG and PDF canvas use the same stem geometry. */
+function useTabRhythm(renderer: import('@coderline/alphatab').rendering.ScoreRenderer, track: model.Track, rhythm: 'base' | 'extended', half: model.Duration) {
+  type TabBar = {
+    drawnLineCount: number
+    lineSpacing: number
+    getLineY(line: number): number
+    smuflMetrics: { stemThickness: number }
+    paintBeamingStem(beat: model.Beat, cy: number, x: number, top: number, bottom: number,
+      canvas: { fillRect(x: number, y: number, width: number, height: number): void }): void
+  }
+  const patched = new WeakSet<TabBar>()
+  renderer.partialLayoutFinished.on(part => {
+    if (part.firstMasterBarIndex < 0) return
+    const layout = (renderer as unknown as { layout?: { getRendererForBar(key: string, bar: model.Bar): TabBar | null } }).layout
+    if (!layout?.getRendererForBar) throw new Error('Esta versão do renderizador não suporta o ritmo da TAB.')
+    for (const staff of track.staves) for (const bar of staff.bars.slice(part.firstMasterBarIndex, part.lastMasterBarIndex + 1)) {
+      const tab = layout.getRendererForBar('tab', bar)
+      if (!tab || patched.has(tab)) continue
+      patched.add(tab)
+      const originalStem = tab.paintBeamingStem
+      tab.paintBeamingStem = function (beat, cy, x, top, bottom, canvas) {
+        // Titan's Guitar Pro profile: one short half-note stem, exactly 50%
+        // of the quarter-note base stem. Extension never lengthens half notes.
+        // See docs/NOTACAO-VISUAL.md; flags/beams/dots stay with the engraver.
+        if (rhythm === 'extended' && beat.duration !== half) {
+          originalStem.call(this, beat, cy, x, top, bottom, canvas)
+          return
+        }
+        const end = Math.max(top, bottom)
+        const baseStart = Math.max(Math.min(top, bottom), cy + this.getLineY(this.drawnLineCount - 1) + this.lineSpacing / 2)
+        const baseHeight = Math.max(0, end - baseStart)
+        const height = beat.duration === half ? baseHeight / 2 : baseHeight
+        if (height > 0) canvas.fillRect(x, end - height, this.smuflMetrics.stemThickness, height)
+      }
+    }
+  })
 }

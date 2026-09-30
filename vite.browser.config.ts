@@ -5,6 +5,7 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 export default defineConfig({
   root: 'tests/browser', plugins: [vue()], publicDir: false,
   resolve: { alias: {
+    '@henryavila/titan-chordpro-ui/vue': `${root}src/vue/index.ts`,
     '@henryavila/titan-chordpro-ui/pdf': `${root}src/pdf/index.ts`,
     '@henryavila/titan-chordpro-ui/bundle': `${root}src/bundle/index.ts`,
     '@henryavila/titan-chordpro-ui/slides': `${root}src/slides/index.ts`,
