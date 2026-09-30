@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { ESCUTA, loadFixture } from '../helpers/load-fixture'
 import {
   addChord,
+  anchorWords,
   blockLabel,
   blockSpan,
   copyHarmony,
@@ -24,6 +26,8 @@ import {
 } from '../../src/core/block-edit'
 import { layoutChartFull } from '../../src/core/layout'
 import { parse } from '../../src/core/parse'
+import { readingWords } from '../../src/core/reading-words'
+import type { AnchorWord } from '../../src/core/block-edit'
 import type { ChartBlock } from '../../src/core/types'
 
 const CHART = [
@@ -120,6 +124,67 @@ describe('a voiceless line is columns, not a pile of pills', () => {
     const cols = playedColumns('[G] [C] [D]')
     expect(cols).not.toBeNull()
     expect(cols!.map((c) => c.name)).toEqual(['G', 'C', 'D'])
+  })
+})
+
+function flatWords(words: AnchorWord[]) {
+  return words.map((w) => ({
+    cells: w.cells.map((c) => ({
+      text: c.chars.map((ch) => ch.ch).join(''),
+      chord: c.chord?.name ?? '',
+      off: c.chord?.off ?? null,
+    })),
+    tail: w.tail.map((ch) => ch.ch).join(''),
+  }))
+}
+
+function readingFlat(line: string) {
+  const blocks = layoutChartFull(parse(`{title: T}\n${line}\n`)).blocks
+  const row = blocks.flatMap((b) => (b.kind === 'stanza' || b.kind === 'chorus' ? b.rows : []))[0]
+  return readingWords(row?.segs ?? []).map((w) => ({
+    cells: w.cells.map((c) => ({ text: c.text, chord: c.chord, off: null as number | null })),
+    tail: w.tail,
+  }))
+}
+
+/** Drop offsets so the comparison is the reading grouping, not the source index. */
+function withoutOff(words: ReturnType<typeof flatWords>) {
+  return words.map((w) => ({
+    cells: w.cells.map((c) => ({ text: c.text, chord: c.chord, off: null })),
+    tail: w.tail,
+  }))
+}
+
+describe('a sung line opens the same columns reading does', () => {
+  const lines = [loadFixture(ESCUTA), loadFixture('sda/h189-deus-sabe-deus-ouve-deus-ve.cho')]
+    .flatMap(source => source.split('\n'))
+    .filter(line => !line.trimStart().startsWith('{') && /\[[^\]]+\]/.test(line))
+
+  it('groups words, syllables and chords the way reading does', () => {
+    for (const line of lines) {
+      expect(withoutOff(flatWords(anchorWords(line))), line).toEqual(readingFlat(line))
+    }
+  })
+
+  it('keeps every source character, in order, at its chord offset', () => {
+    for (const line of lines) {
+      const words = anchorWords(line)
+      const chars = words.flatMap((w) => [...w.cells.flatMap((c) => c.chars), ...w.tail])
+      const p = rowParts(line)
+      expect(chars.map((c) => c.ch).join(''), line).toBe(p.plain)
+      expect(chars.map((c) => c.i), line).toEqual([...p.plain].map((_, i) => i))
+      const placed = words.flatMap((w) => w.cells.flatMap((c) => (c.chord ? [c.chord] : [])))
+      expect(placed.map((c) => c.name), line).toEqual(p.chords.map((c) => c.name))
+      expect(placed.map((c) => c.off), line).toEqual(p.chords.map((c) => c.off))
+    }
+  })
+
+  it('anchors a mid-word chord on the letter it is written before', () => {
+    const line = lines.find(line => line.includes('[Bm]cu[E]ra'))!
+    const word = anchorWords(line).find(word => word.cells.map(c => c.chars.map(ch => ch.ch).join('')).join('') === 'cura')!
+    const start = rowParts(line).plain.indexOf('cura')
+    expect(word.cells.map(c => c.chars[0]?.i)).toEqual([start, start + 2])
+    expect(word.cells.map(c => c.chord?.off)).toEqual([start, start + 2])
   })
 })
 

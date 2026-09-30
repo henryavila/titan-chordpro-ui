@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Indicador no início da linha:** ao editar, o marcador da posição do acorde e seu brilho aparecem inteiros junto à primeira letra, também nas linhas que quebram na tela estreita.
+
 ### Changed
+- **Onde o acorde prende na letra:** ao editar, a linha abre o mesmo espaço da leitura para o acorde caber, também no meio da palavra. Um traço vertical fino, com brilho suave e um pequeno ponto no topo, indica a posição exata do acorde.
 - **Imagem na cifra:** em Inserir, dá para enviar uma foto ou um arquivo (JPG, PNG, WebP ou GIF). O app guarda o arquivo; a cifra fica só com o nome. Sem um app para guardar, o item não aparece.
 - **Inserir no lugar:** no modo de edição, o + fica entre os blocos, no ponto em que o trecho novo entra. O botão Inserir solto da barra saiu.
 - **Cifra no meio da linha:** ao editar a letra, o botão Cifra coloca o acorde onde o cursor está.

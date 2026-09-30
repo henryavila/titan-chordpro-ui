@@ -2147,6 +2147,14 @@ div.cpv-head-id {
   user-select: none;
   -webkit-touch-callout: none;
 }
+/* Keep edge markers inside the scroll viewport without moving the lyric or
+   changing its wrapping width. Includes the dot and its soft glow. */
+.cpv-editrow .cpv-reading-flow {
+  box-sizing: border-box;
+  width: calc(100% + 16px);
+  margin-inline: -8px;
+  padding-inline: 8px;
+}
 .cpv-root.is-chord-drag,
 .cpv-root.is-chord-drag * {
   -webkit-user-select: none !important;
@@ -2181,15 +2189,59 @@ div.cpv-head-id {
 .cpv-pill:hover {
   background: var(--chord-hover);
 }
-/* Voiceless line: the pill stays in the column, same reserve as reading. */
+/* The chip stays in the column and keeps the same gap reading gives a chord. */
 .cpv-pill--flow {
   position: relative;
   left: auto;
   top: auto;
-  margin: 0 0.8em 2px 0;
+  margin: 0 0.8em 0 0;
+}
+/* Room under the chip for the caret, so it never sits on the letter. */
+.cpv-editrow .cpv-word {
+  gap: 6px;
 }
 .cpv-editrow[data-played] {
   line-height: normal;
+}
+/* Anchor marker at the exact source offset. */
+.cpv-editrow .cpv-lyric [data-anchor] {
+  position: relative;
+}
+.cpv-anchor-end {
+  display: inline-block;
+  width: 0;
+  height: 1em;
+  vertical-align: baseline;
+  pointer-events: none;
+}
+/* A drawn hairline at the same source offset, without inserting lyric text. */
+.cpv-editrow .cpv-lyric [data-anchor]::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  top: 0.08em;
+  left: -1px;
+  width: 1px;
+  height: 0.95em;
+  border: 0;
+  border-radius: 1px;
+  background: linear-gradient(to bottom, var(--chord) 55%, color-mix(in srgb, var(--chord) 45%, transparent));
+  box-shadow: 0 0 4px color-mix(in srgb, var(--chord) 35%, transparent);
+  transform: none;
+}
+.cpv-editrow .cpv-lyric [data-anchor]::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: calc(0.08em - 2px);
+  left: -2px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--chord);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--chord) 40%, transparent);
+  pointer-events: none;
 }
 .cpv-pill:focus-visible {
   outline: 2px solid var(--focus);
