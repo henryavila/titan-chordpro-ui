@@ -1627,11 +1627,28 @@ div.cpv-head-id {
   color: var(--downbeat);
 }
 .cpv-head-hit-n {
-  animation: cpv-head-n var(--cpv-met-hit, 420ms) ease-out;
+  --veil: var(--chord);
+  --line: var(--chord);
+  --text: var(--chord-ink);
+  --muted: color-mix(in srgb, var(--chord-ink) 72%, transparent);
+  --sel: color-mix(in srgb, var(--chord-ink) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--chord-ink) 28%, transparent);
+  --hover: color-mix(in srgb, var(--chord-ink) 8%, transparent);
+  color: var(--chord-ink);
 }
-@keyframes cpv-head-n {
-  0% { background: var(--chord-fill); border-color: var(--chord-edge); }
-  100% { background: var(--veil); border-color: var(--line); }
+.cpv-head-hit-n .cpv-head-chip {
+  --text: var(--chord);
+  --muted: color-mix(in srgb, var(--chord) 72%, transparent);
+  --chord-soft: var(--chord-ink);
+  --chord-fill: color-mix(in srgb, var(--chord) 16%, var(--chord-ink));
+  --chord-hover: color-mix(in srgb, var(--chord-ink) 12%, transparent);
+  --chord-edge: color-mix(in srgb, var(--chord-ink) 40%, transparent);
+  --surface: color-mix(in srgb, var(--chord) 12%, var(--chord-ink));
+  --line: color-mix(in srgb, var(--chord-ink) 40%, transparent);
+  --sel: color-mix(in srgb, var(--chord-ink) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--chord-ink) 28%, transparent);
+  --hover: color-mix(in srgb, var(--chord-ink) 12%, transparent);
+  color: var(--chord);
 }
 
 .cpv-met-hit-1 .cpv-chord {

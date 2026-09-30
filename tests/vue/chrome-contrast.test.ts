@@ -65,6 +65,26 @@ describe('chrome contrast vs template', () => {
     expect(chips).toMatch(/--chord-edge:\s*color-mix\(in srgb,\s*var\(--downbeat\)/)
   })
 
+  it('beat-n strip paints chord as a square pulse, chips stay a nested surface', () => {
+    const head = css.match(/\.cpv-head-hit-n\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(head, 'n still fades via keyframes').not.toMatch(/animation:/)
+    expect(head).toMatch(/--veil:\s*var\(--chord\)/)
+    expect(head).toMatch(/--text:\s*var\(--chord-ink\)/)
+    expect(head, 'remapping --chord on the strip eats the chips').not.toMatch(
+      /--chord:\s*var\(--chord-ink\)/,
+    )
+
+    expect(css).toMatch(/\.cpv-head-hit-n\s+\.cpv-head-chip/)
+    expect(css).not.toMatch(/@keyframes\s+cpv-head-n/)
+
+    const chips = css.match(
+      /\.cpv-head-hit-n\s+\.cpv-head-chip\s*\{[^}]+\}/,
+    )?.[0] ?? ''
+    expect(chips).toMatch(/--chord-soft:\s*var\(--chord-ink\)/)
+    expect(chips).toMatch(/--text:\s*var\(--chord\)/)
+    expect(chips).not.toMatch(/--chord:\s*var\(--downbeat\)/)
+  })
+
   it('tom pill keeps air between − / + / capo so the pulse cannot glue them', () => {
     const pill = css.match(/\.cpv-keypill\s*\{[^}]+\}/)?.[0] ?? ''
     const gap = pill.match(/gap:\s*([\d.]+)px/)?.[1]
