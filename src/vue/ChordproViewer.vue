@@ -2815,7 +2815,6 @@ defineExpose({
           :edit="isEdit ? bedit : null"
           :pill-lane="editScale.pillLane"
           :pill-h="editScale.pillH"
-          :edit-line-h="editScale.editLineH"
           :chord-edit-px="editScale.chordEditPx"
           :insert-items="isEdit ? insertItems : []"
           @revert-line="ov.revertLine"

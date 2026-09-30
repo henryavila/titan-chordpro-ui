@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
-import { JESUS_1, loadFixture } from '../helpers/load-fixture'
+import { ESCUTA, JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { normalizeSource, rowParts } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -57,7 +57,31 @@ beforeEach(() => localStorage.clear())
 afterEach(() => localStorage.clear())
 
 describe('the editing surface', () => {
-  it('turns each sung line into syllables with the chords floating over them', async () => {
+  it('opens a sung line like reading and marks the letter each chord is on', async () => {
+    const w = await edit({ source: loadFixture(ESCUTA) })
+    const words = w.findAll('.cpv-reading-word')
+    const lyricOf = (word: (typeof words)[number]) =>
+      word.findAll('.cpv-lyric').map(el => el.text()).join('').trim()
+    const cura = words.find(word => lyricOf(word) === 'cura')!
+    expect(cura.findAll('.cpv-pill--flow').map(p => p.text())).toEqual(['Bm', 'E'])
+    expect(cura.findAll('[data-i][data-anchor]').map(el => el.text())).toEqual(['c', 'r'])
+    const instrumento = words.find(word => lyricOf(word) === 'instrumento' && word.text().includes('Fsus4'))!
+    expect(instrumento.findAll('.cpv-pill--flow').map(p => p.text())).toEqual(['C', 'Fsus4', 'F'])
+    expect(instrumento.findAll('[data-i][data-anchor]').map(el => el.text())).toEqual(['i', 'm', 't'])
+    expect(w.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    w.unmount()
+  })
+
+  it('marks a chord after the final letter of a fixture line', async () => {
+    const source = loadFixture('sda/h189-deus-sabe-deus-ouve-deus-ve.cho')
+    const w = await edit({ source })
+    const row = w.findAll('[data-row]').find(row => row.find('[data-anchor]:not([data-i])').exists())!
+    const line = source.split('\n')[Number(row.attributes('data-row'))]!
+    expect(row.findAll('.cpv-pill--flow').at(-1)?.attributes('data-pill')).toBe(String(rowParts(line).plain.length))
+    w.unmount()
+  })
+
+  it('turns each sung line into syllables a chord can land on', async () => {
     const w = await edit()
     // Reading has chords glued into the flow; editing has pills that can move.
     expect(w.findAll('[data-pill]').length).toBeGreaterThan(0)
@@ -99,8 +123,13 @@ describe('the editing surface', () => {
         .filter((t) => /[x/]/.test(t)),
     ).toEqual(['x///', 'x///', 'x///', 'x/', '//'])
     expect(row.findAll('.cpv-reading-word').length).toBeGreaterThanOrEqual(5)
-    // Sung rows keep the floating pills; this intro must not.
     expect(row.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    // Each clock group carries a caret on its first mark.
+    expect(
+      row
+        .findAll('[data-anchor]')
+        .map((el) => el.text()),
+    ).toEqual(['x', 'x', 'x', 'x', '/'])
     w.unmount()
   })
 
@@ -408,10 +437,10 @@ describe('putting something new into the chart', () => {
   })
 
   it('asks the host to store an uploaded image and writes only the name', async () => {
-    let got: File | null = null
+    const received: File[] = []
     const w = await edit({
       uploadImage: async (file: File) => {
-        got = file
+        received.push(file)
         return { ref: 'uploads/solo.png' }
       },
     })
@@ -430,7 +459,7 @@ describe('putting something new into the chart', () => {
     await flushPromises()
     await w.get('[data-image-send]').trigger('click')
     await flushPromises()
-    expect(got?.name).toBe('solo.png')
+    expect(received[0]?.name).toBe('solo.png')
     expect(await sourceOf(w)).toContain('{image: uploads/solo.png}')
     expect(await sourceOf(w)).not.toContain('data:')
     w.unmount()

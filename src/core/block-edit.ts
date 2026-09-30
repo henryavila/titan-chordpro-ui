@@ -66,6 +66,99 @@ export function rowParts(text: string): RowParts {
   return { plain: plain + text.slice(last), chords }
 }
 
+/** One source character, with the index a chord offset uses. */
+export type AnchorChar = { ch: string; i: number }
+
+/** A syllable column. `chord` sits on the left edge of `chars`, as in reading. */
+export type AnchorCell = {
+  chord: { name: string; idx: number; off: number } | null
+  chars: AnchorChar[]
+}
+
+/**
+ * A word the line may wrap after, never inside. `tail` is the real whitespace
+ * that followed it — the only break point.
+ */
+export type AnchorWord = {
+  cells: AnchorCell[]
+  tail: AnchorChar[]
+}
+
+function charsOf(plain: string, from: number, to: number): AnchorChar[] {
+  const out: AnchorChar[] = []
+  for (let i = from; i < to; i++) out.push({ ch: plain[i] ?? '', i })
+  return out
+}
+
+/**
+ * Sung line, grouped the way reading groups it: each chord is a column that
+ * reserves its own width, and a word never breaks where a chord changes.
+ * Character indexes stay the source offsets, so a marker can sit on the exact
+ * letter the chord is anchored to.
+ *
+ * Voiceless lines stay on `playedColumns` — this is the sung path.
+ */
+export function anchorWords(line: string): AnchorWord[] {
+  const p = rowParts(line)
+  type Seg = { chord: AnchorCell['chord']; from: number; to: number }
+  const segs: Seg[] = []
+  let cursor = 0
+  for (let i = 0; i < p.chords.length; i++) {
+    const c = p.chords[i]!
+    if (c.off > cursor) {
+      segs.push({ chord: null, from: cursor, to: c.off })
+      cursor = c.off
+    }
+    const next = i + 1 < p.chords.length ? p.chords[i + 1]!.off : p.plain.length
+    const to = Math.max(c.off, next)
+    segs.push({ chord: { name: c.name, idx: i, off: c.off }, from: c.off, to })
+    cursor = to
+  }
+  if (cursor < p.plain.length) segs.push({ chord: null, from: cursor, to: p.plain.length })
+
+  const words: AnchorWord[] = []
+  let open_ = -1
+  let carry: AnchorCell['chord'] = null
+  const open = (): AnchorWord => {
+    if (open_ < 0) {
+      words.push({ cells: [], tail: [] })
+      open_ = words.length - 1
+    }
+    return words[open_] as AnchorWord
+  }
+  const flush = () => {
+    if (!carry) return
+    open().cells.push({ chord: carry, chars: [] })
+    carry = null
+  }
+
+  for (const seg of segs) {
+    if (seg.chord) {
+      flush()
+      carry = seg.chord
+    }
+    const parts = p.plain.slice(seg.from, seg.to).match(/\s+|\S+/g) ?? []
+    let at = seg.from
+    for (const part of parts) {
+      const from = at
+      at += part.length
+      if (/\s/.test(part[0] ?? '')) {
+        const chunk = charsOf(p.plain, from, at)
+        if (open_ >= 0) {
+          ;(words[open_] as AnchorWord).tail.push(...chunk)
+          open_ = -1
+        } else words.push({ cells: [], tail: chunk })
+        continue
+      }
+      const src = carry
+      carry = null
+      open().cells.push({ chord: src, chars: charsOf(p.plain, from, at) })
+    }
+  }
+  flush()
+  return words
+}
+
 /** The inverse: put the chords back into the lyric, in order. */
 export function rowJoin(plain: string, chords: ChordRef[]): string {
   const list = [...chords].sort((a, b) => a.off - b.off)

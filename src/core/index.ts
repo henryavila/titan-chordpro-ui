@@ -153,6 +153,7 @@ export {
   lastChordName,
   markCtx,
   moveBlock,
+  anchorWords,
   moveChord,
   pasteHarmony,
   playedColumns,
@@ -170,6 +171,9 @@ export {
   writeMarks,
 } from './block-edit'
 export type {
+  AnchorCell,
+  AnchorChar,
+  AnchorWord,
   BlockSpan,
   BlockWrite,
   ChordRef,
