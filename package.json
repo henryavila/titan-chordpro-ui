@@ -51,7 +51,12 @@
       "default": "./dist/vue/index.js"
     },
     "./vue/style.css": "./dist/vue/style.css",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./bundle": {
+      "types": "./dist/bundle/index.d.ts",
+      "import": "./dist/bundle/index.js",
+      "default": "./dist/bundle/index.js"
+    }
   },
   "files": [
     "dist",

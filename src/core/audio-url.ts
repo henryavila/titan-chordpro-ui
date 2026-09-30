@@ -36,6 +36,8 @@ export function playableAudioUrl(raw: string | null | undefined): string | null 
   const s = String(raw ?? '').trim()
   if (!s || s.includes('}')) return null
   if (s.startsWith('/') && !s.startsWith('//')) return s
+  // Portable chart bundles use controlled, relative attachment paths.
+  if (/^(?:audios|imagens)\/[a-z0-9][a-z0-9._-]*$/i.test(s) && !s.includes('..')) return s
   let u: URL
   try {
     u = new URL(s)
