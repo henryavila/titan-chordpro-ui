@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref, type Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -832,6 +834,16 @@ describe('count-in label is a badge', () => {
     expect(parseFloat(style.borderRadius)).toBeGreaterThan(0)
     expect(style.borderTopStyle, 'naked text has no edge').toBe('solid')
     expect(parseFloat(style.borderTopWidth)).toBeGreaterThan(0)
+  })
+})
+
+describe('metronome sheet beat dots match the column', () => {
+  const src = readFileSync(join(process.cwd(), 'src/vue/sheets/MetronomeSheet.vue'), 'utf8')
+
+  it('paints beat 1 with downbeat, 2–4 with chord', () => {
+    expect(src).toMatch(/liveFill = accent \? 'var\(--downbeat\)' : 'var\(--chord\)'/)
+    expect(src).toMatch(/liveInk = accent \? 'var\(--downbeat\)' : 'var\(--chord\)'/)
+    expect(src).not.toMatch(/liveFill = accent \? 'var\(--chord\)' : 'var\(--beat-rest\)'/)
   })
 })
 
