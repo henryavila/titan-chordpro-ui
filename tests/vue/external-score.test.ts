@@ -20,6 +20,40 @@ describe('external solo integration', () => {
     expect(wrapper.find('[data-external-stub]').exists()).toBe(false)
     wrapper.unmount()
   })
+  it.each(['external', 'invalid'] as const)('removes a %s score in content edit and supports undo', async kind => {
+    const text = kind === 'external' ? reference : reference.replace('{score:', '{sos:') + '\n{eos}'
+    const wrapper = mount(ChordproViewer, {
+      props: { source: `${original}\n${text}`, modes: 'content', theme: 'light', autoHide: false },
+      attachTo: document.body,
+      global: { stubs: { ExternalScore: { template: '<div data-external-stub />' } } },
+    })
+    try {
+      await flushPromises()
+      await wrapper.get('[data-edit]').trigger('click')
+      await flushPromises()
+      if (wrapper.find('[data-mode-content]').exists()) await wrapper.get('[data-mode-content]').trigger('click')
+      await flushPromises()
+      const card = wrapper.get(kind === 'external' ? '[data-external-stub]' : '[data-invalid-score]')
+      const block = card.element.closest('[data-block]')!
+      const bi = block.getAttribute('data-block')
+      await wrapper.get(`[data-grip="${bi}"]`).trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(wrapper.find('[data-edit-score]').exists()).toBe(false)
+      expect(wrapper.find('[data-adjust-score]').exists()).toBe(kind === 'external')
+      expect(wrapper.find('[aria-label="Editor de partitura"]').exists()).toBe(false)
+      await wrapper.get(`[data-block="${bi}"] [data-remove-score]`).trigger('click')
+      await flushPromises()
+      expect(wrapper.find(kind === 'external' ? '[data-external-stub]' : '[data-invalid-score]').exists()).toBe(false)
+      await wrapper.get('[data-source]').trigger('click')
+      await flushPromises()
+      const source = (wrapper.get('textarea[aria-label="Fonte ChordPro"]').element as HTMLTextAreaElement).value
+      expect(source).toBe(original)
+      await wrapper.get('button[aria-label="Fechar painel de source"]').trigger('click')
+      await wrapper.get('[data-undo]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find(kind === 'external' ? '[data-external-stub]' : '[data-invalid-score]').exists()).toBe(true)
+    } finally { wrapper.unmount() }
+  })
   it('keeps the dialog and source untouched when host storage rejects an upload', async () => {
     const bytes = readFileSync('fixtures/notation/notes.gp')
     const chosen = new File([bytes], 'solo.gp')

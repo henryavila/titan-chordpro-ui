@@ -23,7 +23,6 @@ const hideTitle = computed(() =>
     ? 'Remover este bloco da sua leitura — reversível pelo botão Reexibir'
     : 'Ocultar este bloco na leitura',
 )
-const canDelete = computed(() => props.wMode === 'persisted')
 // The 8.5px caps become noise on a narrow bar: on a phone only the value
 // stays, in a size readable while standing.
 const capShow = computed(() => (props.compact ? 'none' : 'block'))
@@ -100,6 +99,7 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
     </template>
 
     <button v-if="e.selIsScore.value" class="cpv-selbar-btn" data-edit-score @click="emit('editScore')">Editar partitura</button>
+    <button v-if="e.selIsExternalScore.value" class="cpv-selbar-btn" data-adjust-score @click="emit('editScore')">Ajustar trecho</button>
     <button v-if="e.selIsImage.value" class="cpv-selbar-btn" data-swap-image @click="e.openPicker('replace')">Trocar imagem</button>
 
     <div style="flex:none;display:flex;align-items:center;gap:2px;">
@@ -126,7 +126,7 @@ const valPx = computed(() => (props.compact ? '12.5px' : '11px'))
 
     <button class="cpv-selbar-icon" data-duplicate title="Duplicar bloco" aria-label="Duplicar bloco" @click="e.duplicateBlock()"><CpvIcon name="copy" :size="16" /></button>
     <button
-      v-if="canDelete"
+      v-if="e.canDelete.value"
       class="cpv-selbar-icon cpv-selbar-icon--danger"
       data-delete
       title="Excluir bloco"

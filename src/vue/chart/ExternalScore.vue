@@ -126,7 +126,7 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
         {{ option === 'tab' ? 'TAB' : 'Partitura' }}
       </button>
       <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
-      <button v-if="canEdit" type="button" class="cpv-figure-btn" @click="emit('editScore')">Editar trecho</button>
+      <button v-if="canEdit" type="button" class="cpv-figure-btn" @click="emit('editScore')">Ajustar trecho</button>
     </figcaption>
     <p v-if="loading && !error" role="status">Abrindo solo…</p>
     <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">Tentar novamente</button></p>

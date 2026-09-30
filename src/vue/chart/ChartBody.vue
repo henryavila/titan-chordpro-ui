@@ -7,7 +7,7 @@ import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import EditLyric from './EditLyric.vue'
 import ScoreFigure from './ScoreFigure.vue'
 import ExternalScore from './ExternalScore.vue'
-import { isScoreReference } from '@henryavila/titan-chordpro-ui'
+import { isInlineScore, isScoreReference } from '@henryavila/titan-chordpro-ui'
 import { readingWords, type ReadingWord } from './readingWords'
 
 const props = withDefaults(
@@ -318,6 +318,9 @@ watch(
               {{ isFolded(block) ? 'Mostrar TAB / partitura' : 'Ocultar TAB / partitura' }}
             </button>
           </div>
+          <div v-if="edit?.canDelete.value && block.kind === 'score'" class="cpv-figure-cap">
+            <button type="button" class="cpv-figure-btn" data-remove-score @click="edit.deleteBlock(i)">Excluir trecho</button>
+          </div>
           <!-- A block with a capo of its own explains itself, right there. -->
           <div
             v-if="(block.kind === 'stanza' || block.kind === 'chorus') && block.hasOwnCapo"
@@ -435,6 +438,11 @@ watch(
             :text="block.text" :block-gap="blockGap" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme"
             @edit-score="emit('editScore', i)"
           />
+          <div v-else-if="block.kind === 'score' && !isInlineScore(block.text)"
+            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`" class="cpv-figure" data-invalid-score
+            style="padding:12px" >
+            <p role="status">Trecho de partitura inválido. Remova este trecho e importe o arquivo novamente.</p>
+          </div>
           <ScoreFigure
             v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score'"

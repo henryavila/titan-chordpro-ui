@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Remover e ajustar solos:** na edição Para todos, cada trecho de partitura tem o botão Excluir trecho. Arquivos Guitar Pro/MusicXML oferecem Ajustar trecho (arquivo, faixa e compassos), sem abrir o editor de notas do Titan. Um bloco inválido avisa que precisa ser removido e importado novamente.
 - **Zoom dos solos:** ao abrir o zoom de um trecho Guitar Pro/MusicXML, as opções seguem o tema claro ou escuro do Titan e destacam o tamanho selecionado. Também é possível escolher pelas setas do teclado e fechar com Escape.
 - **Indicador no início da linha:** ao editar, o marcador da posição do acorde e seu brilho aparecem inteiros junto à primeira letra, também nas linhas que quebram na tela estreita.
 

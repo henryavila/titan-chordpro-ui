@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   blockSpan,
   isScoreReference,
+  isInlineScore,
   buildTimeline,
   buildChoFilename,
   buildPdfFilename,
@@ -2089,6 +2090,7 @@ function openScore(bi: number) {
     externalEd.value = { text: b.text, li0: b.li0, li1: b.li1 }
     return
   }
+  if (b.kind === 'score' && !isInlineScore(b.text)) return
   scoreEd.value = {
     li0: b.li0,
     li1: b.li1,

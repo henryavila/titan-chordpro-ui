@@ -5,6 +5,12 @@ export function isScoreReference(text: string): boolean {
   return /^\s*\{score\s*:/i.test(text)
 }
 
+/** Only notation stored in the document belongs in Titan's note editor. */
+export function isInlineScore(text: string): boolean {
+  const header = text.split('\n')[0] ?? ''
+  return /^\s*\{(?:sos|start_of_score)\b/i.test(header) && !/\bsrc\s*=/i.test(header)
+}
+
 export function readScoreReference(text: string): ScoreReference | null {
   if (!isScoreReference(text)) return null
   const head = text.trim()

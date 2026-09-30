@@ -2,6 +2,8 @@ import { computed, ref, type Ref } from 'vue'
 import {
   addChord as addChordAt,
   anchorWords,
+  isInlineScore,
+  isScoreReference,
   blockLabel,
   blockSpan,
   copyHarmony as copyHarmonyOf,
@@ -535,9 +537,10 @@ export function useBlockEdit(opts: BlockEditOpts) {
     })
   }
 
-  function deleteBlock() {
-    if (sel.value === null) return
-    const r = deleteBlockAt(lines.value, blocks.value, sel.value)
+  const canDelete = computed(() => opts.wMode.value === 'persisted')
+  function deleteBlock(bi = sel.value) {
+    if (bi === null || !canDelete.value) return
+    const r = deleteBlockAt(lines.value, blocks.value, bi)
     if (!r) return
     write(r.lines, r.message)
     clearSel()
@@ -793,7 +796,10 @@ export function useBlockEdit(opts: BlockEditOpts) {
     () => selBlock.value?.kind === 'stanza' || selBlock.value?.kind === 'chorus',
   )
   const selIsScore = computed(
-    () => selBlock.value?.kind === 'tab' || selBlock.value?.kind === 'score',
+    () => selBlock.value?.kind === 'tab' || (selBlock.value?.kind === 'score' && isInlineScore(selBlock.value.text)),
+  )
+  const selIsExternalScore = computed(
+    () => selBlock.value?.kind === 'score' && isScoreReference(selBlock.value.text),
   )
   const selIsImage = computed(() => selBlock.value?.kind === 'image')
   const selIsHidden = computed(() => selBlock.value?.kind === 'hidden')
@@ -831,6 +837,8 @@ export function useBlockEdit(opts: BlockEditOpts) {
     selShiftLabel,
     selHasChords,
     selIsScore,
+    selIsExternalScore,
+    canDelete,
     selIsImage,
     selIsHidden,
     selCapoOwn,
