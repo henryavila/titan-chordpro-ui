@@ -324,3 +324,6 @@ export type {
 } from './strum'
 export { applyStrumPreset, draftStrumPreset, listStrumPresets } from './strum-presets'
 export type { SaveStrumPresetPayload, StrumPreset } from './strum-presets'
+
+export { isScoreReference, readScoreReference, writeScoreReference, scoreAutoScale } from './score-reference'
+export type { ScoreReference } from './score-reference'

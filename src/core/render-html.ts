@@ -1,3 +1,4 @@
+import { scoreReferenceCaption } from './score-reference'
 import { layoutChart } from './layout'
 import { assertTheme, cssVarsString, resolveTheme } from './themes'
 import type { ChartBlock, ChartRow, ChordProView } from './types'
@@ -37,7 +38,7 @@ function blockHtml(block: ChartBlock): string {
     return `<div class="cpv-tab"><pre>${escapeHtml(block.text)}</pre></div>`
   }
   if (block.kind === 'score') {
-    return `<div class="cpv-score"><pre>${escapeHtml(block.text)}</pre></div>`
+    return `<div class="cpv-score"><pre>${escapeHtml(scoreReferenceCaption(block.text))}</pre></div>`
   }
   if (block.kind === 'image') {
     return `<figure class="cpv-image"><img src="${escapeHtml(block.src)}" alt="Partitura da música" /><figcaption>${escapeHtml(

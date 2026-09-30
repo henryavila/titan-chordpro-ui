@@ -39,7 +39,7 @@ export default defineConfig({
       // VexFlow is an optional peer: a host that never shows a `{sos}` block
       // should not ship an engraver. The score layer imports it lazily and
       // falls back to the source text when it is not installed.
-      external: ['vue', 'jspdf', 'vexflow', '@henryavila/titan-chordpro-ui', '@henryavila/titan-chordpro-ui/pdf', '@henryavila/titan-chordpro-ui/slides'],
+      external: ['@coderline/alphatab', 'vue', 'jspdf', 'vexflow', '@henryavila/titan-chordpro-ui', '@henryavila/titan-chordpro-ui/pdf', '@henryavila/titan-chordpro-ui/slides'],
       output: {
         globals: { vue: 'Vue' },
         inlineDynamicImports: true,
