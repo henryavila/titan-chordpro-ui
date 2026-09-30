@@ -96,7 +96,7 @@ import CpvSwipeVeil from './chrome/CpvSwipeVeil.vue'
 import { useBlockEdit } from './use/useBlockEdit'
 import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
 import { pinWouldFillViewport } from './use/viewportPin'
-import { useMetronome } from './use/useMetronome'
+import { useMetronome, metronomePulseHit } from './use/useMetronome'
 import { useStrumSound } from './use/useStrumSound'
 import {
   effectiveChannels,
@@ -1180,16 +1180,8 @@ const toastBottom = computed(() => {
 const headHidden = computed(
   () => chromeHidden.value && !(met.pulseHead.value && met.running.value),
 )
-/** Retriggered every beat so 2→3 still plays the hit, not only 1→n. */
-const metHit = ref<'' | '1' | 'n'>('')
-watch(
-  () => (met.running.value ? met.beat.value : -1),
-  async (b) => {
-    metHit.value = ''
-    if (b < 0) return
-    await nextTick()
-    metHit.value = b === 0 ? '1' : 'n'
-  },
+const metHit = computed(() =>
+  metronomePulseHit(met.running.value, met.beat.value, met.beatClock.value),
 )
 const metHitMs = computed(() => `${Math.round(30000 / Math.max(30, met.bpm.value))}ms`)
 const headHitClass = computed(() => {

@@ -67,14 +67,14 @@ const beats = computed(() =>
   Array.from({ length: props.bar }, (_, i) => {
     const live = props.running && props.beat === i
     const accent = i === 0
-    // Only beat 1 wears the theme colour; 2–3–4 pulse as a white chip.
-    const liveFill = accent ? 'var(--chord)' : 'var(--beat-rest)'
-    const liveInk = accent ? 'var(--chord)' : 'var(--beat-rest-ink)'
+    // Beat 1 is ink; 2–3–4 wear the theme.
+    const liveFill = accent ? 'var(--downbeat)' : 'var(--chord)'
+    const liveInk = accent ? 'var(--downbeat)' : 'var(--chord)'
     return {
       n: String(i + 1),
       size: accent ? '13px' : '9px',
       bg: live ? liveFill : 'transparent',
-      edge: live ? liveFill : accent ? 'var(--chord-edge)' : 'var(--line)',
+      edge: live ? liveFill : accent ? 'var(--downbeat)' : 'var(--line)',
       scale: live ? (accent ? 'scale(1.5)' : 'scale(1.35)') : 'scale(1)',
       num: live ? liveInk : 'var(--muted)',
       weight: accent ? '700' : '500',

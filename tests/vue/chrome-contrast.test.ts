@@ -16,16 +16,17 @@ describe('chrome contrast vs template', () => {
     expect(css).toMatch(/\.cpv-ico[\s\S]*?color:\s*inherit/)
   })
 
-  it('beat numbers stay bare; only beat 1 pulses in the theme colour', () => {
+  it('beat numbers stay bare; beat 1 is ink, 2–4 wear the theme', () => {
     const idle = css.match(/\.cpv-met-beat\s*\{[^}]+\}/)?.[0] ?? ''
     expect(idle).toMatch(/background:\s*transparent/)
     expect(idle).toMatch(/border:\s*0/)
     const pulse = css.match(/\.cpv-met-beat\.is-now\s*\{[^}]+\}/)?.[0] ?? ''
-    expect(pulse).toMatch(/background:\s*var\(--beat-rest\)/)
-    expect(pulse).toMatch(/color:\s*var\(--beat-rest-ink\)/)
+    expect(pulse).toMatch(/background:\s*var\(--chord\)/)
+    expect(pulse).toMatch(/color:\s*var\(--chord-ink\)/)
+    expect(pulse).not.toMatch(/--beat-rest/)
     const one = css.match(/\.cpv-met-beat\.is-now\.is-one\s*\{[^}]+\}/)?.[0] ?? ''
-    expect(one).toMatch(/background:\s*var\(--chord\)/)
-    expect(one).toMatch(/color:\s*var\(--chord-ink\)/)
+    expect(one).toMatch(/background:\s*var\(--downbeat\)/)
+    expect(one).toMatch(/color:\s*var\(--downbeat-ink\)/)
     expect(css).toMatch(/--beat-rest:\s*#E8EAF0/)
     expect(css).toMatch(/\[data-theme='light'\][\s\S]*?--beat-rest:\s*#FFFFFF/)
     expect(css).not.toMatch(/\.cpv-met-hit-1\s+\.cpv-met-beat\.is-now/)
@@ -63,6 +64,29 @@ describe('chrome contrast vs template', () => {
     expect(chips).toMatch(/--muted:\s*color-mix\(in srgb,\s*var\(--downbeat\)\s+72%/)
     expect(chips).not.toMatch(/--muted:\s*color-mix\(in srgb,\s*var\(--downbeat-ink\)/)
     expect(chips).toMatch(/--chord-edge:\s*color-mix\(in srgb,\s*var\(--downbeat\)/)
+  })
+
+  it('beat-n strip paints chord as a square pulse, chips stay a nested surface', () => {
+    const head = css.match(/\.cpv-head-hit-n\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(head, 'n still fades via keyframes').not.toMatch(/animation:/)
+    expect(head).toMatch(/--veil:\s*var\(--chord\)/)
+    expect(head).toMatch(/--text:\s*var\(--chord-ink\)/)
+    expect(head, 'remapping --chord on the strip eats the chips').not.toMatch(
+      /--chord:\s*var\(--chord-ink\)/,
+    )
+
+    expect(css).toMatch(/\.cpv-head-hit-n\s+\.cpv-head-chip/)
+    expect(css).not.toMatch(/@keyframes\s+cpv-head-n/)
+
+    const chips = css.match(
+      /\.cpv-head-hit-n\s+\.cpv-head-chip\s*\{[^}]+\}/,
+    )?.[0] ?? ''
+    expect(chips).toMatch(/--chord-soft:\s*var\(--chord-ink\)/)
+    expect(chips).toMatch(/--text:\s*var\(--chord\)/)
+    expect(chips).not.toMatch(/--chord:\s*var\(--downbeat\)/)
+    expect(chips).toMatch(/--chord-edge:\s*color-mix\(in srgb,\s*var\(--chord\)/)
+    expect(chips).toMatch(/--chord-hover:\s*color-mix\(in srgb,\s*var\(--chord\)/)
+    expect(chips).not.toMatch(/--chord-edge:\s*color-mix\(in srgb,\s*var\(--chord-ink\)/)
   })
 
   it('tom pill keeps air between − / + / capo so the pulse cannot glue them', () => {

@@ -36,7 +36,7 @@
   --shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --downbeat: #EAECF2;
   --downbeat-ink: #0B0D12;
-  /* Off-beat pulse (2–3–4): white chip, not the theme green. */
+  /* Piano white key / unlit paper. Not the metronome pulse. */
   --beat-rest: #E8EAF0;
   --beat-rest-ink: #13161D;
 }
@@ -1584,14 +1584,14 @@ div.cpv-head-id {
 }
 .cpv-met-beat.is-now {
   font-weight: 700;
-  background: var(--beat-rest);
-  color: var(--beat-rest-ink);
-  border: 1px solid var(--line);
-}
-/* Only the downbeat wears the theme colour. */
-.cpv-met-beat.is-now.is-one {
   background: var(--chord);
   color: var(--chord-ink);
+  border: 1px solid transparent;
+}
+/* Downbeat is ink (black/white of the theme); 2–4 keep --chord above. */
+.cpv-met-beat.is-now.is-one {
+  background: var(--downbeat);
+  color: var(--downbeat-ink);
   border-color: transparent;
 }
 
@@ -1627,11 +1627,28 @@ div.cpv-head-id {
   color: var(--downbeat);
 }
 .cpv-head-hit-n {
-  animation: cpv-head-n var(--cpv-met-hit, 420ms) ease-out;
+  --veil: var(--chord);
+  --line: var(--chord);
+  --text: var(--chord-ink);
+  --muted: color-mix(in srgb, var(--chord-ink) 72%, transparent);
+  --sel: color-mix(in srgb, var(--chord-ink) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--chord-ink) 28%, transparent);
+  --hover: color-mix(in srgb, var(--chord-ink) 8%, transparent);
+  color: var(--chord-ink);
 }
-@keyframes cpv-head-n {
-  0% { background: var(--chord-fill); border-color: var(--chord-edge); }
-  100% { background: var(--veil); border-color: var(--line); }
+.cpv-head-hit-n .cpv-head-chip {
+  --text: var(--chord);
+  --muted: color-mix(in srgb, var(--chord) 72%, transparent);
+  --chord-soft: var(--chord-ink);
+  --chord-fill: color-mix(in srgb, var(--chord) 16%, var(--chord-ink));
+  --chord-hover: color-mix(in srgb, var(--chord) 12%, transparent);
+  --chord-edge: color-mix(in srgb, var(--chord) 40%, transparent);
+  --surface: color-mix(in srgb, var(--chord) 12%, var(--chord-ink));
+  --line: color-mix(in srgb, var(--chord) 40%, transparent);
+  --sel: color-mix(in srgb, var(--chord) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--chord) 28%, transparent);
+  --hover: color-mix(in srgb, var(--chord) 12%, transparent);
+  color: var(--chord);
 }
 
 .cpv-met-hit-1 .cpv-chord {
