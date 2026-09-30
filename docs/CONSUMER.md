@@ -790,12 +790,14 @@ worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
   MusicXML `.xml`, `.musicxml`, `.mxl`. A qualidade depende dos dados do arquivo.
   MusicXML sem posições de corda/casa fica em Partitura, com TAB indisponível.
 
-O source usa o bloco de partitura já existente, com referência externa:
+O source usa uma diretiva única para cada referência externa:
 
 ```chordpro
-{sos: src="solos/guitarra.gp" track=1 start=17 end=24}
-{eos}
+{score: src="solos/guitarra.gp" track=1 start=17 end=24}
 ```
+
+`{score: ...}` não possui conteúdo interno nem tag de fechamento.
+`{sos}…{eos}` fica reservado à notação escrita dentro da própria cifra.
 
 Faixa e compassos começam em 1; `end` omitido vai até o fim. Os helpers
 `readScoreReference`/`writeScoreReference` validam a referência. Não se converte

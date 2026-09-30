@@ -9,7 +9,7 @@ aplicativo Titan. A exportação não altera o source do consumer.
 | Conteúdo | Onde está hoje | O que vai no ZIP |
 |---|---|---|
 | Letra, acordes, seções, comentários, marcas `x///`, ritmo, `{define}`, TAB em texto e partitura própria | ChordPro | `.cho` UTF-8, preservando o conteúdo |
-| Guitar Pro / MusicXML | `{sos: src="…" track=… start=… end=…}` + `resolveScore` | Arquivo original em `solos/`; referência relativa no `.cho`; faixa e compassos preservados |
+| Guitar Pro / MusicXML | `{score: src="…" track=… start=… end=…}` + `resolveScore` | Arquivo original em `solos/`; referência relativa no `.cho`; faixa e compassos preservados |
 | Imagens da cifra | `{image:…}` / `{img:…}` + `resolveImage` | Arquivo original em `imagens/`; referência relativa no `.cho` |
 | Cantado e playback | `{x_audio_sung:…}`, `{x_audio_playback:…}` | Arquivos completos em `audios/`; referência relativa no `.cho` |
 | Áudio legado | `{x_audio:…}`, `{x_audio_cantado:…}` | Mesmo tratamento; preserva a diretiva e substitui o endereço pelo arquivo local |
