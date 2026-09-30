@@ -73,7 +73,8 @@ export function useMetronome(opts: MetronomeOpts) {
    */
   const runSilent = ref(false)
   /**
-   * The title strip paints the beat. Off until the metronome panel turns it
+   * The title strip paints tempo and contratempo (on for the first half of
+   * each beat, off for the rest). Off until the metronome panel turns it
    * on — Rolar only brings the left count and the chord pulse.
    */
   const pulseHead = ref(false)

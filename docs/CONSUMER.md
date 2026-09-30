@@ -504,6 +504,10 @@ emite `update:rehearsalFocus`. O músico ainda pode mudar pelo interruptor. O
 sobe o relógio **sem áudio**, para a Fonte de prática não vazar no palco. Para
 ouvir batida ao rolar: entre em **Ensaio batida** ou inicie pelo metrônomo.
 
+**Pulso visual:** a coluna 1–2–3–4 à esquerda marca o tempo do compasso. No
+painel, **Faixa do título** faz a barra acender no tempo e apagar no
+contratempo. Rolar não liga a faixa.
+
 Na lente `letra`, `x///` / `//` / `/_` colados ao acorde **não** vazam na
 letra (`razão.[E]//` → `razão.`). Detalhe e o que **não** se apaga:
 [`MARCAS-X.md`](./MARCAS-X.md) § Lente Só letra.

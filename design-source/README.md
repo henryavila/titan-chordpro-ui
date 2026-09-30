@@ -19,7 +19,7 @@ estava aqui foi revista — o que o `.dc.html` faz, o pacote Vue faz.
 | Leitura + chrome E0 (meta, fonte, dirty, view↔edit) | pronto |
 | Modo dual capo (forma acima, cifra real na letra) | pronto |
 | Lente Nashville + comentários de ensaio | pronto |
-| Metrônomo (click, pulso, BPM por música) | pronto |
+| Metrônomo (click, pulso, BPM por música; faixa marca tempo e contratempo) | pronto |
 | Auto-rolagem em tempo musical (`{duration}`, `x///`) | pronto |
 | Overlay “só para mim” + fila de sugestões | pronto |
 | Diagramas de acorde (violão, ukulele, piano) | pronto |

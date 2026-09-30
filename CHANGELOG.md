@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Comentário de ensaio:** o texto de `{c:}` (e as notas de execução) fica maior e reto, para ler de pé, colado no bloco de baixo — é o rótulo daquele trecho. Continua cinza lavado, menor que a letra, sem caixa alta forçada — a música segue na frente.
 - **Rolar no tablet e no computador:** o botão Rolar na barra de baixo fica na cor do acorde, como no celular. Enquanto a cifra sobe, o botão vira Parar na cor da pílula.
-- **Pulsação do metrônomo:** na coluna à esquerda, o tempo 1 fica preto ou branco conforme o tema; 2, 3 e 4 pulsam na cor do tema e continuam visíveis. Com a faixa do título ligada, ela acende na cabeça de cada tempo e apaga no meio — o 1 deixa de ficar invertido até chegar o 2.
+- **Metrônomo marca tempo e contratempo:** no painel, ligue **Faixa do título** e inicie. A barra do título acende na cabeça de cada tempo e apaga no meio — o pulso e o contratempo do compasso. No 1 a faixa inverte (preto ou branco do tema); nos 2, 3 e 4 pinta na cor do acorde. Na coluna à esquerda o 1 é preto ou branco; 2, 3 e 4 pulsam na cor do tema e ficam visíveis. Rolar sozinho não liga a faixa.
 
 ## [0.10.0] - 2026-09-26
 

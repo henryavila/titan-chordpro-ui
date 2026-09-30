@@ -29,7 +29,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - **Tela ligada** enquanto o viewer está aberto (Screen Wake Lock) — o aparelho não apaga no ensaio. Sem botão; HTTPS. Sem a API, no-op
 
 **Ensaio**
-- Metrônomo (tap tempo, contagem de entrada, vinculado à rolagem)
+- **Metrônomo** — tap tempo, contagem de entrada, vinculado à rolagem. A coluna 1–2–3–4 mostra o tempo do compasso; com a faixa do título, a barra acende no tempo e apaga no contratempo
 - Batida visual (setas + pulso) e ensaio com som
 - **Áudio de referência** — arquivo no ensaio, **sem** sync com letra / Rolar / `{duration:}`:
   - Na linha de Cifra e Letra aparece um fone; toque abre o player. Enquanto toca, o fone anima uma onda. Esconder a barra fecha o player grande e deixa o fone; a música segue. No computador o chip com título fica acima da barra. X fecha sem parar
@@ -571,6 +571,12 @@ Iniciar **fecha o painel**: ele cobre a cifra que acabou de pôr em movimento. O
 que fica é a badge do pulso, ancorada na borda da **coluna de leitura** e não na
 borda da janela — num monitor de 1600px a quina do vidro está a 300px de
 qualquer coisa que o músico esteja olhando.
+
+**Tempo e contratempo.** A coluna 1–2–3–4 à esquerda diz *qual* tempo está
+soando: o 1 no contraste do tema (preto ou branco), os outros na cor do acorde,
+o pulso inteiro. Com **Faixa do título** no painel, a barra do título diz
+*quando*: acende na cabeça de cada tempo e apaga no meio — o contratempo. Rolar
+não liga a faixa.
 
 **Contagem de entrada** (padrão, só com a rolagem vinculada): um compasso de
 click antes de a cifra andar, entrando no tempo forte junto com o acento. Conta
