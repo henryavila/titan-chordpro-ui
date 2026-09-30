@@ -9,12 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Zoom dos solos:** ao abrir o zoom de um trecho Guitar Pro/MusicXML, as opções seguem o tema claro ou escuro do Titan e destacam o tamanho selecionado. Também é possível escolher pelas setas do teclado e fechar com Escape.
+- **Indicador no início da linha:** ao editar, o marcador da posição do acorde e seu brilho aparecem inteiros junto à primeira letra, também nas linhas que quebram na tela estreita.
 
 ### Added
+- **Cifra completa (.zip):** em Exportar, baixe a cifra junto com solos Guitar Pro/MusicXML, imagens, cantado, playback e capas/fundos. O pacote troca os endereços por arquivos locais para não depender dos servidores de origem. YouTube/Spotify ficam apenas como informação de origem. Se um anexo falhar, a janela avisa e não baixa um pacote incompleto.
 - **Ocultar TAB e partitura durante o ensaio:** cada bloco tem um botão para recolher a referência e abrir de novo. A rolagem continua no mesmo ponto da música, mesmo quando o trecho ocultado ocupa várias telas; com a rolagem parada, a letra que você estava lendo permanece no lugar. Ocultar não altera a cifra nem o PDF.
 - **Solo com o visual do Titan:** o trecho mostra somente os compassos escolhidos, sem diagramas de acordes, capa, afinação ou rodapé do arquivo. TAB e partitura acompanham as cores claras/escuras da cifra. Ao importar, a prévia começa com até quatro compassos para você ajustar o trecho. O PDF usa o mesmo desenho enxuto em cores para papel.
+- **Solos desenhados no PDF:** em Exportar → Documento, escolha **TAB**, **Partitura** ou **Nenhum** e confirme em **Gerar PDF**. Os trechos Guitar Pro/MusicXML entram desenhados no papel, com os compassos escolhidos, em tamanho de leitura e com quebra de página. Se um arquivo não tiver TAB ou não puder ser aberto, a janela avisa e permite corrigir a escolha.
+- **Solos de Guitar Pro e MusicXML:** ao editar, toque no + entre os blocos e escolha **Guitar Pro / MusicXML**. Abra o arquivo, selecione a faixa e os compassos e confira o trecho antes de salvar. Na leitura, alterne entre **TAB** e **Partitura**; o zoom automático mantém as notas grandes e reorganiza os compassos conforme a tela. Também há zoom manual. Arquivos sem posições nas cordas ficam em Partitura. O solo mantém o tom do arquivo original.
 
 ### Changed
+- **Onde o acorde prende na letra:** ao editar, a linha abre o mesmo espaço da leitura para o acorde caber, também no meio da palavra. Um traço vertical fino, com brilho suave e um pequeno ponto no topo, indica a posição exata do acorde.
 - **Imagem na cifra:** em Inserir, dá para enviar uma foto ou um arquivo (JPG, PNG, WebP ou GIF). O app guarda o arquivo; a cifra fica só com o nome. Sem um app para guardar, o item não aparece.
 - **Inserir no lugar:** no modo de edição, o + fica entre os blocos, no ponto em que o trecho novo entra. O botão Inserir solto da barra saiu.
 - **Cifra no meio da linha:** ao editar a letra, o botão Cifra coloca o acorde onde o cursor está.

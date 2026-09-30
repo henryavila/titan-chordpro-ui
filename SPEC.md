@@ -169,6 +169,16 @@ export type ChordProLine =
 - Body: chord/lyric pairs in reading order from ViewModel (**not** a brittle HTML scrape long-term; v0.1 may scrape own HTML if snapshots lock parity with current SDA PDF — document which path in CHANGELOG).
 - Bytes in = transposed view; filename helper uses `displayKey`.
 
+### 4.3a Offline chart bundle
+
+The Vue export offers **Cifra completa (.zip)**. The separate `./bundle` entry
+exports `exportChartBundle(source, options)` returning ZIP bytes, filename and
+attachment count. It includes the UTF-8 ChordPro, original notation files,
+images, sung/playback audio and supplied artwork, with local relative references.
+Online service links are provenance only when explicitly configured. Missing
+attachments must fail the export, never silently yield an incomplete archive.
+See `docs/BUNDLE.md` for the complete inventory, manifest and host contract.
+
 ### 4.4 File extensions
 
 **Input (CLI / host):** accept ChordPro text files as **`.cho`** or **`.chordpro`** (case-insensitive). Same `parse()` path — extension does not change semantics.

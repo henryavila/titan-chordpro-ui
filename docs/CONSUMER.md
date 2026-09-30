@@ -767,3 +767,117 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
 
 Props, emits e o resto da API: [README](../README.md).
+
+## Solos em Guitar Pro / MusicXML
+
+Em **Editar → + entre blocos → Guitar Pro / MusicXML**, abra um endereço de
+arquivo, escolha a faixa e o primeiro/último compasso, confira o desenho e salve.
+Na leitura, o próprio trecho oferece **TAB / Partitura** e **Zoom automático**.
+O desenho SVG reorganiza os compassos conforme a largura e mantém escala mínima
+de 110%; um compasso muito denso pode rolar horizontalmente sem diminuir as notas.
+O zoom manual vai até 200%. A notação conserva o tom do arquivo original.
+
+Instale o peer opcional `@coderline/alphatab` (>=1.8.4 <2). Ele é carregado apenas
+quando se abre um solo externo. A fonte Bravura acompanha o pacote, sem CDN,
+worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
+
+- `uploadScore(file): Promise<{ ref: string }>` habilita escolher um arquivo do
+  aparelho; o host guarda os bytes originais e devolve uma referência permanente.
+- `resolveScore(ref): string` transforma essa referência em URL acessível ao
+  navegador. URLs externas precisam permitir CORS. Sem resolver, usa a referência
+  como URL relativa ou absoluta.
+- Formatos do importador: Guitar Pro `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.gp` e
+  MusicXML `.xml`, `.musicxml`, `.mxl`. A qualidade depende dos dados do arquivo.
+  MusicXML sem posições de corda/casa fica em Partitura, com TAB indisponível.
+
+O source usa o bloco de partitura já existente, com referência externa:
+
+```chordpro
+{sos: src="solos/guitarra.gp" track=1 start=17 end=24}
+{eos}
+```
+
+Faixa e compassos começam em 1; `end` omitido vai até o fim. Os helpers
+`readScoreReference`/`writeScoreReference` validam a referência. Não se converte
+para a notação simplificada do editor; bends, vozes e durações permanecem no
+arquivo. Alterar ou cancelar o trecho não modifica os bytes originais.
+
+Limites desta entrega: a transposição da cifra não transpõe o arquivo externo;
+o HTML estático identifica o trecho, sem desenhar a pauta externa.
+A seleção de compassos não fornece sincronização de áudio nem tempo exato para
+a auto-rolagem. Na lente Só letra, o trecho é ocultado como as outras partituras.
+
+Referência do motor: https://alphatab.net/docs/introduction
+
+
+### Solos na exportação PDF
+
+Ao tocar **Exportar → Documento PDF**, uma cifra com solos Guitar Pro/MusicXML
+pede **TAB**, **Partitura** ou **Nenhum**, e só baixa após **Gerar PDF**. O desenho
+é preparado para papel, em preto no branco, no tom original do arquivo, com os
+compassos selecionados e quebra de página entre sistemas completos. Não depende
+do zoom, tema ou da parte visível na tela. Se um arquivo não tiver TAB, a escolha
+continua aberta com uma mensagem para escolher Partitura ou Nenhum. Falhas de
+leitura/desenho interrompem o download; não se gera um PDF com o solo faltando.
+Nenhum omite os blocos TAB/partitura. TABs em texto e partituras da sintaxe antiga
+mantêm a exportação anterior quando incluídas; a alternância é dos arquivos
+Guitar Pro/MusicXML.
+
+Para consumidores de `renderPdf` sem o componente Vue:
+
+- `notation: 'tab' | 'score' | 'none'` seleciona a exportação.
+- `renderNotation(text, mode)` fornece uma Promise de imagens PNG dos sistemas
+  (`{ data: string | Uint8Array, width: number, height: number }[]`). A largura e
+  altura usam a mesma unidade; o PDF preserva a proporção e pagina os sistemas.
+- O componente Vue fornece esse renderizador automaticamente. O `/pdf` continua
+  utilizável no Node, sem Vue/DOM. Sem `notation`, preserva o comportamento anterior
+  (referência textual); com TAB/Partitura e um solo externo, exige `renderNotation`.
+- A renderização para papel usa alphaTab Canvas a pelo menos 288 pixels por
+  polegada na largura útil A4, enquanto a cifra na tela continua em SVG.
+
+
+### Apresentação do trecho (Titan)
+
+A superfície é composta pelo Titan a partir dos sistemas musicais do motor,
+sem montar o visualizador de documento do alphaTab. Importação e geometria de
+notação continuam no motor; a seleção de faixa/compassos, disposição, controles,
+cores, fontes e composição das linhas pertencem à UI Titan. Tela e PDF usam
+`notation-renderer.ts`, com paletas separadas. Não aparecem capa, afinação,
+diagramas, nomes de acordes do documento, créditos ou rodapé do importador.
+Bends, ligaduras, pausas e indicações musicais permanecem.
+
+Na tela o fundo é transparente, as notas seguem a cor de texto da cifra, as
+linhas seguem a cor secundária e os números dos compassos seguem a cor dos
+acordes. Alternar claro/escuro redesenha o trecho sem buscar novamente o arquivo.
+O layout ignora a paginação original e reorganiza os sistemas na largura atual.
+A importação de um arquivo novo abre os primeiros quatro compassos (ou menos,
+se o arquivo for menor); o músico define o intervalo antes de salvar. Referências
+já salvas continuam respeitando exatamente o intervalo original.
+
+
+### Recolher referências durante a leitura
+
+**Ocultar TAB / partitura** recolhe individualmente solos externos, partituras,
+TABs em texto e imagens. **Mostrar TAB / partitura** reabre o mesmo bloco.
+A preferência vale na leitura da cifra atual e não reescreve o source, não
+remove os tempos do bloco e não muda a escolha da exportação PDF.
+
+Enquanto Rolar está ativo, a UI conserva a posição musical e mede novamente o
+layout depois de recolher/abrir. Mudanças de scroll causadas pelo navegador ao
+encolher a página não são tratadas como um gesto para avançar na música. Parada,
+a UI preserva o bloco/linha visível, dentro dos limites de rolagem disponíveis.
+Se o próprio trecho em leitura for recolhido, seu tempo permanece no relógio;
+o botão compacto o representa até o trecho seguinte. Entrar no editor ou trocar
+a cifra reabre as referências.
+
+
+## Cifra completa (.zip)
+
+**Exportar → Cifra completa** reúne ChordPro, solos, imagens, áudios e capas/fundos
+em um pacote com referências locais. Para arquivos privados, o consumer pode
+fornecer `loadBundleAsset(reference, kind)`. Serviços online ficam somente como
+informação de origem. Contrato, inventário completo e limites: [BUNDLE.md](./BUNDLE.md).
+
+Não há importação automática do ZIP nesta entrega. O consumer pode extrair os
+arquivos e resolver seus caminhos a partir da pasta extraída; o pacote não
+depende dos servidores de origem para obter as mídias.
