@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Solo com o visual do Titan:** o trecho mostra somente os compassos escolhidos, sem diagramas de acordes, capa, afinação ou rodapé do arquivo. TAB e partitura acompanham as cores claras/escuras da cifra. Ao importar, a prévia começa com até quatro compassos para você ajustar o trecho. O PDF usa o mesmo desenho enxuto em cores para papel.
+
 ### Changed
 - **Imagem na cifra:** em Inserir, dá para enviar uma foto ou um arquivo (JPG, PNG, WebP ou GIF). O app guarda o arquivo; a cifra fica só com o nome. Sem um app para guardar, o item não aparece.
 - **Inserir no lugar:** no modo de edição, o + fica entre os blocos, no ponto em que o trecho novo entra. O botão Inserir solto da barra saiu.

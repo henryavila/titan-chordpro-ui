@@ -3400,3 +3400,20 @@ div.cpv-head-id {
   font-size: 12px;
   color: var(--danger);
 }
+
+/* Imported notation reflows at a readable size; dense single bars can scroll. */
+.cpv-external-score { padding: 12px; min-width: 0; }
+.cpv-external-score .cpv-figure-cap { flex-wrap: wrap; gap: 8px; }
+.cpv-notation-paper { background: transparent; color: var(--text); overflow-x: auto; border-radius: 6px; }
+.cpv-external-score p { font-size: 13px; line-height: 1.5; }
+.cpv-external-score select { color: var(--text); background: var(--bg); }
+.cpv-import-score { width: min(900px, 100%); max-height: 90%; overflow: auto; padding: 20px; border-radius: 18px; }
+.cpv-import-score h2 { font-size: 20px; }
+.cpv-import-score fieldset { border: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.cpv-import-score label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.cpv-import-score input, .cpv-import-score select { padding: 8px; max-width: 100%; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.cpv-import-score-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+.cpv-notation-system { margin: 0 0 8px; }
+.cpv-notation-system svg { display: block; }
+.cpv-external-score .cpv-figure-kind { font-size: 12px; white-space: normal; letter-spacing: normal; text-transform: none; }
