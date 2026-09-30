@@ -36,7 +36,7 @@ Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página n
 ```sh
 pnpm add @henryavila/titan-chordpro-ui
 # peers: vue ^3.5 (obrigatório para a UI)
-#        vexflow (só se for desenhar {sos}/{sot})
+#        vexflow (só se for desenhar {x_titan_start_of_score}/{sot})
 #        pdfjs-dist (só se for importar PDF)
 ```
 
@@ -368,15 +368,15 @@ ou nenhum). Sem faixa, o chrome não muda. Caminho same-origin (`/audio/nasce.m4
 também vale. Uma faixa só: `setAudioUrl(cho, url, 'sung' | 'playback')`.
 
 Persistir é o fluxo de sempre (`update:source` / `save-content`). Não chame
-`writeMeta(cho, { x_audio_sung })` sozinho — `writeMeta` substitui o header
+`writeMeta(cho, { x_titan_audio_sung })` sozinho — `writeMeta` substitui o header
 inteiro; use `setRehearsalAudio`.
 
-**Capa da cifra:** quadrado **1024 × 1024 px** em `{x_audio_art:}`. A Central
+**Capa da cifra:** quadrado **1024 × 1024 px** em `{x_titan_audio_art:}`. A Central
 de Mídia mostra a capa em 1:1. Passe `width` e `height` **desse arquivo**,
 não do original de 3000 px. A URL precisa ser fetchável (CORS).
 
 **Capa padrão da marca:** prop `defaultAudioArt` (`{ url, width, height }`),
-quadrado **1024 × 1024**. Vale quando a cifra não tem `{x_audio_art:}`. A arte
+quadrado **1024 × 1024**. Vale quando a cifra não tem `{x_titan_audio_art:}`. A arte
 da cifra vence. Sem as duas, o Titan usa a arte genérica 512×512.
 
 Enquanto o áudio toca, o Titan publica na Central de Mídia o `{title:}` (sem
@@ -400,9 +400,36 @@ na cifra: `/media.html?capa=0`. Ensaio com lista: **`/standalone-lista.html?audi
 (cada cifra leva uma faixa diferente, para ouvir a troca). No celular, toque
 play e bloqueie a tela.
 
-Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
-`{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` /
-`{x_audio_cantado:}` legado lê como sung. UI: Cantado / Playback.
+**BREAKING CHANGE — migração obrigatória antes de atualizar o pacote.**
+Atualize as cifras já salvas e os campos lidos/enviados pelo consumer:
+
+| Nome anterior | Nome obrigatório |
+|---|---|
+| `x_source`, `x_origem` | `x_titan_source` |
+| `x_youtube` | `x_titan_youtube` |
+| `x_audio_sung`, `x_audio`, `x_audio_cantado` | `x_titan_audio_sung` |
+| `x_audio_playback` | `x_titan_audio_playback` |
+| `x_audio_art` | `x_titan_audio_art` |
+| `x_audio_art_w`, `x_audio_art_h` | `x_titan_audio_art_w`, `x_titan_audio_art_h` |
+| `x_strum`, `x_strum_set` | `x_titan_strum`, `x_titan_strum_set` |
+| `score` | `x_titan_score` |
+| `sos`, `start_of_score` | `x_titan_start_of_score` |
+| `eos`, `end_of_score` | `x_titan_end_of_score` |
+| `parseXStrum`, `formatXStrum` | `parseTitanStrum`, `formatTitanStrum` |
+| `parseXStrumSet`, `formatXStrumSet` | `parseTitanStrumSet`, `formatTitanStrumSet` |
+
+As chaves novas também são as propriedades de `ChartMeta`, os valores de
+`MetaKey` / `META_KEYS` e as chaves dos patches para os nove metadados.
+As três diretivas de notação são blocos do documento. `ParsedScore.from`
+passa de `sos` para `x_titan_start_of_score` quando a notação é interna.
+Ajuste os leitores, escritores
+e imports do consumer junto com a atualização das cifras. Não há aliases nem
+conversão automática. Diretivas padrão e marcas de tempo `x///` não mudam.
+
+Diretivas (inglês no arquivo): `{x_titan_audio_sung:}`, `{x_titan_audio_playback:}`,
+`{x_titan_audio_art:}`, `{x_titan_audio_art_w:}`, `{x_titan_audio_art_h:}`. UI: Cantado / Playback.
+Os nomes antigos não são interpretados nem convertidos. Arquivos e propriedades
+de `ChartMeta` devem usar `x_titan_*`; veja [o contrato de nomes](NAMING.md#custom-chordpro-tags-x_titan_).
 
 O player na cifra mostra o mesmo título, artista e capa. Com as duas faixas,
 Cantado / Playback são pílulas clicáveis; com uma só, só o rótulo. No celular
@@ -411,8 +438,8 @@ o ícone de fone na linha de Cifra | Letra: toque abre o player
 fecha o player grande e deixa o fone. No computador o chip continua acima da
 barra, com título. X fecha o player (sem parar o áudio).
 
-A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
-ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
+A origem da cifra no arquivo é `{x_titan_source:}` (inglês).
+Na UI o campo continua **Origem** /
 **Referência**.
 
 YouTube, Spotify, Apple Music, `javascript:` e `data:` são recusados (throw).
@@ -723,7 +750,7 @@ Sem o `Referer`, alguns servidores respondem 401.
 | `stdShapeKey` | `config.keyShape` e `<button data-anchor="--chord-tone">Em</button>`. Este é o tom da página. `key` e `shapeKey` divergem quando há capo (Wonderwall: a página mostra `Em`, a API manda `key` `A`) |
 | `capo` | `config.capo` (número). `0` não vira `{capo:}` |
 | `youtubeId` | `"youtubeID"` (ID maiúsculo), 11 caracteres, antes de um `videoLesson` |
-| `strumming` | array `strummings`. Em cada item, `time_signature` vira `timeSignature`; `pattern`, `bpm` e `section` ficam. Sem `strummings`, tempo, compasso e `{x_strum:}` não entram. Sem `timeSignature`, o compasso cai em 4/4; tempo e batida continuam |
+| `strumming` | array `strummings`. Em cada item, `time_signature` vira `timeSignature`; `pattern`, `bpm` e `section` ficam. Sem `strummings`, tempo, compasso e `{x_titan_strum:}` não entram. Sem `timeSignature`, o compasso cai em 4/4; tempo e batida continuam |
 | `content` | o texto da API, dentro de `<pre>`, do jeito que veio |
 
 O acorde em `content` já é `<b>Bm7</b>`. O parser usa o texto da tag.
@@ -793,11 +820,11 @@ worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
 O source usa uma diretiva única para cada referência externa:
 
 ```chordpro
-{score: src="solos/guitarra.gp" track=1 start=17 end=24}
+{x_titan_score: src="solos/guitarra.gp" track=1 start=17 end=24}
 ```
 
-`{score: ...}` não possui conteúdo interno nem tag de fechamento.
-`{sos}…{eos}` fica reservado à notação escrita dentro da própria cifra.
+`{x_titan_score: ...}` não possui conteúdo interno nem tag de fechamento.
+`{x_titan_start_of_score}…{x_titan_end_of_score}` fica reservado à notação escrita dentro da própria cifra.
 
 Faixa e compassos começam em 1; `end` omitido vai até o fim. Os helpers
 `readScoreReference`/`writeScoreReference` validam a referência. Não se converte

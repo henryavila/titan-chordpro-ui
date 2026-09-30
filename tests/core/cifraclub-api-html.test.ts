@@ -68,7 +68,7 @@ describe('Cifra Club version JSON → HTML the parser already reads', () => {
     const meta = readMeta(r.source)
     expect(meta.key).toBe('Em')
     expect(meta.capo).toBe('2')
-    expect(meta.x_youtube).toBe('6hzrDeceEKc')
+    expect(meta.x_titan_youtube).toBe('6hzrDeceEKc')
     expect(r.source).not.toContain('{sot}')
     expect(r.source).toContain('[Em7]')
   })

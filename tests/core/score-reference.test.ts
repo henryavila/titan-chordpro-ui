@@ -8,7 +8,7 @@ describe('external solo reference', () => {
   it('round trips escaped references and preserves the real chart and lyrics', () => {
     const ref = { src: 'solos/intro "guitarra".gp', track: 2, start: 3, end: 7 }
     const text = writeScoreReference(ref)
-    expect(text).toBe('{score: src="solos/intro \\"guitarra\\".gp" track=2 start=3 end=7}')
+    expect(text).toBe('{x_titan_score: src="solos/intro \\"guitarra\\".gp" track=2 start=3 end=7}')
     expect(text.split('\n')).toHaveLength(1)
     expect(readScoreReference(text)).toEqual(ref)
     const view = parse(`${fixture}\n${text}`)
@@ -18,11 +18,11 @@ describe('external solo reference', () => {
   })
   it('keeps inline notation separate; rejects malformed ranges and references', () => {
     expect(isScoreReference(fixture)).toBe(false)
-    expect(readScoreReference('{sos: time=4/4}\n{eos}')).toBeNull()
+    expect(readScoreReference('{x_titan_start_of_score: time=4/4}\n{x_titan_end_of_score}')).toBeNull()
     for (const ref of [
       { src: '', track: 1, start: 1 }, { src: 'a.gp', track: 0, start: 1 },
       { src: 'a.gp', track: 1, start: 2, end: 1 }, { src: 'a.gp', track: 1, start: 1.5 },
-      { src: 'a\n{eos}', track: 1, start: 1 },
+      { src: 'a\n{x_titan_end_of_score}', track: 1, start: 1 },
     ]) expect(() => writeScoreReference(ref)).toThrow()
   })
   it('owns exactly one source line without consuming the following chart', () => {
@@ -32,10 +32,10 @@ describe('external solo reference', () => {
     expect(blocks[0]).toMatchObject({ kind: 'score', text, li0: 0, li1: 0 })
     expect(lyricsText(parse(source))).toBe(lyricsText(parse(fixture)))
     expect(deleteBlock(source.split('\n'), blocks, 0)?.lines.join('\n')).toBe(fixture)
-    expect(() => readScoreReference(text + '\n{eos}')).toThrow()
-    expect(() => readScoreReference('{score: track=1}')).toThrow()
+    expect(() => readScoreReference(text + '\n{x_titan_end_of_score}')).toThrow()
+    expect(() => readScoreReference('{x_titan_score: track=1}')).toThrow()
     expect(() => readScoreReference(text.slice(0, -1))).toThrow()
-    expect(readScoreReference(text.replace('{score:', '{sos:') + '\n{eos}')).toBeNull()
+    expect(readScoreReference(text.replace('{x_titan_score:', '{x_titan_start_of_score:') + '\n{x_titan_end_of_score}')).toBeNull()
   })
   it('keeps readable glyphs on narrow surfaces and enlarges on wider ones', () => {
     expect(scoreAutoScale(320)).toBe(1.1)

@@ -504,7 +504,7 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
 const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
-/** Batida from `{x_strum:}` / `{x_strum_set:}` — toggle is the reader's choice. */
+/** Batida from `{x_titan_strum:}` / `{x_titan_strum_set:}` — toggle is the reader's choice. */
 const strumSet = computed(() => readStrumPatterns(liveSource.value))
 const strumPattern = computed(() => {
   const set = strumSet.value
@@ -2065,7 +2065,7 @@ function onFixTune() {
 
 /**
  * One path for a score and for a legacy text tab: the tab opens imported and
- * is written back as `{sos}`, so a chart has a single way to hold music.
+ * is written back as `{x_titan_start_of_score}`, so a chart has a single way to hold music.
  */
 type ScoreEdit = { li0: number; li1: number; kind: 'score' | 'tab'; text: string; fresh: boolean }
 const scoreEd = ref<ScoreEdit | null>(null)
@@ -2106,7 +2106,7 @@ function newScore() {
   scoreEd.value = {
     ...span,
     kind: 'score',
-    text: '{sos: time=4/4 key=D tempo=92 tuning=EADGBE}\n{eos}',
+    text: '{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}\n{x_titan_end_of_score}',
     fresh: true,
   }
 }

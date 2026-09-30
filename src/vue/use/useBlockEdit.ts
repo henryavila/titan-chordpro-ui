@@ -676,7 +676,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
    * A new score goes into the file empty and the editor opens on top of it.
    * Cancelling undoes the insert — no ghost block is left behind in the chart.
    */
-  function insertScore(text = '{sos: time=4/4 key=D tempo=92 tuning=EADGBE}\n{eos}'): { li0: number; li1: number } {
+  function insertScore(text = '{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}\n{x_titan_end_of_score}'): { li0: number; li1: number } {
     const at = whereToInsert()
     const out = [...lines.value]
     const inserted = text.split('\n')

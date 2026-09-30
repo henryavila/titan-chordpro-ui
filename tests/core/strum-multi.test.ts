@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  formatXStrum,
-  parseXStrum,
+  formatTitanStrum,
+  parseTitanStrum,
   patternFromCc,
 } from '../../src/core/strum'
 import {
-  formatXStrumSet,
+  formatTitanStrumSet,
   metaFromStrumSet,
-  parseXStrumSet,
+  parseTitanStrumSet,
   type StrumPatternSet,
 } from '../../src/core/strum-multi'
 import {
@@ -41,17 +41,17 @@ function twoPatterns(): StrumPatternSet {
   return { activeIndex: 0, patterns: [a, b] }
 }
 
-describe('legacy single {x_strum:} still parses', () => {
-  it('parseXStrum unchanged for a lone pattern string', () => {
+describe('single {x_titan_strum:} parses', () => {
+  it('parseTitanStrum unchanged for a lone pattern string', () => {
     const raw = 'bpm=71; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU'
-    const p = parseXStrum(raw)
+    const p = parseTitanStrum(raw)
     expect(p?.bpm).toBe(71)
     expect(p?.label).toBe('Padrão')
     expect(p?.slots).toHaveLength(8)
   })
 
-  it('readStrumPatterns promotes lone x_strum to a 1-pattern set', () => {
-    const src = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n[G]a\n`
+  it('readStrumPatterns promotes lone x_titan_strum to a 1-pattern set', () => {
+    const src = `{title:X}\n{x_titan_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n[G]a\n`
     const set = readStrumPatterns(src)
     expect(set.patterns).toHaveLength(1)
     expect(set.activeIndex).toBe(0)
@@ -60,14 +60,14 @@ describe('legacy single {x_strum:} still parses', () => {
   })
 })
 
-describe('x_strum_set wire format', () => {
+describe('x_titan_strum_set wire format', () => {
   it('round-trips N named patterns without JSON braces', () => {
     const set = twoPatterns()
-    const raw = formatXStrumSet(set)
+    const raw = formatTitanStrumSet(set)
     expect(raw).not.toMatch(/[{}]/)
     expect(raw.startsWith('0|')).toBe(true)
     expect(raw.split('|').length).toBe(3) // index + 2 patterns
-    const again = parseXStrumSet(raw)
+    const again = parseTitanStrumSet(raw)
     expect(again?.activeIndex).toBe(0)
     expect(again?.patterns).toHaveLength(2)
     expect(again?.patterns[0]?.label).toBe('Parte 1')
@@ -76,85 +76,85 @@ describe('x_strum_set wire format', () => {
     expect(again?.patterns[1]?.slots).toEqual(set.patterns[1]?.slots)
   })
 
-  it('metaFromStrumSet writes only x_strum when N==1', () => {
+  it('metaFromStrumSet writes only x_titan_strum when N==1', () => {
     const one: StrumPatternSet = {
       activeIndex: 0,
       patterns: [twoPatterns().patterns[0]!],
     }
     const meta = metaFromStrumSet(one)
-    expect(meta.x_strum).toContain('label=Parte 1')
-    expect(meta.x_strum_set).toBeUndefined()
+    expect(meta.x_titan_strum).toContain('label=Parte 1')
+    expect(meta.x_titan_strum_set).toBeUndefined()
   })
 
-  it('metaFromStrumSet writes x_strum (active) + x_strum_set when N>1', () => {
+  it('metaFromStrumSet writes x_titan_strum (active) + x_titan_strum_set when N>1', () => {
     const set = { ...twoPatterns(), activeIndex: 1 }
     const meta = metaFromStrumSet(set)
-    expect(meta.x_strum).toContain('label=Parte 2')
-    expect(meta.x_strum_set).toBeTruthy()
-    expect(meta.x_strum_set!.startsWith('1|')).toBe(true)
+    expect(meta.x_titan_strum).toContain('label=Parte 2')
+    expect(meta.x_titan_strum_set).toBeTruthy()
+    expect(meta.x_titan_strum_set!.startsWith('1|')).toBe(true)
   })
 
-  it('writeStrumPatterns / readStrumPatterns round-trip; active mirrors x_strum', () => {
+  it('writeStrumPatterns / readStrumPatterns round-trip; active mirrors x_titan_strum', () => {
     const set = { ...twoPatterns(), activeIndex: 1 }
     const src = writeStrumPatterns('{title:X}\n[G]a\n', set)
     const meta = readMeta(src)
-    expect(meta.x_strum).toContain('Parte 2')
-    expect(meta.x_strum_set).toBeTruthy()
+    expect(meta.x_titan_strum).toContain('Parte 2')
+    expect(meta.x_titan_strum_set).toBeTruthy()
 
-    // Active content is whatever x_strum says (legacy readers)
-    const live = parseXStrum(meta.x_strum!)
+    // Active content is whatever x_titan_strum says
+    const live = parseTitanStrum(meta.x_titan_strum!)
     expect(live?.label).toBe('Parte 2')
 
     const read = readStrumPatterns(src)
     expect(read.patterns).toHaveLength(2)
     expect(read.activeIndex).toBe(1)
     expect(read.patterns[1]?.label).toBe('Parte 2')
-    expect(formatXStrum(read.patterns[1]!)).toBe(meta.x_strum)
+    expect(formatTitanStrum(read.patterns[1]!)).toBe(meta.x_titan_strum)
   })
 
-  it('writeStrumPatterns with N==1 omits x_strum_set', () => {
+  it('writeStrumPatterns with N==1 omits x_titan_strum_set', () => {
     const one: StrumPatternSet = {
       activeIndex: 0,
       patterns: [twoPatterns().patterns[0]!],
     }
     const src = writeStrumPatterns('{title:X}\n[G]a\n', one)
-    expect(readMeta(src).x_strum_set).toBeUndefined()
-    expect(readMeta(src).x_strum).toContain('Parte 1')
+    expect(readMeta(src).x_titan_strum_set).toBeUndefined()
+    expect(readMeta(src).x_titan_strum).toContain('Parte 1')
   })
 
   it('writeStrumPatterns empty set clears both keys', () => {
     const withMulti = writeStrumPatterns('{title:X}\n[G]a\n', twoPatterns())
     const cleared = writeStrumPatterns(withMulti, { activeIndex: 0, patterns: [] })
     const meta = readMeta(cleared)
-    expect(meta.x_strum).toBeUndefined()
-    expect(meta.x_strum_set).toBeUndefined()
+    expect(meta.x_titan_strum).toBeUndefined()
+    expect(meta.x_titan_strum_set).toBeUndefined()
   })
 })
 
 describe('import / enrich keep all CC patterns', () => {
-  it('convert Céu Azul keeps 2 patterns via x_strum_set', () => {
+  it('convert Céu Azul keeps 2 patterns via x_titan_strum_set', () => {
     const r = convert(CEU_AZUL)
     const set = readStrumPatterns(r.source)
     expect(set.patterns).toHaveLength(2)
     expect(set.patterns[0]?.label).toMatch(/Parte 1/)
     expect(set.patterns[1]?.label).toMatch(/Parte 2/)
-    expect(readMeta(r.source).x_strum).toBeTruthy()
-    expect(readMeta(r.source).x_strum_set).toBeTruthy()
+    expect(readMeta(r.source).x_titan_strum).toBeTruthy()
+    expect(readMeta(r.source).x_titan_strum_set).toBeTruthy()
   })
 
   it('enrich fills full set when local has no batida', () => {
     const local = `{title:X}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, CEU_AZUL)
-    expect(proposal.patch.x_strum).toBeTruthy()
-    expect(proposal.patch.x_strum_set).toBeTruthy()
+    expect(proposal.patch.x_titan_strum).toBeTruthy()
+    expect(proposal.patch.x_titan_strum_set).toBeTruthy()
     const next = applyCifraClubEnrich(local, proposal)
     expect(readStrumPatterns(next).patterns).toHaveLength(2)
   })
 
-  it('enrich keep-local still omits batida when x_strum already present', () => {
-    const local = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n[G]a\n`
+  it('enrich keep-local still omits batida when x_titan_strum already present', () => {
+    const local = `{title:X}\n{x_titan_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, CEU_AZUL)
-    expect(proposal.patch.x_strum).toBeUndefined()
-    expect(proposal.patch.x_strum_set).toBeUndefined()
+    expect(proposal.patch.x_titan_strum).toBeUndefined()
+    expect(proposal.patch.x_titan_strum_set).toBeUndefined()
   })
 })

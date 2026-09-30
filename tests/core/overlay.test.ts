@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseXStrum, readMeta, rewriteToKey, writeStrumPatterns } from '../../src/core'
+import { parseTitanStrum, readMeta, rewriteToKey, writeStrumPatterns } from '../../src/core'
 import {
   absorbInto,
   absorbedOp,
@@ -194,16 +194,16 @@ describe('labels', () => {
 })
 
 const STRUM_CHART = ['{title:T}', '{key:G}', '{c:V}', '[G]oi'].join('\n')
-const STRUM = parseXStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU')!
+const STRUM = parseTitanStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU')!
 
 describe('merge mask includes batida', () => {
-  it('diffs a new {x_strum:} as an insert the admin can apply', () => {
+  it('diffs a new {x_titan_strum:} as an insert the admin can apply', () => {
     const mine = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
     const ops = diffOps(STRUM_CHART, mine, CTX)
-    expect(ops.some((op) => op.after.some((l) => l.includes('{x_strum:')))).toBe(true)
+    expect(ops.some((op) => op.after.some((l) => l.includes('{x_titan_strum:')))).toBe(true)
     const r = applyOps(STRUM_CHART, ops)
     expect(r.failed).toHaveLength(0)
-    expect(r.text).toContain('{x_strum:')
+    expect(r.text).toContain('{x_titan_strum:')
     expect(r.text).toContain('[G]oi')
     expect(opLabel(ops[0]!)).toBe('Batida nova')
   })
@@ -214,13 +214,13 @@ describe('merge mask includes batida', () => {
     const shifted = STRUM_CHART.replace('{key:G}', '{key:G}\n{tempo:90}')
     const r = applyOps(shifted, ops)
     expect(r.failed).toHaveLength(0)
-    expect(r.text).toContain('{x_strum:')
+    expect(r.text).toContain('{x_titan_strum:')
     expect(r.text).toContain('{tempo:90}')
   })
 
-  it('labels replace and delete of {x_strum:} as batida, not an empty trecho', () => {
+  it('labels replace and delete of {x_titan_strum:} as batida, not an empty trecho', () => {
     const withStrum = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
-    const other = parseXStrum('bpm=100; meter=4/4; grid=8; label=Outro; pat=Dudu Dudu')!
+    const other = parseTitanStrum('bpm=100; meter=4/4; grid=8; label=Outro; pat=Dudu Dudu')!
     const changed = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [other] })
     const replaceOp = diffOps(withStrum, changed, CTX)[0]!
     expect(opLabel(replaceOp)).toBe('Batida alterada')
@@ -249,7 +249,7 @@ describe('merge mask includes batida', () => {
 
   it('marks changed slots on the proposed pattern for the visualizer', () => {
     const withStrum = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
-    const other = parseXStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=Dudu Dudu')!
+    const other = parseTitanStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=Dudu Dudu')!
     const changed = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [other] })
     const review = strumReviewFromOp(diffOps(withStrum, changed, CTX)[0]!)
     const d = diffStrumPattern(review?.previous[0], review?.proposed[0])

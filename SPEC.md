@@ -181,6 +181,13 @@ See `docs/BUNDLE.md` for the complete inventory, manifest and host contract.
 
 ### 4.4 File extensions
 
+**Titan extensions:** application-specific directives use `x_titan_` exclusively.
+Metadata keys and the three notation directives (`x_titan_score`,
+`x_titan_start_of_score`, `x_titan_end_of_score`) are defined in
+`docs/NAMING.md`. Former names are not interpreted or converted. This breaking
+change requires consumers to migrate stored charts and API usage as documented
+in `docs/CONSUMER.md`; the release notes must state those required adjustments.
+
 **Input (CLI / host):** accept ChordPro text files as **`.cho`** or **`.chordpro`** (case-insensitive). Same `parse()` path — extension does not change semantics.
 
 **Export text default:** `buildChoFilename` keeps suffix **`.cho`** (SDA parity). Optional `opts.ext: 'cho' | 'chordpro'` may be added; if omitted → `.cho`.
@@ -270,7 +277,7 @@ Production corpus (tenant dump): `fixtures/sda/*.cho`. Demo lists **only** that 
 | Id | File | Role |
 |---|---|---|
 | sda | `fixtures/sda/*.cho` | 148 cifras vivas — SoT do demo e do aceite |
-| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{sos}` (fora da lista do demo) |
+| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{x_titan_start_of_score}` (fora da lista do demo) |
 | empty | empty string / missing | parse → empty sections, no throw |
 
 Agent **must not** invent chord charts for snapshots.

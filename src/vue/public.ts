@@ -230,7 +230,7 @@ export type ChordproViewerProps = {
    */
   readPdf?: (file: File) => Promise<string>
   /**
-   * Cover when the chart has no `{x_audio_art:}`. Square 1024 px for the
+   * Cover when the chart has no `{x_titan_audio_art:}`. Square 1024 px for the
    * lock screen. Chart art still wins. Omit → packaged 512 art.
    */
   defaultAudioArt?: AudioArt | null

@@ -141,7 +141,7 @@ export function layout(notes: ScoreNote[], perBar?: number): LayoutItem[] {
  */
 export function serialize(notes: ScoreNote[], meta?: Partial<ScoreMeta>): string {
   const m = { ...DEFAULT_META, ...(meta ?? {}) }
-  const head = `{sos: time=${m.time} key=${m.key} tempo=${m.tempo} tuning=${m.tuning}}`
+  const head = `{x_titan_start_of_score: time=${m.time} key=${m.key} tempo=${m.tempo} tuning=${m.tuning}}`
   const perBar = beatsPerBar(m.time)
   const lines: string[] = []
   let bar: string[] = []
@@ -166,7 +166,7 @@ export function serialize(notes: ScoreNote[], meta?: Partial<ScoreMeta>): string
     bar.push(tok)
   }
   if (bar.length) lines.push(`| ${bar.join(' ')} |`)
-  return `${head}\n${lines.join('\n')}\n{eos}`
+  return `${head}\n${lines.join('\n')}\n{x_titan_end_of_score}`
 }
 
 function midiOf(name: string, oct: number): number {
@@ -177,22 +177,22 @@ function midiOf(name: string, oct: number): number {
 export type ParsedScore = {
   meta: ScoreMeta
   notes: ScoreNote[]
-  /** Where the notes came from: a `{sos}` block, legacy text tab, or nothing. */
-  from: 'sos' | 'tab-texto' | 'vazio' | 'novo'
+  /** Where the notes came from: a `{x_titan_start_of_score}` block, legacy text tab, or nothing. */
+  from: 'x_titan_start_of_score' | 'tab-texto' | 'vazio' | 'novo'
 }
 
-/** Reads the `{sos}` form, a legacy text tab (`{sot}`), or nothing at all. */
+/** Reads the `{x_titan_start_of_score}` form, a legacy text tab (`{sot}`), or nothing at all. */
 export function parseScore(text: string | null | undefined): ParsedScore {
   const src = String(text ?? '').trim()
   if (!src) return { meta: { ...DEFAULT_META }, notes: [], from: 'novo' }
-  if (/\{\s*sos\b/i.test(src)) return parseSos(src)
+  if (/\{\s*x_titan_start_of_score\b/i.test(src)) return parseInlineScore(src)
   return parseAscii(src)
 }
 
-function parseSos(src: string): ParsedScore {
+function parseInlineScore(src: string): ParsedScore {
   const meta = { ...DEFAULT_META }
   const notes: ScoreNote[] = []
-  const head = src.match(/\{\s*sos\s*:?([^}]*)\}/i)
+  const head = src.match(/\{\s*x_titan_start_of_score\s*:?([^}]*)\}/i)
   if (head) {
     const kv = head[1] ?? ''
     const g = (k: string): string | null => {
@@ -243,7 +243,7 @@ function parseSos(src: string): ParsedScore {
       notes.push(n)
     }
   }
-  return { meta, notes, from: 'sos' }
+  return { meta, notes, from: 'x_titan_start_of_score' }
 }
 
 /**

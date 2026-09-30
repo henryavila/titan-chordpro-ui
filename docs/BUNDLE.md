@@ -9,16 +9,15 @@ aplicativo Titan. A exportação não altera o source do consumer.
 | Conteúdo | Onde está hoje | O que vai no ZIP |
 |---|---|---|
 | Letra, acordes, seções, comentários, marcas `x///`, ritmo, `{define}`, TAB em texto e partitura própria | ChordPro | `.cho` UTF-8, preservando o conteúdo |
-| Guitar Pro / MusicXML | `{score: src="…" track=… start=… end=…}` + `resolveScore` | Arquivo original em `solos/`; referência relativa no `.cho`; faixa e compassos preservados |
+| Guitar Pro / MusicXML | `{x_titan_score: src="…" track=… start=… end=…}` + `resolveScore` | Arquivo original em `solos/`; referência relativa no `.cho`; faixa e compassos preservados |
 | Imagens da cifra | `{image:…}` / `{img:…}` + `resolveImage` | Arquivo original em `imagens/`; referência relativa no `.cho` |
-| Cantado e playback | `{x_audio_sung:…}`, `{x_audio_playback:…}` | Arquivos completos em `audios/`; referência relativa no `.cho` |
-| Áudio legado | `{x_audio:…}`, `{x_audio_cantado:…}` | Mesmo tratamento; preserva a diretiva e substitui o endereço pelo arquivo local |
-| Capa da música | `{x_audio_art:…}` e dimensões | Imagem local; dimensões preservadas |
+| Cantado e playback | `{x_titan_audio_sung:…}`, `{x_titan_audio_playback:…}` | Arquivos completos em `audios/`; referência relativa no `.cho` |
+| Capa da música | `{x_titan_audio_art:…}` e dimensões | Imagem local; dimensões preservadas |
 | Capa do player vinda do consumer | `defaultAudioArt`, quando há áudio sem capa própria | Incluída como imagem e materializada no `.cho` exportado |
 | Capa padrão do player | Recurso empacotado no Titan | Incluída quando for a capa efetivamente usada pelo áudio |
 | Capa/fundo dos slides | `coverImage`, `slidesImage`, ou imagens padrão do Titan | Arquivos locais; papéis `slide-cover`/`slide-background` no manifesto |
 | YouTube, Spotify e outros serviços | IDs/links online | Apenas informação em `ORIGEM.txt`; sem botão, player ou dependência online no `.cho` exportado |
-| Origem da cifra | `{x_source:…}` / `{x_origem:…}` | Informação em `ORIGEM.txt` |
+| Origem da cifra | `{x_titan_source:…}` | Informação em `ORIGEM.txt` |
 | Blocos ocultos pelo editor | Linhas `#~` no source | Seus anexos também entram; o bloco permanece oculto |
 | Blocos recolhidos na leitura | Estado transitório da UI | O conteúdo completo entra; recolher não exclui anexos |
 | Versão pessoal | Overlay de edição selecionado em Exportar | Exporta a versão escolhida, com identificação de versão pessoal |

@@ -6,7 +6,7 @@ import {
   densityFromGrid,
   draftStrumPreset,
   emptyPattern,
-  formatXStrum,
+  formatTitanStrum,
   gridFromDensity,
   hasStrumAnchor,
   inferSixEightPulse,
@@ -166,7 +166,7 @@ function clonePattern(p: StrumPattern): StrumPattern {
 }
 
 function snapshotKey(p: StrumPattern, lab: string): string {
-  return formatXStrum({
+  return formatTitanStrum({
     ...p,
     label: lab.trim() || 'Padrão',
     grid: p.slots.length,

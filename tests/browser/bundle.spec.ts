@@ -16,7 +16,7 @@ test('Cifra completa contains local audio, image, notation and slide artwork byt
   const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')))
   const text = new TextDecoder().decode(entries.get(manifest.chart))
   expect(text).not.toMatch(/https?:|blob:|data:|\/\@fs/)
-  expect(text).not.toContain('{x_youtube:')
+  expect(text).not.toContain('{x_titan_youtube:')
   expect(manifest.offline).toBe(true)
   expect(entries.get(audioTracksOf(text).sung!)).toEqual(new Uint8Array(await readFile('demo/ref-audio.wav')))
   expect(entries.get(audioTracksOf(text).playback!)).toEqual(new Uint8Array(await readFile('demo/ref-audio-playback.wav')))

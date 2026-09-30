@@ -281,9 +281,9 @@ export type {
   RewriteToKeyResult,
 } from './import-chordpro'
 export {
-  formatXStrumSet,
+  formatTitanStrumSet,
   metaFromStrumSet,
-  parseXStrumSet,
+  parseTitanStrumSet,
 } from './strum-multi'
 export type { StrumPatternSet } from './strum-multi'
 export {
@@ -295,7 +295,7 @@ export {
   emptySlot,
   encodeStrumPat,
   findAnchorIndex,
-  formatXStrum,
+  formatTitanStrum,
   gridFromDensity,
   hasStrumAnchor,
   inferSixEightPulse,
@@ -305,7 +305,7 @@ export {
   listSlotChoices,
   meterFromTimeSignature,
   oppositeDir,
-  parseXStrum,
+  parseTitanStrum,
   patternFromCc,
   repairStrumPattern,
   requiredDir,

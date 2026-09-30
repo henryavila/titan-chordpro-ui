@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { diffOps, formatXStrum, parseXStrum, readStrumPatterns, writeStrumPatterns } from '../../src/core/index'
+import { diffOps, formatTitanStrum, parseTitanStrum, readStrumPatterns, writeStrumPatterns } from '../../src/core/index'
 import { ChordproViewer } from '../../src/vue/index'
 
 /**
@@ -12,7 +12,7 @@ const SRC = `{title:Teste}
 {key:D}
 {tempo:90}
 {time:4/4}
-{x_strum:bpm=90;meter=4/4;grid=4;label=Leve;pat=D-DU}
+{x_titan_strum:bpm=90;meter=4/4;grid=4;label=Leve;pat=D-DU}
 {c:Verso}
 [D]Camila canta
 {c:Refrão}
@@ -233,8 +233,8 @@ describe('suggestion review', () => {
   })
 
   it('shows the batida strip when only the active pattern changes', async () => {
-    const leve = parseXStrum('bpm=90;meter=4/4;grid=4;label=Leve;pat=D-DU')
-    const forte = parseXStrum('bpm=90;meter=4/4;grid=4;label=Forte;pat=DUDU')
+    const leve = parseTitanStrum('bpm=90;meter=4/4;grid=4;label=Leve;pat=D-DU')
+    const forte = parseTitanStrum('bpm=90;meter=4/4;grid=4;label=Forte;pat=DUDU')
     expect(leve && forte).toBeTruthy()
     const body = `{title:Teste}\n{key:D}\n[D]Camila canta\n`
     const official = writeStrumPatterns(body, { activeIndex: 0, patterns: [leve!, forte!] })
@@ -243,7 +243,7 @@ describe('suggestion review', () => {
     const after = readStrumPatterns(switched)
     expect(before.activeIndex).toBe(0)
     expect(after.activeIndex).toBe(1)
-    expect(before.patterns.map((p) => formatXStrum(p))).toEqual(after.patterns.map((p) => formatXStrum(p)))
+    expect(before.patterns.map((p) => formatTitanStrum(p))).toEqual(after.patterns.map((p) => formatTitanStrum(p)))
     const ops = diffOps(official, switched, { transpose: 0, capo: 0 })
     expect(ops.length).toBeGreaterThan(0)
     localStorage.setItem(

@@ -10,7 +10,7 @@ import {
   overlaid,
   overlayKey,
   STORE_KEYS,
-  formatXStrum,
+  formatTitanStrum,
   strumReviewFromOp,
   tuneText,
   readStrumPatterns,
@@ -577,7 +577,7 @@ export function useOverlay(opts: OverlayOpts) {
     const sameBatida =
       proposed.activeIndex === current.activeIndex &&
       proposed.patterns.length === current.patterns.length &&
-      proposed.patterns.every((p, i) => formatXStrum(p) === formatXStrum(current.patterns[i]!))
+      proposed.patterns.every((p, i) => formatTitanStrum(p) === formatTitanStrum(current.patterns[i]!))
     // The preview text still carries the chart's batida when the request
     // only rewrote lyrics. The strip at the top of the batch is the change.
     if (sameBatida) return null

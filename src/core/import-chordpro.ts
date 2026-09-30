@@ -15,14 +15,14 @@
 import { DIR, rewriteDefineLines } from './define'
 import {
   isLegalStrumPattern,
-  parseXStrum,
+  parseTitanStrum,
   patternFromCc,
   repairStrumPattern,
   type StrumPattern,
 } from './strum'
 import {
   metaFromStrumSet,
-  parseXStrumSet,
+  parseTitanStrumSet,
   type StrumPatternSet,
 } from './strum-multi'
 import { hasSongDuration } from './timeline'
@@ -385,7 +385,7 @@ export function convert(text: string): ImportResult {
       ...(page.tempo ? { tempo: page.tempo } : {}),
       ...(page.time ? { time: page.time } : {}),
       ...(capoN > 0 ? { capo: String(capoN) } : {}),
-      ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
+      ...(page.youtubeId ? { x_titan_youtube: page.youtubeId } : {}),
       ...strumMeta,
     }
     const source = writeMeta(converted, meta)
@@ -422,26 +422,23 @@ export const META_KEYS = [
   'time',
   'duration',
   'capo',
-  'x_source',
-  'x_youtube',
-  'x_audio_sung',
-  'x_audio_playback',
-  'x_audio_art',
-  'x_audio_art_w',
-  'x_audio_art_h',
-  'x_strum',
-  'x_strum_set',
+  'x_titan_source',
+  'x_titan_youtube',
+  'x_titan_audio_sung',
+  'x_titan_audio_playback',
+  'x_titan_audio_art',
+  'x_titan_audio_art_w',
+  'x_titan_audio_art_h',
+  'x_titan_strum',
+  'x_titan_strum_set',
 ] as const
 export type MetaKey = (typeof META_KEYS)[number]
 export type ChartMeta = Partial<Record<MetaKey, string>>
 
-/** Portuguese / short names still in files. Canonical key wins when both exist. */
+/** Standard ChordPro short names. Canonical key wins when both exist. */
 const META_ALIAS: Record<string, MetaKey> = {
   t: 'title',
   st: 'subtitle',
-  x_origem: 'x_source',
-  x_audio: 'x_audio_sung',
-  x_audio_cantado: 'x_audio_sung',
 }
 
 export function canonicalMetaKey(k: string): MetaKey | null {
@@ -469,17 +466,17 @@ export function readMeta(source: string): ChartMeta {
 
 /**
  * Read batida as a pattern set.
- * - Only `{x_strum:}` → 1-pattern set.
- * - `{x_strum_set:}` present → multi; when both exist, active slot mirrors `x_strum`.
+ * - Only `{x_titan_strum:}` → 1-pattern set.
+ * - `{x_titan_strum_set:}` present → multi; when both exist, active slot mirrors `x_titan_strum`.
  */
 export function readStrumPatterns(source: string): StrumPatternSet {
   const meta = readMeta(source)
-  const setRaw = String(meta.x_strum_set ?? '').trim()
-  const singleRaw = String(meta.x_strum ?? '').trim()
+  const setRaw = String(meta.x_titan_strum_set ?? '').trim()
+  const singleRaw = String(meta.x_titan_strum ?? '').trim()
   if (setRaw) {
-    const set = parseXStrumSet(setRaw)
+    const set = parseTitanStrumSet(setRaw)
     if (set?.patterns.length) {
-      const live = singleRaw ? parseXStrum(singleRaw) : null
+      const live = singleRaw ? parseTitanStrum(singleRaw) : null
       if (live) {
         const i = set.activeIndex
         return {
@@ -491,23 +488,23 @@ export function readStrumPatterns(source: string): StrumPatternSet {
     }
   }
   if (singleRaw) {
-    const p = parseXStrum(singleRaw)
+    const p = parseTitanStrum(singleRaw)
     if (p) return { activeIndex: 0, patterns: [p] }
   }
   return { activeIndex: 0, patterns: [] }
 }
 
 /**
- * Persist a pattern set: always writes active `{x_strum:}`; writes
- * `{x_strum_set:}` only when N>1; clears both when empty.
+ * Persist a pattern set: always writes active `{x_titan_strum:}`; writes
+ * `{x_titan_strum_set:}` only when N>1; clears both when empty.
  */
 export function writeStrumPatterns(source: string, set: StrumPatternSet): string {
   const cur: ChartMeta = { ...readMeta(source) }
-  delete cur.x_strum
-  delete cur.x_strum_set
+  delete cur.x_titan_strum
+  delete cur.x_titan_strum_set
   const fields = metaFromStrumSet(set)
-  if (fields.x_strum) cur.x_strum = fields.x_strum
-  if (fields.x_strum_set) cur.x_strum_set = fields.x_strum_set
+  if (fields.x_titan_strum) cur.x_titan_strum = fields.x_titan_strum
+  if (fields.x_titan_strum_set) cur.x_titan_strum_set = fields.x_titan_strum_set
   return writeMeta(source, cur)
 }
 
@@ -557,11 +554,11 @@ function sungRootIndexes(source: string): number[] {
       tab = false
       continue
     }
-    if (k === 'sos' || k === 'start_of_score') {
+    if (k === 'x_titan_start_of_score') {
       score = true
       continue
     }
-    if (k === 'eos' || k === 'end_of_score') {
+    if (k === 'x_titan_end_of_score') {
       score = false
       continue
     }
@@ -1171,7 +1168,7 @@ export type CcStrumChoice = 'keep' | 'replace' | 'replace-with-local-copy'
  */
 export type EnrichProposal = {
   proposed: ChartMeta
-  /** Auto fields: fill-empty + x_strum (keep-local) + x_source. No youtube/capo. */
+  /** Auto fields: fill-empty + x_titan_strum (keep-local) + x_titan_source. No youtube/capo. */
   patch: ChartMeta
   conflicts: EnrichConflict[]
   youtube: EnrichYoutube | null
@@ -1182,7 +1179,7 @@ export type EnrichProposal = {
   strumMissing: boolean
   /**
    * When local already has batida and CC brings patterns — patch still omits
-   * x_strum (keep-local). UI may offer Manter / Trazer CC.
+   * x_titan_strum (keep-local). UI may offer Manter / Trazer CC.
    */
   strumConflict: EnrichStrumConflict | null
 }
@@ -1242,9 +1239,9 @@ export function proposeCifraClubEnrich(
     ...(page.key ? { key: page.key } : {}),
     ...(page.tempo ? { tempo: page.tempo } : {}),
     ...(page.time ? { time: page.time } : {}),
-    ...(page.youtubeId ? { x_youtube: page.youtubeId } : {}),
+    ...(page.youtubeId ? { x_titan_youtube: page.youtubeId } : {}),
     ...strumMeta,
-    ...(opts?.url?.trim() ? { x_source: opts.url.trim() } : {}),
+    ...(opts?.url?.trim() ? { x_titan_source: opts.url.trim() } : {}),
   }
 
   const patch: ChartMeta = {}
@@ -1259,19 +1256,19 @@ export function proposeCifraClubEnrich(
   // Batida: keep-local — only fill when the chart has no batida yet.
   const localSet = readStrumPatterns(source)
   const localHasBatida = localSet.patterns.length > 0
-  if (!localHasBatida && proposed.x_strum) {
-    patch.x_strum = proposed.x_strum
-    if (proposed.x_strum_set) patch.x_strum_set = proposed.x_strum_set
+  if (!localHasBatida && proposed.x_titan_strum) {
+    patch.x_titan_strum = proposed.x_titan_strum
+    if (proposed.x_titan_strum_set) patch.x_titan_strum_set = proposed.x_titan_strum_set
   }
-  if (proposed.x_source) patch.x_source = proposed.x_source
+  if (proposed.x_titan_source) patch.x_titan_source = proposed.x_titan_source
 
   const strumConflict: EnrichStrumConflict | null =
     localHasBatida && remoteSet
       ? { local: localSet, remote: remoteSet }
       : null
 
-  const remoteId = String(proposed.x_youtube ?? '').trim()
-  const localId = String(local.x_youtube ?? '').trim()
+  const remoteId = String(proposed.x_titan_youtube ?? '').trim()
+  const localId = String(local.x_titan_youtube ?? '').trim()
   const songTitle =
     String(local.title ?? '').trim() || String(page.title ?? '').trim() || 'Música'
   const youtube: EnrichYoutube | null = remoteId
@@ -1324,17 +1321,17 @@ export function applyCifraClubEnrich(
 ): string {
   const next: ChartMeta = { ...readMeta(source), ...proposal.patch }
   const id = choice?.youtubeId
-  if (typeof id === 'string' && id.trim()) next.x_youtube = id.trim()
+  if (typeof id === 'string' && id.trim()) next.x_titan_youtube = id.trim()
 
   const strumChoice = choice?.strum ?? 'keep'
   if (proposal.strumConflict && strumChoice !== 'keep') {
     const set = applyCcStrumChoice(proposal.strumConflict, strumChoice)
-    delete next.x_strum
-    delete next.x_strum_set
+    delete next.x_titan_strum
+    delete next.x_titan_strum_set
     if (set) {
       const fields = metaFromStrumSet(set)
-      if (fields.x_strum) next.x_strum = fields.x_strum
-      if (fields.x_strum_set) next.x_strum_set = fields.x_strum_set
+      if (fields.x_titan_strum) next.x_titan_strum = fields.x_titan_strum
+      if (fields.x_titan_strum_set) next.x_titan_strum_set = fields.x_titan_strum_set
     }
   }
   return writeMeta(source, next)

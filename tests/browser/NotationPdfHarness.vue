@@ -12,6 +12,6 @@ const params = new URLSearchParams(location.search)
 const file = params.get('file')
 const text = writeScoreReference({ src: file?.startsWith('piano') ? pianoUrl : file === 'xml' ? xmlUrl : gpUrl, track: 1, start: 1, ...(file === 'piano-long' ? {} : { end: 2 }) })
 const base = file === 'piano-long' ? text + '\n' + source : source + '\n' + text
-const chart = params.has('bundle') ? base + `\n{image: ${imageUrl}}\n{x_audio_sung: ${audioUrl}}\n{x_audio_playback: ${playbackUrl}}\n{x_youtube: abc123}` : base
+const chart = params.has('bundle') ? base + `\n{image: ${imageUrl}}\n{x_titan_audio_sung: ${audioUrl}}\n{x_titan_audio_playback: ${playbackUrl}}\n{x_titan_youtube: abc123}` : base
 </script>
 <template><div style="height:100dvh"><ChordproViewer :source="chart" :auto-hide="false" theme="light" /></div></template>

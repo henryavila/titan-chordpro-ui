@@ -45,8 +45,8 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - No lugar: letra, acorde, bloco (transpor, capo, reordenar)
 - Versão pessoal (overlay) e **Sugerir** (nome obrigatório). O host confirma o POST com `persistSuggestion`; sem ack, não tosta “enviada”
 - Fila do responsável: aceitar / recusar, lote, diff visual da batida
-- **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_strum:}` / `{x_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
-- Partitura `{sos}` / TAB `{sot}`
+- **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_titan_strum:}` / `{x_titan_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
+- Partitura `{x_titan_start_of_score}` / TAB `{sot}`
 - Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco. Se `{key:}` não bate com o corpo (capo-truque do Cifra Club), pergunta **Reescrever** — grava o original e `{transpose:}` para continuar tocando onde estava
 - Completar metadados / batida pelo Cifra Club sem substituir o corpo. Cifras já cadastradas: **Reescrever** na ficha. Uma reescrita uniforme vira um trecho só na sugestão
 
@@ -82,7 +82,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama**, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama + `{x_titan_audio_sung:}` / `{x_titan_audio_playback:}` / `{x_titan_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama**, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -124,7 +124,7 @@ import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
 import type { ChordproViewerProps } from '@henryavila/titan-chordpro-ui/vue'
 ```
 
-`@henryavila/titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{sos}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
+`@henryavila/titan-chordpro-ui/vue` already pulls `./vue/style.css`. Import that path yourself only if you need to control order. `vue` and (for `{x_titan_start_of_score}`/`{sot}`) `vexflow` are peer dependencies. The UI expects **Sora** + **Space Mono**; remap `font-family` on `.cpv-root` if the host loads other faces.
 
 Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 (standalone × shell, uma cifra × apresentação); `/standalone.html` a cifra
@@ -155,7 +155,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
-| `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
+| `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_titan_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
 | `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `@henryavila/titan-chordpro-ui/slides` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o app já tem, oferecidas além do envio |
@@ -280,7 +280,7 @@ O GET precisa de CORS (`Access-Control-Allow-Origin` + `Accept-Ranges: bytes`)
 para o cache e o seek; sem CORS o arquivo toca na rede e o cache vira no-op.
 Persistir é o fluxo de sempre: `update:source` / `save-content`.
 
-Diretivas: `{x_audio_sung:}`, `{x_audio_playback:}`, `{x_audio_art:}` (+ w/h).
+Diretivas: `{x_titan_audio_sung:}`, `{x_titan_audio_playback:}`, `{x_titan_audio_art:}` (+ w/h).
 UI em português (Cantado, Playback). Contrato completo: [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
 Demo de referência (leitura, cantado + playback, capa 1024 × 1024): `/media.html`.
 
@@ -392,12 +392,12 @@ O punho (`⋮⋮`) seleciona e reordena. Rótulo e estrofe são **uma unidade**:
 `{c:(REFRÃO)}` colado na linha de cima é o nome daquele bloco, então mover ou
 apagar leva os dois. A barra da seleção só oferece o que cabe naquele tipo —
 transpor/capo e harmonia num bloco cantado, “Trocar imagem” numa partitura
-escaneada, “Editar partitura” num `{sos}`/`{sot}`. Em `modes: 'local'` não
+escaneada, “Editar partitura” num `{x_titan_start_of_score}`/`{sot}`. Em `modes: 'local'` não
 existe apagar: ocultar **é** o remover, e o rótulo diz isso.
 
-### Partitura: `{sos}`, e a TAB de texto entra pelo mesmo caminho
+### Partitura: `{x_titan_start_of_score}`, e a TAB de texto entra pelo mesmo caminho
 
-`{sos: time=4/4 key=D tempo=92 tuning=EADGBE}` guarda **altura + figura**, uma
+`{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}` guarda **altura + figura**, uma
 linha por compasso; corda/casa é derivada e só vai para o arquivo quando o
 dedilhado foi fixado à mão (`@corda/casa`). Uma figura maior do que o que resta
 do compasso não estica a barra: é partida em figuras legais e ligada (`~l`),
@@ -405,16 +405,16 @@ e volta somada numa nota só na leitura.
 
 O modelo é framework-free (`src/core/score.ts`); só o desenho usa **VexFlow**,
 que é `peerDependency` **opcional** e entra por import tardio: quem nunca mostra
-`{sos}` não embarca um gravador de partitura. Sem ele a leitura cai no texto da
+`{x_titan_start_of_score}` não embarca um gravador de partitura. Sem ele a leitura cai no texto da
 fonte e o resto do pacote não muda.
 
 ```bash
-pnpm add vexflow   # só se as cifras tiverem {sos} ou {sot}
+pnpm add vexflow   # só se as cifras tiverem {x_titan_start_of_score} ou {sot}
 ```
 
 A TAB de texto legada (`{sot}`) abre importada no mesmo editor — cada coluna
 com dígito vira semínima, com o aviso de que o texto nunca trouxe ritmo — e sai
-gravada como `{sos}`.
+gravada como `{x_titan_start_of_score}`.
 
 ### Versão pessoal: overlay, não cópia
 

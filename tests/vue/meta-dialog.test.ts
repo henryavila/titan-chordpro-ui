@@ -105,7 +105,7 @@ describe('MetaDialog', () => {
     const next = w.emitted('apply')?.at(-1)?.[0] as string
     expect(next).toMatch(/\{duration:03:45\}/)
     expect(next).toMatch(/\{time:6\/8\}/)
-    expect(next).toMatch(/\{x_source:https:\/\/youtu\.be\/abc\}/)
+    expect(next).toMatch(/\{x_titan_source:https:\/\/youtu\.be\/abc\}/)
     expect(next).toContain('[G]a')
   })
 
@@ -254,11 +254,11 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     const next = w.emitted('apply')?.at(-1)?.[0] as string
     expect(chartBody(next)).toBe(chartBody(SDA))
     expect(next).not.toContain('[Bm7]')
-    expect(next).toMatch(/\{x_youtube:YXnQ02HYB1w\}/)
-    // keep-local: SDA already has x_strum — enrich must not overwrite batida
-    expect(next).toMatch(/\{x_strum:[^}]*bpm=75/)
-    expect(next).not.toMatch(/\{x_strum:[^}]*bpm=71/)
-    expect(next).toContain(`{x_source:${url}}`)
+    expect(next).toMatch(/\{x_titan_youtube:YXnQ02HYB1w\}/)
+    // keep-local: SDA already has x_titan_strum — enrich must not overwrite batida
+    expect(next).toMatch(/\{x_titan_strum:[^}]*bpm=75/)
+    expect(next).not.toMatch(/\{x_titan_strum:[^}]*bpm=71/)
+    expect(next).toContain(`{x_titan_source:${url}}`)
     expect(next).toMatch(/\{tempo:75\}/)
   })
 
@@ -330,8 +330,8 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     await flushPromises()
 
     const next = w.emitted('apply')?.at(-1)?.[0] as string
-    expect(next).toMatch(/\{x_strum:[^}]*bpm=75/)
-    expect(next).not.toMatch(/\{x_strum:[^}]*bpm=71/)
+    expect(next).toMatch(/\{x_titan_strum:[^}]*bpm=75/)
+    expect(next).not.toMatch(/\{x_titan_strum:[^}]*bpm=71/)
   })
 
   it('Trazer CC replaces local single batida with CC pattern', async () => {
@@ -352,13 +352,13 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     await flushPromises()
 
     const next = w.emitted('apply')?.at(-1)?.[0] as string
-    expect(next).toMatch(/\{x_strum:[^}]*bpm=71/)
-    expect(next).not.toMatch(/\{x_strum:[^}]*bpm=75/)
+    expect(next).toMatch(/\{x_titan_strum:[^}]*bpm=71/)
+    expect(next).not.toMatch(/\{x_titan_strum:[^}]*bpm=75/)
   })
 
   it('Trazer CC with multi CC keeps previous local active as named copy', async () => {
     const fetchChart = vi.fn(async () => CEU_AZUL)
-    const local = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n{x_origem:https://example.com}\n[G]a\n`
+    const local = `{title:X}\n{x_titan_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n{x_titan_source:https://example.com}\n[G]a\n`
     const w = mount(MetaDialog, {
       props: {
         compact: false,
@@ -382,7 +382,7 @@ describe('MetaDialog · Completar com Cifra Club', () => {
     await flushPromises()
 
     const next = w.emitted('apply')?.at(-1)?.[0] as string
-    expect(next).toMatch(/x_strum_set:/)
+    expect(next).toMatch(/x_titan_strum_set:/)
     expect(next).toMatch(/Parte 1/)
     expect(next).toMatch(/Parte 2/)
     expect(next).toMatch(/Old/i)

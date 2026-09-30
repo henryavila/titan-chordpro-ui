@@ -90,9 +90,9 @@ describe('MediaDemo consumer host', () => {
     expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
     expect(w.find('[data-edit]').exists()).toBe(false)
     const cho = String(w.getComponent({ name: 'ChordproViewer' }).props('source') ?? '')
-    expect(cho).toContain('{x_audio_art_w:1024}')
-    expect(cho).toContain('{x_audio_sung:')
-    expect(cho).toContain('{x_audio_playback:')
+    expect(cho).toContain('{x_titan_audio_art_w:1024}')
+    expect(cho).toContain('{x_titan_audio_sung:')
+    expect(cho).toContain('{x_titan_audio_playback:')
     expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('none')
     expect(w.getComponent({ name: 'ChordproViewer' }).props('defaultAudioArt')).toMatchObject({
       width: 1024,

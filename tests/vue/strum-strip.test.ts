@@ -47,13 +47,13 @@ describe('StrumStrip', () => {
 })
 
 describe('viewer batida toggle', () => {
-  it('shows the batida button when the chart has x_strum', async () => {
+  it('shows the batida button when the chart has x_titan_strum', async () => {
     const source = `{title:Teste}
 {key:D}
 {tempo:71}
 {time:4/4}
 {duration:04:00}
-{x_strum: bpm=71; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU}
+{x_titan_strum: bpm=71; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU}
 {c:Verso}
 [D]Oi
 `

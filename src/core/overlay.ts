@@ -293,7 +293,7 @@ export function tuneText(op: TuneOp): string {
 }
 
 function isStrumDirective(line: string): boolean {
-  return /^\s*\{\s*x_strum(?:_set)?\s*:/i.test(line)
+  return /^\s*\{\s*x_titan_strum(?:_set)?\s*:/i.test(line)
 }
 
 function isDirectiveLine(line: string): boolean {

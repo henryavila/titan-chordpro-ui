@@ -44,7 +44,7 @@ test('uploads an original Guitar Pro file and stores only its reference', async 
   await page.locator('input[type="file"]').setInputFiles('fixtures/notation/notes.gp')
   await expect(page.getByRole('button', { name: 'Salvar trecho na cifra' })).toBeEnabled()
   await page.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
-  await expect(page.locator('body')).toHaveAttribute('data-saved', '{score: src="stored/solo.gp" track=1 start=1 end=1}')
+  await expect(page.locator('body')).toHaveAttribute('data-saved', '{x_titan_score: src="stored/solo.gp" track=1 start=1 end=1}')
 })
 
 test('Titan renders only the selected bars, without file furniture, and follows theme changes', async ({ page }, info) => {

@@ -30,7 +30,7 @@ export type RehearsalAudioPatch = {
 /**
  * Direct audio the rehearsal player will fetch. YouTube/Spotify/data/file
  * are not playable here — the consumer hosts a file or a streaming GET.
- * A `}` would break the `{x_audio_sung:…}` / `{x_audio_playback:…}` line.
+ * A `}` would break the `{x_titan_audio_sung:…}` / `{x_titan_audio_playback:…}` line.
  */
 export function playableAudioUrl(raw: string | null | undefined): string | null {
   const s = String(raw ?? '').trim()
@@ -59,14 +59,11 @@ function blockedHost(host: string): boolean {
   return false
 }
 
-function kindKey(kind: AudioKind): 'x_audio_sung' | 'x_audio_playback' {
-  return kind === 'playback' ? 'x_audio_playback' : 'x_audio_sung'
+function kindKey(kind: AudioKind): 'x_titan_audio_sung' | 'x_titan_audio_playback' {
+  return kind === 'playback' ? 'x_titan_audio_playback' : 'x_titan_audio_sung'
 }
 
-/**
- * Write or clear one rehearsal track. `sung` also drops legacy
- * `{x_audio:}` / `{x_audio_cantado:}` so a chart does not carry two sung URLs.
- */
+/** Write or clear one rehearsal track using the Titan directive namespace. */
 export function setAudioUrl(
   source: string,
   url: string | null,
@@ -74,27 +71,24 @@ export function setAudioUrl(
 ): string {
   const cur: ChartMeta = { ...readMeta(source) }
   const key = kindKey(kind)
-  if (kind === 'sung') {
-    delete cur.x_audio_sung
-  }
   if (url == null || !String(url).trim()) {
     delete cur[key]
     return writeMeta(source, cur)
   }
   const ok = playableAudioUrl(url)
   if (!ok) {
-    throw new Error('x_audio_sung / x_audio_playback must be an http(s) audio file URL (not YouTube)')
+    throw new Error('x_titan_audio_sung / x_titan_audio_playback must be an http(s) audio file URL (not YouTube)')
   }
   cur[key] = ok
   return writeMeta(source, cur)
 }
 
-/** Both tracks. Legacy `{x_audio:}` / `{x_audio_cantado:}` already fold into sung via readMeta. */
+/** Both tracks from the Titan metadata. */
 export function audioTracksOf(source: string): AudioTracks {
   const m = readMeta(source)
   return {
-    sung: playableAudioUrl(m.x_audio_sung),
-    playback: playableAudioUrl(m.x_audio_playback),
+    sung: playableAudioUrl(m.x_titan_audio_sung),
+    playback: playableAudioUrl(m.x_titan_audio_playback),
   }
 }
 
@@ -128,34 +122,34 @@ function artDim(raw: string | undefined): number | null {
 export function setAudioArt(source: string, art: AudioArt | null): string {
   const cur: ChartMeta = { ...readMeta(source) }
   if (art == null) {
-    delete cur.x_audio_art
-    delete cur.x_audio_art_w
-    delete cur.x_audio_art_h
+    delete cur.x_titan_audio_art
+    delete cur.x_titan_audio_art_w
+    delete cur.x_titan_audio_art_h
     return writeMeta(source, cur)
   }
   const ok = playableAudioUrl(art.url)
   if (!ok) {
-    throw new Error('x_audio_art must be an http(s) image URL (not YouTube)')
+    throw new Error('x_titan_audio_art must be an http(s) image URL (not YouTube)')
   }
   const w = artDim(String(art.width))
   const h = artDim(String(art.height))
   if (!w || !h) {
-    throw new Error('x_audio_art requires integer width and height (1–4096)')
+    throw new Error('x_titan_audio_art requires integer width and height (1–4096)')
   }
-  cur.x_audio_art = ok
-  cur.x_audio_art_w = String(w)
-  cur.x_audio_art_h = String(h)
+  cur.x_titan_audio_art = ok
+  cur.x_titan_audio_art_w = String(w)
+  cur.x_titan_audio_art_h = String(h)
   return writeMeta(source, cur)
 }
 
 export function audioArtOf(source: string): AudioArt | null {
   const m = readMeta(source)
-  const url = playableAudioUrl(m.x_audio_art)
+  const url = playableAudioUrl(m.x_titan_audio_art)
   if (!url) return null
   return {
     url,
-    width: artDim(m.x_audio_art_w) ?? AUDIO_ART_DEFAULT_PX,
-    height: artDim(m.x_audio_art_h) ?? AUDIO_ART_DEFAULT_PX,
+    width: artDim(m.x_titan_audio_art_w) ?? AUDIO_ART_DEFAULT_PX,
+    height: artDim(m.x_titan_audio_art_h) ?? AUDIO_ART_DEFAULT_PX,
   }
 }
 
@@ -171,7 +165,7 @@ function normalizeArt(art: AudioArt | null | undefined): AudioArt | null {
 }
 
 /**
- * Cover for the player and Media Session: chart `{x_audio_art:}` first, then
+ * Cover for the player and Media Session: chart `{x_titan_audio_art:}` first, then
  * the consumer default. `null` means the Vue player uses the packaged 512 art.
  */
 export function resolveRehearsalArt(

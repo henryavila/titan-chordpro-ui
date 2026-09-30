@@ -17,7 +17,7 @@ annotations:
         comment: 'Ratificado: ask sempre. Mostrar nome da música + os dois links (quando existirem) e montar página web com os dois embeds YouTube para dar play e validar.'
         created_at: '2026-09-11T23:12:10.046Z'
     quote:
-      exact: '1. Em conflito `x_youtube` local ≠ CC: ask sempre, ou prefer-cc silencioso?'
+      exact: '1. Em conflito `x_titan_youtube` local ≠ CC: ask sempre, ou prefer-cc silencioso?'
       prefix: ''
       suffix: ''
   - id: 3a007267
@@ -30,10 +30,10 @@ annotations:
     replies:
       - id: 55df58a3-f528-42a2-8d84-8a348173f449
         author: Henry Ávila
-        comment: 'Ratificado: x_strum sobrescreve o local (hoje não existe nas fixtures).'
+        comment: 'Ratificado: x_titan_strum sobrescreve o local (hoje não existe nas fixtures).'
         created_at: '2026-09-11T23:12:10.046Z'
     quote:
-      exact: 2. `x_strum` deve **sempre** sobrescrever batida local, ou só se não houver `{x_strum:}`?
+      exact: 2. `x_titan_strum` deve **sempre** sobrescrever batida local, ou só se não houver `{x_titan_strum:}`?
       prefix: ''
       suffix: ''
   - id: 329bb3e3

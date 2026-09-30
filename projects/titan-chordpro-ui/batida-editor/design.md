@@ -7,26 +7,26 @@
 
 | Campo | Decisão ratificada (B0) |
 |---|---|
-| **Problema** | Sem `{x_strum:}` (CC sem batida ou cifra à mão) a faixa/metrônomo de batida não existe; com `{x_strum:}` importado, não dá para criar nem ajustar o mapa. |
+| **Problema** | Sem `{x_titan_strum:}` (CC sem batida ou cifra à mão) a faixa/metrônomo de batida não existe; com `{x_titan_strum:}` importado, não dá para criar nem ajustar o mapa. |
 | **In-scope (mapa)** | Criar e editar padrões na UI da cifra; vários padrões nomeados (como CC); presets; mesmo vocabulário (↓↑, toca/passa/pausa, 4 essências); wireframes/UX neste design. |
 | **Out-of-scope** | Amarração batida↔letra/seções da cifra; glyphs além das 4 essências; sync com player de áudio do host. (Som da batida: one-shots locais — ver Non-goals.) |
 | **Done-when (design)** | Este doc: decisões + abordagem + UX + gates; critic Approved + aprovação explícita do usuário. |
-| **Stakes** | Formato `{x_strum:}` e modelo `StrumSlot` — não quebrar cifras já importadas/enriquecidas. |
+| **Stakes** | Formato `{x_titan_strum:}` e modelo `StrumSlot` — não quebrar cifras já importadas/enriquecidas. |
 | **Fontes** | Plano CC/batidas; `src/core/strum.ts`; `StrumStrip.vue`; metrônomo; `MetaDialog.vue`; design do editor E0–E4; `research-digest.md` deste slug. |
 | **Onde** | Pacote `titan-chordpro-ui` — Source-SoT no ChordPro (não no host SDA). |
 
 ## Context
 
-- Já existe **leitura** de batida: import/enrich CC → `{x_strum:}` → `parseXStrum` → `StrumStrip` sync com metrônomo no **view**. verified_by: `src/vue/ChordproViewer.vue` (`hasStrum`, `strumVisible`), `src/vue/StrumStrip.vue`, `tests/vue/strum-strip.test.ts`.
-- **Não existe** UI de criação/edição de slots; MetaDialog preserva `x_strum` no `writeMeta` mas não o edita; enrich avisa `strumMissing`. verified_by: `src/vue/edit/MetaDialog.vue` (chip batida + aviso; sem campo de grade).
+- Já existe **leitura** de batida: import/enrich CC → `{x_titan_strum:}` → `parseTitanStrum` → `StrumStrip` sync com metrônomo no **view**. verified_by: `src/vue/ChordproViewer.vue` (`hasStrum`, `strumVisible`), `src/vue/StrumStrip.vue`, `tests/vue/strum-strip.test.ts`.
+- **Não existe** UI de criação/edição de slots; MetaDialog preserva `x_titan_strum` no `writeMeta` mas não o edita; enrich avisa `strumMissing`. verified_by: `src/vue/edit/MetaDialog.vue` (chip batida + aviso; sem campo de grade).
 - Persistência = **um** padrão por arquivo. CC extrai N `strummings` e grava só o primeiro. verified_by: `src/core/import-chordpro.ts` (`page.strums[0]`), `tests/core/import-chordpro.test.ts` (Céu Azul: 2 no parse, 1 no arquivo).
 - Plano CC §4.1 já previa seletor multi; **não implementado** no fio nem na UI (`canPick` stub, viewer nunca passa). verified_by: `.ai/memory/plano-import-cifraclub-2026-09-11.md` §4.1; `StrumStrip.vue` `canPick` default false.
-- Corpus `fixtures/` / `fixtures/sda/`: **zero** `{x_strum:}` hoje — aceite precisará de fixture(s) novas. verified_by: research-digest + grep do corpus.
+- Corpus `fixtures/` / `fixtures/sda/`: **zero** `{x_titan_strum:}` hoje — aceite precisará de fixture(s) novas. verified_by: research-digest + grep do corpus.
 - Editor ChordPro (E0–E4) é Source-SoT; batida **não** é gate E0–E4 — fatia irmã. verified_by: `projects/titan-chordpro-ui/editor/design.md`.
 
 ## Decisions
 
-1. **Source ChordPro continua SoT.** Toda criação/edição de batida escreve `{x_strum:…}` (via `formatXStrum` + `writeMeta` / patch de meta) e re-parseia. Sem modelo paralelo em Vue/storage do pacote. verified_by: editor design Decision 1; `strum.ts` encode/decode.
+1. **Source ChordPro continua SoT.** Toda criação/edição de batida escreve `{x_titan_strum:…}` (via `formatTitanStrum` + `writeMeta` / patch de meta) e re-parseia. Sem modelo paralelo em Vue/storage do pacote. verified_by: editor design Decision 1; `strum.ts` encode/decode.
 
 2. **Congelar o fio v1.** Tokens e gramática atuais (`bpm; meter; grid; label; pat=` + `D/U/!/m/a/d/u/-`) e `StrumSlot` **não mudam** na primeira fatia. Arquivos existentes round-trip idênticos em rewrite sem edição. verified_by: `tests/core/strum.test.ts`; stake da Interview.
 
@@ -34,7 +34,7 @@
 
 4. **Superfície: folha Batida dedicada** — não MetaDialog (meta “solta”), não StrumStrip como editor. Strip permanece **projeção de leitura** (+ atalho “abrir editor”). verified_by: debate Priya/Aria/Tariq; Uma detalha CTA no view.
 
-5. **Entrada sem batida (view):** CTA `+ Criar batida` acessível sem exigir “Editar cifra” primeiro (job: ensaio precisa de batida agora). Abrir a folha Batida; ao salvar, grava `{x_strum:}` e o botão/toggle Batida passa a existir como hoje. verified_by: dissent Uma preservado na síntese B2.
+5. **Entrada sem batida (view):** CTA `+ Criar batida` acessível sem exigir “Editar cifra” primeiro (job: ensaio precisa de batida agora). Abrir a folha Batida; ao salvar, grava `{x_titan_strum:}` e o botão/toggle Batida passa a existir como hoje. verified_by: dissent Uma preservado na síntese B2.
 
 6. **Entrada com batida:** strip + lápis / “Editar batida” → mesma folha. Em modo `edit` da cifra o strip continua oculto; acesso à batida via chrome (chip/lápis), não competindo com a letra.
 
@@ -68,26 +68,26 @@
    - Import CC / presets / save: padrões ilegais **rejeitados**; save só com padrão completo e legal.  
    - Done-when: impossível persistir ↓↓/↑↑; picker só opções legais; UI completa.
 
-8. **Enrich CC vs batida local:** se o arquivo **já tem** `{x_strum:}`, enrich **não** sobrescreve (keep-local). Prefer-cc de batida só quando a chave está ausente. Se o usuário pediu explicitamente “trazer batida do CC” com conflito, UI pergunta (Manter / Trazer CC). Sem inventar batida quando `strumMissing`. verified_by: debate Priya/Aria/Uma; Tariq “não inventar”.
+8. **Enrich CC vs batida local:** se o arquivo **já tem** `{x_titan_strum:}`, enrich **não** sobrescreve (keep-local). Prefer-cc de batida só quando a chave está ausente. Se o usuário pediu explicitamente “trazer batida do CC” com conflito, UI pergunta (Manter / Trazer CC). Sem inventar batida quando `strumMissing`. verified_by: debate Priya/Aria/Uma; Tariq “não inventar”.
 
 9. **BPM:** metrônomo continua em `{tempo:}` / `{time:}`. Ao criar batida, `bpm` do padrão **espelha** `{tempo:}` se existir; editar BPM na folha pode oferecer “alinhar tempo da cifra” (opcional, não obrigatório no B0). Não dual-SoT silenciosa.
 
-10. **Aceite por gate:** cada gate B0–B3 exige fixture(s) + testes green **antes** de claim DONE. Sem fixture `{x_strum:}` no corpus, B0 não fecha. verified_by: Tariq; AGENTS.md fixtures.
+10. **Aceite por gate:** cada gate B0–B3 exige fixture(s) + testes green **antes** de claim DONE. Sem fixture `{x_titan_strum:}` no corpus, B0 não fecha. verified_by: Tariq; AGENTS.md fixtures.
 
 ### Gates de entrega
 
 | Gate | Capacidade | Critério de entrada / aceite |
 |---|---|---|
-| **B0** | Criar + editar **1** padrão no fio atual; folha Batida; CTA sem batida; strip leitura; keep-local no enrich | Fixture com `{x_strum:}`; round-trip; song sem batida → cria → reabre igual; token/slot tests verdes; arquivos antigos intactos em rewrite sem edição |
-| **B1** | Presets embutidos (catálogo core) aplicados na folha | Catálogo versionado com IDs estáveis; aplicar = `formatXStrum`; confirmação se padrão já sujo |
-| **B2** | Vários padrões **nomeados** na sessão + seletor (`canPick`) | Persistência multi **definida** (chave nova ou gramática documentada) **sem** quebrar parse do `{x_strum:}` legado; import CC passa a não descartar 2..N quando o schema multi existir |
+| **B0** | Criar + editar **1** padrão no fio atual; folha Batida; CTA sem batida; strip leitura; keep-local no enrich | Fixture com `{x_titan_strum:}`; round-trip; song sem batida → cria → reabre igual; token/slot tests verdes; arquivos antigos intactos em rewrite sem edição |
+| **B1** | Presets embutidos (catálogo core) aplicados na folha | Catálogo versionado com IDs estáveis; aplicar = `formatTitanStrum`; confirmação se padrão já sujo |
+| **B2** | Vários padrões **nomeados** na sessão + seletor (`canPick`) | Persistência multi **definida** (chave nova ou gramática documentada) **sem** quebrar parse do `{x_titan_strum:}` legado; import CC passa a não descartar 2..N quando o schema multi existir |
 | **B3** | Conflito enrich rico (diff / cópia nomeada) + polish gestos | Só após B0–B2 estáveis |
 
 Capabilities flags (sketch): `{ batidaEditor?: boolean; batidaPresets?: boolean; batidaMulti?: boolean }` — host liga subconjunto.
 
 ## Chosen approach
 
-**Abordagem escolhida: Source-SoT + folha Batida + mapa completo com gates B0–B3 + fio `{x_strum:}` congelado no B0.**
+**Abordagem escolhida: Source-SoT + folha Batida + mapa completo com gates B0–B3 + fio `{x_titan_strum:}` congelado no B0.**
 
 Peso do debate (2026-03-26):
 
@@ -100,7 +100,7 @@ Peso do debate (2026-03-26):
 
 ### UX — wireframes (normativos para o design)
 
-#### A. View sem `{x_strum:}`
+#### A. View sem `{x_titan_strum:}`
 
 ```
 ┌─ chrome (tom / metro / …) ─────────────────────┐
@@ -112,7 +112,7 @@ Peso do debate (2026-03-26):
 - Toque em `+ Criar batida` → abre **folha Batida** (bottom sheet no phone; **modal centrado largo** no desktop, ~720px).
 - Não exige entrar em `mode=edit` da cifra.
 
-#### B. View com `{x_strum:}`
+#### B. View com `{x_titan_strum:}`
 
 ```
 ┌─ StrumStrip (leitura) ──────────────────────────┐
@@ -149,20 +149,20 @@ Peso do debate (2026-03-26):
 
 - Lista = **só opções legais** do sentido permitido. Sem item “pausa” separado.
 - Wide: modal centrado (folha + picker); phone: bottom sheet. Mockup = referência (7c).
-- **Salvar:** só se completo+legal; `formatXStrum` → `writeMeta`.
-- **Apagar:** remove `x_strum`; CTA `+ Criar` volta.
+- **Salvar:** só se completo+legal; `formatTitanStrum` → `writeMeta`.
+- **Apagar:** remove `x_titan_strum`; CTA `+ Criar` volta.
 - **B1:** seção Presets (só padrões legais); **B2:** picker multi-nome.
 
 #### D. Enrich com batida local (B0 regra; B3 UI rica)
 
-- B0: se `x_strum` presente → patch enrich **omite** batida (keep-local); demais campos fill-empty inalterados.
+- B0: se `x_titan_strum` presente → patch enrich **omite** batida (keep-local); demais campos fill-empty inalterados.
 - B3 (opcional): dialog Manter / Trazer CC / Cancelar.
 
 ### Core API mínima (B0 + 7d)
 
 Funções puras em `src/core/strum.ts` (ou adjacente), sem Vue:
 
-- manter `parseXStrum` / `formatXStrum` / `encodeStrumPat` / `decodeStrumPat`
+- manter `parseTitanStrum` / `formatTitanStrum` / `encodeStrumPat` / `decodeStrumPat`
 - `listSlotChoices(pattern?, index?) → StrumSlot[]` — contextual: sem âncora = 8 hit + 2 ghost; com âncora = 4 hit + 1 ghost do sentido obrigatório; **sem** `rest`
 - `setSlot` (baixo nível) + `setSlotCascading` (âncora + preenchimento + recálculo de fase)
 - `emptySlot` / `isEmptySlot` / `hasStrumAnchor` / `requiredDir` / `isLegalStrumPattern` / `isCompleteStrumPattern` / `repairStrumPattern`
@@ -202,8 +202,8 @@ Vue: folha + wiring `writeMeta`; strip inalterado como leitura; import CC descar
 
 ## Blast radius
 
-- **B0 (contido):** só escreve/apaga a diretiva `{x_strum:}` já suportada. Rewrite sem edição de slots deve preservar string canônica (teste). Enrich leave-local muda comportamento prefer-cc **só para `x_strum`** — documentar no CHANGELOG; demais prefer-cc inalterado.
-- **B2 (porta de mão):** introduzir schema multi (`x_strum_set` ou equivalente) é one-way para leitores externos. Contenção: parse legado de `{x_strum:}` permanece; multi opt-in; migração documentada; import deixa de dropar 2..N só quando o writer multi existir.
+- **B0 (contido):** só escreve/apaga a diretiva `{x_titan_strum:}` já suportada. Rewrite sem edição de slots deve preservar string canônica (teste). Enrich leave-local muda comportamento prefer-cc **só para `x_titan_strum`** — documentar no CHANGELOG; demais prefer-cc inalterado.
+- **B2 (porta de mão):** introduzir schema multi (`x_titan_strum_set` ou equivalente) é one-way para leitores externos. Contenção: parse legado de `{x_titan_strum:}` permanece; multi opt-in; migração documentada; import deixa de dropar 2..N só quando o writer multi existir.
 - **Tokens / StrumSlot:** mudança = breaking de todas as cifras enriquecidas — **proibido** sem major + migração (fora deste design).
 
 ## Open questions

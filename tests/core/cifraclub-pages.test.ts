@@ -46,10 +46,10 @@ describe('Cifra Club pages captured from the live site', () => {
       key: 'D',
       tempo: '71',
       time: '4/4',
-      x_youtube: 'YXnQ02HYB1w',
+      x_titan_youtube: 'YXnQ02HYB1w',
     })
-    expect(meta.x_strum).toContain('bpm=71')
-    expect(meta.x_strum).toContain('meter=4/4')
+    expect(meta.x_titan_strum).toContain('bpm=71')
+    expect(meta.x_titan_strum).toContain('meter=4/4')
     expect(meta.capo).toBeUndefined()
     expect(result.source).toContain('{c:INTRODUÇÃO}')
     expect(result.source).toContain('{c:Primeira Parte}')
@@ -73,8 +73,8 @@ describe('Cifra Club pages captured from the live site', () => {
     expect(parsed.youtubeId).toBe('')
     expect(parsed.strums).toHaveLength(0)
     expect(meta.tempo).toBeUndefined()
-    expect(meta.x_youtube).toBeUndefined()
-    expect(meta.x_strum).toBeUndefined()
+    expect(meta.x_titan_youtube).toBeUndefined()
+    expect(meta.x_titan_strum).toBeUndefined()
     expect(meta.capo).toBeUndefined()
     expect(result.source).toContain('{c:INTRODUÇÃO}')
     expect(result.source).toContain('[E] [F#m7] [D9]')
@@ -93,7 +93,7 @@ describe('Cifra Club pages captured from the live site', () => {
     expect(parsed.title).toBe('Unidos Em Cristo')
     expect(parsed.subtitle).toBe('Novo Hinário Adventista')
     expect(parsed.key).toBe('G')
-    expect(meta.x_youtube).toBe('LCRzBt65wQA')
+    expect(meta.x_titan_youtube).toBe('LCRzBt65wQA')
     expect(meta.capo).toBeUndefined()
     expect(parsed.strums).toHaveLength(0)
     expect(result.source).toContain('{c:INTRODUÇÃO}')

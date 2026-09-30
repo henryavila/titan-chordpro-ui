@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   decodeStrumPat,
   encodeStrumPat,
-  formatXStrum,
-  parseXStrum,
+  formatTitanStrum,
+  parseTitanStrum,
   patternFromCc,
   slotFromCcCode,
 } from '../../src/core/strum'
@@ -27,7 +27,7 @@ describe('CC stroke codes → essence', () => {
   })
 })
 
-describe('x_strum round-trip', () => {
+describe('x_titan_strum round-trip', () => {
   it('encodes Tu És pattern and reads it back', () => {
     const p = patternFromCc(
       [7, 23, 23, 19, 23, 19, 7, 23, 23, 19, 23, 19, 7, 23, 7, 19],
@@ -37,10 +37,10 @@ describe('x_strum round-trip', () => {
     )
     expect(p.meter).toBe('4/4')
     expect(p.grid).toBe(16)
-    const raw = formatXStrum(p)
+    const raw = formatTitanStrum(p)
     expect(raw).toContain('bpm=71')
     expect(raw).toContain('meter=4/4')
-    const again = parseXStrum(raw)
+    const again = parseTitanStrum(raw)
     expect(again?.slots).toEqual(p.slots)
     expect(again?.bpm).toBe(71)
   })

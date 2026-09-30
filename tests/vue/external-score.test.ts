@@ -21,7 +21,7 @@ describe('external solo integration', () => {
     wrapper.unmount()
   })
   it.each(['external', 'invalid'] as const)('removes a %s score in content edit and supports undo', async kind => {
-    const text = kind === 'external' ? reference : reference.replace('{score:', '{sos:') + '\n{eos}'
+    const text = kind === 'external' ? reference : reference.replace('{x_titan_score:', '{x_titan_start_of_score:') + '\n{x_titan_end_of_score}'
     const wrapper = mount(ChordproViewer, {
       props: { source: `${original}\n${text}`, modes: 'content', theme: 'light', autoHide: false },
       attachTo: document.body,

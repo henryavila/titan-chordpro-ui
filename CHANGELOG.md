@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **BREAKING CHANGE — ajuste obrigatório no app que usa o Titan:** ao editar o código da cifra ou exportar o arquivo `.cho`, os campos de origem, YouTube, áudio, capa e batida usam `{x_titan_…: valor}`. Antes de atualizar o pacote, migre as cifras salvas e as chaves enviadas/lidas pela integração: `x_source`, `x_youtube`, `x_audio_sung`, `x_audio_playback`, `x_audio_art`, `x_audio_art_w`, `x_audio_art_h`, `x_strum` e `x_strum_set` recebem `titan_` após `x_`. Converta também `x_origem` para `x_titan_source` e `x_audio` / `x_audio_cantado` para `x_titan_audio_sung`. Os nomes antigos não são interpretados nem convertidos automaticamente. As mesmas mudanças valem para `ChartMeta`, `MetaKey`, `META_KEYS` e patches; se usados, troque `parseXStrum` / `formatXStrum` e suas variantes `Set` por `parseTitanStrum` / `formatTitanStrum` e suas variantes `Set`. Sem esses ajustes, origem, mídia e batidas antigas deixam de funcionar. Letras, acordes, diretivas padrão e marcas `x///` mantêm sua sintaxe.
+- **BREAKING CHANGE — solos e partituras no arquivo:** referências a Guitar Pro/MusicXML passam de `{score: …}` para `{x_titan_score: …}`. Para a notação escrita na cifra, substitua `{sos}` / `{start_of_score}` por `{x_titan_start_of_score}` e `{eos}` / `{end_of_score}` por `{x_titan_end_of_score}`, mantendo os atributos e o conteúdo. O consumer precisa atualizar as cifras salvas e qualquer código que monte ou leia esses trechos; `ParsedScore.from` passa de `sos` para `x_titan_start_of_score`. Os nomes anteriores não são reconhecidos.
+
 ### Fixed
 - **Remover e ajustar solos:** na edição Para todos, cada trecho de partitura tem o botão Excluir trecho. Arquivos Guitar Pro/MusicXML oferecem Ajustar trecho (arquivo, faixa e compassos), sem abrir o editor de notas do Titan. Um bloco inválido avisa que precisa ser removido e importado novamente.
 - **Zoom dos solos:** ao abrir o zoom de um trecho Guitar Pro/MusicXML, as opções seguem o tema claro ou escuro do Titan e destacam o tamanho selecionado. Também é possível escolher pelas setas do teclado e fechar com Escape.
@@ -20,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Solos de Guitar Pro e MusicXML:** ao editar, toque no + entre os blocos e escolha **Guitar Pro / MusicXML**. Abra o arquivo, selecione a faixa e os compassos e confira o trecho antes de salvar. Na leitura, alterne entre **TAB** e **Partitura**; o zoom automático mantém as notas grandes e reorganiza os compassos conforme a tela. Também há zoom manual. Arquivos sem posições nas cordas ficam em Partitura. O solo mantém o tom do arquivo original.
 
 ### Changed
-- **Referências de solos no ChordPro:** ao importar Guitar Pro/MusicXML, cada trecho passa a ocupar uma única linha `{score: src="…" track=1 start=1 end=4}`. O arquivo exportado usa essa mesma forma, sem um bloco vazio nem tag de fechamento.
+- **Referências de solos no ChordPro:** ao importar Guitar Pro/MusicXML, cada trecho passa a ocupar uma única linha `{x_titan_score: src="…" track=1 start=1 end=4}`. O arquivo exportado usa essa mesma forma, sem um bloco vazio nem tag de fechamento.
 - **Onde o acorde prende na letra:** ao editar, a linha abre o mesmo espaço da leitura para o acorde caber, também no meio da palavra. Um traço vertical fino, com brilho suave e um pequeno ponto no topo, indica a posição exata do acorde.
 - **Imagem na cifra:** em Inserir, dá para enviar uma foto ou um arquivo (JPG, PNG, WebP ou GIF). O app guarda o arquivo; a cifra fica só com o nome. Sem um app para guardar, o item não aparece.
 - **Inserir no lugar:** no modo de edição, o + fica entre os blocos, no ponto em que o trecho novo entra. O botão Inserir solto da barra saiu.

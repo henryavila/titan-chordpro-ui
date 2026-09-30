@@ -25,9 +25,9 @@ export type ChartBundleOptions = {
 export type ChartBundle = { bytes: Uint8Array; filename: string; chart: string; assetCount: number }
 
 const MEDIA: Record<string, { kind: ChartAssetKind; role: string }> = {
-  x_audio_sung: { kind: 'audio', role: 'sung' }, x_audio: { kind: 'audio', role: 'sung' },
-  x_audio_cantado: { kind: 'audio', role: 'sung' }, x_audio_playback: { kind: 'audio', role: 'playback' },
-  x_audio_art: { kind: 'image', role: 'audio-cover' },
+  x_titan_audio_sung: { kind: 'audio', role: 'sung' },
+  x_titan_audio_playback: { kind: 'audio', role: 'playback' },
+  x_titan_audio_art: { kind: 'image', role: 'audio-cover' },
 }
 const MIME_EXT: Record<string, string> = {
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg',
@@ -154,15 +154,15 @@ export async function exportChartBundle(source: string, opts: ChartBundleOptions
       }
       const path = await attach(ref, media.kind, media.role)
       lines[i] = `${match[1]}${path}${match[4]}`
-      if (key === 'x_audio_art' && !lines[i]!.trimStart().startsWith('#~')) hasArt = true
-    } else if (key === 'x_youtube') {
+      if (key === 'x_titan_audio_art' && !lines[i]!.trimStart().startsWith('#~')) hasArt = true
+    } else if (key === 'x_titan_youtube') {
       if (opts.onlineReferences !== 'provenance') throw new Error('A cifra contém um vídeo do YouTube. Para um pacote sem dependências externas, forneça o vídeo como arquivo ou guarde o link somente como informação de origem.')
       provenance.push({ kind: 'youtube', value: ref })
       lines[i] = '# Vídeo online registrado apenas em ORIGEM.txt; não faz parte dos recursos offline.'
-    } else if (key === 'x_source' || key === 'x_origem') {
+    } else if (key === 'x_titan_source') {
       provenance.push({ kind: 'source', value: ref })
       lines[i] = '# Origem registrada em ORIGEM.txt.'
-    } else if (/^(?:x_)?(?:video|image|file|attachment|include|asset|media)(?:_|$)/i.test(key) || (/^(?:x_)?audio(?:_|$)/i.test(key) && key !== 'x_audio_art_w' && key !== 'x_audio_art_h')) {
+    } else if (/^(?:x_(?:titan_)?)?(?:video|image|file|attachment|include|asset|media)(?:_|$)/i.test(key) || (/^(?:x_(?:titan_)?)?audio(?:_|$)/i.test(key) && key !== 'x_titan_audio_art_w' && key !== 'x_titan_audio_art_h')) {
       throw new Error(`A diretiva ${key} contém um anexo ainda não suportado pelo pacote offline.`)
     }
   }
@@ -173,7 +173,7 @@ export async function exportChartBundle(source: string, opts: ChartBundleOptions
     if (extra.width) asset.width = extra.width
     if (extra.height) asset.height = extra.height
     if (extra.role === 'audio-cover') {
-      lines.unshift(`{x_audio_art: ${path}}`, `{x_audio_art_w: ${extra.width ?? 512}}`, `{x_audio_art_h: ${extra.height ?? 512}}`)
+      lines.unshift(`{x_titan_audio_art: ${path}}`, `{x_titan_audio_art_w: ${extra.width ?? 512}}`, `{x_titan_audio_art_h: ${extra.height ?? 512}}`)
       hasArt = true
     }
   }

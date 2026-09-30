@@ -37,7 +37,7 @@ export default defineConfig({
     },
     cssCodeSplit: false,
     rollupOptions: {
-      // VexFlow is an optional peer: a host that never shows a `{sos}` block
+      // VexFlow is an optional peer: a host that never shows a `{x_titan_start_of_score}` block
       // should not ship an engraver. The score layer imports it lazily and
       // falls back to the source text when it is not installed.
       external: ['@coderline/alphatab', 'vue', 'jspdf', 'vexflow', '@henryavila/titan-chordpro-ui', '@henryavila/titan-chordpro-ui/pdf', '@henryavila/titan-chordpro-ui/slides', '@henryavila/titan-chordpro-ui/bundle'],

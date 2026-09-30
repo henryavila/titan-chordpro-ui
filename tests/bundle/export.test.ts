@@ -13,14 +13,14 @@ const ref = writeScoreReference({ src: 'private/solo.gp?token=secret', track: 1,
 
 describe('Cifra completa offline archive', () => {
   it('includes original scores, images, both audio roles and host art, rewriting every attachment locally', async () => {
-    const source = fixture + '\n' + ref + '\n' + ref + '\n{x_audio: https://media.example/voz.wav}\n{x_audio_playback: https://media.example/voz.wav}\n{x_youtube: abc123}\n{x_source: https://origin.example/song}'
+    const source = fixture + '\n' + ref + '\n' + ref + '\n{x_titan_audio_sung: https://media.example/voz.wav}\n{x_titan_audio_playback: https://media.example/voz.wav}\n{x_titan_youtube: abc123}\n{x_titan_source: https://origin.example/song}'
     const loadAsset = vi.fn(async (_ref: string, kind: string) => ({ bytes: kind === 'score' ? gp : kind === 'audio' ? audio : png }))
     const result = await exportChartBundle(source, { loadAsset, onlineReferences: 'provenance', extras: [{ role: 'audio-cover', data: { bytes: png }, width: 512, height: 512 }, { role: 'slide-background', data: { bytes: png } }] })
     const entries = unzip(result.bytes)
     const text = new TextDecoder().decode(entries.get(result.chart))
     expect(text).not.toContain('https://')
     expect(text).not.toContain('token=secret')
-    expect(text).not.toContain('{x_youtube:')
+    expect(text).not.toContain('{x_titan_youtube:')
     expect(text).toContain('[Gsus]x')
     expect(text).toContain('track=1 start=1 end=1')
     expect(loadAsset.mock.calls.filter(([, kind]) => kind === 'score')).toHaveLength(1)
@@ -40,12 +40,12 @@ describe('Cifra completa offline archive', () => {
     const source = ref.split('\n').map(line => '#~ ' + line).join('\n')
     const result = await exportChartBundle(source, { loadAsset: async () => ({ bytes: gp }) })
     const text = new TextDecoder().decode(unzip(result.bytes).get(result.chart))
-    expect(text).toContain('#~ {score: src="solos/solo-1.gp"')
-    expect(text).toBe('#~ {score: src="solos/solo-1.gp" track=1 start=1 end=1}')
+    expect(text).toContain('#~ {x_titan_score: src="solos/solo-1.gp"')
+    expect(text).toBe('#~ {x_titan_score: src="solos/solo-1.gp" track=1 start=1 end=1}')
   })
   it('retains service references as provenance without fetching them', async () => {
     const loadAsset = vi.fn()
-    const result = await exportChartBundle('{x_audio_sung: https://open.spotify.com/track/id}\n{x_youtube: abc123}', { loadAsset, onlineReferences: 'provenance' })
+    const result = await exportChartBundle('{x_titan_audio_sung: https://open.spotify.com/track/id}\n{x_titan_youtube: abc123}', { loadAsset, onlineReferences: 'provenance' })
     expect(loadAsset).not.toHaveBeenCalled()
     const entries = unzip(result.bytes)
     expect(new TextDecoder().decode(entries.get(result.chart))).not.toContain('https://')
@@ -53,6 +53,9 @@ describe('Cifra completa offline archive', () => {
   })
   it('rejects undeclared relative dependencies and external SVG resources', async () => {
     await expect(exportChartBundle('{include: other.cho}')).rejects.toThrow('include')
+    await expect(exportChartBundle(fixture + '\n{x_titan_video: clip.mp4}', { loadAsset: async () => ({ bytes: png }) })).rejects.toThrow('x_titan_video')
+    await expect(exportChartBundle(fixture + '\n{x_titan_audio_extra: extra.wav}', { loadAsset: async () => ({ bytes: png }) })).rejects.toThrow('x_titan_audio_extra')
+    await expect(exportChartBundle(fixture + '\n{x_audio: old.wav}', { loadAsset: async () => ({ bytes: png }) })).rejects.toThrow('x_audio')
     await expect(exportChartBundle('{image: vector.svg}', { loadAsset: async () => ({ bytes: new TextEncoder().encode('<svg><image href="https://example.com/picture.png"/></svg>') }) })).rejects.toThrow('SVG')
     const result = await exportChartBundle('{image: vector.svg}', { loadAsset: async () => ({ bytes: new TextEncoder().encode('<svg><defs><linearGradient id="color"/></defs><rect fill="url(#color)"/></svg>') }) })
     expect(result.assetCount).toBe(1)
@@ -62,6 +65,6 @@ describe('Cifra completa offline archive', () => {
     await expect(exportChartBundle(ref, { loadAsset: async () => { throw new Error('403') } })).rejects.toThrow('solo')
     await expect(exportChartBundle(ref, { loadAsset: async () => ({ bytes: new Uint8Array() }) })).rejects.toThrow('vazio')
     await expect(exportChartBundle(ref, { loadAsset: async () => ({ bytes: new TextEncoder().encode('<html>login</html>') }) })).rejects.toThrow('página')
-    await expect(exportChartBundle('{x_audio_sung: https://media.example/a.m3u8}', { loadAsset: async () => ({ bytes: new TextEncoder().encode('#EXTM3U\nhttps://media.example/part.ts') }) })).rejects.toThrow('transmissão')
+    await expect(exportChartBundle('{x_titan_audio_sung: https://media.example/a.m3u8}', { loadAsset: async () => ({ bytes: new TextEncoder().encode('#EXTM3U\nhttps://media.example/part.ts') }) })).rejects.toThrow('transmissão')
   })
 })

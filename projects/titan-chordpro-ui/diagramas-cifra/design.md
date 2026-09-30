@@ -89,7 +89,7 @@ D4 não abre na UI antes de D1 verde.
 
 Peso do debate (2026-09-18):
 
-- **Priya:** o ensaio lê a tela; `{define}` oficial (batida inventou `x_strum` porque o padrão não tinha batida; forma **tem**); criar é job de edit.
+- **Priya:** o ensaio lê a tela; `{define}` oficial (batida inventou `x_titan_strum` porque o padrão não tinha batida; forma **tem**); criar é job de edit.
 - **Aria:** core chato; token B + chave C; `{define}` é documento; API `resolveDiagram`; Vue nunca chama `localStorage`.
 - **Uma:** um hit-target no dual; cordas = shape, piano = concert; seletor no modal grande; view sem personalizar.
 - **Tariq (contrário):** oráculo 257; parser DROP bloqueia override; editor fora do MINOR; miss silencioso; 3 instrumentos juntos = dívida.
@@ -111,7 +111,7 @@ token tocável (shape se cordas+capo; concert se piano)
 | Faixa/lista de diagramas junto da cifra | Polui leitura; p90=19 únicos; lock do usuário | User B2, Uma |
 | Lookup pelo nome escrito no source | Capo/transpose: o músico toca o que vê; shape Am com capo 2 não é diagrama de G | Priya, Uma, emenda capo |
 | Lookup string crua sem parse BR | Metade do hinário (`7M`, `4`) vira miss falso | Priya, Aria |
-| `{x_chord:}` estilo `{x_strum:}` | Forma já tem diretiva oficial; segundo dialeto mente no export | Priya, Aria |
+| `{x_chord:}` estilo `{x_titan_strum:}` | Forma já tem diretiva oficial; segundo dialeto mente no export | Priya, Aria |
 | Empilhar o braço no ChordDialog | ChordDialog edita nome; grelha não cabe no polegar | Uma, Priya |
 | CTA “criar forma” no modal de view | Edit zera transpose; ensaio vira authoring | Priya, Uma |
 | Popover pequeno âncora no acorde | Braço, teclado e 3 instrumentos não cabem; user 2026-09-19 | User |

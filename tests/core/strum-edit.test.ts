@@ -4,7 +4,7 @@ import {
   densityFromGrid,
   emptyPattern,
   emptySlot,
-  formatXStrum,
+  formatTitanStrum,
   gridFromDensity,
   hasStrumAnchor,
   inferSixEightPulse,
@@ -12,7 +12,7 @@ import {
   isEmptySlot,
   isLegalStrumPattern,
   listSlotChoices,
-  parseXStrum,
+  parseTitanStrum,
   repairStrumPattern,
   requiredDir,
   resizePattern,
@@ -210,7 +210,7 @@ describe('setSlotCascading + legality', () => {
   })
 
   it('repairStrumPattern converts rest and forces alternating phase from first directed', () => {
-    const raw = parseXStrum('bpm=80; meter=4/4; grid=4; label=Old; pat=D-U-')
+    const raw = parseTitanStrum('bpm=80; meter=4/4; grid=4; label=Old; pat=D-U-')
     expect(raw).not.toBeNull()
     const fixed = repairStrumPattern(raw!)
     expect(fixed.slots.every((s) => s.contact !== 'rest')).toBe(true)
@@ -226,7 +226,7 @@ describe('setSlot / resizePattern / emptyPattern (baseline)', () => {
     expect(next).not.toBe(base)
     expect(base.slots[0] && isEmptySlot(base.slots[0])).toBe(true)
     expect(next.slots[0]).toEqual({ dir: 'down', contact: 'hit', essence: 'normal' })
-    const again = parseXStrum(formatXStrum(next))
+    const again = parseTitanStrum(formatTitanStrum(next))
     expect(again?.slots[0]).toEqual(next.slots[0])
     expect(again?.bpm).toBe(75)
   })
@@ -261,13 +261,13 @@ describe('setSlot / resizePattern / emptyPattern (baseline)', () => {
     expect(p.slots.every(isEmptySlot)).toBe(true)
   })
 
-  it('identity rewrite without slot edits preserves canonical x_strum string', () => {
+  it('identity rewrite without slot edits preserves canonical x_titan_strum string', () => {
     // Alternating dirs only — DdUu is illegal (down+down ghost).
     const raw = 'bpm=75; meter=6/8; grid=12; label=Padrão; pat=DuDu DuDu DuDu'
-    const parsed = parseXStrum(raw)
+    const parsed = parseTitanStrum(raw)
     expect(parsed).not.toBeNull()
     expect(isLegalStrumPattern(parsed!)).toBe(true)
-    const rewritten = formatXStrum(parsed as StrumPattern)
+    const rewritten = formatTitanStrum(parsed as StrumPattern)
     expect(rewritten).toBe(raw)
   })
 

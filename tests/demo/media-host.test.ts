@@ -55,8 +55,8 @@ describe('media demo host', () => {
       width: 1024,
       height: 1024,
     })
-    expect(cho).toContain('{x_audio_art_w:1024}')
-    expect(cho).toContain('{x_audio_art_h:1024}')
+    expect(cho).toContain('{x_titan_audio_art_w:1024}')
+    expect(cho).toContain('{x_titan_audio_art_h:1024}')
   })
 
   it('can omit chart art so the consumer defaultAudioArt is used', () => {

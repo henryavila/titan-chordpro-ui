@@ -66,10 +66,10 @@ Por baixo, **prefs continuam** `metSound` / `metStrumSound` (Aria + Tariq: sem o
 
 - Ortogonal a Cifra \| Letra \| Nashville.
 - Prop/estado aditivo `rehearsalFocus: 'off' \| 'batida'` (nome de produto: **Ensaio Batida**).
-- Entrada: chip `🎸 Ensaio batida` (só se `{x_strum:}`).
+- Entrada: chip `🎸 Ensaio batida` (só se `{x_titan_strum:}`).
 - Ao entrar: Fonte → Batida, strip abre, chrome marca o modo.
 - Ao sair / trocar música no setlist: volta ao perfil anterior (seguro).
-- Sem `{x_strum:}`: chip ausente ou CTA “Criar batida” (já no mapa do editor — fora deste slug se exigir content-edit).
+- Sem `{x_titan_strum:}`: chip ausente ou CTA “Criar batida” (já no mapa do editor — fora deste slug se exigir content-edit).
 
 ### Decisão C — Defaults conservadores + **Rolar ≠ palco com som**
 
@@ -154,7 +154,7 @@ Unânime. Com Fonte = Batida: “Contagem: click · depois: batida”. Se Fonte 
 ## Rejected alternatives
 
 1. **`lens=batida`** — mistura projeção tipográfica com chrome de prática (Priya/Uma/Aria; Tariq reforça).
-2. **Auto-ligar batida no Rolar** quando há `{x_strum:}` — surpresa em ensaio coletivo (Uma/Tariq vencem Priya).
+2. **Auto-ligar batida no Rolar** quando há `{x_titan_strum:}` — surpresa em ensaio coletivo (Uma/Tariq vencem Priya).
 3. **Só copy sem UI de Fonte** (mínimo Tariq) — resolve descoberta parcial, mas não o job “Ensaio Batida” da Interview.
 4. **Controle exclusivo sem reforço** — mata click+groove consciente.
 5. **Scoring / microfone** — out-of-scope.
@@ -189,7 +189,7 @@ dissent:
   - voice: Tariq
     objection: Modo nomeado sem scoring é teatro; API/default são one-way doors desnecessários
   - voice: Priya
-    objection: Default Rolar sem batida desperdiça {x_strum:} no chart
+    objection: Default Rolar sem batida desperdiça {x_titan_strum:} no chart
 open_questions:
   - Persistência de rehearsalFocus entre músicas do setlist
   - Volume do click de reforço na v1

@@ -74,7 +74,7 @@ async function confirmSuggest(w: Awaited<ReturnType<typeof mountAt>>, name = 'Ca
 }
 
 describe('local batida → suggest → merge', () => {
-  it('queues a batida op and persisted accept writes {x_strum:} on the official chart', async () => {
+  it('queues a batida op and persisted accept writes {x_titan_strum:} on the official chart', async () => {
     const store = memoryStore()
     const local = await mountAt({
       storage: store,
@@ -122,7 +122,7 @@ describe('local batida → suggest → merge', () => {
     await admin.get('[data-q-accept]').trigger('click')
     await flushPromises()
     const saved = String(admin.emitted('save-content')?.at(-1)?.[0] ?? '')
-    expect(readMeta(saved).x_strum).toBeTruthy()
+    expect(readMeta(saved).x_titan_strum).toBeTruthy()
     expect(admin.emitted('suggestion-accepted')).toHaveLength(1)
     admin.unmount()
   })
@@ -156,8 +156,8 @@ describe('local batida → suggest → merge', () => {
     await admin.get('[data-q-accept-batch]').trigger('click')
     await flushPromises()
     const saved = String(admin.emitted('save-content')?.at(-1)?.[0] ?? '')
-    expect(readMeta(saved).x_strum).toBeTruthy()
-    expect(String(readMeta(saved).x_strum)).toMatch(/pat=/i)
+    expect(readMeta(saved).x_titan_strum).toBeTruthy()
+    expect(String(readMeta(saved).x_titan_strum)).toMatch(/pat=/i)
     admin.unmount()
   })
 })

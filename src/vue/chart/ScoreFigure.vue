@@ -5,7 +5,7 @@ import { drawScore, loadVex, vexNow } from '../edit/score-draw'
 
 const props = withDefaults(
   defineProps<{
-    /** The whole `{sos}…{eos}` block, as it stands in the file. */
+    /** The whole `{x_titan_start_of_score}…{x_titan_end_of_score}` block, as it stands in the file. */
     text: string
     blockGap: string
     canEdit?: boolean

@@ -12,7 +12,7 @@ export const JESUS_1 = 'sda/087-jesus-tu-es-a-minha-vida-sobe-o-tom-original.cho
 export const ENTREGA_1 = 'sda/078-entrega-h310.cho'
 export const ESCUTA = 'sda/084-escuta-meu-clamor.cho'
 export const ELE_VIVE = 'sda/013-ele-vive-em-mim.cho'
-/** Image + {sos} — not in the demo list; production 013 has TAB only. */
+/** Image + {x_titan_start_of_score} — not in the demo list; production 013 has TAB only. */
 export const ELE_VIVE_IMG = '013-ele-vive-em-mim-partitura.cho'
 
 /** Scroll is gated on `{duration:}`. Tests that roll a chart without one in the file use this. */
