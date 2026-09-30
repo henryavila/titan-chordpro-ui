@@ -36,7 +36,7 @@
   --shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --downbeat: #EAECF2;
   --downbeat-ink: #0B0D12;
-  /* Off-beat pulse (2–3–4): white chip, not the theme green. */
+  /* Piano white key / unlit paper. Not the metronome pulse. */
   --beat-rest: #E8EAF0;
   --beat-rest-ink: #13161D;
 }

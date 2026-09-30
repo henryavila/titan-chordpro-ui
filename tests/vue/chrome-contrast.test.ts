@@ -23,6 +23,7 @@ describe('chrome contrast vs template', () => {
     const pulse = css.match(/\.cpv-met-beat\.is-now\s*\{[^}]+\}/)?.[0] ?? ''
     expect(pulse).toMatch(/background:\s*var\(--chord\)/)
     expect(pulse).toMatch(/color:\s*var\(--chord-ink\)/)
+    expect(pulse).not.toMatch(/--beat-rest/)
     const one = css.match(/\.cpv-met-beat\.is-now\.is-one\s*\{[^}]+\}/)?.[0] ?? ''
     expect(one).toMatch(/background:\s*var\(--downbeat\)/)
     expect(one).toMatch(/color:\s*var\(--downbeat-ink\)/)
