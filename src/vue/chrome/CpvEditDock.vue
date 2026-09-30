@@ -12,9 +12,6 @@ const props = defineProps<{
   clipLabel: string | null
   edit: BlockEditApi
   wMode: WriteMode | null
-  insertWhere: string
-  insertOpen: boolean
-  insertItems: Array<{ icon: CpvIconName; label: string; go: () => void }>
   showSource: boolean
   lintOk: boolean
   themeTitle: string
@@ -27,7 +24,6 @@ const emit = defineEmits<{
   seenHint: []
   dropClip: []
   editScore: []
-  insert: []
   source: []
   smallerType: []
   biggerType: []
@@ -45,7 +41,8 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
   >
     <div v-if="editHint" class="cpv-clip-bar cpv-veil-2" data-edit-hint style="border-style:solid;">
       <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
-        Toque na linha para editar a letra · segure o acorde e arraste até a sílaba ·
+        Toque na linha para editar a letra · Cifra entra onde está o cursor ·
+        segure o acorde e arraste até a sílaba · o + insere naquele lugar ·
         <CpvIcon name="gripV" :size="14" /> seleciona e reordena o bloco.
       </span>
       <button
@@ -75,28 +72,6 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
     />
 
     <div class="cpv-veil" style="pointer-events:auto;position:relative;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
-      <div v-if="insertOpen" class="cpv-insert-menu cpv-veil-2">
-        <div class="cpv-insert-where">{{ insertWhere }}</div>
-        <button
-          v-for="it in insertItems"
-          :key="it.label"
-          class="cpv-insert-item"
-          type="button"
-          @click="it.go()"
-        ><span><CpvIcon :name="it.icon" :size="16" /></span>{{ it.label }}</button>
-      </div>
-
-      <button
-        data-insert
-        title="Inserir bloco"
-        :style="{
-          border: `1px solid ${insertOpen ? 'var(--sel-line)' : 'var(--line)'}`,
-          background: insertOpen ? 'var(--sel)' : 'transparent',
-        }"
-        style="height:36px;padding:0 13px;border-radius:12px;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
-        @click="emit('insert')"
-      ><CpvIcon name="plus" :size="16" style="color:var(--chord)" />Inserir</button>
-
       <button
         v-if="showBatidaTools && !hasStrum"
         data-batida-create
@@ -112,7 +87,7 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
         @click="emit('editBatida')"
       ><CpvIcon name="pencil" :size="14" />Editar batida</button>
 
-      <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
+      <span v-if="showBatidaTools" style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
 
       <button
         v-if="showSource"

@@ -25,6 +25,7 @@ import {
   seedFixtures,
   songsFor,
 } from './host/charts'
+import { loadScoreImages, persistScoreImage } from './host/image-store'
 import BootShell from './BootShell.vue'
 import HostSite from './host/HostSite.vue'
 import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './host/recipe'
@@ -32,7 +33,30 @@ import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './h
 const props = defineProps<{ surface: Surface; lista: boolean }>()
 
 const fixtures = ref(seedFixtures())
-const { images, resolveImage } = bundledImages()
+const { resolveImage: resolveBundled } = bundledImages()
+/** Object URLs for images this browser already stored. The chart only keeps the name. */
+const uploadedUrls = ref(new Map<string, string>())
+function resolveImage(src: string) {
+  return uploadedUrls.value.get(src) ?? resolveBundled(src)
+}
+function imageExt(file: File): string {
+  const fromName = file.name.match(/\.(png|jpe?g|webp|gif)$/i)?.[0]?.toLowerCase()
+  if (fromName === '.jpeg') return '.jpg'
+  if (fromName) return fromName
+  if (file.type === 'image/png') return '.png'
+  if (file.type === 'image/webp') return '.webp'
+  if (file.type === 'image/gif') return '.gif'
+  return '.jpg'
+}
+async function uploadImage(file: File): Promise<{ ref: string }> {
+  const refName = `uploads/${Date.now().toString(36)}${imageExt(file)}`
+  await persistScoreImage(refName, file)
+  const url = URL.createObjectURL(file)
+  const next = new Map(uploadedUrls.value)
+  next.set(refName, url)
+  uploadedUrls.value = next
+  return { ref: refName }
+}
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
 /**
  * Device storage (default ChartStore): overlay + suggestion queue survive
@@ -163,6 +187,12 @@ const readPdf = async (file: File) => {
 
 onMounted(async () => {
   try {
+    const stored = await loadScoreImages().catch(() => [])
+    const next = new Map(uploadedUrls.value)
+    for (const row of stored) {
+      if (!next.has(row.ref)) next.set(row.ref, URL.createObjectURL(row.blob))
+    }
+    uploadedUrls.value = next
     if (lab.cc) {
       const src = await capturedCifra(lab.cc)
       if (src) {
@@ -221,7 +251,7 @@ onMounted(async () => {
       :edit-mode="editMode"
       :actor-key="actorKey"
       :resolve-image="resolveImage"
-      :images="images"
+      :upload-image="uploadImage"
       :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
       :strum-presets="strumPresets"
       @update:source="source = $event"
@@ -252,7 +282,7 @@ onMounted(async () => {
       :edit-mode="editMode"
       :actor-key="actorKey"
       :resolve-image="resolveImage"
-      :images="images"
+      :upload-image="uploadImage"
       :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
       :strum-presets="strumPresets"
       @update:source="source = $event"

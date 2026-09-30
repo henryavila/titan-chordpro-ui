@@ -2061,9 +2061,15 @@ div.cpv-head-id {
   background: var(--chord-hover);
 }
 /* Text edited where it is read — no second surface to keep in sync. */
+.cpv-row-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .cpv-row-input {
   display: block;
   width: 100%;
+  min-width: 0;
   padding: 5px 9px;
   border: 1px solid var(--chord-edge);
   border-radius: 10px;
@@ -2071,6 +2077,29 @@ div.cpv-head-id {
   color: var(--text);
   font-family: inherit;
   line-height: 1.4;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+.cpv-row-edit .cpv-row-input {
+  flex: 1;
+  width: auto;
+}
+.cpv-insert-chord {
+  flex: none;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--chord-edge);
+  border-radius: 10px;
+  background: var(--chord-soft);
+  color: var(--chord);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cpv-insert-chord:hover {
+  background: var(--chord-hover);
 }
 .cpv-row-input--comment {
   margin: 0 16px 0;
@@ -2095,6 +2124,17 @@ div.cpv-head-id {
   position: relative;
   padding: 2px 0 4px;
   cursor: text;
+  /* The syllables are not a text field. Selecting them on a long-press is what
+     fights a chord drag on touch. The line editor (the input) still selects. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.cpv-root.is-chord-drag,
+.cpv-root.is-chord-drag * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 .cpv-tk-word {
   white-space: nowrap;
@@ -2364,18 +2404,65 @@ div.cpv-head-id {
   border-color: var(--chord-edge);
   animation: cpv-rise 0.18s ease-out;
 }
-/* Insert menu: what a new block can be, right above the button. */
+/* The + lives in the gap it writes into. The menu hangs off that same gap. */
+.cpv-insert-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 2px 32px;
+  min-height: 28px;
+  z-index: 4;
+}
+.cpv-insert-slot.is-open {
+  z-index: 14;
+}
+.cpv-insert-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line-soft);
+}
+.cpv-insert-plus {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--chord);
+  cursor: pointer;
+}
+.cpv-insert-plus:hover,
+.cpv-insert-slot.is-open .cpv-insert-plus {
+  border-style: solid;
+  border-color: var(--chord-edge);
+  background: var(--chord-soft);
+}
+.cpv-insert-plus:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
 .cpv-insert-menu {
   position: absolute;
   left: 0;
-  bottom: calc(100% + 8px);
-  width: 250px;
+  top: calc(100% + 4px);
+  bottom: auto;
+  z-index: 2;
+  width: min(250px, 100%);
   padding: 7px;
   border-radius: 15px;
   display: flex;
   flex-direction: column;
   gap: 3px;
   animation: cpv-rise 0.16s ease-out;
+}
+.cpv-insert-slot.is-up .cpv-insert-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 .cpv-insert-where {
   padding: 5px 10px;
@@ -2526,6 +2613,34 @@ div.cpv-head-id {
   object-fit: cover;
   object-position: left top;
   background: #fff;
+}
+.cpv-image-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.cpv-image-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+.cpv-image-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  object-position: center top;
+  border-radius: 12px;
+  background: #fff;
+}
+.cpv-modal-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* ------------------------------------------------- score editor (Phase E) */

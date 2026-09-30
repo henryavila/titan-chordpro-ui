@@ -8,7 +8,6 @@ import {
   duplicateBlock as duplicateBlockAt,
   groupAfter,
   hideBlock as hideBlockAt,
-  insertAt,
   insertBlock as insertBlockAt,
   insertImage,
   lastChordName,
@@ -81,6 +80,10 @@ export function useBlockEdit(opts: BlockEditOpts) {
   const placing = ref(false)
   const clip = ref<Harmony | null>(null)
   const insertMenu = ref(false)
+  /** Source line the open insert slot writes into. The button is that line. */
+  const insertAtLine = ref<number | null>(null)
+  /** Caret in the lyric being typed, taken from the syllable that was tapped. */
+  const rowCaret = ref<number | null>(null)
   const picker = ref<PickerMode>(null)
   /** Guards the click a browser fires after a pill drag ends. */
   let pillAt = 0
@@ -112,6 +115,8 @@ export function useBlockEdit(opts: BlockEditOpts) {
     chordEdit.value = null
     placing.value = false
     insertMenu.value = false
+    insertAtLine.value = null
+    rowCaret.value = null
     picker.value = null
     clip.value = null
   }
@@ -195,6 +200,17 @@ export function useBlockEdit(opts: BlockEditOpts) {
     const pill = e.currentTarget as HTMLElement
     const row = pill.closest('[data-row]') as HTMLElement | null
     if (!row) return
+    // A long-press on touch is also the gesture that selects the lyric under
+    // the finger. The chart refuses that selection for the whole hold.
+    const root = opts.root.value
+    root?.classList.add('is-chord-drag')
+    const blockSelect = (ev: Event) => ev.preventDefault()
+    const clearTextSel = () => {
+      const s = window.getSelection?.()
+      if (s && !s.isCollapsed) s.removeAllRanges()
+    }
+    document.addEventListener('selectstart', blockSelect, true)
+    clearTextSel()
     const chars = Array.from(row.querySelectorAll<HTMLElement>('[data-i]'))
     const x0 = e.clientX
     const y0 = e.clientY
@@ -234,6 +250,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
         if (ring)
           ring.style.background = `conic-gradient(from -90deg, var(--chord) ${deg}deg, rgba(140,145,158,0.30) ${deg}deg)`
         if (p < 1) {
+          clearTextSel()
           raf = requestAnimationFrame(tick)
           return
         }
@@ -251,6 +268,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
     }
 
     const move = (ev: PointerEvent) => {
+      clearTextSel()
       const dx = ev.clientX - x0
       const dy = ev.clientY - y0
       if (!armed) {
@@ -265,6 +283,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
       if (panned) return
       if (!moved && Math.abs(dx) + Math.abs(dy) < SLOP) return
       moved = true
+      clearTextSel()
       pill.style.opacity = '0.9'
       pill.style.zIndex = '6'
       pill.style.cursor = 'grabbing'
@@ -279,6 +298,9 @@ export function useBlockEdit(opts: BlockEditOpts) {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       window.removeEventListener('pointercancel', up)
+      document.removeEventListener('selectstart', blockSelect, true)
+      root?.classList.remove('is-chord-drag')
+      clearTextSel()
       killRing()
       for (const c of chars) c.style.boxShadow = ''
       pill.style.transform = ''
@@ -317,12 +339,17 @@ export function useBlockEdit(opts: BlockEditOpts) {
 
   // ---------------------------------------------------------- text in place
 
+  function tappedOffset(e: Event, fallback: number): number {
+    const t = e.target as HTMLElement | null
+    const raw = t?.dataset?.i
+    const i = raw == null || raw === '' ? NaN : Number(raw)
+    return Number.isFinite(i) ? i : fallback
+  }
+
   function rowClick(e: MouseEvent, li: number, plain: string) {
     if (Date.now() - pillAt < 350) return
     if (placing.value) {
-      const t = e.target as HTMLElement | null
-      const i = t?.dataset ? Number(t.dataset.i) : NaN
-      const off = Number.isFinite(i) ? i : plain.length
+      const off = tappedOffset(e, plain.length)
       const name = lastChordName(opts.source.value)
       const idx = addChord(li, off, name)
       placing.value = false
@@ -333,9 +360,30 @@ export function useBlockEdit(opts: BlockEditOpts) {
     skipCommit = false
     editKind.value = 'lyric'
     rowText.value = plain
+    rowCaret.value = tappedOffset(e, plain.length)
     editRow.value = li
     insertMenu.value = false
     wantRowFocus.value = true
+  }
+
+  /**
+   * A chord at the caret of the line being typed. The words commit first, so
+   * a typo and the new chord land in one write.
+   */
+  function insertChordAtCaret(caret: number) {
+    const li = editRow.value
+    if (li === null || editKind.value !== 'lyric') return
+    const plain = rowText.value
+    const rewritten = setLyric(lines.value[li] ?? '', plain)
+    const at = Math.max(0, Math.min(plain.length, Math.round(caret)))
+    const name = lastChordName(opts.source.value)
+    const idx = rowParts(rewritten).chords.filter((c) => c.off <= at).length
+    const out = [...lines.value]
+    out[li] = addChordAt(rewritten, at, name)
+    skipCommit = true
+    editRow.value = null
+    write(out)
+    openChord(li, idx, name, true)
   }
 
   /**
@@ -351,7 +399,10 @@ export function useBlockEdit(opts: BlockEditOpts) {
     wantRowFocus.value = true
   }
 
-  function commitRow() {
+  function commitRow(e?: Event) {
+    const next = (e as FocusEvent | undefined)?.relatedTarget
+    // Tabbing onto "Cifra" must not close the line before the chord lands.
+    if (next instanceof HTMLElement && next.closest('[data-insert-chord]')) return
     const li = editRow.value
     if (li === null || skipCommit) {
       skipCommit = false
@@ -574,48 +625,23 @@ export function useBlockEdit(opts: BlockEditOpts) {
 
   // ------------------------------------------------------------ inserting
 
-  /** Index of the block sitting at the top of the reading area. */
-  function visibleBlock(): number | null {
-    const sc = opts.scroller.value
-    const root = opts.root.value
-    if (!sc || !root) return null
-    const top = sc.getBoundingClientRect().top + 140
-    let best: number | null = null
-    for (const el of root.querySelectorAll<HTMLElement>('[data-block]')) {
-      if (el.getBoundingClientRect().bottom > top) {
-        best = Number(el.dataset.block)
-        break
-      }
-    }
-    return best
-  }
-
-  /**
-   * Without a selection the new block went to the end of the file, far out of
-   * sight: it looked like inserting had done nothing. With none, it lands after
-   * the block that is on screen.
-   */
-  function insertTarget(): number | null {
-    return sel.value ?? visibleBlock()
-  }
-
+  /** The + that was pressed. With none, the new block goes at the end. */
   function whereToInsert(): number {
-    return insertAt(blocks.value, insertTarget(), lines.value.length)
+    const at = insertAtLine.value
+    if (at == null) return lines.value.length
+    return Math.max(0, Math.min(lines.value.length, at))
   }
 
-  /**
-   * Where the menu says the block will land. It is a snapshot taken when the
-   * menu opens, because the answer depends on what is scrolled into view —
-   * and a label that says "at the end" while the block lands mid-chart is
-   * worse than no label.
-   */
-  const insertWhere = ref('No fim da cifra')
-  function toggleInsertMenu() {
-    const open = !insertMenu.value
-    insertMenu.value = open
-    if (!open) return
-    const bi = insertTarget()
-    insertWhere.value = bi === null ? 'No fim da cifra' : `Depois de ${blockLabel(blocks.value, bi)}`
+  /** Open the insert menu on the gap the musician pointed at. Same gap closes it. */
+  function openInsert(at: number) {
+    if (insertMenu.value && insertAtLine.value === at) {
+      insertMenu.value = false
+      return
+    }
+    if (editRow.value !== null) commitRow()
+    placing.value = false
+    insertAtLine.value = at
+    insertMenu.value = true
   }
 
   function insertBlock(kind: InsertKind) {
@@ -798,6 +824,8 @@ export function useBlockEdit(opts: BlockEditOpts) {
     placing,
     clip,
     insertMenu,
+    insertAtLine,
+    rowCaret,
     picker,
     wantRowFocus,
     wantChordFocus,
@@ -813,7 +841,6 @@ export function useBlockEdit(opts: BlockEditOpts) {
     selCapoOwn,
     selCapoLabel,
     selDualOn,
-    insertWhere,
     buildRow,
     layoutPills,
     clearSel,
@@ -837,7 +864,8 @@ export function useBlockEdit(opts: BlockEditOpts) {
     togglePlacing,
     insertBlock,
     insertScore,
-    toggleInsertMenu,
+    openInsert,
+    insertChordAtCaret,
     replaceSpan,
     openPicker,
     pickImage,

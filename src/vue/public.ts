@@ -173,6 +173,12 @@ export type ChordproViewerProps = {
   /** Scores the host can serve, offered when a `{image:}` block is inserted. */
   images?: ImageChoice[]
   /**
+   * Host stores an uploaded score image and returns the `{image:}` reference.
+   * Reject, or an empty `ref`, leaves the chart unchanged. The bytes never
+   * enter the ChordPro source — `resolveImage` is how the chart shows them.
+   */
+  uploadImage?: (file: File) => Promise<{ ref: string }>
+  /**
    * Colour of the chords, and of everything derived from them.
    * Named `verde` / `teal`, or any host hex / `rgb()` — light and dark are
    * derived from that hue.

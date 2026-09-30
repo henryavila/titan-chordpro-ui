@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { normalizeSource } from '../../src/core/index'
+import { normalizeSource, rowParts } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
 
@@ -199,6 +199,46 @@ describe('editing the words where they are read', () => {
     w.unmount()
   })
 
+  it('puts a new chord where the caret is', async () => {
+    const w = await edit()
+    const row = w.findAll('[data-row]')[1]!
+    const mark = row.findAll('[data-i]').find((m) => Number(m.attributes('data-i')) > 0)
+    expect(mark).toBeTruthy()
+    const off = Number(mark!.attributes('data-i'))
+    await mark!.trigger('click')
+    await flushPromises()
+    const input = w.get('.cpv-row-input')
+    expect((input.element as HTMLInputElement).selectionStart).toBe(off)
+    await w.get('[data-insert-chord]').trigger('pointerdown')
+    await flushPromises()
+    expect(w.find('[data-chord-dialog]').exists()).toBe(true)
+    await w.get('[data-chord-input]').setValue('F#m7')
+    await w.get('[data-chord-apply]').trigger('click')
+    await flushPromises()
+    const line = (await sourceOf(w)).split('\n').find((l) => l.includes('[F#m7]'))
+    expect(line).toBeTruthy()
+    expect(rowParts(line ?? '').chords.find((c) => c.name === 'F#m7')?.off).toBe(off)
+    w.unmount()
+  })
+
+  it('does not select the lyric while a chord is held', async () => {
+    const w = await edit()
+    await w.get('[data-pill]').trigger('pointerdown', {
+      button: 0,
+      pointerType: 'touch',
+      clientX: 4,
+      clientY: 4,
+    })
+    const ev = new Event('selectstart', { bubbles: true, cancelable: true })
+    document.dispatchEvent(ev)
+    expect(ev.defaultPrevented).toBe(true)
+    expect(w.element.classList.contains('is-chord-drag')).toBe(true)
+    window.dispatchEvent(new Event('pointerup'))
+    await flushPromises()
+    expect(w.element.classList.contains('is-chord-drag')).toBe(false)
+    w.unmount()
+  })
+
   it('renames a rehearsal comment in place', async () => {
     const w = await edit()
     await w.get('.cpv-comment').trigger('click')
@@ -329,12 +369,23 @@ describe('the block a musician has chosen', () => {
 })
 
 describe('putting something new into the chart', () => {
-  it('says where the block will land before it lands', async () => {
+  it('inserts the block at the + that was pressed', async () => {
     const w = await edit()
-    await w.get('[data-insert]').trigger('click')
+    const slots = w.findAll('[data-insert-at]')
+    expect(slots.length).toBeGreaterThan(2)
+    const slot = slots[2]!
+    const at = Number(slot.attributes('data-insert-at'))
+    expect(Number.isFinite(at)).toBe(true)
+    await slot.trigger('click')
     await flushPromises()
-    expect(w.get('.cpv-insert-where').text().length).toBeGreaterThan(0)
+    expect(w.get('.cpv-insert-where').text()).toContain('Neste ponto')
     expect(w.findAll('.cpv-insert-item').length).toBeGreaterThan(0)
+    const chorus = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Refrão'))
+    await chorus?.trigger('click')
+    await flushPromises()
+    const lines = (await sourceOf(w)).split('\n')
+    expect(lines[at + 1]).toBe('{soc}')
+    expect(lines[at + 2]).toContain('refrão')
     w.unmount()
   })
 
@@ -353,6 +404,61 @@ describe('putting something new into the chart', () => {
     await flushPromises()
     const labels = w.findAll('.cpv-insert-item').map((b) => b.text())
     expect(labels.some((l) => l.includes('Imagem'))).toBe(true)
+    w.unmount()
+  })
+
+  it('asks the host to store an uploaded image and writes only the name', async () => {
+    let got: File | null = null
+    const w = await edit({
+      uploadImage: async (file: File) => {
+        got = file
+        return { ref: 'uploads/solo.png' }
+      },
+    })
+    await w.get('[data-insert]').trigger('click')
+    await flushPromises()
+    const image = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Imagem'))
+    await image?.trigger('click')
+    await flushPromises()
+    const input = w.get('[data-image-file]')
+    const file = new File([new Uint8Array([1, 2, 3])], 'solo.png', { type: 'image/png' })
+    Object.defineProperty(input.element, 'files', {
+      configurable: true,
+      value: { 0: file, length: 1, item: (i: number) => (i === 0 ? file : null) },
+    })
+    await input.trigger('change')
+    await flushPromises()
+    await w.get('[data-image-send]').trigger('click')
+    await flushPromises()
+    expect(got?.name).toBe('solo.png')
+    expect(await sourceOf(w)).toContain('{image: uploads/solo.png}')
+    expect(await sourceOf(w)).not.toContain('data:')
+    w.unmount()
+  })
+
+  it('leaves the chart alone when the host refuses the image', async () => {
+    const w = await edit({
+      uploadImage: async () => {
+        throw new Error('disk')
+      },
+    })
+    const before = await sourceOf(w)
+    await w.get('[data-insert]').trigger('click')
+    await flushPromises()
+    const image = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Imagem'))
+    await image?.trigger('click')
+    await flushPromises()
+    const input = w.get('[data-image-file]')
+    const file = new File([new Uint8Array([1])], 'solo.png', { type: 'image/png' })
+    Object.defineProperty(input.element, 'files', {
+      configurable: true,
+      value: { 0: file, length: 1, item: (i: number) => (i === 0 ? file : null) },
+    })
+    await input.trigger('change')
+    await w.get('[data-image-send]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-image-error]').text()).toContain('Não foi possível')
+    expect(await sourceOf(w)).toBe(before)
     w.unmount()
   })
 
