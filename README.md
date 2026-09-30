@@ -70,10 +70,36 @@ Fora: login, multicifra do site, player de áudio **sincronizado**, collab em te
 ```bash
 pnpm install
 pnpm test
-pnpm dev          # índice das demos em :5173
+pnpm dev          # índice das demos; escolhe outra porta se :5173 estiver ocupada
 pnpm build
 pnpm build:pages  # demo estático → dist-demo/ (Cloudflare Pages)
 ```
+
+### Servidor para teste local ou remoto
+
+```bash
+pnpm dev                         # somente neste computador
+pnpm dev --tailscale              # acesso pelo IP Tailscale
+pnpm dev --tailscale --port 5200   # tenta a partir de outra porta
+pnpm dev --help
+```
+
+O terminal mostra a URL com a porta efetivamente disponível. Se a porta estiver
+ocupada, tenta as seguintes sem encerrar outros processos. Ctrl+C encerra o
+servidor e libera a porta. O script também funciona a partir de qualquer pasta:
+`node /caminho/do/repo/scripts/dev-server.mjs --tailscale`.
+
+Para acesso remoto, conecte os dois aparelhos à mesma rede Tailscale e abra a
+URL exibida (as regras de acesso da rede precisam permitir essa conexão).
+O modo remoto escuta somente no IP Tailscale; o modo local, em `127.0.0.1`.
+O script procura a CLI no PATH e no caminho padrão do app macOS; se necessário,
+use `TAILSCALE_BIN=/caminho/tailscale pnpm dev --tailscale`.
+A conexão é HTTP: recursos que exigem HTTPS no celular podem ficar indisponíveis.
+Não configura Tailscale Serve/Funnel nem altera a rede. Se faltarem dependências,
+execute `pnpm install`; se o Tailscale estiver desligado, o script avisa e encerra.
+
+Referências: [opções do servidor Vite](https://vite.dev/config/server-options)
+e [CLI Tailscale](https://tailscale.com/kb/1080/cli).
 
 Demo público (hub completo, sem persistência, proxy de import por link):  
 [`docs/DEMO-PAGES.md`](docs/DEMO-PAGES.md).

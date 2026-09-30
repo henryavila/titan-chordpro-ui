@@ -72,7 +72,7 @@
   },
   "packageManager": "pnpm@11.17.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev-server.mjs",
     "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run build",
     "build": "tsup && vite build --config vite.lib.config.ts && tsx scripts/pack-vue.ts",

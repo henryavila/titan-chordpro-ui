@@ -797,8 +797,8 @@ Props, emits e o resto da API: [README](../README.md).
 
 ## Solos em Guitar Pro / MusicXML
 
-Em **Editar → + entre blocos → Guitar Pro / MusicXML**, abra um endereço de
-arquivo, escolha a faixa e o primeiro/último compasso, confira o desenho e salve.
+Em **Editar → + entre blocos → Guitar Pro / MusicXML**, escolha um arquivo no
+aparelho, selecione a faixa e o primeiro/último compasso, confira o desenho e salve.
 Na leitura, o próprio trecho oferece **TAB / Partitura** e **Zoom automático**.
 O desenho SVG reorganiza os compassos conforme a largura e mantém escala mínima
 de 110%; um compasso muito denso pode rolar horizontalmente sem diminuir as notas.
@@ -808,8 +808,8 @@ Instale o peer opcional `@coderline/alphatab` (>=1.8.4 <2). Ele é carregado ape
 quando se abre um solo externo. A fonte Bravura acompanha o pacote, sem CDN,
 worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
 
-- `uploadScore(file): Promise<{ ref: string }>` habilita escolher um arquivo do
-  aparelho; o host guarda os bytes originais e devolve uma referência permanente.
+- `uploadScore(file): Promise<{ ref: string }>` habilita a opção de inserir
+  Guitar Pro / MusicXML e escolher um arquivo do aparelho; o host guarda os bytes originais e devolve uma referência permanente.
 - `resolveScore(ref): string` transforma essa referência em URL acessível ao
   navegador. URLs externas precisam permitir CORS. Sem resolver, usa a referência
   como URL relativa ou absoluta.

@@ -896,8 +896,9 @@ const chordVocab = computed(() =>
 const insertItems = computed(() => {
   const out: Array<{ icon: CpvIconName; label: string; go: () => void }> = [
     { icon: 'music2', label: 'Partitura ou solo', go: () => newScore() },
-    { icon: 'music2', label: 'Guitar Pro / MusicXML', go: () => { externalEd.value = { text: '' }; bedit.insertMenu.value = false } },
   ]
+  if (props.uploadScore)
+    out.push({ icon: 'music2', label: 'Guitar Pro / MusicXML', go: () => { externalEd.value = { text: '' }; bedit.insertMenu.value = false } })
   // An upload goes to the host. A catalogue is the scores it already has.
   // Neither means the entry would open an empty dialog.
   if (props.uploadImage || props.images.length)

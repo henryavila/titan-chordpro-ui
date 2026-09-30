@@ -37,7 +37,6 @@ function clear() {
   score.value = null
   tracks.value = []
 }
-function changed() { generation++; controller?.abort(); clear(); file.value = null; busy.value = false }
 async function openFile(chosen?: File) {
   const ticket = ++generation
   controller?.abort()
@@ -116,9 +115,7 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
       <h2>Solo de Guitar Pro ou MusicXML</h2>
       <p>Abra o arquivo, escolha a faixa e os compassos que entram na cifra.</p>
       <fieldset :disabled="busy">
-        <label>Endereço do arquivo <input v-model="src" aria-label="Endereço do arquivo" type="text" @input="changed"></label>
-        <button type="button" class="cpv-modal-btn" :disabled="!src.trim()" @click="openFile()">Abrir arquivo</button>
-        <label v-if="uploadScore">Ou escolha no aparelho <input type="file" accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl" @change="selectFile"></label>
+        <label v-if="uploadScore">Escolha o arquivo no aparelho <input type="file" accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl" @change="selectFile"></label>
         <template v-if="tracks.length">
           <p>{{ total }} compassos no arquivo. Só o intervalo escolhido entra na cifra.</p>
           <label>Faixa <select v-model.number="track" aria-label="Faixa"><option v-for="t in tracks" :key="t.id" :value="t.id">{{ t.name }}</option></select></label>
