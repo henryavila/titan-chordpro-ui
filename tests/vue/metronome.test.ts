@@ -777,8 +777,8 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
  */
 /**
  * The 1–2–3–4 column is numbers. A box on every cell fought the lyric
- * underneath; only the pulse fills. Beat 1 wears the theme colour; 2–3–4
- * pulse as a white chip (`--beat-rest`).
+ * underneath; only the pulse fills. Beat 1 is ink (--downbeat); 2–3–4
+ * wear the theme (--chord).
  */
 describe('beat numbers are bare; only the pulse fills', () => {
   function transparent(bg: string) {
@@ -808,7 +808,7 @@ describe('beat numbers are bare; only the pulse fills', () => {
     expect(getComputedStyle(now[0]!.element).fontWeight).toMatch(/700|bold/)
   })
 
-  it('keeps is-one on beat 1 so only the downbeat can wear the theme', async () => {
+  it('keeps is-one on beat 1 so the downbeat can wear ink', async () => {
     const w = await viewerAt(390)
     const cells = w.findAll('.cpv-met-beat')
     expect(cells.length).toBeGreaterThan(1)

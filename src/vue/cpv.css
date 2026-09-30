@@ -1584,14 +1584,14 @@ div.cpv-head-id {
 }
 .cpv-met-beat.is-now {
   font-weight: 700;
-  background: var(--beat-rest);
-  color: var(--beat-rest-ink);
-  border: 1px solid var(--line);
-}
-/* Only the downbeat wears the theme colour. */
-.cpv-met-beat.is-now.is-one {
   background: var(--chord);
   color: var(--chord-ink);
+  border: 1px solid transparent;
+}
+/* Downbeat is ink (black/white of the theme); 2–4 keep --chord above. */
+.cpv-met-beat.is-now.is-one {
+  background: var(--downbeat);
+  color: var(--downbeat-ink);
   border-color: transparent;
 }
 

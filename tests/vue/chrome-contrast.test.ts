@@ -16,16 +16,16 @@ describe('chrome contrast vs template', () => {
     expect(css).toMatch(/\.cpv-ico[\s\S]*?color:\s*inherit/)
   })
 
-  it('beat numbers stay bare; only beat 1 pulses in the theme colour', () => {
+  it('beat numbers stay bare; beat 1 is ink, 2–4 wear the theme', () => {
     const idle = css.match(/\.cpv-met-beat\s*\{[^}]+\}/)?.[0] ?? ''
     expect(idle).toMatch(/background:\s*transparent/)
     expect(idle).toMatch(/border:\s*0/)
     const pulse = css.match(/\.cpv-met-beat\.is-now\s*\{[^}]+\}/)?.[0] ?? ''
-    expect(pulse).toMatch(/background:\s*var\(--beat-rest\)/)
-    expect(pulse).toMatch(/color:\s*var\(--beat-rest-ink\)/)
+    expect(pulse).toMatch(/background:\s*var\(--chord\)/)
+    expect(pulse).toMatch(/color:\s*var\(--chord-ink\)/)
     const one = css.match(/\.cpv-met-beat\.is-now\.is-one\s*\{[^}]+\}/)?.[0] ?? ''
-    expect(one).toMatch(/background:\s*var\(--chord\)/)
-    expect(one).toMatch(/color:\s*var\(--chord-ink\)/)
+    expect(one).toMatch(/background:\s*var\(--downbeat\)/)
+    expect(one).toMatch(/color:\s*var\(--downbeat-ink\)/)
     expect(css).toMatch(/--beat-rest:\s*#E8EAF0/)
     expect(css).toMatch(/\[data-theme='light'\][\s\S]*?--beat-rest:\s*#FFFFFF/)
     expect(css).not.toMatch(/\.cpv-met-hit-1\s+\.cpv-met-beat\.is-now/)
