@@ -275,7 +275,7 @@ const geom = computed(() =>
         </span>
         <span style="display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:13px;font-weight:600;">{{ pulseHead ? 'Faixa do título' : 'Faixa quieta' }}</span>
-          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">No 1 a faixa vira tinta e o título inverte. Nos outros, a cor do tema. Rolar não liga isto.</span>
+          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Acende no tempo e apaga no contratempo. No 1 inverte; nos outros, a cor do tema. Rolar não liga isto.</span>
         </span>
       </button>
 

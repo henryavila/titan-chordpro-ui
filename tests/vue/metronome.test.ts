@@ -845,5 +845,9 @@ describe('metronome sheet beat dots match the column', () => {
     expect(src).toMatch(/liveInk = accent \? 'var\(--downbeat\)' : 'var\(--chord\)'/)
     expect(src).not.toMatch(/liveFill = accent \? 'var\(--chord\)' : 'var\(--beat-rest\)'/)
   })
+
+  it('tells the musician the title strip marks tempo and contratempo', () => {
+    expect(src).toMatch(/Acende no tempo e apaga no contratempo/)
+  })
 })
 
