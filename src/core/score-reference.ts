@@ -2,12 +2,13 @@
 export type ScoreReference = { src: string; track: number; start: number; end?: number }
 
 export function isScoreReference(text: string): boolean {
-  return /^\s*\{(?:sos|start_of_score):[^\n}]*\bsrc\s*=/i.test(text)
+  return /^\s*\{score\s*:/i.test(text)
 }
 
 export function readScoreReference(text: string): ScoreReference | null {
   if (!isScoreReference(text)) return null
-  const head = text.split('\n')[0] ?? ''
+  const head = text.trim()
+  if (!/^\{score\s*:[^\r\n]*\}$/i.test(head)) throw new Error('Use uma única diretiva {score: ...} para o solo.')
   const match = head.match(/\bsrc\s*=\s*("(?:[^"\\]|\\.)*")/)
   if (!match) throw new Error('Informe o arquivo do solo entre aspas.')
   const src: unknown = JSON.parse(match[1]!)
@@ -29,7 +30,7 @@ export function readScoreReference(text: string): ScoreReference | null {
 }
 
 export function writeScoreReference(ref: ScoreReference): string {
-  const text = `{sos: src=${JSON.stringify(ref.src)} track=${ref.track} start=${ref.start}${ref.end === undefined ? '' : ` end=${ref.end}`}}\n{eos}`
+  const text = `{score: src=${JSON.stringify(ref.src)} track=${ref.track} start=${ref.start}${ref.end === undefined ? '' : ` end=${ref.end}`}}`
   readScoreReference(text)
   return text
 }

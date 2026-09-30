@@ -126,6 +126,10 @@ function parseRaw(src: string): {
     if (d) {
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
+      if (k === 'score') {
+        lines.push({ kind: 'score', text: raw, li0: li, li1: li })
+        continue
+      }
       if (k === 'sos' || k === 'start_of_score') {
         score = [raw]
         scoreStart = li

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Solos de Guitar Pro e MusicXML:** ao editar, toque no + entre os blocos e escolha **Guitar Pro / MusicXML**. Abra o arquivo, selecione a faixa e os compassos e confira o trecho antes de salvar. Na leitura, alterne entre **TAB** e **Partitura**; o zoom automático mantém as notas grandes e reorganiza os compassos conforme a tela. Também há zoom manual. Arquivos sem posições nas cordas ficam em Partitura. O solo mantém o tom do arquivo original.
 
 ### Changed
+- **Referências de solos no ChordPro:** ao importar Guitar Pro/MusicXML, cada trecho passa a ocupar uma única linha `{score: src="…" track=1 start=1 end=4}`. O arquivo exportado usa essa mesma forma, sem um bloco vazio nem tag de fechamento.
 - **Onde o acorde prende na letra:** ao editar, a linha abre o mesmo espaço da leitura para o acorde caber, também no meio da palavra. Um traço vertical fino, com brilho suave e um pequeno ponto no topo, indica a posição exata do acorde.
 - **Imagem na cifra:** em Inserir, dá para enviar uma foto ou um arquivo (JPG, PNG, WebP ou GIF). O app guarda o arquivo; a cifra fica só com o nome. Sem um app para guardar, o item não aparece.
 - **Inserir no lugar:** no modo de edição, o + fica entre os blocos, no ponto em que o trecho novo entra. O botão Inserir solto da barra saiu.

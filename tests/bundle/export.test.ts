@@ -40,8 +40,8 @@ describe('Cifra completa offline archive', () => {
     const source = ref.split('\n').map(line => '#~ ' + line).join('\n')
     const result = await exportChartBundle(source, { loadAsset: async () => ({ bytes: gp }) })
     const text = new TextDecoder().decode(unzip(result.bytes).get(result.chart))
-    expect(text).toContain('#~ {sos: src="solos/solo-1.gp"')
-    expect(text).toContain('#~ {eos}')
+    expect(text).toContain('#~ {score: src="solos/solo-1.gp"')
+    expect(text).toBe('#~ {score: src="solos/solo-1.gp" track=1 start=1 end=1}')
   })
   it('retains service references as provenance without fetching them', async () => {
     const loadAsset = vi.fn()
