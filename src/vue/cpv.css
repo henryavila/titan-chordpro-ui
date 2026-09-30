@@ -1641,13 +1641,13 @@ div.cpv-head-id {
   --muted: color-mix(in srgb, var(--chord) 72%, transparent);
   --chord-soft: var(--chord-ink);
   --chord-fill: color-mix(in srgb, var(--chord) 16%, var(--chord-ink));
-  --chord-hover: color-mix(in srgb, var(--chord-ink) 12%, transparent);
-  --chord-edge: color-mix(in srgb, var(--chord-ink) 40%, transparent);
+  --chord-hover: color-mix(in srgb, var(--chord) 12%, transparent);
+  --chord-edge: color-mix(in srgb, var(--chord) 40%, transparent);
   --surface: color-mix(in srgb, var(--chord) 12%, var(--chord-ink));
-  --line: color-mix(in srgb, var(--chord-ink) 40%, transparent);
-  --sel: color-mix(in srgb, var(--chord-ink) 12%, transparent);
-  --sel-line: color-mix(in srgb, var(--chord-ink) 28%, transparent);
-  --hover: color-mix(in srgb, var(--chord-ink) 12%, transparent);
+  --line: color-mix(in srgb, var(--chord) 40%, transparent);
+  --sel: color-mix(in srgb, var(--chord) 12%, transparent);
+  --sel-line: color-mix(in srgb, var(--chord) 28%, transparent);
+  --hover: color-mix(in srgb, var(--chord) 12%, transparent);
   color: var(--chord);
 }
 

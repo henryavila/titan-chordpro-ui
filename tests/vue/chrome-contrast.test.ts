@@ -83,6 +83,9 @@ describe('chrome contrast vs template', () => {
     expect(chips).toMatch(/--chord-soft:\s*var\(--chord-ink\)/)
     expect(chips).toMatch(/--text:\s*var\(--chord\)/)
     expect(chips).not.toMatch(/--chord:\s*var\(--downbeat\)/)
+    expect(chips).toMatch(/--chord-edge:\s*color-mix\(in srgb,\s*var\(--chord\)/)
+    expect(chips).toMatch(/--chord-hover:\s*color-mix\(in srgb,\s*var\(--chord\)/)
+    expect(chips).not.toMatch(/--chord-edge:\s*color-mix\(in srgb,\s*var\(--chord-ink\)/)
   })
 
   it('tom pill keeps air between − / + / capo so the pulse cannot glue them', () => {
