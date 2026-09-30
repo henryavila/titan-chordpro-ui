@@ -628,10 +628,9 @@ export function typeScale(
 }
 
 /**
- * Typography the editing surface needs on top of the reading one. A row in
- * edit mode is syllables you can measure with chord pills floating above them,
- * so the line box has to carry a lane the pills live in — hence a line-height
- * far taller than the lyric itself.
+ * Typography the editing surface needs on top of the reading one.
+ * `pillLane` is the gap above the in-place input. The lyric itself reserves
+ * width per chord, the way reading does, so `editLineH` is no longer the lane.
  */
 export function editTypeScale(bias: number, compact: boolean) {
   const lyric = 18 + bias * 1.7

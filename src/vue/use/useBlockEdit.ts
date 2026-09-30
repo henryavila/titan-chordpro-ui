@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from 'vue'
 import {
   addChord as addChordAt,
+  anchorWords,
   blockLabel,
   blockSpan,
   copyHarmony as copyHarmonyOf,
@@ -27,7 +28,7 @@ import {
   toggleBlockDual as toggleBlockDualOn,
   unhideBlock as unhideBlockAt,
 } from '@henryavila/titan-chordpro-ui'
-import type { ChartBlock, Harmony, InsertKind, PlayedCol } from '@henryavila/titan-chordpro-ui'
+import type { AnchorWord, ChartBlock, Harmony, InsertKind, PlayedCol } from '@henryavila/titan-chordpro-ui'
 import type { WriteMode } from '../public'
 
 export type BlockEditOpts = {
@@ -51,16 +52,18 @@ export type PickerMode = 'insert' | 'replace' | null
 /** A score the host already has on file, offered as a reference for the source. */
 export type { ImageChoice } from '../public'
 
-/** A lyric row as the editor draws it: measurable syllables plus loose chords. */
-export type EditToken = { isWord: boolean; chars: Array<{ ch: string; i: number }> }
+/** A lyric row as the editor draws it: reading columns, with the anchor on the letter. */
 export type EditRow = {
   li: number
-  tokens: EditToken[]
   chords: Array<{ name: string; off: number }>
   plain: string
+  /** Source offsets a caret marks. One per chord, on that letter. */
+  anchors: number[]
   /** Voiceless intro/interlude: columns like reading, not a pile of pills. */
   played: boolean
   columns: PlayedCol[]
+  /** Sung line, grouped like reading so each chord reserves its width. */
+  words: AnchorWord[]
 }
 
 /**
@@ -670,15 +673,16 @@ export function useBlockEdit(opts: BlockEditOpts) {
    * A new score goes into the file empty and the editor opens on top of it.
    * Cancelling undoes the insert — no ghost block is left behind in the chart.
    */
-  function insertScore(): { li0: number; li1: number } {
+  function insertScore(text = '{sos: time=4/4 key=D tempo=92 tuning=EADGBE}\n{eos}'): { li0: number; li1: number } {
     const at = whereToInsert()
     const out = [...lines.value]
-    out.splice(at, 0, '{sos: time=4/4 key=D tempo=92 tuning=EADGBE}', '{eos}', '')
+    const inserted = text.split('\n')
+    out.splice(at, 0, ...inserted, '')
     write(out, 'Partitura nova')
     insertMenu.value = false
     picker.value = null
     sel.value = null
-    return { li0: at, li1: at + 1 }
+    return { li0: at, li1: at + inserted.length - 1 }
   }
 
   /** Swap one block's lines for new ones — how the score editor writes back. */
@@ -695,38 +699,29 @@ export function useBlockEdit(opts: BlockEditOpts) {
     const raw = lines.value[li] ?? ''
     const p = rowParts(raw)
     const columns = playedColumns(raw)
-    const tokens: EditToken[] = []
-    let i = 0
-    while (i < p.plain.length) {
-      const sp = /\s/.test(p.plain[i] as string)
-      let j = i
-      while (j < p.plain.length && /\s/.test(p.plain[j] as string) === sp) j++
-      const chars: Array<{ ch: string; i: number }> = []
-      for (let k = i; k < j; k++) chars.push({ ch: p.plain[k] as string, i: k })
-      tokens.push({ isWord: !sp, chars })
-      i = j
-    }
+    const played = columns !== null
     return {
       li,
-      tokens,
       chords: p.chords.map((c) => ({ name: c.name, off: c.off })),
       plain: p.plain,
-      played: columns !== null,
+      anchors: p.chords.map((c) => c.off),
+      played,
       columns: columns ?? [],
+      words: played ? [] : anchorWords(raw),
     }
   }
 
   /**
-   * Chord pills leave the flow: their position comes from measuring the real
-   * syllable, once per visual line, avoiding collisions left to right — and if
-   * the last one runs past the edge, pushing the earlier ones back left.
+   * Absolute pills are measured onto their syllable. Flow pills (reading
+   * columns, sung and voiceless) already reserve their width — moving them
+   * would pull the chip off the letter it is anchored to.
    */
   function layoutPills() {
     const root = opts.root.value
     if (!opts.editing.value || !root) return
     for (const row of root.querySelectorAll<HTMLElement>('[data-row]')) {
-      // Played lines keep the reading columns: pills are in the flow.
       if (row.hasAttribute('data-played')) continue
+      if (!row.querySelector('.cpv-pill:not(.cpv-pill--flow)')) continue
       const rr = row.getBoundingClientRect()
       const chars = row.querySelectorAll<HTMLElement>('[data-i]')
       const last = chars.length ? chars[chars.length - 1]?.getBoundingClientRect() : null
