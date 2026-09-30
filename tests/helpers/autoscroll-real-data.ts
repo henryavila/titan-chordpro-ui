@@ -17,6 +17,7 @@ import { lineBeats } from '../../src/core/timeline'
 export const AUTOSCROLL_CLOCK_TEST_FILES = [
   'tests/core/autoscroll-states.test.ts',
   'tests/browser/autoscroll.spec.ts',
+  'tests/browser/notation-fold.spec.ts',
   'tests/core/timeline-charts.test.ts',
   'tests/helpers/autoscroll-corpus.ts',
   'tests/helpers/autoscroll-real-data.ts',

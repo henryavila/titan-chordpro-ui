@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUpdated, ref, watch, useId } from 'vue'
 import type { ChartBlock } from '@henryavila/titan-chordpro-ui'
 import type { CpvIconName } from '../icon/paths'
 import InsertSlot from '../edit/InsertSlot.vue'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
+import EditLyric from './EditLyric.vue'
 import ScoreFigure from './ScoreFigure.vue'
+import ExternalScore from './ExternalScore.vue'
+import { isScoreReference } from '@henryavila/titan-chordpro-ui'
 import { readingWords, type ReadingWord } from './readingWords'
 
 const props = withDefaults(
   defineProps<{
     blocks: ChartBlock[]
+    collapsedNotation?: ReadonlySet<number>
     lyricPx: string
     chordPx: string
     shapePx: string
@@ -22,6 +26,7 @@ const props = withDefaults(
     blockGap: string
     /** Maps a `{image:}` reference to a URL the host can actually serve. */
     resolveImage?: (src: string) => string
+    resolveScore?: (src: string) => string
     /** Flip scanned scores when the paper fights the theme. */
     autoInvertScores?: boolean
     theme?: 'light' | 'dark'
@@ -31,7 +36,6 @@ const props = withDefaults(
     edit?: BlockEditApi | null
     pillLane?: string
     pillH?: string
-    editLineH?: string
     chordEditPx?: string
     /** View tap opens the shape modal. Off in edit and in só letra. */
     diagrams?: boolean
@@ -46,7 +50,6 @@ const props = withDefaults(
     edit: null,
     pillLane: '29px',
     pillH: '23px',
-    editLineH: '73px',
     chordEditPx: '13px',
     diagrams: true,
     insertItems: () => [],
@@ -71,8 +74,17 @@ function onInsertChord(e: Event) {
 const emit = defineEmits<{
   revertLine: [li: number]
   editScore: [bi: number]
+  toggleNotation: [bi: number]
   diagram: [payload: { shapeName: string; concert: string; capoFret: number }]
 }>()
+
+const notationId = useId()
+function canFold(block: ChartBlock): boolean {
+  return block.kind === 'tab' || block.kind === 'score' || block.kind === 'image'
+}
+function isFolded(block: ChartBlock): boolean {
+  return !props.edit && !!props.collapsedNotation?.has(block.li0)
+}
 
 /** Which image blocks the reader opened to full height, keyed by source line. */
 const full = ref<Record<number, boolean>>({})
@@ -96,7 +108,15 @@ const editRows = computed(() => {
   }
   return m
 })
-const emptyRow: EditRow = { li: -1, tokens: [], chords: [], plain: '', played: false, columns: [] }
+const emptyRow: EditRow = {
+  li: -1,
+  chords: [],
+  plain: '',
+  anchors: [],
+  played: false,
+  columns: [],
+  words: [],
+}
 const rowOf = (li: number): EditRow => editRows.value.get(li) ?? emptyRow
 
 /**
@@ -268,7 +288,7 @@ watch(
         :edit="edit"
         :items="insertItems"
       />
-      <div :data-block="i" class="cpv-blockrow">
+      <div :data-block="i" class="cpv-blockrow" :data-notation-collapsed="canFold(block) ? isFolded(block) : undefined">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
         <span v-if="edit && edit.dropAt.value === i" class="cpv-drop-line" />
         <span
@@ -292,6 +312,12 @@ watch(
             opacity: edit && edit.inDrag(i) ? '0.45' : '1',
           }"
         >
+          <div v-if="!edit && canFold(block)" class="cpv-notation-fold" :class="{ 'is-folded': isFolded(block) }">
+            <button type="button" :data-toggle-notation="i" :aria-expanded="!isFolded(block)" :aria-controls="`${notationId}-${block.li0}`"
+              @click.stop="emit('toggleNotation', i)">
+              {{ isFolded(block) ? 'Mostrar TAB / partitura' : 'Ocultar TAB / partitura' }}
+            </button>
+          </div>
           <!-- A block with a capo of its own explains itself, right there. -->
           <div
             v-if="(block.kind === 'stanza' || block.kind === 'chorus') && block.hasOwnCapo"
@@ -374,7 +400,7 @@ watch(
             </div>
           </template>
 
-          <div v-else-if="block.kind === 'tab'" class="cpv-tab">
+          <div v-else-if="block.kind === 'tab'" v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`" class="cpv-tab">
             <div v-for="(ex, j) in block.extras" :key="'e' + j" class="cpv-tab-extra">{{ ex }}</div>
             <div class="cpv-tab-staves">
               <div
@@ -403,7 +429,14 @@ watch(
             </div>
           </div>
 
+          <ExternalScore
+            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
+            v-else-if="block.kind === 'score' && isScoreReference(block.text)"
+            :text="block.text" :block-gap="blockGap" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme"
+            @edit-score="emit('editScore', i)"
+          />
           <ScoreFigure
+            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score'"
             :text="block.text"
             :block-gap="blockGap"
@@ -414,6 +447,7 @@ watch(
 
           <figure
             v-else-if="block.kind === 'image'"
+            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
             class="cpv-figure"
             :style="{ margin: `0 0 ${blockGap}`, padding: '10px 10px 8px' }"
           >
@@ -509,9 +543,8 @@ watch(
               </div>
             </template>
 
-            <!-- Editing: the line becomes measurable syllables with the chords
-                 floating above them — which is what lets a chord be dragged to
-                 the syllable it belongs on. -->
+            <!-- Editing: the same columns as reading, so a chord keeps its
+                 gap, plus a caret on the letter it is anchored to. -->
             <template v-else>
               <div v-for="(row, ri) in block.rows" :key="ri">
                 <div
@@ -575,15 +608,15 @@ watch(
                             @keydown="edit.chordKey($event, row.li, col.idx, col.name)"
                           >{{ col.name }}</span>
                         </span>
-                        <span class="cpv-lyric">
-                          <span v-for="c in col.marks" :key="c.i" :data-i="c.i">{{ c.ch }}</span>
-                        </span>
+                        <EditLyric
+                          :chars="col.marks"
+                          :anchors="rowOf(row.li).anchors"
+                          :end="col.off === rowOf(row.li).plain.length"
+                        />
                       </span>
                       <span v-if="col.tail.length" class="cpv-word">
                         <span class="cpv-chord-box" :style="{ minHeight: pillH }" />
-                        <span class="cpv-lyric">
-                          <span v-for="c in col.tail" :key="c.i" :data-i="c.i">{{ c.ch }}</span>
-                        </span>
+                        <EditLyric :chars="col.tail" :anchors="rowOf(row.li).anchors" />
                       </span>
                     </span>
                   </span>
@@ -593,7 +626,7 @@ watch(
                   :data-row="row.li"
                   class="cpv-editrow"
                   title="Toque para editar a letra"
-                  :style="{ lineHeight: editLineH, fontSize: lyricPx }"
+                  :style="{ fontSize: lyricPx }"
                   @click="edit.rowClick($event, row.li, rowOf(row.li).plain)"
                 >
                   <button
@@ -602,28 +635,42 @@ watch(
                     data-mine-dot
                     title="Ajuste seu — toque para voltar este trecho ao original"
                     aria-label="Voltar este trecho ao original"
-                    :style="{ top: `calc(${pillLane} + 2px)` }"
+                    :style="{ top: `calc(${pillH} + 4px)` }"
                     @click.stop="emit('revertLine', row.li)"
                   ><span /></button>
-                  <template v-for="(tk, ti) in rowOf(row.li).tokens" :key="ti">
-                    <span :class="tk.isWord ? 'cpv-tk-word' : 'cpv-tk-space'"><span
-                      v-for="c in tk.chars"
-                      :key="c.i"
-                      :data-i="c.i"
-                    >{{ c.ch }}</span></span>
-                  </template>
-                  <span
-                    v-for="(ch, ci) in rowOf(row.li).chords"
-                    :key="`c${ci}`"
-                    :data-pill="ch.off"
-                    class="cpv-pill"
-                    role="button"
-                    tabindex="0"
-                    title="Arraste para mover · toque para editar · ←/→ ajusta a sílaba"
-                    :style="{ height: pillH, fontSize: chordEditPx }"
-                    @pointerdown="edit.chordDown($event, row.li, ci, ch.name)"
-                    @keydown="edit.chordKey($event, row.li, ci, ch.name)"
-                  >{{ ch.name }}</span>
+                  <span class="cpv-reading-flow">
+                    <span
+                      v-for="(word, wi) in rowOf(row.li).words"
+                      :key="wi"
+                      class="cpv-reading-word"
+                    >
+                      <span v-for="(cell, ci) in word.cells" :key="ci" class="cpv-word">
+                        <span class="cpv-chord-box" :style="{ height: pillH }">
+                          <span
+                            v-if="cell.chord"
+                            :data-pill="cell.chord.off"
+                            class="cpv-pill cpv-pill--flow"
+                            role="button"
+                            tabindex="0"
+                            title="Arraste para mover · toque para editar · ←/→ ajusta a sílaba"
+                            :style="{ height: pillH, fontSize: chordEditPx }"
+                            @pointerdown="edit.chordDown($event, row.li, cell.chord.idx, cell.chord.name)"
+                            @keydown="edit.chordKey($event, row.li, cell.chord.idx, cell.chord.name)"
+                          >{{ cell.chord.name }}</span>
+                        </span>
+                        <EditLyric
+                          :chars="cell.chars"
+                          :anchors="rowOf(row.li).anchors"
+                          :end="!!cell.chord && cell.chord.off === rowOf(row.li).plain.length"
+                        />
+                      </span>
+                      <span v-if="word.tail.length" class="cpv-word">
+                        <span class="cpv-chord-box" :style="{ height: pillH }" />
+                        <EditLyric :chars="word.tail" :anchors="rowOf(row.li).anchors" />
+                      </span>
+                    </span>
+                    <span v-if="!rowOf(row.li).words.length" class="cpv-lyric">&nbsp;</span>
+                  </span>
                 </div>
               </div>
             </template>

@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { ref, useId } from 'vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
     pdfBusy: boolean
+    hasNotation?: boolean
+    pdfError?: string
     slidesBusy?: boolean
+    bundleBusy?: boolean
+    bundleError?: string
     /** Phone width: the dialog becomes a bottom sheet. */
     compact?: boolean
     /** The reader has a personal version: the file has to say which one it is. */
@@ -16,10 +21,14 @@ withDefaults(
 const emit = defineEmits<{
   close: []
   cho: []
-  pdf: []
+  pdf: [notation: 'tab' | 'score' | 'none']
   slides: []
+  bundle: []
   pick: [orig: boolean]
 }>()
+const notationGroup = useId()
+const confirmPdf = ref(false)
+const notation = ref<'tab' | 'score' | 'none'>('score')
 </script>
 
 <template>
@@ -66,11 +75,19 @@ const emit = defineEmits<{
         <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.cho</span>
         ChordPro
       </button>
+      <button data-export="bundle" class="cpv-surface-btn" type="button" :disabled="bundleBusy"
+        style="width:100%;display:flex;align-items:center;gap:12px;text-align:left" @click="emit('bundle')">
+        <span style="font-family:monospace;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px">ZIP</span>
+        <span>Cifra completa <small style="display:block;color:var(--muted);font-weight:400">ChordPro, solos, imagens e áudios · offline</small></span>
+        <span v-if="bundleBusy" class="cpv-spin" style="width:14px;height:14px;margin-left:auto" />
+      </button>
+      <p v-if="bundleError" role="alert" style="font-size:13px;padding:0 4px">{{ bundleError }}</p>
       <button
         data-export="pdf"
         class="cpv-surface-btn"
         style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;"
-        @click="emit('pdf')"
+        :disabled="pdfBusy"
+        @click="hasNotation ? (confirmPdf = true) : emit('pdf', 'score')"
       >
         <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">PDF</span>
         Documento
@@ -79,6 +96,19 @@ const emit = defineEmits<{
           <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
         </span>
       </button>
+      <div v-if="confirmPdf" style="padding:12px 2px" data-pdf-confirm>
+        <fieldset :disabled="pdfBusy" style="border:0;padding:0;margin:0 0 12px">
+          <legend style="font-weight:600;margin-bottom:10px">Solos de Guitar Pro/MusicXML no PDF</legend>
+          <label v-for="choice in ([['tab', 'TAB'], ['score', 'Partitura'], ['none', 'Nenhum']] as const)"
+            :key="choice[0]" style="display:inline-flex;align-items:center;gap:5px;margin-right:12px">
+            <input v-model="notation" type="radio" :name="notationGroup" :value="choice[0]">{{ choice[1] }}
+          </label>
+        </fieldset>
+        <button type="button" class="cpv-surface-btn" data-pdf-download :disabled="pdfBusy" @click="emit('pdf', notation)">
+          {{ pdfBusy ? 'Gerando PDF…' : 'Gerar PDF' }}
+        </button>
+      </div>
+      <p v-if="pdfError" role="alert" style="font-size:13px;padding:0 4px">{{ pdfError }}</p>
       <button
         data-export="slides"
         class="cpv-surface-btn"

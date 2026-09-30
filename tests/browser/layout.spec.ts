@@ -159,6 +159,84 @@ test('editor spaces a voiceless intro like reading — pills do not pile', async
   expect(failures, 'editor pills on the reported intro overlapped').toEqual([])
 })
 
+test('editor reserves the reading gap and marks the chord anchor', async ({ page }, info) => {
+  for (const width of [1280, 375]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/')
+    await page.locator('#load-fonts').click()
+    await expect(page.locator('#fonts-state')).toHaveText('loaded')
+    await page.locator('.cpv-chord').first().waitFor()
+    await page.evaluate(() => document.fonts.ready)
+    const viewShot = info.outputPath(`reading-${width}.png`)
+    await page.locator('.cpv-block', { has: page.locator('.cpv-lyric', { hasText: 'oro' }) }).first().screenshot({ path: viewShot })
+    await page.locator('[data-edit]').click()
+    const pick = page.locator('[data-mode-content]')
+    if (await pick.count()) await pick.click()
+    await expect(page.locator('.cpv-editrow .cpv-pill--flow').first()).toBeVisible()
+    const anchor = page.locator('.cpv-editrow [data-anchor]').first()
+    const pipe = await anchor.evaluate(el => {
+      const s = getComputedStyle(el, '::before')
+      return { width: s.width, height: parseFloat(s.height), border: s.borderTopWidth, content: s.content }
+    })
+    expect(pipe.width).toBe('1px')
+    expect(pipe.height).toBeGreaterThan(10)
+    expect(pipe.border).toBe('0px')
+    expect(pipe.content).toBe('""')
+    const failures = await page.locator('.cpv-editrow:not([data-played])').evaluateAll((rows) => {
+      const fails: string[] = []
+      for (const row of rows) {
+        const flow = row.querySelector('.cpv-reading-flow')!.getBoundingClientRect()
+        for (const anchor of row.querySelectorAll('[data-anchor]')) {
+          const bounds = anchor.getBoundingClientRect()
+          if (bounds.left - flow.left < 7.9) fails.push('anchor glow clipped at line start')
+        }
+        const pills = [...row.querySelectorAll<HTMLElement>('.cpv-pill--flow')]
+        const boxes = pills.map((el) => el.getBoundingClientRect())
+        for (let i = 1; i < boxes.length; i++) {
+          const a = boxes[i - 1]!
+          const b = boxes[i]!
+          if (Math.abs(a.y - b.y) < 1 && b.x - a.right < 3.5) {
+            fails.push(`${pills[i - 1]!.textContent}/${pills[i]!.textContent}: ${(b.x - a.right).toFixed(2)}px`)
+          }
+        }
+        for (const pill of pills) {
+          const cell = pill.closest('.cpv-word')
+          const first = cell?.querySelector<HTMLElement>('[data-i]')
+          const pr = pill.getBoundingClientRect()
+          if (first && Math.abs(pr.left - first.getBoundingClientRect().left) > 2) {
+            fails.push(`${pill.textContent} left ${pr.left.toFixed(1)} vs syllable ${first.getBoundingClientRect().left.toFixed(1)}`)
+          }
+          const off = pill.dataset.pill ?? ''
+          const marked = row.querySelector<HTMLElement>(`[data-i="${off}"][data-anchor]`)
+          const end = !row.querySelector(`[data-i="${off}"]`) && row.querySelector('[data-anchor]:not([data-i])')
+          if (!marked && !end) fails.push(`no caret for ${pill.textContent} @${off}`)
+        }
+        for (const word of row.querySelectorAll('.cpv-reading-word')) {
+          const ys = [...word.querySelectorAll('.cpv-lyric')].map((el) => el.getBoundingClientRect().y)
+          if (ys.length > 1 && Math.max(...ys) - Math.min(...ys) > 1) fails.push('word broken at internal chord')
+        }
+      }
+      return fails
+    })
+    expect(failures, `edit geometry at ${width}px`).toEqual([])
+    const editShot = info.outputPath(`edit-${width}.png`)
+    await page.locator('.cpv-block', { has: page.locator('.cpv-editrow .cpv-lyric', { hasText: 'oro' }) }).first().screenshot({ path: editShot })
+    await info.attach(`reading-${width}`, { path: viewShot, contentType: 'image/png' })
+    await info.attach(`edit-${width}`, { path: editShot, contentType: 'image/png' })
+    if (width === 1280) {
+      await page.locator('#host-theme').selectOption('dark')
+      await expect(page.locator('[data-cpv-root]')).toHaveAttribute('data-theme', 'dark')
+      const caret = await page.locator('.cpv-editrow [data-anchor]').first().evaluate((el) => getComputedStyle(el, '::after').backgroundColor)
+      expect(caret).not.toBe('rgba(0, 0, 0, 0)')
+      const darkShot = info.outputPath('edit-dark.png')
+      const motivos = page.locator('.cpv-editrow', { hasText: 'tivos' }).first()
+      await motivos.scrollIntoViewIfNeeded()
+      await motivos.screenshot({ path: darkShot })
+      await info.attach('edit-dark', { path: darkShot, contentType: 'image/png' })
+    }
+  }
+})
+
 test('font tokens reach edit lyrics and pills while source remains monospace', async ({ page }) => {
   await page.goto('/')
   await page.locator('#load-fonts').click()

@@ -3469,3 +3469,9 @@ div.cpv-head-id {
 .cpv-notation-system { margin: 0 0 8px; }
 .cpv-notation-system svg { display: block; }
 .cpv-external-score .cpv-figure-kind { font-size: 12px; white-space: normal; letter-spacing: normal; text-transform: none; }
+
+/* Keep the reference toggle reachable while crossing a long notation block.
+   No height transition: the clock remaps to the final geometry in one tick. */
+.cpv-notation-fold { position: sticky; top: var(--cpv-notation-fold-top, 72px); z-index: 2; display: flex; justify-content: flex-end; padding: 5px 0; pointer-events: none; }
+.cpv-notation-fold button { pointer-events: auto; font: inherit; font-size: 12px; font-weight: 600; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.cpv-notation-fold.is-folded { position: static; justify-content: flex-start; margin-bottom: 12px; }

@@ -85,7 +85,7 @@ describe('dock Rolar fill', () => {
     [390, 'phone'],
     [768, 'tablet'],
     [1280, 'desktop'],
-  ] as const)('idle Rolar is the chord colour at %ipx (%s)', async (width) => {
+  ] as const)('idle Rolar is the chord colour at %ipx (%s)', async (width, _device) => {
     const w = await viewerAt(width)
     const paint = idleRollPaint(w.get('[data-scroll]').attributes('style') ?? '')
     expect(paint.ghost, 'Rolar is still a ghost on this width').toBe(false)

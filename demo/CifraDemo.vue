@@ -57,6 +57,17 @@ async function uploadImage(file: File): Promise<{ ref: string }> {
   uploadedUrls.value = next
   return { ref: refName }
 }
+/** The same demo blob store also retains original notation files across reloads. */
+async function uploadScore(file: File): Promise<{ ref: string }> {
+  const ext = file.name.match(/\.(gp[345]?|gpx|xml|musicxml|mxl)$/i)?.[0]?.toLowerCase()
+  if (!ext) throw new Error('Escolha um arquivo Guitar Pro ou MusicXML.')
+  const refName = `solos/${crypto.randomUUID()}${ext}`
+  await persistScoreImage(refName, file)
+  const next = new Map(uploadedUrls.value)
+  next.set(refName, URL.createObjectURL(file))
+  uploadedUrls.value = next
+  return { ref: refName }
+}
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
 /**
  * Device storage (default ChartStore): overlay + suggestion queue survive
@@ -252,6 +263,8 @@ onMounted(async () => {
       :actor-key="actorKey"
       :resolve-image="resolveImage"
       :upload-image="uploadImage"
+      :upload-score="uploadScore"
+      :resolve-score="resolveImage"
       :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
       :strum-presets="strumPresets"
       @update:source="source = $event"
@@ -283,6 +296,8 @@ onMounted(async () => {
       :actor-key="actorKey"
       :resolve-image="resolveImage"
       :upload-image="uploadImage"
+      :upload-score="uploadScore"
+      :resolve-score="resolveImage"
       :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
       :strum-presets="strumPresets"
       @update:source="source = $event"

@@ -57,7 +57,29 @@ beforeEach(() => localStorage.clear())
 afterEach(() => localStorage.clear())
 
 describe('the editing surface', () => {
-  it('turns each sung line into syllables with the chords floating over them', async () => {
+  it('opens a sung line like reading and marks the letter each chord is on', async () => {
+    const chart = ['{title: T}', '{key: G}', '', '[Bm]cu[E]ra do [Fsus4]men[F]to', 'vida[C]'].join('\n')
+    const w = await edit({ source: chart })
+    const cura = w.get('[data-row]')
+    expect(cura.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual(['Bm', 'E', 'Fsus4', 'F'])
+    expect(cura.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    // "cura" and "mento" each stay one word, with a caret on the anchor letter.
+    const words = cura.findAll('.cpv-reading-word')
+    const lyricOf = (word: (typeof words)[number] | undefined) =>
+      word?.findAll('.cpv-lyric').map((el) => el.text()).join('') ?? ''
+    expect(lyricOf(words[0]).trim()).toBe('cura')
+    expect(words[0]?.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual(['Bm', 'E'])
+    const mento = words.find((word) => lyricOf(word).trim() === 'mento')
+    expect(mento?.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual(['Fsus4', 'F'])
+    expect(cura.findAll('[data-i][data-anchor]').map((el) => el.text())).toEqual(['c', 'r', 'm', 't'])
+    // A chord written after the last letter still shows its caret.
+    const end = w.findAll('[data-row]')[1]
+    expect(end?.find('[data-anchor]:not([data-i])').exists()).toBe(true)
+    expect(end?.find('.cpv-pill--flow').attributes('data-pill')).toBe(String('vida'.length))
+    w.unmount()
+  })
+
+  it('turns each sung line into syllables a chord can land on', async () => {
     const w = await edit()
     // Reading has chords glued into the flow; editing has pills that can move.
     expect(w.findAll('[data-pill]').length).toBeGreaterThan(0)
@@ -99,8 +121,13 @@ describe('the editing surface', () => {
         .filter((t) => /[x/]/.test(t)),
     ).toEqual(['x///', 'x///', 'x///', 'x/', '//'])
     expect(row.findAll('.cpv-reading-word').length).toBeGreaterThanOrEqual(5)
-    // Sung rows keep the floating pills; this intro must not.
     expect(row.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    // Each clock group carries a caret on its first mark.
+    expect(
+      row
+        .findAll('[data-anchor]')
+        .map((el) => el.text()),
+    ).toEqual(['x', 'x', 'x', 'x', '/'])
     w.unmount()
   })
 
@@ -408,10 +435,10 @@ describe('putting something new into the chart', () => {
   })
 
   it('asks the host to store an uploaded image and writes only the name', async () => {
-    let got: File | null = null
+    const received: File[] = []
     const w = await edit({
       uploadImage: async (file: File) => {
-        got = file
+        received.push(file)
         return { ref: 'uploads/solo.png' }
       },
     })
@@ -430,7 +457,7 @@ describe('putting something new into the chart', () => {
     await flushPromises()
     await w.get('[data-image-send]').trigger('click')
     await flushPromises()
-    expect(got?.name).toBe('solo.png')
+    expect(received[0]?.name).toBe('solo.png')
     expect(await sourceOf(w)).toContain('{image: uploads/solo.png}')
     expect(await sourceOf(w)).not.toContain('data:')
     w.unmount()

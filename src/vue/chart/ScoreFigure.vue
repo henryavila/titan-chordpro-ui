@@ -35,7 +35,7 @@ const meta = computed(() => {
 /** Redraw only when the picture changes: the SVG is rebuilt whole each time. */
 function draw() {
   const el = host.value
-  if (!el || !ready.value) return
+  if (!el || !ready.value || el.clientWidth <= 0) return
   const w = Math.max(300, (el.clientWidth || 320) - 8)
   // The engraver paints with explicit colours, so the theme is part of what
   // the picture IS: leaving it out of the signature kept a dark-theme staff on
