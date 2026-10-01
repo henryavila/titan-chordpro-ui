@@ -3,6 +3,46 @@ import { readFileSync } from 'node:fs'
 import { clockOf, parse } from '../../src/core'
 const duration = clockOf(parse(readFileSync('fixtures/sda/084-escuta-meu-clamor.cho', 'utf8'))).durationSec!
 
+test.describe('touch fold control', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  for (const [file, setlist] of [['gp', false], ['gp', true], ['tab', true]] as const) {
+    test(`tap folds and unfolds ${file} on a phone${setlist ? ' with a setlist' : ''}`, async ({ page }) => {
+      await page.goto(`/notation.html?pdf=1&file=${file}${setlist ? '&setlist=1' : ''}`)
+      const button = file === 'tab'
+        ? page.locator('.cpv-notation-card').filter({ has: page.locator('.cpv-tab') }).first().locator('[data-toggle-notation]')
+        : page.locator('[data-toggle-notation]').first()
+      const hint = page.getByRole('button', { name: 'Entendi' })
+      if (await hint.isVisible()) await hint.tap()
+      const centerButton = async () => button.evaluate(el => {
+        const scroll = el.closest('.cpv-scroll')!
+        scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 240
+      })
+      await expect(button).toHaveAttribute('aria-expanded', 'true')
+      await centerButton()
+      await button.locator('.cpv-notation-title').tap()
+      await expect(button).toHaveAttribute('aria-expanded', 'false')
+      await expect(page.locator('.cpv-chrome').first()).not.toHaveClass(/is-hidden/)
+      await centerButton()
+      await button.tap()
+      await expect(button).toHaveAttribute('aria-expanded', 'true')
+    })
+  }
+
+  test('a tap on the TAB itself leaves the reading controls alone', async ({ page }) => {
+    await page.goto('/notation.html?pdf=1&file=tab')
+    const hint = page.getByRole('button', { name: 'Entendi' })
+    if (await hint.isVisible()) await hint.tap()
+    const tab = page.locator('.cpv-notation-card .cpv-tab').first()
+    await tab.evaluate(el => {
+      const scroll = el.closest('.cpv-scroll')!
+      scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 240
+    })
+    await tab.tap()
+    await expect(page.locator('.cpv-chrome').first()).not.toHaveClass(/is-hidden/)
+    await expect(page.locator('[data-toggle-notation]').first()).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
 test('the reader keeps each solo view and fold across visits, independently by song', async ({ page }) => {
   await page.goto('/notation.html?pdf=1&file=gp')
   await expect(page.locator('.cpv-notation-system').first()).toBeVisible()

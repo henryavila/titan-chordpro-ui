@@ -7,7 +7,9 @@ import { drawNotation, type NotationSystem } from './notation-renderer'
 import { excerptTrack, hasTab, loadNotation } from './notation-loader'
 import ScoreChoice from './ScoreChoice.vue'
 import { useTabRhythm, TAB_RHYTHM_OPTIONS } from '../use/useTabRhythm'
+import { useNoteNames } from '../use/useNoteNames'
 import ScoreZoom from './ScoreZoom.vue'
+import type { NoteNameFormat } from '../public'
 
 const props = defineProps<{
   text: string
@@ -18,11 +20,13 @@ const props = defineProps<{
   preview?: boolean
   preferredView?: 'tab' | 'score'
   theme?: 'light' | 'dark'
+  noteNameFormat?: NoteNameFormat
   resolveScore?: (src: string) => string
 }>()
 const emit = defineEmits<{ editScore: []; viewChange: [view: 'tab' | 'score'] }>()
 const host = ref<HTMLElement | null>(null)
 const preference = useTabRhythm()
+const noteNames = useNoteNames()
 const rhythmOptions = [{ value: 'default', label: 'Padrão do trecho' }, ...TAB_RHYTHM_OPTIONS]
 const localView = ref<'tab' | 'score'>('tab')
 const view = computed<'tab' | 'score'>({
@@ -50,6 +54,7 @@ const resolvedUrl = computed(() => {
   } catch { return '' }
 })
 const zoomLabel = computed(() => `${Math.round(scale.value * 100)}%`)
+const noteLaneHeight = (system: NotationSystem) => `${(system.noteNames.reduce((max, name) => Math.max(max, name.row), 0) + 1) * 20}px`
 let score: model.Score | null = null
 let reference: ScoreReference | null = null
 const systems = ref<NotationSystem[]>([])
@@ -70,6 +75,7 @@ async function redraw() {
   try {
     const rendered = await drawNotation(score, reference, {
       mode: view.value, rhythm: props.preview ? reference.rhythm : preference.value.value ?? reference.rhythm, width: host.value.clientWidth || 320, scale: scale.value,
+      noteNames: !props.preview && noteNames.value.value, noteNameFormat: props.noteNameFormat,
       palette: { ink: value('--text', '#13161d'), secondary: value('--text', '#13161d'),
         line: value('--muted', '#737b88'), accent: value('--chord', '#17713c') },
     })
@@ -117,7 +123,7 @@ async function load() {
   }
 }
 watch([() => props.text, resolvedUrl], () => { localView.value = 'tab'; load() })
-watch([view, zoom, preference.value, () => props.theme], redraw, { flush: 'post' })
+watch([view, zoom, preference.value, noteNames.value, () => props.theme, () => props.noteNameFormat], redraw, { flush: 'post' })
 onMounted(() => {
   load()
   observer = new ResizeObserver(() => {
@@ -148,6 +154,9 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
       </button>
       <ScoreChoice v-if="view === 'tab' && tabAvailable && !preview" :model-value="preference.value.value ?? 'default'"
         label="Ritmo da TAB" caption="Ritmo" compact :options="rhythmOptions" @update:model-value="preference.set" />
+      <button v-if="!preview" type="button" class="cpv-figure-btn cpv-note-names-toggle"
+        :aria-pressed="noteNames.value.value" aria-label="Notas"
+        @click="noteNames.set(!noteNames.value.value)">Notas</button>
       <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
       </div>
     </figcaption>
@@ -156,8 +165,13 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
     <p v-else-if="!loading && !tabAvailable">Este arquivo não traz posições nas cordas para exibir TAB.</p>
     <div class="cpv-notation-paper"><div ref="host" class="cpv-notation-systems">
       <div v-for="(system, i) in systems" :key="i" class="cpv-notation-system"
-        :data-first-bar="system.first" :data-last-bar="system.last"
-        v-html="system.content" />
+        :data-first-bar="system.first" :data-last-bar="system.last" :style="{ width: `${system.width}px` }">
+        <div v-if="noteNames.value.value && !preview && system.noteNames.length" class="cpv-note-names"
+          :style="{ width: `${system.width}px`, height: noteLaneHeight(system) }" :aria-label="view === 'tab' ? 'Notas da TAB' : 'Notas da partitura'">
+          <span v-for="(name, n) in system.noteNames" :key="n" class="cpv-note-name" :style="{ left: `${name.x}px`, top: `${name.row * 20}px` }">{{ name.text }}</span>
+        </div>
+        <div v-html="system.content" />
+      </div>
     </div></div>
   </figure>
 </template>

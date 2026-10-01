@@ -66,7 +66,8 @@ const url = ({ notes: notesUrl, rhythm: rhythmUrl, tuplets: tupletsUrl })[file] 
 try {
   const score = await loadNotation(new Uint8Array(await (await fetch(url)).arrayBuffer()))
   audit = { stems: [], symbols: [], beams: [] }
-  const systems = await drawNotation(score, { src: url, track: 1, start: 1 }, { mode: 'tab', rhythm: mode, width: 1600, scale: 1.2, palette: PAPER_PALETTE, engine })
+  const systems = await drawNotation(score, { src: url, track: 1, start: 1 }, { mode: 'tab', rhythm: mode, width: 1600, scale: 1.2, palette: PAPER_PALETTE, engine, noteNames: true, noteNameFormat: params.get('format') === 'solfege' ? 'solfege' : 'letter' })
+  document.body.dataset.noteNames = JSON.stringify(systems.map(system => ({ width: system.width, names: system.noteNames })))
   for (const system of systems) {
     const div = document.createElement('div')
     if (typeof system.content === 'string') div.innerHTML = system.content

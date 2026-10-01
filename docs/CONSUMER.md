@@ -907,7 +907,7 @@ Novos solos começam com **Ritmo na base** selecionado. Na criação ou em
 **Ajustar trecho**, escolha o **Ritmo padrão da TAB**:
 **Ritmo estendido** (hastes até as notas), **Ritmo na base** (hastes somente
 abaixo das cordas) ou **Sem ritmo** (sem hastes e barras de duração).
-Na leitura, o próprio trecho oferece **TAB / Partitura**, **Ritmo da TAB** e **Zoom Auto**. Os quatro controles ficam na mesma linha; no celular,
+Na leitura, o próprio trecho oferece **TAB / Partitura**, **Ritmo da TAB**, **Notas** e **Zoom Auto**. No celular,
 os detalhes de ritmo e zoom aparecem somente ao abrir o menu.
 A escolha de ritmo na leitura vale para os solos neste navegador, persiste entre
 visitas e não altera o source, o estado de edição nem o padrão definido pelo autor.
@@ -915,6 +915,12 @@ visitas e não altera o source, o estado de edição nem o padrão definido pelo
 A escolha fica em `STORE_KEYS.prefs` (`cpv:user-preferences`, campo `tabRhythm`) e usa o `storage` do host quando
 fornecido; o host pode separá-la por conta. Por padrão, é uma preferência do navegador,
 sem identificação de usuário. Se o armazenamento estiver bloqueado, vale na sessão.
+**Notas** mostra os nomes acima de cada sistema da TAB ou da partitura. Por
+padrão, aparecem como cifras (`C`, `D`, `E`); o consumer pode passar
+`noteNameFormat="solfege"` ao `<ChordproViewer>` para usar `Dó`, `Ré`, `Mi`.
+O formato é definido pelo consumer; o leitor só liga ou desliga a exibição.
+A escolha de exibir fica no mesmo `STORE_KEYS.prefs` (campo `noteNames`, padrão
+desligado), vale para os solos do leitor e não muda o arquivo nem o PDF.
 A escolha TAB/Partitura e o estado aberto/recolhido de cada referência ficam em
 `notationKey(songId)` (`cpv:notation:{songId}`), separados por música e por
 trecho. Passe um `songId` estável; sem ele, o título é usado. Essas escolhas

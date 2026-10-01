@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { provide } from 'vue'
 import { createTabRhythmPreference, tabRhythmKey } from './use/useTabRhythm'
+import { createNoteNamesPreference, noteNamesKey } from './use/useNoteNames'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   blockSpan,
@@ -161,6 +162,7 @@ const props = withDefaults(
     fitDefault: true,
     canEdit: true,
     autoInvertScores: true,
+    noteNameFormat: 'letter',
     resolveImage: (src: string) => src,
     accent: 'verde',
     accentStrength: 1,
@@ -245,6 +247,7 @@ const store: ChartStore = {
 
 const tabRhythmPreference = createTabRhythmPreference(store)
 provide(tabRhythmKey, tabRhythmPreference)
+provide(noteNamesKey, createNoteNamesPreference(store))
 
 const root = ref<HTMLElement | null>(null)
 const scroller = ref<HTMLElement | null>(null)
@@ -464,7 +467,10 @@ const padBottom = computed(() => {
     ? ({ xs: 104, sm: 106, md: 104, lg: 106, xl: 110 } as const)[bp.value]
     : ({ xs: 124, sm: 128, md: 128, lg: 132, xl: 140 } as const)[bp.value]
   // The dock grows when auto-scroll starts: the last line must not hide under it.
-  return `${base + (phone.value ? (scrolling.value ? 54 : 10) : 0)}px`
+  const reserve = base + (phone.value ? (scrolling.value ? 54 : 10) : 0)
+  // The phone dock can be taller than the fixed reserve (notably in a setlist).
+  // Keep the last row's controls above it, including a folded score's handle.
+  return `${phone.value ? Math.max(reserve, swipeRailBottom.value + 56) : reserve}px`
 })
 /**
  * Zen only fades the chrome. The page pad stays put on phone and desktop —
@@ -1790,7 +1796,9 @@ function onSurfaceTap(e: MouseEvent) {
   if (songSwipe.eatClick()) return
   if (isEdit.value) return
   const t = e.target as HTMLElement | null
-  if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure")) return
+  // The solo owns touches on its header and notation; only the chart around
+  // it uses the one-tap chrome gesture.
+  if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure,.cpv-notation-card")) return
   try {
     if (String(window.getSelection() ?? '').length) return
   } catch {
@@ -2993,6 +3001,7 @@ defineExpose({
           @score-view-change="(bi, view) => { const id = notationIds[bi]; if (id) saveNotationChoice(id, { view }) }"
           :resolve-image="resolveImage"
           :resolve-score="resolveScore"
+          :note-name-format="noteNameFormat"
           :auto-invert-scores="autoInvertScores"
           :theme="effTheme"
           :mine-lines="ov.mineLines.value"
