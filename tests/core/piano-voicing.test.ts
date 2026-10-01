@@ -166,8 +166,20 @@ function assertAccidentalPaint(svg: string, token: string) {
   const whiteOp = overlayOpacity(svg, 'diagram-piano-white-on')
   const blackOp = overlayOpacity(svg, 'diagram-piano-black-on')
   if (whiteOp != null && blackOp != null) {
-    expect(whiteOp, `${token} white wash should be lighter than the accidental`).toBeGreaterThan(blackOp)
-    expect(whiteOp - blackOp, token).toBeGreaterThanOrEqual(0.2)
+    expect(blackOp, `${token} accidental needs more chord colour than the white key`).toBeGreaterThan(whiteOp)
+    const selectedBlack = rects.find((attrs) => attrs.includes('class="diagram-piano-black"') && attrs.includes('fill-opacity'))
+    expect(selectedBlack, `${token} selected accidental lets paper show through`).toBeTruthy()
+    expect(Number(selectedBlack?.match(/fill-opacity="([0-9.]+)"/)?.[1])).toBeLessThan(1)
+  }
+  const badges = [...svg.matchAll(/<circle class="diagram-piano-degree-badge"[^>]*>/g)]
+  const labels = [...svg.matchAll(/<text class="diagram-piano-degree"[^>]*>/g)]
+  expect(badges.length, `${token} every degree has a circle`).toBe(labels.length)
+  expect(badges.length, token).toBeGreaterThan(0)
+  if (blackOp != null) {
+    expect(badges.some((badge) => badge[0].includes('fill="#FFFFFF"')), `${token} black key degree uses a light badge`).toBe(true)
+  }
+  if (whiteOp != null) {
+    expect(badges.some((badge) => badge[0].includes('fill="#141820"')), `${token} white key degree uses a dark badge`).toBe(true)
   }
   const sizes = [...svg.matchAll(/class="diagram-piano-degree"[^>]*font-size="([0-9.]+)"/g)].map((m) => m[1])
   if (sizes.length > 1) expect(new Set(sizes), `${token} degree size`).toEqual(new Set(['8']))
