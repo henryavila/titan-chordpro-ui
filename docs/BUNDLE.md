@@ -58,7 +58,7 @@ na montagem: o Titan descobre as referências da cifra escolhida.
 API independente de Vue/DOM:
 
 ```ts
-import { exportChartBundle } from '@henryavila/titan-chordpro-ui/bundle'
+import { exportChartBundle, importChartBundle } from '@henryavila/titan-chordpro-ui/bundle'
 const file = await exportChartBundle(source, {
   loadAsset: async (reference, kind) => storage.read(reference, kind),
   onlineReferences: 'provenance',
@@ -67,11 +67,56 @@ const file = await exportChartBundle(source, {
   ],
 })
 // file.bytes, file.filename, file.chart, file.assetCount
+
+const imported = await importChartBundle(file.bytes, {
+  persistAsset: async (asset) => storage.write(asset),
+})
+// imported.source, imported.chart, imported.personal, imported.assetCount,
+// imported.assets, imported.provenance
 ```
+
+`persistAsset` recebe cada anexo uma vez:
+
+```ts
+{
+  path: string                 // caminho dentro do ZIP, ex. solos/solo-1.gpx
+  kind: 'score' | 'image' | 'audio'
+  roles: string[]              // notation, sung, playback, audio-cover, slide-cover…
+  bytes: Uint8Array
+  contentType: string
+  filename: string
+  width?: number
+  height?: number
+}
+```
+
+Devolve `{ ref }` — o valor que a cifra passa a usar. Cantado, playback e capa
+do player precisam de um endereço que o player aceite (`https://…` ou caminho
+`/…`; também `audios/…` e `imagens/…`). `storage/…` e `file://…` fazem a
+importação falhar.
+
+O retorno:
+
+| Campo | Significado |
+|---|---|
+| `source` | ChordPro com as referências do app |
+| `chart` | Nome do `.cho` dentro do ZIP |
+| `personal` | O pacote era uma versão pessoal |
+| `assetCount` / `assets` | Anexos gravados (`path`, `kind`, `roles`, `ref`) |
+| `provenance` | YouTube, origem e áudio online lidos de `ORIGEM.txt` |
 
 `extras` também aceita referência a uma imagem (`reference`) e dimensões. A capa
 própria da música prevalece sobre a capa de áudio adicional. Consumidores da API
 headless devem passar suas capas/fundos se fizerem parte da apresentação.
+
+A importação **não tem tela no Titan**. O consumer escolhe o arquivo `.zip`, chama
+`importChartBundle` e implementa `persistAsset`: guarda os bytes (Guitar Pro/GPX,
+MusicXML, imagens, cantado, playback, capas) e devolve a referência que a cifra
+deve passar a usar. O pacote reescreve o ChordPro, inclusive trechos ocultos com
+`#~` e o mesmo arquivo usado em cantado e playback. YouTube e origem voltam do
+`ORIGEM.txt` para as diretivas, salvo `restoreProvenance: false`. Sem `persistAsset`,
+ou se um anexo faltar, o tipo não bater ou a gravação falhar, a importação para
+e não devolve uma cifra pela metade.
 
 ## Integridade e limites explícitos
 
@@ -88,14 +133,19 @@ headless devem passar suas capas/fundos se fizerem parte da apresentação.
   são obrigatoriamente incluídos.
 - O ZIP padrão é montado em memória, para uma cifra. ZIP64 e exportações em lote
   não fazem parte deste contrato.
-- **Importação direta do ZIP ainda não foi implementada.** A estrutura está
-  versionada para esse passo. Hoje é possível extrair os arquivos e o consumer
-  servir/resolver as referências a partir da pasta extraída, sem o servidor de
-  origem. Não basta passar o texto do `.cho` para um viewer e perder sua pasta.
+- A importação lê o manifesto `titan-chordpro-bundle` versão 1, recusa caminhos
+  com `..` e ZIP com senha, e só reescreve a cifra depois de persistir cada anexo
+  listado. Não basta colar o texto do `.cho` sem a pasta de mídias. O ZIP precisa
+  do diretório central; um arquivo cortado no meio não importa. Cada referência
+  da cifra tem de existir no manifesto com o mesmo tipo. HTML ou JSON no lugar
+  do binário é recusado. Referência de áudio ou capa do player que o player não
+  toca faz a importação falhar.
 
 ## Verificação
 
 Testes abrem o ZIP com um leitor independente, verificam referências locais,
 presença de cada anexo, bytes originais de áudio/imagem/Guitar Pro, deduplicação,
 blocos ocultos, capas externas, links informativos e falha sem download parcial.
-O fluxo de download e tentativa após falha é exercitado em Chromium e WebKit.
+A importação persiste cada anexo uma vez, reescreve GPX/áudio/imagem para as
+referências do host e recusa pacote incompleto ou gravação recusada. O fluxo de
+download e tentativa após falha é exercitado em Chromium e WebKit.

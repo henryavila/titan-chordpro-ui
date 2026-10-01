@@ -716,6 +716,11 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
 />
 ```
 
+Para abrir no app um ZIP de **Cifra completa**, não há tela no Titan: o host
+chama `importChartBundle` e implementa `persistAsset` com o mesmo
+`uploadScore` / `uploadImage` / armazenamento de áudio da edição. Passo a passo
+em [Cifra completa (.zip)](#cifra-completa-zip).
+
 ```ts
 import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 
@@ -936,6 +941,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
 - [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek; capa da cifra **1024 × 1024**; `defaultAudioArt` para a marca. Uma cifra: `/media.html`. Lista + Central de Mídia: `/standalone-lista.html?audio=1`
 - [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
+- [ ] Cifra completa (.zip): `loadBundleAsset` na exportação; `importChartBundle` + `persistAsset` para o app guardar GPX/áudio/imagem e receber o ChordPro já vinculado ([BUNDLE.md](./BUNDLE.md))
 
 Props, emits e o resto da API: [README](../README.md).
 
@@ -1107,6 +1113,48 @@ em um pacote com referências locais. Para arquivos privados, o consumer pode
 fornecer `loadBundleAsset(reference, kind)`. Serviços online ficam somente como
 informação de origem. Contrato, inventário completo e limites: [BUNDLE.md](./BUNDLE.md).
 
-Não há importação automática do ZIP nesta entrega. O consumer pode extrair os
-arquivos e resolver seus caminhos a partir da pasta extraída; o pacote não
-depende dos servidores de origem para obter as mídias.
+**Importar o ZIP** é só código — o Titan não abre uma tela de importação. O
+consumer escolhe o arquivo, chama `importChartBundle` e **guarda os bytes**. O
+pacote devolve o ChordPro já apontando para as referências do app (Guitar Pro/GPX,
+MusicXML, imagens, cantado, playback, capas), inclusive trechos ocultos com `#~`.
+Sem `persistAsset` a importação falha; a cifra oficial não deve ser substituída.
+
+```ts
+import { importChartBundle } from '@henryavila/titan-chordpro-ui/bundle'
+
+async function importarCifraCompleta(songId: string, zip: Uint8Array) {
+  const imported = await importChartBundle(zip, {
+    persistAsset: async (asset) => {
+      const file = new File([asset.bytes], asset.filename, { type: asset.contentType })
+      if (asset.kind === 'score') return uploadScore(file)          // { ref: 'solos/….gpx' }
+      if (asset.kind === 'image') return uploadImage(file)          // { ref } do {image:}
+      const url = await storage.putAudio(file)                      // URL tocável
+      return { ref: url }
+    },
+  })
+  await api.put(`/songs/${songId}`, { source: imported.source })
+  return imported
+}
+```
+
+`persistAsset` roda **uma vez** por arquivo, mesmo quando cantado e playback
+são o mesmo áudio, ou o mesmo solo aparece duas vezes. Cada chamada traz
+`path`, `kind` (`score` / `image` / `audio`), `roles`, `bytes`, `contentType`,
+`filename` e, nas capas, `width` / `height`. A referência devolvida entra no
+`{x_titan_score:}`, `{image:}`, `{x_titan_audio_sung:}` e demais diretivas; não
+pode ser vazia nem conter `}` ou quebra de linha. Áudio precisa de um endereço
+que o player aceite (`https://…` ou caminho `/…`, o mesmo contrato de
+`setRehearsalAudio`). Se cantado, playback ou a capa do player voltarem com uma
+referência que o player recusa (`storage/…`, `file://…`), a importação falha e a
+cifra não entra. Capas de slides também passam por `persistAsset` (`roles`
+inclui `slide-cover` / `slide-background`); o consumer pode guardá-las como
+imagem.
+
+YouTube e origem voltam para a cifra a partir de `ORIGEM.txt`. Para deixar só
+nos metadados do retorno: `restoreProvenance: false`. `imported.source` é o
+ChordPro a gravar; `imported.personal` indica versão pessoal; `imported.assets`
+lista cada `ref` guardada. Se o manifesto, um anexo, o tipo, o ZIP cortado ou a
+gravação falhar, a Promise rejeita e a cifra oficial não deve ser substituída.
+
+O mesmo `loadBundleAsset` / `uploadScore` / `uploadImage` da edição serve aqui:
+exportar lê os bytes; importar os grava de novo no armazenamento do app.
