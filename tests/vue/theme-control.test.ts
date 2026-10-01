@@ -46,7 +46,8 @@ for (const dark of [true, false]) {
       expect(appearance(w)).toBe('dark')
       await w.setProps({ theme: 'light', themeControl: 'preference' })
       expect(appearance(w)).toBe('dark')
-      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', futurePreference: 'keep' })
+      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', bias: 1 })
+      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).not.toHaveProperty('futurePreference')
     })
     it('host without prefs returns to current prop fallback and does not persist requests', async () => {
       system()
@@ -60,7 +61,7 @@ for (const dark of [true, false]) {
   })
 }
 
-it('host keyboard request follows the same policy and preserves other preference keys', async () => {
+it('host keyboard request follows the same policy and keeps validated preferences', async () => {
   const storage = memoryStore()
   storage.set(STORE_KEYS.prefs, JSON.stringify({ theme: 'stage', futurePreference: 42 }))
   const w = viewer({ theme: 'light', themeControl: 'host', storage })
@@ -70,8 +71,9 @@ it('host keyboard request follows the same policy and preserves other preference
   await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
   // The fit is on out of the box, so the musician's first press turns it off —
-  // what matters here is that the write kept `futurePreference` company.
-  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', futurePreference: 42, fit: false })
+  // Unknown fields from an old schema are discarded when a choice is written.
+  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', fit: false })
+  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).not.toHaveProperty('futurePreference')
 })
 
 

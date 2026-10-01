@@ -160,21 +160,21 @@ describe('lens Só letra', () => {
   })
 
   it('opens already in Letra even when this device last used Cifra', async () => {
-    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'none' }))
+    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'none' }))
     const w = await viewerAt(1024, { lens: 'letra' })
     expect(pressed(w, 'letra')).toBe('true')
     expect(w.find('.cpv-chord').exists()).toBe(false)
   })
 
   it('opens already in Cifra when the host passes lens=none, even if prefs were Letra', async () => {
-    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'letra' }))
+    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'letra' }))
     const w = await viewerAt(1024, { lens: 'none' })
     expect(pressed(w, 'cifra')).toBe('true')
     expect(w.find('.cpv-chord').exists()).toBe(true)
   })
 
   it('restores the last Letra choice when the host omits lens', async () => {
-    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'letra' }))
+    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'letra' }))
     const w = await viewerAt(1024)
     expect(pressed(w, 'letra')).toBe('true')
     expect(w.find('.cpv-chord').exists()).toBe(false)

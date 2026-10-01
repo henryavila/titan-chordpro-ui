@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch, useId } from 'vue'
-import type { ChartBlock } from '@henryavila/titan-chordpro-ui'
+import type { ChartBlock, NotationPreferences } from '@henryavila/titan-chordpro-ui'
 import type { CpvIconName } from '../icon/paths'
 import InsertSlot from '../edit/InsertSlot.vue'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
@@ -14,7 +14,9 @@ import { readingWords, type ReadingWord } from './readingWords'
 const props = withDefaults(
   defineProps<{
     blocks: ChartBlock[]
-    collapsedNotation?: ReadonlySet<number>
+    collapsedNotation?: ReadonlySet<string>
+    notationIds?: Array<string | null>
+    notationChoices?: NotationPreferences
     lyricPx: string
     chordPx: string
     shapePx: string
@@ -76,6 +78,7 @@ const emit = defineEmits<{
   revertLine: [li: number]
   editScore: [bi: number]
   toggleNotation: [bi: number]
+  scoreViewChange: [bi: number, view: 'tab' | 'score']
   diagram: [payload: { shapeName: string; concert: string; capoFret: number }]
 }>()
 
@@ -89,8 +92,13 @@ function notationTitle(block: ChartBlock): string {
   }
   return block.kind === 'tab' ? 'Tablatura' : 'Partitura'
 }
-function isFolded(block: ChartBlock): boolean {
-  return !props.edit && !!props.collapsedNotation?.has(block.li0)
+function isFolded(i: number): boolean {
+  const id = props.notationIds?.[i]
+  return !props.edit && !!id && !!props.collapsedNotation?.has(id)
+}
+function preferredView(i: number): 'tab' | 'score' | undefined {
+  const id = props.notationIds?.[i]
+  return id ? props.notationChoices?.[id]?.view : undefined
 }
 
 /** Which image blocks the reader opened to full height, keyed by source line. */
@@ -295,7 +303,7 @@ watch(
         :edit="edit"
         :items="insertItems"
       />
-      <div :data-block="i" class="cpv-blockrow" :class="{ 'cpv-notation-row': !edit && canFold(block) }" :data-notation-collapsed="canFold(block) ? isFolded(block) : undefined">
+      <div :data-block="i" class="cpv-blockrow" :class="{ 'cpv-notation-row': !edit && canFold(block) }" :data-notation-collapsed="canFold(block) ? isFolded(i) : undefined">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
         <span v-if="edit && edit.dropAt.value === i" class="cpv-drop-line" />
         <span
@@ -322,9 +330,9 @@ watch(
         >
           <div v-if="!edit && canFold(block)" class="cpv-notation-fold">
             <span class="cpv-notation-title">{{ notationTitle(block) }}</span>
-            <button type="button" :data-toggle-notation="i" :aria-expanded="!isFolded(block)" :aria-controls="`${notationId}-${block.li0}`"
-              :aria-label="`${isFolded(block) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
-              :title="isFolded(block) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
+            <button type="button" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
+              :aria-label="`${isFolded(i) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
+              :title="isFolded(i) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
               @click.stop="emit('toggleNotation', i)">
               <CpvIcon name="chevronDown" :size="18" />
             </button>
@@ -414,7 +422,7 @@ watch(
             </div>
           </template>
 
-          <div v-else-if="block.kind === 'tab'" v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`" class="cpv-tab">
+          <div v-else-if="block.kind === 'tab'" v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="cpv-tab">
             <div v-for="(ex, j) in block.extras" :key="'e' + j" class="cpv-tab-extra">{{ ex }}</div>
             <div class="cpv-tab-staves">
               <div
@@ -444,18 +452,20 @@ watch(
           </div>
 
           <ExternalScore
-            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
+            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score' && isScoreReference(block.text)"
             :text="block.text" :hide-title="!edit" :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme"
+            :preferred-view="preferredView(i)"
+            @view-change="view => emit('scoreViewChange', i, view)"
             @edit-score="emit('editScore', i)"
           />
           <div v-else-if="block.kind === 'score' && !isInlineScore(block.text)"
-            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`" class="cpv-figure" data-invalid-score
+            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="cpv-figure" data-invalid-score
             style="padding:12px" >
             <p role="status">Trecho de partitura inválido. Remova este trecho e importe o arquivo novamente.</p>
           </div>
           <ScoreFigure
-            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
+            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score'"
             :text="block.text"
             :block-gap="blockGap"
@@ -466,7 +476,7 @@ watch(
 
           <figure
             v-else-if="block.kind === 'image'"
-            v-show="!isFolded(block)" :id="`${notationId}-${block.li0}`"
+            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
             class="cpv-figure"
             :style="{ margin: `0 0 ${blockGap}`, padding: '10px 10px 8px' }"
           >

@@ -912,9 +912,15 @@ os detalhes de ritmo e zoom aparecem somente ao abrir o menu.
 A escolha de ritmo na leitura vale para os solos neste navegador, persiste entre
 visitas e não altera o source, o estado de edição nem o padrão definido pelo autor.
 **Padrão do trecho** remove a preferência e volta a respeitar cada trecho.
-A chave `STORE_KEYS.tabRhythm` (`cpv:tab-rhythm`) usa o `storage` do host quando
+A escolha fica em `STORE_KEYS.prefs` (`cpv:user-preferences`, campo `tabRhythm`) e usa o `storage` do host quando
 fornecido; o host pode separá-la por conta. Por padrão, é uma preferência do navegador,
 sem identificação de usuário. Se o armazenamento estiver bloqueado, vale na sessão.
+A escolha TAB/Partitura e o estado aberto/recolhido de cada referência ficam em
+`notationKey(songId)` (`cpv:notation:{songId}`), separados por música e por
+trecho. Passe um `songId` estável; sem ele, o título é usado. Essas escolhas
+não alteram o ChordPro, a versão pessoal, sugestões nem o PDF. As chaves
+antigas `cpv:prefs` e `cpv:tab-rhythm` não são lidas ou migradas; hosts que
+guardam preferências na conta devem passar a usar as chaves novas.
 A prévia do editor sempre mostra o padrão que está sendo editado.
 O desenho SVG reorganiza os compassos conforme a largura e mantém escala mínima
 de 110%; um compasso muito denso pode rolar horizontalmente sem diminuir as notas.
@@ -1028,7 +1034,7 @@ já salvas continuam respeitando exatamente o intervalo original.
 
 **Ocultar TAB / partitura** recolhe individualmente solos externos, partituras,
 TABs em texto e imagens. **Mostrar TAB / partitura** reabre o mesmo bloco.
-A preferência vale na leitura da cifra atual e não reescreve o source, não
+A preferência é lembrada por música e por trecho e não reescreve o source, não
 remove os tempos do bloco e não muda a escolha da exportação PDF.
 
 Enquanto Rolar está ativo, a UI conserva a posição musical e mede novamente o
@@ -1036,8 +1042,9 @@ layout depois de recolher/abrir. Mudanças de scroll causadas pelo navegador ao
 encolher a página não são tratadas como um gesto para avançar na música. Parada,
 a UI preserva o bloco/linha visível, dentro dos limites de rolagem disponíveis.
 Se o próprio trecho em leitura for recolhido, seu tempo permanece no relógio;
-o botão compacto o representa até o trecho seguinte. Entrar no editor ou trocar
-a cifra reabre as referências.
+o botão compacto o representa até o trecho seguinte. No editor, as referências
+aparecem abertas para permitir ajustes; ao voltar à leitura, a escolha pessoal
+reaparece. Ao trocar de música, valem as escolhas daquela música.
 
 
 ## Cifra completa (.zip)

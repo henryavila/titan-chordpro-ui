@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
-import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { STORE_KEYS, memoryStore, normalizeSource, overlayKey } from '../../src/core/index'
+import { ELE_VIVE_IMG, JESUS_1, loadFixture } from '../helpers/load-fixture'
+import { STORE_KEYS, memoryStore, normalizeSource, notationKey, overlayKey } from '../../src/core/index'
 import type { ChartStore } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -130,6 +130,18 @@ describe('storage seam', () => {
 
     expect(store.get(STORE_KEYS.prefs)).toBeTruthy()
     expect(localStorage.getItem(STORE_KEYS.prefs)).toBeNull()
+    w.unmount()
+  })
+
+  it('keeps notation display choices in the host store, separate from suggestions', async () => {
+    const store = hostStore()
+    const w = mountViewer(store, { source: loadFixture(ELE_VIVE_IMG) })
+    await w.get('[data-toggle-notation]').trigger('click')
+    await flushPromises()
+    const saved = JSON.parse(store.get(notationKey('jesus-1')) ?? '{}')
+    expect(Object.values(saved)).toContainEqual({ collapsed: true })
+    expect(localStorage.getItem(notationKey('jesus-1'))).toBeNull()
+    expect(store.get(STORE_KEYS.suggestions)).toBeNull()
     w.unmount()
   })
 

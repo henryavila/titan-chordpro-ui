@@ -55,7 +55,7 @@ uma equivalência exata à TAB mínima de outro programa.
 
 Os três modos são preferências de apresentação, não modos de reprodução nem
 conversão de conteúdo. A escolha do autor fica em `ScoreReference.rhythm`; a
-preferência de leitura usa `STORE_KEYS.tabRhythm`, sem editar o source. Ver
+preferência de leitura usa `STORE_KEYS.prefs` (campo `tabRhythm`), sem editar o source. Ver
 [contrato do consumer](CONSUMER.md#solos-em-guitar-pro--musicxml).
 
 ## Vocabulário das durações

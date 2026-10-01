@@ -54,6 +54,12 @@ import {
   type AudioKind,
   STORE_KEYS,
   browserStore,
+  readUserPreferences,
+  updateUserPreferences,
+  notationBlockIds,
+  readNotationPreferences,
+  writeNotationPreferences,
+  type NotationPreferences,
   type StrumPattern,
   type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
@@ -1229,33 +1235,19 @@ function toggleMetPanel() {
 }
 
 function persistPrefs() {
-  // Only what diverges from the default is stored: touching a control must not
-  // become a permanent preference by accident.
-  try {
-    let saved: unknown = null
-    try { saved = JSON.parse(store.get(STORE_KEYS.prefs) ?? '{}') } catch { /* repair malformed prefs on the next choice */ }
-    const p: Record<string, unknown> = saved && typeof saved === 'object' && !Array.isArray(saved) ? { ...saved } : {}
-    // Preserve the free theme preference (including older values) while the
-    // host controls appearance; other controls must not rewrite that policy.
-    for (const key of ['bias', 'fit', 'metSound', 'metStrumSound', 'metFollow', 'metCountIn', 'metPulseHead', 'lens', 'hideComments', 'diagramInstrument']) delete p[key]
-    if (props.themeControl !== 'host' && theme.value) p.theme = theme.value
-    if (bias.value) p.bias = bias.value
-    if (fit.value !== null && fit.value !== undefined) p.fit = fit.value
-    if (met.sound.value) p.metSound = true
-    if (strumSound.enabled.value) p.metStrumSound = true
-    if (met.pulseHead.value) p.metPulseHead = true
-    if (met.follow.value === false) p.metFollow = false
-    if (met.countInOn.value === false) p.metCountIn = false
-    // Reading lens survives song changes and remounts — singer / Nashville
-    // choice is a session preference, not per-chart state.
-    if (lens.value !== 'none') p.lens = lens.value
-    if (hideComments.value) p.hideComments = true
-    if (diagramInstrument.value !== 'guitar') p.diagramInstrument = diagramInstrument.value
-    if (Object.keys(p).length) store.set(STORE_KEYS.prefs, JSON.stringify(p))
-    else store.remove(STORE_KEYS.prefs)
-  } catch {
-    /* storage denied — preferences are a convenience, never a requirement */
-  }
+  updateUserPreferences(store, {
+    ...(props.themeControl === 'host' ? {} : { theme: theme.value ?? undefined }),
+    bias: bias.value || undefined,
+    fit: fit.value ?? undefined,
+    metSound: met.sound.value || undefined,
+    metStrumSound: strumSound.enabled.value || undefined,
+    metPulseHead: met.pulseHead.value || undefined,
+    metFollow: met.follow.value === false ? false : undefined,
+    metCountIn: met.countInOn.value === false ? false : undefined,
+    lens: lens.value === 'none' ? undefined : lens.value,
+    hideComments: hideComments.value || undefined,
+    diagramInstrument: diagramInstrument.value === 'guitar' ? undefined : diagramInstrument.value,
+  })
 }
 
 function markEditSeen() {
@@ -1288,17 +1280,33 @@ function toastMsg(msg: string) {
 // The playhead walks the chart in musical time (see core/timeline.ts); the page
 // only moves once it passes the reading line.
 
-// Collapsing notation is a reading preference, never a source or clock edit.
-const collapsedNotation = ref<Set<number>>(new Set())
+// Display choices belong to this reader, keyed by song and notation identity.
+const notationSongId = computed(() => setlist.on.value
+  ? (setlist.current.value?.id ?? '')
+  : (props.songId || parse(normalizeSource(hostSource.value)).meta.title || 'song'))
+const notationIds = computed(() => notationBlockIds(blocks.value))
+const notationChoices = ref<NotationPreferences>({})
+const collapsedNotation = computed(() => new Set(
+  notationIds.value.filter((id): id is string => !!id && notationChoices.value[id]?.collapsed === true),
+))
+function saveNotationChoice(id: string, patch: { view?: 'tab' | 'score'; collapsed?: boolean }) {
+  const current = notationChoices.value[id] ?? {}
+  const next = { ...current, ...patch }
+  const all = { ...notationChoices.value }
+  if (next.view === undefined && next.collapsed !== true) delete all[id]
+  else all[id] = next
+  notationChoices.value = all
+  writeNotationPreferences(store, notationSongId.value, all)
+}
+watch(notationSongId, songId => { notationChoices.value = readNotationPreferences(store, songId) }, { immediate: true })
 let notationReflow = false
 let notationReflowId = 0
-watch(hostSource, () => { collapsedNotation.value = new Set() })
-watch(isEdit, value => { if (value) collapsedNotation.value = new Set() })
 
 async function toggleNotation(bi: number) {
   const el = scroller.value
   const block = blocks.value[bi]
-  if (!el || !block || notationReflow) return
+  const id = notationIds.value[bi]
+  if (!el || !block || !id || notationReflow) return
   const viewport = el.getBoundingClientRect()
   const readingY = viewport.top + viewport.height * 0.35
   const targetNode = el.querySelector<HTMLElement>(`[data-block="${bi}"]`)
@@ -1316,10 +1324,8 @@ async function toggleNotation(bi: number) {
   el.style.overflowAnchor = 'none'
   // Disable fractional translation before taking fresh DOM measurements.
   setSubPixel(0)
-  const folded = new Set(collapsedNotation.value)
-  if (folded.has(block.li0)) folded.delete(block.li0)
-  else folded.add(block.li0)
-  collapsedNotation.value = folded
+  const willCollapse = !collapsedNotation.value.has(id)
+  saveNotationChoice(id, { collapsed: willCollapse })
   await nextTick()
   timeline = null
   syncScrollRoom()
@@ -1333,7 +1339,7 @@ async function toggleNotation(bi: number) {
       // If the reference itself filled the screen, its old top may be several
       // screens above. Bring its compact handle to the reading line instead
       // of leaving the reader stranded much later in the lyrics.
-      const keepAt = anchor === targetNode && folded.has(block.li0) ? readingY : anchorTop
+      const keepAt = anchor === targetNode && willCollapse ? readingY : anchorTop
       el.scrollTop += anchor.getBoundingClientRect().top - keepAt
     }
     written = el.scrollTop
@@ -2842,19 +2848,7 @@ watch([offset, capo, themeMode, fitOn, bias, mode, dirty, activeLens, hideCommen
 
 onMounted(() => {
   try {
-    const p = JSON.parse(store.get(STORE_KEYS.prefs) || '{}') as {
-      theme?: ThemeId
-      bias?: number
-      fit?: boolean
-      metSound?: boolean
-      metStrumSound?: boolean
-      metPulseHead?: boolean
-      metFollow?: boolean
-      metCountIn?: boolean
-      lens?: Lens
-      hideComments?: boolean
-      diagramInstrument?: DiagramInstrumentChoice
-    }
+    const p = readUserPreferences(store)
     if (p.theme) theme.value = p.theme
     if (typeof p.bias === 'number') bias.value = p.bias
     if (typeof p.fit === 'boolean') fit.value = p.fit
@@ -2993,7 +2987,10 @@ defineExpose({
           v-bind="chartScale"
           :blocks="blocks"
           :collapsed-notation="collapsedNotation"
+          :notation-ids="notationIds"
+          :notation-choices="notationChoices"
           @toggle-notation="toggleNotation"
+          @score-view-change="(bi, view) => { const id = notationIds[bi]; if (id) saveNotationChoice(id, { view }) }"
           :resolve-image="resolveImage"
           :resolve-score="resolveScore"
           :auto-invert-scores="autoInvertScores"

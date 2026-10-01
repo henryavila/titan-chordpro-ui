@@ -16,14 +16,25 @@ const props = defineProps<{
   hideTitle?: boolean
   /** Editor preview always shows the authored default. */
   preview?: boolean
+  preferredView?: 'tab' | 'score'
   theme?: 'light' | 'dark'
   resolveScore?: (src: string) => string
 }>()
-const emit = defineEmits<{ editScore: [] }>()
+const emit = defineEmits<{ editScore: []; viewChange: [view: 'tab' | 'score'] }>()
 const host = ref<HTMLElement | null>(null)
 const preference = useTabRhythm()
 const rhythmOptions = [{ value: 'default', label: 'Padrão do trecho' }, ...TAB_RHYTHM_OPTIONS]
-const view = ref<'tab' | 'score'>('tab')
+const localView = ref<'tab' | 'score'>('tab')
+const view = computed<'tab' | 'score'>({
+  get: () => {
+    const requested = props.preview || props.canEdit ? localView.value : props.preferredView ?? localView.value
+    return requested === 'tab' && !tabAvailable.value ? 'score' : requested
+  },
+  set: next => {
+    localView.value = next
+    if (!props.preview && !props.canEdit) emit('viewChange', next)
+  },
+})
 const tabAvailable = ref(false)
 const error = ref('')
 const loading = ref(true)
@@ -96,7 +107,6 @@ async function load() {
     score = loaded
     const track = excerptTrack(score, reference.track, reference.start, reference.end)
     tabAvailable.value = hasTab(track)
-    if (!tabAvailable.value) view.value = 'score'
     scale.value = zoom.value || scoreAutoScale(host.value.clientWidth)
     await redraw()
 
@@ -106,7 +116,7 @@ async function load() {
     loading.value = false
   }
 }
-watch([() => props.text, resolvedUrl], load)
+watch([() => props.text, resolvedUrl], () => { localView.value = 'tab'; load() })
 watch([view, zoom, preference.value, () => props.theme], redraw, { flush: 'post' })
 onMounted(() => {
   load()

@@ -52,7 +52,7 @@ test('a long MusicXML excerpt continues on multiple PDF pages', async ({ page },
 for (const rhythm of ['base', 'none']) {
   test(`PDF renders personal TAB rhythm ${rhythm}`, async ({ page }, info) => {
     await page.goto('/notation.html?pdf=1&file=gp')
-    await page.evaluate(value => localStorage.setItem('cpv:tab-rhythm', value), rhythm)
+    await page.evaluate(value => localStorage.setItem('cpv:user-preferences', JSON.stringify({ tabRhythm: value })), rhythm)
     await page.reload()
     await page.getByRole('button', { name: 'Exportar', exact: true }).click({ force: true })
     await page.locator('[data-export="pdf"]').click()

@@ -13,10 +13,10 @@ describe('personal TAB presentation', () => {
     expect(createTabRhythmPreference(second).value.value).toBeUndefined()
     expect(first.get('cpv:my:song')).toBe('unchanged source')
     pref.set('default')
-    expect(first.get(STORE_KEYS.tabRhythm)).toBeNull()
+    expect(JSON.parse(first.get(STORE_KEYS.prefs) ?? '{}')).not.toHaveProperty('tabRhythm')
   })
   it('ignores corrupt data and retains the preference when storage is denied', () => {
-    expect(createTabRhythmPreference(memoryStore({ [STORE_KEYS.tabRhythm]: 'invalid' })).value.value).toBeUndefined()
+    expect(createTabRhythmPreference(memoryStore({ [STORE_KEYS.prefs]: JSON.stringify({ tabRhythm: 'invalid' }) })).value.value).toBeUndefined()
     const fail = () => { throw new Error('denied') }
     const pref = createTabRhythmPreference({ get: fail, set: fail, remove: fail })
     pref.set('none')

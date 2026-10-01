@@ -22,10 +22,10 @@ export type ChartStore = {
 
 /** Every key the package writes, so a host can route or namespace them. */
 export const STORE_KEYS = {
-  /** Reading preferences: theme, type bias, fit mode, metronome toggles. */
-  prefs: 'cpv:prefs',
-  /** Personal TAB rhythm; absent means use each excerpt’s authored default. */
-  tabRhythm: 'cpv:tab-rhythm',
+  /** Device/account reading preferences, including TAB rhythm. */
+  prefs: 'cpv:user-preferences',
+  /** Per-song, per-reference display choices. */
+  notationPrefix: 'cpv:notation:',
   /** `"1"` once the fit-mode hint has actually been seen. */
   fitSeen: 'cpv:fitSeen',
   /** `"1"` once the three touch rules of the editor have been shown. */

@@ -134,12 +134,12 @@ test('three TAB rhythms render differently, persist and reset without editing th
   await page.getByRole('option', { name: 'Padrão do trecho', exact: true }).click()
   await expect.poll(() => paper.innerHTML()).toBe(initial)
   await page.screenshot({ path: info.outputPath('rhythm-extended.png'), fullPage: true })
-  expect(await page.evaluate(() => localStorage.getItem('cpv:tab-rhythm'))).toBeNull()
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('cpv:user-preferences') ?? '{}'))).not.toHaveProperty('tabRhythm')
 })
 
 test('author chooses the default independently of the saved reading preference', async ({ page }) => {
   await page.goto('/notation.html?edit=1&file=chords.gp')
-  await page.evaluate(() => localStorage.setItem('cpv:tab-rhythm', 'none'))
+  await page.evaluate(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ tabRhythm: 'none' })))
   await page.reload()
   const rhythm = page.getByRole('button', { name: 'Ritmo padrão da TAB', exact: true })
   await expect(rhythm).toBeVisible()
@@ -149,7 +149,7 @@ test('author chooses the default independently of the saved reading preference',
   await expect(page.getByRole('button', { name: 'Ritmo da TAB', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
   await expect(page.locator('body')).toHaveAttribute('data-saved', /rhythm=base name="Solo"}/)
-  expect(await page.evaluate(() => localStorage.getItem('cpv:tab-rhythm'))).toBe('none')
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('cpv:user-preferences') ?? '{}')).tabRhythm).toBe('none')
 })
 
 for (const size of [{ width: 1280, height: 900 }, { width: 375, height: 812 }]) {

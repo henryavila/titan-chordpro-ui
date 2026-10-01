@@ -32,6 +32,15 @@ export {
   readJson as readStoredJson,
   writeJson as writeStoredJson,
 } from './storage'
+export {
+  readUserPreferences,
+  updateUserPreferences,
+  notationKey,
+  notationBlockIds,
+  readNotationPreferences,
+  writeNotationPreferences,
+} from './preferences'
+export type { UserPreferences, NotationChoice, NotationPreferences } from './preferences'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export { parseDefineDirective, serializeDefine, writeDefines } from './define'
