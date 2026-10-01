@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import {
   applyCifraClubEnrich,
@@ -57,6 +57,22 @@ const ytPick = ref<'remote' | 'local' | 'skip' | ''>('')
 const strumPick = ref<'keep' | 'replace'>('keep')
 /** Two-step gate: first click reveals confirm; only confirm emits `restart`. */
 const restartAsk = ref(false)
+const activePane = ref<'chart' | 'extras'>('chart')
+const bodyEl = ref<HTMLElement | null>(null)
+const chartTabEl = ref<HTMLButtonElement | null>(null)
+const extrasTabEl = ref<HTMLButtonElement | null>(null)
+
+function showPane(pane: 'chart' | 'extras') {
+  activePane.value = pane
+  if (bodyEl.value) bodyEl.value.scrollTop = 0
+}
+
+function onTabKey(e: KeyboardEvent) {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+  e.preventDefault()
+  showPane(activePane.value === 'chart' ? 'extras' : 'chart')
+  void nextTick(() => (activePane.value === 'chart' ? chartTabEl.value : extrasTabEl.value)?.focus())
+}
 
 const canFetch = computed(() => !!props.fetchChart)
 const missing = computed(() => missingOf(meta.value))
@@ -74,8 +90,10 @@ const missingList = computed(() => {
 })
 const flag = (k: string) => (missing.value.includes(k) ? '· falta' : '')
 const edge = (k: string) => {
-  if (!missing.value.includes(k)) return 'var(--chord-edge)'
-  return k === 'duration' ? 'var(--danger)' : 'var(--line)'
+  if (!missing.value.includes(k)) return 'var(--line-soft)'
+  return k === 'duration'
+    ? 'color-mix(in srgb, var(--danger) 45%, transparent)'
+    : 'var(--line)'
 }
 
 const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
@@ -86,38 +104,10 @@ const keyRewrite = computed(() => detectKeyRewrite(liveSource.value))
 const fileCapo = computed(() => Math.max(0, Number(meta.value.capo) || 0))
 const enrichRewrite = ref<'go' | 'keep' | null>(null)
 
-const wide = computed(
-  () => enrichPhase.value === 'youtube' || enrichPhase.value === 'preview',
-)
-
-const geom = computed(() =>
-  props.compact
-    ? {
-        align: 'flex-end',
-        wrapPad: '0',
-        max: '100%',
-        maxH: '92%',
-        pad: '18px 16px calc(18px + env(safe-area-inset-bottom))',
-        radius: '22px 22px 0 0',
-        cols: 'minmax(0,1fr)',
-        titleSize: '18px',
-      }
-    : {
-        align: 'center',
-        wrapPad: '20px',
-        max: wide.value ? '720px' : '480px',
-        maxH: '92%',
-        pad: '20px 18px 16px',
-        radius: '20px',
-        cols: 'minmax(0,1fr) minmax(0,1fr)',
-        titleSize: '20px',
-      },
-)
-
 const chip = (on: boolean) => ({
   background: on ? 'var(--chord)' : 'transparent',
   color: on ? 'var(--chord-ink)' : 'var(--text)',
-  borderColor: on ? 'var(--chord)' : 'var(--line)',
+  border: on ? '1px solid var(--chord)' : '1px solid var(--line)',
 })
 
 const patchLabels = computed(() => {
@@ -319,32 +309,180 @@ async function commitEnrich() {
 }
 
 onMounted(() => {
+  if (props.compact) {
+    chartTabEl.value?.focus()
+    return
+  }
   titleEl.value?.focus()
   titleEl.value?.select()
 })
 </script>
 
 <template>
-  <div
-    :style="{ alignItems: geom.align, padding: geom.wrapPad }"
-    style="position:absolute;inset:0;z-index:40;display:flex;justify-content:center;"
-  >
+  <div class="titan-chordpro-meta-overlay" :class="{ 'is-compact': props.compact }">
     <div class="titan-chordpro-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Metadados da cifra"
       data-meta-dialog
-      :style="{ maxWidth: geom.max, maxHeight: geom.maxH, padding: geom.pad, borderRadius: geom.radius, background: 'var(--canvas)' }"
-      style="position:relative;width:100%;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;animation:titan-chordpro-rise .2s ease-out;"
+      class="titan-chordpro-meta-dialog"
     >
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-        <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Metadados</span>
-          <span style="font-size:20px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;">Identificação da cifra</span>
-          <span style="font-size:12.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Título, tom, andamento, compasso e duração — o que a leitura e a rolagem precisam.</span>
+      <div class="titan-chordpro-meta-header">
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span class="titan-chordpro-meta-eyebrow">Editar cifra</span>
+          <span style="font-size:20px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;">Metadados</span>
         </div>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:40px;height:40px;border-radius:10px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="18" /></button>
+      </div>
+
+      <div v-if="props.compact" class="titan-chordpro-meta-tabs" role="tablist" aria-label="Áreas dos metadados">
+        <button id="titan-chordpro-meta-chart-tab" ref="chartTabEl" type="button" role="tab" data-meta-tab="chart" aria-controls="titan-chordpro-meta-chart-panel" :aria-selected="activePane === 'chart'" :tabindex="activePane === 'chart' ? 0 : -1" :class="{ 'is-active': activePane === 'chart' }" @click="showPane('chart')" @keydown="onTabKey">Dados da música</button>
+        <button id="titan-chordpro-meta-extras-tab" ref="extrasTabEl" type="button" role="tab" data-meta-tab="extras" aria-controls="titan-chordpro-meta-extras-panel" :aria-selected="activePane === 'extras'" :tabindex="activePane === 'extras' ? 0 : -1" :class="{ 'is-active': activePane === 'extras' }" @click="showPane('extras')" @keydown="onTabKey">Referências e ações</button>
+      </div>
+
+      <div ref="bodyEl" class="titan-chordpro-meta-body">
+      <section id="titan-chordpro-meta-chart-panel" v-show="!props.compact || activePane === 'chart'" class="titan-chordpro-meta-chart" :role="props.compact ? 'tabpanel' : 'region'" :aria-labelledby="props.compact ? 'titan-chordpro-meta-chart-tab' : undefined" aria-label="Dados da música">
+      <div v-if="!props.compact" class="titan-chordpro-meta-section-head">
+        <strong>Dados da música</strong>
+        <span>Identificação e tempo</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line-soft);">
+        <input
+          ref="titleEl"
+          :value="meta.title ?? ''"
+          data-meta-title
+          aria-label="Nome da música"
+          placeholder="Nome da música"
+          style="width:100%;border:0;background:transparent;color:var(--text);font-family:inherit;font-size:20px;font-weight:700;letter-spacing:-0.02em;padding:4px 0;"
+          @input="setMeta('title', ($event.target as HTMLInputElement).value)"
+        >
+        <input
+          :value="meta.subtitle ?? ''"
+          data-meta-subtitle
+          aria-label="Artista ou ministério"
+          placeholder="Artista ou ministério"
+          style="width:100%;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;padding:4px 0;"
+          @input="setMeta('subtitle', ($event.target as HTMLInputElement).value)"
+        >
+      </div>
+
+      <div :style="{ border: `1px solid ${edge('duration')}` }" style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:15px;background:var(--canvas);">
+        <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Duração {{ flag('duration') }}</span>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <input
+            :value="meta.duration ?? ''"
+            placeholder="MM:SS"
+            inputmode="numeric"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="5"
+            aria-label="Duração em minutos e segundos"
+            data-meta-duration
+            :style="{ fontSize: meta.duration ? '22px' : '16px' }"
+            style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
+            @input="onDurationInput"
+            @blur="onDurationBlur"
+          >
+          <span style="font-size:11px;color:var(--muted);">MM:SS</span>
+        </div>
+        <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Necessária para a rolagem automática.</span>
+      </div>
+
+      <div class="titan-chordpro-meta-rhythm">
+        <div :style="{ border: `1px solid ${edge('tempo')}` }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);">
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Andamento {{ flag('tempo') }}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="titan-chordpro-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
+            <input
+              :value="meta.tempo ?? ''"
+              aria-label="Andamento em bpm"
+              inputmode="numeric"
+              placeholder="—"
+              data-meta-tempo
+              style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;"
+              @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))"
+            >
+            <button class="titan-chordpro-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
+            <span style="font-size:10.5px;color:var(--muted);">bpm</span>
+          </div>
+          <button data-meta-tap style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="tapTempo">{{ tapLabel }}</button>
+        </div>
+
+        <div :style="{ border: `1px solid ${edge('time')}` }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);">
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Compasso {{ flag('time') }}</span>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <button
+              v-for="t in TIMES"
+              :key="t"
+              :data-meta-time="t"
+              :style="chip(meta.time === t)"
+              style="height:32px;padding:0 12px;border-radius:10px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;"
+              @click="setMeta('time', t)"
+            >{{ t }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div :style="{ border: `1px solid ${edge('key')}` }" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:var(--surface);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom {{ flag('key') }}</span>
+          <button
+            v-if="!showKeyPad && keyRoot"
+            style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
+            @click="keyEdit = true"
+          >Trocar</button>
+        </div>
+        <div v-if="!showKeyPad" style="display:flex;align-items:baseline;gap:8px;">
+          <span data-meta-key-shown style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
+        </div>
+        <template v-else>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            <button
+              v-for="r in SHARP"
+              :key="r"
+              :data-meta-key="r"
+              :style="chip(keyRoot === r)"
+              style="min-width:34px;height:30px;padding:0 7px;border-radius:9px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;"
+              @click="pickKey(r)"
+            >{{ r }}</button>
+          </div>
+          <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
+        </template>
+        <span
+          v-if="fileCapo"
+          data-meta-capo-hint
+          style="font-size:11.5px;line-height:1.45;color:var(--muted);"
+        >Cifra sugere capo {{ fileCapo }}</span>
+        <div
+          v-if="keyRewrite"
+          data-meta-rewrite
+          style="display:flex;flex-direction:column;gap:8px;padding:10px 0 0;border-top:1px solid var(--line);"
+        >
+          <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
+            Declarado: <strong style="color:var(--text);">{{ keyRewrite.declaredKey }}</strong>.
+            Escrito: <strong style="color:var(--text);">{{ keyRewrite.writtenKey }}</strong>.
+            Reescrever guarda o original ({{ keyRewrite.declaredKey }}) e continua tocando em {{ keyRewrite.writtenKey }}.
+          </span>
+          <button
+            type="button"
+            data-meta-rewrite-go
+            style="height:36px;border:0;border-radius:11px;background:var(--chord-fill);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+            @click="rewriteDeclared"
+          >Reescrever em {{ keyRewrite.declaredKey }}</button>
+        </div>
+      </div>
+
+      <div class="titan-chordpro-meta-notes">
+        <span v-if="softMissing.length" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Falta {{ missingList }}. Dá para aplicar e completar depois.</span>
+        <span v-if="durationMissing" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ durationNote }}</span>
+      </div>
+      </section>
+
+      <section id="titan-chordpro-meta-extras-panel" v-show="!props.compact || activePane === 'extras'" class="titan-chordpro-meta-extras" :role="props.compact ? 'tabpanel' : 'region'" :aria-labelledby="props.compact ? 'titan-chordpro-meta-extras-tab' : undefined" aria-label="Referências e ações">
+      <div v-if="!props.compact" class="titan-chordpro-meta-section-head">
+        <strong>Referências e ações</strong>
+        <span>Complete sem alterar a letra</span>
       </div>
 
       <!-- Cifra Club enrich (meta only) -->
@@ -355,11 +493,11 @@ onMounted(() => {
         <div style="display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra Club</span>
           <span style="font-size:13px;font-weight:700;letter-spacing:-0.02em;">Completar com Cifra Club</span>
-          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Traz batida, YouTube e o que faltar — sem substituir a cifra.</span>
+          <span v-if="canFetch" style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Traz batida, YouTube e o que faltar — sem substituir a cifra.</span>
         </div>
 
         <template v-if="!canFetch">
-          <span data-meta-enrich-unavailable style="font-size:12px;line-height:1.45;color:var(--muted);">Buscar no Cifra Club não está disponível — o site precisa buscar a página.</span>
+          <span data-meta-enrich-unavailable style="font-size:12px;line-height:1.45;color:var(--muted);">A busca não está disponível neste app.</span>
         </template>
         <template v-else>
           <div style="display:flex;gap:8px;align-items:stretch;">
@@ -370,7 +508,7 @@ onMounted(() => {
               placeholder="cifraclub.com.br/artista/musica"
               spellcheck="false"
               :disabled="enrichPhase === 'busy'"
-              style="flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;"
+              class="titan-chordpro-meta-url"
               @paste="onEnrichPaste"
               @keydown.enter.prevent="runEnrich"
             >
@@ -400,7 +538,7 @@ onMounted(() => {
               v-if="proposal.youtube.remoteId"
               data-meta-enrich-yt-remote
               :style="chip(ytPick === 'remote')"
-              style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid;border-radius:14px;cursor:pointer;"
+              style="display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;cursor:pointer;"
               @click="ytPick = 'remote'"
             >
               <span style="font-size:11px;font-weight:700;">Cifra Club</span>
@@ -425,7 +563,7 @@ onMounted(() => {
                 type="button"
                 data-meta-enrich-yt-pick-remote
                 :style="chip(ytPick === 'remote')"
-                style="height:34px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                style="height:34px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
                 @click.stop="ytPick = 'remote'"
               >Usar este</button>
             </div>
@@ -433,7 +571,7 @@ onMounted(() => {
               v-if="proposal.youtube.localId"
               data-meta-enrich-yt-local
               :style="chip(ytPick === 'local')"
-              style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid;border-radius:14px;cursor:pointer;"
+              style="display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;cursor:pointer;"
               @click="ytPick = 'local'"
             >
               <span style="font-size:11px;font-weight:700;">Já na cifra</span>
@@ -458,7 +596,7 @@ onMounted(() => {
                 type="button"
                 data-meta-enrich-yt-pick-local
                 :style="chip(ytPick === 'local')"
-                style="height:34px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                style="height:34px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
                 @click.stop="ytPick = 'local'"
               >Usar este</button>
             </div>
@@ -497,14 +635,14 @@ onMounted(() => {
                 type="button"
                 data-meta-enrich-strum-keep
                 :style="chip(strumPick === 'keep')"
-                style="height:34px;padding:0 12px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                style="height:34px;padding:0 12px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
                 @click="strumPick = 'keep'"
               >Manter</button>
               <button
                 type="button"
                 data-meta-enrich-strum-replace
                 :style="chip(strumPick === 'replace')"
-                style="height:34px;padding:0 12px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
+                style="height:34px;padding:0 12px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
                 @click="strumPick = 'replace'"
               >Trazer CC</button>
             </div>
@@ -533,14 +671,14 @@ onMounted(() => {
               type="button"
               data-meta-enrich-rewrite-go
               :style="chip(enrichRewrite === 'go')"
-              style="height:34px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
+              style="height:34px;border-radius:10px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;"
               @click="enrichRewrite = 'go'"
             >Reescrever em {{ proposal.keyRewrite.declaredKey }}</button>
             <button
               type="button"
               data-meta-enrich-rewrite-keep
               :style="chip(enrichRewrite === 'keep')"
-              style="height:32px;border:1px solid;border-radius:10px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
+              style="height:32px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
               @click="enrichRewrite = 'keep'"
             >Manter</button>
           </div>
@@ -560,19 +698,38 @@ onMounted(() => {
           <span v-if="enrichErr" data-meta-enrich-error style="font-size:12px;color:var(--danger);">{{ enrichErr }}</span>
         </div>
 
+      </div>
+
+      <div class="titan-chordpro-meta-reference" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line);">
+        <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
+        <input
+          :value="meta.x_titan_source ?? ''"
+          data-meta-source
+          type="url"
+          inputmode="url"
+          autocomplete="url"
+          aria-label="Link de referência"
+          placeholder="Link de onde veio, ou vídeo de referência"
+          spellcheck="false"
+          class="titan-chordpro-meta-url"
+          @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)"
+        >
+      </div>
+
         <div
           v-if="props.allowRestart"
           data-meta-restart-box
-          style="display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--line-soft);"
+          class="titan-chordpro-meta-restart"
         >
           <template v-if="!restartAsk">
+            <span class="titan-chordpro-meta-eyebrow">Nova cifra</span>
             <button
               type="button"
               data-meta-restart
-              style="align-self:flex-start;min-height:36px;padding:0;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;"
+              style="align-self:flex-start;min-height:36px;padding:0;border:0;background:transparent;color:var(--text);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;"
               @click="askRestart"
             >Começar de novo</button>
-            <span style="font-size:11px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Abre Nova cifra (importar ou branco). A cifra atual só some quando você concluir.</span>
+            <span style="font-size:11px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Importe outra música ou comece em branco.</span>
           </template>
           <div
             v-else
@@ -599,150 +756,10 @@ onMounted(() => {
             </div>
           </div>
         </div>
+      </section>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line-soft);">
-        <input
-          ref="titleEl"
-          :value="meta.title ?? ''"
-          data-meta-title
-          placeholder="Nome da música"
-          :style="{ fontSize: geom.titleSize }"
-          style="width:100%;border:0;background:transparent;color:var(--text);font-family:inherit;font-weight:700;letter-spacing:-0.02em;padding:4px 0;"
-          @input="setMeta('title', ($event.target as HTMLInputElement).value)"
-        >
-        <input
-          :value="meta.subtitle ?? ''"
-          data-meta-subtitle
-          placeholder="Artista ou ministério"
-          style="width:100%;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;padding:4px 0;"
-          @input="setMeta('subtitle', ($event.target as HTMLInputElement).value)"
-        >
-      </div>
-
-      <div :style="{ borderColor: edge('duration') }" style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:15px;background:var(--canvas);border:1px solid;">
-        <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Duração {{ flag('duration') }}</span>
-        <div style="display:flex;align-items:baseline;gap:8px;">
-          <input
-            :value="meta.duration ?? ''"
-            placeholder="MM:SS"
-            inputmode="numeric"
-            autocomplete="off"
-            spellcheck="false"
-            maxlength="5"
-            aria-label="Duração em minutos e segundos"
-            data-meta-duration
-            :style="{ fontSize: meta.duration ? '22px' : '16px' }"
-            style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
-            @input="onDurationInput"
-            @blur="onDurationBlur"
-          >
-          <span style="font-size:11px;color:var(--muted);">MM:SS</span>
-        </div>
-        <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Tempo da música, como no YouTube. A rolagem automática precisa disso.</span>
-      </div>
-
-      <div :style="{ gridTemplateColumns: geom.cols }" style="display:grid;gap:9px;">
-        <div :style="{ borderColor: edge('tempo') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Andamento {{ flag('tempo') }}</span>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button class="titan-chordpro-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
-            <input
-              :value="meta.tempo ?? ''"
-              inputmode="numeric"
-              placeholder="—"
-              data-meta-tempo
-              style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;"
-              @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))"
-            >
-            <button class="titan-chordpro-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
-            <span style="font-size:10.5px;color:var(--muted);">bpm</span>
-          </div>
-          <button data-meta-tap style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="tapTempo">{{ tapLabel }}</button>
-        </div>
-
-        <div :style="{ borderColor: edge('time') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Compasso {{ flag('time') }}</span>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;">
-            <button
-              v-for="t in TIMES"
-              :key="t"
-              :data-meta-time="t"
-              :style="chip(meta.time === t)"
-              style="height:32px;padding:0 12px;border:1px solid;border-radius:10px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;"
-              @click="setMeta('time', t)"
-            >{{ t }}</button>
-          </div>
-        </div>
-      </div>
-
-      <div :style="{ borderColor: edge('key') }" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom {{ flag('key') }}</span>
-          <button
-            v-if="!showKeyPad && keyRoot"
-            style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
-            @click="keyEdit = true"
-          >Trocar</button>
-        </div>
-        <div v-if="!showKeyPad" style="display:flex;align-items:baseline;gap:8px;">
-          <span data-meta-key-shown style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
-        </div>
-        <template v-else>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">
-            <button
-              v-for="r in SHARP"
-              :key="r"
-              :data-meta-key="r"
-              :style="chip(keyRoot === r)"
-              style="min-width:34px;height:30px;padding:0 7px;border:1px solid;border-radius:9px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;"
-              @click="pickKey(r)"
-            >{{ r }}</button>
-          </div>
-          <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
-        </template>
-        <span
-          v-if="fileCapo"
-          data-meta-capo-hint
-          style="font-size:11.5px;line-height:1.45;color:var(--muted);"
-        >Cifra sugere capo {{ fileCapo }}</span>
-        <div
-          v-if="keyRewrite"
-          data-meta-rewrite
-          style="display:flex;flex-direction:column;gap:8px;padding:10px 0 0;border-top:1px solid var(--line);"
-        >
-          <span style="font-size:12px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
-            Declarado: <strong style="color:var(--text);">{{ keyRewrite.declaredKey }}</strong>.
-            Escrito: <strong style="color:var(--text);">{{ keyRewrite.writtenKey }}</strong>.
-            Reescrever guarda o original ({{ keyRewrite.declaredKey }}) e continua tocando em {{ keyRewrite.writtenKey }}.
-          </span>
-          <button
-            type="button"
-            data-meta-rewrite-go
-            style="height:36px;border:0;border-radius:11px;background:var(--chord-fill);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
-            @click="rewriteDeclared"
-          >Reescrever em {{ keyRewrite.declaredKey }}</button>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
-        <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
-        <input
-          :value="meta.x_titan_source ?? ''"
-          data-meta-source
-          placeholder="Link de onde veio, ou vídeo de referência"
-          spellcheck="false"
-          style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;"
-          @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)"
-        >
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <span v-if="softMissing.length" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Falta {{ missingList }}. Dá para aplicar e completar depois.</span>
-        <span v-if="durationMissing" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ durationNote }}</span>
-      </div>
-
-      <div style="position:sticky;bottom:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 0;margin-top:4px;background:var(--canvas);border-top:1px solid var(--line-soft);">
+      <div class="titan-chordpro-meta-footer">
         <button style="min-height:40px;padding:0 12px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" @click="emit('close')">Cancelar</button>
         <button
           data-meta-apply
@@ -755,6 +772,157 @@ onMounted(() => {
 </template>
 
 <style>
+.titan-chordpro-meta-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 47;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.titan-chordpro-meta-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  height: min(660px, 100%);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--canvas);
+  box-shadow: var(--shadow);
+  animation: titan-chordpro-rise .2s ease-out;
+}
+.titan-chordpro-meta-header,
+.titan-chordpro-meta-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px;
+  background: var(--canvas);
+}
+.titan-chordpro-meta-header { border-bottom: 1px solid var(--line-soft); }
+.titan-chordpro-meta-footer { border-top: 1px solid var(--line-soft); }
+.titan-chordpro-meta-footer button {
+  min-height: 44px;
+}
+.titan-chordpro-meta-eyebrow {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.titan-chordpro-meta-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 22px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 22px;
+}
+.titan-chordpro-meta-chart,
+.titan-chordpro-meta-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-width: 0;
+}
+.titan-chordpro-meta-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 3px;
+}
+.titan-chordpro-meta-section-head strong { font-size: 13px; }
+.titan-chordpro-meta-section-head span { color: var(--muted); font-size: 11px; }
+.titan-chordpro-meta-rhythm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 9px;
+}
+.titan-chordpro-meta-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.titan-chordpro-meta-tabs { display: none; }
+.titan-chordpro-meta-overlay.is-compact {
+  align-items: flex-end;
+  padding: 0;
+}
+.is-compact .titan-chordpro-meta-dialog {
+  width: 100%;
+  height: min(720px, 94%);
+  border-radius: 22px 22px 0 0;
+}
+.is-compact .titan-chordpro-meta-header { padding: 15px 16px 12px; }
+.is-compact .titan-chordpro-meta-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  flex: none;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.titan-chordpro-meta-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.titan-chordpro-meta-tabs button.is-active {
+  background: var(--chord-fill);
+  color: var(--chord);
+}
+.titan-chordpro-meta-restart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 15px;
+  background: var(--surface);
+}
+.titan-chordpro-meta-url {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 11.5px;
+}
+.titan-chordpro-meta-reference .titan-chordpro-meta-url { flex: none; }
+.is-compact .titan-chordpro-meta-body {
+  display: block;
+  padding: 14px 16px 22px;
+}
+.is-compact .titan-chordpro-meta-chart,
+.is-compact .titan-chordpro-meta-extras { gap: 10px; }
+.is-compact .titan-chordpro-meta-footer {
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+}
+@media (max-width: 359px) {
+  .is-compact .titan-chordpro-meta-rhythm { grid-template-columns: minmax(0, 1fr); }
+}
 [data-meta-dialog] input::placeholder {
   color: var(--muted);
   font-weight: 500;
