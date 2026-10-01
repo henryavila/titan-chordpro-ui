@@ -9,7 +9,7 @@ import {
   readStrumPatterns,
   writeStrumPatterns,
 } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import BatidaSheet from '../../src/vue/sheets/BatidaSheet.vue'
 
 const observers: ((entries: unknown[]) => void)[] = []
@@ -27,7 +27,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -57,7 +57,7 @@ const MULTI = writeStrumPatterns(
 )
 
 async function viewerAt(source: string, width = 900) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source, storage: memoryStore(), autoHide: false, modes: 'content' },
     attachTo: document.body,
   })

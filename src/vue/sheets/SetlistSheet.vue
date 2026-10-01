@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import { overlayVisualInsets, type EdgeInsets } from '../use/viewportPin'
 
 export type SetlistItem = {
@@ -91,20 +91,20 @@ const wrapStyle = computed(() => ({
     :style="wrapStyle"
     style="position:absolute;z-index:29;display:flex;justify-content:center;"
   >
-    <div class="cpv-scrim" @click="emit('close')" />
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
     <div
-      class="cpv-veil-2"
+      class="titan-chordpro-veil-2"
       role="dialog"
       aria-label="Lista do ensaio"
       :style="{ maxWidth: geom.max, borderRadius: geom.radius }"
-      style="position:relative;width:100%;max-height:78%;display:flex;flex-direction:column;overflow:hidden;animation:cpv-rise .2s ease-out;"
+      style="position:relative;width:100%;max-height:78%;display:flex;flex-direction:column;overflow:hidden;animation:titan-chordpro-rise .2s ease-out;"
     >
       <div style="flex:none;display:flex;align-items:center;gap:10px;padding:14px 10px 12px 16px;border-bottom:1px solid var(--line-soft);">
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Ensaio · {{ headLabel }}</span>
           <span style="font-size:11.5px;color:var(--muted);">{{ seenLabel }}</span>
         </span>
-        <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:38px;height:38px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="18" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:38px;height:38px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="18" /></button>
       </div>
 
       <!-- Search earns its place only once the list is too long to scan. -->
@@ -137,7 +137,7 @@ const wrapStyle = computed(() => ({
         >
           <span
             :style="{ color: it.current ? 'var(--chord)' : 'var(--muted)' }"
-            style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;"
+            style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;"
           >{{ it.num }}</span>
           <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
             <span
@@ -148,13 +148,13 @@ const wrapStyle = computed(() => ({
           </span>
           <span
             v-if="it.hasKey"
-            style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);"
+            style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);"
           >{{ it.keyLabel }}</span>
           <span
             v-if="it.bpmLabel"
             data-setlist-bpm
             :title="`${it.bpmLabel} BPM`"
-            style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);letter-spacing:0.02em;"
+            style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);letter-spacing:0.02em;"
           >{{ it.bpmLabel }}</span>
           <span
             v-if="it.failed || it.busy || it.seen"
@@ -162,8 +162,8 @@ const wrapStyle = computed(() => ({
             data-setlist-mark
             style="flex:none;width:20px;display:flex;align-items:center;justify-content:center;"
           >
-            <CpvIcon v-if="it.failed" name="alertTri" :size="14" />
-            <CpvIcon v-else-if="it.seen" name="check" :size="13" :weight="2" />
+            <TitanChordproIcon v-if="it.failed" name="alertTri" :size="14" />
+            <TitanChordproIcon v-else-if="it.seen" name="check" :size="13" :weight="2" />
             <span v-else style="font-size:12px;font-weight:700;">…</span>
           </span>
         </button>

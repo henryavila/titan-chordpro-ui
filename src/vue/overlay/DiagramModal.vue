@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { drawDiagram, resolveDiagram, type ChordDefine } from '@henryavila/titan-chordpro-ui'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 /** Movement below this stays a tap, so the instrument buttons still click. */
 const DRAG_SLOP_PX = 12
@@ -185,32 +185,32 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="cpv-diagram"
+    class="titan-chordpro-diagram"
     data-diagram-modal
     :class="{ 'is-dragging': dragging }"
     :style="{ '--diagram-scrim': String(scrimOpacity), '--diagram-blur': `${scrimBlur}px` }"
   >
-    <div class="cpv-diagram-blur" data-diagram-blur />
-    <div class="cpv-diagram-scrim" data-diagram-scrim @click="emit('close')" />
+    <div class="titan-chordpro-diagram-blur" data-diagram-blur />
+    <div class="titan-chordpro-diagram-scrim" data-diagram-scrim @click="emit('close')" />
     <div
       ref="panelRef"
-      class="cpv-diagram-panel"
+      class="titan-chordpro-diagram-panel"
       data-diagram-panel
       role="dialog"
       aria-modal="true"
-      aria-labelledby="cpv-diagram-title"
+      aria-labelledby="titan-chordpro-diagram-title"
       :style="dragY > 0 ? { transform: `translate3d(0, ${dragY}px, 0)` } : undefined"
       @pointerdown="onDragDown"
       @click.capture="onDragClick"
       @click.stop
     >
-      <div class="cpv-diagram-grab" data-diagram-grab aria-hidden="true">
-        <CpvIcon name="chevronDown" :size="22" />
+      <div class="titan-chordpro-diagram-grab" data-diagram-grab aria-hidden="true">
+        <TitanChordproIcon name="chevronDown" :size="22" />
       </div>
-      <div class="cpv-diagram-stage" data-diagram-stage>
+      <div class="titan-chordpro-diagram-stage" data-diagram-stage>
         <div
           v-if="frames.length > 1"
-          class="cpv-diagram-inversions"
+          class="titan-chordpro-diagram-inversions"
           data-diagram-draw
           data-diagram-kind="piano"
           :data-inversion-count="frames.length"
@@ -219,41 +219,41 @@ onBeforeUnmount(() => {
           <figure
             v-for="frame in frames"
             :key="frame.label"
-            class="cpv-diagram-inversion"
+            class="titan-chordpro-diagram-inversion"
             data-piano-inversion
             :style="{ '--draw-ratio': String(frame.ratio) }"
           >
-            <div class="cpv-diagram-inversion-keys" v-html="frame.svg" />
-            <figcaption class="cpv-diagram-inversion-name">{{ frame.label }}</figcaption>
+            <div class="titan-chordpro-diagram-inversion-keys" v-html="frame.svg" />
+            <figcaption class="titan-chordpro-diagram-inversion-name">{{ frame.label }}</figcaption>
           </figure>
         </div>
         <div
           v-else-if="soloFrame"
-          class="cpv-diagram-draw"
+          class="titan-chordpro-diagram-draw"
           data-diagram-draw
           :data-diagram-kind="instrument"
           :style="{ '--draw-ratio': String(soloFrame.ratio) }"
           v-html="soloFrame.svg"
         />
-        <p v-else class="cpv-diagram-miss" data-diagram-miss>Sem forma neste instrumento</p>
+        <p v-else class="titan-chordpro-diagram-miss" data-diagram-miss>Sem forma neste instrumento</p>
       </div>
 
-      <header class="cpv-diagram-head">
+      <header class="titan-chordpro-diagram-head">
         <div>
-          <h2 id="cpv-diagram-title" data-diagram-name>{{ shownName }}</h2>
+          <h2 id="titan-chordpro-diagram-title" data-diagram-name>{{ shownName }}</h2>
           <p v-if="sounds" data-diagram-sounds>soa {{ concert }}</p>
         </div>
-        <button type="button" class="cpv-diagram-close" data-diagram-close aria-label="Fechar" @click="emit('close')">
-          <CpvIcon name="x" :size="18" />
+        <button type="button" class="titan-chordpro-diagram-close" data-diagram-close aria-label="Fechar" @click="emit('close')">
+          <TitanChordproIcon name="x" :size="18" />
         </button>
       </header>
 
-      <div class="cpv-diagram-instruments" role="group" aria-label="Instrumento">
+      <div class="titan-chordpro-diagram-instruments" role="group" aria-label="Instrumento">
         <button
           v-for="item in instruments"
           :key="item.id"
           type="button"
-          class="cpv-diagram-instrument"
+          class="titan-chordpro-diagram-instrument"
           :data-diagram-instrument="item.id"
           :aria-pressed="instrument === item.id"
           @click="emit('instrument', item.id)"
@@ -266,12 +266,12 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.cpv-diagram {
+.titan-chordpro-diagram {
   position: absolute;
   inset: 0;
   z-index: 40;
 }
-.cpv-diagram-blur {
+.titan-chordpro-diagram-blur {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -279,18 +279,18 @@ onBeforeUnmount(() => {
   -webkit-backdrop-filter: blur(var(--diagram-blur, 0px));
   transition: backdrop-filter 200ms ease, -webkit-backdrop-filter 200ms ease;
 }
-.cpv-diagram-scrim {
+.titan-chordpro-diagram-scrim {
   position: absolute;
   inset: 0;
   background: var(--scrim);
   opacity: var(--diagram-scrim, 1);
   transition: opacity 200ms ease;
 }
-.cpv-diagram.is-dragging .cpv-diagram-blur,
-.cpv-diagram.is-dragging .cpv-diagram-scrim {
+.titan-chordpro-diagram.is-dragging .titan-chordpro-diagram-blur,
+.titan-chordpro-diagram.is-dragging .titan-chordpro-diagram-scrim {
   transition: none;
 }
-.cpv-diagram-panel {
+.titan-chordpro-diagram-panel {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -300,10 +300,10 @@ onBeforeUnmount(() => {
   user-select: none;
   transition: transform 200ms ease;
 }
-.cpv-diagram.is-dragging .cpv-diagram-panel {
+.titan-chordpro-diagram.is-dragging .titan-chordpro-diagram-panel {
   transition: none;
 }
-.cpv-diagram-grab {
+.titan-chordpro-diagram-grab {
   position: absolute;
   top: 4px;
   left: 0;
@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
   color: var(--muted);
   pointer-events: none;
 }
-.cpv-diagram-stage {
+.titan-chordpro-diagram-stage {
   --diagram-card: min(20rem, 100cqi);
   position: absolute;
   inset: 0;
@@ -328,7 +328,7 @@ onBeforeUnmount(() => {
  * One diagram card for every instrument. The SVG keeps its viewBox; the
  * box never grows past 20rem and never stretches to fill leftover stage.
  */
-.cpv-diagram-draw {
+.titan-chordpro-diagram-draw {
   width: min(var(--diagram-card), calc(100cqh * var(--draw-ratio, 1.25)));
   height: auto;
   aspect-ratio: var(--draw-ratio, 1.25);
@@ -339,13 +339,13 @@ onBeforeUnmount(() => {
   overflow: hidden;
   color: var(--text);
 }
-.cpv-diagram-draw[data-diagram-kind='piano'] {
+.titan-chordpro-diagram-draw[data-diagram-kind='piano'] {
   border: 1px solid var(--line);
   border-radius: 0;
   overflow: visible;
   background: var(--canvas);
 }
-.cpv-diagram-draw :deep(svg) {
+.titan-chordpro-diagram-draw :deep(svg) {
   display: block;
   width: 100%;
   height: auto;
@@ -356,7 +356,7 @@ onBeforeUnmount(() => {
  * Inversions are a grid of the same card. Stack until two (42rem) or three
  * (62rem) cards fit. A short landscape stage rows three even if they shrink.
  */
-.cpv-diagram-inversions {
+.titan-chordpro-diagram-inversions {
   --inv-cols: 1;
   --inv-rows: var(--inv-count, 1);
   width: var(--diagram-card);
@@ -370,38 +370,38 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 @container (min-width: 42rem) {
-  .cpv-diagram-inversions[data-inversion-count='2'] {
+  .titan-chordpro-diagram-inversions[data-inversion-count='2'] {
     --inv-cols: 2;
     --inv-rows: 1;
     width: min(100cqi, calc(2 * 20rem + 14px));
   }
-  .cpv-diagram-inversions[data-inversion-count='4'] {
+  .titan-chordpro-diagram-inversions[data-inversion-count='4'] {
     --inv-cols: 2;
     --inv-rows: 2;
     width: min(100cqi, calc(2 * 20rem + 14px));
   }
 }
 @container (min-width: 62rem) {
-  .cpv-diagram-inversions[data-inversion-count='3'] {
+  .titan-chordpro-diagram-inversions[data-inversion-count='3'] {
     --inv-cols: 3;
     --inv-rows: 1;
     width: min(100cqi, calc(3 * 20rem + 28px));
   }
-  .cpv-diagram-inversions[data-inversion-count='5'],
-  .cpv-diagram-inversions[data-inversion-count='6'] {
+  .titan-chordpro-diagram-inversions[data-inversion-count='5'],
+  .titan-chordpro-diagram-inversions[data-inversion-count='6'] {
     --inv-cols: 3;
     --inv-rows: 2;
     width: min(100cqi, calc(3 * 20rem + 28px));
   }
 }
 @container (max-height: 28rem) and (min-width: 36rem) {
-  .cpv-diagram-inversions[data-inversion-count='3'] {
+  .titan-chordpro-diagram-inversions[data-inversion-count='3'] {
     --inv-cols: 3;
     --inv-rows: 1;
     width: min(100cqi, calc(3 * 20rem + 28px));
   }
 }
-.cpv-diagram-inversion {
+.titan-chordpro-diagram-inversion {
   --keys-max-h: calc((100cqh - (var(--inv-rows) - 1) * 12px) / var(--inv-rows) - 1.5rem);
   display: flex;
   flex-direction: column;
@@ -414,20 +414,20 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: var(--diagram-card);
 }
-.cpv-diagram-inversion-keys {
+.titan-chordpro-diagram-inversion-keys {
   width: 100%;
   min-height: 0;
   display: grid;
   place-items: center;
 }
-.cpv-diagram-inversion-keys :deep(svg) {
+.titan-chordpro-diagram-inversion-keys :deep(svg) {
   display: block;
   width: min(100%, calc(var(--keys-max-h) * var(--draw-ratio, 2)));
   height: auto;
   max-width: 100%;
   max-height: var(--keys-max-h);
 }
-.cpv-diagram-inversion-name {
+.titan-chordpro-diagram-inversion-name {
   flex: none;
   margin: 0;
   font-family: 'Space Mono', ui-monospace, monospace;
@@ -436,7 +436,7 @@ onBeforeUnmount(() => {
   letter-spacing: -0.03em;
   color: var(--muted);
 }
-.cpv-diagram-head {
+.titan-chordpro-diagram-head {
   position: absolute;
   top: 30px;
   left: 14px;
@@ -448,7 +448,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   pointer-events: none;
 }
-.cpv-diagram-head h2 {
+.titan-chordpro-diagram-head h2 {
   margin: 0;
   font-family: 'Space Mono', ui-monospace, monospace;
   font-size: 26px;
@@ -457,12 +457,12 @@ onBeforeUnmount(() => {
   line-height: 1;
   color: var(--chord);
 }
-.cpv-diagram-head p {
+.titan-chordpro-diagram-head p {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 13px;
 }
-.cpv-diagram-close {
+.titan-chordpro-diagram-close {
   pointer-events: auto;
   flex: none;
   width: 36px;
@@ -476,12 +476,12 @@ onBeforeUnmount(() => {
   padding: 0;
   cursor: pointer;
 }
-.cpv-diagram-miss {
+.titan-chordpro-diagram-miss {
   margin: 0;
   font-size: 18px;
   color: var(--muted);
 }
-.cpv-diagram-instruments {
+.titan-chordpro-diagram-instruments {
   position: absolute;
   left: 14px;
   bottom: 12px;
@@ -489,7 +489,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 6px;
 }
-.cpv-diagram-instrument {
+.titan-chordpro-diagram-instrument {
   border: 0;
   border-radius: 999px;
   background: var(--veil-2);
@@ -500,7 +500,7 @@ onBeforeUnmount(() => {
   padding: 6px 10px;
   cursor: pointer;
 }
-.cpv-diagram-instrument[aria-pressed='true'] {
+.titan-chordpro-diagram-instrument[aria-pressed='true'] {
   background: var(--chord);
   color: var(--chord-ink);
 }

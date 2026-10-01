@@ -56,7 +56,7 @@ export function resolveEditMode(props: {
   return 'local'
 }
 
-export type ViewerCapabilities = {
+export type TitanChordproCapabilities = {
   sourcePane?: boolean
   /**
    * Host-owned strum presets on the Batida sheet (list + “Salvar como preset”).
@@ -79,9 +79,9 @@ export type ViewerCapabilities = {
 export type SlideImage = Blob | ArrayBuffer | Uint8Array
 
 /**
- * Host-facing props of `<ChordproViewer>`. Test-only knobs stay off this type.
+ * Host-facing props of `<TitanChordpro>`. Test-only knobs stay off this type.
  */
-export type ChordproViewerProps = {
+export type TitanChordproProps = {
   source?: string
   mode?: 'view' | 'edit'
   /** Initial fallback in preference mode; authoritative value in host mode. */
@@ -168,7 +168,7 @@ export type ChordproViewerProps = {
    */
   songs?: SetlistSong[]
   /**
-   * Asked for a song's ChordPro when the list did not carry it. The viewer
+   * Asked for a song's ChordPro when the list did not carry it. TitanChordpro
    * keeps what comes back, and prefetches the neighbours so changing song in a
    * rehearsal never waits on the network.
    */
@@ -198,18 +198,18 @@ export type ChordproViewerProps = {
   /** 0.5–1.5 over the derived fills, edges and glow. The hue does not move. */
   accentStrength?: number
   /**
-   * Warn — in the console and on screen — when the host embeds the viewer
+   * Warn — in the console and on screen — when the host embeds TitanChordpro
    * without giving its parent a height, so the frame collapses to the
    * `min-height` floor and the control bar falls below the fold.
    * Off only for a host that knowingly composes the frame some other way.
    */
   surfaceGuard?: boolean
   /**
-   * Where what the viewer remembers is kept. Default is this device's
+   * Where TitanChordpro's remembered choices are kept. Default is this device's
    * `localStorage`; a host that keeps them on the account passes its own.
    */
   storage?: ChartStore
-  capabilities?: ViewerCapabilities
+  capabilities?: TitanChordproCapabilities
   /**
    * Host catalog of strum presets for the Batida sheet. The package does not
    * ship or persist these — the consumer owns storage and passes the list.
@@ -218,7 +218,7 @@ export type ChordproViewerProps = {
   strumPresets?: StrumPreset[]
   /**
    * Fetches the page behind a link, for "new chart · import". The browser
-   * cannot reach another site from inside the viewer, so this is the host's
+   * cannot reach another site from inside TitanChordpro, so this is the host's
    * backend. Without it the Link tab says so rather than pretending.
    */
   fetchChart?: (url: string) => Promise<string>
@@ -253,7 +253,7 @@ export type ChordproViewerProps = {
 
 export type { SuggestionStatus }
 
-export type ChordproViewerEmits = {
+export type TitanChordproEmits = {
   'update:source': [value: string]
   /** Request only in host mode: the host accepts by updating its theme prop. */
   'update:theme': [value: ThemeId]

@@ -12,7 +12,7 @@ Fonte do brief: `uploads/00-design-system.md`, `uploads/01-screens.md`, `uploads
 Os arquivos deste pacote são **referências de design feitas em HTML** — protótipos que mostram
 aparência e comportamento pretendidos, **não** código de produção para copiar. A tarefa é
 **recriar esses designs no ambiente do codebase alvo** (Vue/SDA, React, etc.), usando os padrões e
-bibliotecas já estabelecidos lá. O legado de referência é `ChordproViewer.vue` (sda-v2).
+bibliotecas já estabelecidos lá. O legado de referência é `TitanChordpro.vue` (sda-v2).
 
 Especificamente: `fixtures.js` existe só para alimentar o protótipo. No app real a cifra chega do
 host como string ChordPro — no protótipo isso é a prop `source` (quando vazia, cai nas fixtures).
@@ -203,16 +203,16 @@ embutido): a meta de BPM/compasso/duração é omitida e o grupo de tom passa a 
 da barra superior. Acima disso, tudo em uma linha. A barra inferior sempre quebra por `flex-wrap`.
 
 ## Preferências persistidas
-`localStorage`: `cpv:prefs` guarda **apenas o que diverge do default** (`theme` só se escolhido,
+`localStorage`: `titan-chordpro:prefs` guarda **apenas o que diverge do default** (`theme` só se escolhido,
 `bias` só se ≠ 0, `fit` só se o toggle foi usado); quando nada diverge, a chave é removida — assim
-mexer nos controles não vira preferência permanente sem intenção. `cpv:fitSeen` = `"1"`
+mexer nos controles não vira preferência permanente sem intenção. `titan-chordpro:fitSeen` = `"1"`
 depois que a dica do modo ajuste é vista. Tom, capo e velocidade **não** persistem — são da sessão.
 
 ## Micro-descoberta do modo ajuste
 Na primeira visita, uma dica discreta acima da barra inferior ("Ajuste encaixa a cifra no espaço da
 tela — e dá para voltar ao padrão quando quiser") com botão de fechar. Some ao usar o Ajuste, ao
 fechar, ou 9s depois — e o cronômetro de 9s **só começa quando a dica está de fato na tela**, então
-o flag `cpv:fitSeen` nunca é queimado sem a pessoa ter visto. Aparece com o modo ajuste ligado ou
+o flag `titan-chordpro:fitSeen` nunca é queimado sem a pessoa ter visto. Aparece com o modo ajuste ligado ou
 desligado (ela explica o modo, não o estado). Depois de vista, nunca volta.
 
 ## Acessibilidade
@@ -275,8 +275,8 @@ Nenhuma imagem. Ícones são formas CSS (triângulo por `clip-path`, quadrado, c
 tipográficos (`◐ ○ ● ⤢ ⤡ ↓ ▾ × − +`). Fontes vêm do Google Fonts.
 
 ## Arquivos
-- `Chordpro Viewer v2.dc.html` — design de referência (versão atual).
-- `Chordpro Viewer.dc.html` — versão anterior, só para histórico.
+- `TitanChordpro v2.dc.html` — design de referência (versão atual).
+- `TitanChordpro.dc.html` — versão anterior, só para histórico.
 - `fixtures.js` — cifras reais usadas no protótipo (Ermelinda / Ministério Tons Set A).
 - `support.js` — runtime do protótipo; **não** portar.
 - `GAPS.md` — o que ainda falta implementar.

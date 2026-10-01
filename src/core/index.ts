@@ -7,9 +7,9 @@ export type {
   ChartBlockBody,
   ChartRow,
   ChartSeg,
-  ChordProLine,
-  ChordProSection,
-  ChordProView,
+  TitanChordproLine,
+  TitanChordproSection,
+  TitanChordproDocument,
   Lens,
   LineSpan,
   ParseIssue,
@@ -18,9 +18,9 @@ export type {
   TabStave,
   TabToken,
   ThemeId,
-  ViewerAction,
-  ViewerController,
-  ViewerState,
+  TitanChordproAction,
+  TitanChordproController,
+  TitanChordproState,
 } from './types'
 
 export type { ChartStore } from './storage'
@@ -67,7 +67,7 @@ export { buildChoFilename, buildPdfFilename, buildSljaFilename } from './filenam
 export { lyricsForSlides, lyricsText, exportLyrics } from './lyrics-for-slides'
 export type { SlideSourceLine, ChartLyrics } from './lyrics-for-slides'
 export { exportCho, patchMeta } from './export-cho'
-export { calcScrollSpeed, adjustScrollSpeed, viewerMulStep } from './scroll'
+export { calcScrollSpeed, adjustScrollSpeed, adjustScrollMultiplier } from './scroll'
 export {
   ANCHOR_RAMP,
   ANCHOR_RATIO,
@@ -97,7 +97,7 @@ export {
   songDurationSec,
 } from './timeline'
 export type { Timeline, TimelineBlock, TimelineOpts, TimelineSeg } from './timeline'
-export { createViewerController } from './controller'
+export { createTitanChordproController } from './controller'
 export { createSourceSession } from './source-session'
 export type { SourceSession, SourceChangeReason } from './source-session'
 export {

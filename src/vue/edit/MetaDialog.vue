@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import {
   applyCifraClubEnrich,
   detectKeyRewrite,
@@ -329,14 +329,14 @@ onMounted(() => {
     :style="{ alignItems: geom.align, padding: geom.wrapPad }"
     style="position:absolute;inset:0;z-index:40;display:flex;justify-content:center;"
   >
-    <div class="cpv-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
+    <div class="titan-chordpro-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Metadados da cifra"
       data-meta-dialog
       :style="{ maxWidth: geom.max, maxHeight: geom.maxH, padding: geom.pad, borderRadius: geom.radius, background: 'var(--canvas)' }"
-      style="position:relative;width:100%;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;animation:cpv-rise .2s ease-out;"
+      style="position:relative;width:100%;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;animation:titan-chordpro-rise .2s ease-out;"
     >
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
         <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
@@ -344,7 +344,7 @@ onMounted(() => {
           <span style="font-size:20px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;">Identificação da cifra</span>
           <span style="font-size:12.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Título, tom, andamento, compasso e duração — o que a leitura e a rolagem precisam.</span>
         </div>
-        <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="16" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
       </div>
 
       <!-- Cifra Club enrich (meta only) -->
@@ -370,7 +370,7 @@ onMounted(() => {
               placeholder="cifraclub.com.br/artista/musica"
               spellcheck="false"
               :disabled="enrichPhase === 'busy'"
-              style="flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;"
+              style="flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;"
               @paste="onEnrichPaste"
               @keydown.enter.prevent="runEnrich"
             >
@@ -409,7 +409,7 @@ onMounted(() => {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-meta-enrich-yt-remote-link
-                style="font-size:10.5px;font-family:var(--cpv-font-chords,'Space Mono',monospace);color:var(--chord);text-decoration:none;word-break:break-all;"
+                style="font-size:10.5px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);color:var(--chord);text-decoration:none;word-break:break-all;"
                 @click.stop
               >{{ proposal.youtube.remoteUrl }}</a>
               <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;">
@@ -442,7 +442,7 @@ onMounted(() => {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-meta-enrich-yt-local-link
-                style="font-size:10.5px;font-family:var(--cpv-font-chords,'Space Mono',monospace);color:var(--chord);text-decoration:none;word-break:break-all;"
+                style="font-size:10.5px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);color:var(--chord);text-decoration:none;word-break:break-all;"
                 @click.stop
               >{{ proposal.youtube.localUrl }}</a>
               <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;">
@@ -633,7 +633,7 @@ onMounted(() => {
             aria-label="Duração em minutos e segundos"
             data-meta-duration
             :style="{ fontSize: meta.duration ? '22px' : '16px' }"
-            style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
+            style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
             @input="onDurationInput"
             @blur="onDurationBlur"
           >
@@ -646,16 +646,16 @@ onMounted(() => {
         <div :style="{ borderColor: edge('tempo') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Andamento {{ flag('tempo') }}</span>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button class="cpv-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
+            <button class="titan-chordpro-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
             <input
               :value="meta.tempo ?? ''"
               inputmode="numeric"
               placeholder="—"
               data-meta-tempo
-              style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;"
+              style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;"
               @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))"
             >
-            <button class="cpv-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
+            <button class="titan-chordpro-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
             <span style="font-size:10.5px;color:var(--muted);">bpm</span>
           </div>
           <button data-meta-tap style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="tapTempo">{{ tapLabel }}</button>
@@ -669,7 +669,7 @@ onMounted(() => {
               :key="t"
               :data-meta-time="t"
               :style="chip(meta.time === t)"
-              style="height:32px;padding:0 12px;border:1px solid;border-radius:10px;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;"
+              style="height:32px;padding:0 12px;border:1px solid;border-radius:10px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;"
               @click="setMeta('time', t)"
             >{{ t }}</button>
           </div>
@@ -686,7 +686,7 @@ onMounted(() => {
           >Trocar</button>
         </div>
         <div v-if="!showKeyPad" style="display:flex;align-items:baseline;gap:8px;">
-          <span data-meta-key-shown style="font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
+          <span data-meta-key-shown style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
         </div>
         <template v-else>
           <div style="display:flex;flex-wrap:wrap;gap:4px;">
@@ -695,7 +695,7 @@ onMounted(() => {
               :key="r"
               :data-meta-key="r"
               :style="chip(keyRoot === r)"
-              style="min-width:34px;height:30px;padding:0 7px;border:1px solid;border-radius:9px;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;"
+              style="min-width:34px;height:30px;padding:0 7px;border:1px solid;border-radius:9px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;"
               @click="pickKey(r)"
             >{{ r }}</button>
           </div>
@@ -732,7 +732,7 @@ onMounted(() => {
           data-meta-source
           placeholder="Link de onde veio, ou vídeo de referência"
           spellcheck="false"
-          style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;"
+          style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;"
           @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)"
         >
       </div>

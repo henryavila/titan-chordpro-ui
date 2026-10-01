@@ -20,7 +20,7 @@ let pageTitle = ''
 beforeEach(() => {
   pageTitle = document.title
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -89,12 +89,12 @@ describe('MediaDemo consumer host', () => {
     expect(w.get('[data-audio-kind=sung]').text()).toBe('Cantado')
     expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
     expect(w.find('[data-edit]').exists()).toBe(false)
-    const cho = String(w.getComponent({ name: 'ChordproViewer' }).props('source') ?? '')
+    const cho = String(w.getComponent({ name: 'TitanChordpro' }).props('source') ?? '')
     expect(cho).toContain('{x_titan_audio_art_w:1024}')
     expect(cho).toContain('{x_titan_audio_sung:')
     expect(cho).toContain('{x_titan_audio_playback:')
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('none')
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('defaultAudioArt')).toMatchObject({
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('editMode')).toBe('none')
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('defaultAudioArt')).toMatchObject({
       width: 1024,
       height: 1024,
     })

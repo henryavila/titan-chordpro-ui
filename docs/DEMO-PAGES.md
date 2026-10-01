@@ -1,6 +1,6 @@
 # Demo público (Cloudflare Pages)
 
-Demo real do `<ChordproViewer>`: hub + standalone + shell + lista.
+Demo real do `<TitanChordpro>`: hub + standalone + shell + lista.
 
 **Persistência de lab:** o overlay pessoal, a fila de sugestões e a cifra
 oficial usam `localStorage` do navegador (mesmo `songId`); os arquivos

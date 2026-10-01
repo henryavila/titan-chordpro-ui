@@ -5,7 +5,7 @@ const fixture = readFileSync('fixtures/013-ele-vive-em-mim-partitura.cho', 'utf8
 
 for (const width of [390, 1280]) test(`Guitar Pro stays below the introduction after upload, save and reading (${width}px)`, async ({ page }) => {
   await page.setViewportSize({ width, height: 900 })
-  await page.addInitScript(() => localStorage.setItem('cpv:editSeen', '1'))
+  await page.addInitScript(() => localStorage.setItem('titan-chordpro:editSeen', '1'))
   await page.goto('/demo-insertion.html?editMode=persisted')
   await page.locator('[data-edit]').click()
   if (await page.locator('[data-mode-content]').count()) await page.locator('[data-mode-content]').click()
@@ -17,7 +17,7 @@ for (const width of [390, 1280]) test(`Guitar Pro stays below the introduction a
   await page.getByRole('button', { name: 'Guitar Pro / MusicXML', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Solo de Guitar Pro ou MusicXML' })
   await dialog.locator('input[type="file"]').setInputFiles('fixtures/notation/notes.gp')
-  await expect(dialog.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  await expect(dialog.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
   await dialog.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
   await expect(dialog).toHaveCount(0)
   await page.locator('[data-source]').click()
@@ -28,7 +28,7 @@ for (const width of [390, 1280]) test(`Guitar Pro stays below the introduction a
   await page.locator('[data-save]').click()
   await page.locator('[data-read]').click()
   const solo = page.locator('[data-external-score]')
-  await expect(solo.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  await expect(solo.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
   const row = solo.locator('xpath=ancestor::*[@data-block]')
   const previous = row.locator('xpath=preceding-sibling::*[@data-block][1]')
   await expect(previous).toContainText('G/B')
@@ -39,7 +39,7 @@ for (const width of [390, 1280]) test(`Guitar Pro stays below the introduction a
 
 for (const width of [390, 1280]) for (const releaseOnly of [false, true]) test(`dragging Guitar Pro lands after the introduction (${width}px, final position on ${releaseOnly ? 'release' : 'move'})`, async ({ page }) => {
   await page.setViewportSize({ width, height: 700 })
-  await page.addInitScript(() => localStorage.setItem('cpv:editSeen', '1'))
+  await page.addInitScript(() => localStorage.setItem('titan-chordpro:editSeen', '1'))
   await page.goto('/demo-insertion.html?editMode=persisted')
   await page.locator('[data-edit]').click()
   if (await page.locator('[data-mode-content]').count()) await page.locator('[data-mode-content]').click()
@@ -48,7 +48,7 @@ for (const width of [390, 1280]) for (const releaseOnly of [false, true]) test(`
   const solo = '{x_titan_score: src="/fixtures/notation/notes.gp" track=1 start=1 end=1}'
   await page.getByRole('textbox', { name: 'Fonte ChordPro' }).fill(`${solo}\n\n${fixture}`)
   await page.getByRole('button', { name: 'Fechar painel de source' }).click()
-  await expect(page.locator('[data-external-score] .cpv-notation-paper svg').first()).toBeVisible()
+  await expect(page.locator('[data-external-score] .titan-chordpro-notation-paper svg').first()).toBeVisible()
   const grip = page.locator('[data-grip="0"]')
   await grip.scrollIntoViewIfNeeded()
   const start = (await grip.boundingBox())!
@@ -73,7 +73,7 @@ for (const width of [390, 1280]) for (const releaseOnly of [false, true]) test(`
   await page.locator('[data-save]').click()
   await page.locator('[data-read]').click()
   const row = page.locator('[data-external-score]').locator('xpath=ancestor::*[@data-block]')
-  await expect(row.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  await expect(row.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
   await expect(row.locator('xpath=preceding-sibling::*[@data-block][1]')).toContainText('G/B')
   await expect(row.locator('xpath=following-sibling::*[@data-block][1]')).toContainText('onde')
 })
@@ -81,7 +81,7 @@ for (const width of [390, 1280]) for (const releaseOnly of [false, true]) test(`
 test('insert below the introduction, duplicate and move the copy to a later verse', async ({ page }) => {
   const chart = readFileSync('fixtures/sda/h031-jesus-tu-es-a-minha-vida.cho', 'utf8')
   await page.setViewportSize({ width: 1280, height: 700 })
-  await page.addInitScript(() => localStorage.setItem('cpv:editSeen', '1'))
+  await page.addInitScript(() => localStorage.setItem('titan-chordpro:editSeen', '1'))
   await page.goto('/demo-insertion.html?editMode=persisted')
   await page.locator('[data-edit]').click()
   if (await page.locator('[data-mode-content]').count()) await page.locator('[data-mode-content]').click()
@@ -93,7 +93,7 @@ test('insert below the introduction, duplicate and move the copy to a later vers
   await page.getByRole('button', { name: 'Guitar Pro / MusicXML', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Solo de Guitar Pro ou MusicXML' })
   await dialog.locator('input[type="file"]').setInputFiles('fixtures/notation/notes.gp')
-  await expect(dialog.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  await expect(dialog.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
   await dialog.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
   await expect(dialog).toHaveCount(0)
   await expect(page.locator('[data-external-score]')).toHaveCount(1)

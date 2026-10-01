@@ -14,7 +14,7 @@ for (const name of ['notes.gp', 'bends.musicxml']) {
   test(`drops ${name}, previews and saves only after confirmation`, async ({ page }, info) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/notation.html?edit=1&new=1')
-    const zone = page.locator('.cpv-import-score-file')
+    const zone = page.locator('.titan-chordpro-import-score-file')
     const dataTransfer = await transfer(page, [name])
     await zone.dispatchEvent('dragenter', { dataTransfer })
     await expect(zone).toHaveClass(/--dragging/)
@@ -29,7 +29,7 @@ for (const name of ['notes.gp', 'bends.musicxml']) {
     await zone.dispatchEvent('drop', { dataTransfer })
     await expect(zone).not.toHaveClass(/--dragging/)
     await expect(zone).toContainText(name)
-    await expect(page.locator('.cpv-notation-paper svg').first()).toBeVisible()
+    await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
     await expect(page.locator('body')).not.toHaveAttribute('data-saved')
     await page.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
     await expect(page.locator('body')).toHaveAttribute('data-saved', /src="stored\/solo.gp" track=1 start=1/)
@@ -39,7 +39,7 @@ for (const name of ['notes.gp', 'bends.musicxml']) {
 
 test('rejects multiple files and unsupported files without replacing the current solo', async ({ page }) => {
   await page.goto('/notation.html?edit=1')
-  const zone = page.locator('.cpv-import-score-file')
+  const zone = page.locator('.titan-chordpro-import-score-file')
   const save = page.getByRole('button', { name: 'Salvar trecho na cifra' })
   await expect(save).toBeEnabled()
   const original = await zone.locator('strong').textContent()
@@ -55,7 +55,7 @@ test('rejects multiple files and unsupported files without replacing the current
   await expect(page.getByRole('alert')).toContainText('Escolha um arquivo Guitar Pro ou MusicXML')
   await expect(zone.locator('strong')).toHaveText(original!)
   await expect(save).toBeEnabled()
-  await expect(page.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
   await multiple.dispose()
   await unsupported.dispose()
 })

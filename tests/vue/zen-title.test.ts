@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -28,7 +28,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -40,7 +40,7 @@ afterEach(() => {
 })
 
 async function viewerAt(width: number) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: src, theme: 'dark', autoHide: false, storage: memoryStore() },
     attachTo: document.body,
   })
@@ -61,10 +61,10 @@ describe('zen keeps a plain song name in the head band', () => {
     [900, 'desktop'],
   ] as const)('on a %s, with chrome up there is no second title bar', async (width, _label) => {
     const w = await viewerAt(width)
-    expect(w.find('[data-cpv-zen-title]').exists()).toBe(false)
-    expect(w.findAll('[data-cpv-head]')).toHaveLength(1)
+    expect(w.find('[data-titan-chordpro-zen-title]').exists()).toBe(false)
+    expect(w.findAll('[data-titan-chordpro-head]')).toHaveLength(1)
     expect(w.get('[data-chart-title]').text()).toContain(TITLE)
-    const page = w.get('.cpv-page').element as HTMLElement
+    const page = w.get('.titan-chordpro-page').element as HTMLElement
     expect(parseFloat(getComputedStyle(page).paddingTop), 'lyric sat under the overlay pad').toBeGreaterThan(40)
   })
 
@@ -73,17 +73,17 @@ describe('zen keeps a plain song name in the head band', () => {
     [900, 'desktop'],
   ] as const)('on a %s, zen fades the card and pins only the name', async (width, _label) => {
     const w = await viewerAt(width)
-    await w.get('[data-cpv-scroll]').trigger('click')
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
     await flushPromises()
 
-    const overlay = w.get('[data-cpv-head]').element.closest('.cpv-chrome') as HTMLElement
+    const overlay = w.get('[data-titan-chordpro-head]').element.closest('.titan-chordpro-chrome') as HTMLElement
     expect(overlay.classList.contains('is-hidden')).toBe(true)
     expect(opacityOf(overlay)).toBe('0')
-    expect(w.get('[data-scroll]').element.closest('.cpv-chrome')!.classList.contains('is-hidden')).toBe(true)
+    expect(w.get('[data-scroll]').element.closest('.titan-chordpro-chrome')!.classList.contains('is-hidden')).toBe(true)
 
-    const zen = w.get('[data-cpv-zen-title]')
+    const zen = w.get('[data-titan-chordpro-zen-title]')
     expect(zen.text()).toContain(TITLE)
-    expect(zen.find('.cpv-veil').exists()).toBe(false)
+    expect(zen.find('.titan-chordpro-veil').exists()).toBe(false)
     expect(zen.find('button').exists()).toBe(false)
     expect(getComputedStyle(zen.element).position).toMatch(/absolute|fixed/)
   })

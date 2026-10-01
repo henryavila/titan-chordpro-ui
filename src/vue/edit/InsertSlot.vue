@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
-import type { CpvIconName } from '../icon/paths'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import type { TitanChordproIconName } from '../icon/paths'
 import type { BlockEditApi } from '../use/useBlockEdit'
 
 const props = defineProps<{
   /** Source line where a block inserted from this button lands. */
   at: number
   edit: BlockEditApi
-  items: Array<{ icon: CpvIconName; label: string; go: () => void }>
+  items: Array<{ icon: TitanChordproIconName; label: string; go: () => void }>
   /** Last slot opens upward so the menu stays above the dock. */
   up?: boolean
 }>()
@@ -19,11 +19,11 @@ const open = computed(
 </script>
 
 <template>
-  <div class="cpv-insert-slot" :class="{ 'is-open': open, 'is-up': up }">
-    <span class="cpv-insert-rule" aria-hidden="true" />
+  <div class="titan-chordpro-insert-slot" :class="{ 'is-open': open, 'is-up': up }">
+    <span class="titan-chordpro-insert-rule" aria-hidden="true" />
     <button
       type="button"
-      class="cpv-insert-plus"
+      class="titan-chordpro-insert-plus"
       data-insert
       :data-insert-at="at"
       :aria-expanded="open ? 'true' : 'false'"
@@ -31,19 +31,19 @@ const open = computed(
       title="Inserir neste ponto"
       @click.stop="edit.openInsert(at)"
     >
-      <CpvIcon name="plus" :size="14" />
+      <TitanChordproIcon name="plus" :size="14" />
     </button>
-    <span class="cpv-insert-rule" aria-hidden="true" />
-    <div v-if="open" class="cpv-insert-menu cpv-veil-2" @click.stop>
-      <div class="cpv-insert-where">Neste ponto</div>
+    <span class="titan-chordpro-insert-rule" aria-hidden="true" />
+    <div v-if="open" class="titan-chordpro-insert-menu titan-chordpro-veil-2" @click.stop>
+      <div class="titan-chordpro-insert-where">Neste ponto</div>
       <button
         v-for="it in items"
         :key="it.label"
-        class="cpv-insert-item"
+        class="titan-chordpro-insert-item"
         type="button"
         @click="it.go()"
       >
-        <span><CpvIcon :name="it.icon" :size="16" /></span>{{ it.label }}
+        <span><TitanChordproIcon :name="it.icon" :size="16" /></span>{{ it.label }}
       </button>
     </div>
   </div>

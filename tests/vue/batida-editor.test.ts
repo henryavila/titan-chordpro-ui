@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { memoryStore, readMeta } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 
 const observers: ((entries: unknown[]) => void)[] = []
 class TestRO {
@@ -18,7 +18,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -63,7 +63,7 @@ async function viewerAt(
   width = 900,
   modes: 'content' | 'local' | 'both' | 'none' = 'content',
 ) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source, storage: memoryStore(), autoHide: false, modes },
     attachTo: document.body,
   })

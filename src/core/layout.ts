@@ -15,8 +15,8 @@ import type {
   ChartBlockBody,
   ChartRow,
   ChartSeg,
-  ChordProLine,
-  ChordProView,
+  TitanChordproLine,
+  TitanChordproDocument,
   Lens,
   LineSpan,
   TabStave,
@@ -43,7 +43,7 @@ type WorkLine = WorkBase &
     | { kind: 'note'; items: string[]; lis: number[] }
   )
 
-function flatten(view: ChordProView): WorkLine[] {
+function flatten(view: TitanChordproDocument): WorkLine[] {
   const out: WorkLine[] = []
   for (const sec of view.sections) {
     for (const line of sec.lines) out.push(fromLine(line, sec.kind === 'chorus'))
@@ -51,7 +51,7 @@ function flatten(view: ChordProView): WorkLine[] {
   return out
 }
 
-function fromLine(line: ChordProLine, inChorus: boolean): WorkLine {
+function fromLine(line: TitanChordproLine, inChorus: boolean): WorkLine {
   const span = { li0: line.li0, li1: line.li1 }
   if (line.type === 'empty') return { kind: 'blank', ...span }
   if (line.type === 'comment') return { kind: 'comment', text: line.text, ...span }
@@ -435,7 +435,7 @@ function lyricsOnlyBlocks(blocks: ChartBlock[]): ChartBlock[] {
   return out
 }
 
-export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlock[] {
+export function layoutChart(view: TitanChordproDocument, opts: LayoutOpts = {}): ChartBlock[] {
   return layoutChartFull(view, opts).blocks
 }
 
@@ -445,7 +445,7 @@ export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlo
  * chart itself is rewritten to the shapes they fret. The sounding key does
  * not change.
  */
-export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): ChartLayout {
+export function layoutChartFull(view: TitanChordproDocument, opts: LayoutOpts = {}): ChartLayout {
   const semis = opts.semitones ?? 0
   const capo = Math.max(0, opts.capo ?? 0)
   const editing = !!opts.editing

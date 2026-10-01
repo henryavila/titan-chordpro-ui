@@ -291,7 +291,7 @@ export const ICONS = {
   ],
 } as const satisfies Record<string, IconNode[]>
 
-export type CpvIconName = keyof typeof ICONS
+export type TitanChordproIconName = keyof typeof ICONS
 
 /** Names the JSON selection locked. Type stays A−/A+. Chorus is `repeatBar`. */
 export const PICKED_ICONS = [
@@ -335,4 +335,4 @@ export const PICKED_ICONS = [
   'check',
   'play',
   'pause',
-] as const satisfies readonly CpvIconName[]
+] as const satisfies readonly TitanChordproIconName[]

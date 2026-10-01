@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import StrumStrip from '../../src/vue/StrumStrip.vue'
 import { memoryStore, patternFromCc } from '../../src/core'
 
@@ -57,7 +57,7 @@ describe('viewer batida toggle', () => {
 {c:Verso}
 [D]Oi
 `
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source, storage: memoryStore(), autoHide: false },
       attachTo: document.body,
     })

@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { ELE_VIVE_IMG, JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { STORE_KEYS, memoryStore, normalizeSource, notationKey, overlayKey } from '../../src/core/index'
 import type { ChartStore } from '../../src/core/index'
@@ -26,7 +26,7 @@ function hostStore(): ChartStore & { seen: string[] } {
 }
 
 function mountViewer(store: ChartStore, props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: {
       source: src(),
       theme: 'dark',
@@ -146,7 +146,7 @@ describe('storage seam', () => {
   })
 
   it('falls back to this device when the host passes no store', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src(), theme: 'dark', autoHide: false, songId: 'jesus-1' },
       attachTo: document.body,
     })
@@ -175,13 +175,13 @@ it('keeps the overlay and free theme preference while the host controls appearan
   const overlay = store.get(key)
   expect(overlay).toBeTruthy()
   await w.setProps({ theme: 'auto' })
-  await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
+  await w.get('[data-titan-chordpro-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
   // `a` toggles the fit away from its default, which is on.
   expect(JSON.parse(store.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: false })
   expect(store.get(key)).toBe(overlay)
   await w.setProps({ theme: 'light', themeControl: 'preference' })
-  expect(w.get('[data-cpv-root]').attributes('data-theme')).toBe('dark')
+  expect(w.get('[data-titan-chordpro-root]').attributes('data-theme')).toBe('dark')
   expect(w.html()).toContain('(meu)')
   expect(store.get(key)).toBe(overlay)
   w.unmount()

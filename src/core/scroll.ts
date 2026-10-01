@@ -21,7 +21,7 @@ export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): nu
  * Human fine-tuning of the auto-scroll clock: ±12% per press, 0.3×–3×.
  * The base pace comes from the musical timeline, not from this factor.
  */
-export function viewerMulStep(mul: number, direction: 'up' | 'down'): number {
+export function adjustScrollMultiplier(mul: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? mul * 1.12 : mul / 1.12
   return Math.max(0.3, Math.min(3, +next.toFixed(3)))
 }

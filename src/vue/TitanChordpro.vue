@@ -40,7 +40,7 @@ import {
   transposeToken,
   typeScale,
   usesFlats,
-  viewerMulStep,
+  adjustScrollMultiplier,
   writeMeta,
   writeStrumPatterns,
   AUDIO_ART_DEFAULT_PX,
@@ -93,18 +93,18 @@ import MetaDialog from './edit/MetaDialog.vue'
 import MyVersionPanel from './overlay/MyVersionPanel.vue'
 import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
-import CpvViewHead from './chrome/CpvViewHead.vue'
+import TitanChordproViewHead from './chrome/TitanChordproViewHead.vue'
 import type { ViewHeadModel } from './chrome/view-head'
-import CpvCapoLegend from './chrome/CpvCapoLegend.vue'
-import CpvViewerStates from './chrome/CpvViewerStates.vue'
-import CpvEditHead from './chrome/CpvEditHead.vue'
-import CpvWideDock from './chrome/CpvWideDock.vue'
-import CpvPhoneDock from './chrome/CpvPhoneDock.vue'
-import CpvAudioRef from './chrome/CpvAudioRef.vue'
-import CpvMoreSheet from './chrome/CpvMoreSheet.vue'
-import CpvEditDock from './chrome/CpvEditDock.vue'
-import CpvEndOffer from './chrome/CpvEndOffer.vue'
-import CpvSwipeVeil from './chrome/CpvSwipeVeil.vue'
+import TitanChordproCapoLegend from './chrome/TitanChordproCapoLegend.vue'
+import TitanChordproStates from './chrome/TitanChordproStates.vue'
+import TitanChordproEditHead from './chrome/TitanChordproEditHead.vue'
+import TitanChordproWideDock from './chrome/TitanChordproWideDock.vue'
+import TitanChordproPhoneDock from './chrome/TitanChordproPhoneDock.vue'
+import TitanChordproAudioRef from './chrome/TitanChordproAudioRef.vue'
+import TitanChordproMoreSheet from './chrome/TitanChordproMoreSheet.vue'
+import TitanChordproEditDock from './chrome/TitanChordproEditDock.vue'
+import TitanChordproEndOffer from './chrome/TitanChordproEndOffer.vue'
+import TitanChordproSwipeVeil from './chrome/TitanChordproSwipeVeil.vue'
 import { useBlockEdit } from './use/useBlockEdit'
 import { useFullscreen, warnIfHostBlocksFullscreen } from './use/useFullscreen'
 import { pinWouldFillViewport } from './use/viewportPin'
@@ -126,16 +126,16 @@ import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
 import { mediaSessionArtwork, useMediaSession } from './use/useMediaSession'
 import defaultArt from './assets/audio-ref-default.jpg'
-import type { ChordproViewerProps, EditMode, RehearsalFocus, WriteMode } from './public'
+import type { TitanChordproProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
-import CpvIcon from './icon/CpvIcon.vue'
-import type { CpvIconName } from './icon/paths'
-import './cpv.css'
+import TitanChordproIcon from './icon/TitanChordproIcon.vue'
+import type { TitanChordproIconName } from './icon/paths'
+import './titan-chordpro.css'
 
 const props = withDefaults(
   defineProps<
-    ChordproViewerProps & {
+    TitanChordproProps & {
       /** Host batida presets (declared locally so the SFC macro always emits a runtime prop). */
       strumPresets?: StrumPreset[]
       persistSuggestion?: (
@@ -193,7 +193,7 @@ const props = withDefaults(
 )
 
 // Inline emit map so the SFC compiler emits a runtime declaration (imported
-// `ChordproViewerEmits` alone can omit new keys from the runtime emits list).
+// `TitanChordproEmits` alone can omit new keys from the runtime emits list).
 const emit = defineEmits<{
   'update:source': [value: string]
   'update:theme': [value: ThemeId]
@@ -256,6 +256,7 @@ const head = ref<HTMLElement | null>(null)
 const capoBox = ref<HTMLElement | null>(null)
 const width = ref(900)
 const swipeRailBottom = ref(0)
+const visibleDockBottom = ref(0)
 const headH = ref(72)
 const offset = ref(0)
 const capo = ref(0)
@@ -470,7 +471,7 @@ const padBottom = computed(() => {
   const reserve = base + (phone.value ? (scrolling.value ? 54 : 10) : 0)
   // The phone dock can be taller than the fixed reserve (notably in a setlist).
   // Keep the last row's controls above it, including a folded score's handle.
-  return `${phone.value ? Math.max(reserve, swipeRailBottom.value + 56) : reserve}px`
+  return `${phone.value ? Math.max(reserve, visibleDockBottom.value + 56) : reserve}px`
 })
 /**
  * Zen only fades the chrome. The page pad stays put on phone and desktop —
@@ -737,7 +738,7 @@ const audioKey = computed(
 const audio = useAudioRef(audioUrl, { identity: audioIdentity })
 
 /**
- * What the viewer is reading. In a rehearsal the list decides; otherwise the
+ * What TitanChordpro is reading. In a rehearsal the list decides; otherwise the
  * host's `source` is the chart, exactly as before. A song still on its way
  * reads as empty — `songFail` and the busy marks say why.
  */
@@ -925,7 +926,7 @@ const chordVocab = computed(() =>
   ).slice(0, 12),
 )
 const insertItems = computed(() => {
-  const out: Array<{ icon: CpvIconName; label: string; go: () => void }> = [
+  const out: Array<{ icon: TitanChordproIconName; label: string; go: () => void }> = [
     { icon: 'music2', label: 'Partitura ou solo', go: () => newScore() },
   ]
   if (props.uploadScore)
@@ -1223,11 +1224,11 @@ const metHit = computed(() =>
 const metHitMs = computed(() => `${Math.round(30000 / Math.max(30, met.bpm.value))}ms`)
 const headHitClass = computed(() => {
   if (!met.pulseHead.value || !metHit.value) return ''
-  return metHit.value === '1' ? 'cpv-head-hit-1' : 'cpv-head-hit-n'
+  return metHit.value === '1' ? 'titan-chordpro-head-hit-1' : 'titan-chordpro-head-hit-n'
 })
 const rootHitClass = computed(() => {
   if (!metHit.value) return ''
-  return metHit.value === '1' ? 'cpv-met-hit-1' : 'cpv-met-hit-n'
+  return metHit.value === '1' ? 'titan-chordpro-met-hit-1' : 'titan-chordpro-met-hit-n'
 })
 const dockPlayLabel = computed(() => (dockPlayLabeled.value ? (rollLive.value ? 'Parar' : 'Rolar') : ''))
 const dockPlayName = computed(() => (rollLive.value ? 'Parar' : 'Rolar'))
@@ -1316,7 +1317,7 @@ async function toggleNotation(bi: number) {
   const viewport = el.getBoundingClientRect()
   const readingY = viewport.top + viewport.height * 0.35
   const targetNode = el.querySelector<HTMLElement>(`[data-block="${bi}"]`)
-  const candidates = [...el.querySelectorAll<HTMLElement>('.cpv-reading-row, [data-block]')]
+  const candidates = [...el.querySelectorAll<HTMLElement>('.titan-chordpro-reading-row, [data-block]')]
   const anchor = candidates.find(node => {
     if (node.closest(`[data-block="${bi}"]`)) return false
     const r = node.getBoundingClientRect()
@@ -1448,7 +1449,7 @@ function pageSpot(): PageSpot {
   const eye = el ? el.getBoundingClientRect().top + el.clientHeight * 0.4 : 0
   let anchor: HTMLElement | null = null
   let distance = Infinity
-  for (const node of el?.querySelectorAll<HTMLElement>('.cpv-lyric') ?? []) {
+  for (const node of el?.querySelectorAll<HTMLElement>('.titan-chordpro-lyric') ?? []) {
     const d = Math.abs(node.getBoundingClientRect().top - eye)
     if (d < distance) {
       anchor = node
@@ -1798,7 +1799,7 @@ function onSurfaceTap(e: MouseEvent) {
   const t = e.target as HTMLElement | null
   // The solo owns touches on its header and notation; only the chart around
   // it uses the one-tap chrome gesture.
-  if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure,.cpv-notation-card")) return
+  if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure,.titan-chordpro-notation-card")) return
   try {
     if (String(window.getSelection() ?? '').length) return
   } catch {
@@ -1919,7 +1920,7 @@ function measurePinGain() {
 /**
  * Whether the button wins something the gesture cannot. That is the only thing
  * that ever decides whether it is drawn — never "is this a phone". A tap on the
- * chart puts the viewer's own chrome away everywhere; the button exists where
+ * chart puts TitanChordpro's own chrome away everywhere; the button exists where
  * there is also a browser chrome or a host page to cover.
  */
 const canWinScreen = computed(() => canNativeFs.value || canPinFill.value)
@@ -2467,8 +2468,8 @@ function onKey(e: KeyboardEvent) {
   } else if (k === '+' || k === '=') shift(1)
   else if (k === '-' || k === '_') shift(-1)
   else if (k === '0') resetTone()
-  else if (k === 'ArrowRight' && scrolling.value) mul.value = viewerMulStep(mul.value, 'up')
-  else if (k === 'ArrowLeft' && scrolling.value) mul.value = viewerMulStep(mul.value, 'down')
+  else if (k === 'ArrowRight' && scrolling.value) mul.value = adjustScrollMultiplier(mul.value, 'up')
+  else if (k === 'ArrowLeft' && scrolling.value) mul.value = adjustScrollMultiplier(mul.value, 'down')
   else if ((k === 'l' || k === 'L') && !isEdit.value) toggleReading()
   else if (k === 'm' || k === 'M') met.toggle()
   else if (k === 'f' || k === 'F') toggleFs()
@@ -2523,7 +2524,7 @@ function onWheel(e: WheelEvent) {
   // Open sheets own the wheel — the setlist list scrolls itself; do not drag
   // the chart under the dialog. The scrim blocks the page without moving it.
   if (hit?.closest?.('[role="dialog"]')) return
-  if (hit?.closest?.('.cpv-scrim')) {
+  if (hit?.closest?.('.titan-chordpro-scrim')) {
     e.preventDefault()
     return
   }
@@ -2720,8 +2721,8 @@ function dockLiftEl(): HTMLElement | null {
   const rootEl = root.value
   if (!rootEl) return null
   return (
-    (rootEl.querySelector('.cpv-phone-stack') as HTMLElement | null) ??
-    (rootEl.querySelector('[data-scroll]')?.closest('.cpv-chrome') as HTMLElement | null)
+    (rootEl.querySelector('.titan-chordpro-phone-stack') as HTMLElement | null) ??
+    (rootEl.querySelector('[data-scroll]')?.closest('.titan-chordpro-chrome') as HTMLElement | null)
   )
 }
 
@@ -2735,6 +2736,9 @@ function measureSwipeRailBottom() {
   const a = rootEl.getBoundingClientRect()
   const b = dock.getBoundingClientRect()
   swipeRailBottom.value = Math.max(0, Math.round(a.bottom - b.top))
+  // Zen hides the controls but keeps the reading line in place. Remember the
+  // visible dock's height for the page padding while its content is hidden.
+  if (!chromeHidden.value) visibleDockBottom.value = swipeRailBottom.value
 }
 
 function bindDockLift() {
@@ -2971,26 +2975,26 @@ defineExpose({
 <template>
   <div
     ref="root"
-    class="cpv-root"
-    data-cpv-root
+    class="titan-chordpro-root"
+    data-titan-chordpro-root
     :data-theme="effTheme"
-    :data-cpv-lens="activeLens"
+    :data-titan-chordpro-lens="activeLens"
     :class="[rootHitClass, { 'is-setlist': setlist.on.value, 'is-swipe-debug': swipeDebug }]"
     :style="{
-      '--cpv-met-hit': metHitMs,
-      '--cpv-swipe-edge': `${SWIPE_EDGE_PX}px`,
-      '--cpv-swipe-rail': `${swipeRailPx(width)}px`,
-      '--cpv-swipe-rail-bottom': `${swipeRailBottom}px`,
+      '--titan-chordpro-met-hit': metHitMs,
+      '--titan-chordpro-swipe-edge': `${SWIPE_EDGE_PX}px`,
+      '--titan-chordpro-swipe-rail': `${swipeRailPx(width)}px`,
+      '--titan-chordpro-swipe-rail-bottom': `${swipeRailBottom}px`,
     }"
     @pointerdown="songSwipe.onDown"
   >
-    <div class="cpv-glow" />
+    <div class="titan-chordpro-glow" />
 
-    <div class="cpv-stage">
-    <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
-      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad, '--cpv-notation-outset': notationOutset }">
+    <div class="titan-chordpro-stage">
+    <div v-if="isPopulated" ref="scroller" class="titan-chordpro-scroll" data-titan-chordpro-scroll @click="onSurfaceTap">
+      <div :ref="bindPage" class="titan-chordpro-page" :style="{ maxWidth: pageMax, padding: pagePad, '--titan-chordpro-notation-outset': notationOutset }">
         <div :style="{ padding: pageBodyPad }">
-        <CpvCapoLegend v-if="legend" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
+        <TitanChordproCapoLegend v-if="legend" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
         <ChartBody
           v-bind="chartScale"
           :blocks="blocks"
@@ -3019,7 +3023,7 @@ defineExpose({
       </div>
     </div>
 
-    <CpvViewerStates
+    <TitanChordproStates
       v-else
       :failing="setlist.failing.value"
       :song-loading="songLoading"
@@ -3042,24 +3046,24 @@ defineExpose({
     />
     <div
       v-if="swipeDebug"
-      class="cpv-swipe-debug"
+      class="titan-chordpro-swipe-debug"
       aria-hidden="true"
     >
-      <div class="cpv-swipe-debug-dead">Safari</div>
-      <div class="cpv-swipe-debug-center">rolar</div>
-      <div class="cpv-swipe-debug-legend">
+      <div class="titan-chordpro-swipe-debug-dead">Safari</div>
+      <div class="titan-chordpro-swipe-debug-center">rolar</div>
+      <div class="titan-chordpro-swipe-debug-legend">
         cinza = Safari · verde = rolar · azul = anterior · laranja = próxima
       </div>
     </div>
     <div
       v-if="setlist.on.value"
-      class="cpv-swipe-rail"
+      class="titan-chordpro-swipe-rail"
       data-swipe-rail="prev"
       aria-hidden="true"
     />
     <div
       v-if="setlist.on.value"
-      class="cpv-swipe-rail"
+      class="titan-chordpro-swipe-rail"
       data-swipe-rail="next"
       aria-hidden="true"
     />
@@ -3073,23 +3077,23 @@ defineExpose({
       @close="closeDiagram"
       @instrument="setDiagramInstrument"
     />
-    <CpvSwipeVeil
+    <TitanChordproSwipeVeil
       :view="swipeView"
       :next-title="setlist.nextTitle.value"
       :prev-title="setlist.prevTitle.value"
     />
     </div>
-    <div class="cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
+    <div class="titan-chordpro-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
     <!-- Identity card — fades with zen. A plain name takes the same band while chrome is gone. -->
     <div
       v-if="!isEdit && isPopulated"
-      class="cpv-chrome"
+      class="titan-chordpro-chrome"
       :class="{ 'is-hidden': headHidden, 'is-wide-wrap': !phone }"
       style="position:absolute;top:0;left:0;right:0;z-index:12;"
       :style="{ padding: chromePad }"
     >
-      <CpvViewHead
+      <TitanChordproViewHead
         v-bind="viewHeadBind"
         v-model:capo-open="capoOpen"
         :ref="bindHead"
@@ -3106,17 +3110,17 @@ defineExpose({
     </div>
     <div
       v-if="!isEdit && isPopulated && headHidden"
-      class="cpv-zen-title"
+      class="titan-chordpro-zen-title"
       :class="{ 'is-wide-wrap': !phone }"
-      data-cpv-zen-title
+      data-titan-chordpro-zen-title
       aria-hidden="true"
       :style="{ padding: chromePad }"
     >
-      <span class="cpv-zen-title-text" :style="!phone ? { maxWidth: pageMax } : undefined">{{
+      <span class="titan-chordpro-zen-title-text" :style="!phone ? { maxWidth: pageMax } : undefined">{{
         meta.title || 'Sem título'
       }}</span>
     </div>
-    <CpvEditHead
+    <TitanChordproEditHead
       v-if="isEdit"
       :phone="phone"
       :compact="compact"
@@ -3144,7 +3148,7 @@ defineExpose({
       @read="exitEdit"
     />
 
-    <CpvWideDock
+    <TitanChordproWideDock
       v-if="!isEdit && !phone && isPopulated"
       :hidden="chromeHidden"
       :show-mine="showMine"
@@ -3180,8 +3184,8 @@ defineExpose({
       @original="toggleOriginal"
       @open-my="ov.myPanel.value = true"
       @dismiss-hint="dismissHint(true)"
-      @slower="mul = viewerMulStep(mul, 'down')"
-      @faster="mul = viewerMulStep(mul, 'up')"
+      @slower="mul = adjustScrollMultiplier(mul, 'down')"
+      @faster="mul = adjustScrollMultiplier(mul, 'up')"
       @prev="goPrev"
       @open-list="setlist.open()"
       @next="goNext"
@@ -3200,7 +3204,7 @@ defineExpose({
       @edit="enterEdit"
       @export="sheet = true"
     >
-      <CpvAudioRef
+      <TitanChordproAudioRef
         v-if="audioUrl"
         :key="audioKey"
         :playing="audio.playing.value"
@@ -3219,9 +3223,9 @@ defineExpose({
         @seek="audio.seek"
         @kind="audioKind = $event"
       />
-    </CpvWideDock>
+    </TitanChordproWideDock>
 
-    <CpvPhoneDock
+    <TitanChordproPhoneDock
       v-if="!isEdit && phone && isPopulated"
       :hidden="chromeHidden || moreOpen"
       :hint-fit="hintFit"
@@ -3255,8 +3259,8 @@ defineExpose({
       @prev="goPrev"
       @open-list="setlist.open()"
       @next="goNext"
-      @slower="mul = viewerMulStep(mul, 'down')"
-      @faster="mul = viewerMulStep(mul, 'up')"
+      @slower="mul = adjustScrollMultiplier(mul, 'down')"
+      @faster="mul = adjustScrollMultiplier(mul, 'up')"
       @toggle-scroll="toggleScroll"
       @smaller-type="bias = Math.max(-3, bias - 1)"
       @bigger-type="bias = Math.min(5, bias + 1)"
@@ -3264,7 +3268,7 @@ defineExpose({
       @toggle-fit="toggleFit"
       @more="moreOpen = true"
     >
-      <CpvAudioRef
+      <TitanChordproAudioRef
         v-if="audioUrl"
         :key="audioKey"
         :playing="audio.playing.value"
@@ -3286,23 +3290,23 @@ defineExpose({
         @kind="audioKind = $event"
         @reveal="showChrome"
       />
-    </CpvPhoneDock>
+    </TitanChordproPhoneDock>
 
     <button
       v-if="queueEntry"
-      class="cpv-queue-chip"
+      class="titan-chordpro-queue-chip"
       :class="{ 'is-compact': compact, 'is-alone': chromeHidden }"
       data-queue-chip
       :aria-label="`Sugestões dos músicos, ${ov.pendingCount.value} ${ov.pendingCount.value === 1 ? 'pendente' : 'pendentes'}`"
       title="Sugestões dos músicos"
       @click="ov.openQueue"
     >
-      <span class="cpv-queue-chip-dot" aria-hidden="true" />
-      <span class="cpv-queue-chip-copy">Sugestões</span>
-      <span class="cpv-queue-chip-count" data-queue-count>{{ ov.pendingCount.value }}</span>
+      <span class="titan-chordpro-queue-chip-dot" aria-hidden="true" />
+      <span class="titan-chordpro-queue-chip-copy">Sugestões</span>
+      <span class="titan-chordpro-queue-chip-count" data-queue-count>{{ ov.pendingCount.value }}</span>
     </button>
 
-    <CpvEditDock
+    <TitanChordproEditDock
       v-if="isEdit && !srcOpen"
       :compact="compact"
       :edit-hint="editHint"
@@ -3325,7 +3329,7 @@ defineExpose({
       @edit-batida="openBatidaEdit"
     />
 
-    <div v-if="isEdit && bedit.placing.value" class="cpv-placing-bar cpv-veil-2" data-placing>
+    <div v-if="isEdit && bedit.placing.value" class="titan-chordpro-placing-bar titan-chordpro-veil-2" data-placing>
       <span style="font-size:11.5px;color:var(--text);">Toque na sílaba onde o acorde entra.</span>
       <button
         style="height:28px;padding:0 10px;border:0;border-radius:9px;background:var(--surface);color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
@@ -3357,7 +3361,7 @@ defineExpose({
     <ImportScoreDialog v-if="isEdit && externalEd" :text="externalEd.text" :theme="effTheme"
       :resolve-score="resolveScore" :upload-score="uploadScore"
       @save="saveExternalScore" @close="externalEd = null" />
-    <div v-if="isEdit && scoreEd" class="cpv-score-modal" role="dialog" aria-modal="true" aria-label="Editor de partitura">
+    <div v-if="isEdit && scoreEd" class="titan-chordpro-score-modal" role="dialog" aria-modal="true" aria-label="Editor de partitura">
       <ScoreEditor
         :title="meta.title || 'Partitura'"
         :subtitle="scoreLabel"
@@ -3367,28 +3371,28 @@ defineExpose({
       />
     </div>
 
-    <div v-if="slides === 'error'" class="cpv-error-banner">
-      <CpvIcon name="alertTri" :size="18" style="color:var(--danger)" />
+    <div v-if="slides === 'error'" class="titan-chordpro-error-banner">
+      <TitanChordproIcon name="alertTri" :size="18" style="color:var(--danger)" />
       <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em slides falhou.</span>
       <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="slides = 'idle'; doExportSlides()">Tentar de novo</button>
-      <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="slides = 'idle'"><CpvIcon name="x" :size="14" /></button>
+      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="slides = 'idle'"><TitanChordproIcon name="x" :size="14" /></button>
     </div>
 
-    <div v-if="pdf === 'error'" class="cpv-error-banner">
-      <CpvIcon name="alertTri" :size="18" style="color:var(--danger)" />
+    <div v-if="pdf === 'error'" class="titan-chordpro-error-banner">
+      <TitanChordproIcon name="alertTri" :size="18" style="color:var(--danger)" />
       <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em PDF falhou.</span>
       <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="pdf = 'idle'; doExportPdf()">Tentar de novo</button>
-      <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="pdf = 'idle'"><CpvIcon name="x" :size="14" /></button>
+      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="pdf = 'idle'"><TitanChordproIcon name="x" :size="14" /></button>
     </div>
 
     <div
       v-if="toast"
-      class="cpv-toast cpv-veil-2"
+      class="titan-chordpro-toast titan-chordpro-veil-2"
       :class="{ 'is-out': toastOut }"
       :style="{ bottom: toastBottom }"
     >{{ toast }}</div>
 
-    <CpvEndOffer
+    <TitanChordproEndOffer
       v-if="setlist.endOffer.value && !isEdit"
       :next-title="setlist.nextTitle.value"
       :bottom="offerBottom"
@@ -3396,19 +3400,19 @@ defineExpose({
       @dismiss="setlist.dismissEnd()"
     />
 
-    <div v-if="guard.bad.value" class="cpv-surface-warn" role="alert">
-      <CpvIcon name="alertTri" :size="16" style="color:var(--danger)" />
+    <div v-if="guard.bad.value" class="titan-chordpro-surface-warn" role="alert">
+      <TitanChordproIcon name="alertTri" :size="16" style="color:var(--danger)" />
       <span style="flex:1;min-width:0;">
-        <span class="cpv-surface-warn-title">Viewer sem altura resolvível</span>
-        <span class="cpv-surface-warn-body">O ancestral imediato precisa de uma altura definida. Sem ela o viewer usa o piso de 460px e a barra de controle fica fora da tela. Ver <code>docs/CONSUMER.md</code> — detalhes no console.</span>
+        <span class="titan-chordpro-surface-warn-title">Cifra sem altura resolvível</span>
+        <span class="titan-chordpro-surface-warn-body">O ancestral imediato precisa de uma altura definida. Sem ela a cifra usa o piso de 460px e a barra de controle fica fora da tela. Ver <code>docs/CONSUMER.md</code> — detalhes no console.</span>
       </span>
       <button
-        class="cpv-ghost"
+        class="titan-chordpro-ghost"
         aria-label="Ocultar aviso"
         title="Ocultar aviso"
         style="flex:none;width:26px;height:26px;color:var(--muted);font-size:15px;"
         @click="guard.dismiss()"
-      ><CpvIcon name="x" :size="14" /></button>
+      ><TitanChordproIcon name="x" :size="14" /></button>
     </div>
 
     <ExportSheet
@@ -3435,7 +3439,7 @@ defineExpose({
     <div
       v-if="strumVisible && strumPattern"
       :ref="bindStrumDock"
-      class="cpv-strum-dock"
+      class="titan-chordpro-strum-dock"
       data-strum-dock
       :style="strumDockStyle"
     >
@@ -3454,17 +3458,17 @@ defineExpose({
       v-if="met.running.value && !isEdit"
       data-met-count
       type="button"
-      class="cpv-met-count"
+      class="titan-chordpro-met-count"
       :title="metPulseTitle"
       :style="{ top: countTop, left: countLeft }"
       @click="met.toggle()"
     >
-      <span v-if="met.countIn.value" data-met-countin class="cpv-met-entrada">entrada</span>
-      <span data-met-bpm class="cpv-met-bpm">{{ met.bpm.value }}</span>
+      <span v-if="met.countIn.value" data-met-countin class="titan-chordpro-met-entrada">entrada</span>
+      <span data-met-bpm class="titan-chordpro-met-bpm">{{ met.bpm.value }}</span>
       <span
         v-for="n in met.bar.value"
         :key="n"
-        class="cpv-met-beat"
+        class="titan-chordpro-met-beat"
         :class="{ 'is-now': met.beat.value === n - 1, 'is-one': n === 1 }"
       >{{ n }}</span>
     </button>
@@ -3580,7 +3584,7 @@ defineExpose({
       @reset="resetTone"
     />
 
-    <CpvMoreSheet
+    <TitanChordproMoreSheet
       v-if="moreOpen && compact"
       :theme-title="themeTitle"
       :theme-icon="themeIcon(themeMode)"
@@ -3679,7 +3683,7 @@ defineExpose({
       @close="srcOpen = false"
     />
 
-    <div class="cpv-live" role="status" aria-live="polite">{{ toast }}</div>
-    <div class="cpv-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : '') }}</div>
+    <div class="titan-chordpro-live" role="status" aria-live="polite">{{ toast }}</div>
+    <div class="titan-chordpro-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : '') }}</div>
   </div>
 </template>

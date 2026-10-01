@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ICONS, type CpvIconName } from './paths'
+import { ICONS, type TitanChordproIconName } from './paths'
 
 const props = withDefaults(
   defineProps<{
-    name: CpvIconName
+    name: TitanChordproIconName
     /** CSS px. Dock chrome is 16 so every neighbour paints the same box. */
     size?: number
     weight?: number
@@ -18,7 +18,7 @@ const box = computed(() => `${props.size}px`)
 
 <template>
   <svg
-    class="cpv-ico"
+    class="titan-chordpro-ico"
     :data-icon="name"
     :width="size"
     :height="size"

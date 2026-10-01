@@ -1,4 +1,4 @@
-import type { BlockMusic, ChordProView } from './types'
+import type { BlockMusic, TitanChordproDocument } from './types'
 
 /**
  * Auto-scroll in musical time.
@@ -643,7 +643,7 @@ export function playheadAtScroll(t: Timeline | null, scroll: number, viewport: n
 }
 
 /** Clock inputs a chart provides; `bpmOverride` is the reader's own tempo. */
-export function clockOf(view: ChordProView, bpmOverride?: number | null) {
+export function clockOf(view: TitanChordproDocument, bpmOverride?: number | null) {
   return {
     bpm: bpmOverride || sheetBpm(view.meta.tempo) || 100,
     beatsPerBar: beatsPerBar(view.meta.time),

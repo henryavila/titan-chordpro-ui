@@ -15,21 +15,21 @@ copyFileSync(join(root, 'src/vue/public.ts'), join(root, 'dist/vue/public.d.ts')
 writeFileSync(
   join(root, 'dist/vue/index.d.ts'),
   `import type { DefineComponent } from 'vue'
-import type { ChordproViewerProps } from './public'
+import type { TitanChordproProps } from './public'
 
 export type {
-  ChordproViewerEmits,
-  ChordproViewerProps,
+  TitanChordproEmits,
+  TitanChordproProps,
   ImageChoice,
   ModesProp,
-  ViewerCapabilities,
+  TitanChordproCapabilities,
   WriteMode,
 } from './public'
 export type { AccentId, AccentProp, ChartStore, ThemeId } from '@henryavila/titan-chordpro-ui'
 
-declare const ChordproViewer: DefineComponent<ChordproViewerProps>
-export { ChordproViewer }
-export default ChordproViewer
+declare const TitanChordpro: DefineComponent<TitanChordproProps>
+export { TitanChordpro }
+export default TitanChordpro
 `,
 )
 

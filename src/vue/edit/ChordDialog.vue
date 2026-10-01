@@ -40,13 +40,13 @@ function onKey(e: KeyboardEvent) {
 
 <template>
   <div
-    class="cpv-modal"
+    class="titan-chordpro-modal"
     data-chord-dialog
     :style="{ alignItems: compact ? 'flex-end' : 'center', padding: compact ? '0' : '20px' }"
   >
-    <div class="cpv-scrim" @click="emit('close')" />
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
     <div
-      class="cpv-veil-2 cpv-modal-card"
+      class="titan-chordpro-veil-2 titan-chordpro-modal-card"
       role="dialog"
       aria-modal="true"
       aria-label="Acorde"
@@ -56,11 +56,11 @@ function onKey(e: KeyboardEvent) {
         borderRadius: compact ? '20px 20px 0 0' : '18px',
       }"
     >
-      <span class="cpv-modal-kicker">Acorde</span>
+      <span class="titan-chordpro-modal-kicker">Acorde</span>
       <input
         ref="input"
         data-chord-input
-        class="cpv-chord-input"
+        class="titan-chordpro-chord-input"
         :value="modelValue"
         aria-label="Nome do acorde"
         @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
@@ -70,16 +70,16 @@ function onKey(e: KeyboardEvent) {
         <button
           v-for="v in vocab"
           :key="v"
-          class="cpv-vocab-btn"
+          class="titan-chordpro-vocab-btn"
           type="button"
           @click="emit('update:modelValue', v)"
         >{{ v }}</button>
       </div>
       <div style="display:flex;gap:7px;">
-        <button class="cpv-modal-btn cpv-modal-btn--danger" data-chord-remove type="button" @click="emit('remove')">Remover</button>
+        <button class="titan-chordpro-modal-btn titan-chordpro-modal-btn--danger" data-chord-remove type="button" @click="emit('remove')">Remover</button>
         <span style="flex:1;" />
-        <button class="cpv-modal-btn" type="button" @click="emit('close')">Cancelar</button>
-        <button class="cpv-modal-btn cpv-modal-btn--primary" data-chord-apply type="button" @click="emit('apply')">Aplicar</button>
+        <button class="titan-chordpro-modal-btn" type="button" @click="emit('close')">Cancelar</button>
+        <button class="titan-chordpro-modal-btn titan-chordpro-modal-btn--primary" data-chord-apply type="button" @click="emit('apply')">Aplicar</button>
       </div>
     </div>
   </div>

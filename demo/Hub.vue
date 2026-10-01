@@ -8,7 +8,7 @@ import { GROUPS, demosOf } from './host/recipe'
       <p class="mark">titan-chordpro-ui</p>
       <h1>Demos</h1>
       <p class="lead">
-        O mesmo <code>&lt;ChordproViewer&gt;</code>. Standalone ou no shell do
+        O mesmo <code>&lt;TitanChordpro&gt;</code>. Standalone ou no shell do
         consumer. Uma cifra ou uma apresentação ao vivo.
       </p>
       <p class="ephemeral" data-demo-ephemeral>

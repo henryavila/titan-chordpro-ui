@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
@@ -32,10 +32,10 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
 </script>
 
 <template>
-  <div class="cpv-sheet" :class="{ 'is-compact': compact }">
-    <div class="cpv-scrim" @click="emit('close')" />
+  <div class="titan-chordpro-sheet" :class="{ 'is-compact': compact }">
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
     <div
-      class="cpv-dialog cpv-veil-2"
+      class="titan-chordpro-dialog titan-chordpro-veil-2"
       role="dialog"
       aria-modal="true"
       aria-label="Exportar"
@@ -44,7 +44,7 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
         <span style="font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">
           Exportar {{ exportKeyNote }}
         </span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
       </div>
       <div v-if="hasOverlay" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;">
         <button
@@ -68,23 +68,23 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
       </div>
       <button
         data-export="cho"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;"
         @click="emit('cho')"
       >
         <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.cho</span>
         ChordPro
       </button>
-      <button data-export="bundle" class="cpv-surface-btn" type="button" :disabled="bundleBusy"
+      <button data-export="bundle" class="titan-chordpro-surface-btn" type="button" :disabled="bundleBusy"
         style="width:100%;display:flex;align-items:center;gap:12px;text-align:left" @click="emit('bundle')">
         <span style="font-family:monospace;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px">ZIP</span>
         <span>Cifra completa <small style="display:block;color:var(--muted);font-weight:400">ChordPro, solos, imagens e áudios · offline</small></span>
-        <span v-if="bundleBusy" class="cpv-spin" style="width:14px;height:14px;margin-left:auto" />
+        <span v-if="bundleBusy" class="titan-chordpro-spin" style="width:14px;height:14px;margin-left:auto" />
       </button>
       <p v-if="bundleError" role="alert" style="font-size:13px;padding:0 4px">{{ bundleError }}</p>
       <button
         data-export="pdf"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;"
         :disabled="pdfBusy"
         @click="hasNotation ? (confirmPdf = true) : emit('pdf', 'score')"
@@ -93,7 +93,7 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
         Documento
         <span style="flex:1;" />
         <span v-if="pdfBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
-          <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
+          <span class="titan-chordpro-spin" style="width:14px;height:14px;" />gerando…
         </span>
       </button>
       <div v-if="confirmPdf" style="padding:12px 2px" data-pdf-confirm>
@@ -104,14 +104,14 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
             <input v-model="notation" type="radio" :name="notationGroup" :value="choice[0]">{{ choice[1] }}
           </label>
         </fieldset>
-        <button type="button" class="cpv-surface-btn" data-pdf-download :disabled="pdfBusy" @click="emit('pdf', notation)">
+        <button type="button" class="titan-chordpro-surface-btn" data-pdf-download :disabled="pdfBusy" @click="emit('pdf', notation)">
           {{ pdfBusy ? 'Gerando PDF…' : 'Gerar PDF' }}
         </button>
       </div>
       <p v-if="pdfError" role="alert" style="font-size:13px;padding:0 4px">{{ pdfError }}</p>
       <button
         data-export="slides"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         style="width:100%;display:flex;align-items:center;gap:12px;text-align:left;"
         @click="emit('slides')"
       >
@@ -119,7 +119,7 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
         Slide Louvor JA
         <span style="flex:1;" />
         <span v-if="slidesBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
-          <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
+          <span class="titan-chordpro-spin" style="width:14px;height:14px;" />gerando…
         </span>
       </button>
     </div>

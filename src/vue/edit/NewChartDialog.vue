@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import {
   convert, detect, durationFromYoutubeHtml, hostOk, maskDurationMmSs, missingOf, MISSING_LABEL,
   normalizeDurationMmSs, readMeta, rewriteToKey, titleFromUrl, writeMeta,
   type ChartMeta, type KeyRewriteOffer, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
-import type { CpvIconName } from '../icon/paths'
+import type { TitanChordproIconName } from '../icon/paths'
 
 /**
  * A song with no chart is not a dead end: whoever may write for everyone starts
@@ -50,7 +50,7 @@ const BLANK_NOTE =
   'Cifra em branco. Identifique a música e o editor abre com INTRODUÇÃO e Verso 1 — é só digitar por cima e inserir o resto.'
 
 type Origin = 'url' | 'file' | 'text'
-const ORIGINS: Array<{ id: Origin; title: string; hint: string; icon: CpvIconName }> = [
+const ORIGINS: Array<{ id: Origin; title: string; hint: string; icon: TitanChordproIconName }> = [
   { id: 'url', title: 'Cifra Club', hint: 'Link da página', icon: 'link' },
   { id: 'file', title: 'Arquivo', hint: '.cho, texto ou PDF', icon: 'fileInput' },
   { id: 'text', title: 'Texto', hint: 'Colar a cifra', icon: 'alignLeft' },
@@ -388,14 +388,14 @@ onMounted(() => {
     :style="{ alignItems: geom.align, padding: geom.wrapPad }"
     style="position:absolute;inset:0;z-index:40;display:flex;justify-content:center;"
   >
-    <div class="cpv-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
+    <div class="titan-chordpro-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Nova cifra"
       data-new-chart
       :style="{ maxWidth: geom.max, maxHeight: geom.maxH, padding: geom.pad, borderRadius: geom.radius, background: 'var(--canvas)' }"
-      style="position:relative;width:100%;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;animation:cpv-rise .2s ease-out;"
+      style="position:relative;width:100%;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;animation:titan-chordpro-rise .2s ease-out;"
     >
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
         <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
@@ -403,7 +403,7 @@ onMounted(() => {
           <span v-if="headline" style="font-size:20px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;">{{ headline }}</span>
           <span v-if="step === 'import'" style="font-size:12.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ lede }}</span>
         </div>
-        <button class="cpv-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="16" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
       </div>
 
       <!-- Step one: where the chart comes from. Cifra Club is the normal way in. -->
@@ -444,7 +444,7 @@ onMounted(() => {
             style="width:100%;height:48px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;"
             @click="runUrl"
           >
-            <span v-if="busy" class="cpv-spin" style="width:14px;height:14px;" />{{ busy ? 'Buscando…' : 'Buscar cifra' }}
+            <span v-if="busy" class="titan-chordpro-spin" style="width:14px;height:14px;" />{{ busy ? 'Buscando…' : 'Buscar cifra' }}
           </button>
         </div>
 
@@ -458,11 +458,11 @@ onMounted(() => {
           @dragleave="drag = false"
           @drop="onDrop"
         >
-          <span style="width:40px;height:40px;border-radius:12px;background:var(--chord-soft);color:var(--chord);display:flex;align-items:center;justify-content:center;"><CpvIcon name="fileInput" :size="18" /></span>
+          <span style="width:40px;height:40px;border-radius:12px;background:var(--chord-soft);color:var(--chord);display:flex;align-items:center;justify-content:center;"><TitanChordproIcon name="fileInput" :size="18" /></span>
           <span style="font-size:14.5px;font-weight:700;">{{ busy ? 'Lendo o arquivo…' : drag ? 'Solte aqui' : 'Solte o arquivo ou toque para escolher' }}</span>
           <span style="font-size:11.5px;line-height:1.5;color:var(--muted);max-width:280px;text-wrap:pretty;">ChordPro, OnSong, texto com acordes sobre a letra{{ readPdf ? ', ou PDF que tenha texto de verdade.' : '.' }}</span>
           <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-            <span v-for="ext in readPdf ? ['.cho', '.txt', '.pro', 'PDF com texto'] : ['.cho', '.txt', '.pro']" :key="ext" style="font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">{{ ext }}</span>
+            <span v-for="ext in readPdf ? ['.cho', '.txt', '.pro', 'PDF com texto'] : ['.cho', '.txt', '.pro']" :key="ext" style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">{{ ext }}</span>
           </span>
           <input ref="fileEl" type="file" accept=".cho,.crd,.chopro,.pro,.txt,.onsong,.pdf,text/plain,application/pdf" style="display:none;" @change="onFile" />
         </div>
@@ -474,7 +474,7 @@ onMounted(() => {
             data-nova-text
             placeholder="Cole aqui a cifra — ChordPro, OnSong ou acordes sobre a letra."
             :style="{ height: geom.textH }"
-            style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--canvas);color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12px;line-height:1.6;resize:vertical;"
+            style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--canvas);color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12px;line-height:1.6;resize:vertical;"
           />
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <button data-nova-text-go style="flex:1;min-width:140px;height:48px;padding:0 18px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;" @click="runText">Converter</button>
@@ -499,7 +499,7 @@ onMounted(() => {
               style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
               @click="pickTab(o.id)"
             >
-              <span style="flex:none;width:28px;height:28px;border-radius:9px;background:var(--hover);color:var(--muted);display:flex;align-items:center;justify-content:center;"><CpvIcon :name="o.icon" :size="14" /></span>
+              <span style="flex:none;width:28px;height:28px;border-radius:9px;background:var(--hover);color:var(--muted);display:flex;align-items:center;justify-content:center;"><TitanChordproIcon :name="o.icon" :size="14" /></span>
               <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
                 <span style="font-size:13px;font-weight:700;">{{ o.title }}</span>
                 <span style="font-size:11px;line-height:1.35;color:var(--muted);">{{ o.hint }}</span>
@@ -569,7 +569,7 @@ onMounted(() => {
               aria-label="Duração em minutos e segundos"
               data-nova-duration
               :style="{ fontSize: meta.duration ? '22px' : '16px' }"
-              style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
+              style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
               @input="onDurationInput"
               @blur="onDurationBlur"
             />
@@ -590,9 +590,9 @@ onMounted(() => {
           <div :style="{ borderColor: edge('tempo') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
             <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Andamento {{ flag('tempo') }}</span>
             <div style="display:flex;align-items:center;gap:8px;">
-              <button class="cpv-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
-              <input :value="meta.tempo ?? ''" inputmode="numeric" placeholder="—" data-nova-bpm style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;" @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))" />
-              <button class="cpv-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
+              <button class="titan-chordpro-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
+              <input :value="meta.tempo ?? ''" inputmode="numeric" placeholder="—" data-nova-bpm style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;" @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))" />
+              <button class="titan-chordpro-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
               <span style="font-size:10.5px;color:var(--muted);">bpm</span>
             </div>
             <button data-nova-tap style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="tapTempo">{{ tapLabel }}</button>
@@ -601,7 +601,7 @@ onMounted(() => {
           <div :style="{ borderColor: edge('time') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
             <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Compasso {{ flag('time') }}</span>
             <div style="display:flex;gap:5px;flex-wrap:wrap;">
-              <button v-for="t in TIMES" :key="t" :data-time-chip="t" :style="chip(meta.time === t)" style="height:32px;padding:0 12px;border:1px solid;border-radius:10px;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;" @click="setMeta('time', t)">{{ t }}</button>
+              <button v-for="t in TIMES" :key="t" :data-time-chip="t" :style="chip(meta.time === t)" style="height:32px;padding:0 12px;border:1px solid;border-radius:10px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;" @click="setMeta('time', t)">{{ t }}</button>
             </div>
           </div>
         </div>
@@ -616,11 +616,11 @@ onMounted(() => {
             >Trocar</button>
           </div>
           <div v-if="!showKeyPad" style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
+            <span style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
           </div>
           <template v-else>
             <div style="display:flex;flex-wrap:wrap;gap:4px;">
-              <button v-for="r in SHARP" :key="r" :data-key-chip="r" :style="chip(keyRoot === r)" style="min-width:34px;height:30px;padding:0 7px;border:1px solid;border-radius:9px;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;" @click="pickKey(r)">{{ r }}</button>
+              <button v-for="r in SHARP" :key="r" :data-key-chip="r" :style="chip(keyRoot === r)" style="min-width:34px;height:30px;padding:0 7px;border:1px solid;border-radius:9px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;" @click="pickKey(r)">{{ r }}</button>
             </div>
             <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
           </template>
@@ -628,7 +628,7 @@ onMounted(() => {
 
         <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
-          <input :value="meta.x_titan_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)" />
+          <input :value="meta.x_titan_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)" />
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">

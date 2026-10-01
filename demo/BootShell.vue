@@ -6,20 +6,20 @@ withDefaults(defineProps<{ variant?: 'standalone' | 'site' }>(), {
 
 <template>
   <div
-    class="cpv-boot"
+    class="titan-chordpro-boot"
     :data-boot-theme="variant"
     data-boot-shell
     role="status"
     aria-busy="true"
     aria-live="polite"
   >
-    <div class="cpv-boot-head">
-      <span class="cpv-boot-kicker">titan-chordpro-ui</span>
-      <span class="cpv-boot-title">Cifra</span>
+    <div class="titan-chordpro-boot-head">
+      <span class="titan-chordpro-boot-kicker">titan-chordpro-ui</span>
+      <span class="titan-chordpro-boot-title">Cifra</span>
     </div>
-    <div class="cpv-boot-page">
-      <div class="cpv-boot-spin" aria-hidden="true" />
-      <p class="cpv-boot-msg">Preparando a cifra…</p>
+    <div class="titan-chordpro-boot-page">
+      <div class="titan-chordpro-boot-spin" aria-hidden="true" />
+      <p class="titan-chordpro-boot-msg">Preparando a cifra…</p>
     </div>
   </div>
 </template>

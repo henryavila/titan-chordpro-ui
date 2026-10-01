@@ -20,8 +20,9 @@ describe('renderHtml', () => {
       expected = html
     }
     expect(html).toBe(expected)
-    expect(html).toContain('data-cpv-scroll')
-    expect(html).toContain('cpv')
+    expect(html).toContain('data-titan-chordpro-scroll')
+    expect(html).toContain('titan-chordpro')
+    expect(html).not.toMatch(/data-cpv-|class="(?:cpv|chordpro-content|song-content|lyrics-line|comment-line|chorus-section)\b/)
   })
 
   it('does not strip rehearsal comments', () => {
@@ -54,7 +55,7 @@ describe('renderHtml', () => {
     const src = loadFixture(JESUS_1)
     const html = renderHtml(parse(src), { theme: 'default' })
     const sourceChords = (src.match(/\[[^\]]+\]/g) ?? []).length
-    const htmlChords = (html.match(/class="chord /g) ?? []).length
+    const htmlChords = (html.match(/class="titan-chordpro-chord(?: |")/g) ?? []).length
     expect(htmlChords).toBeGreaterThanOrEqual(sourceChords)
   })
 })

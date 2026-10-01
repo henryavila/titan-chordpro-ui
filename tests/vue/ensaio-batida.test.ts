@@ -1,6 +1,6 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { withDuration } from '../helpers/load-fixture'
 
@@ -23,15 +23,15 @@ async function viewer() {
   const root = document.createElement('div')
   root.style.height = '640px'
   document.body.appendChild(root)
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: CHART, autoHide: false, storage: memoryStore() },
     attachTo: root,
   })
   mounted.push(w)
   await flushPromises()
   // Give layout room so Rolar is enabled.
-  Object.defineProperty(w.get('[data-cpv-root]').element, 'clientHeight', { value: 400 })
-  const page = w.find('.cpv-page').element as HTMLElement
+  Object.defineProperty(w.get('[data-titan-chordpro-root]').element, 'clientHeight', { value: 400 })
+  const page = w.find('.titan-chordpro-page').element as HTMLElement
   Object.defineProperty(page, 'scrollHeight', { value: 2000, configurable: true })
   await flushPromises()
   return w
@@ -49,12 +49,12 @@ describe('Ensaio Batida + Rolar silencioso', () => {
     await w.get('[data-ensaio-batida]').trigger('click')
     await flushPromises()
     expect(w.find('[data-ensaio-batida]').text()).toMatch(/Sair/i)
-    expect(w.find('[data-strum-strip]').exists() || w.find('.cpv-strum-dock').exists()).toBe(true)
+    expect(w.find('[data-strum-strip]').exists() || w.find('.titan-chordpro-strum-dock').exists()).toBe(true)
   })
 
   it('Fonte Batida in the metronome maps to prefs without forcing Rolar audio', async () => {
     const storage = memoryStore()
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: CHART, autoHide: false, storage },
       attachTo: document.body,
     })
@@ -65,6 +65,6 @@ describe('Ensaio Batida + Rolar silencioso', () => {
     await flushPromises()
     await w.get('[data-met-source="batida"]').trigger('click')
     await flushPromises()
-    expect(JSON.parse(storage.get('cpv:user-preferences')!)).toMatchObject({ metStrumSound: true })
+    expect(JSON.parse(storage.get('titan-chordpro:user-preferences')!)).toMatchObject({ metStrumSound: true })
   })
 })

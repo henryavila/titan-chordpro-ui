@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import type { LintResult } from '@henryavila/titan-chordpro-ui'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 const props = defineProps<{
   source: string
@@ -86,7 +86,7 @@ function onResize(e: PointerEvent) {
   e.preventDefault()
   const y0 = e.clientY
   const h0 = height.value
-  const host = (e.currentTarget as HTMLElement).closest('.cpv-root') as HTMLElement | null
+  const host = (e.currentTarget as HTMLElement).closest('.titan-chordpro-root') as HTMLElement | null
   const max = (host ? host.clientHeight : 700) - 150
   const move = (ev: PointerEvent) => {
     height.value = Math.max(150, Math.min(max, h0 + (y0 - ev.clientY)))
@@ -101,11 +101,11 @@ function onResize(e: PointerEvent) {
 </script>
 
 <template>
-  <div class="cpv-src" :style="{ height: `${height}px` }">
+  <div class="titan-chordpro-src" :style="{ height: `${height}px` }">
     <div
       role="separator"
       aria-label="Redimensionar painel"
-      class="cpv-src-grip"
+      class="titan-chordpro-src-grip"
       @pointerdown="onResize"
     >
       <span />
@@ -128,7 +128,7 @@ function onResize(e: PointerEvent) {
         style="height:30px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;"
         @click="jumpToSel"
       >Ir para {{ sel.label }}</button>
-      <button class="cpv-ghost" aria-label="Fechar painel de source" style="width:30px;height:30px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
+      <button class="titan-chordpro-ghost" aria-label="Fechar painel de source" style="width:30px;height:30px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
     </div>
     <textarea
       ref="ta"

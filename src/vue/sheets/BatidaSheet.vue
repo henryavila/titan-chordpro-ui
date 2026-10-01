@@ -24,7 +24,7 @@ import {
   type StrumPreset,
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import BatidaPresets from '../edit/BatidaPresets.vue'
 import BatidaSlotPicker from '../edit/BatidaSlotPicker.vue'
 import { slotIndexAtClock } from '../use/useStrumSound'
@@ -439,13 +439,13 @@ function save() {
 
 <template>
   <div
-    class="cpv-sheet batida-sheet-root"
+    class="titan-chordpro-sheet batida-sheet-root"
     :class="{ 'is-compact': compact }"
     style="z-index:28;"
   >
-    <div class="cpv-scrim" data-batida-scrim @click="emit('close')" />
+    <div class="titan-chordpro-scrim" data-batida-scrim @click="emit('close')" />
     <div
-      class="cpv-veil-2 batida-sheet-panel"
+      class="titan-chordpro-veil-2 batida-sheet-panel"
       :class="{ 'is-compact': compact }"
       role="dialog"
       aria-label="Batida"
@@ -455,8 +455,8 @@ function save() {
       <div v-if="compact" class="batida-sheet-grab" />
       <div class="batida-sheet-head">
         <span class="batida-sheet-kicker">Batida</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
-          <CpvIcon name="x" :size="16" />
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
+          <TitanChordproIcon name="x" :size="16" />
         </button>
       </div>
 
@@ -651,13 +651,13 @@ function save() {
 
     <div
       v-if="pendingPresetId"
-      class="cpv-sheet"
+      class="titan-chordpro-sheet"
       style="z-index:32;"
       data-batida-preset-replace-dialog
     >
-      <div class="cpv-scrim" data-batida-preset-replace-scrim @click="cancelPendingPreset" />
+      <div class="titan-chordpro-scrim" data-batida-preset-replace-scrim @click="cancelPendingPreset" />
       <div
-        class="cpv-dialog cpv-veil-2"
+        class="titan-chordpro-dialog titan-chordpro-veil-2"
         role="dialog"
         aria-modal="true"
         aria-label="Substituir batida"
@@ -671,7 +671,7 @@ function save() {
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:2px;">
           <button
             type="button"
-            class="cpv-ghost"
+            class="titan-chordpro-ghost"
             data-batida-preset-replace-cancel
             style="height:38px;padding:0 14px;border-radius:11px;color:var(--muted);font-size:13px;font-weight:600;"
             @click="cancelPendingPreset"
@@ -688,13 +688,13 @@ function save() {
 
     <div
       v-if="presetNameOpen"
-      class="cpv-sheet"
+      class="titan-chordpro-sheet"
       style="z-index:32;"
       data-batida-preset-name-dialog
     >
-      <div class="cpv-scrim" data-batida-preset-name-scrim @click="closePresetName" />
+      <div class="titan-chordpro-scrim" data-batida-preset-name-scrim @click="closePresetName" />
       <div
-        class="cpv-dialog cpv-veil-2"
+        class="titan-chordpro-dialog titan-chordpro-veil-2"
         role="dialog"
         aria-modal="true"
         aria-label="Salvar como preset"
@@ -726,7 +726,7 @@ function save() {
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:2px;">
           <button
             type="button"
-            class="cpv-ghost"
+            class="titan-chordpro-ghost"
             data-batida-preset-name-cancel
             style="height:38px;padding:0 14px;border-radius:11px;color:var(--muted);font-size:13px;font-weight:600;"
             @click="closePresetName"
@@ -756,7 +756,7 @@ function save() {
   gap: 16px;
   padding: 22px 24px 20px;
   border-radius: 20px;
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
   box-shadow: var(--shadow);
 }
 .batida-sheet-panel.is-compact {
@@ -940,7 +940,7 @@ function save() {
   display: flex;
   align-items: flex-end;
   padding-bottom: 10px;
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
@@ -962,7 +962,7 @@ function save() {
 .batida-beat-num {
   flex: none;
   width: 22px;
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 13px;
   font-weight: 700;
   color: var(--muted);

@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /**
@@ -25,7 +25,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -37,7 +37,7 @@ afterEach(() => {
 })
 
 async function viewerAt(width: number) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false, songId: 'jesus-1' },
     attachTo: document.body,
   })
@@ -94,8 +94,8 @@ describe('dock Rolar fill', () => {
   })
 
   it('Parar on the wide bar uses the pill, so rolling is not the same green', async () => {
-    const { default: CpvWideDock } = await import('../../src/vue/chrome/CpvWideDock.vue')
-    const w = mount(CpvWideDock, {
+    const { default: TitanChordproWideDock } = await import('../../src/vue/chrome/TitanChordproWideDock.vue')
+    const w = mount(TitanChordproWideDock, {
       props: {
         hidden: false,
         showMine: false,

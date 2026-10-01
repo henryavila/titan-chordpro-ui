@@ -247,7 +247,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
 
     if (touch) {
       ring = document.createElement('span')
-      ring.className = 'cpv-pill-ring'
+      ring.className = 'titan-chordpro-pill-ring'
       pill.appendChild(ring)
       const tick = () => {
         const p = Math.min(1, (performance.now() - t0) / HOLD)
@@ -738,7 +738,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
     if (!opts.editing.value || !root) return
     for (const row of root.querySelectorAll<HTMLElement>('[data-row]')) {
       if (row.hasAttribute('data-played')) continue
-      if (!row.querySelector('.cpv-pill:not(.cpv-pill--flow)')) continue
+      if (!row.querySelector('.titan-chordpro-pill:not(.titan-chordpro-pill--flow)')) continue
       const rr = row.getBoundingClientRect()
       const chars = row.querySelectorAll<HTMLElement>('[data-i]')
       const last = chars.length ? chars[chars.length - 1]?.getBoundingClientRect() : null

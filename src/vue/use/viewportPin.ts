@@ -66,7 +66,7 @@ export function visualViewportInsets(parent: RectLike, view: ViewLike): EdgeInse
 
 /** Positioned ancestor the overlay is laid out against (viewer root, then CSS containing block). */
 function overlayContainingBlock(el: HTMLElement): HTMLElement | null {
-  const root = el.closest('.cpv-root, [data-cpv-root]')
+  const root = el.closest('.titan-chordpro-root, [data-titan-chordpro-root]')
   if (root instanceof HTMLElement) return root
   if (el.offsetParent instanceof HTMLElement) return el.offsetParent
   let p = el.parentElement

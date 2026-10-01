@@ -2,7 +2,10 @@
 
 > **Audience:** agent or human executing the rename.  
 > **Locked:** 2026-08-28 (NAMING); execution 2026-08-29.  
-> **SoT:** [`NAMING.md`](./NAMING.md) · sibling gen: [`../titan-chordpro-gen/docs/REBRAND-HANDOFF.md`](../../titan-chordpro-gen/docs/REBRAND-HANDOFF.md).
+> **SoT:** [`NAMING.md`](./NAMING.md) · sibling gen: [`titan-chordpro-gen`](https://github.com/henryavila/titan-chordpro-gen).
+> **Historical handoff:** the 2026-08 decision to keep `ChordproViewer`,
+> `cpv-*` and `ViewerController` was superseded by the 2026-10 solution identity
+> in [`NAMING.md`](./NAMING.md). Do not use those older locks for new code.
 
 ---
 
@@ -26,9 +29,9 @@
 | npm package | **`@henryavila/titan-chordpro-ui`** (scoped; same publish pattern as `@henryavila/mdprobe`) |
 | exports | `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
 | CLI bin | **`titan-chordpro-ui`** |
-| Vue SFC | **`ChordproViewer`** (keep — SDA mental model) |
-| CSS / DOM prefix | **`cpv-*`**, `[data-cpv-scroll]` (keep — technical, stable) |
-| Controller | `createViewerController` / `ViewerController` (keep — domain “view session”) |
+| Vue SFC (updated 2026-10) | **`TitanChordpro`** |
+| CSS / DOM prefix (updated 2026-10) | **`titan-chordpro-*`**, `[data-titan-chordpro-scroll]` |
+| Controller (updated 2026-10) | `createTitanChordproController` / `TitanChordproController` |
 
 ---
 
@@ -94,7 +97,7 @@
 - Do **not** rename generator here (own handoff).
 - Do **not** create `titan-chordpro` app shell.
 - Do **not** edit `sda-v2/frontend` runtime.
-- Do **not** change `--cpv-*` / `ChordproViewer` symbol in this pass.
+- The 2026-08 pass did not change `--cpv-*` / `ChordproViewer`; the 2026-10 solution rebrand replaces them without aliases.
 - Do **not** rewrite git history.
 
 ---
@@ -105,7 +108,7 @@
 chore: rebrand repository to titan-chordpro-ui
 
 - Docs/SPEC/AGENTS/CLI/npm identity → titan-chordpro-ui
-- Keep ChordproViewer + cpv-* technical names
+- The 2026-08 pass kept the then-current component and CSS names; see `NAMING.md` for the current names.
 - Sibling gen + sda design-handoff path updates
 - See docs/REBRAND-HANDOFF.md
 ```

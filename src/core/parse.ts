@@ -8,7 +8,7 @@ import {
 } from './define'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
-import type { ChordProLine, ChordProSection, ChordProView, SectionKind } from './types'
+import type { TitanChordproLine, TitanChordproSection, TitanChordproDocument, SectionKind } from './types'
 
 type RawLine = { li0: number; li1: number } & (
   | {
@@ -59,13 +59,13 @@ function splitLyricLine(raw: string): Array<{ chord?: string; lyric: string }> {
 }
 
 function parseRaw(src: string): {
-  meta: ChordProView['meta']
+  meta: TitanChordproDocument['meta']
   lines: RawLine[]
   /** `{soc}` line → the `{eoc}` line that closes it. */
   eocOf: Record<number, number>
   defines: ChordDefine[]
 } {
-  const meta: ChordProView['meta'] = {}
+  const meta: TitanChordproDocument['meta'] = {}
   const lines: RawLine[] = []
   const defines: ChordDefine[] = []
   const raws = src.split('\n')
@@ -210,15 +210,15 @@ function parseRaw(src: string): {
   return { meta, lines, eocOf, defines }
 }
 
-function toSections(raw: RawLine[]): ChordProSection[] {
-  const sections: ChordProSection[] = []
-  let current: ChordProSection | null = null
+function toSections(raw: RawLine[]): TitanChordproSection[] {
+  const sections: TitanChordproSection[] = []
+  let current: TitanChordproSection | null = null
 
   const flush = () => {
     if (current) sections.push(current)
     current = null
   }
-  const solo = (kind: SectionKind, line: ChordProLine, label?: string) => {
+  const solo = (kind: SectionKind, line: TitanChordproLine, label?: string) => {
     flush()
     sections.push({ kind, label, lines: [line] })
   }
@@ -252,7 +252,7 @@ function toSections(raw: RawLine[]): ChordProSection[] {
     }
     const kind: SectionKind = line.inChorus ? 'chorus' : 'verse'
     if (current && current.kind !== kind) flush()
-    const cur: ChordProSection = current ?? { kind, lines: [] }
+    const cur: TitanChordproSection = current ?? { kind, lines: [] }
     current = cur
     cur.lines.push({
       type: 'lyrics',
@@ -268,14 +268,14 @@ function toSections(raw: RawLine[]): ChordProSection[] {
   return sections
 }
 
-function applyShape(view: ChordProView, semis: number): ChordProView {
+function applyShape(view: TitanChordproDocument, semis: number): TitanChordproDocument {
   if (!semis) {
     return { ...view, transposeSemitones: 0, displayKey: view.meta.key ?? null }
   }
   const flats = usesFlats(view.meta.key)
   const sections = view.sections.map((sec) => ({
     ...sec,
-    lines: sec.lines.map((line): ChordProLine => {
+    lines: sec.lines.map((line): TitanChordproLine => {
       if (line.type === 'lyrics') {
         return {
           ...line,
@@ -318,7 +318,7 @@ export function normalizeSource(source: string): string {
   return looksLikeOnSong(text) ? normalizeOnSong(text) : text
 }
 
-export function parse(source: string): ChordProView {
+export function parse(source: string): TitanChordproDocument {
   const text = normalizeEol(source ?? '')
   const normalized = looksLikeOnSong(text) ? normalizeOnSong(text) : text
   const { meta, lines, eocOf, defines } = parseRaw(normalized)
@@ -333,11 +333,11 @@ export function parse(source: string): ChordProView {
   }
 }
 
-export function transpose(view: ChordProView, semitones: number): ChordProView {
+export function transpose(view: TitanChordproDocument, semitones: number): TitanChordproDocument {
   return applyShape(parse(view.source), semitones)
 }
 
-export function setKey(view: ChordProView, targetKey: string): ChordProView {
+export function setKey(view: TitanChordproDocument, targetKey: string): TitanChordproDocument {
   const from = view.meta.key
   if (!from) throw new Error('setKey requires a source key')
   return transpose(view, semitoneDelta(from, targetKey))

@@ -36,7 +36,7 @@ O medo de “ficar preso no Vue” só se materializa se transpose/PDF/HTML/scro
 ### A) Core headless + bindings por framework *(padrão vencedor na indústria)*
 
 ```
-titan-chordpro-ui          → parse, transpose, renderHtml, pdf, scroll math, createViewerController()
+titan-chordpro-ui          → parse, transpose, renderHtml, pdf, scroll math, createTitanChordproController()
 titan-chordpro-ui/vue      → SFC/composables (oficial, v0.1)
 titan-chordpro-ui/react    → hooks/components (só quando houver demanda — binding futuro)
 titan-chordpro-ui/element  → CE opcional (só se HTML drop-in virar requisito)
@@ -90,10 +90,10 @@ Alguém copia o repo Vue e reescreve em React.
 
 | Desafio | Gravidade | Mitigação **agora** (sem escrever React) |
 |---|---|---|
-| Lógica presa em `ref`/`watch` Vue | Alta | Core TS + `createViewerController()` com `getState/subscribe/dispatch` |
+| Lógica presa em `ref`/`watch` Vue | Alta | Core TS + `createTitanChordproController()` com `getState/subscribe/dispatch` |
 | HTML só existe como template Vue | Alta | `renderHtml(view, { theme })` → **string** estável; Vue só injeta |
-| CSS acoplado a Nuxt UI / Tailwind do SDA | Alta | Tokens `--cpv-*`, classes `cpv`, tema claro/escuro documentados |
-| Auto-scroll assume DOM do SFC | Média | Contrato: root `[data-cpv-scroll]`; controller expõe `attachScroll(el)` ou host passa el |
+| CSS acoplado a Nuxt UI / Tailwind do SDA | Alta | Tokens `--titan-chordpro-*`, classes `titan-chordpro`, tema claro/escuro documentados |
+| Auto-scroll assume DOM do SFC | Média | Contrato: root `[data-titan-chordpro-scroll]`; controller expõe `attachScroll(el)` ou host passa el |
 | Eventos (“tom mudou”, “export”) | Média | Callbacks/DOM events no contrato do shell, não só `emit` Vue |
 | PDF/jsPDF no bundle Vue | Média | Entry `core/pdf` lazy; bindings só chamam |
 | Duas UIs de controles a manter | Alta **depois** | Aceitar: toolbar React ≠ copy-paste do SFC; reusa **controller + HTML cifra** |
@@ -120,7 +120,7 @@ Investimento pequeno, alto retorno — **compatível com Vue-first total na UI**
 ### Camada 1 — Core (obrigatório)
 
 - [ ] Zero imports Vue/React em `src/core` (grep/CI, como o AGENTS já intuía).
-- [ ] `ChordProView` JSON-serializável (já no SPEC legado).
+- [ ] `TitanChordproDocument` JSON-serializável (já no SPEC legado).
 - [ ] `parse` / `transpose` / `setKey?` / `renderHtml` / filenames / scroll math / `renderPdf`.
 - [ ] Fixtures + testes de aceite no core.
 
@@ -129,21 +129,21 @@ Investimento pequeno, alto retorno — **compatível com Vue-first total na UI**
 Algo no espírito:
 
 ```ts
-const c = createViewerController({ source })
+const c = createTitanChordproController({ source })
 c.subscribe((state) => { /* displayKey, html, theme, scrollSpeed */ })
 c.dispatch({ type: 'transpose', semitones: 1 })
 c.dispatch({ type: 'setTheme', theme: 'dark' | 'light' | 'auto' })
 c.attachScroll(element) // opcional
 ```
 
-Vue v0.1: composable fino `useChordproViewer()` → só adapta controller ↔ `ref`/`computed`.  
-React depois: `useChordproViewer()` hooks → **mesmo** controller.
+Vue v0.1: composable fino `useTitanChordpro()` → só adapta controller ↔ `ref`/`computed`.
+React depois: `useTitanChordpro()` hooks → **mesmo** controller.
 
 Isso é a forma *leve* de “view plugável”: **a view é plugável porque o estado não é Vue**.
 
 ### Camada 3 — Contrato visual da cifra (obrigatório)
 
-- [ ] HTML estável + classes `cpv*` / legacy opcional.
+- [ ] HTML estável + classes `titan-chordpro*` / legacy opcional.
 - [ ] CSS variables documentadas (claro/escuro/auto).
 - [ ] Controles **fora** do HTML da cifra (shell do viewer), para ports refazerem botões sem tocar o miolo.
 

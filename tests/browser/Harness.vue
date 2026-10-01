@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { AUDIO_ART_MEDIA_PX, setAudioArt, setAudioUrl } from '../../src/core'
 import type { Lens } from '../../src/vue'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
 import refAudio from '../../demo/ref-audio.wav?url'
 import refPlayback from '../../demo/ref-audio-playback.wav?url'
@@ -143,7 +143,7 @@ const zonas = q.get('zonas') === '1'
         ? 'height:100dvh;min-height:560px;overflow:hidden;scroll-snap-align:start'
         : 'flex:1;min-height:0;position:relative'"
     >
-      <ChordproViewer
+      <TitanChordpro
         :source="source"
         :songs="songs"
         :theme="theme"

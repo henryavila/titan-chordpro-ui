@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { beatsInMeter, type StrumPattern } from '@henryavila/titan-chordpro-ui'
 import type { QueueOpCard, QueueRow } from '../use/useOverlay'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import StrumStrip from '../StrumStrip.vue'
 import ScoreReview from './ScoreReview.vue'
 
@@ -48,7 +48,7 @@ const emit = defineEmits<{
 <template>
   <!-- Three levels, never a flat list: whoever owns the charts answers one
        song at a time, and each adjustment is accepted on its own. -->
-  <div data-queue style="position:absolute;inset:0;z-index:41;display:flex;flex-direction:column;background:var(--canvas);animation:cpv-fade .16s ease;">
+  <div data-queue style="position:absolute;inset:0;z-index:41;display:flex;flex-direction:column;background:var(--canvas);animation:titan-chordpro-fade .16s ease;">
     <div style="flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-soft);">
       <button
         v-if="showBack"
@@ -56,7 +56,7 @@ const emit = defineEmits<{
         data-q-back
         style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
         @click="emit('back')"
-      ><CpvIcon name="chevronLeft" :size="16" /></button>
+      ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
       <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Sugestões dos músicos</span>
         <span style="font-size:15.5px;font-weight:700;color:var(--text);">{{ title }}</span>
@@ -73,13 +73,13 @@ const emit = defineEmits<{
       >Voltar à cifra</button>
     </div>
 
-    <div class="cpv-q-body">
+    <div class="titan-chordpro-q-body">
       <span v-if="empty" style="font-size:12.5px;color:var(--muted);">Nenhuma sugestão pendente.</span>
 
       <button
         v-for="s in level === 1 ? songs : []"
         :key="s.key"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         data-q-song
         style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;"
         @click="emit('pickSong', s.key)"
@@ -88,7 +88,7 @@ const emit = defineEmits<{
       <button
         v-for="s in level === 2 ? sugs : []"
         :key="s.key"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         data-q-sug
         style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;"
         @click="emit('pickSug', s.key)"
@@ -102,14 +102,14 @@ const emit = defineEmits<{
 
       <div
         v-if="level === 3 && ops.length"
-        class="cpv-q-batch"
+        class="titan-chordpro-q-batch"
         data-q-batch
       >
-        <div class="cpv-q-batch-head">
+        <div class="titan-chordpro-q-batch-head">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">
             Preview: {{ batchApplies ?? 0 }} encaixam{{ (batchConflicts ?? 0) > 0 ? ` · ${batchConflicts} conflito(s)` : '' }}
           </span>
-          <span class="cpv-q-batch-actions">
+          <span class="titan-chordpro-q-batch-actions">
             <button
               data-q-refuse-batch
               :disabled="busy"
@@ -124,7 +124,7 @@ const emit = defineEmits<{
             >Aceitar lote</button>
           </span>
         </div>
-        <div v-if="previewStrum?.length" class="cpv-q-strum" data-q-strum-preview>
+        <div v-if="previewStrum?.length" class="titan-chordpro-q-strum" data-q-strum-preview>
           <StrumStrip
             v-for="(p, i) in previewStrum"
             :key="`${p.label}-${i}`"
@@ -134,7 +134,7 @@ const emit = defineEmits<{
           />
           <span
             v-if="officialStrum?.length"
-            class="cpv-q-strum-legend"
+            class="titan-chordpro-q-strum-legend"
           >Destaque = mudou · seta riscada = era</span>
         </div>
       </div>
@@ -150,12 +150,12 @@ const emit = defineEmits<{
           <ScoreReview v-for="(score, i) in op.scores" :key="i" :previous="score.previous" :proposed="score.proposed"
             :attachment="score.attachment" :resolve-score="resolveScore" />
           <template v-if="!op.strum">
-            <span v-if="!op.scores.length || op.from !== '—'" class="cpv-op-line" style="color:var(--muted);white-space:normal;">{{ op.from }}</span>
-            <span v-if="!op.scores.length || op.to !== '—'" class="cpv-op-line" style="color:var(--chord);white-space:normal;">{{ op.to }}</span>
+            <span v-if="!op.scores.length || op.from !== '—'" class="titan-chordpro-op-line" style="color:var(--muted);white-space:normal;">{{ op.from }}</span>
+            <span v-if="!op.scores.length || op.to !== '—'" class="titan-chordpro-op-line" style="color:var(--chord);white-space:normal;">{{ op.to }}</span>
           </template>
           <span v-if="op.note" style="font-size:10.5px;color:var(--muted);">{{ op.note }}</span>
           <span v-if="op.warn" style="font-size:10.5px;font-weight:600;color:var(--danger);">{{ op.warn }}</span>
-          <div v-if="op.strum" class="cpv-q-strum" data-q-strum>
+          <div v-if="op.strum" class="titan-chordpro-q-strum" data-q-strum>
             <StrumStrip
               v-for="(p, i) in (op.strum.proposed.length ? op.strum.proposed : op.strum.previous)"
               :key="`${p.label}-${i}`"
@@ -166,7 +166,7 @@ const emit = defineEmits<{
             />
             <span
               v-if="op.strum.previous.length && op.strum.proposed.length"
-              class="cpv-q-strum-legend"
+              class="titan-chordpro-q-strum-legend"
             >Destaque = mudou · seta riscada = era</span>
           </div>
         </span>
@@ -190,7 +190,7 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.cpv-q-body {
+.titan-chordpro-q-body {
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -204,7 +204,7 @@ const emit = defineEmits<{
   width: 100%;
   margin: 0 auto;
 }
-.cpv-q-batch {
+.titan-chordpro-q-batch {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -214,19 +214,19 @@ const emit = defineEmits<{
   border-radius: 13px;
   background: var(--chord-soft);
 }
-.cpv-q-batch-head {
+.titan-chordpro-q-batch-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
-.cpv-q-batch-actions {
+.titan-chordpro-q-batch-actions {
   display: flex;
   gap: 6px;
   flex: none;
 }
-.cpv-q-strum {
+.titan-chordpro-q-strum {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -234,7 +234,7 @@ const emit = defineEmits<{
   width: 100%;
   max-width: 100%;
 }
-.cpv-q-strum-legend {
+.titan-chordpro-q-strum-legend {
   font-size: 10.5px;
   font-weight: 600;
   color: var(--muted);

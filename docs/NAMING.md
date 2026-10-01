@@ -4,14 +4,40 @@
 
 | Piece | Role | Repo (target name) | Stack |
 |---|---|---|---|
-| **UI** | Viewer **+** editor (one layer) | **`titan-chordpro-ui`** (npm: **`@henryavila/titan-chordpro-ui`**) | TypeScript / Vue |
-| **Generator** | Audio → `.chordpro` / `.cho` | **`titan-chordpro-gen`** — handoff: [`../titan-chordpro-gen/docs/REBRAND-HANDOFF.md`](../../titan-chordpro-gen/docs/REBRAND-HANDOFF.md) | Python |
+| **UI** | Leitura **+** edição (uma camada) | **`titan-chordpro-ui`** (npm: **`@henryavila/titan-chordpro-ui`**) | TypeScript / Vue |
+| **Generator** | Audio → `.chordpro` / `.cho` | **[`titan-chordpro-gen`](https://github.com/henryavila/titan-chordpro-gen)** | Python |
 | **App / studio** | Standalone Titan host (shell + editor + extras) | **`titan-chordpro`** (future; none today) | TBD |
 | **SDA** | Church product host — **first consumer** | `sda-v2` (consumes **ui** only) | Nuxt |
 
 **Layout:** **separate repos** (not a monorepo). Revisit monorepo only when **`titan-chordpro`** exists and wants to glue gen+ui in one CI.
 
-**This repo** is **`titan-chordpro-ui`** (formerly seed folder `chordpro-viewer`). Rebrand checklist: [`REBRAND-HANDOFF.md`](./REBRAND-HANDOFF.md).
+**This repo** is **`titan-chordpro-ui`** (formerly seed folder `chordpro-viewer`). The repository rename is recorded in the [historical handoff](./REBRAND-HANDOFF.md).
+
+## Solution identity (updated 2026-10-01)
+
+The code and the host-facing component are **TitanChordpro**. The repo, npm
+package and CLI remain `titan-chordpro-ui`; the future `titan-chordpro` app is
+still a separate host. This decision supersedes the component/CSS/controller
+locks in the 2026-08 repository handoff.
+
+| Surface | Current name |
+|---|---|
+| Vue component | `TitanChordpro` (`./vue`, named and default export) |
+| Parsed model | `TitanChordproDocument`, `TitanChordproSection`, `TitanChordproLine` |
+| Controller | `createTitanChordproController`, `TitanChordproController`, `TitanChordproState`, `TitanChordproAction` |
+| CSS / DOM | `titan-chordpro-*`, `--titan-chordpro-*`, `data-titan-chordpro-*` |
+| Stored keys | `titan-chordpro:*` via `STORE_KEYS` |
+
+No compatibility aliases are exported or emitted. Consumers must update
+component imports, TypeScript names, CSS overrides, DOM selectors and storage
+key mappings together; see [`CONSUMER.md`](./CONSUMER.md). Existing `cpv:*`
+data is not read by the package. A host that needs it must copy it to the new
+keys before updating. The `view` / `edit` modes, ChordPro input syntax,
+`x_titan_*` directives and `x///` clock marks retain their meaning and spelling.
+
+Dated handoffs, research and implementation plans retain the symbols they used
+at the time. They document history; this section and `CONSUMER.md` describe the
+current package contract.
 
 ## Refocus (2026-08-28)
 
@@ -27,7 +53,7 @@ Fluxo de adoção:
 ```
 titan-chordpro-ui  (este repo)
         │
-        ├─► sda-v2          (1º: embute viewer+editor na cifra)
+        ├─► sda-v2          (1º: embute leitura+edição da cifra)
         └─► titan-chordpro  (depois: app standalone Titan)
 ```
 

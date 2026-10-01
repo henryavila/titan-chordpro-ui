@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { memoryStore, readMeta } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 
 const observers: ((entries: unknown[]) => void)[] = []
 class TestRO {
@@ -39,7 +39,7 @@ async function mountAt(
   props: Record<string, unknown>,
   width = 900,
 ) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: NO_STRUM, autoHide: false, ...props },
     attachTo: document.body,
   })

@@ -1,7 +1,7 @@
 import { parse } from './parse'
 import { readMeta, writeMeta, type ChartMeta, type MetaKey } from './import-chordpro'
 import { lintSource } from './lint'
-import type { ChordProView } from './types'
+import type { TitanChordproDocument } from './types'
 
 export type SourceChangeReason = 'edit' | 'import' | 'undo' | 'redo' | 'meta'
 
@@ -9,7 +9,7 @@ export type MetaPatch = ChartMeta & { tempo?: string | number }
 
 export type SourceSession = {
   getSource: () => string
-  getView: () => ChordProView
+  getView: () => TitanChordproDocument
   replace: (next: string, reason?: SourceChangeReason) => void
   /**
    * Types into the source without opening an undo step. Free typing would

@@ -2,7 +2,7 @@
 import { nextTick, ref, watch } from 'vue'
 import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 import type { OpCard } from '../use/useOverlay'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -47,10 +47,10 @@ function statusLabel(s: Suggestion): string {
 <template>
   <!-- Every adjustment on its own, revertable on its own: a personal version
        that cannot be undone piece by piece is a fork, not a personalisation. -->
-  <div class="cpv-sheet" :class="{ 'is-compact': compact }" style="z-index:37;">
-    <div class="cpv-scrim" style="backdrop-filter:blur(5px);" @click="emit('close')" />
+  <div class="titan-chordpro-sheet" :class="{ 'is-compact': compact }" style="z-index:37;">
+    <div class="titan-chordpro-scrim" style="backdrop-filter:blur(5px);" @click="emit('close')" />
     <div
-      class="cpv-dialog cpv-veil-2"
+      class="titan-chordpro-dialog titan-chordpro-veil-2"
       role="dialog"
       aria-modal="true"
       aria-label="Minha versão"
@@ -59,7 +59,7 @@ function statusLabel(s: Suggestion): string {
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ mineLabel }}</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;border-radius:8px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:26px;height:26px;border-radius:8px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
       </div>
 
       <div
@@ -70,8 +70,8 @@ function statusLabel(s: Suggestion): string {
       >
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">{{ op.label }}</span>
-          <span v-if="op.from" class="cpv-op-line" style="color:var(--muted);">{{ op.from }}</span>
-          <span v-if="op.to" class="cpv-op-line" style="color:var(--chord);">{{ op.to }}</span>
+          <span v-if="op.from" class="titan-chordpro-op-line" style="color:var(--muted);">{{ op.from }}</span>
+          <span v-if="op.to" class="titan-chordpro-op-line" style="color:var(--chord);">{{ op.to }}</span>
           <span v-if="op.note" style="font-size:10.5px;color:var(--muted);">{{ op.note }}</span>
         </span>
         <button
@@ -111,14 +111,14 @@ function statusLabel(s: Suggestion): string {
           autocomplete="name"
           placeholder="Como o responsável deve te ver"
           :aria-invalid="nameError ? 'true' : 'false'"
-          :aria-describedby="nameError ? 'cpv-suggest-name-err' : undefined"
+          :aria-describedby="nameError ? 'titan-chordpro-suggest-name-err' : undefined"
           :style="{ borderColor: nameError ? 'var(--danger)' : 'var(--line)' }"
           style="width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:13px;"
           @input="emit('update:actorName', ($event.target as HTMLInputElement).value)"
         />
         <span
           v-if="nameError"
-          id="cpv-suggest-name-err"
+          id="titan-chordpro-suggest-name-err"
           data-suggest-name-error
           role="alert"
           style="font-size:12px;font-weight:600;color:var(--danger);line-height:1.35;"
@@ -154,7 +154,7 @@ function statusLabel(s: Suggestion): string {
       <button
         data-revert-all
         type="button"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         :disabled="suggesting"
         :style="{ color: revertAllDanger ? 'var(--danger)' : 'var(--text)' }"
         style="display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;border:0;border-radius:12px;font-size:12.5px;"

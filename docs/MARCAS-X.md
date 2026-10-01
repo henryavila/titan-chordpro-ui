@@ -111,7 +111,7 @@ O relógio do músico que **toca** continua a ver as marcas (lente desligada). A
 3. Resíduo de produção grudado na marca (`/_`, `/-`, `x...`) some com a marca.
 4. **Não** come sílaba (`cami/nhar`) nem a letra **x** dentro de palavra (`Exaltado`).
 
-Host / cantor: prop `lens="letra"` em `<ChordproViewer>` (ver [`CONSUMER.md`](./CONSUMER.md) §8). A escolha **persiste** entre músicas do ensaio (`songs`); não é estado por cifra.
+Host / cantor: prop `lens="letra"` em `<TitanChordpro>` (ver [`CONSUMER.md`](./CONSUMER.md) §8). A escolha **persiste** entre músicas do ensaio (`songs`); não é estado por cifra.
 
 ## Lint
 

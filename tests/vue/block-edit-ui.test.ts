@@ -1,13 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { ESCUTA, JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { normalizeSource, rowParts } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: { source: src(), theme: 'dark', autoHide: false, songId: 'jesus-1', ...props },
     attachTo: document.body,
   })
@@ -59,16 +59,16 @@ afterEach(() => localStorage.clear())
 describe('the editing surface', () => {
   it('opens a sung line like reading and marks the letter each chord is on', async () => {
     const w = await edit({ source: loadFixture(ESCUTA) })
-    const words = w.findAll('.cpv-reading-word')
+    const words = w.findAll('.titan-chordpro-reading-word')
     const lyricOf = (word: (typeof words)[number]) =>
-      word.findAll('.cpv-lyric').map(el => el.text()).join('').trim()
+      word.findAll('.titan-chordpro-lyric').map(el => el.text()).join('').trim()
     const cura = words.find(word => lyricOf(word) === 'cura')!
-    expect(cura.findAll('.cpv-pill--flow').map(p => p.text())).toEqual(['Bm', 'E'])
+    expect(cura.findAll('.titan-chordpro-pill--flow').map(p => p.text())).toEqual(['Bm', 'E'])
     expect(cura.findAll('[data-i][data-anchor]').map(el => el.text())).toEqual(['c', 'r'])
     const instrumento = words.find(word => lyricOf(word) === 'instrumento' && word.text().includes('Fsus4'))!
-    expect(instrumento.findAll('.cpv-pill--flow').map(p => p.text())).toEqual(['C', 'Fsus4', 'F'])
+    expect(instrumento.findAll('.titan-chordpro-pill--flow').map(p => p.text())).toEqual(['C', 'Fsus4', 'F'])
     expect(instrumento.findAll('[data-i][data-anchor]').map(el => el.text())).toEqual(['i', 'm', 't'])
-    expect(w.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    expect(w.findAll('.titan-chordpro-pill:not(.titan-chordpro-pill--flow)')).toHaveLength(0)
     w.unmount()
   })
 
@@ -77,7 +77,7 @@ describe('the editing surface', () => {
     const w = await edit({ source })
     const row = w.findAll('[data-row]').find(row => row.find('[data-anchor]:not([data-i])').exists())!
     const line = source.split('\n')[Number(row.attributes('data-row'))]!
-    expect(row.findAll('.cpv-pill--flow').at(-1)?.attributes('data-pill')).toBe(String(rowParts(line).plain.length))
+    expect(row.findAll('.titan-chordpro-pill--flow').at(-1)?.attributes('data-pill')).toBe(String(rowParts(line).plain.length))
     w.unmount()
   })
 
@@ -109,7 +109,7 @@ describe('the editing surface', () => {
     ].join('\n')
     const w = await edit({ source: src })
     const row = w.get('[data-played]')
-    expect(row.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual([
+    expect(row.findAll('.titan-chordpro-pill--flow').map((p) => p.text())).toEqual([
       'G/D',
       'D7(4)',
       'G',
@@ -118,12 +118,12 @@ describe('the editing surface', () => {
     ])
     expect(
       row
-        .findAll('.cpv-lyric')
+        .findAll('.titan-chordpro-lyric')
         .map((l) => l.text())
         .filter((t) => /[x/]/.test(t)),
     ).toEqual(['x///', 'x///', 'x///', 'x/', '//'])
-    expect(row.findAll('.cpv-reading-word').length).toBeGreaterThanOrEqual(5)
-    expect(row.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    expect(row.findAll('.titan-chordpro-reading-word').length).toBeGreaterThanOrEqual(5)
+    expect(row.findAll('.titan-chordpro-pill:not(.titan-chordpro-pill--flow)')).toHaveLength(0)
     // Each clock group carries a caret on its first mark.
     expect(
       row
@@ -200,7 +200,7 @@ describe('editing the words where they are read', () => {
     const row = w.findAll('[data-row]')[1]
     await row?.trigger('click')
     await flushPromises()
-    const input = w.get('.cpv-row-input')
+    const input = w.get('.titan-chordpro-row-input')
     const value = (input.element as HTMLInputElement).value
     // The whole line is offered, with its chords stripped out of the text.
     expect(value).not.toContain('[')
@@ -220,7 +220,7 @@ describe('editing the words where they are read', () => {
     const row = w.findAll('[data-row]')[1]
     await row?.trigger('click')
     await flushPromises()
-    const input = w.get('.cpv-row-input')
+    const input = w.get('.titan-chordpro-row-input')
     await input.setValue('nada disso')
     await input.trigger('keydown', { key: 'Escape' })
     await flushPromises()
@@ -236,7 +236,7 @@ describe('editing the words where they are read', () => {
     const off = Number(mark!.attributes('data-i'))
     await mark!.trigger('click')
     await flushPromises()
-    const input = w.get('.cpv-row-input')
+    const input = w.get('.titan-chordpro-row-input')
     expect((input.element as HTMLInputElement).selectionStart).toBe(off)
     await w.get('[data-insert-chord]').trigger('pointerdown')
     await flushPromises()
@@ -270,9 +270,9 @@ describe('editing the words where they are read', () => {
 
   it('renames a rehearsal comment in place', async () => {
     const w = await edit()
-    await w.get('.cpv-comment').trigger('click')
+    await w.get('.titan-chordpro-comment').trigger('click')
     await flushPromises()
-    const input = w.get('.cpv-row-input--comment')
+    const input = w.get('.titan-chordpro-row-input--comment')
     await input.setValue('PONTE')
     await input.trigger('keydown', { key: 'Enter' })
     await flushPromises()
@@ -300,7 +300,7 @@ describe('the block a musician has chosen', () => {
     const after = await sourceOf(w)
     expect(after).toContain('#^+1')
     // The badge says so beside the block, with a way back.
-    expect(w.get('.cpv-block-tag--key').text()).toContain('+1')
+    expect(w.get('.titan-chordpro-block-tag--key').text()).toContain('+1')
 
     await w.get('[data-sec-reset]').trigger('click')
     await flushPromises()
@@ -329,9 +329,9 @@ describe('the block a musician has chosen', () => {
     await flushPromises()
     const hidden = await sourceOf(w)
     expect(hidden.split('\n').some((l) => l.startsWith('#~'))).toBe(true)
-    expect(w.find('.cpv-hidden-card').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-hidden-card').exists()).toBe(true)
 
-    await w.get('.cpv-hidden-btn').trigger('click')
+    await w.get('.titan-chordpro-hidden-btn').trigger('click')
     await flushPromises()
     expect(await sourceOf(w)).toBe(before)
     w.unmount()
@@ -357,10 +357,10 @@ describe('the block a musician has chosen', () => {
     const blocks = Array.from(root.querySelectorAll<HTMLElement>('[data-block]'))
     const labelled = blocks.findIndex(
       (el, i) =>
-        !!el.querySelector('[data-row]') && !!blocks[i - 1]?.querySelector('.cpv-comment'),
+        !!el.querySelector('[data-row]') && !!blocks[i - 1]?.querySelector('.titan-chordpro-comment'),
     )
     expect(labelled).toBeGreaterThan(0)
-    const label = w.findAll('.cpv-comment')[0]?.text().trim() ?? ''
+    const label = w.findAll('.titan-chordpro-comment')[0]?.text().trim() ?? ''
     expect(label.length).toBeGreaterThan(0)
 
     await select(w, labelled)
@@ -384,7 +384,7 @@ describe('the block a musician has chosen', () => {
     await select(w, firstSongBlock(w))
     await w.get('[data-copy-harmony]').trigger('click')
     await flushPromises()
-    const paste = w.findAll('.cpv-paste-btn')
+    const paste = w.findAll('.titan-chordpro-paste-btn')
     expect(paste.length).toBeGreaterThan(0)
     await paste[0]?.trigger('click')
     await flushPromises()
@@ -407,9 +407,9 @@ describe('putting something new into the chart', () => {
     expect(Number.isFinite(at)).toBe(true)
     await slot.trigger('click')
     await flushPromises()
-    expect(w.get('.cpv-insert-where').text()).toContain('Neste ponto')
-    expect(w.findAll('.cpv-insert-item').length).toBeGreaterThan(0)
-    const chorus = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Refrão'))
+    expect(w.get('.titan-chordpro-insert-where').text()).toContain('Neste ponto')
+    expect(w.findAll('.titan-chordpro-insert-item').length).toBeGreaterThan(0)
+    const chorus = w.findAll('.titan-chordpro-insert-item').find((b) => b.text().includes('Refrão'))
     await chorus?.trigger('click')
     await flushPromises()
     const lines = (await sourceOf(w)).split('\n')
@@ -422,7 +422,7 @@ describe('putting something new into the chart', () => {
     const w = await edit()
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const labels = w.findAll('.cpv-insert-item').map((b) => b.text())
+    const labels = w.findAll('.titan-chordpro-insert-item').map((b) => b.text())
     expect(labels.some((l) => l.includes('Imagem'))).toBe(false)
     w.unmount()
   })
@@ -431,7 +431,7 @@ describe('putting something new into the chart', () => {
     const w = await edit({ images: [{ file: 'intro.png', label: 'Intro' }] })
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const labels = w.findAll('.cpv-insert-item').map((b) => b.text())
+    const labels = w.findAll('.titan-chordpro-insert-item').map((b) => b.text())
     expect(labels.some((l) => l.includes('Imagem'))).toBe(true)
     w.unmount()
   })
@@ -446,7 +446,7 @@ describe('putting something new into the chart', () => {
     })
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const image = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Imagem'))
+    const image = w.findAll('.titan-chordpro-insert-item').find((b) => b.text().includes('Imagem'))
     await image?.trigger('click')
     await flushPromises()
     const input = w.get('[data-image-file]')
@@ -474,7 +474,7 @@ describe('putting something new into the chart', () => {
     const before = await sourceOf(w)
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const image = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Imagem'))
+    const image = w.findAll('.titan-chordpro-insert-item').find((b) => b.text().includes('Imagem'))
     await image?.trigger('click')
     await flushPromises()
     const input = w.get('[data-image-file]')
@@ -495,7 +495,7 @@ describe('putting something new into the chart', () => {
     const w = await edit()
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const chorus = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Refrão'))
+    const chorus = w.findAll('.titan-chordpro-insert-item').find((b) => b.text().includes('Refrão'))
     await chorus?.trigger('click')
     await flushPromises()
     const after = await sourceOf(w)
@@ -509,7 +509,7 @@ describe('putting something new into the chart', () => {
     const before = await sourceOf(w)
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const score = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Partitura'))
+    const score = w.findAll('.titan-chordpro-insert-item').find((b) => b.text().includes('Partitura'))
     await score?.trigger('click')
     await flushPromises()
     expect(await sourceOf(w)).toContain('{x_titan_start_of_score:')
@@ -529,12 +529,12 @@ describe('leaving the editor', () => {
     await select(w, firstSongBlock(w))
     await w.get('[data-copy-harmony]').trigger('click')
     await flushPromises()
-    expect(w.find('.cpv-clip-bar').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-clip-bar').exists()).toBe(true)
 
     await w.get('[data-read]').trigger('click')
     await flushPromises()
     expect(w.find('[data-sel-bar]').exists()).toBe(false)
-    expect(w.find('.cpv-clip-bar').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-clip-bar').exists()).toBe(false)
     expect(w.findAll('[data-pill]')).toHaveLength(0)
     w.unmount()
   })

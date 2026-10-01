@@ -21,16 +21,16 @@ async function mediaSnap(page: Page) {
 async function captureMediaHandlers(page: Page) {
   await page.addInitScript(`(() => {
     const capture = Object.create(null)
-    window.__cpvMediaHandlers = capture
+    window.__titanChordproMediaHandlers = capture
     function install(target) {
       if (!target || typeof target.setActionHandler !== 'function') return
-      if (target.setActionHandler.__cpvWrapped) return
+      if (target.setActionHandler.__titanChordproWrapped) return
       const orig = target.setActionHandler
       const wrapped = function (action, handler) {
         capture[action] = handler
         return orig.call(this, action, handler)
       }
-      wrapped.__cpvWrapped = true
+      wrapped.__titanChordproWrapped = true
       try {
         target.setActionHandler = wrapped
       } catch (e) {
@@ -45,7 +45,7 @@ async function captureMediaHandlers(page: Page) {
 async function handlerKind(page: Page, action: string): Promise<HandlerKind> {
   return page.evaluate(
     `(() => {
-      const capture = window.__cpvMediaHandlers
+      const capture = window.__titanChordproMediaHandlers
       const h = capture && capture[${JSON.stringify(action)}]
       return h == null ? 'none' : 'fn'
     })()`,
@@ -55,7 +55,7 @@ async function handlerKind(page: Page, action: string): Promise<HandlerKind> {
 async function fireAction(page: Page, action: string) {
   await page.evaluate(
     `(() => {
-      const capture = window.__cpvMediaHandlers
+      const capture = window.__titanChordproMediaHandlers
       const fn = capture && capture[${JSON.stringify(action)}]
       if (typeof fn === 'function') fn({ action: ${JSON.stringify(action)} })
     })()`,

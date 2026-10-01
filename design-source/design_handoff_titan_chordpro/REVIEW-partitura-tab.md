@@ -88,7 +88,7 @@ faixa de status; `aria-pressed` nos controles de estado e rótulo de célula com
 
 ## 3. Aberto
 
-- **`Chordpro Viewer v2.dc.html`** (leitura ratificada) ainda não renderiza `{x_titan_start_of_score}` — hoje só o
+- **`TitanChordpro v2.dc.html`** (leitura ratificada) ainda não renderiza `{x_titan_start_of_score}` — hoje só o
   `Titan Chordpro UI v2`. Precisa do mesmo bloco de leitura.
 - **PDF** não desenha o bloco `{x_titan_start_of_score}` (o export herdado escreve TAB em texto). Com o modelo
   pronto, dá para gerar as duas pautas no PDF — é a próxima peça óbvia.

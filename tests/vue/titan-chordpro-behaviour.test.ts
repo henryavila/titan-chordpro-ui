@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import SourcePane from '../../src/vue/edit/SourcePane.vue'
 import { lintSource } from '../../src/core/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
@@ -8,7 +8,7 @@ import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 const src = () => loadFixture(JESUS_1)
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: { source: src(), theme: 'dark', autoHide: false, ...props },
     attachTo: document.body,
   })
@@ -38,26 +38,26 @@ describe('fit hint', () => {
 
 describe('zen', () => {
   it('a tap on empty chart puts the chrome away and brings it back', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer()
     await flushPromises()
-    const chrome = () => w.get('.cpv-chrome')
+    const chrome = () => w.get('.titan-chordpro-chrome')
     expect(chrome().classes()).not.toContain('is-hidden')
 
-    await w.get('[data-cpv-scroll]').trigger('click')
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
     await flushPromises()
     expect(chrome().classes()).toContain('is-hidden')
-    expect(w.find('.cpv-chrome-hint').exists(), 'standing hint stayed after the toast').toBe(false)
-    expect(w.get('.cpv-toast').text()).toBe('Toque na tela para mostrar os controles')
+    expect(w.find('.titan-chordpro-chrome-hint').exists(), 'standing hint stayed after the toast').toBe(false)
+    expect(w.get('.titan-chordpro-toast').text()).toBe('Toque na tela para mostrar os controles')
 
-    await w.get('[data-cpv-scroll]').trigger('click')
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
     await flushPromises()
     expect(chrome().classes()).not.toContain('is-hidden')
     w.unmount()
   })
 
   it('the first hide on a phone is the same toast, not a standing band', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const observers: ((entries: unknown[]) => void)[] = []
     class RO {
       constructor(cb: (entries: unknown[]) => void) {
@@ -75,10 +75,10 @@ describe('zen', () => {
       observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
       await flushPromises()
 
-      await w.get('[data-cpv-scroll]').trigger('click')
+      await w.get('[data-titan-chordpro-scroll]').trigger('click')
       await flushPromises()
-      expect(w.find('.cpv-chrome-hint').exists()).toBe(false)
-      expect(w.get('.cpv-toast').text()).toBe('Toque na tela para mostrar os controles')
+      expect(w.find('.titan-chordpro-chrome-hint').exists()).toBe(false)
+      expect(w.get('.titan-chordpro-toast').text()).toBe('Toque na tela para mostrar os controles')
       w.unmount()
     } finally {
       globalThis.ResizeObserver = realRO
@@ -86,23 +86,23 @@ describe('zen', () => {
   })
 
   it('fades the toast out instead of dropping it', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer()
     try {
       await flushPromises()
       vi.useFakeTimers()
-      await w.get('[data-cpv-scroll]').trigger('click')
+      await w.get('[data-titan-chordpro-scroll]').trigger('click')
       await flushPromises()
-      expect(w.get('.cpv-toast').classes()).not.toContain('is-out')
+      expect(w.get('.titan-chordpro-toast').classes()).not.toContain('is-out')
 
       await vi.advanceTimersByTimeAsync(2400)
       await flushPromises()
-      expect(w.get('.cpv-toast').classes()).toContain('is-out')
-      expect(w.find('.cpv-toast').exists()).toBe(true)
+      expect(w.get('.titan-chordpro-toast').classes()).toContain('is-out')
+      expect(w.find('.titan-chordpro-toast').exists()).toBe(true)
 
       await vi.advanceTimersByTimeAsync(450)
       await flushPromises()
-      expect(w.find('.cpv-toast').exists()).toBe(false)
+      expect(w.find('.titan-chordpro-toast').exists()).toBe(false)
     } finally {
       w.unmount()
       vi.useRealTimers()
@@ -110,12 +110,12 @@ describe('zen', () => {
   })
 
   it('ignores a tap that lands on a control', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer()
     await flushPromises()
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
-    expect(w.get('.cpv-chrome').classes()).not.toContain('is-hidden')
+    expect(w.get('.titan-chordpro-chrome').classes()).not.toContain('is-hidden')
     w.unmount()
   })
 
@@ -127,7 +127,7 @@ describe('zen', () => {
     [1280, 'desktop'],
     [390, 'phone'],
   ] as const)('on %s, zen hides the chrome without shrinking the page pad', async (width, _label) => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const observers: ((entries: unknown[]) => void)[] = []
     class RO {
       constructor(cb: (entries: unknown[]) => void) {
@@ -145,18 +145,18 @@ describe('zen', () => {
       observers.forEach((cb) => cb([{ contentRect: { width, height: 900 } }]))
       await flushPromises()
 
-      const pad = () => (w.get('.cpv-page').attributes('style') ?? '')
+      const pad = () => (w.get('.titan-chordpro-page').attributes('style') ?? '')
       const before = pad()
       expect(before).toMatch(/padding:/)
 
-      await w.get('[data-cpv-scroll]').trigger('click')
+      await w.get('[data-titan-chordpro-scroll]').trigger('click')
       await flushPromises()
-      expect(w.get('.cpv-chrome').classes()).toContain('is-hidden')
+      expect(w.get('.titan-chordpro-chrome').classes()).toContain('is-hidden')
       expect(pad(), 'zen reclaimed the chrome band and jumped the chart').toBe(before)
 
-      await w.get('[data-cpv-scroll]').trigger('click')
+      await w.get('[data-titan-chordpro-scroll]').trigger('click')
       await flushPromises()
-      expect(w.get('.cpv-chrome').classes()).not.toContain('is-hidden')
+      expect(w.get('.titan-chordpro-chrome').classes()).not.toContain('is-hidden')
       expect(pad()).toBe(before)
       w.unmount()
     } finally {
@@ -194,7 +194,7 @@ async function titleInMeta(w: ReturnType<typeof mountViewer>) {
 
 describe('edit chrome (E0)', () => {
   it('editing meta marks the chart dirty and rewrites the directive', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
@@ -213,7 +213,7 @@ describe('edit chrome (E0)', () => {
   })
 
   it('carries an unsaved draft into reading and back into editing', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
@@ -231,7 +231,7 @@ describe('edit chrome (E0)', () => {
   })
 
   it('asks twice before discarding, then goes back to the last saved text', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
@@ -249,7 +249,7 @@ describe('edit chrome (E0)', () => {
   })
 
   it('offers redo only once something has been undone', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer({ modes: 'content' })
     await flushPromises()
     await enterContentEdit(w)
@@ -268,7 +268,7 @@ describe('edit chrome (E0)', () => {
 
 describe('host contract', () => {
   it('canEdit=false removes every way into the editor', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer({ canEdit: false })
     await flushPromises()
     expect(w.find('[data-edit]').exists()).toBe(false)
@@ -276,7 +276,7 @@ describe('host contract', () => {
   })
 
   it('resolveImage maps a {image:} reference onto a URL the host serves', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = mountViewer({
       source: '{title: T}\n\n{image: assets/intro.png}\n',
       resolveImage: (s: string) => `/cdn/${s}`,

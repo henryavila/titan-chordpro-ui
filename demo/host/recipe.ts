@@ -22,7 +22,7 @@ export type DemoEntry = {
   kicker: string
   title: string
   blurb: string
-  /** Compact `<ChordproViewer>` call for this composition. */
+  /** Compact `<TitanChordpro>` call for this composition. */
   call: string
   /** Named or hex swatch, when this demo is about the host primary. */
   swatch?: string
@@ -84,7 +84,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Standalone',
     title: 'Uma cifra',
     blurb: 'A cifra é a página. Rota 100dvh, sem shell. Default = editMode local.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="local"
@@ -110,7 +110,7 @@ export const DEMOS: readonly DemoEntry[] = [
   sung, playback,
   art: { url, width: 1024, height: 1024 },
 })
-<ChordproViewer
+<TitanChordpro
   :source="cho"
   :default-audio-art="{ url, width: 1024, height: 1024 }"
   song-id="nasce-em-mim"
@@ -124,7 +124,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Standalone',
     title: 'Apresentação',
     blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Com áudio, a Central de Mídia também troca de cifra.',
-    call: `<ChordproViewer :songs="songs" edit-mode="local" />`,
+    call: `<TitanChordpro :songs="songs" edit-mode="local" />`,
     extra: [
       { href: '/standalone-lista.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
@@ -138,7 +138,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'No shell',
     title: 'Uma cifra',
     blurb: 'O Vue no meio da página do consumer: conteúdo acima e abaixo. Não é iframe.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="local"
@@ -153,7 +153,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'No shell',
     title: 'Apresentação',
     blurb: 'A mesma lista ao vivo, no shell do site. Trocar de música é do Titan.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :songs="songs"
   edit-mode="local"
   theme="light"
@@ -168,7 +168,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Só para mim + sugerir',
     blurb:
       'Overlay no aparelho. Edite letra ou importe Guitar Pro/MusicXML, abra Minha versão → Sugerir. O arquivo acompanha o pedido. Depois abra “Para todos” na mesma música.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="local"
@@ -186,7 +186,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Para todos + fila',
     blurb:
       'Salvar grava o oficial. Em Sugestões dos músicos, veja o solo antes/depois e aceite o arquivo para todos; outra aba do mesmo navegador acompanha a fila.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="persisted"
@@ -201,7 +201,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Leitura',
     title: 'Sem edição',
     blurb: 'Só leitura — sem botão Editar.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="none"
@@ -217,7 +217,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Standalone',
     title: 'Cifra nova',
     blurb: 'Importar (link, arquivo, texto, PDF) ou começar em branco.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   source=""
   song-id="vazio"
   edit-mode="persisted"
@@ -234,7 +234,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Verde',
     blurb: 'O par medido contra os dois temas. Default se o host não passa nada.',
     swatch: '#84DFA6',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="verde"
@@ -248,7 +248,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Teal',
     blurb: 'Segundo nome medido. Soft e borda saem do mesmo matiz.',
     swatch: '#2DD4BF',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="teal"
@@ -262,7 +262,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Hex do host',
     blurb: 'Qualquer `#hex` / `rgb()`. O Titan deriva soft, edge e glow.',
     swatch: '#4F46E5',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="#4F46E5"
@@ -276,7 +276,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Teal no claro',
     blurb: 'Mesma primária no papel do host. O teal escurece no tema light.',
     swatch: '#0E6E7D',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="teal"
@@ -292,7 +292,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Frame sem altura',
     blurb: 'O ancestral não tem height. A guarda avisa, o dock cai abaixo da dobra.',
     warn: true,
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
 />`,

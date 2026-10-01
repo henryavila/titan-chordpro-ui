@@ -13,7 +13,7 @@ defineEmits<{
 
 <template>
   <div
-    class="cpv-reading"
+    class="titan-chordpro-reading"
     :class="`is-${variant}`"
     role="group"
     aria-label="Cifra ou letra"

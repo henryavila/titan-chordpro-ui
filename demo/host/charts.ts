@@ -1,9 +1,9 @@
 import defaultCho from '../../fixtures/sda/001-tudo-que-ha-de-bom-em-mim.cho?raw'
 import { readMeta } from '@henryavila/titan-chordpro-ui'
-import type { ChordproViewerProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
+import type { TitanChordproProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
 import type { ListaMode } from './recipe'
 
-type DemoSong = NonNullable<ChordproViewerProps['songs']>[number]
+type DemoSong = NonNullable<TitanChordproProps['songs']>[number]
 
 const assetUrls = import.meta.glob('../../fixtures/assets/*.png', {
   eager: true,

@@ -54,8 +54,8 @@ type Measured = {
 async function measure(page: Page): Promise<Measured> {
   await page.locator('[data-block]').first().waitFor()
   return page.evaluate(() => {
-    const el = document.querySelector('.cpv-scroll') as HTMLElement
-    const pageEl = document.querySelector('.cpv-page') as HTMLElement
+    const el = document.querySelector('.titan-chordpro-scroll') as HTMLElement
+    const pageEl = document.querySelector('.titan-chordpro-page') as HTMLElement
     const base = el.getBoundingClientRect().top - el.scrollTop
     const nodes = [...el.querySelectorAll('[data-block]')] as HTMLElement[]
     return {

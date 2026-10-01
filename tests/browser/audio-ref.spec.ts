@@ -54,8 +54,8 @@ test('reference player is a music transport, not Rolar', async ({ page }) => {
 
   await player.locator('[data-audio-close]').click()
   await expect(player.locator('[data-icon=headphones]')).toBeVisible()
-  await page.locator('[data-cpv-scroll]').click({ position: { x: 180, y: 280 } })
-  await expect(page.locator('.cpv-chrome.is-hidden')).toHaveCount(2)
+  await page.locator('[data-titan-chordpro-scroll]').click({ position: { x: 180, y: 280 } })
+  await expect(page.locator('.titan-chordpro-chrome.is-hidden')).toHaveCount(2)
   await expect(page.locator('[data-audio-title]')).toHaveCount(0)
   await expect(page.locator('[data-icon=headphones]')).toBeVisible()
 })

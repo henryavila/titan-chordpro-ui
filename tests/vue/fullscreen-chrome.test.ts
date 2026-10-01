@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /**
@@ -57,7 +57,7 @@ function installFullscreen() {
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -73,7 +73,7 @@ afterEach(() => {
 })
 
 async function phoneViewer() {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false, songId: 'jesus-1' },
     attachTo: document.body,
   })
@@ -85,11 +85,11 @@ async function phoneViewer() {
 }
 
 function chromeHidden(w: Awaited<ReturnType<typeof phoneViewer>>) {
-  return w.findAll('.cpv-chrome').map((c) => c.classes().includes('is-hidden'))
+  return w.findAll('.titan-chordpro-chrome').map((c) => c.classes().includes('is-hidden'))
 }
 
 async function viewerAt(size: { w: number; h: number }) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false, songId: 'jesus-1' },
     attachTo: document.body,
   })
@@ -137,7 +137,7 @@ function coverViewport(
   w: Awaited<ReturnType<typeof viewerAt>>,
   view: { w: number; h: number },
 ) {
-  stubView(w.get('[data-cpv-root]').element as HTMLElement, { top: 0, left: 0, w: view.w, h: view.h }, view)
+  stubView(w.get('[data-titan-chordpro-root]').element as HTMLElement, { top: 0, left: 0, w: view.w, h: view.h }, view)
 }
 
 /** Ficha still showing host chrome above the chart. */
@@ -146,7 +146,7 @@ function hostChromeAbove(
   view: { w: number; h: number },
   gap = 180,
 ) {
-  stubView(w.get('[data-cpv-root]').element as HTMLElement, { top: gap, left: 0, w: view.w, h: view.h }, view)
+  stubView(w.get('[data-titan-chordpro-root]').element as HTMLElement, { top: gap, left: 0, w: view.w, h: view.h }, view)
 }
 
 const FS_LABELS = ['Tela cheia', 'Sair da tela cheia', 'Modo imersivo', 'Sair do modo imersivo']
@@ -154,7 +154,7 @@ const FS_LABELS = ['Tela cheia', 'Sair da tela cheia', 'Modo imersivo', 'Sair do
 function fsControls(w: Awaited<ReturnType<typeof viewerAt>>) {
   const seen = new Set<Element>()
   return [...w.findAll('[data-fs]'), ...w.findAll('button')].filter((b) => {
-    if (b.element.closest('[data-cpv-zen-title]')) return false
+    if (b.element.closest('[data-titan-chordpro-zen-title]')) return false
     const hit = b.attributes('data-fs') !== undefined || FS_LABELS.includes(b.attributes('aria-label') ?? '')
     if (!hit || seen.has(b.element)) return false
     seen.add(b.element)
@@ -165,7 +165,7 @@ function fsControls(w: Awaited<ReturnType<typeof viewerAt>>) {
 function fsChromeSide(w: Awaited<ReturnType<typeof viewerAt>>): 'top' | 'bottom' | 'none' {
   const btns = fsControls(w)
   if (!btns.length) return 'none'
-  const chrome = btns[0]!.element.closest('.cpv-chrome') as HTMLElement | null
+  const chrome = btns[0]!.element.closest('.titan-chordpro-chrome') as HTMLElement | null
   const s = chrome?.getAttribute('style') ?? ''
   if (/(?:^|;)\s*top:\s*0/.test(s)) return 'top'
   if (/(?:^|;)\s*bottom:\s*0/.test(s)) return 'bottom'
@@ -182,7 +182,7 @@ describe('Tela cheia on a phone keeps the live controls', () => {
     await flushPromises()
 
     expect(chromeHidden(w).some(Boolean), 'tela cheia hid a chrome surface').toBe(false)
-    expect(w.find('.cpv-chrome-hint').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chrome-hint').exists()).toBe(false)
     expect(w.get('[data-fs]').attributes('aria-label')).toBe('Sair da tela cheia')
     expect(w.find('[data-scroll]').exists()).toBe(true)
     expect(w.find('[aria-label="Mais controles"]').exists()).toBe(true)
@@ -194,14 +194,14 @@ describe('Tela cheia on a phone keeps the live controls', () => {
     await w.get('[data-fs]').trigger('click')
     await flushPromises()
 
-    await w.get('[data-cpv-scroll]').trigger('click')
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
     await flushPromises()
     expect(chromeHidden(w).every(Boolean)).toBe(true)
     expect(w.get('[data-fs]').attributes('aria-label')).toBe('Sair da tela cheia')
-    expect(w.find('.cpv-chrome-hint').exists()).toBe(false)
-    expect(w.get('.cpv-toast').text()).toBe('Toque na tela para mostrar os controles')
+    expect(w.find('.titan-chordpro-chrome-hint').exists()).toBe(false)
+    expect(w.get('.titan-chordpro-toast').text()).toBe('Toque na tela para mostrar os controles')
 
-    await w.get('[data-cpv-scroll]').trigger('click')
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
     await flushPromises()
     expect(chromeHidden(w).some(Boolean)).toBe(false)
     expect(w.get('[data-fs]').attributes('aria-label')).toBe('Sair da tela cheia')
@@ -220,7 +220,7 @@ describe('Tela cheia on a phone keeps the live controls', () => {
   })
 
   it('a wide screen already kept the chrome — entering tela cheia still does', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false, songId: 'jesus-1' },
       attachTo: document.body,
     })

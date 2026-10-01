@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
+import { TitanChordpro } from '@henryavila/titan-chordpro-ui/vue'
 import nasce from '../fixtures/sda/100-nasce-em-mim.cho?raw'
 import sung from './ref-nasce-cantado.m4a?url'
 import playback from './ref-nasce-playback.m4a?url'
@@ -77,7 +77,7 @@ onUnmounted(() => {
       </p>
     </header>
     <div class="media-demo-stage">
-      <ChordproViewer
+      <TitanChordpro
         :source="source"
         :song-id="MEDIA_DEMO_SONG_ID"
         :default-audio-art="defaultAudioArt"

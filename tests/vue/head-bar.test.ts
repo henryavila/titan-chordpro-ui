@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -59,7 +59,7 @@ function installFullscreen() {
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -79,7 +79,7 @@ const rehearsal = [
 ]
 
 async function viewerAt(width: number, extra: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: '',
       songs: rehearsal,
@@ -98,7 +98,7 @@ async function viewerAt(width: number, extra: Record<string, unknown> = {}) {
 }
 
 function head(w: Awaited<ReturnType<typeof viewerAt>>) {
-  return w.get('[data-cpv-head]').element as HTMLElement
+  return w.get('[data-titan-chordpro-head]').element as HTMLElement
 }
 
 function titleEl(w: Awaited<ReturnType<typeof viewerAt>>) {
@@ -150,7 +150,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
 
   it('drops the list glyph from the title — the whole title opens the list', async () => {
     const w = await viewerAt(390)
-    expect(w.find('[data-cpv-head] [data-icon=listMusic]').exists()).toBe(false)
+    expect(w.find('[data-titan-chordpro-head] [data-icon=listMusic]').exists()).toBe(false)
     expect(w.get('[data-setlist-open]').attributes('title')).toMatch(/lista/i)
   })
 
@@ -173,7 +173,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
     expect(titleEl(w).textContent).toContain('O Rei vem vindo')
     const name = titleEl(w).parentElement as HTMLElement
     expect(minWidthPx(name)).toBeGreaterThanOrEqual(160)
-    expect(w.find('[data-cpv-head] [data-icon=listMusic]').exists()).toBe(false)
+    expect(w.find('[data-titan-chordpro-head] [data-icon=listMusic]').exists()).toBe(false)
   })
 
   it('keeps the phone head as a floating card with an inset above it', async () => {
@@ -185,7 +185,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
   })
 
   it('without a list the title still has a floor, so a long capo pill cannot eat it', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: O_REI, theme: 'dark', autoHide: false, storage: memoryStore(), initialCapo: 1 },
       attachTo: document.body,
     })

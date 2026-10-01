@@ -81,20 +81,20 @@ onUnmounted(() => ro?.disconnect())
 
 <template>
   <figure
-    class="cpv-figure"
+    class="titan-chordpro-figure"
     data-score
     :style="{ margin: `0 0 ${blockGap}`, padding: '12px 12px 10px' }"
   >
-    <div ref="host" class="cpv-score-host" />
+    <div ref="host" class="titan-chordpro-score-host" />
     <!-- Without the engraver the block still reads: the source is the score. -->
-    <div v-if="!ready" class="cpv-score-body">{{ text }}</div>
-    <figcaption class="cpv-figure-cap">
-      <span class="cpv-figure-kind">{{ kind }}</span>
-      <span class="cpv-figure-meta">{{ meta }}</span>
+    <div v-if="!ready" class="titan-chordpro-score-body">{{ text }}</div>
+    <figcaption class="titan-chordpro-figure-cap">
+      <span class="titan-chordpro-figure-kind">{{ kind }}</span>
+      <span class="titan-chordpro-figure-meta">{{ meta }}</span>
       <button
         v-for="v in ([['score', 'Pauta'], ['tab', 'TAB'], ['both', 'Ambos']] as const)"
         :key="v[0]"
-        class="cpv-figure-btn"
+        class="titan-chordpro-figure-btn"
         type="button"
         :aria-pressed="view === v[0]"
         :style="{
@@ -104,7 +104,7 @@ onUnmounted(() => ro?.disconnect())
         }"
         @click="view = v[0]"
       >{{ v[1] }}</button>
-      <button v-if="canEdit" class="cpv-figure-btn cpv-figure-btn--go" type="button" @click="emit('editScore')">Editar</button>
+      <button v-if="canEdit" class="titan-chordpro-figure-btn titan-chordpro-figure-btn--go" type="button" @click="emit('editScore')">Editar</button>
     </figcaption>
   </figure>
 </template>

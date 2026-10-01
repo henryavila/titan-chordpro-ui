@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { diffOps, formatTitanStrum, parseTitanStrum, proposedScoreSources, readStrumPatterns, scoreReviewsFromOp, writeStrumPatterns, writeScoreReference } from '../../src/core/index'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 
 vi.mock('../../src/vue/chart/ExternalScore.vue', () => ({ default: { props: ['text'], template: '<div data-score-rendered />' } }))
 
@@ -48,7 +48,7 @@ afterEach(() => {
 })
 
 async function mountAt(props: Record<string, unknown>) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: SRC, theme: 'dark', autoHide: false, songId: 'review-1', ...props },
     attachTo: document.body,
   })
@@ -111,7 +111,7 @@ describe('suggestion review', () => {
   it('sends the original Guitar Pro file and reviews the excerpt as before/after', async () => {
     const bytes = new Uint8Array(readFileSync('fixtures/notation/notes.gp'))
     const score = writeScoreReference({ src: 'solos/notes.gp', track: 1, start: 1, end: 2, name: 'Solo de entrada' })
-    localStorage.setItem('cpv:my:review-1', JSON.stringify({
+    localStorage.setItem('titan-chordpro:my:review-1', JSON.stringify({
       baseVersion: 'v1', at: 1,
       ops: diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 }),
     }))
@@ -119,7 +119,7 @@ describe('suggestion review', () => {
     await local.get('[data-edit]').trigger('click')
     await flushPromises()
     await sendSuggestion(local, 'Ana Souza')
-    const sent = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    const sent = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')
     expect(sent).toHaveLength(1)
     expect(sent[0].scoreAttachments).toHaveLength(1)
     expect(sent[0].scoreAttachments[0].src).toBe('solos/notes.gp')
@@ -138,7 +138,7 @@ describe('suggestion review', () => {
     const bytes = new Uint8Array(readFileSync('fixtures/notation/notes.gp'))
     const score = writeScoreReference({ src: 'private/notes.gp', track: 1, start: 1, end: 2, name: 'Solo' })
     const ops = diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 })
-    localStorage.setItem('cpv:sug', JSON.stringify([{
+    localStorage.setItem('titan-chordpro:sug', JSON.stringify([{
       id: 's-score', songId: 'review-1', title: 'Teste', at: 1, baseVersion: 'v1',
       ops, actorName: 'Ana Souza', scoreAttachments: [{ src: 'private/notes.gp', filename: 'notes.gp', base64: Buffer.from(bytes).toString('base64') }],
     }]))
@@ -153,13 +153,13 @@ describe('suggestion review', () => {
     expect(uploaded).toHaveLength(1)
     expect(uploaded[0]?.name).toBe('notes.gp')
     expect(admin.emitted('save-content')?.at(-1)?.[0]).toContain('src="published/notes.gp"')
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0].status).toBe('accepted')
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')[0].status).toBe('accepted')
     admin.unmount()
   })
 
   it('keeps the score suggestion pending when the reviewer cannot store the attached file', async () => {
     const score = writeScoreReference({ src: 'private/notes.gp', track: 1, start: 1 })
-    localStorage.setItem('cpv:sug', JSON.stringify([{
+    localStorage.setItem('titan-chordpro:sug', JSON.stringify([{
       id: 's-score', songId: 'review-1', title: 'Teste', at: 1, baseVersion: 'v1',
       ops: diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 }),
       scoreAttachments: [{ src: 'private/notes.gp', filename: 'notes.gp', base64: 'AA==' }],
@@ -170,13 +170,13 @@ describe('suggestion review', () => {
     await flushPromises()
     expect(admin.emitted('save-content')).toBeUndefined()
     expect(admin.text()).toContain('precisa poder guardar o arquivo')
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0].status ?? 'pending').toBe('pending')
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')[0].status ?? 'pending').toBe('pending')
     admin.unmount()
   })
 
   it('does not send a score suggestion without the file bytes', async () => {
     const score = writeScoreReference({ src: 'private/missing.gpx', track: 1, start: 1 })
-    localStorage.setItem('cpv:my:review-1', JSON.stringify({
+    localStorage.setItem('titan-chordpro:my:review-1', JSON.stringify({
       baseVersion: 'v1', at: 1,
       ops: diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 }),
     }))
@@ -184,7 +184,7 @@ describe('suggestion review', () => {
     await local.get('[data-edit]').trigger('click')
     await flushPromises()
     await sendSuggestion(local, 'Ana Souza')
-    expect(localStorage.getItem('cpv:sug')).toBeNull()
+    expect(localStorage.getItem('titan-chordpro:sug')).toBeNull()
     expect(local.emitted('suggestion-created')).toBeUndefined()
     expect(local.text()).toContain('Não foi possível anexar o arquivo do solo')
     local.unmount()
@@ -340,7 +340,7 @@ describe('suggestion review', () => {
     const ops = diffOps(official, switched, { transpose: 0, capo: 0 })
     expect(ops.length).toBeGreaterThan(0)
     localStorage.setItem(
-      'cpv:sug',
+      'titan-chordpro:sug',
       JSON.stringify([
         {
           id: 's-ativa',

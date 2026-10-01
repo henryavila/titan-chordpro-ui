@@ -62,14 +62,14 @@ async function probeLiveControls(page: Page): Promise<Finding[]> {
       const live = (el: HTMLElement) => {
         const cs = getComputedStyle(el)
         if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false
-        if (el.closest('.cpv-chrome.is-hidden')) return false
+        if (el.closest('.titan-chordpro-chrome.is-hidden')) return false
         const r = el.getBoundingClientRect()
         if (r.width < 8 || r.height < 8) return false
         if (el.hasAttribute('disabled')) return false
         return true
       }
 
-      const root = document.querySelector('[data-cpv-root]') as HTMLElement | null
+      const root = document.querySelector('[data-titan-chordpro-root]') as HTMLElement | null
       for (const sel of sels) {
         const el = document.querySelector(sel) as HTMLElement | null
         if (!el || !live(el)) continue
@@ -123,11 +123,11 @@ async function probeLiveControls(page: Page): Promise<Finding[]> {
 async function railDockOverlap(page: Page) {
   return page.evaluate(() => {
     const stack =
-      (document.querySelector('.cpv-phone-stack') as HTMLElement | null) ??
-      (document.querySelector('[data-scroll]')?.closest('.cpv-chrome') as HTMLElement | null)
+      (document.querySelector('.titan-chordpro-phone-stack') as HTMLElement | null) ??
+      (document.querySelector('[data-scroll]')?.closest('.titan-chordpro-chrome') as HTMLElement | null)
     if (!stack) return { overlap: false, reason: 'no-dock' }
     const s = stack.getBoundingClientRect()
-    const hits = [...document.querySelectorAll('.cpv-swipe-rail')].flatMap((rail) => {
+    const hits = [...document.querySelectorAll('.titan-chordpro-swipe-rail')].flatMap((rail) => {
       const r = rail.getBoundingClientRect()
       const overlap =
         r.bottom > s.top + 0.5 && r.top < s.bottom && r.right > s.left && r.left < s.right
@@ -169,7 +169,7 @@ for (const vp of PHONES) {
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await page.goto('/?lista=1&zonas=1')
     await page.locator('[data-scroll]').waitFor()
-    await expect(page.locator('[data-cpv-root]')).toHaveClass(/is-swipe-debug/)
+    await expect(page.locator('[data-titan-chordpro-root]')).toHaveClass(/is-swipe-debug/)
     expect(await railDockOverlap(page)).toMatchObject({ overlap: false })
     const findings = await probeLiveControls(page)
     assertNoThieves(findings, `${vp.name} zonas`)
@@ -190,7 +190,7 @@ test('single chart (no setlist): dock is not under a leftover rail', async ({ pa
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await page.locator('[data-scroll]').waitFor()
-  expect(await page.locator('.cpv-swipe-rail').count()).toBe(0)
+  expect(await page.locator('.titan-chordpro-swipe-rail').count()).toBe(0)
   const findings = await probeLiveControls(page)
   assertNoThieves(findings, 'single chart')
 })

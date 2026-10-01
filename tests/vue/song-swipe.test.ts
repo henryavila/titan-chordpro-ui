@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import {
   beginSongSwipe,
@@ -73,7 +73,7 @@ describe('swipeIgnoresPointer', () => {
   }
 
   it('keeps a rail down when the paint stack is only the rail', () => {
-    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail', 'data-swipe-rail': 'next' })
     expect(swipeIgnoresPointer(rail, 370, 400, () => [rail])).toBe(false)
   })
 
@@ -83,25 +83,25 @@ describe('swipeIgnoresPointer', () => {
   })
 
   it('yields when iOS names the rail as target but Mais is under the finger', () => {
-    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail', 'data-swipe-rail': 'next' })
     const more = node('button', { 'data-more': '' })
     expect(swipeIgnoresPointer(rail, 370, 800, () => [rail, more])).toBe(true)
   })
 
   it('yields when Rolar sits in the paint stack under a left-rail down', () => {
-    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'prev' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail', 'data-swipe-rail': 'prev' })
     const roll = node('button', { 'data-scroll': '' })
     expect(swipeIgnoresPointer(rail, 40, 800, () => [rail, roll])).toBe(true)
   })
 
   it('yields when the phone stack is in the paint stack', () => {
-    const rail = node('div', { class: 'cpv-swipe-rail' })
-    const stack = node('div', { class: 'cpv-phone-stack' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail' })
+    const stack = node('div', { class: 'titan-chordpro-phone-stack' })
     expect(swipeIgnoresPointer(rail, 40, 800, () => [rail, stack])).toBe(true)
   })
 
   it('keeps a rail swipe when a reading-chord button sits under the rail', () => {
-    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail', 'data-swipe-rail': 'next' })
     const chord = node('button', { 'aria-label': 'Forma de G' })
     expect(swipeIgnoresPointer(rail, 370, 400, () => [rail, chord])).toBe(false)
   })
@@ -271,7 +271,7 @@ afterEach(() => {
 })
 
 function viewer() {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: '', songs: songs(), autoHide: false, storage: memoryStore() },
     attachTo: document.body,
   })
@@ -296,12 +296,12 @@ describe('swipe zone debug overlay', () => {
   it('is off by default', async () => {
     const w = viewer()
     await flushPromises()
-    expect(w.find('.cpv-swipe-debug').exists()).toBe(false)
-    expect(w.get('[data-cpv-root]').classes()).not.toContain('is-swipe-debug')
+    expect(w.find('.titan-chordpro-swipe-debug').exists()).toBe(false)
+    expect(w.get('[data-titan-chordpro-root]').classes()).not.toContain('is-swipe-debug')
   })
 
   it('paints the rails when capabilities.debugSwipe is on', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: {
         source: '',
         songs: songs(),
@@ -313,8 +313,8 @@ describe('swipe zone debug overlay', () => {
     })
     mounted.push(w)
     await flushPromises()
-    expect(w.find('.cpv-swipe-debug').exists()).toBe(true)
-    expect(w.get('[data-cpv-root]').classes()).toContain('is-swipe-debug')
+    expect(w.find('.titan-chordpro-swipe-debug').exists()).toBe(true)
+    expect(w.get('[data-titan-chordpro-root]').classes()).toContain('is-swipe-debug')
   })
 })
 
@@ -322,7 +322,7 @@ describe('rail peek on the rehearsal chart', () => {
   it('paints a next chevron from the right rail, then changes song on release past the line', async () => {
     const w = viewer()
     await flushPromises()
-    const root = w.get('[data-cpv-root]').element
+    const root = w.get('[data-titan-chordpro-root]').element
     const x = 880
     const y = 200
 
@@ -335,7 +335,7 @@ describe('rail peek on the rehearsal chart', () => {
     expect(w.find('[data-icon="chevronRight"]').exists()).toBe(true)
     expect(veil.text()).toMatch(/Próxima/i)
     expect(veil.text()).not.toMatch(/Solte para ir/i)
-    expect(veil.attributes('style') ?? '').toMatch(/--cpv-swipe-stamp-top:\s*\d+(\.\d+)?px/)
+    expect(veil.attributes('style') ?? '').toMatch(/--titan-chordpro-swipe-stamp-top:\s*\d+(\.\d+)?px/)
 
     finger(root, 'pointermove', x - 160, y + 8)
     await w.vm.$nextTick()
@@ -345,7 +345,7 @@ describe('rail peek on the rehearsal chart', () => {
     finger(root, 'pointerup', x - 160, y + 8)
     await flushPromises()
     await w.vm.$nextTick()
-    expect(w.get('[data-cpv-root]').attributes('data-swipe')).toBeUndefined()
+    expect(w.get('[data-titan-chordpro-root]').attributes('data-swipe')).toBeUndefined()
     await vi.waitFor(() => {
       expect(w.get('[data-chart-title]').text()).toMatch(/Escuta/i)
     })
@@ -357,7 +357,7 @@ describe('rail peek on the rehearsal chart', () => {
   it('does not peek or change song when the drag starts in the centre', async () => {
     const w = viewer()
     await flushPromises()
-    const root = w.get('[data-cpv-root]').element
+    const root = w.get('[data-titan-chordpro-root]').element
     const x = 450
     const y = 80
     finger(root, 'pointerdown', x, y)
@@ -373,11 +373,11 @@ describe('rail peek on the rehearsal chart', () => {
   it('does not start a swipe when the finger is on Mais under the right rail', async () => {
     const w = viewer()
     await flushPromises()
-    const root = w.get('[data-cpv-root]').element as HTMLElement
+    const root = w.get('[data-titan-chordpro-root]').element as HTMLElement
     const more = document.createElement('button')
     more.setAttribute('data-more', '')
     const rail = document.createElement('div')
-    rail.className = 'cpv-swipe-rail'
+    rail.className = 'titan-chordpro-swipe-rail'
     const hit = vi.fn(() => [rail, more])
     Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: hit })
     try {
@@ -394,7 +394,7 @@ describe('rail peek on the rehearsal chart', () => {
   it('hides the fade and stays on the song when the rail swipe is aborted', async () => {
     const w = viewer()
     await flushPromises()
-    const root = w.get('[data-cpv-root]').element
+    const root = w.get('[data-titan-chordpro-root]').element
     const x = 880
     const y = 80
     finger(root, 'pointerdown', x, y)

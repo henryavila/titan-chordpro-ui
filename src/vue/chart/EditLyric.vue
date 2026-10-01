@@ -12,5 +12,5 @@ defineProps<{
 
 <template>
   <!-- No whitespace between the spans: a text node would shift the caret off the letter. -->
-  <span class="cpv-lyric"><span v-for="c in chars" :key="c.i" :data-i="c.i" :data-anchor="anchors.includes(c.i) ? '' : undefined">{{ c.ch }}</span><span v-if="end" class="cpv-anchor-end" data-anchor /></span>
+  <span class="titan-chordpro-lyric"><span v-for="c in chars" :key="c.i" :data-i="c.i" :data-anchor="anchors.includes(c.i) ? '' : undefined">{{ c.ch }}</span><span v-if="end" class="titan-chordpro-anchor-end" data-anchor /></span>
 </template>

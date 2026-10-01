@@ -1,12 +1,12 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
-describe('ChordproViewer', () => {
+describe('TitanChordpro', () => {
   it('mounts jesus-1 and transpose changes displayed chords', async () => {
     const src = loadFixture(JESUS_1)
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src, theme: 'dark', autoHide: false },
       attachTo: document.body,
     })
@@ -25,19 +25,19 @@ describe('ChordproViewer', () => {
 
   it('applies a saved {transpose:} on the transpose control', async () => {
     const src = '{title: Uma}\n{key:Ab}\n{transpose:-1}\n\n[Ab]hey\n'
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src, theme: 'dark', autoHide: false },
       attachTo: document.body,
     })
     await flushPromises()
     expect(w.get('[data-display-key]').text()).toBe('Ab')
     expect(w.get('[data-tone-shift]').text()).toMatch(/tocando em G/)
-    expect(w.findAll('.cpv-chord').map((n) => n.text())).toContain('G')
+    expect(w.findAll('.titan-chordpro-chord').map((n) => n.text())).toContain('G')
     await w.get('[data-transpose-up]').trigger('click')
     await flushPromises()
     expect(w.get('[data-display-key]').text()).toBe('Ab')
     expect(w.find('[data-tone-shift]').exists()).toBe(false)
-    expect(w.findAll('.cpv-chord').map((n) => n.text())).toContain('Ab')
+    expect(w.findAll('.titan-chordpro-chord').map((n) => n.text())).toContain('Ab')
     await w.get('[data-transpose-up]').trigger('click')
     await flushPromises()
     expect(w.get('[data-display-key]').text()).toBe('Ab')
@@ -46,7 +46,7 @@ describe('ChordproViewer', () => {
   })
 
   it('exposes light/dark/auto theme control', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: loadFixture(JESUS_1), theme: 'auto', autoHide: false },
       attachTo: document.body,
     })
@@ -60,12 +60,12 @@ describe('ChordproViewer', () => {
     await btn.trigger('click')
     expect(w.get('[data-theme-btn]').text()).toMatch(/Escuro/)
     expect(w.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
-    expect(w.get('[data-cpv-root]').attributes('data-theme')).toBe('dark')
+    expect(w.get('[data-titan-chordpro-root]').attributes('data-theme')).toBe('dark')
     w.unmount()
   })
 
   it('scroll control sets explicit text color (not UA black)', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false },
       attachTo: document.body,
     })
@@ -76,7 +76,7 @@ describe('ChordproViewer', () => {
   })
 
   it('empty source shows empty copy', () => {
-    const w = mount(ChordproViewer, { props: { source: '' } })
+    const w = mount(TitanChordpro, { props: { source: '' } })
     expect(w.text()).toContain('Nenhuma cifra carregada')
     w.unmount()
   })
