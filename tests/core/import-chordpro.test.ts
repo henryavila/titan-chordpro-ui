@@ -142,20 +142,6 @@ describe('the chart\'s own details', () => {
     })
   })
 
-  it('maps Portuguese aliases to English keys and rewrites them', () => {
-    const src = '{title:T}\n{x_origem:https://cifraclub.com.br/a}\n{x_audio_cantado:https://cdn/a.m4a?h=1}\n[G]a\n'
-    expect(readMeta(src)).toMatchObject({
-      title: 'T',
-      x_source: 'https://cifraclub.com.br/a',
-      x_audio_sung: 'https://cdn/a.m4a?h=1',
-    })
-    const out = writeMeta(src, readMeta(src))
-    expect(out).toContain('{x_source:https://cifraclub.com.br/a}')
-    expect(out).toContain('{x_audio_sung:https://cdn/a.m4a?h=1}')
-    expect(out).not.toContain('x_origem')
-    expect(out).not.toContain('x_audio_cantado')
-  })
-
   it('rewrites the header instead of stacking a second one', () => {
     const out = writeMeta('{key:C}\n{title:Velho}\n[G]Letra', { title: 'Novo', key: 'G' })
     expect(out.match(/\{key:/g)).toHaveLength(1)
@@ -537,10 +523,10 @@ E|--------------3---------------------------|
     const meta = readMeta(r.source)
     expect(meta.tempo).toBe('71')
     expect(meta.time).toBe('4/4')
-    expect(meta.x_youtube).toBe('YXnQ02HYB1w')
+    expect(meta.x_titan_youtube).toBe('YXnQ02HYB1w')
     expect(meta.capo).toBeUndefined()
-    expect(meta.x_strum).toContain('bpm=71')
-    expect(meta.x_strum).toContain('pat=')
+    expect(meta.x_titan_strum).toContain('bpm=71')
+    expect(meta.x_titan_strum).toContain('pat=')
     expect(missingOf(meta).filter((k) => k === 'tempo' || k === 'time')).toEqual([])
   })
 
@@ -677,9 +663,9 @@ letra [G]aqui
     const muted = page.strums[0]?.slots.find((s) => s.essence === 'muted')
     expect(muted).toEqual({ dir: 'down', contact: 'hit', essence: 'muted' })
     const r = convert(CEU_AZUL_STRUM)
-    // Active pattern in x_strum; full set in x_strum_set
-    expect(readMeta(r.source).x_strum).toContain('Da')
-    expect(readMeta(r.source).x_strum_set).toBeTruthy()
-    expect(readMeta(r.source).x_strum_set!.split('|').length).toBe(3)
+    // Active pattern in x_titan_strum; full set in x_titan_strum_set
+    expect(readMeta(r.source).x_titan_strum).toContain('Da')
+    expect(readMeta(r.source).x_titan_strum_set).toBeTruthy()
+    expect(readMeta(r.source).x_titan_strum_set!.split('|').length).toBe(3)
   })
 })

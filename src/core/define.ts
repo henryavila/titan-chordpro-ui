@@ -313,13 +313,13 @@ function lineKey(line: string): string {
 
 function notationOpen(key: string): 'tab' | 'score' | null {
   if (key === 'sot' || key === 'start_of_tab') return 'tab'
-  if (key === 'sos' || key === 'start_of_score') return 'score'
+  if (key === 'x_titan_start_of_score') return 'score'
   return null
 }
 
 function notationClose(key: string, region: 'tab' | 'score'): boolean {
   if (region === 'tab') return key === 'eot' || key === 'end_of_tab'
-  return key === 'eos' || key === 'end_of_score'
+  return key === 'x_titan_end_of_score'
 }
 
 /**
@@ -407,10 +407,15 @@ const DEFINE_HEADER = new Set([
   'time',
   'duration',
   'capo',
-  'x_origem',
-  'x_youtube',
-  'x_strum',
-  'x_strum_set',
+  'x_titan_source',
+  'x_titan_audio_sung',
+  'x_titan_audio_playback',
+  'x_titan_audio_art',
+  'x_titan_audio_art_w',
+  'x_titan_audio_art_h',
+  'x_titan_youtube',
+  'x_titan_strum',
+  'x_titan_strum_set',
 ])
 
 /**

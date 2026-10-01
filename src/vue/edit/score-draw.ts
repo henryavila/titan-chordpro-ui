@@ -2,7 +2,7 @@
  * Drawing a score with VexFlow. The same path serves the editor (with a
  * selection and clickable notes) and the reading surface.
  *
- * VexFlow is optional: a host that never shows a `{sos}` block should not have
+ * VexFlow is optional: a host that never shows a `{x_titan_start_of_score}` block should not have
  * to ship an engraver. It is looked for on `window.Vex` (a CDN tag) and, when
  * that is absent, imported from the package if it happens to be installed.
  * Without either, the caller falls back to showing the source text.

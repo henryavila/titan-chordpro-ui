@@ -795,8 +795,7 @@ describe('transposeDefine', () => {
     const blocks = [
       ['{start_of_tab}', '{end_of_tab}'],
       ['{sot}', '{eot}'],
-      ['{start_of_score}', '{end_of_score}'],
-      ['{sos}', '{eos}'],
+      ['{x_titan_start_of_score}', '{x_titan_end_of_score}'],
     ] as const
     for (const [open, close] of blocks) {
       const src = [
@@ -817,9 +816,9 @@ describe('transposeDefine', () => {
       '{start_of_tab}',
       '{define-guitar: D frets x 0 0 2 3 2 keys 0 4 7}',
       '{end_of_tab}',
-      '{start_of_score}',
+      '{x_titan_start_of_score}',
       '{define-ukulele: D frets 0 0 0 3 keys 0 4 7}',
-      '{end_of_score}',
+      '{x_titan_end_of_score}',
       '[D]',
     ].join('\n')
     const kept = liveExport(insideGuitar, 2).defines

@@ -26,6 +26,10 @@ export default defineConfig([
     splitting: false,
   },
   {
+    entry: { 'bundle/index': 'src/bundle/index.ts' },
+    format: ['esm'], dts: true, sourcemap: true, splitting: false,
+  },
+  {
     entry: { 'cli/index': 'src/cli/index.ts' },
     format: ['esm'],
     dts: false,

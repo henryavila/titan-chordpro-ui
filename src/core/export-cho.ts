@@ -38,7 +38,7 @@ export function patchMeta(
     time?: string
     duration?: string
     capo?: string | number
-    x_source?: string
+    x_titan_source?: string
   },
 ): string {
   const lines = String(source ?? '').split('\n')
@@ -52,7 +52,7 @@ export function patchMeta(
     time: ['time'],
     duration: ['duration'],
     capo: ['capo'],
-    x_source: ['x_source', 'x_origem'],
+    x_titan_source: ['x_titan_source'],
   }
   const META = new Set([
     'title',
@@ -66,8 +66,7 @@ export function patchMeta(
     'time',
     'duration',
     'capo',
-    'x_source',
-    'x_origem',
+    'x_titan_source',
   ])
 
   const indexOfMeta = (names: string[]) =>

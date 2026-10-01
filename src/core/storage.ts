@@ -24,6 +24,8 @@ export type ChartStore = {
 export const STORE_KEYS = {
   /** Reading preferences: theme, type bias, fit mode, metronome toggles. */
   prefs: 'cpv:prefs',
+  /** Personal TAB rhythm; absent means use each excerpt’s authored default. */
+  tabRhythm: 'cpv:tab-rhythm',
   /** `"1"` once the fit-mode hint has actually been seen. */
   fitSeen: 'cpv:fitSeen',
   /** `"1"` once the three touch rules of the editor have been shown. */

@@ -36,7 +36,7 @@ Bookmarks antigos (`/?ficha=1`, `/?ensaio=juntas`) redirecionam para a página n
 ```sh
 pnpm add @henryavila/titan-chordpro-ui
 # peers: vue ^3.5 (obrigatório para a UI)
-#        vexflow (só se for desenhar {sos}/{sot})
+#        vexflow (só se for desenhar {x_titan_start_of_score}/{sot})
 #        pdfjs-dist (só se for importar PDF)
 ```
 
@@ -368,15 +368,15 @@ ou nenhum). Sem faixa, o chrome não muda. Caminho same-origin (`/audio/nasce.m4
 também vale. Uma faixa só: `setAudioUrl(cho, url, 'sung' | 'playback')`.
 
 Persistir é o fluxo de sempre (`update:source` / `save-content`). Não chame
-`writeMeta(cho, { x_audio_sung })` sozinho — `writeMeta` substitui o header
+`writeMeta(cho, { x_titan_audio_sung })` sozinho — `writeMeta` substitui o header
 inteiro; use `setRehearsalAudio`.
 
-**Capa da cifra:** quadrado **1024 × 1024 px** em `{x_audio_art:}`. A Central
+**Capa da cifra:** quadrado **1024 × 1024 px** em `{x_titan_audio_art:}`. A Central
 de Mídia mostra a capa em 1:1. Passe `width` e `height` **desse arquivo**,
 não do original de 3000 px. A URL precisa ser fetchável (CORS).
 
 **Capa padrão da marca:** prop `defaultAudioArt` (`{ url, width, height }`),
-quadrado **1024 × 1024**. Vale quando a cifra não tem `{x_audio_art:}`. A arte
+quadrado **1024 × 1024**. Vale quando a cifra não tem `{x_titan_audio_art:}`. A arte
 da cifra vence. Sem as duas, o Titan usa a arte genérica 512×512.
 
 Enquanto o áudio toca, o Titan publica na Central de Mídia o `{title:}` (sem
@@ -400,9 +400,36 @@ na cifra: `/media.html?capa=0`. Ensaio com lista: **`/standalone-lista.html?audi
 (cada cifra leva uma faixa diferente, para ouvir a troca). No celular, toque
 play e bloqueie a tela.
 
-Diretivas (inglês no arquivo): `{x_audio_sung:}`, `{x_audio_playback:}`,
-`{x_audio_art:}`, `{x_audio_art_w:}`, `{x_audio_art_h:}`. `{x_audio:}` /
-`{x_audio_cantado:}` legado lê como sung. UI: Cantado / Playback.
+**BREAKING CHANGE — migração obrigatória antes de atualizar o pacote.**
+Atualize as cifras já salvas e os campos lidos/enviados pelo consumer:
+
+| Nome anterior | Nome obrigatório |
+|---|---|
+| `x_source`, `x_origem` | `x_titan_source` |
+| `x_youtube` | `x_titan_youtube` |
+| `x_audio_sung`, `x_audio`, `x_audio_cantado` | `x_titan_audio_sung` |
+| `x_audio_playback` | `x_titan_audio_playback` |
+| `x_audio_art` | `x_titan_audio_art` |
+| `x_audio_art_w`, `x_audio_art_h` | `x_titan_audio_art_w`, `x_titan_audio_art_h` |
+| `x_strum`, `x_strum_set` | `x_titan_strum`, `x_titan_strum_set` |
+| `score` | `x_titan_score` |
+| `sos`, `start_of_score` | `x_titan_start_of_score` |
+| `eos`, `end_of_score` | `x_titan_end_of_score` |
+| `parseXStrum`, `formatXStrum` | `parseTitanStrum`, `formatTitanStrum` |
+| `parseXStrumSet`, `formatXStrumSet` | `parseTitanStrumSet`, `formatTitanStrumSet` |
+
+As chaves novas também são as propriedades de `ChartMeta`, os valores de
+`MetaKey` / `META_KEYS` e as chaves dos patches para os nove metadados.
+As três diretivas de notação são blocos do documento. `ParsedScore.from`
+passa de `sos` para `x_titan_start_of_score` quando a notação é interna.
+Ajuste os leitores, escritores
+e imports do consumer junto com a atualização das cifras. Não há aliases nem
+conversão automática. Diretivas padrão e marcas de tempo `x///` não mudam.
+
+Diretivas (inglês no arquivo): `{x_titan_audio_sung:}`, `{x_titan_audio_playback:}`,
+`{x_titan_audio_art:}`, `{x_titan_audio_art_w:}`, `{x_titan_audio_art_h:}`. UI: Cantado / Playback.
+Os nomes antigos não são interpretados nem convertidos. Arquivos e propriedades
+de `ChartMeta` devem usar `x_titan_*`; veja [o contrato de nomes](NAMING.md#custom-chordpro-tags-x_titan_).
 
 O player na cifra mostra o mesmo título, artista e capa. Com as duas faixas,
 Cantado / Playback são pílulas clicáveis; com uma só, só o rótulo. No celular
@@ -411,8 +438,8 @@ o ícone de fone na linha de Cifra | Letra: toque abre o player
 fecha o player grande e deixa o fone. No computador o chip continua acima da
 barra, com título. X fecha o player (sem parar o áudio).
 
-A origem da cifra no arquivo é `{x_source:}` (inglês). `{x_origem:}` legado
-ainda lê; a próxima gravação reescreve. Na UI o campo continua **Origem** /
+A origem da cifra no arquivo é `{x_titan_source:}` (inglês).
+Na UI o campo continua **Origem** /
 **Referência**.
 
 YouTube, Spotify, Apple Music, `javascript:` e `data:` são recusados (throw).
@@ -723,7 +750,7 @@ Sem o `Referer`, alguns servidores respondem 401.
 | `stdShapeKey` | `config.keyShape` e `<button data-anchor="--chord-tone">Em</button>`. Este é o tom da página. `key` e `shapeKey` divergem quando há capo (Wonderwall: a página mostra `Em`, a API manda `key` `A`) |
 | `capo` | `config.capo` (número). `0` não vira `{capo:}` |
 | `youtubeId` | `"youtubeID"` (ID maiúsculo), 11 caracteres, antes de um `videoLesson` |
-| `strumming` | array `strummings`. Em cada item, `time_signature` vira `timeSignature`; `pattern`, `bpm` e `section` ficam. Sem `strummings`, tempo, compasso e `{x_strum:}` não entram. Sem `timeSignature`, o compasso cai em 4/4; tempo e batida continuam |
+| `strumming` | array `strummings`. Em cada item, `time_signature` vira `timeSignature`; `pattern`, `bpm` e `section` ficam. Sem `strummings`, tempo, compasso e `{x_titan_strum:}` não entram. Sem `timeSignature`, o compasso cai em 4/4; tempo e batida continuam |
 | `content` | o texto da API, dentro de `<pre>`, do jeito que veio |
 
 O acorde em `content` já é `<b>Bm7</b>`. O parser usa o texto da tag.
@@ -767,3 +794,153 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] Cifra Club: `fetchChart` no backend; se a página não for a cifra, API `/v3/version/…` e o HTML da [§11](#11-buscar-no-cifra-club-fetchchart)
 
 Props, emits e o resto da API: [README](../README.md).
+
+## Solos em Guitar Pro / MusicXML
+
+Em **Editar → + entre blocos → Guitar Pro / MusicXML**, escolha um arquivo no
+aparelho, informe o **Nome do trecho** (começa como **Solo**), selecione a faixa
+e o intervalo de compassos, confira o desenho e salve.
+Arraste as duas alças para marcar início e fim, ou digite os números exatos.
+O intervalo fica entre 1 e o total de compassos do arquivo; **Selecionar tudo**
+inclui o arquivo inteiro. Os controles ficam ao lado da prévia no computador
+e acima dela no celular, com as ações de salvar e cancelar sempre acessíveis.
+Novos solos começam com **Ritmo na base** selecionado. Na criação ou em
+**Ajustar trecho**, escolha o **Ritmo padrão da TAB**:
+**Ritmo estendido** (hastes até as notas), **Ritmo na base** (hastes somente
+abaixo das cordas) ou **Sem ritmo** (sem hastes e barras de duração).
+Na leitura, o próprio trecho oferece **TAB / Partitura**, **Ritmo da TAB** e **Zoom Auto**. Os quatro controles ficam na mesma linha; no celular,
+os detalhes de ritmo e zoom aparecem somente ao abrir o menu.
+A escolha de ritmo na leitura vale para os solos neste navegador, persiste entre
+visitas e não altera o source, o estado de edição nem o padrão definido pelo autor.
+**Padrão do trecho** remove a preferência e volta a respeitar cada trecho.
+A chave `STORE_KEYS.tabRhythm` (`cpv:tab-rhythm`) usa o `storage` do host quando
+fornecido; o host pode separá-la por conta. Por padrão, é uma preferência do navegador,
+sem identificação de usuário. Se o armazenamento estiver bloqueado, vale na sessão.
+A prévia do editor sempre mostra o padrão que está sendo editado.
+O desenho SVG reorganiza os compassos conforme a largura e mantém escala mínima
+de 110%; um compasso muito denso pode rolar horizontalmente sem diminuir as notas.
+O zoom manual vai até 200%. A notação conserva o tom do arquivo original.
+
+Instale o peer opcional `@coderline/alphatab` (>=1.8.4 <2). Ele é carregado apenas
+quando se abre um solo externo. A fonte Bravura acompanha o pacote, sem CDN,
+worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
+
+- `uploadScore(file): Promise<{ ref: string }>` habilita a opção de inserir
+  Guitar Pro / MusicXML e escolher um arquivo do aparelho; o host guarda os bytes originais e devolve uma referência permanente.
+- `resolveScore(ref): string` transforma essa referência em URL acessível ao
+  navegador. URLs externas precisam permitir CORS. Sem resolver, usa a referência
+  como URL relativa ou absoluta.
+- Formatos do importador: Guitar Pro `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.gp` e
+  MusicXML `.xml`, `.musicxml`, `.mxl`. A qualidade depende dos dados do arquivo.
+  MusicXML sem posições de corda/casa fica em Partitura, com TAB indisponível.
+
+O source usa uma diretiva única para cada referência externa:
+
+```chordpro
+{x_titan_score: src="solos/guitarra.gp" track=1 start=17 end=24 rhythm=base name="Solo de entrada"}
+```
+
+`{x_titan_score: ...}` não possui conteúdo interno nem tag de fechamento.
+`{x_titan_start_of_score}…{x_titan_end_of_score}` fica reservado à notação escrita dentro da própria cifra.
+
+O atributo opcional `name="Solo de entrada"` (`ScoreReference.name`) identifica
+o trecho na cifra e no PDF. Referências antigas, sem nome, mostram **Solo**.
+Na leitura, o cabeçalho mostra somente esse nome, sem faixa, intervalo ou aviso
+de tom original. A notação continua no tom do arquivo. A seta no canto do card
+oculta ou mostra o conteúdo, mantendo o título visível; não flutua sobre a cifra.
+O card aproveita uma área mais larga que a coluna da letra no desktop e respeita
+a largura disponível no celular e no componente incorporado.
+
+Faixa e compassos começam em 1; `end` omitido vai até o fim.
+O atributo opcional `rhythm=extended|base|none` salva o padrão de apresentação;
+omitido, mantém o ritmo estendido. `ScoreReference.rhythm` usa o tipo `TabRhythm`.
+O padrão visual segue o perfil Guitar Pro do Titan: uma haste por nota;
+na base, a mínima tem **50%** da altura da semínima. No modo estendido, a mínima
+mantém o tamanho e a semínima cresce até a nota. A semibreve não tem haste.
+A regra vale para tela e PDF; barras, pontos e quiálteras permanecem preservados.
+Fontes, diferenças entre convenções e critérios de aceite estão em
+[`NOTACAO-VISUAL.md`](NOTACAO-VISUAL.md).
+O arquivo Guitar Pro/MusicXML e suas durações não são modificados. Os helpers
+`readScoreReference`/`writeScoreReference` validam a referência. Não se converte
+para a notação simplificada do editor; bends, vozes e durações permanecem no
+arquivo. Alterar ou cancelar o trecho não modifica os bytes originais.
+
+Limites desta entrega: a transposição da cifra não transpõe o arquivo externo;
+o HTML estático identifica o trecho, sem desenhar a pauta externa.
+A seleção de compassos não fornece sincronização de áudio nem tempo exato para
+a auto-rolagem. Na lente Só letra, o trecho é ocultado como as outras partituras.
+
+Referência do motor: https://alphatab.net/docs/introduction
+
+
+### Solos na exportação PDF
+
+Ao tocar **Exportar → Documento PDF**, uma cifra com solos Guitar Pro/MusicXML
+pede **TAB**, **Partitura** ou **Nenhum**, e só baixa após **Gerar PDF**. O desenho
+é preparado para papel, em preto no branco, no tom original do arquivo, com os
+compassos selecionados e quebra de página entre sistemas completos. Não depende
+do zoom, tema ou da parte visível na tela. Em TAB, respeita a preferência pessoal de ritmo ou, sem ela, o padrão de cada trecho. Se um arquivo não tiver TAB, a escolha
+continua aberta com uma mensagem para escolher Partitura ou Nenhum. Falhas de
+leitura/desenho interrompem o download; não se gera um PDF com o solo faltando.
+Nenhum omite os blocos TAB/partitura. TABs em texto e partituras da sintaxe antiga
+mantêm a exportação anterior quando incluídas; a alternância é dos arquivos
+Guitar Pro/MusicXML.
+
+Para consumidores de `renderPdf` sem o componente Vue:
+
+- `notation: 'tab' | 'score' | 'none'` seleciona a exportação.
+- `renderNotation(text, mode)` fornece uma Promise de imagens PNG dos sistemas
+  (`{ data: string | Uint8Array, width: number, height: number }[]`). A largura e
+  altura usam a mesma unidade; o PDF preserva a proporção e pagina os sistemas.
+- O componente Vue fornece esse renderizador automaticamente. O `/pdf` continua
+  utilizável no Node, sem Vue/DOM. Sem `notation`, preserva o comportamento anterior
+  (referência textual); com TAB/Partitura e um solo externo, exige `renderNotation`.
+- A renderização para papel usa alphaTab Canvas a pelo menos 288 pixels por
+  polegada na largura útil A4, enquanto a cifra na tela continua em SVG.
+
+
+### Apresentação do trecho (Titan)
+
+A superfície é composta pelo Titan a partir dos sistemas musicais do motor,
+sem montar o visualizador de documento do alphaTab. Importação e geometria de
+notação continuam no motor; a seleção de faixa/compassos, disposição, controles,
+cores, fontes e composição das linhas pertencem à UI Titan. Tela e PDF usam
+`notation-renderer.ts`, com paletas separadas. Não aparecem capa, afinação,
+diagramas, nomes de acordes do documento, créditos ou rodapé do importador.
+Bends, ligaduras, pausas e indicações musicais permanecem.
+
+Na tela o fundo é transparente, as notas seguem a cor de texto da cifra, as
+linhas seguem a cor secundária e os números dos compassos seguem a cor dos
+acordes. Alternar claro/escuro redesenha o trecho sem buscar novamente o arquivo.
+O layout ignora a paginação original e reorganiza os sistemas na largura atual.
+A importação de um arquivo novo abre os primeiros quatro compassos (ou menos,
+se o arquivo for menor); o músico define o intervalo antes de salvar. Referências
+já salvas continuam respeitando exatamente o intervalo original.
+
+
+### Recolher referências durante a leitura
+
+**Ocultar TAB / partitura** recolhe individualmente solos externos, partituras,
+TABs em texto e imagens. **Mostrar TAB / partitura** reabre o mesmo bloco.
+A preferência vale na leitura da cifra atual e não reescreve o source, não
+remove os tempos do bloco e não muda a escolha da exportação PDF.
+
+Enquanto Rolar está ativo, a UI conserva a posição musical e mede novamente o
+layout depois de recolher/abrir. Mudanças de scroll causadas pelo navegador ao
+encolher a página não são tratadas como um gesto para avançar na música. Parada,
+a UI preserva o bloco/linha visível, dentro dos limites de rolagem disponíveis.
+Se o próprio trecho em leitura for recolhido, seu tempo permanece no relógio;
+o botão compacto o representa até o trecho seguinte. Entrar no editor ou trocar
+a cifra reabre as referências.
+
+
+## Cifra completa (.zip)
+
+**Exportar → Cifra completa** reúne ChordPro, solos, imagens, áudios e capas/fundos
+em um pacote com referências locais. Para arquivos privados, o consumer pode
+fornecer `loadBundleAsset(reference, kind)`. Serviços online ficam somente como
+informação de origem. Contrato, inventário completo e limites: [BUNDLE.md](./BUNDLE.md).
+
+Não há importação automática do ZIP nesta entrega. O consumer pode extrair os
+arquivos e resolver seus caminhos a partir da pasta extraída; o pacote não
+depende dos servidores de origem para obter as mídias.

@@ -25,7 +25,7 @@ const props = withDefaults(
     fetchChart?: (url: string) => Promise<string>
     /**
      * Host fetch of a YouTube watch page (HTML) or a ready `MM:SS` duration.
-     * Used after Cifra Club import when `{x_youtube:}` is present.
+     * Used after Cifra Club import when `{x_titan_youtube:}` is present.
      */
     fetchYoutubeDuration?: (videoId: string) => Promise<string>
     /** Reads a PDF that has text. Without it, PDFs are refused up front. */
@@ -176,7 +176,7 @@ function startBlank() {
 }
 
 async function fillDurationFromYoutube(m: ChartMeta): Promise<ChartMeta> {
-  const id = String(m.x_youtube ?? '').trim()
+  const id = String(m.x_titan_youtube ?? '').trim()
   if (!id || !props.fetchYoutubeDuration) return m
   try {
     const raw = await props.fetchYoutubeDuration(id)
@@ -212,7 +212,7 @@ async function runUrl() {
     const r = convert(text)
     if (!r.source.trim()) throw new Error('vazio')
     const guess = titleFromUrl(u)
-    let m: ChartMeta = { ...readMeta(r.source), x_source: u }
+    let m: ChartMeta = { ...readMeta(r.source), x_titan_source: u }
     if (!m.title) m.title = guess.title
     if (!m.subtitle) m.subtitle = guess.subtitle
     m = await fillDurationFromYoutube(m)
@@ -347,7 +347,7 @@ function acceptKeyRewrite() {
     tempo: user.tempo,
     time: user.time,
     duration: user.duration,
-    x_source: user.x_source,
+    x_titan_source: user.x_titan_source,
   }
   keyRewrite.value = null
 }
@@ -577,8 +577,8 @@ onMounted(() => {
           </div>
           <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Tempo da música, como no YouTube. A rolagem precisa disso.</span>
           <a
-            v-if="meta.x_youtube"
-            :href="'https://www.youtube.com/watch?v=' + meta.x_youtube"
+            v-if="meta.x_titan_youtube"
+            :href="'https://www.youtube.com/watch?v=' + meta.x_titan_youtube"
             target="_blank"
             rel="noopener noreferrer"
             data-nova-youtube
@@ -628,7 +628,7 @@ onMounted(() => {
 
         <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
-          <input :value="meta.x_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_source', ($event.target as HTMLInputElement).value)" />
+          <input :value="meta.x_titan_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)" />
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">

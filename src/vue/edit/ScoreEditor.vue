@@ -23,7 +23,7 @@ const props = withDefaults(
   defineProps<{
     title?: string
     subtitle?: string
-    /** The block's source: a `{sos}` score, a legacy text tab, or empty. */
+    /** The block's source: a `{x_titan_start_of_score}` score, a legacy text tab, or empty. */
     source?: string
     entry?: 'guitar' | 'piano'
     view?: 'score' | 'tab' | 'both'

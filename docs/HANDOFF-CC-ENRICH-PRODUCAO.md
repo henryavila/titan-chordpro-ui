@@ -99,20 +99,20 @@ php artisan chordpro:enrich-cifraclub \
 | Campo | Política |
 |-------|----------|
 | corpo ChordPro | **nunca** altera |
-| `x_source` | URL do mapa (`{x_origem:}` legado ainda lê) |
-| `x_strum` / `x_strum_set` | **keep-local**: só preenche quando a cifra **não tem** batida; se o CC trouxer N>1 padrões, grava o conjunto completo (ver schema abaixo). No mapa SDA: 0 páginas com batida local |
+| `x_titan_source` | URL do mapa |
+| `x_titan_strum` / `x_titan_strum_set` | **keep-local**: só preenche quando a cifra **não tem** batida; se o CC trouxer N>1 padrões, grava o conjunto completo (ver schema abaixo). No mapa SDA: 0 páginas com batida local |
 | `tempo` / `time` / `key` / título… | fill-empty |
 | `capo` | não aplica |
-| `x_youtube` | com `--youtube=remote`: grava o do CC se existir; se local já tem e difere, mantém local |
+| `x_titan_youtube` | com `--youtube=remote`: grava o do CC se existir; se local já tem e difere, mantém local |
 
 `--youtube=skip` — não grava YouTube (só resto da meta).
 
-### Multi-batida — schema `x_strum_set` (blast radius)
+### Multi-batida — schema `x_titan_strum_set` (blast radius)
 
-- **Legado (sempre):** `{x_strum: bpm=…; meter=…; grid=…; label=…; pat=…}` — um padrão ativo. Leitores antigos continuam vendo só isso.
-- **Multi (novo):** `{x_strum_set: <activeIndex>|<pattern>|<pattern>|…}` — encoding compacto **sem JSON/chaves `{}`**. Cada `<pattern>` usa a mesma gramática de `{x_strum:}`. Pipe `|` separa índice e padrões; labels sanitizam `|` → `/` e `}` → `)`.
-- **Writer:** N==1 → só `{x_strum:}`; N>1 → `{x_strum:}` (ativo) **+** `{x_strum_set:}`. Import/enrich CC com vários `strummings` passa a guardar todos (ex.: Céu Azul = 2).
-- **Blast radius:** clients que só leem `x_strum` ignoram o set e usam o padrão ativo. Não há binding de batida a verso/refrão — o músico escolhe o ativo na UI.
+- **Legado (sempre):** `{x_titan_strum: bpm=…; meter=…; grid=…; label=…; pat=…}` — um padrão ativo. Leitores antigos continuam vendo só isso.
+- **Multi (novo):** `{x_titan_strum_set: <activeIndex>|<pattern>|<pattern>|…}` — encoding compacto **sem JSON/chaves `{}`**. Cada `<pattern>` usa a mesma gramática de `{x_titan_strum:}`. Pipe `|` separa índice e padrões; labels sanitizam `|` → `/` e `}` → `)`.
+- **Writer:** N==1 → só `{x_titan_strum:}`; N>1 → `{x_titan_strum:}` (ativo) **+** `{x_titan_strum_set:}`. Import/enrich CC com vários `strummings` passa a guardar todos (ex.: Céu Azul = 2).
+- **Blast radius:** clients que só leem `x_titan_strum` ignoram o set e usam o padrão ativo. Não há binding de batida a verso/refrão — o músico escolhe o ativo na UI.
 
 ### CLI puro (debug / um arquivo)
 

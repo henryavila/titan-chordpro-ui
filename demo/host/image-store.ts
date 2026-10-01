@@ -4,6 +4,7 @@
  */
 const DB = 'titan-chordpro-demo'
 const STORE = 'score-images'
+type StoredMedia = { bytes: ArrayBuffer; type: string }
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -17,14 +18,19 @@ function openDb(): Promise<IDBDatabase> {
 }
 
 export async function persistScoreImage(ref: string, blob: Blob): Promise<void> {
+  // Store structured-cloneable bytes rather than a browser-managed Blob/File
+  // backing store (which WebKit can reject). Older Blob entries remain readable.
+  const media: StoredMedia = { bytes: await blob.arrayBuffer(), type: blob.type }
   const db = await openDb()
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).put(blob, ref)
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-  db.close()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      tx.objectStore(STORE).put(media, ref)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+      tx.onabort = () => reject(tx.error)
+    })
+  } finally { db.close() }
 }
 
 export async function loadScoreImages(): Promise<Array<{ ref: string; blob: Blob }>> {
@@ -36,9 +42,14 @@ export async function loadScoreImages(): Promise<Array<{ ref: string; blob: Blob
     const req = store.getAll()
     const keys = store.getAllKeys()
     tx.oncomplete = () => {
-      const blobs = (req.result ?? []) as Blob[]
+      const blobs = (req.result ?? []) as Array<Blob | StoredMedia>
       const ids = (keys.result ?? []) as string[]
-      resolve(ids.map((ref, i) => ({ ref, blob: blobs[i] as Blob })).filter((r) => r.blob))
+      resolve(ids.flatMap((ref, i) => {
+        const stored = blobs[i]
+        if (!stored) return []
+        const blob = stored instanceof Blob ? stored : new Blob([stored.bytes], { type: stored.type })
+        return [{ ref, blob }]
+      }))
     }
     tx.onerror = () => reject(tx.error)
   })

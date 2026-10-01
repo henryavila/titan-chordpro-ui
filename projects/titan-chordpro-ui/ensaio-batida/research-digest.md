@@ -25,7 +25,7 @@
 
 - **Dois AudioContexts:** click (osciladores) e batida (WAVs) são engines separados, sem ducking mútuo. Defaults ambos off. Evidence: explore digest + `useMetronome` / `useStrumSound`.
 
-- **BPM dual:** strip mostra `pattern.bpm` do `{x_strum:}`; áudio/highlight seguem BPM do metrônomo (`{tempo:}` / override). Risco de label mentir sobre o que se ouve.
+- **BPM dual:** strip mostra `pattern.bpm` do `{x_titan_strum:}`; áudio/highlight seguem BPM do metrônomo (`{tempo:}` / override). Risco de label mentir sobre o que se ouve.
 
 - **Sem practiceMode nomeado:** ensaio no produto = setlist + lens/letra + metrônomo; não há flag `ensaioBatida`. `WriteMode` local/content é escrita, não prática.
 
@@ -37,7 +37,7 @@
 2. **Novo `lens=batida` vs modo paralelo.** `lens` hoje é projeção tipográfica (acordes/letra/Nashville). “Ensaio Batida” pode ser layout/chrome (strip grande, foco rítmico) sem ser a mesma família — ou estender `Lens` (stake de API).
 3. **Default ao ligar Rolar com batida presente.** Hoje nada muda: click/strum seguem prefs. Mudar default para “batida no lugar do click” é one-way de hábito.
 4. **Count-in vs batida.** Se a fonte for batida, a entrada deve ser click, batida, ou híbrido?
-5. **Sem `{x_strum:}`.** Modo Ensaio Batida e toggle de som precisam degradar (CTA criar batida? só click? ocultar modo?).
+5. **Sem `{x_titan_strum:}`.** Modo Ensaio Batida e toggle de som precisam degradar (CTA criar batida? só click? ocultar modo?).
 6. **API pública:** prefs locais já existem; lens novo toca `CONSUMER.md` + hosts SDA. Stake ratificado na Interview.
 
 ## External UX patterns (informam proposta; **não** são evidência do digest)

@@ -36,11 +36,11 @@ function voicelessWithoutMarks(src: string): number {
       tab = false
       continue
     }
-    if (k === 'sos' || k === 'start_of_score') {
+    if (k === 'x_titan_start_of_score') {
       score = true
       continue
     }
-    if (k === 'eos' || k === 'end_of_score') {
+    if (k === 'x_titan_end_of_score') {
       score = false
       continue
     }
@@ -67,12 +67,12 @@ export function lintSource(source: string): LintResult {
   const eoc = count(src, /\{\s*(eoc|end_of_chorus)\b/gi)
   const sot = count(src, /\{\s*(sot|start_of_tab)\b/gi)
   const eot = count(src, /\{\s*(eot|end_of_tab)\b/gi)
-  const sos = count(src, /\{\s*(sos|start_of_score)\b/gi)
-  const eos = count(src, /\{\s*(eos|end_of_score)\b/gi)
+  const sos = count(src, /\{\s*x_titan_start_of_score\b/gi)
+  const eos = count(src, /\{\s*x_titan_end_of_score\b/gi)
 
   if (soc !== eoc) issues.push(`refrão sem fechar (${soc} {soc} × ${eoc} {eoc})`)
   if (sot !== eot) issues.push(`tab sem fechar (${sot} {sot} × ${eot} {eot})`)
-  if (sos !== eos) issues.push(`partitura sem fechar (${sos} {sos} × ${eos} {eos})`)
+  if (sos !== eos) issues.push(`partitura sem fechar (${sos} {x_titan_start_of_score} × ${eos} {x_titan_end_of_score})`)
   const brackets = Math.abs(count(src, /\[/g) - count(src, /\]/g))
   if (brackets) issues.push('colchete de acorde sem par')
   const k = (src.match(/\{\s*key\s*:\s*([^}]*)\}/i) || [])[1]

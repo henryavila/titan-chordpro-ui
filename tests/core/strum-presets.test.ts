@@ -3,9 +3,9 @@ import {
   applyStrumPreset,
   draftStrumPreset,
   emptyPattern,
-  formatXStrum,
+  formatTitanStrum,
   listStrumPresets,
-  parseXStrum,
+  parseTitanStrum,
   type StrumPreset,
 } from '../../src/core'
 
@@ -20,7 +20,7 @@ const SAMPLE: StrumPreset[] = [
       meter: '4/4',
       grid: 8,
       label: 'Host A',
-      slots: parseXStrum('bpm=71; meter=4/4; grid=8; label=Host A; pat=DuDu DuDU')!.slots,
+      slots: parseTitanStrum('bpm=71; meter=4/4; grid=8; label=Host A; pat=DuDu DuDU')!.slots,
     },
   },
   {
@@ -31,7 +31,7 @@ const SAMPLE: StrumPreset[] = [
       meter: '4/4',
       grid: 8,
       label: 'Host B',
-      slots: parseXStrum('bpm=71; meter=4/4; grid=8; label=Host B; pat=Dudu Dudu')!.slots,
+      slots: parseTitanStrum('bpm=71; meter=4/4; grid=8; label=Host B; pat=Dudu Dudu')!.slots,
     },
   },
   {
@@ -42,7 +42,7 @@ const SAMPLE: StrumPreset[] = [
       meter: '4/4',
       grid: 16,
       label: 'Host C',
-      slots: parseXStrum(
+      slots: parseTitanStrum(
         'bpm=71; meter=4/4; grid=16; label=Host C; pat=DuDu DuDu DuDu DuDu',
       )!.slots,
     },
@@ -63,19 +63,19 @@ describe('listStrumPresets', () => {
     expect(listStrumPresets(SAMPLE).map((p) => p.id)).toEqual(ids)
   })
 
-  it('patterns round-trip via formatXStrum/parseXStrum without rest tokens', () => {
+  it('patterns round-trip via formatTitanStrum/parseTitanStrum without rest tokens', () => {
     for (const p of listStrumPresets(SAMPLE)) {
-      const raw = formatXStrum(p.pattern)
+      const raw = formatTitanStrum(p.pattern)
       const pat = raw.match(/pat=([^;]*)/)?.[1] ?? ''
       expect(pat).not.toContain('-')
       expect(pat).toMatch(ALLOWED_PAT)
       expect(p.pattern.slots.every((s) => s.contact !== 'rest')).toBe(true)
-      const again = parseXStrum(raw)
+      const again = parseTitanStrum(raw)
       expect(again).not.toBeNull()
       expect(again!.slots).toEqual(p.pattern.slots)
       expect(again!.grid).toBe(p.pattern.grid)
       expect(again!.label).toBe(p.pattern.label)
-      expect(formatXStrum(again!)).toBe(raw)
+      expect(formatTitanStrum(again!)).toBe(raw)
     }
   })
 })
@@ -93,7 +93,7 @@ describe('applyStrumPreset', () => {
     expect(next!.label).toBe(preset.pattern.label)
     expect(next!.slots).toEqual(preset.pattern.slots)
     expect(next!.slots).not.toBe(preset.pattern.slots)
-    const pat = formatXStrum(next!).match(/pat=([^;]*)/)?.[1] ?? ''
+    const pat = formatTitanStrum(next!).match(/pat=([^;]*)/)?.[1] ?? ''
     expect(pat).not.toContain('-')
     expect(current.label).toBe('Rascunho')
     expect(current.slots).toHaveLength(8)

@@ -86,7 +86,7 @@ function parseRaw(src: string): {
 
     if (score !== null) {
       score.push(raw)
-      if (d && /^(eos|end_of_score)$/i.test(d[1] ?? '')) {
+      if (d && /^x_titan_end_of_score$/i.test(d[1] ?? '')) {
         lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: li })
         score = null
       }
@@ -126,7 +126,11 @@ function parseRaw(src: string): {
     if (d) {
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
-      if (k === 'sos' || k === 'start_of_score') {
+      if (k === 'x_titan_score') {
+        lines.push({ kind: 'score', text: raw, li0: li, li1: li })
+        continue
+      }
+      if (k === 'x_titan_start_of_score') {
         score = [raw]
         scoreStart = li
         continue

@@ -178,6 +178,12 @@ export type ChordproViewerProps = {
    * enter the ChordPro source — `resolveImage` is how the chart shows them.
    */
   uploadImage?: (file: File) => Promise<{ ref: string }>
+  /** Stores an original Guitar Pro/MusicXML file; source retains only its reference. */
+  uploadScore?: (file: File) => Promise<{ ref: string }>
+  /** Resolves the external solo reference to a fetchable URL (CORS applies). */
+  resolveScore?: (src: string) => string
+  /** Original attachment bytes for an offline ZIP, including private/authenticated storage. */
+  loadBundleAsset?: (reference: string, kind: 'score' | 'image' | 'audio') => Promise<{ bytes: Uint8Array; contentType?: string }>
   /**
    * Colour of the chords, and of everything derived from them.
    * Named `verde` / `teal`, or any host hex / `rgb()` — light and dark are
@@ -224,7 +230,7 @@ export type ChordproViewerProps = {
    */
   readPdf?: (file: File) => Promise<string>
   /**
-   * Cover when the chart has no `{x_audio_art:}`. Square 1024 px for the
+   * Cover when the chart has no `{x_titan_audio_art:}`. Square 1024 px for the
    * lock screen. Chart art still wins. Omit → packaged 512 art.
    */
   defaultAudioArt?: AudioArt | null

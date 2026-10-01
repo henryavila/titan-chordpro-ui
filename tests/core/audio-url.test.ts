@@ -52,14 +52,14 @@ describe('playableAudioUrl', () => {
 })
 
 describe('setAudioUrl / audioUrlOf', () => {
-  const cho = '{title:Nasce}\n{key:A}\n{x_youtube:abcdefghijk}\n[A]x///\n'
+  const cho = '{title:Nasce}\n{key:A}\n{x_titan_youtube:abcdefghijk}\n[A]x///\n'
 
-  it('writes {x_audio_sung:} without wiping the rest of the header', () => {
+  it('writes {x_titan_audio_sung:} without wiping the rest of the header', () => {
     const next = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
-    expect(next).toContain('{x_audio_sung:https://cdn.sda/nasce.m4a?h=a1}')
+    expect(next).toContain('{x_titan_audio_sung:https://cdn.sda/nasce.m4a?h=a1}')
     expect(next).not.toContain('{x_audio:')
     expect(next).toContain('{title:Nasce}')
-    expect(next).toContain('{x_youtube:abcdefghijk}')
+    expect(next).toContain('{x_titan_youtube:abcdefghijk}')
     expect(next).toContain('[A]x///')
     expect(audioUrlOf(next)).toBe('https://cdn.sda/nasce.m4a?h=a1')
     expect(audioUrlOf(next, 'sung')).toBe('https://cdn.sda/nasce.m4a?h=a1')
@@ -87,27 +87,17 @@ describe('setAudioUrl / audioUrlOf', () => {
     expect(audioUrlOf(none)).toBeNull()
   })
 
-  it('reads legacy {x_audio:} and {x_audio_cantado:} as sung until rewritten', () => {
-    const legacy = '{title:Nasce}\n{x_audio:https://cdn.sda/old.m4a?h=1}\n[A]x\n'
-    expect(audioTracksOf(legacy).sung).toBe('https://cdn.sda/old.m4a?h=1')
-    const pt = '{title:Nasce}\n{x_audio_cantado:https://cdn.sda/pt.m4a?h=1}\n[A]x\n'
-    expect(audioTracksOf(pt).sung).toBe('https://cdn.sda/pt.m4a?h=1')
-    const next = setAudioUrl(legacy, 'https://cdn.sda/new.m4a?h=2', 'sung')
-    expect(next).toContain('{x_audio_sung:https://cdn.sda/new.m4a?h=2}')
-    expect(next).not.toMatch(/\{x_audio:/)
-  })
-
   it('replaces the URL in place when the hash changes', () => {
     const a = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
     const b = setAudioUrl(a, 'https://cdn.sda/nasce.m4a?h=b2')
-    expect(b.match(/\{x_audio_sung:/g)).toHaveLength(1)
+    expect(b.match(/\{x_titan_audio_sung:/g)).toHaveLength(1)
     expect(audioUrlOf(b, 'sung')).toBe('https://cdn.sda/nasce.m4a?h=b2')
   })
 
   it('removes the directive when the URL is cleared', () => {
     const a = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
     const b = setAudioUrl(a, null)
-    expect(b).not.toContain('x_audio_sung')
+    expect(b).not.toContain('x_titan_audio_sung')
     expect(audioUrlOf(b)).toBeNull()
   })
 
@@ -120,16 +110,16 @@ describe('setAudioUrl / audioUrlOf', () => {
     const sneaky = writeMeta(cho, {
       title: 'Nasce',
       key: 'A',
-      x_youtube: 'abcdefghijk',
-      x_audio_sung: 'https://youtube.com/watch?v=nope',
+      x_titan_youtube: 'abcdefghijk',
+      x_titan_audio_sung: 'https://youtube.com/watch?v=nope',
     })
-    expect(sneaky).toContain('{x_audio_sung:')
+    expect(sneaky).toContain('{x_titan_audio_sung:')
     expect(audioUrlOf(sneaky, 'sung')).toBeNull()
   })
 })
 
 describe('setAudioArt / identity', () => {
-  const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_audio:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
+  const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_titan_audio_sung:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
 
   it('recommends 1024 px so Media Session has a lock-screen cover', () => {
     expect(AUDIO_ART_MEDIA_PX).toBe(1024)
@@ -147,10 +137,10 @@ describe('setAudioArt / identity', () => {
 
   it('writes cover URL plus pixel size for the host-optimized file', () => {
     const next = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 512, height: 512 })
-    expect(next).toContain('{x_audio_art:https://cdn.sda/a.jpg?h=9}')
-    expect(next).toContain('{x_audio_art_w:512}')
-    expect(next).toContain('{x_audio_art_h:512}')
-    expect(next).toContain('{x_audio_sung:https://cdn.sda/a.m4a?h=1}')
+    expect(next).toContain('{x_titan_audio_art:https://cdn.sda/a.jpg?h=9}')
+    expect(next).toContain('{x_titan_audio_art_w:512}')
+    expect(next).toContain('{x_titan_audio_art_h:512}')
+    expect(next).toContain('{x_titan_audio_sung:https://cdn.sda/a.m4a?h=1}')
     expect(audioArtOf(next)).toEqual({
       url: 'https://cdn.sda/a.jpg?h=9',
       width: 512,
@@ -167,7 +157,7 @@ describe('setAudioArt / identity', () => {
   it('clears the cover', () => {
     const withArt = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 256, height: 256 })
     const next = setAudioArt(withArt, null)
-    expect(next).not.toContain('x_audio_art')
+    expect(next).not.toContain('x_titan_audio_art')
     expect(audioArtOf(next)).toBeNull()
   })
 

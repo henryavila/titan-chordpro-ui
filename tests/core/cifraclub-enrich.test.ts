@@ -45,12 +45,12 @@ describe('proposeCifraClubEnrich — meta only, no convert', () => {
 
     expect(chartBody(applied)).toBe(chartBody(TUA))
     expect(applied).not.toContain('[Bm7]') // CC body never imported
-    expect(readMeta(applied).x_source).toBe(url)
-    // local already has x_strum — keep-local omits batida from the patch
-    expect(proposal.patch.x_strum).toBeUndefined()
-    expect(readMeta(applied).x_strum).toContain('bpm=75')
-    expect(readMeta(applied).x_strum).not.toContain('bpm=71')
-    expect(readMeta(applied).x_youtube).toBe('YXnQ02HYB1w')
+    expect(readMeta(applied).x_titan_source).toBe(url)
+    // local already has x_titan_strum — keep-local omits batida from the patch
+    expect(proposal.patch.x_titan_strum).toBeUndefined()
+    expect(readMeta(applied).x_titan_strum).toContain('bpm=75')
+    expect(readMeta(applied).x_titan_strum).not.toContain('bpm=71')
+    expect(readMeta(applied).x_titan_youtube).toBe('YXnQ02HYB1w')
     // local already had tempo/time/duration — fill-empty keeps them
     expect(readMeta(applied).tempo).toBe('75')
     expect(readMeta(applied).time).toBe('6/8')
@@ -58,37 +58,37 @@ describe('proposeCifraClubEnrich — meta only, no convert', () => {
     expect(proposal.conflicts.some((c) => c.key === 'tempo')).toBe(true)
   })
 
-  it('does not write x_youtube until the caller chooses', () => {
+  it('does not write x_titan_youtube until the caller chooses', () => {
     const proposal = proposeCifraClubEnrich(TUA, TU_ES, {
       url: 'https://www.cifraclub.com.br/a/b/',
     })
     expect(proposal.youtube?.remoteId).toBe('YXnQ02HYB1w')
     expect(proposal.youtube?.songTitle).toMatch(/Tua Vontade/i)
-    expect(proposal.patch.x_youtube).toBeUndefined()
+    expect(proposal.patch.x_titan_youtube).toBeUndefined()
 
     const without = applyCifraClubEnrich(TUA, proposal)
-    expect(readMeta(without).x_youtube).toBeUndefined()
+    expect(readMeta(without).x_titan_youtube).toBeUndefined()
 
     const withPick = applyCifraClubEnrich(TUA, proposal, { youtubeId: 'YXnQ02HYB1w' })
-    expect(readMeta(withPick).x_youtube).toBe('YXnQ02HYB1w')
+    expect(readMeta(withPick).x_titan_youtube).toBe('YXnQ02HYB1w')
   })
 
-  it('keeps local x_strum (keep-local)', () => {
-    const local = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=8;label=Old;pat=DUDU}\n[G]a\n`
+  it('keeps local x_titan_strum (keep-local)', () => {
+    const local = `{title:X}\n{x_titan_strum:bpm=40;meter=4/4;grid=8;label=Old;pat=DUDU}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, TU_ES)
-    expect(proposal.patch.x_strum).toBeUndefined()
+    expect(proposal.patch.x_titan_strum).toBeUndefined()
     const next = applyCifraClubEnrich(local, proposal)
-    expect(readMeta(next).x_strum).toContain('bpm=40')
-    expect(readMeta(next).x_strum).not.toContain('bpm=71')
+    expect(readMeta(next).x_titan_strum).toContain('bpm=40')
+    expect(readMeta(next).x_titan_strum).not.toContain('bpm=71')
     expect(chartBody(next)).toBe(chartBody(local))
   })
 
-  it('fills x_strum when local lacks it and CC has strum', () => {
+  it('fills x_titan_strum when local lacks it and CC has strum', () => {
     const local = `{title:X}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, TU_ES)
-    expect(proposal.patch.x_strum).toContain('bpm=71')
+    expect(proposal.patch.x_titan_strum).toContain('bpm=71')
     const next = applyCifraClubEnrich(local, proposal)
-    expect(readMeta(next).x_strum).toContain('bpm=71')
+    expect(readMeta(next).x_titan_strum).toContain('bpm=71')
     expect(chartBody(next)).toBe(chartBody(local))
   })
 
@@ -131,16 +131,16 @@ describe('proposeCifraClubEnrich — meta only, no convert', () => {
       url: 'https://www.cifraclub.com.br/adoradores/tua-vontade/',
     })
     expect(proposal.strumMissing).toBe(true)
-    expect(proposal.patch.x_strum).toBeUndefined()
+    expect(proposal.patch.x_titan_strum).toBeUndefined()
     expect(proposal.strumMissing).not.toBe(proposeCifraClubEnrich(TUA, TU_ES).strumMissing)
   })
 })
 
 describe('proposeCifraClubEnrich — strumConflict surface', () => {
-  it('surfaces strumConflict when local has x_strum and CC brings batida (patch still keep-local)', () => {
+  it('surfaces strumConflict when local has x_titan_strum and CC brings batida (patch still keep-local)', () => {
     const proposal = proposeCifraClubEnrich(TUA, TU_ES)
     expect(proposal.strumMissing).toBe(false)
-    expect(proposal.patch.x_strum).toBeUndefined()
+    expect(proposal.patch.x_titan_strum).toBeUndefined()
     expect(proposal.strumConflict).toBeTruthy()
     expect(proposal.strumConflict!.local.patterns).toHaveLength(1)
     expect(proposal.strumConflict!.local.patterns[0]?.bpm).toBe(75)
@@ -152,41 +152,41 @@ describe('proposeCifraClubEnrich — strumConflict surface', () => {
     const local = `{title:X}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, TU_ES)
     expect(proposal.strumConflict).toBeNull()
-    expect(proposal.patch.x_strum).toContain('bpm=71')
+    expect(proposal.patch.x_titan_strum).toContain('bpm=71')
   })
 
   it('strumConflict is null when CC has no batida (strumMissing still warns, no invent)', () => {
     const proposal = proposeCifraClubEnrich(TUA, TUA_CC_NO_STRUM)
     expect(proposal.strumMissing).toBe(true)
     expect(proposal.strumConflict).toBeNull()
-    expect(proposal.patch.x_strum).toBeUndefined()
+    expect(proposal.patch.x_titan_strum).toBeUndefined()
     const next = applyCifraClubEnrich(TUA, proposal)
-    expect(readMeta(next).x_strum).toContain('bpm=75')
+    expect(readMeta(next).x_titan_strum).toContain('bpm=75')
   })
 })
 
 describe('applyCifraClubEnrich — explicit CC batida choice', () => {
-  it('keep (default) leaves local x_strum untouched', () => {
+  it('keep (default) leaves local x_titan_strum untouched', () => {
     const proposal = proposeCifraClubEnrich(TUA, TU_ES)
     const kept = applyCifraClubEnrich(TUA, proposal, { strum: 'keep' })
-    expect(readMeta(kept).x_strum).toContain('bpm=75')
-    expect(readMeta(kept).x_strum).not.toContain('bpm=71')
+    expect(readMeta(kept).x_titan_strum).toContain('bpm=75')
+    expect(readMeta(kept).x_titan_strum).not.toContain('bpm=71')
 
     const defaulted = applyCifraClubEnrich(TUA, proposal)
-    expect(readMeta(defaulted).x_strum).toContain('bpm=75')
+    expect(readMeta(defaulted).x_titan_strum).toContain('bpm=75')
   })
 
   it('replace applies CC single pattern over local', () => {
     const proposal = proposeCifraClubEnrich(TUA, TU_ES)
     const next = applyCifraClubEnrich(TUA, proposal, { strum: 'replace' })
-    expect(readMeta(next).x_strum).toContain('bpm=71')
-    expect(readMeta(next).x_strum).not.toContain('bpm=75')
-    expect(readMeta(next).x_strum_set).toBeUndefined()
+    expect(readMeta(next).x_titan_strum).toContain('bpm=71')
+    expect(readMeta(next).x_titan_strum).not.toContain('bpm=75')
+    expect(readMeta(next).x_titan_strum_set).toBeUndefined()
     expect(chartBody(next)).toBe(chartBody(TUA))
   })
 
   it('replace-with-local-copy on multi CC keeps previous local active as named copy', () => {
-    const local = `{title:X}\n{x_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n[G]a\n`
+    const local = `{title:X}\n{x_titan_strum:bpm=40;meter=4/4;grid=4;label=Old;pat=DUDU}\n[G]a\n`
     const proposal = proposeCifraClubEnrich(local, CEU_AZUL)
     expect(proposal.strumConflict).toBeTruthy()
     expect(proposal.strumConflict!.remote.patterns).toHaveLength(2)
@@ -201,15 +201,15 @@ describe('applyCifraClubEnrich — explicit CC batida choice', () => {
     expect(copy?.bpm).toBe(40)
     expect(copy?.label).toMatch(/Old/i)
     expect(copy?.label).toMatch(/local/i)
-    expect(readMeta(next).x_strum).toContain('Parte 1')
-    expect(readMeta(next).x_strum_set).toBeTruthy()
+    expect(readMeta(next).x_titan_strum).toContain('Parte 1')
+    expect(readMeta(next).x_titan_strum_set).toBeTruthy()
   })
 
   it('replace-with-local-copy when local already has multi keeps only the active as named copy', () => {
     const local = [
       '{title:X}',
-      '{x_strum:bpm=55;meter=4/4;grid=4;label=Ativa;pat=DUDU}',
-      '{x_strum_set:0|bpm=55;meter=4/4;grid=4;label=Ativa;pat=DUDU|bpm=60;meter=4/4;grid=4;label=Outra;pat=UDUD}',
+      '{x_titan_strum:bpm=55;meter=4/4;grid=4;label=Ativa;pat=DUDU}',
+      '{x_titan_strum_set:0|bpm=55;meter=4/4;grid=4;label=Ativa;pat=DUDU|bpm=60;meter=4/4;grid=4;label=Outra;pat=UDUD}',
       '[G]a',
       '',
     ].join('\n')

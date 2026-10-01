@@ -79,9 +79,9 @@ describe('the ChordPro extension', () => {
       { midi: 66, dur: 'h' },
     ])
     const lines = out.split('\n')
-    expect(lines[0]).toBe('{sos: time=4/4 key=D tempo=92 tuning=EADGBE}')
+    expect(lines[0]).toBe('{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}')
     expect(lines[1]).toBe('| d4:q e4:q f#4:h |')
-    expect(lines[2]).toBe('{eos}')
+    expect(lines[2]).toBe('{x_titan_end_of_score}')
   })
 
   it('records a fingering only when it was pinned by hand', () => {
@@ -101,7 +101,7 @@ describe('the ChordPro extension', () => {
       { midi: 67, dur: 'h', str: 0, fret: 3 },
     ]
     const round = parseScore(serialize(notes, { key: 'G', tempo: 72 }))
-    expect(round.from).toBe('sos')
+    expect(round.from).toBe('x_titan_start_of_score')
     expect(round.meta.key).toBe('G')
     expect(round.meta.tempo).toBe(72)
     expect(round.notes).toEqual([
@@ -154,8 +154,8 @@ describe('reading what a chart already holds', () => {
     expect(p.notes).toEqual([{ midi: 64 + 12, str: 0, fret: 12, dur: 'q' }])
   })
 
-  it('keeps the head of a `{sos}` block', () => {
-    const p = parseScore('{sos: time=3/4 key=Bb tempo=60 tuning=DADGAD}\n| c4:q |\n{eos}')
+  it('keeps the head of a `{x_titan_start_of_score}` block', () => {
+    const p = parseScore('{x_titan_start_of_score: time=3/4 key=Bb tempo=60 tuning=DADGAD}\n| c4:q |\n{x_titan_end_of_score}')
     expect(p.meta).toEqual({ time: '3/4', key: 'Bb', tempo: 60, tuning: 'DADGAD' })
   })
 })

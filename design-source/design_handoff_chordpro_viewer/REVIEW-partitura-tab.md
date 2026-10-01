@@ -42,23 +42,23 @@ foco em outro campo; não havia desfazer dentro do editor.
 ## 2. O que mudou
 
 **Modelo único — `partitura.js`.** Um arquivo com o modelo (altura + figura; corda/casa
-derivada), a serialização ChordPro (`{sos}…{eos}`), a leitura do formato e o desenho VexFlow.
+derivada), a serialização ChordPro (`{x_titan_start_of_score}…{x_titan_end_of_score}`), a leitura do formato e o desenho VexFlow.
 Editor e leitura usam o mesmo código: o que é escrito é exatamente o que é lido.
 
 Formato salvo, uma linha por compasso:
 
 ```
-{sos: time=4/4 key=G tempo=72 tuning=EADGBE}
+{x_titan_start_of_score: time=4/4 key=G tempo=72 tuning=EADGBE}
 | d4:8 e4:8 g4:q a4:8~s b4:8 |
 | g4:h d4:q e4:q |
-{eos}
+{x_titan_end_of_score}
 ```
 
 `~s` slide, `~l` ligadura de compasso, `r:` pausa, `@corda/casa` só quando o dedilhado foi
 fixado à mão. Figura maior do que o resto do compasso é partida e ligada, então a barra cai
 sempre no tempo certo.
 
-**Leitura desenha a partitura.** O bloco `{sos}` é renderizado na cifra com pauta e tab, e traz
+**Leitura desenha a partitura.** O bloco `{x_titan_start_of_score}` é renderizado na cifra com pauta e tab, e traz
 um seletor por bloco: Pauta / TAB / Ambos. O trecho passa a ser contável pela auto-rolagem.
 
 **Uma porta só para editar.** O bloco de partitura tem "Editar" na própria legenda, no modo
@@ -67,7 +67,7 @@ um seletor por bloco: Pauta / TAB / Ambos. O trecho passa a ser contável pela a
 
 **TAB antiga entra e sai convertida.** Um `{sot}` de texto abre no editor importado (cada
 coluna com dígito vira uma semínima) com um aviso explícito de que o texto não trazia ritmo, e
-sai gravado como `{sos}`.
+sai gravado como `{x_titan_start_of_score}`.
 
 **Inserir → Partitura ou solo** cria um bloco vazio e abre o editor nele; cancelar desfaz a
 inserção, sem bloco fantasma. "Imagem de partitura" continua no menu como caminho separado,
@@ -88,11 +88,11 @@ faixa de status; `aria-pressed` nos controles de estado e rótulo de célula com
 
 ## 3. Aberto
 
-- **`Chordpro Viewer v2.dc.html`** (leitura ratificada) ainda não renderiza `{sos}` — hoje só o
+- **`Chordpro Viewer v2.dc.html`** (leitura ratificada) ainda não renderiza `{x_titan_start_of_score}` — hoje só o
   `Titan Chordpro UI v2`. Precisa do mesmo bloco de leitura.
-- **PDF** não desenha o bloco `{sos}` (o export herdado escreve TAB em texto). Com o modelo
+- **PDF** não desenha o bloco `{x_titan_start_of_score}` (o export herdado escreve TAB em texto). Com o modelo
   pronto, dá para gerar as duas pautas no PDF — é a próxima peça óbvia.
-- **Transposição não alcança a partitura.** O `{sos}` guarda alturas absolutas; transpor a
+- **Transposição não alcança a partitura.** O `{x_titan_start_of_score}` guarda alturas absolutas; transpor a
   cifra deveria transpor o solo junto (e o capo, deslocar as casas). Decisão de produto: seguir
   o transpose da leitura ou ficar fixo no tom escrito.
 - **Modo local** continua sem partitura/TAB, conforme o spec; hoje o toque avisa por toast.

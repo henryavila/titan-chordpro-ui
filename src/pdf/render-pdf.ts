@@ -1,3 +1,4 @@
+import { isScoreReference, readScoreReference, scoreReferenceCaption } from '../core/score-reference'
 import { jsPDF } from 'jspdf'
 import { layoutChartFull } from '../core/layout'
 import { readingWords, type ReadingWord } from '../core/reading-words'
@@ -6,7 +7,15 @@ import { transposeToken, usesFlats } from '../core/transpose'
 import type { CapoLegend, ChartRow, ChordProView } from '../core/types'
 import { MONO, registerPdfFonts, SANS } from './fonts'
 
+export type PdfNotationMode = 'tab' | 'score' | 'none'
+/** One complete system/engraving chunk; page breaks occur between these images. */
+export type PdfNotationImage = { data: string | Uint8Array; width: number; height: number }
 export type PdfOptions = {
+  /** Omitted preserves the headless text fallback. The Vue export always asks. */
+  notation?: PdfNotationMode
+  /** Browser/host supplies paper engravings, keeping the PDF entry DOM-free. */
+  renderNotation?: (text: string, mode: 'tab' | 'score') => Promise<PdfNotationImage[]>
+
   title?: string
   personal?: boolean
   /** Host chord colour. Paper uses the light swatch — print is a light page. */
@@ -34,6 +43,7 @@ const ML = 46
 const MR = 46
 const MB = 46
 const INNER = W - ML - MR
+const CONTINUATION_TOP = 50
 
 function hexRgb(hex: string): RGB {
   const h = hex.replace('#', '')
@@ -308,7 +318,7 @@ export async function renderPdf(view: ChordProView, opts: PdfOptions = {}): Prom
       }
       stroke(doc, INK.line, 0.5)
       doc.line(ML, 36, R, 36)
-      return 50
+      return CONTINUATION_TOP
     }
 
     let top = 38
@@ -530,11 +540,40 @@ export async function renderPdf(view: ChordProView, opts: PdfOptions = {}): Prom
       continue
     }
     if (block.kind === 'tab') {
+      if (opts.notation === 'none') continue
       drawFigure('TAB', block.text)
       continue
     }
     if (block.kind === 'score') {
-      drawFigure('PARTITURA', block.text)
+      if (opts.notation === 'none') continue
+      if (isScoreReference(block.text) && opts.notation) {
+        if (!opts.renderNotation) throw new Error('Forneça renderNotation para desenhar os solos no PDF.')
+        const images = await opts.renderNotation(block.text, opts.notation)
+        if (!images.length) throw new Error('O solo não produziu um desenho para o PDF.')
+        let heading = true
+        for (const image of images) {
+          if (!Number.isFinite(image.width) || !Number.isFinite(image.height) || image.width <= 0 || image.height <= 0)
+            throw new Error('Dimensões do desenho do solo inválidas.')
+          // Keep each system whole. A very tall multi-staff system gets its own
+          // page and is uniformly reduced only as far as the paper requires.
+          const maxHeight = H - MB - CONTINUATION_TOP - 24
+          const factor = Math.min(INNER / image.width, maxHeight / image.height)
+          const width = image.width * factor
+          const height = image.height * factor
+          const previousPage = page
+          room(height + 24)
+          if (heading || previousPage !== page) {
+            face(doc, SANS, 'normal', 8, INK.muted)
+            doc.text(readScoreReference(block.text)?.name ?? 'Solo', ML, y + 9)
+            y += 16
+            heading = false
+          }
+          doc.addImage(typeof image.data === 'string' ? image.data : Uint8Array.from(image.data), 'PNG', ML, y, width, height)
+          y += height + 8
+        }
+        continue
+      }
+      drawFigure('PARTITURA', scoreReferenceCaption(block.text))
       continue
     }
     if (block.kind !== 'stanza' && block.kind !== 'chorus') continue

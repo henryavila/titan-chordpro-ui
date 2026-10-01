@@ -29,7 +29,7 @@ const props = defineProps<{
   /** Taps registered in the current tempo measurement. */
   tapCount: number
   time: string | undefined
-  /** Chart has a `{x_strum:}` pattern — guitar one-shots can follow the strip. */
+  /** Chart has a `{x_titan_strum:}` pattern — guitar one-shots can follow the strip. */
   hasStrum?: boolean
   /** Opt-in acoustic strum sound synced to the batida grid. */
   strumSound?: boolean

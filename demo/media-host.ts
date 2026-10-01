@@ -8,7 +8,7 @@ export const MEDIA_DEMO_SONG_ID = '100-nasce-em-mim'
 /**
  * Complete consumer write: both rehearsal tracks + optional square 1024 cover.
  * Titan reads this from `source`; there is no `audioUrl` prop.
- * `includeArt: false` leaves the chart without `{x_audio_art:}` so the host
+ * `includeArt: false` leaves the chart without `{x_titan_audio_art:}` so the host
  * `defaultAudioArt` (or the packaged art) is used.
  */
 export function rehearsalChart(opts: {

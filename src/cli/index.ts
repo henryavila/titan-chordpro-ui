@@ -63,7 +63,7 @@ async function enrichCc(argv: string[]): Promise<void> {
   }
 
   const proposal = proposeCifraClubEnrich(source, html, { url })
-  const localYt = String(readMeta(source).x_youtube ?? '').trim()
+  const localYt = String(readMeta(source).x_titan_youtube ?? '').trim()
   let youtubeId: string | null = null
   if (ytMode === 'remote' && proposal.youtube?.remoteId) {
     if (localYt && localYt !== proposal.youtube.remoteId) {

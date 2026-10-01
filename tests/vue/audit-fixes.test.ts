@@ -291,7 +291,7 @@ describe('B3 · a scanned score follows the theme', () => {
  */
 describe('B4 · the score editor owns the keyboard', () => {
   const SCORE =
-    '{title: Com solo}\n\n[G]Uma linha cantada\n\n{sos: time=4/4 key=G tempo=90 tuning=EADGBE}\n| g4:q a4:q b4:q d5:q |\n{eos}\n'
+    '{title: Com solo}\n\n[G]Uma linha cantada\n\n{x_titan_start_of_score: time=4/4 key=G tempo=90 tuning=EADGBE}\n| g4:q a4:q b4:q d5:q |\n{x_titan_end_of_score}\n'
 
   async function openScoreEditor(w: ReturnType<typeof mountViewer>) {
     await w.get('[data-edit]').trigger('click')

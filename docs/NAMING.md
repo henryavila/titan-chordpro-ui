@@ -47,14 +47,33 @@ O pacote UI continua **autossuficiente na cifra** (1 string ChordPro in → supe
 
 `viewer` undersells the product once the **editor** lives in the same layer. **ui** = the musician-facing surface for one chart (view + edit). The future **`titan-chordpro`** app is the *host*, not a rename of this package.
 
-## Custom ChordPro tags (`x_*`)
+## Custom ChordPro tags (`x_titan_*`)
 
-Directive **names** in the file are English (`x_source`, `x_audio_sung`,
-`x_audio_playback`, `x_audio_art`, `x_audio_art_w`, `x_audio_art_h`,
-`x_youtube`, `x_strum`, `x_strum_set`).
-Portuguese belongs in the **UI** (Origem, Cantado, Playback). Legacy
-`{x_origem:}` / `{x_audio_cantado:}` / `{x_audio:}` still **read**; the next
-`writeMeta` emits the English key.
+As extensões do Titan usam `{x_titan_<name>: valor}`. O prefixo `x_`
+identifica extensões ChordPro; `titan_` identifica o aplicativo, conforme a
+[convenção oficial](https://www.chordpro.org/chordpro/chordpro-directives/#custom-extensions).
+
+Os nove metadados são em inglês: `x_titan_source`, `x_titan_audio_sung`,
+`x_titan_audio_playback`, `x_titan_audio_art`, `x_titan_audio_art_w`,
+`x_titan_audio_art_h`, `x_titan_youtube`, `x_titan_strum`, `x_titan_strum_set`.
+Português pertence à UI (Origem, Cantado, Playback).
+
+A notação também usa o namespace: `{x_titan_score: src="…" track=1 start=1}`
+referencia um arquivo externo; `{x_titan_start_of_score: …}` e
+`{x_titan_end_of_score}` delimitam a notação interna. Os nomes `score`, `sos`,
+`eos`, `start_of_score` e `end_of_score` deixam de ser reconhecidos.
+Essas três diretivas são conteúdo do documento, não campos de `ChartMeta`.
+Novas extensões próprias devem sempre usar `x_titan_`, sem abreviações alternativas.
+
+**Migração completa, sem retrocompatibilidade:** os nomes anteriores `x_source`,
+`x_youtube`, `x_audio_*`, `x_strum`, `x_strum_set` e os aliases `x_origem`,
+`x_audio`, `x_audio_cantado` não são interpretados nem convertidos automaticamente.
+Arquivos e consumidores precisam usar as novas chaves. Diretivas desconhecidas
+continuam preservadas no source, sem adquirir semântica Titan.
+As propriedades de `ChartMeta`, `MetaKey`, `META_KEYS` e os patches usam os
+mesmos nomes novos. Os helpers são `parseTitanStrum`, `formatTitanStrum`,
+`parseTitanStrumSet` e `formatTitanStrumSet`, sem aliases dos nomes anteriores.
+Diretivas padrão e marcas de tempo `x///` mantêm sua sintaxe.
 
 ## Non-goals of this decision
 

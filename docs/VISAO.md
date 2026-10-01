@@ -66,13 +66,15 @@ ChordPro (1 string)
 1. **Leitura** elegante (acorde acima da letra, comentários de ensaio preservados, espaçamento).
 2. **Transposição** (semitons; reset ao original).
 3. **Tamanho de fonte** / bias (passos ou continuum — ver research auto-ajuste).
-4. **Export** `.cho` e PDF (nomes estáveis; PDF com tom exibido).
+4. **Export** `.cho`, PDF (nomes estáveis; PDF com tom exibido) e **Cifra completa (.zip)** com anexos locais para transporte offline — contrato em `docs/BUNDLE.md`.
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
 6. **Temas:** claro e escuro, com opção de **troca automática**.
 7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.
 8. **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano (mesmo cartão, tela cheia no ensaio). Instrumento é preferência do aparelho. Violão/ukulele: forma da mão + capo no desenho. Piano: teclas concert, inversões e baixo escrito. `{define}` no arquivo é override. Sem forma: “Sem forma neste instrumento”. Só letra não abre. Editor de grelha (F4) ainda não.
 9. **Cifra ou letra** — o músico troca no interruptor. O host pode abrir já na letra (link de cantor) ou já na cifra.
 10. **Metrônomo** — click, tap tempo, contagem de entrada, vinculado à rolagem. A coluna à esquerda marca o tempo do compasso (1 no contraste do tema, os demais na cor do acorde). Com a faixa do título, o pulso marca tempo e contratempo: acende na cabeça, apaga no meio.
+
+11. **Solos de arquivos musicais** — trechos de Guitar Pro/MusicXML dentro da cifra, com seleção de faixa e compassos, alternância TAB/Partitura durante a leitura, três apresentações de TAB (ritmo estendido, ritmo na base e sem ritmo), padrão do autor com preferência pessoal persistida no navegador sem editar a cifra, e zoom automático com reflow para legibilidade. Trechos têm nome (padrão Solo), card amplo e controle no canto para ocultar o conteúdo mantendo o título. Arquivo original preservado pelo host; sem conversão para imagem. Detalhes e limites em `CONSUMER.md`, “Solos em Guitar Pro / MusicXML”. Padrão de desenho: [`NOTACAO-VISUAL.md`](NOTACAO-VISUAL.md) — mínima com haste única de 50% da semínima na base, inalterada ao estender.
 
 ### 4.2 Edição (edit) — mapa + gates
 

@@ -2,6 +2,8 @@ import { computed, ref, type Ref } from 'vue'
 import {
   addChord as addChordAt,
   anchorWords,
+  isInlineScore,
+  isScoreReference,
   blockLabel,
   blockSpan,
   copyHarmony as copyHarmonyOf,
@@ -455,24 +457,37 @@ export function useBlockEdit(opts: BlockEditOpts) {
     if (e.button != null && e.button !== 0) return
     e.preventDefault()
     const y0 = e.clientY
-    const rects = Array.from(opts.root.value?.querySelectorAll<HTMLElement>('[data-block]') ?? []).map(
-      (el) => ({ bi: Number(el.dataset.block), r: el.getBoundingClientRect() }),
-    )
     let moved = false
-    const move = (ev: PointerEvent) => {
-      if (!moved && Math.abs(ev.clientY - y0) < 7) return
-      moved = true
-      if (dragBi.value !== bi) dragBi.value = bi
+    let pointerY = y0
+    const updateTarget = () => {
+      if (!moved) return
+      // Scroll and notation reflow can move every block during a drag.
+      const rects = Array.from(opts.root.value?.querySelectorAll<HTMLElement>('[data-block]') ?? []).map(
+        (el) => ({ bi: Number(el.dataset.block), r: el.getBoundingClientRect() }),
+      )
       let t: number | null = null
       for (const it of rects)
-        if (ev.clientY < it.r.top + it.r.height / 2) {
+        if (pointerY < it.r.top + it.r.height / 2) {
           t = it.bi
           break
         }
       if (t === null) t = rects.length ? (rects[rects.length - 1]?.bi ?? 0) + 1 : 0
       if (dropAt.value !== t) dropAt.value = t
     }
-    const up = () => {
+    const move = (ev: PointerEvent) => {
+      pointerY = ev.clientY
+      if (!moved && Math.abs(pointerY - y0) < 7) return
+      moved = true
+      if (dragBi.value !== bi) dragBi.value = bi
+      updateTarget()
+    }
+    const scroller = opts.scroller.value
+    const up = (ev: PointerEvent) => {
+      // Release can carry a newer position than the last delivered move.
+      // Commit against that point, not the previous hover target.
+      pointerY = ev.clientY
+      updateTarget()
+      scroller?.removeEventListener('scroll', updateTarget)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       const to = dropAt.value
@@ -482,6 +497,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
         if (to !== null) moveBlock(bi, to)
       } else toggleSel(bi)
     }
+    scroller?.addEventListener('scroll', updateTarget)
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
   }
@@ -535,9 +551,10 @@ export function useBlockEdit(opts: BlockEditOpts) {
     })
   }
 
-  function deleteBlock() {
-    if (sel.value === null) return
-    const r = deleteBlockAt(lines.value, blocks.value, sel.value)
+  const canDelete = computed(() => opts.wMode.value === 'persisted')
+  function deleteBlock(bi = sel.value) {
+    if (bi === null || !canDelete.value) return
+    const r = deleteBlockAt(lines.value, blocks.value, bi)
     if (!r) return
     write(r.lines, r.message)
     clearSel()
@@ -673,15 +690,16 @@ export function useBlockEdit(opts: BlockEditOpts) {
    * A new score goes into the file empty and the editor opens on top of it.
    * Cancelling undoes the insert — no ghost block is left behind in the chart.
    */
-  function insertScore(): { li0: number; li1: number } {
+  function insertScore(text = '{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}\n{x_titan_end_of_score}'): { li0: number; li1: number } {
     const at = whereToInsert()
     const out = [...lines.value]
-    out.splice(at, 0, '{sos: time=4/4 key=D tempo=92 tuning=EADGBE}', '{eos}', '')
+    const inserted = text.split('\n')
+    out.splice(at, 0, ...inserted, '')
     write(out, 'Partitura nova')
     insertMenu.value = false
     picker.value = null
     sel.value = null
-    return { li0: at, li1: at + 1 }
+    return { li0: at, li1: at + inserted.length - 1 }
   }
 
   /** Swap one block's lines for new ones — how the score editor writes back. */
@@ -792,7 +810,10 @@ export function useBlockEdit(opts: BlockEditOpts) {
     () => selBlock.value?.kind === 'stanza' || selBlock.value?.kind === 'chorus',
   )
   const selIsScore = computed(
-    () => selBlock.value?.kind === 'tab' || selBlock.value?.kind === 'score',
+    () => selBlock.value?.kind === 'tab' || (selBlock.value?.kind === 'score' && isInlineScore(selBlock.value.text)),
+  )
+  const selIsExternalScore = computed(
+    () => selBlock.value?.kind === 'score' && isScoreReference(selBlock.value.text),
   )
   const selIsImage = computed(() => selBlock.value?.kind === 'image')
   const selIsHidden = computed(() => selBlock.value?.kind === 'hidden')
@@ -830,6 +851,8 @@ export function useBlockEdit(opts: BlockEditOpts) {
     selShiftLabel,
     selHasChords,
     selIsScore,
+    selIsExternalScore,
+    canDelete,
     selIsImage,
     selIsHidden,
     selCapoOwn,

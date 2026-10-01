@@ -2,9 +2,9 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   emptyPattern,
-  formatXStrum,
+  formatTitanStrum,
   memoryStore,
-  parseXStrum,
+  parseTitanStrum,
   readMeta,
   setSlotCascading,
   type StrumPreset,
@@ -28,21 +28,21 @@ const HOST_PRESETS: StrumPreset[] = [
   {
     id: 'basic-down-up',
     label: 'Baixo-cima',
-    pattern: parseXStrum(
+    pattern: parseTitanStrum(
       'bpm=90; meter=4/4; grid=16; label=Baixo-cima; pat=DuDu DuDu DuDu DuDu',
     )!,
   },
   {
     id: 'folk-passa',
     label: 'Folk passa',
-    pattern: parseXStrum(
+    pattern: parseTitanStrum(
       'bpm=90; meter=4/4; grid=16; label=Folk passa; pat=Dudu Dudu Dudu Dudu',
     )!,
   },
   {
     id: 'pop-accent',
     label: 'Pop acento',
-    pattern: parseXStrum(
+    pattern: parseTitanStrum(
       'bpm=90; meter=4/4; grid=16; label=Pop acento; pat=DuDu DuD!u DuDu DuD!u',
     )!,
   },
@@ -237,13 +237,13 @@ describe('Batida presets section (host catalog)', () => {
     await w.get('[data-batida-save]').trigger('click')
     await flushPromises()
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''
-    const raw = readMeta(src).x_strum
+    const raw = readMeta(src).x_titan_strum
     expect(raw).toBeTruthy()
     expect(raw).toContain('bpm=90')
     expect(raw).toContain(`label=${preset.pattern.label}`)
-    const parsed = parseXStrum(raw!)
+    const parsed = parseTitanStrum(raw!)
     expect(parsed?.slots).toEqual(preset.pattern.slots)
-    expect(formatXStrum(parsed!).match(/pat=([^;]*)/)?.[1]).not.toContain('-')
+    expect(formatTitanStrum(parsed!).match(/pat=([^;]*)/)?.[1]).not.toContain('-')
 
     await w.get('[data-batida-edit-chrome]').trigger('click')
     await flushPromises()

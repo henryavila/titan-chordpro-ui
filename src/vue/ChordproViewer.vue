@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { provide } from 'vue'
+import { createTabRhythmPreference, tabRhythmKey } from './use/useTabRhythm'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   blockSpan,
+  isScoreReference,
+  isInlineScore,
   buildTimeline,
   buildChoFilename,
   buildPdfFilename,
@@ -76,6 +80,7 @@ import SourcePane from './edit/SourcePane.vue'
 import ChordDialog from './edit/ChordDialog.vue'
 import ImagePicker from './edit/ImagePicker.vue'
 import ScoreEditor from './edit/ScoreEditor.vue'
+import ImportScoreDialog from './edit/ImportScoreDialog.vue'
 import NewChartDialog from './edit/NewChartDialog.vue'
 import MetaDialog from './edit/MetaDialog.vue'
 import MyVersionPanel from './overlay/MyVersionPanel.vue'
@@ -231,6 +236,9 @@ const store: ChartStore = {
   set: (k, v) => (props.storage ?? deviceStore).set(k, v),
   remove: (k) => (props.storage ?? deviceStore).remove(k),
 }
+
+const tabRhythmPreference = createTabRhythmPreference(store)
+provide(tabRhythmKey, tabRhythmPreference)
 
 const root = ref<HTMLElement | null>(null)
 const scroller = ref<HTMLElement | null>(null)
@@ -501,7 +509,7 @@ const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs'
 const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
-/** Batida from `{x_strum:}` / `{x_strum_set:}` — toggle is the reader's choice. */
+/** Batida from `{x_titan_strum:}` / `{x_titan_strum_set:}` — toggle is the reader's choice. */
 const strumSet = computed(() => readStrumPatterns(liveSource.value))
 const strumPattern = computed(() => {
   const set = strumSet.value
@@ -661,6 +669,11 @@ watch(strumVisible, async (on) => {
 /** Gap between the identity bar and the first lyric. */
 const pageGap = computed(() => (fs.value ? 6 : compact.value ? 10 : 14))
 const strumSpacer = computed(() => (strumVisible.value ? Math.max(72, strumH.value + 10) : 0))
+const notationOutset = computed(() => {
+  const pageWidth = pageMax.value === '100%' ? width.value : Math.min(width.value, parseFloat(pageMax.value))
+  const contentWidth = pageWidth - 2 * parseFloat(padX.value)
+  return `${Math.max(0, (Math.min(width.value, 1280) - 32 - contentWidth) / 2)}px`
+})
 const pagePad = computed(() => {
   // Head is overlay-only. Top pad keeps the lyric under the card (and under
   // the batida dock when it is open). Zen drops a plain name into that band —
@@ -894,6 +907,8 @@ const insertItems = computed(() => {
   const out: Array<{ icon: CpvIconName; label: string; go: () => void }> = [
     { icon: 'music2', label: 'Partitura ou solo', go: () => newScore() },
   ]
+  if (props.uploadScore)
+    out.push({ icon: 'music2', label: 'Guitar Pro / MusicXML', go: () => { externalEd.value = { text: '' }; bedit.insertMenu.value = false } })
   // An upload goes to the host. A catalogue is the scores it already has.
   // Neither means the entry would open an empty dialog.
   if (props.uploadImage || props.images.length)
@@ -1264,6 +1279,64 @@ function toastMsg(msg: string) {
 // The playhead walks the chart in musical time (see core/timeline.ts); the page
 // only moves once it passes the reading line.
 
+// Collapsing notation is a reading preference, never a source or clock edit.
+const collapsedNotation = ref<Set<number>>(new Set())
+let notationReflow = false
+let notationReflowId = 0
+watch(hostSource, () => { collapsedNotation.value = new Set() })
+watch(isEdit, value => { if (value) collapsedNotation.value = new Set() })
+
+async function toggleNotation(bi: number) {
+  const el = scroller.value
+  const block = blocks.value[bi]
+  if (!el || !block || notationReflow) return
+  const viewport = el.getBoundingClientRect()
+  const readingY = viewport.top + viewport.height * 0.35
+  const targetNode = el.querySelector<HTMLElement>(`[data-block="${bi}"]`)
+  const candidates = [...el.querySelectorAll<HTMLElement>('.cpv-reading-row, [data-block]')]
+  const anchor = candidates.find(node => {
+    if (node.closest(`[data-block="${bi}"]`)) return false
+    const r = node.getBoundingClientRect()
+    return r.bottom > readingY && r.top < viewport.bottom
+  }) ?? targetNode
+  const anchorTop = anchor?.getBoundingClientRect().top ?? 0
+  const atStart = el.scrollTop <= 1
+  const savedAnchor = el.style.overflowAnchor
+  notationReflow = true
+  const ticket = ++notationReflowId
+  el.style.overflowAnchor = 'none'
+  // Disable fractional translation before taking fresh DOM measurements.
+  setSubPixel(0)
+  const folded = new Set(collapsedNotation.value)
+  if (folded.has(block.li0)) folded.delete(block.li0)
+  else folded.add(block.li0)
+  collapsedNotation.value = folded
+  await nextTick()
+  timeline = null
+  syncScrollRoom()
+  if (scrolling.value) {
+    // Keep the existing playhead. Do not infer time from the browser's clamp
+    // or anchor adjustment when hundreds of pixels disappear above the reader.
+    reseatScroll()
+  } else {
+    if (atStart) el.scrollTop = 0
+    else if (anchor?.isConnected) {
+      // If the reference itself filled the screen, its old top may be several
+      // screens above. Bring its compact handle to the reading line instead
+      // of leaving the reader stranded much later in the lyrics.
+      const keepAt = anchor === targetNode && folded.has(block.li0) ? readingY : anchorTop
+      el.scrollTop += anchor.getBoundingClientRect().top - keepAt
+    }
+    written = el.scrollTop
+    rebuildTimeline()
+  }
+  requestAnimationFrame(() => {
+    if (ticket !== notationReflowId) return
+    el.style.overflowAnchor = savedAnchor
+    notationReflow = false
+  })
+}
+
 function measureBlocks(): TimelineBlock[] {
   const el = scroller.value
   if (!el) return []
@@ -1341,14 +1414,32 @@ function reseatScroll() {
 }
 
 /** Where the reader was, taken before anything is allowed to move. */
-type PageSpot = { padTop: number; scroll: number; max: number }
+type PageSpot = {
+  padTop: number
+  scroll: number
+  max: number
+  anchor: HTMLElement | null
+  anchorFromEye: number
+}
 
 function pageSpot(): PageSpot {
   const el = scroller.value
+  const eye = el ? el.getBoundingClientRect().top + el.clientHeight * 0.4 : 0
+  let anchor: HTMLElement | null = null
+  let distance = Infinity
+  for (const node of el?.querySelectorAll<HTMLElement>('.cpv-lyric') ?? []) {
+    const d = Math.abs(node.getBoundingClientRect().top - eye)
+    if (d < distance) {
+      anchor = node
+      distance = d
+    }
+  }
   return {
     padTop: pageTopPad(),
     scroll: el?.scrollTop ?? 0,
     max: el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0,
+    anchor,
+    anchorFromEye: anchor ? anchor.getBoundingClientRect().top - eye : 0,
   }
 }
 
@@ -1374,7 +1465,11 @@ function reflowPage(before: PageSpot) {
     // into the first verse; the same holds for the last line.
     if (before.scroll <= 1) el.scrollTop = 0
     else if (before.scroll >= before.max - 1) el.scrollTop = max
-    else {
+    else if (before.anchor?.isConnected) {
+      const eye = el.getBoundingClientRect().top + el.clientHeight * 0.4
+      const target = eye + before.anchorFromEye
+      el.scrollTop = Math.max(0, Math.min(max, el.scrollTop + before.anchor.getBoundingClientRect().top - target))
+    } else {
       const shift = (pageTopPad() || before.padTop) - before.padTop
       el.scrollTop = Math.max(0, Math.min(max, before.scroll + shift))
     }
@@ -1441,7 +1536,7 @@ function startScroll() {
   // The musician may drag the chart while it rolls (back a bit, skip ahead).
   // The playhead adopts that position and carries on from there.
   userScroll = () => {
-    if (!scrolling.value) return
+    if (!scrolling.value || notationReflow) return
     if (Math.abs(el.scrollTop - written) > 1.5) {
       const maxS = Math.max(0, el.scrollHeight - el.clientHeight)
       const atEnd = maxS <= 1 || el.scrollTop >= maxS - 2
@@ -1934,6 +2029,7 @@ function beginEdit(kind: WriteMode) {
   ov.showOriginal.value = false
   bedit.reset()
   scoreEd.value = null
+  externalEd.value = null
   wMode.value = kind
   localMode.value = 'edit'
   if (!session.dirty()) forceBase()
@@ -1953,6 +2049,7 @@ function exitEdit() {
   metaOpen.value = false
   bedit.reset()
   scoreEd.value = null
+  externalEd.value = null
   wMode.value = null
   localMode.value = 'view'
   // The local draft has already become the overlay; a "for everyone" draft
@@ -2001,10 +2098,20 @@ function onFixTune() {
 
 /**
  * One path for a score and for a legacy text tab: the tab opens imported and
- * is written back as `{sos}`, so a chart has a single way to hold music.
+ * is written back as `{x_titan_start_of_score}`, so a chart has a single way to hold music.
  */
 type ScoreEdit = { li0: number; li1: number; kind: 'score' | 'tab'; text: string; fresh: boolean }
 const scoreEd = ref<ScoreEdit | null>(null)
+const externalEd = ref<{ text: string; li0?: number; li1?: number } | null>(null)
+watch(() => props.source, () => { externalEd.value = null })
+function saveExternalScore(text: string) {
+  const edit = externalEd.value
+  if (!edit) return
+  if (edit.li0 === undefined) bedit.insertScore(text)
+  else bedit.replaceSpan(edit.li0, edit.li1!, text, 'Solo atualizado')
+  externalEd.value = null
+}
+
 const scoreLabel = computed(() =>
   scoreEd.value?.kind === 'tab' ? 'TAB importada do texto' : 'Partitura do bloco',
 )
@@ -2012,6 +2119,11 @@ const scoreLabel = computed(() =>
 function openScore(bi: number) {
   const b = blocks.value[bi]
   if (!b || (b.kind !== 'tab' && b.kind !== 'score')) return
+  if (b.kind === 'score' && isScoreReference(b.text)) {
+    externalEd.value = { text: b.text, li0: b.li0, li1: b.li1 }
+    return
+  }
+  if (b.kind === 'score' && !isInlineScore(b.text)) return
   scoreEd.value = {
     li0: b.li0,
     li1: b.li1,
@@ -2027,7 +2139,7 @@ function newScore() {
   scoreEd.value = {
     ...span,
     kind: 'score',
-    text: '{sos: time=4/4 key=D tempo=92 tuning=EADGBE}\n{eos}',
+    text: '{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}\n{x_titan_end_of_score}',
     fresh: true,
   }
 }
@@ -2042,6 +2154,7 @@ function saveScore(text: string) {
     d.kind === 'tab' ? 'TAB convertida em partitura' : d.fresh ? 'Partitura inserida' : 'Partitura atualizada',
   )
   scoreEd.value = null
+  externalEd.value = null
   bedit.focusLine(d.li0)
 }
 
@@ -2050,6 +2163,7 @@ function cancelScore() {
   // A block that only exists because the editor was opened goes away with it.
   if (d?.fresh) undo()
   scoreEd.value = null
+  externalEd.value = null
 }
 
 /**
@@ -2124,9 +2238,64 @@ function doExportCho() {
   toastMsg('Arquivo .cho baixado')
 }
 
-async function doExportPdf() {
+const bundleBusy = ref(false)
+const bundleError = ref('')
+async function doExportBundle() {
+  if (bundleBusy.value) return
+  bundleBusy.value = true
+  bundleError.value = ''
+  const source = exportCho(exportSource(), { semitones: offset.value, capo: capo.value })
+  const personal = !ov.exportOrig.value && ov.hasOverlay.value
+  const title = meta.value.title || 'cifra'
+  const key = shownKey.value || null
+  const resolveScore = props.resolveScore
+  const resolveImage = props.resolveImage
+  const loadBundleAsset = props.loadBundleAsset
+  const hostArt = props.defaultAudioArt
+  const cover = props.coverImage
+  const background = props.slidesImage
+  try {
+    const { exportChartBundle } = await import('@henryavila/titan-chordpro-ui/bundle')
+    const extras: import('@henryavila/titan-chordpro-ui/bundle').BundleExtra[] = []
+    const tracks = audioTracksOf(source)
+    if ((tracks.sung || tracks.playback) && !audioArtOf(source)) {
+      const art = hostArt
+      extras.push({ role: 'audio-cover', reference: art?.url ?? defaultArt,
+        width: art?.width ?? AUDIO_ART_DEFAULT_PX, height: art?.height ?? AUDIO_ART_DEFAULT_PX })
+    }
+    const { DEFAULT_COVER_JPEG, DEFAULT_SLIDES_JPEG } = await import('@henryavila/titan-chordpro-ui/slides')
+    extras.push({ role: 'slide-cover', data: { bytes: await imageBytes(cover) ?? DEFAULT_COVER_JPEG } })
+    extras.push({ role: 'slide-background', data: { bytes: await imageBytes(background) ?? DEFAULT_SLIDES_JPEG } })
+    const file = await exportChartBundle(source, {
+      personal, title, key, extras, onlineReferences: 'provenance',
+      loadAsset: async (ref, kind) => {
+        if (loadBundleAsset && ref !== defaultArt) return loadBundleAsset(ref, kind)
+        const resolved = ref === defaultArt ? ref : kind === 'score' ? resolveScore?.(ref) ?? ref : kind === 'image' ? resolveImage(ref) : ref
+        const url = new URL(resolved, document.baseURI)
+        if (!['http:', 'https:', 'blob:', 'data:'].includes(url.protocol)) throw new Error('Endereço inválido')
+        const abort = new AbortController()
+        const timer = setTimeout(() => abort.abort(), 60000)
+        try {
+          const response = await fetch(url.href, { signal: abort.signal })
+          if (!response.ok) throw new Error('Arquivo indisponível')
+          return { bytes: new Uint8Array(await response.arrayBuffer()), contentType: response.headers.get('content-type') ?? undefined }
+        } finally { clearTimeout(timer) }
+      },
+    })
+    download(file.filename, new Blob([file.bytes as BlobPart], { type: 'application/zip' }))
+    sheet.value = false
+    toastMsg('Cifra completa baixada')
+  } catch (error) {
+    bundleError.value = error instanceof Error ? error.message : 'Não foi possível gerar a cifra completa. Tente novamente.'
+  } finally { bundleBusy.value = false }
+}
+
+const pdfExportError = ref('')
+const exportHasNotation = computed(() => layoutChartFull(parse(exportSource())).blocks.some(b => b.kind === 'score' && isScoreReference(b.text)))
+async function doExportPdf(notation: 'tab' | 'score' | 'none' = 'score') {
   if (pdf.value === 'busy') return
   pdf.value = 'busy'
+  pdfExportError.value = ''
   try {
     if (props.pdfShouldFail) throw new Error('simulado')
     const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
@@ -2135,6 +2304,11 @@ async function doExportPdf() {
     // A personal version leaves marked on paper too: it must not circulate as
     // the team's chart.
     const bytes = await renderPdf(view, {
+      notation,
+      renderNotation: async (text, mode) => {
+        const { renderPdfNotation } = await import('./chart/pdf-notation')
+        return renderPdfNotation(text, mode, props.resolveScore, tabRhythmPreference.value.value)
+      },
       personal: !ov.exportOrig.value && ov.hasOverlay.value,
       accent: props.accent,
     })
@@ -2145,9 +2319,9 @@ async function doExportPdf() {
     pdf.value = 'idle'
     sheet.value = false
     toastMsg('PDF gerado')
-  } catch {
+  } catch (error) {
     pdf.value = 'error'
-    sheet.value = false
+    pdfExportError.value = error instanceof Error ? error.message : 'Não foi possível gerar o PDF. Tente novamente.'
   }
 }
 
@@ -2206,7 +2380,7 @@ function onKey(e: KeyboardEvent) {
   // The score editor owns the keyboard while it is open: Esc, the arrows and
   // undo all mean something in there, and the chart behind it must not act on
   // the same keystroke.
-  if (scoreEd.value) return
+  if (scoreEd.value || externalEd.value) return
   const k = e.key
   if (diagramOpen.value) {
     if (k === 'Escape') {
@@ -2470,6 +2644,7 @@ const swipeBlocked = computed(
     moreOpen.value ||
     setlist.listOpen.value ||
     !!scoreEd.value ||
+    !!externalEd.value ||
     metaOpen.value ||
     toneOpen.value ||
     metOpen.value ||
@@ -2802,13 +2977,16 @@ defineExpose({
 
     <div class="cpv-stage">
     <div v-if="isPopulated" ref="scroller" class="cpv-scroll" data-cpv-scroll @click="onSurfaceTap">
-      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad }">
+      <div :ref="bindPage" class="cpv-page" :style="{ maxWidth: pageMax, padding: pagePad, '--cpv-notation-outset': notationOutset }">
         <div :style="{ padding: pageBodyPad }">
         <CpvCapoLegend v-if="legend" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
         <ChartBody
           v-bind="chartScale"
           :blocks="blocks"
+          :collapsed-notation="collapsedNotation"
+          @toggle-notation="toggleNotation"
           :resolve-image="resolveImage"
+          :resolve-score="resolveScore"
           :auto-invert-scores="autoInvertScores"
           :theme="effTheme"
           :mine-lines="ov.mineLines.value"
@@ -3161,6 +3339,9 @@ defineExpose({
       @close="bedit.picker.value = null"
     />
 
+    <ImportScoreDialog v-if="isEdit && externalEd" :text="externalEd.text" :theme="effTheme"
+      :resolve-score="resolveScore" :upload-score="uploadScore"
+      @save="saveExternalScore" @close="externalEd = null" />
     <div v-if="isEdit && scoreEd" class="cpv-score-modal" role="dialog" aria-modal="true" aria-label="Editor de partitura">
       <ScoreEditor
         :title="meta.title || 'Partitura'"
@@ -3219,7 +3400,11 @@ defineExpose({
       v-if="sheet"
       :export-key-note="exportKeyNote"
       :pdf-busy="pdf === 'busy'"
+      :has-notation="exportHasNotation"
+      :pdf-error="pdfExportError"
       :slides-busy="slides === 'busy'"
+      :bundle-busy="bundleBusy"
+      :bundle-error="bundleError"
       :compact="compact"
       :has-overlay="ov.hasOverlay.value"
       :export-orig="ov.exportOrig.value"
@@ -3227,6 +3412,7 @@ defineExpose({
       @cho="doExportCho"
       @pdf="doExportPdf"
       @slides="doExportSlides"
+      @bundle="doExportBundle"
       @pick="(orig) => { ov.exportOrig.value = orig; toggleOriginal(orig) }"
     />
 

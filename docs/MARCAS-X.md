@@ -115,7 +115,7 @@ Host / cantor: prop `lens="letra"` em `<ChordproViewer>` (ver [`CONSUMER.md`](./
 
 ## Lint
 
-`lintSource` avisa `trecho sem voz sem x/// (N linha(s))` quando uma linha tem acorde, não tem letra, e `lineBeats` é 0. Tab (`{sot}`) e partitura (`{sos}`) ficam de fora — o `x` da TAB é mudo de corda, não marca de tempo.
+`lintSource` avisa `trecho sem voz sem x/// (N linha(s))` quando uma linha tem acorde, não tem letra, e `lineBeats` é 0. Tab (`{sot}`) e partitura (`{x_titan_start_of_score}`) ficam de fora — o `x` da TAB é mudo de corda, não marca de tempo.
 
 Linha cantada sem cauda **não** é erro.
 

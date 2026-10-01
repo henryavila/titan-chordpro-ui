@@ -384,10 +384,10 @@ describe('CifraDemo', () => {
         source?: string
       }[]
       expect(songs.length).toBeGreaterThanOrEqual(2)
-      expect(songs[0]?.source).toContain('{x_audio_sung:')
-      expect(songs[1]?.source).toContain('{x_audio_sung:')
+      expect(songs[0]?.source).toContain('{x_titan_audio_sung:')
+      expect(songs[1]?.source).toContain('{x_titan_audio_sung:')
       const sungOf = (cho: string | undefined) =>
-        String(cho ?? '').match(/\{x_audio_sung:\s*([^}]+)\}/)?.[1]?.trim() ?? ''
+        String(cho ?? '').match(/\{x_titan_audio_sung:\s*([^}]+)\}/)?.[1]?.trim() ?? ''
       expect(sungOf(songs[0]?.source)).toBeTruthy()
       expect(sungOf(songs[1]?.source)).toBeTruthy()
       expect(sungOf(songs[0]?.source)).not.toBe(sungOf(songs[1]?.source))

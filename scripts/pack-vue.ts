@@ -32,3 +32,5 @@ export { ChordproViewer }
 export default ChordproViewer
 `,
 )
+
+copyFileSync(join(root, 'node_modules/@coderline/alphatab/dist/font/Bravura-OFL.txt'), join(root, 'dist/vue/Bravura-OFL.txt'))

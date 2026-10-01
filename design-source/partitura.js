@@ -66,7 +66,7 @@ export const DEFAULT_META = { time: "4/4", key: "D", tempo: 92, tuning: "EADGBE"
 // r = pausa, @corda/casa só quando o dedilhado foi fixado à mão, ~l = ligadura.
 export function serialize(notes, meta) {
   const m = Object.assign({}, DEFAULT_META, meta || {});
-  const head = "{sos: time=" + m.time + " key=" + m.key + " tempo=" + m.tempo + " tuning=" + m.tuning + "}";
+  const head = "{x_titan_start_of_score: time=" + m.time + " key=" + m.key + " tempo=" + m.tempo + " tuning=" + m.tuning + "}";
   const perBar = beatsPerBar(m.time);
   const lines = []; let bar = [];
   for (const it of layout(notes, perBar)) {
@@ -80,7 +80,7 @@ export function serialize(notes, meta) {
     bar.push(tok);
   }
   if (bar.length) lines.push("| " + bar.join(" ") + " |");
-  return head + "\n" + lines.join("\n") + "\n{eos}";
+  return head + "\n" + lines.join("\n") + "\n{x_titan_end_of_score}";
 }
 
 export function beatsPerBar(time) {
@@ -94,7 +94,7 @@ function midiOf(name, oct) {
   return i < 0 ? 60 : (oct + 1) * 12 + i;
 }
 
-// Aceita o formato {sos}, TAB em texto (legado {sot}) ou nada.
+// Aceita o formato {x_titan_start_of_score}, TAB em texto (legado {sot}) ou nada.
 export function parseScore(text) {
   const src = String(text || "").trim();
   if (!src) return { meta: Object.assign({}, DEFAULT_META), notes: [], from: "novo" };

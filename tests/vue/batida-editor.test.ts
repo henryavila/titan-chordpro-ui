@@ -43,7 +43,7 @@ const WITH_STRUM = `{title:Teste}
 {tempo:71}
 {time:4/4}
 {duration:04:00}
-{x_strum: bpm=71; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU}
+{x_titan_strum: bpm=71; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU}
 {c:Verso}
 [D]Oi
 `
@@ -53,7 +53,7 @@ const LEGACY_REST = `{title:Teste}
 {tempo:80}
 {time:4/4}
 {duration:04:00}
-{x_strum:bpm=80; meter=4/4; grid=4; label=Old; pat=D-U-}
+{x_titan_strum:bpm=80; meter=4/4; grid=4; label=Old; pat=D-U-}
 {c:Verso}
 [D]Oi
 `
@@ -197,7 +197,7 @@ describe('Batida editor CTA + sheet', () => {
     expect(on.attributes('data-batida-choice')).toBe('hit')
   })
 
-  it('save writes {x_strum:} via writeMeta and hasStrum becomes true', async () => {
+  it('save writes {x_titan_strum:} via writeMeta and hasStrum becomes true', async () => {
     const w = await viewerAt(NO_STRUM)
     await enterContentEdit(w)
     await w.get('[data-batida-create]').trigger('click')
@@ -214,15 +214,15 @@ describe('Batida editor CTA + sheet', () => {
     expect(w.find('[data-batida-create]').exists()).toBe(false)
     expect(w.find('[data-batida-edit-chrome]').exists()).toBe(true)
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''
-    expect(readMeta(src).x_strum).toBeTruthy()
-    expect(readMeta(src).x_strum).toContain('bpm=90')
-    expect(readMeta(src).x_strum).not.toContain('-')
+    expect(readMeta(src).x_titan_strum).toBeTruthy()
+    expect(readMeta(src).x_titan_strum).toContain('bpm=90')
+    expect(readMeta(src).x_titan_strum).not.toContain('-')
     // Cascaded fill must alternate — no DD/UU runs in pat=
-    const pat = String(readMeta(src).x_strum).match(/pat=([^;]*)/)?.[1] ?? ''
+    const pat = String(readMeta(src).x_titan_strum).match(/pat=([^;]*)/)?.[1] ?? ''
     expect(pat).not.toMatch(/DD|UU|dd|uu|Dd|dD|Uu|uU/)
   })
 
-  it('Apagar removes x_strum and restores + Criar', async () => {
+  it('Apagar removes x_titan_strum and restores + Criar', async () => {
     const w = await viewerAt(WITH_STRUM)
     await enterContentEdit(w)
     await w.get('[data-batida-edit-chrome]').trigger('click')
@@ -232,7 +232,7 @@ describe('Batida editor CTA + sheet', () => {
     expect(w.find('[data-batida-create]').exists()).toBe(true)
     expect(w.find('[data-batida-edit-chrome]').exists()).toBe(false)
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''
-    expect(readMeta(src).x_strum).toBeUndefined()
+    expect(readMeta(src).x_titan_strum).toBeUndefined()
   })
 
   it('legacy pat - displays/edits as passa and save does not write new -', async () => {
@@ -246,7 +246,7 @@ describe('Batida editor CTA + sheet', () => {
     await w.get('[data-batida-save]').trigger('click')
     await flushPromises()
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''
-    const raw = readMeta(src).x_strum ?? ''
+    const raw = readMeta(src).x_titan_strum ?? ''
     expect(raw).toBeTruthy()
     expect(raw).not.toContain('-')
     expect(raw).toMatch(/[du]/i)
@@ -266,7 +266,7 @@ describe('Batida editor CTA + sheet', () => {
     await w.get('[data-batida-save]').trigger('click')
     await flushPromises()
     const src = (w.emitted('update:source')?.at(-1)?.[0] as string) ?? ''
-    expect(readMeta(src).x_strum).toContain('bpm=90')
+    expect(readMeta(src).x_titan_strum).toContain('bpm=90')
   })
 
   it('Só para mim: save writes overlay, not the official source', async () => {
@@ -282,7 +282,7 @@ describe('Batida editor CTA + sheet', () => {
     await w.get('[data-batida-save]').trigger('click')
     await flushPromises()
     const officialWrites = (w.emitted('update:source') ?? []).map((e) => String(e[0] ?? ''))
-    expect(officialWrites.some((s) => s.includes('x_strum'))).toBe(false)
+    expect(officialWrites.some((s) => s.includes('x_titan_strum'))).toBe(false)
     expect(w.emitted('save-content')).toBeUndefined()
     expect(w.find('[data-batida-edit-chrome]').exists()).toBe(true)
     await w.get('[data-read]').trigger('click')

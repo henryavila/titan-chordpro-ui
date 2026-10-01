@@ -169,7 +169,24 @@ export type ChordProLine =
 - Body: chord/lyric pairs in reading order from ViewModel (**not** a brittle HTML scrape long-term; v0.1 may scrape own HTML if snapshots lock parity with current SDA PDF — document which path in CHANGELOG).
 - Bytes in = transposed view; filename helper uses `displayKey`.
 
+### 4.3a Offline chart bundle
+
+The Vue export offers **Cifra completa (.zip)**. The separate `./bundle` entry
+exports `exportChartBundle(source, options)` returning ZIP bytes, filename and
+attachment count. It includes the UTF-8 ChordPro, original notation files,
+images, sung/playback audio and supplied artwork, with local relative references.
+Online service links are provenance only when explicitly configured. Missing
+attachments must fail the export, never silently yield an incomplete archive.
+See `docs/BUNDLE.md` for the complete inventory, manifest and host contract.
+
 ### 4.4 File extensions
+
+**Titan extensions:** application-specific directives use `x_titan_` exclusively.
+Metadata keys and the three notation directives (`x_titan_score`,
+`x_titan_start_of_score`, `x_titan_end_of_score`) are defined in
+`docs/NAMING.md`. Former names are not interpreted or converted. This breaking
+change requires consumers to migrate stored charts and API usage as documented
+in `docs/CONSUMER.md`; the release notes must state those required adjustments.
 
 **Input (CLI / host):** accept ChordPro text files as **`.cho`** or **`.chordpro`** (case-insensitive). Same `parse()` path — extension does not change semantics.
 
@@ -217,6 +234,15 @@ The chart’s only **exact** duration on a line is the `x///` convention: `x` is
 
 ---
 
+### 4.8 Notation appearance
+
+The visual contract for imported TAB/score is [`docs/NOTACAO-VISUAL.md`](docs/NOTACAO-VISUAL.md).
+In the base rhythm mode, half notes have one stem at 50% of the quarter-note
+stem height. Extending rhythm preserves the half-note stem and extends the
+quarter-note stem toward the fret number. Do not use LilyPond's double stem.
+SVG and PDF canvas share this geometry; durations in the original file remain
+unchanged. The document separates official sources from Titan product choices.
+
 ## 5. Transpose rules
 
 - One step = **1 semitone**.
@@ -260,7 +286,7 @@ Production corpus (tenant dump): `fixtures/sda/*.cho`. Demo lists **only** that 
 | Id | File | Role |
 |---|---|---|
 | sda | `fixtures/sda/*.cho` | 148 cifras vivas — SoT do demo e do aceite |
-| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{sos}` (fora da lista do demo) |
+| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{x_titan_start_of_score}` (fora da lista do demo) |
 | empty | empty string / missing | parse → empty sections, no throw |
 
 Agent **must not** invent chord charts for snapshots.

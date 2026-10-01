@@ -512,7 +512,7 @@ describe('putting something new into the chart', () => {
     const score = w.findAll('.cpv-insert-item').find((b) => b.text().includes('Partitura'))
     await score?.trigger('click')
     await flushPromises()
-    expect(await sourceOf(w)).toContain('{sos:')
+    expect(await sourceOf(w)).toContain('{x_titan_start_of_score:')
     expect(w.find('[data-score-editor]').exists()).toBe(true)
 
     await w.get('[data-score-cancel]').trigger('click')

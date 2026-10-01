@@ -8,7 +8,7 @@ const CHART = withDuration(`{title: Ensaio}
 {tempo: 100}
 {time: 4/4}
 {duration: 0:30}
-{x_strum: bpm=100; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU}
+{x_titan_strum: bpm=100; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU}
 
 [G]ola [C]mundo
 `)
