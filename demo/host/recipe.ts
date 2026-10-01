@@ -167,12 +167,15 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Frontend',
     title: 'Só para mim + sugerir',
     blurb:
-      'Overlay no aparelho. Edite uma linha, abra Minha versão → Sugerir. Depois abra “Para todos” (mesmo song) e revise.',
+      'Overlay no aparelho. Edite letra ou importe Guitar Pro/MusicXML, abra Minha versão → Sugerir. O arquivo acompanha o pedido. Depois abra “Para todos” na mesma música.',
     call: `<ChordproViewer
   :source="cho"
   :song-id="id"
   edit-mode="local"
   actor-key="demo-musico"
+  :upload-score="uploadScore"
+  :load-bundle-asset="loadDemoAsset"
+  :persist-suggestion="persistDemoSuggestion"
 />`,
   },
   {
@@ -182,11 +185,13 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Backend / admin',
     title: 'Para todos + fila',
     blurb:
-      'Salvar grava o oficial (`save-content`). Menu · Sugestões dos músicos: preview, Aceitar lote / item.',
+      'Salvar grava o oficial. Em Sugestões dos músicos, veja o solo antes/depois e aceite o arquivo para todos; outra aba do mesmo navegador acompanha a fila.',
     call: `<ChordproViewer
   :source="cho"
   :song-id="id"
   edit-mode="persisted"
+  :suggestion-queue="suggestionQueue"
+  :upload-score="uploadScore"
 />`,
   },
   {

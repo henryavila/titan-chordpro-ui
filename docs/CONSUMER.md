@@ -642,10 +642,16 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
   edit-mode="local"
   :source="cho"
   :song-id="id"
+  :version="version"
   :actor-key="userId"
   :actor-name="displayName"
+  :suggestion-queue="queue"
+  :upload-score="uploadScore"
+  :resolve-score="resolveScore"
+  :load-bundle-asset="loadAsset"
   :persist-suggestion="persistSuggestion"
   @suggestion-created="onSuggestionAck"
+  @update:suggestionQueue="queue = $event"
 />
 
 <!-- Admin / PDP (backend) -->
@@ -653,8 +659,12 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
   edit-mode="persisted"
   :source="cho"
   :song-id="id"
+  :version="version"
   :suggestion-queue="queue"
-  @save-content="persistOfficial"
+  :upload-score="uploadScore"
+  :resolve-score="resolveScore"
+  @save-content="cho = $event"
+  @save="persistDirectSave"
   @suggestion-accepted="onAccepted"
   @suggestion-refused="onRefused"
   @update:suggestionQueue="queue = $event"
@@ -664,14 +674,88 @@ Um papel por mount — o host já sabe se é frontend ou backend. Prop:
 ```ts
 import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 
-function persistSuggestion(s: Suggestion) {
-  return api.post('/suggestions', s)
+const route = useRoute() // Nuxt; use o roteador do seu app
+const id = String(route.params.songId)
+const cho = ref('')
+const version = ref('')
+const queue = ref<Suggestion[]>([])
+
+async function refresh() {
+  const chart = await api.get(`/songs/${id}`)
+  cho.value = chart.source
+  version.value = chart.version
+  queue.value = await api.get(`/songs/${id}/suggestions`)
 }
 
-function onSuggestionAck(_s: Suggestion) {
-  // depois do ack — analytics / refresh. O POST não é aqui.
+async function uploadScore(file: File): Promise<{ ref: string }> {
+  const body = new FormData()
+  body.append('file', file, file.name)
+  return api.post(`/songs/${id}/scores`, body) // resposta: { ref: 'solos/<id>.gpx' }
 }
+
+function resolveScore(ref: string): string {
+  return `/api/songs/${id}/assets?kind=score&ref=${encodeURIComponent(ref)}`
+}
+
+async function loadAsset(ref: string, kind: 'score' | 'image' | 'audio') {
+  const url = `/api/songs/${id}/assets?kind=${kind}&ref=${encodeURIComponent(ref)}`
+  const response = await fetch(url, { credentials: 'include' })
+  if (!response.ok) throw new Error('Anexo indisponível')
+  return {
+    bytes: new Uint8Array(await response.arrayBuffer()),
+    contentType: response.headers.get('content-type') ?? undefined,
+    filename: response.headers.get('x-filename') ?? undefined,
+  }
+}
+
+async function persistSuggestion(s: Suggestion): Promise<void> {
+  // Envie o objeto inteiro, inclusive scoreAttachments[].base64.
+  await api.post(`/songs/${id}/suggestions`, s)
+}
+
+async function onSuggestionAck(_s: Suggestion) {
+  // Depois do ack: atualize os status. O POST já ocorreu em persistSuggestion.
+  queue.value = await api.get(`/songs/${id}/suggestions`)
+}
+
+async function persistDirectSave(text: string) {
+  await api.put(`/songs/${id}`, { source: text })
+  await refresh()
+}
+
+async function onAccepted(p: { id: string; opIds: string[]; officialText: string; status: string }) {
+  try {
+    // Uma transação no servidor grava texto oficial + status dos itens.
+    await api.post(`/songs/${id}/suggestions/${p.id}/accept`, p)
+  } finally { await refresh() }
+}
+
+async function onRefused(p: { id: string; opIds: string[]; status: string }) {
+  try { await api.post(`/songs/${id}/suggestions/${p.id}/refuse`, p) }
+  finally { await refresh() }
+}
+
+onMounted(refresh)
 ```
+
+`api` e os caminhos HTTP acima são um exemplo de integração; o consumer cria esses endpoints. Use o **mesmo `songId`** no músico e no responsável. O `GET` da fila devolve sugestões com `ops`, `resolvedOps`, `status`, `actorName` e `scoreAttachments`: **apenas as próprias** ao músico e **todas** ao responsável. Autorize cada leitura/escrita no servidor, valide extensão/tamanho dos arquivos e guarde o texto oficial e o resultado da aceitação na mesma transação. O servidor deve devolver a fila atualizada após cada decisão; `update:suggestionQueue` atualiza a tela imediatamente. `save-content` reflete o texto na tela tanto em um save direto quanto numa aceitação; `save` é emitido apenas no save direto. `suggestion-accepted` traz o `officialText` já com a referência do arquivo aprovada.
+
+| Endpoint do exemplo | Contrato mínimo no servidor |
+|---|---|
+| `POST /songs/:id/scores` | Recebe `multipart/form-data` (`file`), guarda os bytes originais e devolve `{ ref }` durável. É chamado no envio inicial pelo músico **e novamente** na aceitação pelo responsável. |
+| `GET /songs/:id/assets?kind=score&ref=…` | Devolve bytes, `Content-Type` e, se a referência perder o nome original, `X-Filename`. Autorize acesso à música; se a API estiver em outra origem, exponha esses headers por CORS. |
+| `POST /songs/:id/suggestions` | Guarda o objeto `Suggestion` completo, inclusive `scoreAttachments[].base64`; vincula a autoria à conta autenticada e só responde sucesso depois da gravação. O tamanho aceito pelo servidor deve cobrir o arquivo em base64. |
+| `GET /songs/:id/suggestions` | Devolve abertos e resolvidos: somente pedidos do usuário autenticado no frontend; fila completa no papel de responsável. Inclui anexos para desenhar a prévia e status. |
+| `POST /songs/:id/suggestions/:suggestionId/accept` | Confere ids dos itens, versão/encaixe contra a cifra oficial atual e a nova referência do solo. Grava cifra, status e itens resolvidos numa transação; devolve a cifra/fila atualizadas. |
+| `POST /songs/:id/suggestions/:suggestionId/refuse` | Atualiza status e itens resolvidos sem mexer na cifra; devolve a fila atualizada. |
+
+O servidor deve recalcular a aplicação dos `ops` sobre a cifra oficial atual
+(helpers `applyOps`/`diffOps` do core), em vez de confiar apenas no
+`officialText` recebido do navegador. Em caso de conflito ou falha de
+persistência, devolva erro e recarregue `source`, `version` e a fila do servidor.
+Passe `:version="version"` ao viewer para a versão pessoal detectar
+mudanças no oficial. `ChartStore` guarda a versão pessoal e preferências;
+`suggestionQueue` e os endpoints fazem a fila atravessar contas e aparelhos.
 
 O POST é `persistSuggestion` (`return` da Promise), lida na hora do envio. `@suggestion-created` dispara **depois** do ack — não é o save. Se o POST ainda está no handler do evento, mova. Sem `return`, o Titan pede retry e **não** enfileira; não tosta “enviada”. A fila (e `update:suggestionQueue`, se o host injeta) só muda depois do ack.
 
@@ -679,9 +763,11 @@ O POST é `persistSuggestion` (`return` da Promise), lida na hora do envio. `@su
 
 1. Músico edita em `local` (overlay no device).
 2. **Sugerir alteração** pede o **nome** (identificação) e confirmação leve. Titan **espera** `persistSuggestion`: resolve → enfileira + emit `suggestion-created` (`actorName` + `actorKey` opcional) + toast “Sugestão enviada”; reject ou `void` (sem Promise) → nada na fila, mantém Minha versão, “Não foi possível enviar. Tente de novo.” Sem a prop, o toast “enviada” é otimista (só neste aparelho). Reverter fica bloqueado enquanto envia.
-3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, a faixa da batida só quando ela mudou, e encaixa / conflito → Aceitar lote ou item a item. Aceitar um item deixa a revisão aberta no que ainda falta.
+3. Admin em `persisted` abre **Sugestões dos músicos** → vê quem enviou, a faixa da batida só quando ela mudou, o solo Guitar Pro/MusicXML em **Antes/Depois** com arquivo, faixa e compassos, e encaixa / conflito → Aceitar lote ou item a item. Aceitar um item deixa a revisão aberta no que ainda falta.
 4. Aceitar emite `save-content` **e** `suggestion-accepted` (`officialText` igual ao save). Devolver esse texto em `source` não troca de cifra: a revisão continua.
 5. Status (`pendente` / `aceita` / `recusada` / `parcial`) aparece na Minha versão do músico na próxima visita (host devolve a fila).
+
+Quando um ajuste contém `{x_titan_score: …}`, a sugestão leva `scoreAttachments?: Array<{ src, filename, contentType?, base64 }>` com os **bytes originais** de cada arquivo proposto (inclusive ao alterar só faixa/compassos). O Titan obtém os bytes por `loadBundleAsset(ref, 'score')` ou `resolveScore(ref)` e impede o envio se não conseguir anexá-los. Se a referência não conservar a extensão original, `loadBundleAsset` pode devolver também `filename`. O host deve persistir esse campo junto de `ops` no POST e devolvê-lo em `suggestionQueue` para a revisão em outro aparelho. Na aceitação, o Titan reconstrói cada `File`, chama `uploadScore(file)` no lado do responsável e grava no ChordPro a nova referência devolvida; se esse upload faltar ou falhar, a sugestão permanece pendente e o texto oficial não muda. O mesmo vale para **Aceitar lote**. O fluxo suporta `.gp`, `.gp3`–`.gp5`, `.gpx`, `.xml`, `.musicxml` e `.mxl`.
 
 **Deprecated:** `modes` (`content` → `persisted`; `both` → `local` + warning no console).
 
@@ -703,6 +789,19 @@ antigos sob outro id **não** migram.
 | `/standalone.html?criar=1` | Cifra nova (`persisted`) |
 
 Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e revise.
+Para testar um arquivo musical, abra `/standalone.html?editMode=local`, entre em
+**Editar → + entre blocos → Guitar Pro / MusicXML**, escolha um `.gp`, `.gpx`
+ou MusicXML, salve o trecho, volte à leitura e abra **Minha versão → Sugerir**.
+Em outra aba do **mesmo navegador**, abra
+`/standalone.html?editMode=persisted`, entre em **Sugestões dos músicos**,
+confira o desenho do solo e aceite. Atualize a aba do responsável: o solo
+continua na cifra oficial. O demo usa `localStorage` para a fila e o texto
+oficial, e IndexedDB para os bytes, em
+[`demo/CifraDemo.vue`](../demo/CifraDemo.vue),
+[`suggestion-store.ts`](../demo/host/suggestion-store.ts) e
+[`image-store.ts`](../demo/host/image-store.ts). Abas da mesma origem
+compartilham esse estado; aparelhos diferentes exigem os endpoints do exemplo
+acima. O demo **não** é um serviço de sugestões multiusuário.
 
 ---
 
@@ -830,6 +929,13 @@ worker ou SoundFont. O core continua sem Vue e sem alphaTab em runtime.
 - `resolveScore(ref): string` transforma essa referência em URL acessível ao
   navegador. URLs externas precisam permitir CORS. Sem resolver, usa a referência
   como URL relativa ou absoluta.
+- `loadBundleAsset(ref, 'score')` fornece os bytes originais na hora de sugerir
+  (e de exportar a cifra completa). Pode devolver também `filename` quando o
+  identificador salvo não tem extensão; rejeitar bloqueia o envio da sugestão.
+- Passe `uploadScore` também no mount do responsável: a aceitação envia o anexo
+  outra vez e só então troca a referência no texto oficial. Preserve
+  `scoreAttachments` no banco/fila; uma URL temporária sozinha não basta para
+  revisar em outro aparelho.
 - Formatos do importador: Guitar Pro `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.gp` e
   MusicXML `.xml`, `.musicxml`, `.mxl`. A qualidade depende dos dados do arquivo.
   MusicXML sem posições de corda/casa fica em Partitura, com TAB indisponível.

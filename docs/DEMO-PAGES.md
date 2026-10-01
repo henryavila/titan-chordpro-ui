@@ -2,9 +2,14 @@
 
 Demo real do `<ChordproViewer>`: hub + standalone + shell + lista.
 
-**Persistência de lab:** overlay e fila de sugestões usam `localStorage` do
-navegador (mesmo `songId`), para validar **local → sugerir → persisted →
-revisar**. Prefs de tema também sobrevivem ao reload.
+**Persistência de lab:** o overlay pessoal, a fila de sugestões e a cifra
+oficial usam `localStorage` do navegador (mesmo `songId`); os arquivos
+Guitar Pro/MusicXML enviados ficam no IndexedDB. O demo passa explicitamente
+`persistSuggestion`, `suggestionQueue`, `loadBundleAsset` e `uploadScore` ao
+viewer. Isso permite validar **local → sugerir com arquivo → persisted →
+revisar antes/depois → aceitar → recarregar** em abas do mesmo navegador.
+Prefs de tema também sobrevivem ao reload. A demo não sincroniza aparelhos;
+para isso, o consumer implementa a API descrita no [guia](./CONSUMER.md#10-edição-e-persistência).
 
 **Papéis (`editMode`)**
 
@@ -14,6 +19,16 @@ revisar**. Prefs de tema também sobrevivem ao reload.
 | `?editMode=persisted` | Admin — oficial + fila |
 | `?editMode=none` | Só leitura |
 | `?criar=1` | Cifra nova (`persisted`) |
+
+Teste do solo: em `/standalone.html?editMode=local`, importe um arquivo pelo
+**+ entre blocos → Guitar Pro / MusicXML**, volte à leitura e envie em
+**Minha versão → Sugerir**. Em outra aba, abra
+`/standalone.html?editMode=persisted` e toque em **Sugestões dos músicos**.
+Depois de aceitar, atualize a página: o arquivo e a cifra oficial continuam
+disponíveis. A implementação do host de demonstração está em
+[`CifraDemo.vue`](../demo/CifraDemo.vue),
+[`suggestion-store.ts`](../demo/host/suggestion-store.ts) e
+[`image-store.ts`](../demo/host/image-store.ts).
 
 Query legado `?modes=` ainda funciona (`content`→`persisted`, `both`→`local`).
 

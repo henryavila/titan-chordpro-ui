@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   AUDIO_ART_MEDIA_PX,
   convert,
+  hashText,
   readMeta,
   setRehearsalAudio,
   writeMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
+  type Suggestion,
 } from '@henryavila/titan-chordpro-ui'
 import refAudioUrl from './ref-nasce-cantado.m4a?url'
 import refPlaybackUrl from './ref-nasce-playback.m4a?url'
@@ -25,7 +27,11 @@ import {
   seedFixtures,
   songsFor,
 } from './host/charts'
-import { loadScoreImages, persistScoreImage } from './host/image-store'
+import { loadScoreImage, loadScoreImages, persistScoreImage } from './host/image-store'
+import {
+  DEMO_SUGGESTIONS_KEY, demoOfficialKey, persistDemoSuggestion,
+  readDemoOfficial, readDemoSuggestions, writeDemoOfficial, writeDemoSuggestions,
+} from './host/suggestion-store'
 import BootShell from './BootShell.vue'
 import HostSite from './host/HostSite.vue'
 import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './host/recipe'
@@ -74,10 +80,39 @@ async function uploadScore(file: File): Promise<{ ref: string }> {
   return { ref: refName }
 }
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
-/**
- * Device storage (default ChartStore): overlay + suggestion queue survive
- * navigation so you can suggest on `editMode=local` and review on `persisted`.
- */
+/** Demo host: the personal overlay stays in ChartStore; the queue is host-owned. */
+const suggestionQueue = ref<Suggestion[]>(readDemoSuggestions())
+function updateSuggestionQueue(queue: Suggestion[]) {
+  writeDemoSuggestions(queue)
+  suggestionQueue.value = queue
+}
+function saveOfficial(text: string) {
+  source.value = text
+  officialSource.value = text
+  writeDemoOfficial(id.value, text)
+}
+async function loadDemoAsset(reference: string, kind: 'score' | 'image' | 'audio') {
+  const stored = kind === 'audio' ? null : await loadScoreImage(reference)
+  if (stored) return { ...stored, filename: reference.split('/').at(-1) }
+  const resolved = kind === 'audio' ? reference : resolveImage(reference)
+  const url = new URL(resolved, document.baseURI)
+  if (!['http:', 'https:', 'blob:'].includes(url.protocol)) throw new Error('Anexo inválido')
+  const response = await fetch(url.href)
+  if (!response.ok) throw new Error('Não foi possível abrir o anexo')
+  return {
+    bytes: new Uint8Array(await response.arrayBuffer()),
+    contentType: response.headers.get('content-type') || undefined,
+    filename: reference.split(/[/?#]/).filter(Boolean).at(-1),
+  }
+}
+function onDemoStorage(event: StorageEvent) {
+  if (event.key === DEMO_SUGGESTIONS_KEY) suggestionQueue.value = readDemoSuggestions()
+  if (event.key === demoOfficialKey(id.value)) {
+    const next = readDemoOfficial(id.value) ?? fixtures.value[id.value] ?? ''
+    source.value = next
+    officialSource.value = next
+  }
+}
 
 /**
  * Host-owned batida presets (demo stand-in for SDA storage).
@@ -122,11 +157,15 @@ function withAudio(cho: string, slot = 0) {
   return next
 }
 
-const source = ref(lab.criar ? '' : withAudio(fixtures.value[id.value] ?? ''))
+const initialOfficial = lab.criar ? '' : withAudio(readDemoOfficial(id.value) ?? fixtures.value[id.value] ?? '')
+const source = ref(initialOfficial)
+const officialSource = ref(initialOfficial)
+const version = computed(() => `demo-${hashText(officialSource.value)}`)
 
 function pick(next: string) {
   id.value = next
-  source.value = withAudio(fixtures.value[next] ?? '')
+  source.value = withAudio(readDemoOfficial(next) ?? fixtures.value[next] ?? '')
+  officialSource.value = source.value
 }
 
 const listaMode = computed(() => {
@@ -202,6 +241,7 @@ const readPdf = async (file: File) => {
 }
 
 onMounted(async () => {
+  window.addEventListener('storage', onDemoStorage)
   try {
     const stored = await loadScoreImages().catch(() => [])
     const next = new Map(uploadedUrls.value)
@@ -214,6 +254,7 @@ onMounted(async () => {
       if (src) {
         id.value = lab.cc
         source.value = src
+        officialSource.value = src
         return
       }
     }
@@ -238,6 +279,7 @@ onMounted(async () => {
   }
   if (lab.song && lab.song in fixtures.value) pick(lab.song)
 })
+onUnmounted(() => window.removeEventListener('storage', onDemoStorage))
 </script>
 
 <template>
@@ -259,6 +301,7 @@ onMounted(async () => {
       :lens="lab.lens ?? undefined"
       :hide-comments="lab.hideComments"
       :song-id="id"
+      :version="listaMode === 'off' ? version : undefined"
       :songs="songs"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
@@ -270,10 +313,14 @@ onMounted(async () => {
       :upload-image="uploadImage"
       :upload-score="uploadScore"
       :resolve-score="resolveImage"
+      :load-bundle-asset="loadDemoAsset"
+      :persist-suggestion="persistDemoSuggestion"
+      :suggestion-queue="suggestionQueue"
       :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
       :strum-presets="strumPresets"
       @update:source="source = $event"
-      @save-content="source = $event"
+      @save-content="saveOfficial"
+      @update:suggestionQueue="updateSuggestionQueue"
       @save-strum-preset="onSaveStrumPreset"
     />
   </HostSite>
@@ -292,6 +339,7 @@ onMounted(async () => {
       :lens="lab.lens ?? undefined"
       :hide-comments="lab.hideComments"
       :song-id="id"
+      :version="listaMode === 'off' ? version : undefined"
       :songs="songs"
       :load-song="lazyLista ? loadSong : undefined"
       :fetch-chart="fetchChart"
@@ -303,10 +351,14 @@ onMounted(async () => {
       :upload-image="uploadImage"
       :upload-score="uploadScore"
       :resolve-score="resolveImage"
+      :load-bundle-asset="loadDemoAsset"
+      :persist-suggestion="persistDemoSuggestion"
+      :suggestion-queue="suggestionQueue"
       :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
       :strum-presets="strumPresets"
       @update:source="source = $event"
-      @save-content="source = $event"
+      @save-content="saveOfficial"
+      @update:suggestionQueue="updateSuggestionQueue"
       @save-strum-preset="onSaveStrumPreset"
     />
   </div>

@@ -10,6 +10,7 @@
 import { canonicalMetaKey, readMeta, readStrumPatterns } from './import-chordpro'
 import type { StrumPattern, StrumSlot } from './strum'
 import { keyRootOf, signedSemitoneDelta } from './transpose'
+import { readScoreReference, type ScoreReference } from './score-reference'
 
 export type ReadingCtx = {
   /** Semitones the reader was transposed by when the edit was made. */
@@ -364,8 +365,55 @@ export function strumReviewFromOp(op: OverlayOp): StrumReview | null {
   return { previous, proposed }
 }
 
+export type ScoreAttachment = {
+  /** The source reference this file belongs to, before any review promotion. */
+  src: string
+  filename: string
+  contentType?: string
+  /** Original Guitar Pro/MusicXML bytes, base64 for JSON queues and APIs. */
+  base64: string
+}
+
+/** A score edit is a visual before/after pair, not raw ChordPro for review. */
+export function scoreReviewsFromOp(op: OverlayOp): Array<{ previous: ScoreReference | null; proposed: ScoreReference | null }> {
+  if (isTuneOp(op)) return []
+  const find = (lines: string[]): ScoreReference[] => {
+    const refs: ScoreReference[] = []
+    for (const line of lines) {
+      try {
+        const ref = readScoreReference(line)
+        if (ref) refs.push(ref)
+      } catch { /* malformed text remains in the ordinary diff */ }
+    }
+    return refs
+  }
+  const previous = find(op.before)
+  const proposed = find(op.after)
+  return Array.from({ length: Math.max(previous.length, proposed.length) }, (_, i) => ({
+    previous: previous[i] ?? null,
+    proposed: proposed[i] ?? null,
+  }))
+}
+
+export function scoreReviewFromOp(op: OverlayOp): { previous: ScoreReference | null; proposed: ScoreReference | null } | null {
+  return scoreReviewsFromOp(op)[0] ?? null
+}
+
+export function proposedScoreSources(ops: OverlayOp[]): string[] {
+  const sources = new Set<string>()
+  for (const op of ops) {
+    for (const review of scoreReviewsFromOp(op)) if (review.proposed) sources.add(review.proposed.src)
+  }
+  return [...sources]
+}
+
 export function opLabel(op: OverlayOp): string {
   if (isTuneOp(op)) return 'Tom e capo fixos'
+  const score = scoreReviewFromOp(op)
+  if (score) {
+    const name = score.proposed?.name ?? score.previous?.name ?? 'Solo'
+    return `${op.type === 'insert' ? 'Solo novo' : op.type === 'delete' ? 'Solo removido' : 'Solo alterado'} · ${name}`
+  }
   if (
     !isTuneOp(op) &&
     op.type === 'replace' &&
@@ -491,6 +539,8 @@ export type Suggestion = {
   baseVersion: string
   /** Still-open ops waiting for review. */
   ops: OverlayOp[]
+  /** Original files used by proposed score excerpts. Persist with the suggestion. */
+  scoreAttachments?: ScoreAttachment[]
   /** Ops already accepted or refused (not deleted). */
   resolvedOps?: ResolvedOp[]
   /** Default `pending` on create. */
