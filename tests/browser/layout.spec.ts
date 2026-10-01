@@ -121,7 +121,7 @@ for (const width of [1280, 375]) {
 }
 
 test('controlled auto follows system changes, explicit host theme wins old preference', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('cpv:prefs', JSON.stringify({ theme: 'dark' })))
+  await page.addInitScript(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ theme: 'dark' })))
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto('/')
   const root = page.locator('[data-cpv-root]')

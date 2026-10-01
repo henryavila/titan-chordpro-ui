@@ -388,14 +388,20 @@ Todas declaradas em `STORE_KEYS`, para o host rotear ou prefixar:
 
 | Chave | O que guarda | Escopo natural |
 |---|---|---|
-| `cpv:prefs` | tema, bias, ajuste ao espaço, metrônomo | dispositivo **ou** conta |
+| `cpv:user-preferences` | tema, tamanho, ajuste ao espaço, metrônomo, lente, instrumento e ritmo da TAB | dispositivo **ou** conta |
+| `cpv:notation:{songId}` | TAB/Partitura e aberto/recolhido de cada trecho | dispositivo **ou** conta, por música |
 | `cpv:fitSeen` | dica do modo ajuste já vista | dispositivo |
 | `cpv:bpm` | BPM manual por música | dispositivo **ou** conta |
 | `cpv:my:{songId}` | **a versão pessoal do músico** | conta — ele troca de celular |
 | `cpv:sug` | sugestões pendentes | servidor — atravessa pessoas |
 | `cpv:actor-name` | último nome ao sugerir | dispositivo **ou** conta |
 
-`overlayKey(songId)` monta a quarta. As duas últimas são as que realmente
+`notationKey(songId)` monta a segunda chave (com o ID codificado) e
+`overlayKey(songId)` monta a quinta. Passe um `songId` estável para que as
+escolhas de cada música não se misturem; sem ele, o título da cifra é usado.
+`cpv:prefs` e `cpv:tab-rhythm` não são lidas nem migradas. Se o host guarda
+preferências na conta, passe a armazenar as chaves novas.
+As duas últimas são as que realmente
 pedem um host: mantidas no default, a versão pessoal morre quando o músico
 limpa o navegador, e a sugestão só existe naquele navegador.
 

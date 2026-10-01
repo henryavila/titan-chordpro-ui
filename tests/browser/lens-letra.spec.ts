@@ -25,7 +25,7 @@ test('host lens=letra opens already in Só letra', async ({ page }) => {
 test('host lens=none opens Cifra even when prefs were Letra', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 800 })
   await page.addInitScript(() => {
-    localStorage.setItem('cpv:prefs', JSON.stringify({ lens: 'letra' }))
+    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'letra' }))
   })
   await page.goto('/?lens=none')
   await page.locator('.cpv-chord').first().waitFor()

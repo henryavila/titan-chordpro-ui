@@ -65,6 +65,6 @@ describe('Ensaio Batida + Rolar silencioso', () => {
     await flushPromises()
     await w.get('[data-met-source="batida"]').trigger('click')
     await flushPromises()
-    expect(JSON.parse(storage.get('cpv:prefs')!)).toMatchObject({ metStrumSound: true })
+    expect(JSON.parse(storage.get('cpv:user-preferences')!)).toMatchObject({ metStrumSound: true })
   })
 })

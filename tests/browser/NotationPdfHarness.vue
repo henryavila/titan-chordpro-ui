@@ -14,4 +14,4 @@ const text = writeScoreReference({ src: file?.startsWith('piano') ? pianoUrl : f
 const base = file === 'piano-long' ? text + '\n' + source : source + '\n' + text
 const chart = params.has('bundle') ? base + `\n{image: ${imageUrl}}\n{x_titan_audio_sung: ${audioUrl}}\n{x_titan_audio_playback: ${playbackUrl}}\n{x_titan_youtube: abc123}` : base
 </script>
-<template><div style="height:100dvh"><ChordproViewer :source="chart" :auto-hide="false" theme="light" /></div></template>
+<template><div style="height:100dvh"><ChordproViewer :source="chart" :song-id="file ?? 'demo'" :auto-hide="false" theme="light" /></div></template>

@@ -1,5 +1,5 @@
 import { inject, ref, type InjectionKey } from 'vue'
-import { browserStore, isTabRhythm, STORE_KEYS, type ChartStore, type TabRhythm } from '@henryavila/titan-chordpro-ui'
+import { browserStore, isTabRhythm, readUserPreferences, updateUserPreferences, type ChartStore, type TabRhythm } from '@henryavila/titan-chordpro-ui'
 
 export const TAB_RHYTHM_OPTIONS = [
   { value: 'extended', label: 'Ritmo estendido' },
@@ -8,13 +8,10 @@ export const TAB_RHYTHM_OPTIONS = [
 ]
 export function createTabRhythmPreference(store: ChartStore) {
   const value = ref<TabRhythm | undefined>()
-  try { const saved = store.get(STORE_KEYS.tabRhythm); if (isTabRhythm(saved)) value.value = saved } catch { /* unavailable */ }
+  value.value = readUserPreferences(store).tabRhythm
   function set(next: string | number) {
     value.value = isTabRhythm(next) ? next : undefined
-    try {
-      if (value.value) store.set(STORE_KEYS.tabRhythm, value.value)
-      else store.remove(STORE_KEYS.tabRhythm)
-    } catch { /* keep the session preference */ }
+    updateUserPreferences(store, { tabRhythm: value.value })
   }
   return { value, set }
 }

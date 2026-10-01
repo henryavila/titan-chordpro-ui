@@ -3,6 +3,26 @@ import { readFileSync } from 'node:fs'
 import { clockOf, parse } from '../../src/core'
 const duration = clockOf(parse(readFileSync('fixtures/sda/084-escuta-meu-clamor.cho', 'utf8'))).durationSec!
 
+test('the reader keeps each solo view and fold across visits, independently by song', async ({ page }) => {
+  await page.goto('/notation.html?pdf=1&file=gp')
+  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Partitura', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.locator('[data-toggle-notation]').click()
+  await expect(page.locator('[data-toggle-notation]')).toHaveAttribute('aria-expanded', 'false')
+  await page.reload()
+  await expect(page.locator('[data-toggle-notation]')).toHaveAttribute('aria-expanded', 'false')
+  await page.locator('[data-toggle-notation]').click()
+  await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.goto('/notation.html?pdf=1&file=xml')
+  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await expect(page.locator('[data-toggle-notation]')).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('button', { name: 'TAB', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.goto('/notation.html?pdf=1&file=gp')
+  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toHaveAttribute('aria-pressed', 'true')
+})
+
 async function progress(page: Page) {
   return page.locator('.cpv-progress > span').evaluate(el => parseFloat((el as HTMLElement).style.width) / 100)
 }
@@ -14,7 +34,7 @@ async function toggle(page: Page) {
 for (const width of [390, 1280]) {
   test(`folding a large reference preserves a running clock at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
-    await page.addInitScript(() => localStorage.setItem('cpv:prefs', JSON.stringify({ metFollow: false })))
+    await page.addInitScript(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ metFollow: false })))
     await page.goto('/notation.html?pdf=1&file=piano-long')
     await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
     await expect(page.locator('[data-external-score] [role="status"]')).toHaveCount(0)
@@ -71,7 +91,7 @@ test('paused fold keeps the same lyric on screen, and reopening restores the ref
 
 test('folding while the playhead is inside the reference retains its remaining time', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => localStorage.setItem('cpv:prefs', JSON.stringify({ metFollow: false })))
+  await page.addInitScript(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ metFollow: false })))
   await page.goto('/notation.html?pdf=1&file=piano-long')
   await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
   await page.clock.install()
