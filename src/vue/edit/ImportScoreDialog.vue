@@ -31,6 +31,8 @@ const tracks = ref<Array<{ id: number; name: string }>>([])
 const total = ref(0)
 const error = ref('')
 const busy = ref(false)
+const dragDepth = ref(0)
+const dragging = computed(() => dragDepth.value > 0 && !!props.uploadScore && !busy.value)
 const score = shallowRef<model.Score | null>(null)
 const trackOptions = computed(() => tracks.value.map(t => ({ value: t.id, label: t.name })))
 const fileName = computed(() => file.value?.name || src.value.split('/').at(-1) || 'Arquivo musical')
@@ -80,8 +82,33 @@ async function openFile(chosen?: File) {
   } finally { if (ticket === generation) busy.value = false }
 }
 function selectFile(event: Event) {
-  const chosen = (event.target as HTMLInputElement).files?.[0]
-  if (chosen) openFile(chosen)
+  const input = event.target as HTMLInputElement
+  chooseFiles(Array.from(input.files ?? []))
+  input.value = ''
+}
+function chooseFiles(files: File[]) {
+  if (!props.uploadScore || busy.value || !files.length) return
+  if (files.length !== 1) {
+    error.value = 'Solte apenas um arquivo musical por vez.'
+    return
+  }
+  const chosen = files[0]
+  if (!chosen) return
+  if (!/\.(gp[345]?|gpx|xml|musicxml|mxl)$/i.test(chosen.name)) {
+    error.value = 'Escolha um arquivo Guitar Pro ou MusicXML (GP, GPX, GP3–5, XML, MusicXML ou MXL).'
+    return
+  }
+  void openFile(chosen)
+}
+function dragEnter(event: DragEvent) {
+  if (props.uploadScore && !busy.value && event.dataTransfer?.types.includes('Files')) dragDepth.value++
+}
+function dragOver(event: DragEvent) {
+  if (event.dataTransfer) event.dataTransfer.dropEffect = props.uploadScore && !busy.value ? 'copy' : 'none'
+}
+function dropFile(event: DragEvent) {
+  dragDepth.value = 0
+  chooseFiles(Array.from(event.dataTransfer?.files ?? []))
 }
 async function save() {
   if (!score.value || busy.value) return
@@ -121,7 +148,7 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
 </script>
 
 <template>
-  <div class="cpv-modal cpv-import-score-modal" @keydown.stop="keydown">
+  <div class="cpv-modal cpv-import-score-modal" @keydown.stop="keydown" @dragover.prevent @drop.prevent>
     <div class="cpv-scrim" />
     <form ref="dialog" class="cpv-veil-2 cpv-modal-card cpv-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save">
       <header class="cpv-import-score-head">
@@ -130,11 +157,14 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
       </header>
       <div class="cpv-import-score-body">
         <fieldset class="cpv-import-score-controls" :disabled="busy">
-          <div class="cpv-import-score-file">
+          <div class="cpv-import-score-file" :class="{ 'cpv-import-score-file--drop': uploadScore, 'cpv-import-score-file--dragging': dragging }"
+            @dragenter.prevent="dragEnter" @dragover.prevent.stop="dragOver"
+            @dragleave.prevent="dragDepth = Math.max(0, dragDepth - 1)" @drop.prevent.stop="dropFile">
             <span class="cpv-import-score-file-icon"><CpvIcon name="fileInput" :size="22" /></span>
             <div><strong>{{ file || src ? fileName : 'Seu arquivo musical' }}</strong><p>{{ total ? `${total} compassos disponíveis` : 'GP, GPX, GP3–5, XML ou MXL' }}</p></div>
             <input v-if="uploadScore" ref="fileInput" type="file" hidden accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl" @change="selectFile">
             <button v-if="uploadScore" type="button" class="cpv-modal-btn" @click="fileInput?.click()">{{ file || src ? 'Trocar arquivo' : 'Escolher arquivo' }}</button>
+            <p v-if="uploadScore" class="cpv-import-score-drop-hint" role="status">{{ dragging ? 'Solte o arquivo aqui' : 'Ou arraste e solte o arquivo aqui' }}</p>
           </div>
           <template v-if="tracks.length">
             <label class="cpv-import-score-field"><span class="cpv-import-score-label">Nome do trecho</span>

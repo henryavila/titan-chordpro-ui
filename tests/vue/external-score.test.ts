@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import ImportScoreDialog from '../../src/vue/edit/ImportScoreDialog.vue'
 import ChordproViewer from '../../src/vue/ChordproViewer.vue'
-import { normalizeSource, writeScoreReference } from '../../src/core'
+import { layoutChart, parse, normalizeSource, writeScoreReference } from '../../src/core'
 
 const original = normalizeSource(readFileSync('fixtures/013-ele-vive-em-mim-partitura.cho', 'utf8'))
 const reference = writeScoreReference({ src: '/solo.gp', track: 1, start: 1, end: 1 })
@@ -52,6 +52,56 @@ describe('external solo integration', () => {
       await wrapper.get('[data-undo]').trigger('click')
       await flushPromises()
       expect(wrapper.find(kind === 'external' ? '[data-external-stub]' : '[data-invalid-score]').exists()).toBe(true)
+    } finally { wrapper.unmount() }
+  })
+  it('duplicates, adjusts and moves a solo after a chorus, preserving the saved source', async () => {
+    const source = `${reference}\n\n${original}`
+    const wrapper = mount(ChordproViewer, {
+      props: { source, modes: 'content', theme: 'light', autoHide: false },
+      global: { stubs: { ExternalScore: { props: ['text'], template: '<div data-external-stub>{{ text }}</div>' } } },
+    })
+    const current = () => (wrapper.vm as unknown as { getSource(): string }).getSource()
+    const select = async (bi: number) => {
+      if (wrapper.find('[data-close-sel]').exists()) await wrapper.get('[data-close-sel]').trigger('click')
+      await wrapper.get(`[data-grip="${bi}"]`).trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+    }
+    try {
+      await flushPromises()
+      await wrapper.get('[data-edit]').trigger('click')
+      await flushPromises()
+      if (wrapper.find('[data-mode-content]').exists()) await wrapper.get('[data-mode-content]').trigger('click')
+      await select(0)
+      await wrapper.get('[data-duplicate]').trigger('click')
+      await flushPromises()
+      await select(1)
+      await wrapper.get('[data-adjust-score]').trigger('click')
+      const updated = writeScoreReference({ src: '/solo.gp', track: 1, start: 3, end: 11 })
+      wrapper.getComponent(ImportScoreDialog).vm.$emit('save', updated)
+      await flushPromises()
+      expect(current().split(reference)).toHaveLength(2)
+      expect(current()).toContain(updated)
+      // Move the copy one block at a time until it follows the first refrain.
+      let bs = layoutChart(parse(current()))
+      let bi = bs.findIndex(b => b.kind === 'score' && b.text === updated)
+      await select(bi)
+      for (let step = 0; step < 20; step++) {
+        bs = layoutChart(parse(current()))
+        bi = bs.findIndex(b => b.kind === 'score' && b.text === updated)
+        if (bs[bi - 1]?.kind === 'chorus') break
+        await wrapper.get('[data-nudge-down]').trigger('click')
+        await flushPromises()
+      }
+      bs = layoutChart(parse(current()))
+      bi = bs.findIndex(b => b.kind === 'score' && b.text === updated)
+      expect(bs[bi - 1]?.kind).toBe('chorus')
+      const moved = current()
+      await wrapper.get('[data-save]').trigger('click')
+      await flushPromises()
+      expect(wrapper.emitted('save')?.at(-1)).toEqual([moved])
+      await wrapper.setProps({ source: moved })
+      expect(current()).toBe(moved)
+      expect(moved.replace(`${reference}\n\n`, '').replace(`${updated}\n`, '').replace(/\n+/g, '\n').trim()).toBe(original.replace(/\n+/g, '\n').trim())
     } finally { wrapper.unmount() }
   })
   it('keeps the dialog and source untouched when host storage rejects an upload', async () => {

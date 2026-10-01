@@ -3,7 +3,7 @@
 import type { model } from '@coderline/alphatab'
 import type { ScoreReference, TabRhythm } from '@henryavila/titan-chordpro-ui'
 import bravuraUrl from '@coderline/alphatab/font/Bravura.woff2?url'
-import { excerptTrack, hasTab } from './notation-loader'
+import { excerptTrack, hasTab, isolateExcerpt } from './notation-loader'
 
 export type NotationPalette = { ink: string; secondary: string; line: string; accent: string }
 export type NotationSystem = { content: string | HTMLCanvasElement; width: number; height: number; first: number; last: number }
@@ -20,6 +20,9 @@ export async function drawNotation(score: model.Score, reference: ScoreReference
 }): Promise<NotationSystem[]> {
   await loadFont()
   const alpha = await import('@coderline/alphatab')
+  // Rendering owns its model: repeated previews and other copies must retain
+  // the complete imported music, including links crossing this excerpt's edge.
+  score = isolateExcerpt(alpha.model.JsonConverter.jsObjectToScore(alpha.model.JsonConverter.scoreToJsObject(score)), reference.start, reference.end)
   const track = excerptTrack(score, reference.track, reference.start, reference.end)
   if (options.mode === 'tab' && !hasTab(track)) throw new Error('Um dos solos não contém posições nas cordas. Escolha Partitura ou Nenhum.')
   for (const staff of track.staves) {

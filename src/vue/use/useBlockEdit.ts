@@ -457,24 +457,37 @@ export function useBlockEdit(opts: BlockEditOpts) {
     if (e.button != null && e.button !== 0) return
     e.preventDefault()
     const y0 = e.clientY
-    const rects = Array.from(opts.root.value?.querySelectorAll<HTMLElement>('[data-block]') ?? []).map(
-      (el) => ({ bi: Number(el.dataset.block), r: el.getBoundingClientRect() }),
-    )
     let moved = false
-    const move = (ev: PointerEvent) => {
-      if (!moved && Math.abs(ev.clientY - y0) < 7) return
-      moved = true
-      if (dragBi.value !== bi) dragBi.value = bi
+    let pointerY = y0
+    const updateTarget = () => {
+      if (!moved) return
+      // Scroll and notation reflow can move every block during a drag.
+      const rects = Array.from(opts.root.value?.querySelectorAll<HTMLElement>('[data-block]') ?? []).map(
+        (el) => ({ bi: Number(el.dataset.block), r: el.getBoundingClientRect() }),
+      )
       let t: number | null = null
       for (const it of rects)
-        if (ev.clientY < it.r.top + it.r.height / 2) {
+        if (pointerY < it.r.top + it.r.height / 2) {
           t = it.bi
           break
         }
       if (t === null) t = rects.length ? (rects[rects.length - 1]?.bi ?? 0) + 1 : 0
       if (dropAt.value !== t) dropAt.value = t
     }
-    const up = () => {
+    const move = (ev: PointerEvent) => {
+      pointerY = ev.clientY
+      if (!moved && Math.abs(pointerY - y0) < 7) return
+      moved = true
+      if (dragBi.value !== bi) dragBi.value = bi
+      updateTarget()
+    }
+    const scroller = opts.scroller.value
+    const up = (ev: PointerEvent) => {
+      // Release can carry a newer position than the last delivered move.
+      // Commit against that point, not the previous hover target.
+      pointerY = ev.clientY
+      updateTarget()
+      scroller?.removeEventListener('scroll', updateTarget)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       const to = dropAt.value
@@ -484,6 +497,7 @@ export function useBlockEdit(opts: BlockEditOpts) {
         if (to !== null) moveBlock(bi, to)
       } else toggleSel(bi)
     }
+    scroller?.addEventListener('scroll', updateTarget)
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
   }

@@ -3507,6 +3507,12 @@ div.cpv-head-id {
 .cpv-import-score-file strong { display: block; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .cpv-import-score-file p { font-size: 11px; margin-top: 3px; }
 .cpv-import-score-file > button { grid-column: 1 / -1; width: 100%; }
+.cpv-import-score-file--drop { padding: 16px; border: 1px dashed var(--line); border-radius: 14px; }
+.cpv-import-score-file--dragging { border-color: var(--chord); background: var(--chord-soft); }
+.cpv-import-score-file .cpv-import-score-drop-hint { grid-column: 1 / -1; margin: 0; text-align: center; }
+@media (hover: none) and (pointer: coarse) {
+  .cpv-import-score-drop-hint { display: none; }
+}
 .cpv-import-score-field { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
 .cpv-import-score-label, .cpv-bar-range-heading { font-size: 12px; font-weight: 650; }
 .cpv-import-score-field p { font-size: 12px; }
