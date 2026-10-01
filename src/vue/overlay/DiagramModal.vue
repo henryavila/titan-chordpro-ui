@@ -321,7 +321,7 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: 72px 12px 60px;
+  padding: 72px 12px calc(104px + env(safe-area-inset-bottom, 0px));
   container-type: size;
 }
 /*
@@ -483,21 +483,24 @@ onBeforeUnmount(() => {
 }
 .titan-chordpro-diagram-instruments {
   position: absolute;
-  left: 14px;
-  bottom: 12px;
+  left: 16px;
+  bottom: calc(36px + env(safe-area-inset-bottom, 0px));
   z-index: 1;
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(360px, calc(100% - 32px));
+  gap: 8px;
 }
 .titan-chordpro-diagram-instrument {
+  min-height: 48px;
   border: 0;
   border-radius: 999px;
   background: var(--veil-2);
   color: var(--muted);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
-  padding: 6px 10px;
+  padding: 0 8px;
   cursor: pointer;
 }
 .titan-chordpro-diagram-instrument[aria-pressed='true'] {
