@@ -39,7 +39,8 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
   - Num ensaio, anterior e próxima na tela de bloqueio / Central de Mídia / fone trocam a cifra da lista (no iPhone no lugar dos ±10 s; ±10 s continua no player da cifra). Demo: `/standalone-lista.html?audio=1`
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. O selo Próxima / Anterior sobe e fica acima do dedo. Sem flick, sem a cifra deslizando
-- Export ChordPro, PDF e slides LouvorJA (`.slja`)
+- Export ChordPro, PDF, slides LouvorJA (`.slja`) e **Cifra completa (.zip)** (solos, imagens, áudios)
+- Import da cifra completa pelo consumer (`importChartBundle` + `persistAsset`; sem tela no Titan) — [`docs/BUNDLE.md`](docs/BUNDLE.md) · [`docs/CONSUMER.md`](docs/CONSUMER.md)
 
 **Edição**
 - No lugar: letra, acorde, bloco (transpor, capo, reordenar)
@@ -51,7 +52,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 - Completar metadados / batida pelo Cifra Club sem substituir o corpo. Cifras já cadastradas: **Reescrever** na ficha. Uma reescrita uniforme vira um trecho só na sugestão
 
 **Pacote**
-- Entradas `core` / `vue` / `pdf` / `slides` + CLI
+- Entradas `core` / `vue` / `pdf` / `slides` / `bundle` + CLI
 - Persistência do host (`ChartStore`); auth fica fora
 
 Fora: login, multicifra do site, player de áudio **sincronizado**, collab em tempo real.

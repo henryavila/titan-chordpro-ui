@@ -48,6 +48,10 @@ describe('package.json is what a published consumer resolves', () => {
       types: './dist/vue/index.d.ts',
       import: './dist/vue/index.js',
     })
+    expect(pkg.exports['./bundle']).toMatchObject({
+      types: './dist/bundle/index.d.ts',
+      import: './dist/bundle/index.js',
+    })
     expect(pkg.exports['./vue/style.css']).toBe('./dist/vue/style.css')
 
     const typesPaths = [
@@ -55,6 +59,7 @@ describe('package.json is what a published consumer resolves', () => {
       (pkg.exports['.'] as { types: string }).types,
       (pkg.exports['./pdf'] as { types: string }).types,
       (pkg.exports['./slides'] as { types: string }).types,
+      (pkg.exports['./bundle'] as { types: string }).types,
       (pkg.exports['./vue'] as { types: string }).types,
     ]
     for (const p of typesPaths) {
@@ -108,6 +113,12 @@ describe('SPEC §4 public API is importable from the package name', () => {
     }
     expect(core).not.toHaveProperty('createViewerController')
     expect(core).not.toHaveProperty('viewerMulStep')
+  })
+
+  it('bundle entry exports export and import of the offline ZIP', async () => {
+    const mod = await import('@henryavila/titan-chordpro-ui/bundle')
+    expect(mod.exportChartBundle).toBeTypeOf('function')
+    expect(mod.importChartBundle).toBeTypeOf('function')
   })
 
   it('vue entry exports TitanChordpro as named and default', async () => {
@@ -180,10 +191,14 @@ describe('built dist (consumer tarball shape)', () => {
     expect(hashed).toEqual([])
   })
 
-  it.skipIf(!built)('core, pdf and slides type files exist', () => {
+  it.skipIf(!built)('core, pdf, slides and bundle type files exist', () => {
     expect(existsSync(join(root, 'dist/core/index.d.ts'))).toBe(true)
     expect(existsSync(join(root, 'dist/pdf/index.d.ts'))).toBe(true)
     expect(existsSync(join(root, 'dist/slides/index.d.ts'))).toBe(true)
+    expect(existsSync(join(root, 'dist/bundle/index.d.ts'))).toBe(true)
+    const bundleDts = readFileSync(join(root, 'dist/bundle/index.d.ts'), 'utf8')
+    expect(bundleDts).toMatch(/exportChartBundle/)
+    expect(bundleDts).toMatch(/importChartBundle/)
     const coreDts = readFileSync(join(root, 'dist/core/index.d.ts'), 'utf8')
     expect(coreDts).toMatch(/export \{/)
     expect(coreDts).toMatch(/type TitanChordproDocument/)
@@ -201,5 +216,8 @@ describe('built dist (consumer tarball shape)', () => {
     const slidesMod = await import(pathToFileURL(join(root, 'dist/slides/index.js')).href)
     expect(slidesMod.renderSlja).toBeTypeOf('function')
     expect(slidesMod.exportSlja).toBeTypeOf('function')
+    const bundleMod = await import(pathToFileURL(join(root, 'dist/bundle/index.js')).href)
+    expect(bundleMod.exportChartBundle).toBeTypeOf('function')
+    expect(bundleMod.importChartBundle).toBeTypeOf('function')
   })
 })

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Importar cifra completa (.zip):** o app que usa o Titan pode abrir o pacote baixado em Exportar e guardar cifra, solos Guitar Pro/GPX/MusicXML, imagens, cantado, playback e capas no próprio armazenamento. Os caminhos locais do ZIP viram as referências do app; YouTube e origem voltam na cifra. Não há tela de importar no Titan — a integração é pelo código (`importChartBundle`). Se um anexo faltar, o tipo não bater, o ZIP estiver cortado, o arquivo for uma página de erro ou a referência de áudio não puder ser tocada, a importação para e a cifra não entra incompleta.
 - **Notas nos solos:** em um trecho Guitar Pro/MusicXML, toque em **Notas** para ver C, D, E e os demais nomes acima da TAB ou da partitura. Toque novamente para ocultar. O aparelho lembra sua escolha para os próximos trechos. O app que abre o Titan pode escolher a forma Dó, Ré, Mi para seus leitores.
 
 ### Removed

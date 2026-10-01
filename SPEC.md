@@ -8,7 +8,7 @@
 |---|---|
 | Product / repo | **`titan-chordpro-ui`** (view **+** edit, one package) — formerly seed `chordpro-viewer` |
 | Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
-| Packages (npm) | **`@henryavila/titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
+| Packages (npm) | **`@henryavila/titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./bundle"`, `"./vue"` |
 | Repo path | `/Volumes/External/code/titan-chordpro-ui` |
 | Sibling generator | **`titan-chordpro-gen`** — audio → ChordPro — **out of scope** |
 | Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
@@ -114,6 +114,11 @@ export function exportSlja(source: string, opts?: SljaOptions): Promise<SljaFile
 // SljaOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
 // Chart line breaks are the phrasing. Do not reflow like louvorja-slides ASR.
 
+// @henryavila/titan-chordpro-ui/bundle  (ZIP stay out of core)
+export function exportChartBundle(source: string, opts?: ChartBundleOptions): Promise<ChartBundle>
+export function importChartBundle(bytes: Uint8Array | ArrayBuffer, opts: ChartBundleImportOptions): Promise<ChartBundleImport>
+// persistAsset stores each attachment; returned refs rewrite the ChordPro.
+
 // @henryavila/titan-chordpro-ui/vue
 export { TitanChordpro } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
 ```
@@ -191,10 +196,24 @@ export type TitanChordproLine = LineSpan & (
 
 The Vue export offers **Cifra completa (.zip)**. The separate `./bundle` entry
 exports `exportChartBundle(source, options)` returning ZIP bytes, filename and
-attachment count. It includes the UTF-8 ChordPro, original notation files,
-images, sung/playback audio and supplied artwork, with local relative references.
-Online service links are provenance only when explicitly configured. Missing
-attachments must fail the export, never silently yield an incomplete archive.
+attachment count, and `importChartBundle(bytes, { persistAsset, restoreProvenance? })`
+for hosts that ingest that ZIP. There is no import UI.
+
+Export includes the UTF-8 ChordPro, original notation files, images, sung/playback
+audio and supplied artwork, with local relative references. Online service links
+are provenance only when explicitly configured.
+
+Import calls `persistAsset` once per unique file (GP, GPX, MusicXML, images, audio)
+with `{ path, kind, roles, bytes, contentType, filename, width?, height? }`. The
+host returns `{ ref }`; the package rewrites `{x_titan_score:}`, `{image:}`, audio
+and cover directives (including `#~` hidden lines). Audio and player-cover refs
+must pass `playableAudioUrl`. YouTube and `{x_titan_source:}` restore from
+`ORIGEM.txt` unless `restoreProvenance` is false. The result is
+`{ source, chart, personal, assetCount, assets, provenance }`.
+
+Missing attachments, kind mismatch, truncated ZIP (no central directory), HTML/JSON
+in place of media, empty/unsafe host refs, or persist failure must fail the export
+or import — never a partial archive or a half-linked chart.
 See `docs/BUNDLE.md` for the complete inventory, manifest and host contract.
 
 ### 4.4 File extensions
@@ -335,7 +354,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 
 | # | Criterion | How verified |
 |---|---|---|
-| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.`, `./pdf`, `./slides` and `./vue` | `pnpm build` |
+| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.`, `./pdf`, `./slides`, `./bundle` and `./vue` | `pnpm build` |
 | A2 | Filename helpers match §4.5 exactly | unit tests ported from SDA |
 | A3 | Scroll helpers match §4.6 exactly | unit tests ported from SDA |
 | A2b | CLI accepts `.cho`, `.chordpro`, and `.onsong` (auto-detect) for `html`/`pdf`/`parse` | integration |
@@ -354,6 +373,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 | A15 | `createTitanChordproController` subscribe/dispatch transpose updates state + html | unit |
 | A16 | Vue `TitanChordpro` mounts fixture jesus-1; transpose control changes displayed chords | component/e2e smoke |
 | A17 | Vue package exposes light/dark/auto theme control | component smoke |
+| A18 | `importChartBundle` persists each attachment once, rewrites host refs, restores provenance, and rejects incomplete, swapped-kind, unplayable-audio, or JSON-disguised ZIP | `tests/bundle/import.test.ts` |
 
 **Not DONE if:** only a demo without tests; PDF ignores transpose; theme hardcoded with no `theme` option; cifra toolbar only exists inside sda-v2 and not in this repo’s Vue package.
 
