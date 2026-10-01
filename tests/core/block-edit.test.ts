@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ESCUTA, loadFixture } from '../helpers/load-fixture'
 import {
   addChord,
   anchorWords,
@@ -155,14 +156,9 @@ function withoutOff(words: ReturnType<typeof flatWords>) {
 }
 
 describe('a sung line opens the same columns reading does', () => {
-  const lines = [
-    'Eu [D]oro [G]pela  [Bm]cu[E]ra',
-    'Ter [Em]mais [Em7/D] mo[A]tivos [Gm]pra louv[D]ar',
-    'Que eu [D7]seja um [B]instru[E]mento [E]seu',
-    '[Fsus4]men[F]to',
-    'vida[C]',
-    '[C][G]word',
-  ]
+  const lines = [loadFixture(ESCUTA), loadFixture('sda/h189-deus-sabe-deus-ouve-deus-ve.cho')]
+    .flatMap(source => source.split('\n'))
+    .filter(line => !line.trimStart().startsWith('{') && /\[[^\]]+\]/.test(line))
 
   it('groups words, syllables and chords the way reading does', () => {
     for (const line of lines) {
@@ -184,10 +180,11 @@ describe('a sung line opens the same columns reading does', () => {
   })
 
   it('anchors a mid-word chord on the letter it is written before', () => {
-    const words = anchorWords('[Bm]cu[E]ra')
-    expect(words).toHaveLength(1)
-    expect(words[0]!.cells.map((c) => c.chars[0]?.i)).toEqual([0, 2])
-    expect(words[0]!.cells.map((c) => c.chord?.off)).toEqual([0, 2])
+    const line = lines.find(line => line.includes('[Bm]cu[E]ra'))!
+    const word = anchorWords(line).find(word => word.cells.map(c => c.chars.map(ch => ch.ch).join('')).join('') === 'cura')!
+    const start = rowParts(line).plain.indexOf('cura')
+    expect(word.cells.map(c => c.chars[0]?.i)).toEqual([start, start + 2])
+    expect(word.cells.map(c => c.chord?.off)).toEqual([start, start + 2])
   })
 })
 

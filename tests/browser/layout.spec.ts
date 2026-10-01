@@ -266,7 +266,7 @@ test('personal marker stays clickable outside horizontal flow and reverts the re
   await page.locator('[data-edit]').click()
   const pick = page.locator('[data-mode-local]')
   if (await pick.isVisible()) await pick.click()
-  await page.locator('.cpv-editrow').filter({ hasText: 'Eu oro pela' }).click()
+  await page.locator('.cpv-editrow').filter({ has: page.locator('.cpv-lyric', { hasText: 'oro' }) }).first().locator('.cpv-lyric').first().click()
   const input = page.getByRole('textbox', { name: 'Letra desta linha' })
   const original = await input.inputValue()
   await input.fill(`${original} (meu)`)

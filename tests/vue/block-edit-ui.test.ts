@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ChordproViewer } from '../../src/vue/index'
-import { JESUS_1, loadFixture } from '../helpers/load-fixture'
+import { ESCUTA, JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { normalizeSource, rowParts } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -58,24 +58,26 @@ afterEach(() => localStorage.clear())
 
 describe('the editing surface', () => {
   it('opens a sung line like reading and marks the letter each chord is on', async () => {
-    const chart = ['{title: T}', '{key: G}', '', '[Bm]cu[E]ra do [Fsus4]men[F]to', 'vida[C]'].join('\n')
-    const w = await edit({ source: chart })
-    const cura = w.get('[data-row]')
-    expect(cura.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual(['Bm', 'E', 'Fsus4', 'F'])
-    expect(cura.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
-    // "cura" and "mento" each stay one word, with a caret on the anchor letter.
-    const words = cura.findAll('.cpv-reading-word')
-    const lyricOf = (word: (typeof words)[number] | undefined) =>
-      word?.findAll('.cpv-lyric').map((el) => el.text()).join('') ?? ''
-    expect(lyricOf(words[0]).trim()).toBe('cura')
-    expect(words[0]?.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual(['Bm', 'E'])
-    const mento = words.find((word) => lyricOf(word).trim() === 'mento')
-    expect(mento?.findAll('.cpv-pill--flow').map((p) => p.text())).toEqual(['Fsus4', 'F'])
-    expect(cura.findAll('[data-i][data-anchor]').map((el) => el.text())).toEqual(['c', 'r', 'm', 't'])
-    // A chord written after the last letter still shows its caret.
-    const end = w.findAll('[data-row]')[1]
-    expect(end?.find('[data-anchor]:not([data-i])').exists()).toBe(true)
-    expect(end?.find('.cpv-pill--flow').attributes('data-pill')).toBe(String('vida'.length))
+    const w = await edit({ source: loadFixture(ESCUTA) })
+    const words = w.findAll('.cpv-reading-word')
+    const lyricOf = (word: (typeof words)[number]) =>
+      word.findAll('.cpv-lyric').map(el => el.text()).join('').trim()
+    const cura = words.find(word => lyricOf(word) === 'cura')!
+    expect(cura.findAll('.cpv-pill--flow').map(p => p.text())).toEqual(['Bm', 'E'])
+    expect(cura.findAll('[data-i][data-anchor]').map(el => el.text())).toEqual(['c', 'r'])
+    const instrumento = words.find(word => lyricOf(word) === 'instrumento' && word.text().includes('Fsus4'))!
+    expect(instrumento.findAll('.cpv-pill--flow').map(p => p.text())).toEqual(['C', 'Fsus4', 'F'])
+    expect(instrumento.findAll('[data-i][data-anchor]').map(el => el.text())).toEqual(['i', 'm', 't'])
+    expect(w.findAll('.cpv-pill:not(.cpv-pill--flow)')).toHaveLength(0)
+    w.unmount()
+  })
+
+  it('marks a chord after the final letter of a fixture line', async () => {
+    const source = loadFixture('sda/h189-deus-sabe-deus-ouve-deus-ve.cho')
+    const w = await edit({ source })
+    const row = w.findAll('[data-row]').find(row => row.find('[data-anchor]:not([data-i])').exists())!
+    const line = source.split('\n')[Number(row.attributes('data-row'))]!
+    expect(row.findAll('.cpv-pill--flow').at(-1)?.attributes('data-pill')).toBe(String(rowParts(line).plain.length))
     w.unmount()
   })
 
