@@ -16,12 +16,13 @@ export type UserPreferences = {
   hideComments?: boolean
   diagramInstrument?: 'guitar' | 'ukulele' | 'piano'
   tabRhythm?: TabRhythm
+  noteNames?: boolean
 }
 
 const themes = new Set(['light', 'dark', 'auto', 'print', 'default', 'stage'])
 const lenses = new Set(['none', 'nashville', 'letra'])
 const instruments = new Set(['guitar', 'ukulele', 'piano'])
-const booleanFields = ['fit', 'metSound', 'metStrumSound', 'metPulseHead', 'metFollow', 'metCountIn', 'hideComments'] as const
+const booleanFields = ['fit', 'metSound', 'metStrumSound', 'metPulseHead', 'metFollow', 'metCountIn', 'hideComments', 'noteNames'] as const
 
 export function readUserPreferences(store: ChartStore): UserPreferences {
   let raw: unknown

@@ -8,6 +8,7 @@ export type {
   EditMode,
   ImageChoice,
   Lens,
+  NoteNameFormat,
   ModesProp,
   RehearsalFocus,
   SlideImage,

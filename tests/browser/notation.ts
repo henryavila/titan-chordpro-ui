@@ -12,6 +12,7 @@ import pianoUrl from '../../fixtures/notation/piano.musicxml?url'
 import chordsUrl from '../../fixtures/notation/chords.gp?url'
 const params = new URLSearchParams(location.search)
 const dark = ref(params.has('dark'))
+const noteNameFormat = ref<'letter' | 'solfege'>(params.get('format') === 'solfege' ? 'solfege' : 'letter')
 const file = new URLSearchParams(location.search).get('file') || 'notes.gp'
 const text = writeScoreReference({ src: ({ 'chords.gp': chordsUrl, 'piano.musicxml': pianoUrl, 'bends.gp': bendsUrl, 'notes.gp': gpUrl, 'notes.gp5': gp5Url, 'bends.musicxml': xmlUrl }[file] || gpUrl), track: 1, start: Number(params.get('start')) || 1, ...(params.has('end') ? { end: Number(params.get('end')) } : {}), ...(file === 'piano.musicxml' ? { end: 2 } : {}) })
 const stored = new Map<string, string>()
@@ -26,4 +27,5 @@ createApp({ render: () => new URLSearchParams(location.search).has('pdf') ? h(No
     '--chord': dark.value ? '#84DFA6' : '#17713c', '--canvas': dark.value ? '#171b24' : '#ffffff',
     background: dark.value ? '#171b24' : '#ffffff', color: dark.value ? '#EAECF2' : '#13161d', minHeight: '100vh',
   } }, [h('button', { id: 'toggle-theme', onClick: () => { dark.value = !dark.value } }, 'Tema'),
-    h(ExternalScore, { text, blockGap: '16px', theme: dark.value ? 'dark' : 'light' })]) }).mount('#app')
+    h('button', { id: 'toggle-format', onClick: () => { noteNameFormat.value = noteNameFormat.value === 'letter' ? 'solfege' : 'letter' } }, 'Formato'),
+    h(ExternalScore, { text, blockGap: '16px', theme: dark.value ? 'dark' : 'light', noteNameFormat: noteNameFormat.value })]) }).mount('#app')

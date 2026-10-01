@@ -1,4 +1,59 @@
 import { expect, test } from '@playwright/test'
+test('shows letter notes above TAB and partitura, switches to solfege, and remembers visibility', async ({ page }, info) => {
+  await page.goto('/notation.html?file=notes.gp')
+  await expect(page.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  const toggle = page.getByRole('button', { name: 'Notas', exact: true })
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  const tabLane = page.getByLabel('Notas da TAB').first()
+  await expect(tabLane.locator('.cpv-note-name').first()).toBeVisible()
+  await expect(tabLane.locator('.cpv-note-name').first()).toHaveText('F')
+  const overlaps = await tabLane.locator('.cpv-note-name').evaluateAll(nodes => nodes.some((node, i) => nodes.slice(i + 1).some(other => {
+    const a = node.getBoundingClientRect(), b = other.getBoundingClientRect()
+    return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+  })))
+  expect(overlaps).toBe(false)
+  await page.screenshot({ path: info.outputPath('note-names-tab.png') })
+  expect(await tabLane.evaluate(el => el.compareDocumentPosition(el.parentElement!.querySelector('svg')!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy()
+  const tabSvg = await page.locator('.cpv-notation-paper svg').first().innerHTML()
+  await page.getByRole('button', { name: 'Partitura', exact: true }).click()
+  await expect.poll(() => page.locator('.cpv-notation-paper svg').first().innerHTML()).not.toBe(tabSvg)
+  const scoreLane = page.getByLabel('Notas da partitura').first()
+  await expect(scoreLane.locator('.cpv-note-name').first()).toBeVisible()
+  await expect(scoreLane.locator('.cpv-note-name').first()).toHaveText('F')
+  await page.screenshot({ path: info.outputPath('note-names-score.png') })
+  expect(await scoreLane.evaluate(el => el.compareDocumentPosition(el.parentElement!.querySelector('svg')!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy()
+  await page.locator('#toggle-format').click()
+  await expect(scoreLane.locator('.cpv-note-name').first()).toHaveText('Fá')
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Notas', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByLabel('Notas da TAB').locator('.cpv-note-name').first()).toHaveText('F')
+  await page.setViewportSize({ width: 375, height: 850 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  const cardBox = (await page.locator('.cpv-external-score').boundingBox())!
+  const zoomBox = (await page.getByRole('button', { name: 'Zoom do solo' }).boundingBox())!
+  expect(zoomBox.x + zoomBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width)
+  await page.setViewportSize({ width: 320, height: 850 })
+  const narrowCard = (await page.locator('.cpv-external-score').boundingBox())!
+  const narrowZoom = (await page.getByRole('button', { name: 'Zoom do solo' }).boundingBox())!
+  expect(narrowZoom.x + narrowZoom.width).toBeLessThanOrEqual(narrowCard.x + narrowCard.width)
+  const narrowNotes = (await page.getByRole('button', { name: 'Notas', exact: true }).boundingBox())!
+  const narrowTab = (await page.getByRole('button', { name: 'TAB', exact: true }).boundingBox())!
+  expect(narrowNotes.y).toBe(narrowZoom.y)
+  expect(narrowTab.y).toBe(narrowZoom.y)
+  await page.getByRole('button', { name: 'Notas', exact: true }).click()
+  await expect(page.locator('.cpv-note-names')).toHaveCount(0)
+})
+test('shows note names above MusicXML when the file has only a partitura', async ({ page }) => {
+  await page.goto('/notation.html?file=piano.musicxml')
+  await expect(page.locator('.cpv-notation-paper svg').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Notas', exact: true }).click()
+  const scoreLane = page.getByLabel('Notas da partitura').first()
+  await expect(scoreLane.locator('.cpv-note-name').first()).toBeVisible()
+  expect(await scoreLane.evaluate(el => el.compareDocumentPosition(el.parentElement!.querySelector('svg')!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy()
+  await expect(page.getByLabel('Notas da TAB')).toHaveCount(0)
+})
 for (const file of ['notes.gp', 'notes.gp5', 'bends.musicxml', 'bends.gp', 'piano.musicxml']) {
   test(`renders ${file}, switches notation and fits a phone`, async ({ page }, info) => {
     const errors: string[] = []

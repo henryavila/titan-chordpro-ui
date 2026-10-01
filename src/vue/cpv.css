@@ -3458,13 +3458,17 @@ div.cpv-head-id {
 .cpv-external-score .cpv-figure-cap { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .cpv-score-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .cpv-score-controls { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.cpv-score-controls .cpv-note-names-toggle[aria-pressed="true"] { border-color: var(--chord); color: var(--chord); background: var(--chord-soft); }
 .cpv-score-controls .cpv-figure-btn, .cpv-score-controls .cpv-score-zoom-trigger { height: 32px; min-height: 32px; padding: 0 8px; font-size: 11.5px; border-radius: 8px; white-space: nowrap; }
 @container (max-width: 640px) {
   .cpv-score-controls .cpv-score-choice-compact .cpv-score-choice-value,
   .cpv-score-controls .cpv-score-choice-compact .cpv-score-zoom-trigger > svg { display: none; }
   .cpv-score-controls .cpv-score-choice-compact .cpv-score-zoom-label { color: var(--text); font-weight: 600; }
 }
+@container (max-width: 340px) { .cpv-score-controls { flex-wrap: wrap; } }
 .cpv-notation-paper { background: transparent; color: var(--text); overflow-x: auto; border-radius: 6px; }
+.cpv-note-names { position: relative; height: 20px; color: var(--chord); font: 600 11px/20px sans-serif; white-space: nowrap; }
+.cpv-note-name { position: absolute; transform: translateX(-50%); }
 .cpv-external-score p { font-size: 13px; line-height: 1.5; }
 .cpv-score-zoom { position: relative; max-width: 100%; }
 .cpv-score-zoom-trigger, .cpv-score-zoom-option {
@@ -3577,7 +3581,7 @@ div.cpv-head-id {
 .cpv-notation-card { border: 1px solid var(--line-soft); background: var(--veil); overflow: visible; }
 .cpv-notation-fold { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px 8px 16px; }
 .cpv-notation-title { min-width: 0; overflow-wrap: anywhere; color: var(--chord); font-size: 14px; font-weight: 650; }
-.cpv-notation-fold button { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
+.cpv-notation-fold button { position: relative; z-index: 12; flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
 .cpv-notation-fold button:hover { background: var(--hover); color: var(--text); }
 .cpv-notation-fold button:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }
 .cpv-notation-fold button[aria-expanded="true"] svg { transform: rotate(180deg); }

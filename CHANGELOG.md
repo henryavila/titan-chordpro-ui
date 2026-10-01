@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Notas nos solos:** em um trecho Guitar Pro/MusicXML, toque em **Notas** para ver C, D, E e os demais nomes acima da TAB ou da partitura. Toque novamente para ocultar. O aparelho lembra sua escolha para os próximos trechos. O app que abre o Titan pode escolher a forma Dó, Ré, Mi para seus leitores.
+
 ### Removed
 - **BREAKING CHANGE — preferências salvas:** o app que guarda escolhas de leitura na conta deve passar a usar `cpv:user-preferences` e `cpv:notation:{songId}`. As chaves anteriores `cpv:prefs` e `cpv:tab-rhythm` deixam de ser lidas; na primeira abertura, as escolhas de leitura voltam ao padrão até a pessoa selecionar novamente. A cifra, a versão pessoal e as sugestões não mudam.
 - **BREAKING CHANGE — ajuste obrigatório no app que usa o Titan:** ao editar o código da cifra ou exportar o arquivo `.cho`, os campos de origem, YouTube, áudio, capa e batida usam `{x_titan_…: valor}`. Antes de atualizar o pacote, migre as cifras salvas e as chaves enviadas/lidas pela integração: `x_source`, `x_youtube`, `x_audio_sung`, `x_audio_playback`, `x_audio_art`, `x_audio_art_w`, `x_audio_art_h`, `x_strum` e `x_strum_set` recebem `titan_` após `x_`. Converta também `x_origem` para `x_titan_source` e `x_audio` / `x_audio_cantado` para `x_titan_audio_sung`. Os nomes antigos não são interpretados nem convertidos automaticamente. As mesmas mudanças valem para `ChartMeta`, `MetaKey`, `META_KEYS` e patches; se usados, troque `parseXStrum` / `formatXStrum` e suas variantes `Set` por `parseTitanStrum` / `formatTitanStrum` e suas variantes `Set`. Sem esses ajustes, origem, mídia e batidas antigas deixam de funcionar. Letras, acordes, diretivas padrão e marcas `x///` mantêm sua sintaxe.
 - **BREAKING CHANGE — solos e partituras no arquivo:** referências a Guitar Pro/MusicXML passam de `{score: …}` para `{x_titan_score: …}`. Para a notação escrita na cifra, substitua `{sos}` / `{start_of_score}` por `{x_titan_start_of_score}` e `{eos}` / `{end_of_score}` por `{x_titan_end_of_score}`, mantendo os atributos e o conteúdo. O consumer precisa atualizar as cifras salvas e qualquer código que monte ou leia esses trechos; `ParsedScore.from` passa de `sos` para `x_titan_start_of_score`. Os nomes anteriores não são reconhecidos.
 
 ### Fixed
+- **Recolher e abrir TAB/partitura no celular:** o toque na seta do trecho volta a funcionar durante uma lista de ensaio. A área de troca de música não cobre mais a seta, e o espaço abaixo da cifra permite tocá-la novamente quando o trecho está recolhido.
 - **Tela cheia durante a leitura:** ao entrar e sair no meio da cifra, a linha que você estava lendo permanece sob os olhos mesmo quando a área útil muda de altura.
 - **Posição do Guitar Pro ao soltar:** ao arrastar um trecho para depois da introdução, o editor usa o ponto em que você solta o bloco, inclusive se a página rolou durante o gesto. A posição anterior do ponteiro não mantém mais o trecho no começo da cifra.
 - **Ajustar compassos de um solo:** trechos válidos de Guitar Pro/MusicXML que começam depois de uma ligadura voltam a abrir em TAB, partitura e PDF, sem o erro “Cannot read properties of null”. O arquivo original e as ligaduras dentro do trecho são preservados.

@@ -2,11 +2,13 @@
  * Titan owns the systems, colors and layout, without mounting a document viewer. */
 import type { model } from '@coderline/alphatab'
 import type { ScoreReference, TabRhythm } from '@henryavila/titan-chordpro-ui'
+import type { NoteNameFormat } from '../public'
 import bravuraUrl from '@coderline/alphatab/font/Bravura.woff2?url'
 import { excerptTrack, hasTab, isolateExcerpt } from './notation-loader'
 
 export type NotationPalette = { ink: string; secondary: string; line: string; accent: string }
-export type NotationSystem = { content: string | HTMLCanvasElement; width: number; height: number; first: number; last: number }
+export type NoteName = { x: number; text: string; row: number }
+export type NotationSystem = { content: string | HTMLCanvasElement; width: number; height: number; first: number; last: number; noteNames: NoteName[] }
 export const PAPER_PALETTE: NotationPalette = { ink: '#13161d', secondary: '#434957', line: '#737b88', accent: '#17713c' }
 let font: Promise<void> | undefined
 function loadFont(): Promise<void> {
@@ -16,7 +18,7 @@ function loadFont(): Promise<void> {
 }
 
 export async function drawNotation(score: model.Score, reference: ScoreReference, options: {
-  mode: 'tab' | 'score'; rhythm?: TabRhythm; width: number; scale: number; palette: NotationPalette; engine?: 'svg' | 'html5'
+  mode: 'tab' | 'score'; rhythm?: TabRhythm; width: number; scale: number; palette: NotationPalette; engine?: 'svg' | 'html5'; noteNames?: boolean; noteNameFormat?: NoteNameFormat
 }): Promise<NotationSystem[]> {
   await loadFont()
   const alpha = await import('@coderline/alphatab')
@@ -35,6 +37,7 @@ export async function drawNotation(score: model.Score, reference: ScoreReference
   settings.core.engine = options.engine ?? 'svg'
   settings.core.useWorkers = false
   settings.core.enableLazyLoading = false
+  settings.core.includeNoteBounds = options.noteNames === true
   settings.display.layoutMode = alpha.LayoutMode.Page
   settings.display.systemsLayoutMode = alpha.SystemsLayoutMode.Automatic
   settings.display.scale = options.scale
@@ -75,14 +78,63 @@ export async function drawNotation(score: model.Score, reference: ScoreReference
       ? part.renderResult.replaceAll('class="at"', `class="at" style="font: ${resources.engravingSettings.musicFontSize}px TitanNotation"`)
       : part.renderResult
     systems.push({ content, width: part.width, height: part.height,
-      first: part.firstMasterBarIndex + 1, last: part.lastMasterBarIndex + 1 })
+      first: part.firstMasterBarIndex + 1, last: part.lastMasterBarIndex + 1, noteNames: [] })
   })
   try {
     renderer.renderScore(score, [reference.track - 1])
     if (failure) throw failure
     if (!systems.length) throw new Error('O trecho não contém notas para desenhar.')
+    if (options.noteNames) for (const system of systems) system.noteNames = namesInSystem(renderer, system, reference.start, options.mode, options.noteNameFormat ?? 'letter')
     return systems
   } finally { renderer.destroy() }
+}
+
+const SHARP_NAMES = ['Dó', 'Dó♯', 'Ré', 'Ré♯', 'Mi', 'Fá', 'Fá♯', 'Sol', 'Sol♯', 'Lá', 'Lá♯', 'Si']
+const FLAT_NAMES = ['Dó', 'Ré♭', 'Ré', 'Mi♭', 'Mi', 'Fá', 'Sol♭', 'Sol', 'Lá♭', 'Lá', 'Si♭', 'Si']
+const SHARP_LETTERS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+const FLAT_LETTERS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+
+function pitchName(value: number, flats: boolean, format: NoteNameFormat): string {
+  const pitch = ((Math.round(value) % 12) + 12) % 12
+  return (format === 'solfege' ? (flats ? FLAT_NAMES : SHARP_NAMES) : (flats ? FLAT_LETTERS : SHARP_LETTERS))[pitch]!
+}
+
+/** The lookup uses document coordinates; each partial render is one staff system. */
+function namesInSystem(renderer: import('@coderline/alphatab').rendering.ScoreRenderer, system: NotationSystem, start: number, mode: 'tab' | 'score', format: NoteNameFormat): NoteName[] {
+  const lookup = renderer.boundsLookup
+  if (!lookup) return []
+  const staffSystem = lookup.staffSystems.find(bounds => bounds.bars.some(bar => bar.index === system.first - 1))
+  if (!staffSystem) return []
+  const labels: NoteName[] = []
+  const seen = new Set<string>()
+  for (const master of staffSystem.bars) {
+    if (master.index < Math.max(start - 1, system.first - 1) || master.index >= system.last) continue
+    for (const bar of master.bars) for (const beat of bar.beats) {
+      const notes = beat.beat.notes.filter(note => !note.isPercussion && Number.isFinite(note.realValue))
+      if (!notes.length) continue
+      const flats = Number(bar.bar.keySignature) < 0
+      const names = notes.map(note => pitchName(note.calculateRealValue(mode === 'tab', true), flats, format))
+      const x = beat.onNotesX - staffSystem.realBounds.x
+      const key = `${Math.round(x)}:${names.join('/')}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      labels.push({ x, text: names.join(' · '), row: 0 })
+    }
+  }
+  labels.sort((a, b) => a.x - b.x)
+  const ctx = document.createElement('canvas').getContext('2d')
+  if (ctx) ctx.font = '600 11px sans-serif'
+  const rowEnds: number[] = []
+  for (const label of labels) {
+    const halfWidth = (ctx?.measureText(label.text).width ?? label.text.length * 7) / 2
+    label.x = Math.max(halfWidth, Math.min(system.width - halfWidth, label.x))
+    const left = label.x - halfWidth
+    let row = rowEnds.findIndex(end => left >= end + 4)
+    if (row < 0) { row = rowEnds.length; rowEnds.push(0) }
+    label.row = row
+    rowEnds[row] = label.x + halfWidth
+  }
+  return labels
 }
 
 /** alphaTab 1.8 has neither a short-stem setting nor distinct half-note stems. Keep this internal geometry seam local

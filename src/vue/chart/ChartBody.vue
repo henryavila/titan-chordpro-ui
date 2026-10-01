@@ -10,6 +10,7 @@ import ExternalScore from './ExternalScore.vue'
 import CpvIcon from '../icon/CpvIcon.vue'
 import { isInlineScore, isScoreReference, readScoreReference } from '@henryavila/titan-chordpro-ui'
 import { readingWords, type ReadingWord } from './readingWords'
+import type { NoteNameFormat } from '../public'
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +31,7 @@ const props = withDefaults(
     /** Maps a `{image:}` reference to a URL the host can actually serve. */
     resolveImage?: (src: string) => string
     resolveScore?: (src: string) => string
+    noteNameFormat?: NoteNameFormat
     /** Flip scanned scores when the paper fights the theme. */
     autoInvertScores?: boolean
     theme?: 'light' | 'dark'
@@ -454,7 +456,7 @@ watch(
           <ExternalScore
             v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score' && isScoreReference(block.text)"
-            :text="block.text" :hide-title="!edit" :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme"
+            :text="block.text" :hide-title="!edit" :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme" :note-name-format="noteNameFormat"
             :preferred-view="preferredView(i)"
             @view-change="view => emit('scoreViewChange', i, view)"
             @edit-score="emit('editScore', i)"

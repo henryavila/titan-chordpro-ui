@@ -30,6 +30,8 @@ export type ModesProp = 'none' | 'local' | 'content' | 'both' | 'persisted'
 
 /** Chrome rehearsal profile — orthogonal to reading `lens`. */
 export type RehearsalFocus = 'off' | 'batida'
+/** How labels above imported notation spell each note. */
+export type NoteNameFormat = 'letter' | 'solfege'
 
 let bothWarned = false
 
@@ -116,6 +118,8 @@ export type ChordproViewerProps = {
   fitDefault?: boolean
   canEdit?: boolean
   autoInvertScores?: boolean
+  /** Labels above Guitar Pro/MusicXML notation: C/D/E by default, or Dó/Ré/Mi. */
+  noteNameFormat?: NoteNameFormat
   /** Maps a `{image:}` reference to a URL the host can serve. */
   resolveImage?: (src: string) => string
   /**
