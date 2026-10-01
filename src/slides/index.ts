@@ -1,5 +1,7 @@
 export { renderSlja, renderLja, exportSlja, NoSlideLyricsError } from './render-slja'
 export type { SljaOptions, SljaFile } from './render-slja'
+export { renderPpsx, exportPpsx } from './render-ppsx'
+export type { PpsxOptions, PpsxFile } from './render-ppsx'
 export { planSlides } from './layout'
 export type { SlidePlan, SlideLayoutConfig } from './layout'
 export { DEFAULT_COVER_JPEG, DEFAULT_SLIDES_JPEG } from './default-image'

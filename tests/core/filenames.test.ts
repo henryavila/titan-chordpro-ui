@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildChoFilename, buildPdfFilename, buildSljaFilename } from '../../src/core/filenames'
+import { buildChoFilename, buildPdfFilename, buildPpsxFilename, buildSljaFilename } from '../../src/core/filenames'
 
 describe('buildChoFilename', () => {
   it('creates filename with key', () => {
@@ -43,5 +43,12 @@ describe('buildSljaFilename', () => {
   it('slugs the title without a key — slides are not a transposed chart', () => {
     expect(buildSljaFilename('Fala Comigo')).toBe('slides-fala-comigo.slja')
     expect(buildSljaFilename('Lindo És')).toBe('slides-lindo-es.slja')
+  })
+})
+
+describe('buildPpsxFilename', () => {
+  it('uses the same slug as LouvorJA with a .ppsx suffix', () => {
+    expect(buildPpsxFilename('Fala Comigo')).toBe('slides-fala-comigo.ppsx')
+    expect(buildPpsxFilename('Lindo És')).toBe('slides-lindo-es.ppsx')
   })
 })

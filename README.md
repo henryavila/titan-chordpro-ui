@@ -39,7 +39,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
   - Num ensaio, anterior e próxima na tela de bloqueio / Central de Mídia / fone trocam a cifra da lista (no iPhone no lugar dos ±10 s; ±10 s continua no player da cifra). Demo: `/standalone-lista.html?audio=1`
 - Lista: anterior / próxima, lugar guardado por música
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. O selo Próxima / Anterior sobe e fica acima do dedo. Sem flick, sem a cifra deslizando
-- Export ChordPro, PDF, slides LouvorJA (`.slja`) e **Cifra completa (.zip)** (solos, imagens, áudios)
+- Export ChordPro, PDF, slides LouvorJA (`.slja`), PowerPoint (`.ppsx`, abre em apresentação, mesmas imagens, letra em caixa alta) e **Cifra completa (.zip)** (solos, imagens, áudios)
 - Import da cifra completa pelo consumer (`importChartBundle` + `persistAsset`; sem tela no Titan) — [`docs/BUNDLE.md`](docs/BUNDLE.md) · [`docs/CONSUMER.md`](docs/CONSUMER.md)
 
 **Edição**
@@ -109,7 +109,7 @@ Demo público (hub completo, persistência local no navegador e proxy de import 
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama + `{x_titan_audio_sung:}` / `{x_titan_audio_playback:}` / `{x_titan_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama**, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + dicionário / `{define}` / desenho do diagrama + `{x_titan_audio_sung:}` / `{x_titan_audio_playback:}` / `{x_titan_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja` / `.ppsx`), view↔edit E0, zen, setlist + swipe, wake lock, **modal de diagrama**, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` e do `.ppsx` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · TitanChordpro v2). Demo: `pnpm dev`.
 
@@ -144,9 +144,10 @@ Exemplos completos (Nuxt/Vue, ficha real, palco, ensaio, gestos):
 ```
 
 ```ts
-import { parse, memoryStore } from '@henryavila/titan-chordpro-ui'
-import type { ChartStore } from '@henryavila/titan-chordpro-ui'
-import { renderPdf } from '@henryavila/titan-chordpro-ui/pdf'
+import { parse, memoryStore, exportChoFile, EXPORT_MIME } from '@henryavila/titan-chordpro-ui'
+import type { ChartStore, ExportedFile } from '@henryavila/titan-chordpro-ui'
+import { exportPdf, renderPdf } from '@henryavila/titan-chordpro-ui/pdf'
+import { exportSlja, exportPpsx } from '@henryavila/titan-chordpro-ui/slides'
 import { TitanChordpro } from '@henryavila/titan-chordpro-ui/vue'
 import type { TitanChordproProps } from '@henryavila/titan-chordpro-ui/vue'
 ```
@@ -183,7 +184,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
 | `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_titan_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
-| `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo de todos os slides LouvorJA. Lista sem abrir a cifra: `exportSlja` em `@henryavila/titan-chordpro-ui/slides` |
+| `coverImage` / `slidesImage` | default do pacote | JPEG/PNG (`Blob` / `Uint8Array`) da capa e do fundo dos slides LouvorJA e do PowerPoint. Lista sem abrir a cifra: `exportSlja` / `exportPpsx` em `./slides`, `exportPdf` em `./pdf`, `exportChoFile` em `.` |
 | `version` | `'v1'` | Versão do oficial; mudá-la pergunta ao leitor o que manter |
 | `images` | `[]` | Partituras que o app já tem, oferecidas além do envio |
 | `uploadImage` | — | `(file) => Promise<{ ref }>` — o app grava a imagem e devolve o nome que entra em `{image:}`. A cifra não leva o arquivo. reject ou `ref` vazio = nada é inserido. Sem isto e sem `images`, o item Imagem não aparece |
@@ -636,8 +637,15 @@ Pausa acima de 2,4 s começa medição nova.
   → Vue <TitanChordpro>  // UI completa de 1 cifra
   → renderPdf()           // entrada …/pdf
   → exportLyrics(source)  // letra plaintext (cadastro sem o TitanChordpro)
+  → exportChoFile(source) // .cho sem montar o TitanChordpro → ExportedFile
+  → exportPdf(source)     // entrada …/pdf — PDF sem montar o TitanChordpro
+  → renderPdf(view)
   → exportSlja(source)    // entrada …/slides — .slja sem montar o TitanChordpro
   → renderSlja(view)      // o mesmo ZIP, a partir do ViewModel
+  → exportPpsx(source)    // o mesmo recorte e as mesmas imagens, em .ppsx (caixa alta, abre em apresentação)
+  → renderPpsx(view)
+  → exportChartBundle(source) // entrada …/bundle
+  → importChartBundle(bytes)  // o mesmo ZIP, de volta à cifra do host
 ```
 
 OnSong: `docs/research-onsong-format.md`. Expansão depois: `@…/react` ou CE — não é fork, não é registry de plugin.

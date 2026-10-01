@@ -28,3 +28,8 @@ export function buildSljaFilename(title: string): string {
   const slug = slugify(title) || 'cifra'
   return `slides-${slug}.slja`
 }
+
+export function buildPpsxFilename(title: string): string {
+  const slug = slugify(title) || 'cifra'
+  return `slides-${slug}.ppsx`
+}

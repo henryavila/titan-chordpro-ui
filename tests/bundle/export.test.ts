@@ -16,6 +16,8 @@ describe('Cifra completa offline archive', () => {
     const source = fixture + '\n' + ref + '\n' + ref + '\n{x_titan_audio_sung: https://media.example/voz.wav}\n{x_titan_audio_playback: https://media.example/voz.wav}\n{x_titan_youtube: abc123}\n{x_titan_source: https://origin.example/song}'
     const loadAsset = vi.fn(async (_ref: string, kind: string) => ({ bytes: kind === 'score' ? gp : kind === 'audio' ? audio : png }))
     const result = await exportChartBundle(source, { loadAsset, onlineReferences: 'provenance', extras: [{ role: 'audio-cover', data: { bytes: png }, width: 512, height: 512 }, { role: 'slide-background', data: { bytes: png } }] })
+    expect(result.mime).toBe('application/zip')
+    expect(result.title).toBeTruthy()
     const entries = unzip(result.bytes)
     const text = new TextDecoder().decode(entries.get(result.chart))
     expect(text).not.toContain('https://')

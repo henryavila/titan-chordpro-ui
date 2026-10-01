@@ -1,3 +1,4 @@
+import { EXPORT_MIME } from '../core/exported-file'
 import { buildChoFilename } from '../core/filenames'
 import { normalizeSource, parse } from '../core/parse'
 import { zip, type ZipMember } from '../slides/zip'
@@ -120,5 +121,13 @@ export async function exportChartBundle(source: string, opts: ChartBundleOptions
   members.push({ name: 'LEIA-ME.txt', data: enc.encode(
     `Cifra completa — Titan\n\nExtraia todos os arquivos juntos, preservando as pastas.\n${chartName} guarda a cifra; solos, imagens e áudios apontam para arquivos locais deste pacote.\nmanifest.json identifica os anexos e as capas fornecidas pelo app.\n\nOs arquivos musicais e áudios são os originais. A seleção de faixa e compassos está no ChordPro.\nNão é necessário acessar os servidores de origem para obter os anexos. Links em ORIGEM.txt são apenas informação, não conteúdo incluído.\n\nEste pacote contém o documento e suas mídias, não o aplicativo Titan. Um app compatível importa o ZIP, guarda os anexos no próprio armazenamento e atualiza as referências da cifra.\n`,
   ) })
-  return { bytes: await zip(members), filename: `cifra-completa-${chartName.slice(0, -4)}.zip`, chart: chartName, assetCount: assets.length }
+  const title = (opts.title ?? original.meta.title ?? 'cifra').trim() || 'cifra'
+  return {
+    bytes: await zip(members),
+    filename: `cifra-completa-${chartName.slice(0, -4)}.zip`,
+    mime: EXPORT_MIME.bundle,
+    title,
+    chart: chartName,
+    assetCount: assets.length,
+  }
 }

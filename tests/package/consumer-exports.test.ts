@@ -89,10 +89,13 @@ describe('SPEC §4 public API is importable from the package name', () => {
       'buildChoFilename',
       'buildPdfFilename',
       'buildSljaFilename',
+      'buildPpsxFilename',
       'lyricsForSlides',
       'lyricsText',
       'exportLyrics',
       'exportCho',
+      'exportChoFile',
+      'EXPORT_MIME',
       'calcScrollSpeed',
       'adjustScrollSpeed',
       'adjustScrollMultiplier',
@@ -108,11 +111,12 @@ describe('SPEC §4 public API is importable from the package name', () => {
     for (const name of names) {
       expect(core, name).toHaveProperty(name)
       expect((core as Record<string, unknown>)[name], name).toBeTypeOf(
-        name === 'STORE_KEYS' ? 'object' : 'function',
+        name === 'STORE_KEYS' || name === 'EXPORT_MIME' ? 'object' : 'function',
       )
     }
     expect(core).not.toHaveProperty('createViewerController')
     expect(core).not.toHaveProperty('viewerMulStep')
+    expect(core).not.toHaveProperty('buildPptxFilename')
   })
 
   it('bundle entry exports export and import of the offline ZIP', async () => {
@@ -213,9 +217,14 @@ describe('built dist (consumer tarball shape)', () => {
     expect(coreMod.listThemes()).toEqual(expect.arrayContaining(['light', 'dark', 'print']))
     const pdfMod = await import(pathToFileURL(join(root, 'dist/pdf/index.js')).href)
     expect(pdfMod.renderPdf).toBeTypeOf('function')
+    expect(pdfMod.exportPdf).toBeTypeOf('function')
     const slidesMod = await import(pathToFileURL(join(root, 'dist/slides/index.js')).href)
     expect(slidesMod.renderSlja).toBeTypeOf('function')
     expect(slidesMod.exportSlja).toBeTypeOf('function')
+    expect(slidesMod.renderPpsx).toBeTypeOf('function')
+    expect(slidesMod.exportPpsx).toBeTypeOf('function')
+    expect(slidesMod).not.toHaveProperty('renderPptx')
+    expect(slidesMod).not.toHaveProperty('exportPptx')
     const bundleMod = await import(pathToFileURL(join(root, 'dist/bundle/index.js')).href)
     expect(bundleMod.exportChartBundle).toBeTypeOf('function')
     expect(bundleMod.importChartBundle).toBeTypeOf('function')

@@ -66,7 +66,7 @@ const file = await exportChartBundle(source, {
     { role: 'slide-cover', data: { bytes: coverBytes, contentType: 'image/jpeg' } },
   ],
 })
-// file.bytes, file.filename, file.chart, file.assetCount
+// file.bytes, file.filename, file.mime, file.title, file.chart, file.assetCount
 
 const imported = await importChartBundle(file.bytes, {
   persistAsset: async (asset) => storage.write(asset),

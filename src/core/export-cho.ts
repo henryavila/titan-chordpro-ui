@@ -1,6 +1,19 @@
+import { buildChoFilename } from './filenames'
+import { parse } from './parse'
+import { EXPORT_MIME, textExportedFile, type ExportedFile } from './exported-file'
+
+export type ExportChoOptions = {
+  key?: string | null
+  semitones?: number
+  capo?: number
+  title?: string
+  /** Prepended to the downloaded text (personal-version mark). */
+  preamble?: string
+}
+
 export function exportCho(
   source: string,
-  opts?: { key?: string | null; semitones?: number; capo?: number },
+  opts?: ExportChoOptions,
 ): string {
   const n = opts?.semitones ?? 0
   const capo = opts?.capo ?? 0
@@ -20,6 +33,15 @@ export function exportCho(
     out = `{capo: ${capo}}\n${out}`
   }
   return out
+}
+
+/** Host download without mounting the viewer. `exportCho` stays the source rewrite. */
+export function exportChoFile(source: string, opts: ExportChoOptions = {}): ExportedFile {
+  const text = `${opts.preamble ?? ''}${exportCho(source, opts)}`
+  const view = parse(source)
+  const title = (opts.title ?? view.meta.title ?? 'cifra').trim() || 'cifra'
+  const key = opts.key !== undefined ? opts.key : view.displayKey ?? null
+  return textExportedFile(text, buildChoFilename(title, key), title, EXPORT_MIME.cho)
 }
 
 /**

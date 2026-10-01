@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Slides em PowerPoint:** em Exportar, baixe a letra em `.ppsx`. Ao abrir o arquivo, a apresentação começa na hora. A capa e o fundo são as mesmas imagens do Louvor JA. Cada slide mostra a letra grande no centro, no mesmo recorte do `.slja`. Título e letra vão em caixa alta, para ler no projetor. Na capa, o título da música fica maior e um pouco acima do centro. O app que usa o Titan gera o mesmo arquivo a partir da cifra, sem abrir a tela (`exportPpsx`).
 - **Importar cifra completa (.zip):** o app que usa o Titan pode abrir o pacote baixado em Exportar e guardar cifra, solos Guitar Pro/GPX/MusicXML, imagens, cantado, playback e capas no próprio armazenamento. Os caminhos locais do ZIP viram as referências do app; YouTube e origem voltam na cifra. Não há tela de importar no Titan — a integração é pelo código (`importChartBundle`). Se um anexo faltar, o tipo não bater, o ZIP estiver cortado, o arquivo for uma página de erro ou a referência de áudio não puder ser tocada, a importação para e a cifra não entra incompleta.
 - **Notas nos solos:** em um trecho Guitar Pro/MusicXML, toque em **Notas** para ver C, D, E e os demais nomes acima da TAB ou da partitura. Toque novamente para ocultar. O aparelho lembra sua escolha para os próximos trechos. O app que abre o Titan pode escolher a forma Dó, Ré, Mi para seus leitores.
 
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING CHANGE — solos e partituras no arquivo:** referências a Guitar Pro/MusicXML passam de `{score: …}` para `{x_titan_score: …}`. Para a notação escrita na cifra, substitua `{sos}` / `{start_of_score}` por `{x_titan_start_of_score}` e `{eos}` / `{end_of_score}` por `{x_titan_end_of_score}`, mantendo os atributos e o conteúdo. O consumer precisa atualizar as cifras salvas e qualquer código que monte ou leia esses trechos; `ParsedScore.from` passa de `sos` para `x_titan_start_of_score`. Os nomes anteriores não são reconhecidos.
 
 ### Fixed
+- **Slides grandes demais no projetor:** uma linha da cifra que junta duas frases (a segunda começando com maiúscula) vira um slide só daquelas duas linhas. Duas linhas longas e independentes deixam de ir no mesmo slide — vale para o Louvor JA e para o PowerPoint.
 - **Demo público:** ao abrir uma pull request, o Cloudflare publica um preview do demo. O site de demonstração usa o mesmo build. Importar cifra pelo Cifra Club e a duração do YouTube seguem em `/__cifra_fetch` e `/__youtube_duration`.
 - **Metadados no tema escuro:** os cartões de duração, andamento, compasso e tom deixam de ter contornos brancos fortes. O campo **Referência** ganha a mesma altura e aparência do campo de endereço do Cifra Club.
 - **Diagramas de acorde no celular:** os botões Violão, Ukulele e Piano ficam mais altos e afastados da borda inferior para facilitar o toque. No piano, as teclas pretas marcadas mostram melhor a cor do acorde, e cada grau aparece dentro de um círculo claro ou escuro para continuar legível com as cores escolhidas pelo app.
