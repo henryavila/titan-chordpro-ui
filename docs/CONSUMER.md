@@ -15,6 +15,32 @@ aliases antigos.
 
 Atualize CSS e consultas ao DOM do host: `.cpv-*` → `.titan-chordpro-*`,
 `--cpv-*` → `--titan-chordpro-*` e `data-cpv-*` → `data-titan-chordpro-*`.
+A raiz do HTML estático (`renderHtml`) é `titan-chordpro` com o gancho de
+tema `titan-chordpro--{tema}` — não `cpv` / `cpv--{tema}`. As classes sem
+prefixo também saíram; a leitura no Vue usa os mesmos nomes estruturais:
+
+| Antes | Agora |
+|---|---|
+| `cpv` | `titan-chordpro` |
+| `cpv--{tema}` | `titan-chordpro--{tema}` |
+| `chordpro-content`, `song-content` | saíram da raiz |
+| `chord` | `titan-chordpro-chord` |
+| `word` | `titan-chordpro-word` |
+| `lyric` | `titan-chordpro-lyric` |
+| `lyrics-line` | `titan-chordpro-row` |
+| `comment-line` | `titan-chordpro-comment` |
+| `chorus-section` | `titan-chordpro-chorus` |
+
+Estrofe, nota, TAB, partitura e imagem: `titan-chordpro-stanza`,
+`titan-chordpro-note`, `titan-chordpro-tab`, `titan-chordpro-score`,
+`titan-chordpro-image`. Sem esses nomes, o CSS e as consultas do host
+deixam de achar a cifra. O pacote não emite aliases.
+
+Se o host chama o helper de ajuste fino da rolagem automática, troque
+`viewerMulStep` por `adjustScrollMultiplier`. A assinatura continua
+`(mul, 'up' | 'down')`: ±12% por passo, limitado a 0,3×–3×. O nome antigo
+não é exportado.
+
 Os valores de `STORE_KEYS` agora começam com `titan-chordpro:`. Se o host
 guarda preferências, versões pessoais ou sugestões sob `cpv:*`, copie esses
 valores para as novas chaves **antes** de atualizar o pacote; os nomes antigos

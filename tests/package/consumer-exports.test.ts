@@ -90,6 +90,7 @@ describe('SPEC §4 public API is importable from the package name', () => {
       'exportCho',
       'calcScrollSpeed',
       'adjustScrollSpeed',
+      'adjustScrollMultiplier',
       'createTitanChordproController',
       'STORE_KEYS',
       'overlayKey',
@@ -106,6 +107,7 @@ describe('SPEC §4 public API is importable from the package name', () => {
       )
     }
     expect(core).not.toHaveProperty('createViewerController')
+    expect(core).not.toHaveProperty('viewerMulStep')
   })
 
   it('vue entry exports TitanChordpro as named and default', async () => {

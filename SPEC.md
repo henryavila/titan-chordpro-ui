@@ -100,6 +100,7 @@ export function exportLyrics(source: string): ChartLyrics
 export function exportCho(source: string, opts?: { key?: string | null }): string
 export function calcScrollSpeed(contentHeight: number, durationSeconds: number | null, bpm: number | null): number
 export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): number
+export function adjustScrollMultiplier(mul: number, direction: 'up' | 'down'): number
 export function createTitanChordproController(opts: { source: string }): TitanChordproController
 // TitanChordproController: getState / subscribe / dispatch / optional attachScroll(el)
 
@@ -167,12 +168,17 @@ export type TitanChordproLine = LineSpan & (
 
 ### 4.2 HTML contract (theme `default`)
 
-- Root wrapper class: `titan-chordpro` plus theme hook `titan-chordpro--default`.
+`renderHtml` emits this static reading HTML. Vue reading uses the same structural class names on the chart body.
+
+- Root wrapper: `div.titan-chordpro.titan-chordpro--{alias}` with `[data-titan-chordpro-scroll]` and `data-theme="{resolved}"`. Theme `default` keeps the hook `titan-chordpro--default` while `data-theme` resolves to `light`. Themes `light`, `dark` and `print` use the resolved name in both the hook and `data-theme`. CSS variables are inline on the root.
 - Document body must expose a scrollable content root: `[data-titan-chordpro-scroll]` or `.titan-chordpro-scroll`.
-- Chord above lyric: each lyric atom is a word unit with optional chord.
-- Comments from `{c:…}` appear as comment lines (not dropped).
+- Lyric atom: `span.titan-chordpro-word` containing `span.titan-chordpro-chord-box` > `span.titan-chordpro-chord` plus sibling `span.titan-chordpro-lyric`. Empty chord slot: `titan-chordpro-chord--empty`. Chord tight against the next word: `titan-chordpro-chord--tight`.
+- Row: `div.titan-chordpro-row`. Chorus: `div.titan-chordpro-chorus`. Other sung block: `div.titan-chordpro-stanza`.
+- Comment (`{c:…}`): `div.titan-chordpro-comment` with `titan-chordpro-comment-dot` and `titan-chordpro-comment-text` (not dropped).
+- Note: `div.titan-chordpro-note` with `titan-chordpro-note-label` (“Execução”) and `titan-chordpro-note-item`.
+- Tab: `div.titan-chordpro-tab`. Score: `div.titan-chordpro-score`. Image: `figure.titan-chordpro-image`. Hidden blocks are omitted.
 - Empty ChordPro lines → empty line nodes (spacing preserved).
-- The HTML uses only the `titan-chordpro-*` classes and data hooks. Legacy SDA and `cpv-*` aliases are not emitted.
+- Every class token is `titan-chordpro` or `titan-chordpro-*`. Data hooks are `data-titan-chordpro-*`. These tokens are not emitted: `cpv`, `cpv-*`, `chordpro-content`, `song-content`, `chord`, `word`, `lyric`, `lyrics-line`, `comment-line`, `chorus-section`. `data-cpv-*` is not emitted.
 
 ### 4.3 PDF contract
 
@@ -232,6 +238,7 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 | `(0, 30, null)` | `30` |
 
 `adjustScrollSpeed`: ±15% factor, min `5`, 1 decimal place.
+`adjustScrollMultiplier`: ±12% per press, clamp `0.3`–`3`, 3 decimal places. Former export name `viewerMulStep` is not aliased.
 
 ### 4.7 Voiceless time (`x///`)
 
@@ -335,7 +342,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 | A2c | `parse` of OnSong-style source (chords-over-lyrics and/or `Key:` meta) yields ViewModel with ≥1 lyrics line when content present | unit + fixture |
 | A4 | `parse(jesus-1)` yields `meta.key === 'G'` (or display from content) and ≥1 lyrics line with chords | unit |
 | A5 | `transpose(parse(jesus-1), 2)` changes chord roots; `displayKey` reflects +2 when key known | unit |
-| A6 | `renderHtml` snapshot for jesus-1 theme `default` committed | snapshot test |
+| A6 | `renderHtml` snapshot for jesus-1 theme `default` committed; structural classes match §4.2 | snapshot + unit |
 | A7 | Comment directives not stripped (see §6) | unit on HTML string |
 | A8 | `renderPdf(transposed)` returns non-empty `Uint8Array`; PDF header meta uses transposed key | unit/integration |
 | A9 | `buildPdfFilename('Jesus Tu És a Minha Vida', 'A')` → `cifra-jesus-tu-es-a-minha-vida-tom-a.pdf` | unit |
