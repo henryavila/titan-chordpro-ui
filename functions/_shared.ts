@@ -1,4 +1,4 @@
-/** Shared by Pages Functions — keep tiny; do not import the Vue/core package. */
+/** Shared by the demo Worker — keep tiny; do not import the Vue/core package. */
 
 export const UA = 'Mozilla/5.0 (compatible; titan-chordpro-ui)'
 
@@ -22,10 +22,6 @@ export function corsHeaders(origin: string | null): HeadersInit {
   }
 }
 
-/** DOM `Response` vs `@cloudflare/workers-types` `Response` in the same tsconfig. */
-export function workerResponse(
-  body: BodyInit | null,
-  init?: ResponseInit,
-): import('@cloudflare/workers-types').Response {
-  return new Response(body, init) as unknown as import('@cloudflare/workers-types').Response
+export function workerResponse(body: BodyInit | null, init?: ResponseInit): Response {
+  return new Response(body, init)
 }

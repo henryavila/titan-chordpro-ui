@@ -73,11 +73,11 @@
   "packageManager": "pnpm@11.17.0",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
-    "prepare": "pnpm run build",
+    "prepare": "pnpm run build && if [ \"$WORKERS_CI\" = 1 ]; then pnpm run build:pages; fi",
     "prepublishOnly": "pnpm run build",
     "build": "tsup && vite build --config vite.lib.config.ts && tsx scripts/pack-vue.ts",
     "build:pages": "TITAN_PAGES=1 vite build",
-    "pages:dev": "pnpm build:pages && wrangler pages dev dist-demo --compatibility-date=2024-09-23",
+    "pages:dev": "pnpm build:pages && wrangler dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
