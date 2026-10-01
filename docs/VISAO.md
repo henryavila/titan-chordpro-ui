@@ -66,7 +66,7 @@ ChordPro (1 string)
 1. **Leitura** elegante (acorde acima da letra, comentários de ensaio preservados, espaçamento).
 2. **Transposição** (semitons; reset ao original).
 3. **Tamanho de fonte** / bias (passos ou continuum — ver research auto-ajuste).
-4. **Export** `.cho`, PDF (nomes estáveis; PDF com tom exibido) e **Cifra completa (.zip)** com anexos locais para transporte offline. O consumer importa o mesmo ZIP no código (`importChartBundle` + persistência dos anexos; sem tela no Titan) e religa GPX/áudio/imagem — contrato em `docs/BUNDLE.md`.
+4. **Export** `.cho`, PDF (nomes estáveis; PDF com tom exibido), slides Louvor JA (`.slja`), PowerPoint (`.ppsx`, abre em apresentação, mesmas imagens de capa e fundo, letra em caixa alta) e **Cifra completa (.zip)** com anexos locais para transporte offline. O consumer importa o mesmo ZIP no código (`importChartBundle` + persistência dos anexos; sem tela no Titan) e religa GPX/áudio/imagem — contrato em `docs/BUNDLE.md`.
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
 6. **Temas:** claro e escuro, com opção de **troca automática**.
 7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.

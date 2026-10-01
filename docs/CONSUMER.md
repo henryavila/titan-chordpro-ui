@@ -113,7 +113,7 @@ export default defineNuxtConfig({
 |---|---|
 | Um SFC: `<TitanChordpro>` | Um `<iframe src="…">` |
 | Superfície de **1 cifra** com scroller próprio | Um artigo que cresce com a página |
-| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides, ensaio, **diagrama do acorde**, áudio de referência) | Shell do app (login, nav, lista de músicas do site, player **sincronizado**) |
+| Chrome do músico (tom, capo, rolagem, tema, export CHO/PDF/slides/ppsx, ensaio, **diagrama do acorde**, áudio de referência) | Shell do app (login, nav, lista de músicas do site, player **sincronizado**) |
 | Palco no celular, se o host der a geometria certa | Fullscreen nativo no Safari do iPhone (a plataforma não tem) |
 
 Duas composições, o **mesmo** componente:
@@ -632,11 +632,29 @@ O pacote não baixa fontes. O host carrega as faces. Defaults: Sora + Space Mono
 
 ## 9. Letra e slides — sem abrir a cifra
 
-O TitanChordpro exporta `.slja` pelo menu **Exportar**. Numa lista de músicas o host
-não precisa montar `<TitanChordpro>`: a string ChordPro basta.
+Cada arquivo baixável segue o mesmo contrato. O host passa a string ChordPro
+e recebe `{ bytes, filename, mime, title }` (`ExportedFile`) — sem montar
+`<TitanChordpro>`. O `mime` vem de `EXPORT_MIME` no núcleo. O writer pesado
+fica na entrada do pacote (`./pdf`, `./slides`, `./bundle`). Não há registro
+de plugins.
+
+| Arquivo | Host (sem Vue) | Já tem o ViewModel |
+|---|---|---|
+| ChordPro | `exportChoFile(source)` em `.` | `exportCho(source)` reescreve o texto |
+| Letra (cadastro) | `exportLyrics(source)` em `.` | — |
+| PDF | `exportPdf(source)` em `./pdf` | `renderPdf(view)` |
+| Louvor JA | `exportSlja(source)` em `./slides` | `renderSlja(view)` |
+| PowerPoint | `exportPpsx(source)` em `./slides` | `renderPpsx(view)` |
+| Cifra completa | `exportChartBundle(source)` / `importChartBundle(bytes)` em `./bundle` | — |
+
+O TitanChordpro exporta `.slja` (Louvor JA) e `.ppsx` (PowerPoint, abre em
+apresentação) pelo menu **Exportar**. Os dois usam o mesmo recorte da letra e
+as mesmas imagens de capa e fundo. Numa lista de músicas o host não precisa
+montar `<TitanChordpro>`: a string ChordPro basta.
 
 ```ts
-import { exportSlja, NoSlideLyricsError } from '@henryavila/titan-chordpro-ui/slides'
+import { EXPORT_MIME } from '@henryavila/titan-chordpro-ui'
+import { exportSlja, exportPpsx, NoSlideLyricsError } from '@henryavila/titan-chordpro-ui/slides'
 
 async function baixarSlides(chordpro: string, capa?: Uint8Array, fundo?: Uint8Array) {
   const { bytes, filename } = await exportSlja(chordpro, {
@@ -644,7 +662,19 @@ async function baixarSlides(chordpro: string, capa?: Uint8Array, fundo?: Uint8Ar
     slidesImage: fundo,    // opcional — default do pacote
   })
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }))
+  a.href = URL.createObjectURL(new Blob([bytes], { type: EXPORT_MIME.slja }))
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+async function baixarPpsx(chordpro: string, capa?: Uint8Array, fundo?: Uint8Array) {
+  const { bytes, filename } = await exportPpsx(chordpro, {
+    coverImage: capa,
+    slidesImage: fundo,
+  })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([bytes], { type: EXPORT_MIME.ppsx }))
   a.download = filename
   a.click()
   URL.revokeObjectURL(a.href)
@@ -653,7 +683,10 @@ async function baixarSlides(chordpro: string, capa?: Uint8Array, fundo?: Uint8Ar
 
 `NoSlideLyricsError` é a cifra sem letra (só intro/`x///`). Serve no browser
 e num handler Nitro/Node — não puxa Vue. A quebra de slide segue as linhas
-da cifra.
+da cifra: uma linha da cifra que junta duas frases (maiúscula no meio) vira
+um slide de duas linhas; duas linhas longas independentes não compartilham
+o mesmo slide. No `.ppsx`, título e letra aparecem em caixa alta. O `.slja`
+mantém a capitalização da cifra.
 
 A mesma cifra cadastra a letra — sem acordes, `x///` nem comentário de ensaio:
 
@@ -1057,7 +1090,9 @@ Nenhum omite os blocos TAB/partitura. TABs em texto e partituras da sintaxe anti
 mantêm a exportação anterior quando incluídas; a alternância é dos arquivos
 Guitar Pro/MusicXML.
 
-Para consumidores de `renderPdf` sem o componente Vue:
+Para consumidores sem o componente Vue, `exportPdf(source)` devolve
+`{ bytes, filename, mime, title }`. `renderPdf(view)` continua o writer a
+partir do ViewModel:
 
 - `notation: 'tab' | 'score' | 'none'` seleciona a exportação.
 - `renderNotation(text, mode)` fornece uma Promise de imagens PNG dos sistemas

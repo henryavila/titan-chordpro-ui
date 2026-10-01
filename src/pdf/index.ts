@@ -1,4 +1,6 @@
 export { renderPdf } from './render-pdf'
 export type { PdfOptions, PdfNotationMode, PdfNotationImage } from './render-pdf'
+export { exportPdf } from './export-pdf'
+export type { PdfFile, ExportPdfOptions } from './export-pdf'
 export { pdfText, PdfHasNoText } from './pdf-text'
 export type { PdfjsLike, PdfSource, PdfTextOptions } from './pdf-text'

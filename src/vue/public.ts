@@ -240,13 +240,13 @@ export type TitanChordproProps = {
    */
   defaultAudioArt?: AudioArt | null
   /**
-   * Cover JPEG/PNG for the `.slja` (LouvorJA `imagens\Capa.jpg`).
-   * Omitted → the package default.
+   * Cover JPEG/PNG for the `.slja` (LouvorJA `imagens\Capa.jpg`) and the
+   * PowerPoint title slide. Omitted → the package default.
    */
   coverImage?: SlideImage
   /**
-   * Background for every lyric slide (`imagens\slides.jpg`).
-   * Omitted → the package default. The host overrides both independently.
+   * Background for every lyric slide (`imagens\slides.jpg`) in LouvorJA and
+   * PowerPoint. Omitted → the package default. The host overrides both independently.
    */
   slidesImage?: SlideImage
 }

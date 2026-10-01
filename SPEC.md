@@ -92,12 +92,16 @@ export function listThemes(): string[]
 export function buildChoFilename(title: string, key: string | null): string
 export function buildPdfFilename(title: string, key: string | null): string
 export function buildSljaFilename(title: string): string
+export function buildPpsxFilename(title: string): string
 export function lyricsForSlides(view: TitanChordproDocument): SlideSourceLine[]
 export function lyricsText(view: TitanChordproDocument): string
 export function exportLyrics(source: string): ChartLyrics
 // ChartLyrics = { title, artist, lyrics }. Host cadastra letra sem Vue.
 // Lyrics drop chords, x///, comments, tab, images. Empty string if none.
 export function exportCho(source: string, opts?: { key?: string | null }): string
+export function exportChoFile(source: string, opts?: ExportChoOptions): ExportedFile
+export const EXPORT_MIME: { cho: string; html: string; pdf: string; slja: string; ppsx: string; bundle: string }
+// ExportedFile = { bytes, filename, mime, title }. Every file export returns this from exportX(source).
 export function calcScrollSpeed(contentHeight: number, durationSeconds: number | null, bpm: number | null): number
 export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): number
 export function adjustScrollMultiplier(mul: number, direction: 'up' | 'down'): number
@@ -105,19 +109,27 @@ export function createTitanChordproController(opts: { source: string }): TitanCh
 // TitanChordproController: getState / subscribe / dispatch / optional attachScroll(el)
 
 // @henryavila/titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
-export function renderPdf(view: TitanChordproDocument, opts: PdfOptions): Promise<Uint8Array>
+export function renderPdf(view: TitanChordproDocument, opts?: PdfOptions): Promise<Uint8Array>
+export function exportPdf(source: string, opts?: ExportPdfOptions): Promise<ExportedFile>
 
 // @henryavila/titan-chordpro-ui/slides  (separate entry — ZIP / CP1252 stay out of core)
 export function renderSlja(view: TitanChordproDocument, opts?: SljaOptions): Promise<Uint8Array>
-export function exportSlja(source: string, opts?: SljaOptions): Promise<SljaFile>
-// SljaFile = { bytes, filename, title }. Host download button: no Vue tree.
-// SljaOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
+export function exportSlja(source: string, opts?: SljaOptions): Promise<ExportedFile>
+export function renderPpsx(view: TitanChordproDocument, opts?: PpsxOptions): Promise<Uint8Array>
+export function exportPpsx(source: string, opts?: PpsxOptions): Promise<ExportedFile>
+// Host download: exportX(source) → ExportedFile. Already-parsed ViewModel: renderX(view) → bytes.
+// No plugin registry. Writers stay in ./pdf, ./slides, ./bundle.
+// SljaOptions / PpsxOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
 // Chart line breaks are the phrasing. Do not reflow like louvorja-slides ASR.
+// PPSX uses the same planner and the same cover/lyric images as the .slja.
+// PPSX paints title and lyrics in uppercase (pt-BR); .slja keeps source casing.
+// Content type is slideshow so the file opens in presentation mode.
 
 // @henryavila/titan-chordpro-ui/bundle  (ZIP stay out of core)
-export function exportChartBundle(source: string, opts?: ChartBundleOptions): Promise<ChartBundle>
+export function exportChartBundle(source: string, opts?: ChartBundleOptions): Promise<ExportedFile & { chart: string; assetCount: number }>
 export function importChartBundle(bytes: Uint8Array | ArrayBuffer, opts: ChartBundleImportOptions): Promise<ChartBundleImport>
 // persistAsset stores each attachment; returned refs rewrite the ChordPro.
+// ChartBundle = ExportedFile & { chart, assetCount }.
 
 // @henryavila/titan-chordpro-ui/vue
 export { TitanChordpro } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
@@ -241,6 +253,8 @@ in `docs/CONSUMER.md`; the release notes must state those required adjustments.
 | `buildPdfFilename('Lindo És', 'C#')` | `cifra-lindo-es-tom-c#.pdf` |
 | `buildSljaFilename('Fala Comigo')` | `slides-fala-comigo.slja` |
 | `buildSljaFilename('Lindo És')` | `slides-lindo-es.slja` |
+| `buildPpsxFilename('Fala Comigo')` | `slides-fala-comigo.ppsx` |
+| `buildPpsxFilename('Lindo És')` | `slides-lindo-es.ppsx` |
 
 Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 
@@ -340,6 +354,8 @@ titan-chordpro-ui html  song.cho --theme default -o out.html
 titan-chordpro-ui html  song.chordpro --theme default -o out.html
 titan-chordpro-ui html  song.onsong --theme light -o out.html
 titan-chordpro-ui pdf   song.chordpro --key A -o cifra-….pdf
+titan-chordpro-ui slides song.cho -o slides-….slja
+titan-chordpro-ui ppsx  song.cho -o slides-….ppsx
 titan-chordpro-ui parse song.cho -o view.json          # dump ViewModel
 ```
 
@@ -374,6 +390,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 | A16 | Vue `TitanChordpro` mounts fixture jesus-1; transpose control changes displayed chords | component/e2e smoke |
 | A17 | Vue package exposes light/dark/auto theme control | component smoke |
 | A18 | `importChartBundle` persists each attachment once, rewrites host refs, restores provenance, and rejects incomplete, swapped-kind, unplayable-audio, or JSON-disguised ZIP | `tests/bundle/import.test.ts` |
+| A19 | File exports share `ExportedFile` (`bytes`, `filename`, `mime`, `title`) from `exportX(source)`. `exportChoFile` / `exportPdf` / `exportSlja` / `exportPpsx` / `exportChartBundle` return that shape. PPSX MIME is `EXPORT_MIME.ppsx` (slideshow). Vue menu has `data-export="ppsx"`. No `pptx` aliases. | unit + consumer-exports + vue/browser |
 
 **Not DONE if:** only a demo without tests; PDF ignores transpose; theme hardcoded with no `theme` option; cifra toolbar only exists inside sda-v2 and not in this repo’s Vue package.
 

@@ -1,3 +1,4 @@
+import type { ExportedFile } from '../core/exported-file'
 import { parse } from '../core/parse'
 import { readScoreReference } from '../core/score-reference'
 
@@ -20,7 +21,7 @@ export type ChartBundleOptions = {
   title?: string
   key?: string | null
 }
-export type ChartBundle = { bytes: Uint8Array; filename: string; chart: string; assetCount: number }
+export type ChartBundle = ExportedFile & { chart: string; assetCount: number }
 
 export const MEDIA: Record<string, { kind: ChartAssetKind; role: string }> = {
   x_titan_audio_sung: { kind: 'audio', role: 'sung' },

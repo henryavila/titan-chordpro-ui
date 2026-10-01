@@ -8,14 +8,16 @@ import {
   isScoreReference,
   isInlineScore,
   buildTimeline,
-  buildChoFilename,
   buildPdfFilename,
+  buildPpsxFilename,
   buildSljaFilename,
+  EXPORT_MIME,
   clockOf,
   createSourceSession,
   editTypeScale,
   etaSec,
   exportCho,
+  exportChoFile,
   formatEta,
   hasSongDuration,
   isParseFatal,
@@ -77,6 +79,7 @@ import type {
 import ChartBody from './chart/ChartBody.vue'
 import DiagramModal from './overlay/DiagramModal.vue'
 import type { DiagramInstrumentChoice } from './overlay/DiagramModal.vue'
+import { downloadExportedFile, runExportJob } from './export/run-export'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
@@ -144,6 +147,7 @@ const props = withDefaults(
       forceParseError?: boolean
       pdfShouldFail?: boolean
       slidesShouldFail?: boolean
+      ppsxShouldFail?: boolean
       /** Test harness: start with this live capo. File `{capo:}` does not. */
       initialCapo?: number
       /** Test harness: start with dual on/off. Default on when there is a capo. */
@@ -186,6 +190,7 @@ const props = withDefaults(
     forceParseError: false,
     pdfShouldFail: false,
     slidesShouldFail: false,
+    ppsxShouldFail: false,
     capabilities: () => ({ sourcePane: true }),
     strumPresets: () => [],
     defaultAudioArt: undefined,
@@ -276,6 +281,7 @@ const etaLabel = ref('—')
 const sheet = ref(false)
 const pdf = ref<'idle' | 'busy' | 'error'>('idle')
 const slides = ref<'idle' | 'busy' | 'error'>('idle')
+const ppsx = ref<'idle' | 'busy' | 'error'>('idle')
 const toast = ref<string | null>(null)
 const toastOut = ref(false)
 const fs = ref(false)
@@ -2236,28 +2242,29 @@ function applyMeta(next: string) {
 
 // ------------------------------------------------------------------- exports
 
-function download(name: string, blob: Blob) {
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = name
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000)
-}
-
 /** What leaves the app: the reader's version, or the official one. */
 function exportSource(): string {
   return ov.exportOrig.value ? ov.official.value : liveSource.value
 }
 
+function exportedView() {
+  return transpose(parse(exportSource()), offset.value)
+}
+
 function doExportCho() {
-  const text = exportCho(exportSource(), { semitones: offset.value, capo: capo.value })
-  // A personal version leaves marked: it must not circulate as the team's chart.
   const mark =
     !ov.exportOrig.value && ov.hasOverlay.value
       ? '# versão pessoal — não é a cifra oficial da equipe\n'
       : ''
-  const name = buildChoFilename(meta.value.title ?? 'cifra', shownKey.value || null)
-  download(name, new Blob([mark + text], { type: 'text/plain;charset=utf-8' }))
+  downloadExportedFile(
+    exportChoFile(exportSource(), {
+      semitones: offset.value,
+      capo: capo.value,
+      title: meta.value.title ?? 'cifra',
+      key: shownKey.value || null,
+      preamble: mark,
+    }),
+  )
   sheet.value = false
   toastMsg('Arquivo .cho baixado')
 }
@@ -2306,7 +2313,7 @@ async function doExportBundle() {
         } finally { clearTimeout(timer) }
       },
     })
-    download(file.filename, new Blob([file.bytes as BlobPart], { type: 'application/zip' }))
+    downloadExportedFile(file)
     sheet.value = false
     toastMsg('Cifra completa baixada')
   } catch (error) {
@@ -2317,36 +2324,34 @@ async function doExportBundle() {
 const pdfExportError = ref('')
 const exportHasNotation = computed(() => layoutChartFull(parse(exportSource())).blocks.some(b => b.kind === 'score' && isScoreReference(b.text)))
 async function doExportPdf(notation: 'tab' | 'score' | 'none' = 'score') {
-  if (pdf.value === 'busy') return
-  pdf.value = 'busy'
-  pdfExportError.value = ''
-  try {
-    if (props.pdfShouldFail) throw new Error('simulado')
-    const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
-    // The PDF always uses the default scale: fit mode serves the screen, not paper.
-    const view = transpose(parse(exportSource()), offset.value)
-    // A personal version leaves marked on paper too: it must not circulate as
-    // the team's chart.
-    const bytes = await renderPdf(view, {
-      notation,
-      renderNotation: async (text, mode) => {
-        const { renderPdfNotation } = await import('./chart/pdf-notation')
-        return renderPdfNotation(text, mode, props.resolveScore, tabRhythmPreference.value.value)
-      },
-      personal: !ov.exportOrig.value && ov.hasOverlay.value,
-      accent: props.accent,
-    })
-    download(
-      buildPdfFilename(meta.value.title ?? 'cifra', shownKey.value || null),
-      new Blob([bytes as BlobPart], { type: 'application/pdf' }),
-    )
-    pdf.value = 'idle'
-    sheet.value = false
-    toastMsg('PDF gerado')
-  } catch (error) {
-    pdf.value = 'error'
-    pdfExportError.value = error instanceof Error ? error.message : 'Não foi possível gerar o PDF. Tente novamente.'
-  }
+  const title = meta.value.title ?? 'cifra'
+  await runExportJob({
+    state: pdf,
+    errorText: pdfExportError,
+    shouldFail: props.pdfShouldFail,
+    produce: async () => {
+      const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
+      const bytes = await renderPdf(exportedView(), {
+        notation,
+        renderNotation: async (text, mode) => {
+          const { renderPdfNotation } = await import('./chart/pdf-notation')
+          return renderPdfNotation(text, mode, props.resolveScore, tabRhythmPreference.value.value)
+        },
+        personal: !ov.exportOrig.value && ov.hasOverlay.value,
+        accent: props.accent,
+      })
+      return {
+        bytes,
+        filename: buildPdfFilename(title, shownKey.value || null),
+        mime: EXPORT_MIME.pdf,
+        title,
+      }
+    },
+    onSuccess: () => {
+      sheet.value = false
+      toastMsg('PDF gerado')
+    },
+  })
 }
 
 async function imageBytes(
@@ -2358,30 +2363,105 @@ async function imageBytes(
   return new Uint8Array(await input.arrayBuffer())
 }
 
-async function doExportSlides() {
-  if (slides.value === 'busy') return
-  slides.value = 'busy'
-  try {
-    if (props.slidesShouldFail) throw new Error('simulado')
-    const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-    const view = transpose(parse(exportSource()), offset.value)
-    const bytes = await renderSlja(view, {
-      title: meta.value.title ?? 'cifra',
-      coverImage: await imageBytes(props.coverImage),
-      slidesImage: await imageBytes(props.slidesImage),
-    })
-    download(
-      buildSljaFilename(meta.value.title ?? 'cifra'),
-      new Blob([bytes as BlobPart], { type: 'application/zip' }),
-    )
-    slides.value = 'idle'
-    sheet.value = false
-    toastMsg('Slides gerados')
-  } catch {
-    slides.value = 'error'
-    sheet.value = false
+async function slideImageOpts() {
+  return {
+    title: meta.value.title ?? 'cifra',
+    coverImage: await imageBytes(props.coverImage),
+    slidesImage: await imageBytes(props.slidesImage),
   }
 }
+
+async function doExportSlides() {
+  await runExportJob({
+    state: slides,
+    shouldFail: props.slidesShouldFail,
+    produce: async () => {
+      const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
+      const opts = await slideImageOpts()
+      return {
+        bytes: await renderSlja(exportedView(), opts),
+        filename: buildSljaFilename(opts.title),
+        mime: EXPORT_MIME.slja,
+        title: opts.title,
+      }
+    },
+    onSuccess: () => {
+      sheet.value = false
+      toastMsg('Slides gerados')
+    },
+    onError: () => {
+      sheet.value = false
+    },
+  })
+}
+
+async function doExportPpsx() {
+  await runExportJob({
+    state: ppsx,
+    shouldFail: props.ppsxShouldFail,
+    produce: async () => {
+      const { renderPpsx } = await import('@henryavila/titan-chordpro-ui/slides')
+      const opts = await slideImageOpts()
+      return {
+        bytes: await renderPpsx(exportedView(), opts),
+        filename: buildPpsxFilename(opts.title),
+        mime: EXPORT_MIME.ppsx,
+        title: opts.title,
+      }
+    },
+    onSuccess: () => {
+      sheet.value = false
+      toastMsg('Apresentação gerada')
+    },
+    onError: () => {
+      sheet.value = false
+    },
+  })
+}
+
+const exportAlerts = computed(() => {
+  const rows: Array<{ id: string; text: string; retry: () => void; dismiss: () => void }> = []
+  if (slides.value === 'error') {
+    rows.push({
+      id: 'slides',
+      text: 'A exportação em slides falhou.',
+      retry: () => {
+        slides.value = 'idle'
+        void doExportSlides()
+      },
+      dismiss: () => {
+        slides.value = 'idle'
+      },
+    })
+  }
+  if (ppsx.value === 'error') {
+    rows.push({
+      id: 'ppsx',
+      text: 'A exportação em PowerPoint falhou.',
+      retry: () => {
+        ppsx.value = 'idle'
+        void doExportPpsx()
+      },
+      dismiss: () => {
+        ppsx.value = 'idle'
+      },
+    })
+  }
+  if (pdf.value === 'error') {
+    rows.push({
+      id: 'pdf',
+      text: 'A exportação em PDF falhou.',
+      retry: () => {
+        pdf.value = 'idle'
+        void doExportPdf()
+      },
+      dismiss: () => {
+        pdf.value = 'idle'
+      },
+    })
+  }
+  return rows
+})
 
 // ------------------------------------------------------------------ listeners
 
@@ -3371,18 +3451,15 @@ defineExpose({
       />
     </div>
 
-    <div v-if="slides === 'error'" class="titan-chordpro-error-banner">
+    <div
+      v-for="alert in exportAlerts"
+      :key="alert.id"
+      class="titan-chordpro-error-banner"
+    >
       <TitanChordproIcon name="alertTri" :size="18" style="color:var(--danger)" />
-      <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em slides falhou.</span>
-      <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="slides = 'idle'; doExportSlides()">Tentar de novo</button>
-      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="slides = 'idle'"><TitanChordproIcon name="x" :size="14" /></button>
-    </div>
-
-    <div v-if="pdf === 'error'" class="titan-chordpro-error-banner">
-      <TitanChordproIcon name="alertTri" :size="18" style="color:var(--danger)" />
-      <span style="flex:1;font-size:13px;line-height:1.4;">A exportação em PDF falhou.</span>
-      <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="pdf = 'idle'; doExportPdf()">Tentar de novo</button>
-      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="pdf = 'idle'"><TitanChordproIcon name="x" :size="14" /></button>
+      <span style="flex:1;font-size:13px;line-height:1.4;">{{ alert.text }}</span>
+      <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="alert.retry()">Tentar de novo</button>
+      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="alert.dismiss()"><TitanChordproIcon name="x" :size="14" /></button>
     </div>
 
     <div
@@ -3422,6 +3499,7 @@ defineExpose({
       :has-notation="exportHasNotation"
       :pdf-error="pdfExportError"
       :slides-busy="slides === 'busy'"
+      :ppsx-busy="ppsx === 'busy'"
       :bundle-busy="bundleBusy"
       :bundle-error="bundleError"
       :compact="compact"
@@ -3431,6 +3509,7 @@ defineExpose({
       @cho="doExportCho"
       @pdf="doExportPdf"
       @slides="doExportSlides"
+      @ppsx="doExportPpsx"
       @bundle="doExportBundle"
       @pick="(orig) => { ov.exportOrig.value = orig; toggleOriginal(orig) }"
     />
@@ -3684,6 +3763,6 @@ defineExpose({
     />
 
     <div class="titan-chordpro-live" role="status" aria-live="polite">{{ toast }}</div>
-    <div class="titan-chordpro-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : '') }}</div>
+    <div class="titan-chordpro-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : ppsx === 'error' ? 'A exportação em PowerPoint falhou.' : '') }}</div>
   </div>
 </template>
