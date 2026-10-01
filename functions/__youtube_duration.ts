@@ -1,13 +1,18 @@
-import type { PagesFunction } from '@cloudflare/workers-types'
 import { UA, YT_ID, corsHeaders, workerResponse } from './_shared'
 
 /**
  * Same contract as the Vite demo middleware: GET ?id=VIDEO_ID → watch-page HTML
  * so the viewer can read lengthSeconds for `{duration:}` after a Cifra Club import.
  */
-export const onRequestGet: PagesFunction = async (context) => {
-  const origin = context.request.headers.get('Origin')
-  const id = new URL(context.request.url).searchParams.get('id') ?? ''
+export async function handleYoutubeDurationRequest(request: Request): Promise<Response> {
+  const origin = request.headers.get('Origin')
+  if (request.method === 'OPTIONS') {
+    return workerResponse(null, { status: 204, headers: corsHeaders(origin) })
+  }
+  if (request.method !== 'GET') {
+    return workerResponse(null, { status: 405, headers: corsHeaders(origin) })
+  }
+  const id = new URL(request.url).searchParams.get('id') ?? ''
   if (!YT_ID.test(id)) {
     return workerResponse(null, { status: 400, headers: corsHeaders(origin) })
   }
@@ -27,6 +32,3 @@ export const onRequestGet: PagesFunction = async (context) => {
     return workerResponse(null, { status: 502, headers: corsHeaders(origin) })
   }
 }
-
-export const onRequestOptions: PagesFunction = async (context) =>
-  workerResponse(null, { status: 204, headers: corsHeaders(context.request.headers.get('Origin')) })

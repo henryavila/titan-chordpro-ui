@@ -1,4 +1,4 @@
-# Demo público (Cloudflare Pages)
+# Demo público (Cloudflare Workers)
 
 Demo real do `<TitanChordpro>`: hub + standalone + shell + lista.
 
@@ -62,7 +62,7 @@ No `pnpm dev`, o Vite expõe:
 | `/__cifra_fetch?url=` | HTML da cifra. Se a resposta não for a cifra, o proxy monta o HTML da [§11](./CONSUMER.md#11-buscar-no-cifra-club-fetchchart) |
 | `/__youtube_duration?id=` | HTML do watch do YouTube (duração → `{duration:}`) |
 
-No Pages, as mesmas rotas vivem em `functions/` (Pages Functions).  
+No Worker, as mesmas rotas vivem em `functions/worker.ts`.  
 A demo continua chamando os mesmos paths relativos — local e produção iguais.
 
 Import por **arquivo / colar / PDF** não precisa de proxy.
@@ -73,7 +73,7 @@ Import por **arquivo / colar / PDF** não precisa de proxy.
 |---|---|
 | Static assets | ilimitado |
 | Functions (Workers) | **100 000 req/dia**, ~10 ms CPU (espera de `fetch` não conta) |
-| Domínio | `*.pages.dev` grátis |
+| Domínio | `*.workers.dev` grátis |
 
 Outras opções gratuitas (se um dia sair do CF): Deno Deploy (~1 M req/mês), Vercel Hobby (uso pessoal). Para este proxy fino, **Cloudflare** é o melhor custo/benefício.
 
@@ -82,24 +82,24 @@ Outras opções gratuitas (se um dia sair do CF): Deno Deploy (~1 M req/mês),
 ```bash
 pnpm install
 pnpm build:pages          # → dist-demo/
-pnpm pages:dev            # static + Functions local (Wrangler)
+pnpm pages:dev            # static + proxy Worker local (Wrangler)
 ```
 
-**Dashboard Cloudflare**
+**Workers Builds (Git)**
 
-1. Workers & Pages → Create → Connect to Git (este repo).
-2. Build command: `pnpm install && pnpm build:pages`
-3. Build output directory: `dist-demo`
-4. A pasta `functions/` na raiz é detectada automaticamente (não entra no `dist-demo`).
+O `wrangler.toml` é um Worker com assets em `dist-demo/` e o proxy em `functions/worker.ts`. O check **Workers Builds: titan-chordpro-ui** nas PRs roda `npx wrangler preview` (produção: `npx wrangler deploy`). O comando `[build]` gera o demo; com `WORKERS_CI=1` o `prepare` também gera, para o diretório existir mesmo se o passo de build do dashboard estiver vazio.
+
+1. Workers & Pages → Connect to Git (este repo).
+2. Build command (opcional): `pnpm run build:pages`
+3. Deploy command: `npx wrangler deploy`
+4. Preview command: `npx wrangler preview`
 
 **CLI**
 
 ```bash
 pnpm build:pages
-npx wrangler pages deploy dist-demo
+npx wrangler deploy
 ```
-
-> Upload direto pelo dashboard **não** leva Functions — use Git ou Wrangler.
 
 ## Segurança do proxy
 
