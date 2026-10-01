@@ -161,8 +161,9 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
             @dragenter.prevent="dragEnter" @dragover.prevent.stop="dragOver"
             @dragleave.prevent="dragDepth = Math.max(0, dragDepth - 1)" @drop.prevent.stop="dropFile">
             <span class="cpv-import-score-file-icon"><CpvIcon name="fileInput" :size="22" /></span>
-            <div><strong>{{ file || src ? fileName : 'Seu arquivo musical' }}</strong><p>{{ total ? `${total} compassos disponíveis` : 'GP, GPX, GP3–5, XML ou MXL' }}</p></div>
-            <input v-if="uploadScore" ref="fileInput" type="file" hidden accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl" @change="selectFile">
+            <div><strong>{{ file || src ? fileName : 'Seu arquivo musical' }}</strong><p>{{ total ? `${total} compassos disponíveis` : '.gp, .gp3–5, .gpx, .xml, .musicxml ou .mxl' }}</p></div>
+            <!-- iOS Files may disable .gp with an accept filter. Validate after selection instead. -->
+            <input v-if="uploadScore" ref="fileInput" type="file" hidden @change="selectFile">
             <button v-if="uploadScore" type="button" class="cpv-modal-btn" @click="fileInput?.click()">{{ file || src ? 'Trocar arquivo' : 'Escolher arquivo' }}</button>
             <p v-if="uploadScore" class="cpv-import-score-drop-hint" role="status">{{ dragging ? 'Solte o arquivo aqui' : 'Ou arraste e solte o arquivo aqui' }}</p>
           </div>

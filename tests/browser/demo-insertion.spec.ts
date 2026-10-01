@@ -15,7 +15,24 @@ for (const unavailable of [true, false]) {
       await page.locator('[data-insert]').first().click()
       await page.getByRole('button', { name: 'Guitar Pro / MusicXML', exact: true }).click()
       const dialog = page.getByRole('dialog', { name: 'Solo de Guitar Pro ou MusicXML' })
-      await dialog.locator('input[type="file"]').setInputFiles(`fixtures/notation/${file}`)
+      const input = dialog.locator('input[type="file"]')
+      // iOS Files disables some .gp files when the picker filters by extension.
+      // The app validates the selected file after the picker returns it.
+      await expect(input).not.toHaveAttribute('accept')
+      if (file === 'notes.gp') {
+        const [invalidChooser] = await Promise.all([
+          page.waitForEvent('filechooser'),
+          dialog.getByRole('button', { name: 'Escolher arquivo', exact: true }).click(),
+        ])
+        await invalidChooser.setFiles('fixtures/notation/LICENSE.alphatab')
+        await expect(dialog.getByRole('alert')).toContainText('Escolha um arquivo Guitar Pro ou MusicXML')
+        await expect(dialog.getByRole('button', { name: 'Salvar trecho na cifra' })).toBeDisabled()
+      }
+      const [chooser] = await Promise.all([
+        page.waitForEvent('filechooser'),
+        dialog.getByRole('button', { name: 'Escolher arquivo', exact: true }).click(),
+      ])
+      await chooser.setFiles(`fixtures/notation/${file}`)
       await expect(dialog.locator('.cpv-notation-paper svg').first()).toBeVisible()
       await expect(dialog.getByRole('textbox', { name: 'Nome do trecho' })).toHaveValue('Solo')
       await dialog.getByRole('textbox', { name: 'Nome do trecho' }).fill(`Entrada ${file}`)
