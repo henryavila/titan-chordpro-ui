@@ -786,6 +786,15 @@ const ov = useOverlay({
     emit('save-content', text)
   },
   persistSuggestion: computed(() => props.persistSuggestion),
+  loadScoreAsset: async (src) => {
+    if (props.loadBundleAsset) return props.loadBundleAsset(src, 'score')
+    const url = new URL(props.resolveScore?.(src) ?? src, document.baseURI)
+    if (!['http:', 'https:', 'blob:'].includes(url.protocol)) throw new Error('Referência do solo inválida')
+    const response = await fetch(url.href)
+    if (!response.ok) throw new Error('Não foi possível abrir o arquivo do solo')
+    return { bytes: new Uint8Array(await response.arrayBuffer()), contentType: response.headers.get('content-type') ?? undefined }
+  },
+  uploadScore: computed(() => props.uploadScore),
   onSuggestionCreated: (s) => emit('suggestion-created', s),
   onSuggestionAccepted: (p) => emit('suggestion-accepted', p),
   onSuggestionRefused: (p) => emit('suggestion-refused', p),
@@ -3642,6 +3651,8 @@ defineExpose({
       :official-strum="ov.qOfficialStrum.value"
       :batch-applies="ov.qBatchPreview.value?.count ?? 0"
       :batch-conflicts="ov.qBatchPreview.value?.conflicts ?? 0"
+      :busy="ov.reviewBusy.value"
+      :resolve-score="resolveScore"
       @back="ov.qBack"
       @close="ov.closeQueue"
       @pick-song="(k) => (ov.qSong.value = k)"

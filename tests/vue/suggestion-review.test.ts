@@ -1,7 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { diffOps, formatTitanStrum, parseTitanStrum, readStrumPatterns, writeStrumPatterns } from '../../src/core/index'
+import { readFileSync } from 'node:fs'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { diffOps, formatTitanStrum, parseTitanStrum, proposedScoreSources, readStrumPatterns, scoreReviewsFromOp, writeStrumPatterns, writeScoreReference } from '../../src/core/index'
 import { ChordproViewer } from '../../src/vue/index'
+
+vi.mock('../../src/vue/chart/ExternalScore.vue', () => ({ default: { props: ['text'], template: '<div data-score-rendered />' } }))
 
 /**
  * Chart that already has a batida. A lyric typo must not look like a batida
@@ -97,6 +100,96 @@ async function echoSavedChart(w: Awaited<ReturnType<typeof mountAt>>) {
 }
 
 describe('suggestion review', () => {
+  it('keeps every score file when adjacent excerpts change in one hunk', () => {
+    const first = writeScoreReference({ src: 'a.gpx', track: 1, start: 1, end: 2 })
+    const second = writeScoreReference({ src: 'b.musicxml', track: 1, start: 3, end: 4 })
+    const ops = diffOps(`${first}\n${second}`, `${first.replace('end=2', 'end=3')}\n${second.replace('end=4', 'end=5')}`, { transpose: 0, capo: 0 })
+    expect(proposedScoreSources(ops)).toEqual(['a.gpx', 'b.musicxml'])
+    expect(ops.flatMap(scoreReviewsFromOp)).toHaveLength(2)
+  })
+
+  it('sends the original Guitar Pro file and reviews the excerpt as before/after', async () => {
+    const bytes = new Uint8Array(readFileSync('fixtures/notation/notes.gp'))
+    const score = writeScoreReference({ src: 'solos/notes.gp', track: 1, start: 1, end: 2, name: 'Solo de entrada' })
+    localStorage.setItem('cpv:my:review-1', JSON.stringify({
+      baseVersion: 'v1', at: 1,
+      ops: diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 }),
+    }))
+    const local = await mountAt({ editMode: 'local', actorKey: 'musico', loadBundleAsset: async () => ({ bytes }) })
+    await local.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await sendSuggestion(local, 'Ana Souza')
+    const sent = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    expect(sent).toHaveLength(1)
+    expect(sent[0].scoreAttachments).toHaveLength(1)
+    expect(sent[0].scoreAttachments[0].src).toBe('solos/notes.gp')
+    expect(Buffer.from(sent[0].scoreAttachments[0].base64, 'base64')).toEqual(Buffer.from(bytes))
+    local.unmount()
+
+    const admin = await mountAt({ editMode: 'persisted' })
+    await openRequest(admin)
+    expect(admin.get('[data-q-score-review]').text()).toMatch(/Solo de entrada.*notes\.gp.*faixa 1.*compassos 1–2/s)
+    expect(admin.get('[data-q-score-file]').text()).toContain('notes.gp')
+    expect(admin.get('[data-q-op]').text()).not.toContain('{x_titan_score:')
+    admin.unmount()
+  })
+
+  it('stores the attached score for everyone before accepting its reference', async () => {
+    const bytes = new Uint8Array(readFileSync('fixtures/notation/notes.gp'))
+    const score = writeScoreReference({ src: 'private/notes.gp', track: 1, start: 1, end: 2, name: 'Solo' })
+    const ops = diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 })
+    localStorage.setItem('cpv:sug', JSON.stringify([{
+      id: 's-score', songId: 'review-1', title: 'Teste', at: 1, baseVersion: 'v1',
+      ops, actorName: 'Ana Souza', scoreAttachments: [{ src: 'private/notes.gp', filename: 'notes.gp', base64: Buffer.from(bytes).toString('base64') }],
+    }]))
+    const uploaded: File[] = []
+    const admin = await mountAt({ editMode: 'persisted', uploadScore: async (file: File) => {
+      uploaded.push(file)
+      return { ref: 'published/notes.gp' }
+    } })
+    await openRequest(admin)
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+    expect(uploaded).toHaveLength(1)
+    expect(uploaded[0]?.name).toBe('notes.gp')
+    expect(admin.emitted('save-content')?.at(-1)?.[0]).toContain('src="published/notes.gp"')
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0].status).toBe('accepted')
+    admin.unmount()
+  })
+
+  it('keeps the score suggestion pending when the reviewer cannot store the attached file', async () => {
+    const score = writeScoreReference({ src: 'private/notes.gp', track: 1, start: 1 })
+    localStorage.setItem('cpv:sug', JSON.stringify([{
+      id: 's-score', songId: 'review-1', title: 'Teste', at: 1, baseVersion: 'v1',
+      ops: diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 }),
+      scoreAttachments: [{ src: 'private/notes.gp', filename: 'notes.gp', base64: 'AA==' }],
+    }]))
+    const admin = await mountAt({ editMode: 'persisted' })
+    await openRequest(admin)
+    await admin.get('[data-q-accept]').trigger('click')
+    await flushPromises()
+    expect(admin.emitted('save-content')).toBeUndefined()
+    expect(admin.text()).toContain('precisa poder guardar o arquivo')
+    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0].status ?? 'pending').toBe('pending')
+    admin.unmount()
+  })
+
+  it('does not send a score suggestion without the file bytes', async () => {
+    const score = writeScoreReference({ src: 'private/missing.gpx', track: 1, start: 1 })
+    localStorage.setItem('cpv:my:review-1', JSON.stringify({
+      baseVersion: 'v1', at: 1,
+      ops: diffOps(SRC, `${SRC}${score}\n`, { transpose: 0, capo: 0 }),
+    }))
+    const local = await mountAt({ editMode: 'local', loadBundleAsset: async () => { throw new Error('missing') } })
+    await local.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await sendSuggestion(local, 'Ana Souza')
+    expect(localStorage.getItem('cpv:sug')).toBeNull()
+    expect(local.emitted('suggestion-created')).toBeUndefined()
+    expect(local.text()).toContain('Não foi possível anexar o arquivo do solo')
+    local.unmount()
+  })
+
   it('does not put the existing batida on a lyric-only suggestion', async () => {
     const local = await mountAt({ editMode: 'local', actorKey: 'musico' })
     await local.get('[data-edit]').trigger('click')

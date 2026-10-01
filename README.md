@@ -44,7 +44,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
 **Edição**
 - No lugar: letra, acorde, bloco (transpor, capo, reordenar)
 - Versão pessoal (overlay) e **Sugerir** (nome obrigatório). O host confirma o POST com `persistSuggestion`; sem ack, não tosta “enviada”
-- Fila do responsável: aceitar / recusar, lote, diff visual da batida
+- Fila do responsável: aceitar / recusar, lote, diff visual da batida e prévia Antes/Depois de Guitar Pro/MusicXML com o arquivo anexado
 - **Editor de batida** — grade por tempo; cada pulso é ↓ / ↑, passa, pausa ou ×, com essência (normal, acento, mute, abafada). O primeiro toque ancora o sentido da mão; daí o picker só oferece o que a mão alcança. Vários padrões nomeados na mesma cifra, densidade 2 ou 4 por tempo, 6/8 em 2 compostos ou 6 colcheias. **Ouvir** toca o loop antes de gravar. Em *Só para mim* vai ao overlay + Sugerir; em *Para todos* grava `{x_titan_strum:}` / `{x_titan_strum_set:}`. Presets são do host — o pacote não embute catálogo. Na revisão, o diff é no visualizador (destaque + seta riscada), não no texto da diretiva.
 - Partitura `{x_titan_start_of_score}` / TAB `{sot}`
 - Import ChordPro, OnSong, cifra sobre letra, Cifra Club, PDF com texto, em branco. Se `{key:}` não bate com o corpo (capo-truque do Cifra Club), pergunta **Reescrever** — grava o original e `{transpose:}` para continuar tocando onde estava
@@ -101,7 +101,7 @@ execute `pnpm install`; se o Tailscale estiver desligado, o script avisa e encer
 Referências: [opções do servidor Vite](https://vite.dev/config/server-options)
 e [CLI Tailscale](https://tailscale.com/kb/1080/cli).
 
-Demo público (hub completo, sem persistência, proxy de import por link):  
+Demo público (hub completo, persistência local no navegador e proxy de import por link):
 [`docs/DEMO-PAGES.md`](docs/DEMO-PAGES.md).
 
 ## Core vs Vue vs host
@@ -374,7 +374,9 @@ servidor responde do próprio cache e dispara a gravação por trás do `set`.
 
 A sugestão **não** é fire-and-forget quando o host passa `persistSuggestion`:
 Titan espera a Promise, só então enfileira e tosta “Sugestão enviada”. Sem a
-prop, o toast é otimista neste aparelho (demo).
+prop, o toast é otimista neste aparelho. O demo passa a prop e guarda a fila
+no navegador; [CONSUMER §10](docs/CONSUMER.md#10-edição-e-persistência) mostra
+como persistir a fila e os arquivos Guitar Pro/MusicXML no servidor.
 
 Falhar em silêncio é o contrato: `localStorage` negado numa janela anônima ou
 num iframe bloqueado custa uma conveniência, nunca uma mensagem de erro ao

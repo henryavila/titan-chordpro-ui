@@ -3,6 +3,7 @@ import { beatsInMeter, type StrumPattern } from '@henryavila/titan-chordpro-ui'
 import type { QueueOpCard, QueueRow } from '../use/useOverlay'
 import CpvIcon from '../icon/CpvIcon.vue'
 import StrumStrip from '../StrumStrip.vue'
+import ScoreReview from './ScoreReview.vue'
 
 defineProps<{
   title: string
@@ -20,6 +21,8 @@ defineProps<{
   /** How many open ops still apply cleanly (level 3). */
   batchApplies?: number
   batchConflicts?: number
+  busy?: boolean
+  resolveScore?: (src: string) => string
 }>()
 
 function barBeatsOf(p: StrumPattern): number {
@@ -109,11 +112,13 @@ const emit = defineEmits<{
           <span class="cpv-q-batch-actions">
             <button
               data-q-refuse-batch
+              :disabled="busy"
               style="height:32px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
               @click="emit('refuseBatch')"
             >Recusar lote</button>
             <button
               data-q-accept-batch
+              :disabled="busy"
               style="height:32px;padding:0 12px;border:0;border-radius:10px;background:var(--pill);color:var(--pill-ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
               @click="emit('acceptBatch')"
             >Aceitar lote</button>
@@ -142,9 +147,11 @@ const emit = defineEmits<{
       >
         <span style="flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:5px;">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">{{ op.label }}</span>
+          <ScoreReview v-for="(score, i) in op.scores" :key="i" :previous="score.previous" :proposed="score.proposed"
+            :attachment="score.attachment" :resolve-score="resolveScore" />
           <template v-if="!op.strum">
-            <span class="cpv-op-line" style="color:var(--muted);white-space:normal;">{{ op.from }}</span>
-            <span class="cpv-op-line" style="color:var(--chord);white-space:normal;">{{ op.to }}</span>
+            <span v-if="!op.scores.length || op.from !== '—'" class="cpv-op-line" style="color:var(--muted);white-space:normal;">{{ op.from }}</span>
+            <span v-if="!op.scores.length || op.to !== '—'" class="cpv-op-line" style="color:var(--chord);white-space:normal;">{{ op.to }}</span>
           </template>
           <span v-if="op.note" style="font-size:10.5px;color:var(--muted);">{{ op.note }}</span>
           <span v-if="op.warn" style="font-size:10.5px;font-weight:600;color:var(--danger);">{{ op.warn }}</span>
@@ -166,11 +173,13 @@ const emit = defineEmits<{
         <span style="flex:none;display:flex;align-items:center;gap:6px;">
           <button
             data-q-refuse
+            :disabled="busy"
             style="height:32px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
             @click="emit('refuse', op.id)"
           >Recusar</button>
           <button
             data-q-accept
+            :disabled="busy || !op.fits"
             style="height:32px;padding:0 12px;border:0;border-radius:10px;background:var(--pill);color:var(--pill-ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
             @click="emit('accept', op.id)"
           >Aceitar</button>

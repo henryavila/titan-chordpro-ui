@@ -150,7 +150,8 @@ export type ChordproViewerProps = {
    * resolve → enqueue + toast “Sugestão enviada” and emit `suggestion-created`;
    * reject or a void return → keep Minha versão, toast retry, nothing queued.
    * The POST lives here (`return` the Promise). `suggestion-created` is notify-after-ack.
-   * Omit for local-only (demo / no backend).
+   * Omit for local-only (demo / no backend). Score suggestions include original
+   * file bytes as base64 in `scoreAttachments`; persist and return that field.
    */
   persistSuggestion?: (suggestion: Suggestion) => Promise<void>
   /** Identity of the chart, so a personal version follows the right song. */
@@ -178,12 +179,12 @@ export type ChordproViewerProps = {
    * enter the ChordPro source — `resolveImage` is how the chart shows them.
    */
   uploadImage?: (file: File) => Promise<{ ref: string }>
-  /** Stores an original Guitar Pro/MusicXML file; source retains only its reference. */
+  /** Stores an original Guitar Pro/MusicXML file; also promotes accepted suggestion attachments. */
   uploadScore?: (file: File) => Promise<{ ref: string }>
   /** Resolves the external solo reference to a fetchable URL (CORS applies). */
   resolveScore?: (src: string) => string
   /** Original attachment bytes for an offline ZIP, including private/authenticated storage. */
-  loadBundleAsset?: (reference: string, kind: 'score' | 'image' | 'audio') => Promise<{ bytes: Uint8Array; contentType?: string }>
+  loadBundleAsset?: (reference: string, kind: 'score' | 'image' | 'audio') => Promise<{ bytes: Uint8Array; contentType?: string; filename?: string }>
   /**
    * Colour of the chords, and of everything derived from them.
    * Named `verde` / `teal`, or any host hex / `rgb()` — light and dark are

@@ -12,6 +12,11 @@ import {
   STORE_KEYS,
   formatTitanStrum,
   strumReviewFromOp,
+  scoreReviewsFromOp,
+  proposedScoreSources,
+  readScoreReference,
+  isScoreReference,
+  writeScoreReference,
   tuneText,
   readStrumPatterns,
   readStoredJson as readStored,
@@ -24,6 +29,8 @@ import type {
   ReadingCtx,
   ResolvedOp,
   StrumReview,
+  ScoreAttachment,
+  ScoreReference,
   Suggestion,
   SuggestionStatus,
   TuneOp,
@@ -58,6 +65,8 @@ export type OverlayOpts = {
    * reject or a void return → keep the overlay, toast retry, nothing queued.
    */
   persistSuggestion?: Ref<((s: Suggestion) => Promise<void>) | undefined>
+  loadScoreAsset?: (src: string) => Promise<{ bytes: Uint8Array; contentType?: string; filename?: string }>
+  uploadScore?: Ref<((file: File) => Promise<{ ref: string }>) | undefined>
   onSuggestionAccepted?: (p: {
     id: string
     songId: string
@@ -93,7 +102,29 @@ export type UpdCard = {
 }
 
 export type QueueRow = { key: string; label: string; hint: string; actor?: string }
-export type QueueOpCard = OpCard & { fits: boolean; warn: string; strum: StrumReview | null }
+export type QueueOpCard = OpCard & {
+  fits: boolean
+  warn: string
+  strum: StrumReview | null
+  scores: Array<{ previous: ScoreReference | null; proposed: ScoreReference | null; attachment?: ScoreAttachment }>
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let encoded = ''
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    encoded += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(encoded)
+}
+
+function fromBase64(text: string): Uint8Array {
+  const binary = atob(text)
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0))
+}
+
+function scoreFilename(src: string): string {
+  const name = src.split(/[/?#]/).filter(Boolean).at(-1) || 'solo.gp'
+  try { return decodeURIComponent(name) } catch { return name }
+}
 
 type UpdatePlan = NonNullable<ReturnType<typeof checkUpdate>>
 
@@ -120,6 +151,7 @@ export function useOverlay(opts: OverlayOpts) {
   const confirmRevert = ref(false)
   const confirmSuggest = ref(false)
   const sending = ref(false)
+  const reviewBusy = ref(false)
   const nameNeeded = ref(false)
   const actorName = ref(
     String(opts.actorName?.value ?? '').trim() ||
@@ -337,6 +369,11 @@ export function useOverlay(opts: OverlayOpts) {
 
   /** Optimistic in-memory mirror when the host injects `suggestionQueue`. */
   const injectedMirror = ref<Suggestion[] | null>(null)
+  watch(() => opts.suggestionQueue?.value, (queue) => {
+    if (queue === undefined) return
+    injectedMirror.value = null
+    sugTick.value += 1
+  })
 
   function normalizeSug(s: Suggestion): Suggestion {
     return {
@@ -440,6 +477,22 @@ export function useOverlay(opts: OverlayOpts) {
       actorKey: opts.actorKey?.value,
       actorName: name,
     }
+    sending.value = true
+    try {
+      const sources = proposedScoreSources(ov.ops)
+      if (sources.length) {
+        if (!opts.loadScoreAsset) throw new Error('Arquivo do solo indisponível')
+        created.scoreAttachments = await Promise.all(sources.map(async (src) => {
+          const asset = await opts.loadScoreAsset!(src)
+          if (!asset.bytes.length) throw new Error('Arquivo do solo vazio')
+          return { src, filename: asset.filename || scoreFilename(src), contentType: asset.contentType, base64: toBase64(asset.bytes) }
+        }))
+      }
+    } catch {
+      sending.value = false
+      opts.toast('Não foi possível anexar o arquivo do solo. Tente de novo.')
+      return
+    }
     const persist = opts.persistSuggestion?.value
     if (!persist) {
       writeSug([...allSug(), created])
@@ -450,9 +503,9 @@ export function useOverlay(opts: OverlayOpts) {
       }
       myPanel.value = false
       opts.toast('Sugestão enviada')
+      sending.value = false
       return
     }
-    sending.value = true
     try {
       const result: unknown = persist(created)
       if (
@@ -547,19 +600,21 @@ export function useOverlay(opts: OverlayOpts) {
     const off = official.value
     return s.ops.map((op) => {
       const fits = !applyOps(off, [op]).failed.length
+      const scores = scoreReviewsFromOp(op)
       return {
         id: op.id,
         label: opLabel(op),
         note: opCtxNote(op),
-        from: isTuneOp(op) || op.type === 'insert' ? '—' : op.before.join(' / ').slice(0, 90),
+        from: isTuneOp(op) || op.type === 'insert' ? '—' : op.before.filter((line) => !isScoreReference(line)).join(' / ').slice(0, 90) || '—',
         to: isTuneOp(op)
           ? tuneText(op)
           : op.type === 'delete'
             ? '—'
-            : op.after.join(' / ').slice(0, 90),
+            : op.after.filter((line) => !isScoreReference(line)).join(' / ').slice(0, 90) || '—',
         fits,
         warn: fits ? '' : 'Não encaixa mais na cifra atual',
         strum: strumReviewFromOp(op),
+        scores: scores.map((score) => ({ ...score, attachment: s.scoreAttachments?.find((a) => a.src === score.proposed?.src) })),
       }
     })
   })
@@ -632,22 +687,64 @@ export function useOverlay(opts: OverlayOpts) {
     }
   }
 
+  async function promoteScoreFiles(s: Suggestion, ops: OverlayOp[]): Promise<OverlayOp[]> {
+    const attachments = s.scoreAttachments ?? []
+    if (!attachments.length) return ops
+    const needed = new Set(ops.flatMap((op) => proposedScoreSources([op])))
+    const remap = new Map<string, string>()
+    for (const asset of attachments) {
+      if (!needed.has(asset.src)) continue
+      const upload = opts.uploadScore?.value
+      if (!upload) throw new Error('O responsável precisa poder guardar o arquivo do solo.')
+      const file = new File([new Uint8Array(fromBase64(asset.base64)).buffer], asset.filename, { type: asset.contentType || 'application/octet-stream' })
+      const result = await upload(file)
+      if (!result.ref?.trim()) throw new Error('Não foi possível guardar o arquivo do solo.')
+      remap.set(asset.src, result.ref.trim())
+    }
+    if (!remap.size) return ops
+    return ops.map((op) => {
+      if (isTuneOp(op)) return op
+      return { ...op, after: op.after.map((line) => {
+        try {
+          const score = readScoreReference(line)
+          const src = score && remap.get(score.src)
+          return score && src ? writeScoreReference({ ...score, src }) : line
+        } catch { return line }
+      }) }
+    })
+  }
+
   /**
    * Accepting writes the official text and bumps the version: anyone holding an
    * overlay meets the update dialog on their next read. Ops are archived, not deleted.
    */
-  function acceptOp(opId: string) {
+  async function acceptOp(opId: string) {
+    if (reviewBusy.value) return
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
     const op = s?.ops.find((o) => o.id === opId)
     if (!s || !op) return
-    const r = applyOps(official.value, [op])
-    if (r.failed.length) {
+    if (applyOps(official.value, [op]).failed.length) {
       opts.toast('Este ajuste não encaixa mais na cifra atual')
       return
     }
-    const next = archiveOp(s, opId, 'accepted')
+    reviewBusy.value = true
+    let acceptedOp: OverlayOp
+    try {
+      acceptedOp = (await promoteScoreFiles(s, [op]))[0]!
+    } catch (e) {
+      opts.toast(e instanceof Error ? e.message : 'Não foi possível guardar o solo.')
+      reviewBusy.value = false
+      return
+    }
+    const r = applyOps(official.value, [acceptedOp])
+    if (r.failed.length) {
+      opts.toast('Este ajuste não encaixa mais na cifra atual')
+      reviewBusy.value = false
+      return
+    }
+    const next = archiveOp({ ...s, ops: s.ops.map((o) => o.id === opId ? acceptedOp : o) }, opId, 'accepted')
     const patched = patchSug(sugId, next)
     opts.toast('Aceito — já vale para todos')
     if (!isTuneOp(op)) setOfficial(r.text, true)
@@ -662,6 +759,7 @@ export function useOverlay(opts: OverlayOpts) {
     } catch {
       /* host failure */
     }
+    reviewBusy.value = false
   }
 
   function refuseOp(opId: string) {
@@ -684,7 +782,8 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   /** Accept every op that still fits — one apply + one save-content bump. */
-  function acceptBatch() {
+  async function acceptBatch() {
+    if (reviewBusy.value) return
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
@@ -694,9 +793,20 @@ export function useOverlay(opts: OverlayOpts) {
       opts.toast('Nenhum ajuste encaixa na cifra atual')
       return
     }
-    const r = applyOps(official.value, applies)
-    const okIds = new Set(applies.filter((op) => !r.failed.some((f) => f.id === op.id)).map((o) => o.id))
-    let next = s
+    const preflight = applyOps(official.value, applies)
+    const ready = applies.filter((op) => !preflight.failed.some((failed) => failed.id === op.id))
+    reviewBusy.value = true
+    let promoted: OverlayOp[]
+    try {
+      promoted = await promoteScoreFiles(s, ready)
+    } catch (e) {
+      opts.toast(e instanceof Error ? e.message : 'Não foi possível guardar o solo.')
+      reviewBusy.value = false
+      return
+    }
+    const r = applyOps(official.value, promoted)
+    const okIds = new Set(promoted.filter((op) => !r.failed.some((f) => f.id === op.id)).map((o) => o.id))
+    let next = { ...s, ops: s.ops.map((op) => promoted.find((p) => p.id === op.id) ?? op) }
     for (const op of s.ops) {
       if (okIds.has(op.id)) next = archiveOp(next, op.id, 'accepted')
     }
@@ -714,6 +824,7 @@ export function useOverlay(opts: OverlayOpts) {
     } catch {
       /* host failure */
     }
+    reviewBusy.value = false
   }
 
   function refuseBatch() {
@@ -824,6 +935,7 @@ export function useOverlay(opts: OverlayOpts) {
     qOps,
     qBatchPreview,
     qTitle,
+    reviewBusy,
     acceptOp,
     refuseOp,
     acceptBatch,

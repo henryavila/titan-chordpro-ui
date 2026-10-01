@@ -56,3 +56,20 @@ export async function loadScoreImages(): Promise<Array<{ ref: string; blob: Blob
   db.close()
   return rows
 }
+
+/** Direct lookup used by suggestion attachments and the offline bundle. */
+export async function loadScoreImage(ref: string): Promise<{ bytes: Uint8Array; contentType?: string } | null> {
+  if (typeof indexedDB === 'undefined') return null
+  const db = await openDb()
+  try {
+    const stored = await new Promise<Blob | StoredMedia | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly')
+      const request = tx.objectStore(STORE).get(ref)
+      request.onsuccess = () => resolve(request.result as Blob | StoredMedia | undefined)
+      request.onerror = () => reject(request.error)
+    })
+    if (!stored) return null
+    if (stored instanceof Blob) return { bytes: new Uint8Array(await stored.arrayBuffer()), contentType: stored.type || undefined }
+    return { bytes: new Uint8Array(stored.bytes), contentType: stored.type || undefined }
+  } finally { db.close() }
+}
