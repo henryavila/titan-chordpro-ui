@@ -1796,7 +1796,9 @@ function onSurfaceTap(e: MouseEvent) {
   if (songSwipe.eatClick()) return
   if (isEdit.value) return
   const t = e.target as HTMLElement | null
-  if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure")) return
+  // The solo owns touches on its header and notation; only the chart around
+  // it uses the one-tap chrome gesture.
+  if (t?.closest?.("button,input,textarea,select,a,[role='button'],figure,.cpv-notation-card")) return
   try {
     if (String(window.getSelection() ?? '').length) return
   } catch {

@@ -331,11 +331,11 @@ watch(
           }"
         >
           <div v-if="!edit && canFold(block)" class="cpv-notation-fold">
-            <span class="cpv-notation-title">{{ notationTitle(block) }}</span>
-            <button type="button" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
+            <button type="button" class="cpv-notation-fold-toggle" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
               :aria-label="`${isFolded(i) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
               :title="isFolded(i) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
               @click.stop="emit('toggleNotation', i)">
+              <span class="cpv-notation-title">{{ notationTitle(block) }}</span>
               <CpvIcon name="chevronDown" :size="18" />
             </button>
           </div>

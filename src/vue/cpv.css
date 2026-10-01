@@ -3579,12 +3579,13 @@ div.cpv-head-id {
 /* A notation card retains its title when folded; its control never floats. */
 .cpv-notation-row { margin-inline: calc(-1 * var(--cpv-notation-outset, 0px)); margin-bottom: 16px; }
 .cpv-notation-card { border: 1px solid var(--line-soft); background: var(--veil); overflow: visible; }
-.cpv-notation-fold { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px 8px 16px; }
+.cpv-notation-fold { padding: 0; }
 .cpv-notation-title { min-width: 0; overflow-wrap: anywhere; color: var(--chord); font-size: 14px; font-weight: 650; }
-.cpv-notation-fold button { position: relative; z-index: 12; flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
-.cpv-notation-fold button:hover { background: var(--hover); color: var(--text); }
-.cpv-notation-fold button:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }
-.cpv-notation-fold button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.cpv-notation-fold-toggle { position: relative; z-index: 12; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 8px 19px 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; touch-action: manipulation; }
+.cpv-notation-fold-toggle:hover { background: var(--hover); color: var(--text); }
+.cpv-notation-fold-toggle:focus-visible { outline: 2px solid var(--chord); outline-offset: -2px; }
+.cpv-notation-fold-toggle svg { flex: none; }
+.cpv-notation-fold-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 .cpv-notation-card > .cpv-figure, .cpv-notation-card > .cpv-tab { margin: 0 !important; border: 0; background: transparent; box-shadow: none; }
 .cpv-import-score-name { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font: inherit; font-size: 13px; }
 .cpv-import-score-name:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }

@@ -19,13 +19,28 @@ test.describe('touch fold control', () => {
       })
       await expect(button).toHaveAttribute('aria-expanded', 'true')
       await centerButton()
-      await button.tap()
+      await button.locator('.cpv-notation-title').tap()
       await expect(button).toHaveAttribute('aria-expanded', 'false')
+      await expect(page.locator('.cpv-chrome').first()).not.toHaveClass(/is-hidden/)
       await centerButton()
       await button.tap()
       await expect(button).toHaveAttribute('aria-expanded', 'true')
     })
   }
+
+  test('a tap on the TAB itself leaves the reading controls alone', async ({ page }) => {
+    await page.goto('/notation.html?pdf=1&file=tab')
+    const hint = page.getByRole('button', { name: 'Entendi' })
+    if (await hint.isVisible()) await hint.tap()
+    const tab = page.locator('.cpv-notation-card .cpv-tab').first()
+    await tab.evaluate(el => {
+      const scroll = el.closest('.cpv-scroll')!
+      scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 240
+    })
+    await tab.tap()
+    await expect(page.locator('.cpv-chrome').first()).not.toHaveClass(/is-hidden/)
+    await expect(page.locator('[data-toggle-notation]').first()).toHaveAttribute('aria-expanded', 'true')
+  })
 })
 
 test('the reader keeps each solo view and fold across visits, independently by song', async ({ page }) => {
