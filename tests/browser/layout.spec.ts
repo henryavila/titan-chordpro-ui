@@ -934,7 +934,8 @@ test('immersive mid-song holds the line the reader was on, and the top stays the
   expect(await line()).toBe(was)
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(600)
-  expect((await immersiveSpot(page)).scrollTop).toBe(800)
+  expect(await line()).toBe(was)
+  expect(Math.abs((await immersiveSpot(page)).scrollTop - 800)).toBeLessThan(24)
 })
 
 /**

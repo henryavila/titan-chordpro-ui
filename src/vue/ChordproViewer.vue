@@ -1414,14 +1414,32 @@ function reseatScroll() {
 }
 
 /** Where the reader was, taken before anything is allowed to move. */
-type PageSpot = { padTop: number; scroll: number; max: number }
+type PageSpot = {
+  padTop: number
+  scroll: number
+  max: number
+  anchor: HTMLElement | null
+  anchorFromEye: number
+}
 
 function pageSpot(): PageSpot {
   const el = scroller.value
+  const eye = el ? el.getBoundingClientRect().top + el.clientHeight * 0.4 : 0
+  let anchor: HTMLElement | null = null
+  let distance = Infinity
+  for (const node of el?.querySelectorAll<HTMLElement>('.cpv-lyric') ?? []) {
+    const d = Math.abs(node.getBoundingClientRect().top - eye)
+    if (d < distance) {
+      anchor = node
+      distance = d
+    }
+  }
   return {
     padTop: pageTopPad(),
     scroll: el?.scrollTop ?? 0,
     max: el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0,
+    anchor,
+    anchorFromEye: anchor ? anchor.getBoundingClientRect().top - eye : 0,
   }
 }
 
@@ -1447,7 +1465,11 @@ function reflowPage(before: PageSpot) {
     // into the first verse; the same holds for the last line.
     if (before.scroll <= 1) el.scrollTop = 0
     else if (before.scroll >= before.max - 1) el.scrollTop = max
-    else {
+    else if (before.anchor?.isConnected) {
+      const eye = el.getBoundingClientRect().top + el.clientHeight * 0.4
+      const target = eye + before.anchorFromEye
+      el.scrollTop = Math.max(0, Math.min(max, el.scrollTop + before.anchor.getBoundingClientRect().top - target))
+    } else {
       const shift = (pageTopPad() || before.padTop) - before.padTop
       el.scrollTop = Math.max(0, Math.min(max, before.scroll + shift))
     }

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING CHANGE — solos e partituras no arquivo:** referências a Guitar Pro/MusicXML passam de `{score: …}` para `{x_titan_score: …}`. Para a notação escrita na cifra, substitua `{sos}` / `{start_of_score}` por `{x_titan_start_of_score}` e `{eos}` / `{end_of_score}` por `{x_titan_end_of_score}`, mantendo os atributos e o conteúdo. O consumer precisa atualizar as cifras salvas e qualquer código que monte ou leia esses trechos; `ParsedScore.from` passa de `sos` para `x_titan_start_of_score`. Os nomes anteriores não são reconhecidos.
 
 ### Fixed
+- **Tela cheia durante a leitura:** ao entrar e sair no meio da cifra, a linha que você estava lendo permanece sob os olhos mesmo quando a área útil muda de altura.
 - **Posição do Guitar Pro ao soltar:** ao arrastar um trecho para depois da introdução, o editor usa o ponto em que você solta o bloco, inclusive se a página rolou durante o gesto. A posição anterior do ponteiro não mantém mais o trecho no começo da cifra.
 - **Ajustar compassos de um solo:** trechos válidos de Guitar Pro/MusicXML que começam depois de uma ligadura voltam a abrir em TAB, partitura e PDF, sem o erro “Cannot read properties of null”. O arquivo original e as ligaduras dentro do trecho são preservados.
 - **Mover solos na cifra:** ao arrastar um bloco enquanto rola a página, o destino acompanha a posição atual dos blocos. Soltar depois de um refrão mantém o solo ali ao salvar, inclusive após duplicar e ajustar o trecho.
