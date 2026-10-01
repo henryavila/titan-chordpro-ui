@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  layoutChart, memoryStore, notationBlockIds, notationKey, parse,
+  layoutChart, memoryStore, notationBlockIds, notationKey, overlayKey, parse,
   readNotationPreferences, readUserPreferences, STORE_KEYS,
   updateUserPreferences, writeNotationPreferences,
 } from '../../src/core'
@@ -8,7 +8,11 @@ import { ELE_VIVE_IMG, loadFixture } from '../helpers/load-fixture'
 
 describe('reader preferences', () => {
   it('keeps global choices in one validated record and does not read the old keys', () => {
-    const store = memoryStore({ 'cpv:prefs': '{"theme":"dark"}', 'cpv:tab-rhythm': 'none' })
+    const store = memoryStore({
+      'cpv:user-preferences': '{"theme":"dark"}',
+      'cpv:prefs': '{"theme":"dark"}',
+      'cpv:tab-rhythm': 'none',
+    })
     expect(readUserPreferences(store)).toEqual({})
     updateUserPreferences(store, { theme: 'light', tabRhythm: 'base' })
     expect(readUserPreferences(store)).toEqual({ theme: 'light', tabRhythm: 'base' })
@@ -27,14 +31,19 @@ describe('reader preferences', () => {
   })
 
   it('isolates notation by song and host store without touching source or suggestions', () => {
-    const first = memoryStore({ 'cpv:my:song': 'unchanged' })
+    const first = memoryStore({
+      'titan-chordpro:my:song': 'unchanged',
+      'cpv:notation:song%2F1': '{"solo":{"view":"tab"}}',
+    })
     const second = memoryStore()
     const choices = { solo: { view: 'score' as const, collapsed: true } }
+    expect(readNotationPreferences(first, 'song/1')).toEqual({})
     writeNotationPreferences(first, 'song/1', choices)
     expect(readNotationPreferences(first, 'song/1')).toEqual(choices)
     expect(readNotationPreferences(first, 'song/2')).toEqual({})
     expect(readNotationPreferences(second, 'song/1')).toEqual({})
-    expect(first.get('cpv:my:song')).toBe('unchanged')
-    expect(notationKey('song/1')).toBe('cpv:notation:song%2F1')
+    expect(first.get('titan-chordpro:my:song')).toBe('unchanged')
+    expect(overlayKey('song')).toBe('titan-chordpro:my:song')
+    expect(notationKey('song/1')).toBe('titan-chordpro:notation:song%2F1')
   })
 })

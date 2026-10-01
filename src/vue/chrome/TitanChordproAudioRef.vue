@@ -7,7 +7,7 @@ import {
   type AudioKind,
 } from '@henryavila/titan-chordpro-ui'
 import defaultArt from '../assets/audio-ref-default.jpg'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 const props = defineProps<{
   playing: boolean
@@ -93,7 +93,7 @@ function onSeek(e: PointerEvent) {
 
 <template>
   <div
-    class="cpv-hit cpv-audio-ref"
+    class="titan-chordpro-hit titan-chordpro-audio-ref"
     :class="{ 'is-playing': playing, 'is-closed': !open, 'is-inline': inline }"
     data-audio-ref
     role="region"
@@ -105,24 +105,24 @@ function onSeek(e: PointerEvent) {
       <button
         v-if="inline"
         type="button"
-        class="cpv-audio-ref-phones"
+        class="titan-chordpro-audio-ref-phones"
         data-audio-open
         aria-label="Abrir referência"
         title="Abrir referência"
         @click="openCard"
       >
-        <CpvIcon name="headphones" :size="20" />
+        <TitanChordproIcon name="headphones" :size="20" />
       </button>
       <template v-else>
       <button
         type="button"
-        class="cpv-audio-ref-launch"
+        class="titan-chordpro-audio-ref-launch"
         data-audio-open
         aria-label="Abrir referência"
         title="Abrir referência"
         @click="open = true"
       >
-        <span class="cpv-audio-ref-art is-chip" data-audio-art>
+        <span class="titan-chordpro-audio-ref-art is-chip" data-audio-art>
           <img
             :src="artSrc"
             alt=""
@@ -133,26 +133,26 @@ function onSeek(e: PointerEvent) {
             @error="onArtError"
           />
         </span>
-        <span class="cpv-audio-ref-launch-copy">
-          <span class="cpv-audio-ref-kicker">{{ kindLabel }}</span>
-          <span class="cpv-audio-ref-launch-title">{{ title }}</span>
+        <span class="titan-chordpro-audio-ref-launch-copy">
+          <span class="titan-chordpro-audio-ref-kicker">{{ kindLabel }}</span>
+          <span class="titan-chordpro-audio-ref-launch-title">{{ title }}</span>
         </span>
       </button>
       <button
         type="button"
-        class="cpv-audio-ref-play"
+        class="titan-chordpro-audio-ref-play"
         data-audio-play
         :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
         :title="playing ? 'Pausar referência' : 'Tocar referência'"
         @click="emit('toggle')"
       >
-        <CpvIcon :name="playing ? 'pause' : 'play'" :size="15" />
+        <TitanChordproIcon :name="playing ? 'pause' : 'play'" :size="15" />
       </button>
       </template>
     </template>
 
     <template v-else>
-      <div class="cpv-audio-ref-art" data-audio-art>
+      <div class="titan-chordpro-audio-ref-art" data-audio-art>
         <img
           :src="artSrc"
           alt=""
@@ -164,11 +164,11 @@ function onSeek(e: PointerEvent) {
         />
       </div>
 
-      <div class="cpv-audio-ref-id">
-        <p data-audio-title class="cpv-audio-ref-title">{{ title }}</p>
-        <p data-audio-artist class="cpv-audio-ref-artist">{{ artist }}</p>
+      <div class="titan-chordpro-audio-ref-id">
+        <p data-audio-title class="titan-chordpro-audio-ref-title">{{ title }}</p>
+        <p data-audio-artist class="titan-chordpro-audio-ref-artist">{{ artist }}</p>
         <div
-          class="cpv-audio-ref-kind"
+          class="titan-chordpro-audio-ref-kind"
           :class="{ 'is-switch': canSwitch }"
           data-audio-kind
           role="group"
@@ -196,46 +196,46 @@ function onSeek(e: PointerEvent) {
 
       <button
         type="button"
-        class="cpv-audio-ref-close"
+        class="titan-chordpro-audio-ref-close"
         data-audio-close
         aria-label="Fechar referência"
         title="Fechar referência"
         @click="open = false"
       >
-        <CpvIcon name="x" :size="14" />
+        <TitanChordproIcon name="x" :size="14" />
       </button>
 
-      <p v-if="error" class="cpv-audio-ref-error">Não foi possível tocar</p>
+      <p v-if="error" class="titan-chordpro-audio-ref-error">Não foi possível tocar</p>
 
       <template v-else>
-        <div class="cpv-audio-ref-transport">
+        <div class="titan-chordpro-audio-ref-transport">
           <button
             type="button"
-            class="cpv-audio-ref-skip"
+            class="titan-chordpro-audio-ref-skip"
             data-audio-skip="-1"
             aria-label="Recuar 10 segundos"
             @click="emit('skip', -1)"
           >−10</button>
           <button
             type="button"
-            class="cpv-audio-ref-play"
+            class="titan-chordpro-audio-ref-play"
             data-audio-play
             :aria-label="playing ? 'Pausar referência' : 'Tocar referência'"
             :title="playing ? 'Pausar referência' : 'Tocar referência'"
             @click="emit('toggle')"
           >
-            <CpvIcon :name="playing ? 'pause' : 'play'" :size="18" />
+            <TitanChordproIcon :name="playing ? 'pause' : 'play'" :size="18" />
           </button>
           <button
             type="button"
-            class="cpv-audio-ref-skip"
+            class="titan-chordpro-audio-ref-skip"
             data-audio-skip="1"
             aria-label="Avançar 10 segundos"
             @click="emit('skip', 1)"
           >+10</button>
         </div>
         <div
-          class="cpv-audio-ref-seek"
+          class="titan-chordpro-audio-ref-seek"
           data-audio-seek
           role="slider"
           :aria-valuemin="0"
@@ -244,9 +244,9 @@ function onSeek(e: PointerEvent) {
           :aria-label="`Posição da referência, ${clock}`"
           @pointerdown="onSeek"
         >
-          <span class="cpv-audio-ref-seek-fill" :style="{ width: `${played * 100}%` }" />
+          <span class="titan-chordpro-audio-ref-seek-fill" :style="{ width: `${played * 100}%` }" />
         </div>
-        <div class="cpv-audio-ref-times">
+        <div class="titan-chordpro-audio-ref-times">
           <span data-audio-clock>{{ elapsed }}</span>
           <span data-audio-total>{{ total }}</span>
         </div>

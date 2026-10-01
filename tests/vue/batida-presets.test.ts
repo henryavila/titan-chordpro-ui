@@ -9,7 +9,7 @@ import {
   setSlotCascading,
   type StrumPreset,
 } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import BatidaSheet from '../../src/vue/sheets/BatidaSheet.vue'
 
 const observers: ((entries: unknown[]) => void)[] = []
@@ -50,7 +50,7 @@ const HOST_PRESETS: StrumPreset[] = [
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -75,7 +75,7 @@ async function viewerAt(
   width = 900,
   extra: Record<string, unknown> = {},
 ) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source,
       storage: memoryStore(),

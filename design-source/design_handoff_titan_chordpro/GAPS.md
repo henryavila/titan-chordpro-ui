@@ -1,6 +1,6 @@
 # O que ainda falta implementar
 
-Estado do protótipo `Chordpro Viewer v2.dc.html` em relação ao brief.
+Estado do protótipo `TitanChordpro v2.dc.html` em relação ao brief.
 Itens resolvidos nesta rodada estão em `## Resolvido` no fim, para o revisor conferir.
 
 ## 1. Decisões que dependem do time (não são código)
@@ -15,7 +15,7 @@ tom quando o arquivo não declara (hoje o viewer só lê o que está na cifra).
 configuração do host, não do viewer.
 
 **Escopo da persistência.** Tema, bias e modo ajuste são gravados em `localStorage`
-(`cpv:prefs`). No app real decidir se isso é por dispositivo ou por conta do usuário.
+(`titan-chordpro:prefs`). No app real decidir se isso é por dispositivo ou por conta do usuário.
 
 **Capo no cabeçalho do PDF.** Hoje o rótulo "Tom X · Capo n" aparece em todas as páginas.
 Confirmar se é o desejado ou só na primeira.

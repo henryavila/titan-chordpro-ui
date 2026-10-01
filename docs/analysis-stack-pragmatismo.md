@@ -26,7 +26,7 @@ Isso entrega valor no sda-v2 já, preserva reuso (core + contrato), e evita arqu
 | **A. Cortar/melhorar cifra no sda-v2** | Agora | **Vue** |
 | **B. Pacote comunidade multi-framework** | Depois (downloads, issues, 2º host) | Core estável + ports *sob demanda* |
 
-Misturar A e B no dia 1 costuma gerar: abstração prematura, DX pior, e atraso no consumer que realmente existe (Nuxt 4 + `ChordproViewer.vue` ~536 LOC).
+Misturar A e B no dia 1 costuma gerar: abstração prematura, DX pior, e atraso no consumer que realmente existe (Nuxt 4 + `TitanChordpro.vue` ~536 LOC).
 
 Reuso “por mim” **não exige** React: um pacote Vue + CLI + core TS já serve Titan (Python gera `.cho`; preview pode ser página Vue mínima ou HTML gerado pelo core).
 
@@ -101,7 +101,7 @@ Não é um plugin system. É um **contrato**:
 
 | Camada | Estável | Troca-se |
 |---|---|---|
-| `ChordProView` (JSON) | sim | raramente |
+| `TitanChordproDocument` (JSON) | sim | raramente |
 | HTML da cifra + classes/`data-*` + CSS vars | sim | temas |
 | Controles (toolbar da cifra) | implementação | Vue agora; React depois se precisar |
 | Host (multi-cifra, shell) | fora | sda-v2 |
@@ -169,7 +169,7 @@ Sem core limpo, o port vira fork. **Investimento certo agora = core + contrato H
 
 - Pasta/`package` **core** sem Vue.
 - UI Vue só monta ViewModel + emite eventos (`transpose`, `export`, `theme-change`).
-- CSS da cifra com prefixo/`cpv` + CSS variables (como o SPEC legado já esboçava).
+- CSS da cifra com prefixo/`titan-chordpro` + CSS variables (como o SPEC legado já esboçava).
 - Demo standalone no repo (prova que não depende do shell SDA).
 
 ---

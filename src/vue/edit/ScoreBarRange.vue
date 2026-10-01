@@ -23,17 +23,17 @@ function commit(which: 'start' | 'end', event: Event) {
 </script>
 
 <template>
-  <div class="cpv-bar-range">
-    <div class="cpv-bar-range-heading"><span>Compassos</span><span>{{ end - start + 1 }} de {{ total }}</span></div>
-    <div class="cpv-bar-range-values">
+  <div class="titan-chordpro-bar-range">
+    <div class="titan-chordpro-bar-range-heading"><span>Compassos</span><span>{{ end - start + 1 }} de {{ total }}</span></div>
+    <div class="titan-chordpro-bar-range-values">
       <label><span>Início</span><input :value="start" type="number" inputmode="numeric" min="1" :max="end"
         aria-label="Primeiro compasso" @change="commit('start', $event)" @keydown.enter.prevent="commit('start', $event)"></label>
-      <span class="cpv-bar-range-to" aria-hidden="true">→</span>
+      <span class="titan-chordpro-bar-range-to" aria-hidden="true">→</span>
       <label><span>Fim</span><input :value="end" type="number" inputmode="numeric" :min="start" :max="total"
         aria-label="Último compasso" @change="commit('end', $event)" @keydown.enter.prevent="commit('end', $event)"></label>
     </div>
-    <div class="cpv-bar-range-sliders">
-      <div class="cpv-bar-range-rail"><div :style="selection" /></div>
+    <div class="titan-chordpro-bar-range-sliders">
+      <div class="titan-chordpro-bar-range-rail"><div :style="selection" /></div>
       <input type="range" min="1" :max="total" step="1" :value="start" :disabled="total === 1"
         aria-label="Início do intervalo" :aria-valuemax="end" :aria-valuetext="`Compasso ${start}`"
         @input="commit('start', $event)">
@@ -41,6 +41,6 @@ function commit(which: 'start' | 'end', event: Event) {
         aria-label="Fim do intervalo" :aria-valuemin="start" :aria-valuetext="`Compasso ${end}`"
         @input="commit('end', $event)">
     </div>
-    <div class="cpv-bar-range-scale"><span>1</span><button type="button" @click="emit('change', 1, total)">Selecionar tudo</button><span>{{ total }}</span></div>
+    <div class="titan-chordpro-bar-range-scale"><span>1</span><button type="button" @click="emit('change', 1, total)">Selecionar tudo</button><span>{{ total }}</span></div>
   </div>
 </template>

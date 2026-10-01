@@ -136,7 +136,7 @@ describe('classifyBump — the 0.1.x bugfix mistake must not recur', () => {
   it('maps 0.x breaking to minor, 1.x breaking to major', () => {
     const zero = classifyBump({
       current: '0.2.0',
-      commits: ['feat!: rename ChordproViewer prop chart → source'],
+      commits: ['feat!: rename TitanChordpro prop chart → source'],
       unreleased: { added: [], changed: [], deprecated: [], removed: ['prop chart'], fixed: [], security: [] },
     })
     expect(zero.kind).toBe('minor')
@@ -145,7 +145,7 @@ describe('classifyBump — the 0.1.x bugfix mistake must not recur', () => {
 
     const one = classifyBump({
       current: '1.2.0',
-      commits: ['feat!: rename ChordproViewer prop chart → source'],
+      commits: ['feat!: rename TitanChordpro prop chart → source'],
       unreleased: { added: [], changed: [], deprecated: [], removed: ['prop chart'], fixed: [], security: [] },
     })
     expect(one.kind).toBe('major')

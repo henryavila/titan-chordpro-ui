@@ -100,7 +100,7 @@ describe('the live clock drives the 50/50 hit', () => {
 
 describe('the viewer follows beatClock', () => {
   it('the title hit follows beatClock, not a nextTick retrigger', () => {
-    const src = readFileSync(join(process.cwd(), 'src/vue/ChordproViewer.vue'), 'utf8')
+    const src = readFileSync(join(process.cwd(), 'src/vue/TitanChordpro.vue'), 'utf8')
     expect(src).toMatch(/metronomePulseHit\(/)
     expect(src).not.toMatch(/metHit\.value = ''/)
   })

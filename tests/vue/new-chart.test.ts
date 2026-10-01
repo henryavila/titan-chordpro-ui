@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import NewChartDialog from '../../src/vue/edit/NewChartDialog.vue'
 import { memoryStore } from '../../src/core'
 import { loadFixture } from '../helpers/load-fixture'
@@ -23,7 +23,7 @@ function dialog(props: Record<string, unknown> = {}) {
   return w
 }
 function viewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: '', storage: memoryStore(), autoHide: false, ...props },
     attachTo: document.body,
   })

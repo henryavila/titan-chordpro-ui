@@ -1,8 +1,8 @@
 import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 
 /** Browser-only stand-in for the consumer's suggestions API. Shared by demo tabs. */
-export const DEMO_SUGGESTIONS_KEY = 'cpv:sug'
-export const demoOfficialKey = (songId: string) => `cpv:demo:official:${songId}`
+export const DEMO_SUGGESTIONS_KEY = 'titan-chordpro:sug'
+export const demoOfficialKey = (songId: string) => `titan-chordpro:demo:official:${songId}`
 
 export function readDemoSuggestions(): Suggestion[] {
   try {

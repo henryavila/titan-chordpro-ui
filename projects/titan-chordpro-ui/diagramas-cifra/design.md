@@ -2,6 +2,9 @@
 
 > **Aprovado** (usuário, 2026-09-18) · critic Approved · síntese do debate (Priya / Aria / Uma / Tariq-contrário) + capo no draw.  
 > Paths: `projects/titan-chordpro-ui/diagramas-cifra/` · digest: `research-digest.md`.
+> **Registro da época:** os nomes `ChordproViewer`, `cpv-*` e `cpv:prefs` abaixo
+> descrevem a implementação observada em 2026-09. Para integrar a versão atual,
+> use [`docs/NAMING.md`](../../../docs/NAMING.md) e [`docs/CONSUMER.md`](../../../docs/CONSUMER.md).
 
 ## Interview
 

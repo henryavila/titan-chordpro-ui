@@ -1,7 +1,7 @@
 # Research — formato OnSong (requisito de **engine**, não UI)
 
 > Decisão de produto: o viewer deve aceitar cifras **ChordPro** e **OnSong** (e misturas comuns).  
-> A **tela** não escolhe formato — o **core/parse** normaliza para o mesmo `ChordProView`.
+> A **tela** não escolhe formato — o **core/parse** normaliza para o mesmo `TitanChordproDocument`.
 
 ---
 
@@ -52,7 +52,7 @@ Heurística em 147 arquivos da pasta Tons (2026-08-28):
 ```
 source text (ChordPro | OnSong | mixed)
         → detect / normalize
-        → parse() → ChordProView   // mesmo ViewModel
+        → parse() → TitanChordproDocument   // mesmo ViewModel
         → renderHtml / controller / Vue UI
 ```
 

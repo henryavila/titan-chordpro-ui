@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ChordproViewer from '../../src/vue/ChordproViewer.vue'
+import TitanChordpro from '../../src/vue/TitanChordpro.vue'
 import { writeScoreReference } from '../../src/core'
 import source from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
 import tabSource from '../../fixtures/sda/013-ele-vive-em-mim.cho?raw'
@@ -16,4 +16,4 @@ const base = file === 'tab' ? tabSource : file === 'piano-long' ? text + '\n' + 
 const chart = params.has('bundle') ? base + `\n{image: ${imageUrl}}\n{x_titan_audio_sung: ${audioUrl}}\n{x_titan_audio_playback: ${playbackUrl}}\n{x_titan_youtube: abc123}` : base
 const songs = params.has('setlist') ? [{ id: 'demo', title: 'Solo', source: chart }, { id: 'next', title: 'Outra música', source }] : undefined
 </script>
-<template><div style="height:100dvh"><ChordproViewer :source="chart" :songs="songs" :song-id="file ?? 'demo'" :auto-hide="false" theme="light" /></div></template>
+<template><div style="height:100dvh"><TitanChordpro :source="chart" :songs="songs" :song-id="file ?? 'demo'" :auto-hide="false" theme="light" /></div></template>

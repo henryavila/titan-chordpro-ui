@@ -1,6 +1,6 @@
-/* Tokens = Titan Chordpro UI v2 / Chordpro Viewer v2 :root (dark default). */
-.cpv-root,
-.cpv-root[data-theme='dark'] {
+/* Tokens da superfície TitanChordpro (dark default). */
+.titan-chordpro-root,
+.titan-chordpro-root[data-theme='dark'] {
   color-scheme: dark;
   --canvas: #0B0D12;
   --veil: rgba(20, 23, 31, 0.72);
@@ -40,7 +40,7 @@
   --beat-rest: #E8EAF0;
   --beat-rest-ink: #13161D;
 }
-.cpv-root[data-theme='light'] {
+.titan-chordpro-root[data-theme='light'] {
   color-scheme: light;
   --canvas: #F5F6F8;
   --veil: rgba(255, 255, 255, 0.76);
@@ -80,7 +80,7 @@
   --beat-rest-ink: #13161D;
 }
 
-.cpv-root {
+.titan-chordpro-root {
   position: relative;
   height: 100%;
   min-height: 460px;
@@ -88,33 +88,33 @@
   overflow: hidden;
   background: var(--canvas);
   color: var(--text);
-  font-family: var(--cpv-font-controls, Sora, system-ui, -apple-system, sans-serif);
+  font-family: var(--titan-chordpro-font-controls, Sora, system-ui, -apple-system, sans-serif);
   box-sizing: border-box;
   overscroll-behavior: none;
 }
-.cpv-root *,
-.cpv-root *::before,
-.cpv-root *::after {
+.titan-chordpro-root *,
+.titan-chordpro-root *::before,
+.titan-chordpro-root *::after {
   box-sizing: border-box;
 }
-.cpv-root button {
+.titan-chordpro-root button {
   appearance: none;
   -webkit-appearance: none;
   font-family: inherit;
   color: var(--text);
   background: transparent;
 }
-.cpv-root button:focus-visible {
+.titan-chordpro-root button:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.cpv-glow {
+.titan-chordpro-glow {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(120% 80% at 50% -10%, var(--glow), transparent 60%);
 }
-.cpv-scroll {
+.titan-chordpro-scroll {
   position: absolute;
   inset: 0;
   overflow-y: auto;
@@ -123,37 +123,37 @@
   -webkit-overflow-scrolling: touch;
 }
 /* Rehearsal: the browser keeps vertical pans in the centre; rails own X. */
-.cpv-root.is-setlist .cpv-scroll {
+.titan-chordpro-root.is-setlist .titan-chordpro-scroll {
   touch-action: pan-y;
 }
-.cpv-swipe-rail {
+.titan-chordpro-swipe-rail {
   position: absolute;
   top: 0;
-  bottom: var(--cpv-swipe-rail-bottom, 0px);
+  bottom: var(--titan-chordpro-swipe-rail-bottom, 0px);
   z-index: 11;
-  width: var(--cpv-swipe-rail, 64px);
+  width: var(--titan-chordpro-swipe-rail, 64px);
   touch-action: none;
   pointer-events: none;
 }
-.cpv-root.is-setlist .cpv-swipe-rail {
+.titan-chordpro-root.is-setlist .titan-chordpro-swipe-rail {
   pointer-events: auto;
 }
-.cpv-swipe-rail[data-swipe-rail='prev'] {
-  left: var(--cpv-swipe-edge, 24px);
+.titan-chordpro-swipe-rail[data-swipe-rail='prev'] {
+  left: var(--titan-chordpro-swipe-edge, 24px);
 }
-.cpv-swipe-rail[data-swipe-rail='next'] {
+.titan-chordpro-swipe-rail[data-swipe-rail='next'] {
   right: 0;
 }
-.cpv-root.is-swipe-debug .cpv-swipe-rail[data-swipe-rail='prev'] {
+.titan-chordpro-root.is-swipe-debug .titan-chordpro-swipe-rail[data-swipe-rail='prev'] {
   background: color-mix(in srgb, #2563eb 38%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #1d4ed8 55%, transparent);
 }
-.cpv-root.is-swipe-debug .cpv-swipe-rail[data-swipe-rail='next'] {
+.titan-chordpro-root.is-swipe-debug .titan-chordpro-swipe-rail[data-swipe-rail='next'] {
   background: color-mix(in srgb, #ea580c 38%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #c2410c 55%, transparent);
 }
-.cpv-root.is-swipe-debug .cpv-swipe-rail[data-swipe-rail='prev']::after,
-.cpv-root.is-swipe-debug .cpv-swipe-rail[data-swipe-rail='next']::after {
+.titan-chordpro-root.is-swipe-debug .titan-chordpro-swipe-rail[data-swipe-rail='prev']::after,
+.titan-chordpro-root.is-swipe-debug .titan-chordpro-swipe-rail[data-swipe-rail='next']::after {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -166,24 +166,24 @@
   text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
   pointer-events: none;
 }
-.cpv-root.is-swipe-debug .cpv-swipe-rail[data-swipe-rail='prev']::after {
+.titan-chordpro-root.is-swipe-debug .titan-chordpro-swipe-rail[data-swipe-rail='prev']::after {
   content: '← anterior';
 }
-.cpv-root.is-swipe-debug .cpv-swipe-rail[data-swipe-rail='next']::after {
+.titan-chordpro-root.is-swipe-debug .titan-chordpro-swipe-rail[data-swipe-rail='next']::after {
   content: 'próxima →';
 }
-.cpv-swipe-debug {
+.titan-chordpro-swipe-debug {
   position: absolute;
   inset: 0;
   z-index: 10;
   pointer-events: none;
 }
-.cpv-swipe-debug-dead {
+.titan-chordpro-swipe-debug-dead {
   position: absolute;
   top: 0;
-  bottom: var(--cpv-swipe-rail-bottom, 0px);
+  bottom: var(--titan-chordpro-swipe-rail-bottom, 0px);
   left: 0;
-  width: var(--cpv-swipe-edge, 24px);
+  width: var(--titan-chordpro-swipe-edge, 24px);
   background: color-mix(in srgb, #6b7280 42%, transparent);
   color: #fff;
   font: 700 10px/1 system-ui, sans-serif;
@@ -196,12 +196,12 @@
   justify-content: center;
   text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
 }
-.cpv-swipe-debug-center {
+.titan-chordpro-swipe-debug-center {
   position: absolute;
   top: 0;
-  bottom: var(--cpv-swipe-rail-bottom, 0px);
-  left: calc(var(--cpv-swipe-edge, 24px) + var(--cpv-swipe-rail, 64px));
-  right: var(--cpv-swipe-rail, 64px);
+  bottom: var(--titan-chordpro-swipe-rail-bottom, 0px);
+  left: calc(var(--titan-chordpro-swipe-edge, 24px) + var(--titan-chordpro-swipe-rail, 64px));
+  right: var(--titan-chordpro-swipe-rail, 64px);
   background: color-mix(in srgb, #059669 18%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #047857 35%, transparent);
   color: color-mix(in srgb, #064e3b 80%, #fff);
@@ -212,7 +212,7 @@
   align-items: center;
   justify-content: center;
 }
-.cpv-swipe-debug-legend {
+.titan-chordpro-swipe-debug-legend {
   position: absolute;
   left: 12px;
   right: 12px;
@@ -225,7 +225,7 @@
   font: 600 11px/1.35 system-ui, sans-serif;
   text-align: center;
 }
-.cpv-swipe-veil {
+.titan-chordpro-swipe-veil {
   position: absolute;
   inset: 0;
   z-index: 12;
@@ -233,28 +233,28 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: var(--cpv-swipe-stamp-top, 80px);
-  opacity: calc(0.22 + var(--cpv-swipe-p, 0) * 0.78);
+  padding-top: var(--titan-chordpro-swipe-stamp-top, 80px);
+  opacity: calc(0.22 + var(--titan-chordpro-swipe-p, 0) * 0.78);
   transition: opacity 180ms linear;
 }
-.cpv-swipe-veil[data-intent='next'] {
+.titan-chordpro-swipe-veil[data-intent='next'] {
   background: linear-gradient(
     90deg,
     color-mix(in srgb, var(--chord) 10%, transparent),
-    color-mix(in srgb, var(--chord) calc(var(--cpv-swipe-p, 0) * 58%), transparent)
+    color-mix(in srgb, var(--chord) calc(var(--titan-chordpro-swipe-p, 0) * 58%), transparent)
   );
 }
-.cpv-swipe-veil[data-intent='prev'] {
+.titan-chordpro-swipe-veil[data-intent='prev'] {
   background: linear-gradient(
     270deg,
     color-mix(in srgb, var(--chord) 10%, transparent),
-    color-mix(in srgb, var(--chord) calc(var(--cpv-swipe-p, 0) * 58%), transparent)
+    color-mix(in srgb, var(--chord) calc(var(--titan-chordpro-swipe-p, 0) * 58%), transparent)
   );
 }
-.cpv-swipe-veil[data-armed='1'] {
+.titan-chordpro-swipe-veil[data-armed='1'] {
   opacity: 1;
 }
-.cpv-swipe-stamp {
+.titan-chordpro-swipe-stamp {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -266,21 +266,21 @@
   background: var(--chord);
   color: var(--chord-ink);
   box-shadow: var(--shadow);
-  transform: scale(calc(0.92 + var(--cpv-swipe-p, 0) * 0.08));
+  transform: scale(calc(0.92 + var(--titan-chordpro-swipe-p, 0) * 0.08));
 }
-.cpv-swipe-veil[data-armed='1'] .cpv-swipe-stamp {
+.titan-chordpro-swipe-veil[data-armed='1'] .titan-chordpro-swipe-stamp {
   transform: scale(1);
 }
-.cpv-swipe-veil[data-armed='1'] .cpv-swipe-kicker {
+.titan-chordpro-swipe-veil[data-armed='1'] .titan-chordpro-swipe-kicker {
   letter-spacing: 0.1em;
 }
-.cpv-swipe-kicker {
+.titan-chordpro-swipe-kicker {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-.cpv-swipe-title {
+.titan-chordpro-swipe-title {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
@@ -289,17 +289,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cpv-stage {
+.titan-chordpro-stage {
   position: absolute;
   inset: 0;
 }
-.cpv-page {
+.titan-chordpro-page {
   width: 100%;
   margin: 0 auto;
 }
 /* While the scroll runs this is the one element that is visibly alive on a
    chart that barely moves, so it earns a pixel and the full accent. */
-.cpv-progress {
+.titan-chordpro-progress {
   position: absolute;
   top: 0;
   left: 0;
@@ -308,31 +308,31 @@
   z-index: 14;
   pointer-events: none;
 }
-.cpv-progress > span {
+.titan-chordpro-progress > span {
   display: block;
   height: 2px;
   background: linear-gradient(90deg, var(--chord-edge), var(--chord));
   transition: width 0.1s linear, height 0.2s ease, box-shadow 0.2s ease;
 }
-.cpv-progress.is-live > span {
+.titan-chordpro-progress.is-live > span {
   height: 3px;
   box-shadow: 0 0 10px -1px var(--chord);
 }
-.cpv-veil {
+.titan-chordpro-veil {
   background: var(--veil);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
-.cpv-veil-2 {
+.titan-chordpro-veil-2 {
   background: var(--veil-2);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
-.cpv-center {
+.titan-chordpro-center {
   position: absolute;
   inset: 0;
   display: flex;
@@ -344,7 +344,7 @@
   text-align: center;
 }
 /* Chart placeholder while loadSong is in flight — title + nav stay live. */
-.cpv-song-skel {
+.titan-chordpro-song-skel {
   position: absolute;
   inset: 0;
   display: flex;
@@ -353,14 +353,14 @@
   gap: 14px;
   pointer-events: none;
 }
-.cpv-song-skel-head,
-.cpv-song-skel-dock,
-.cpv-song-skel-title,
-.cpv-song-skel-nav,
-.cpv-song-skel-list {
+.titan-chordpro-song-skel-head,
+.titan-chordpro-song-skel-dock,
+.titan-chordpro-song-skel-title,
+.titan-chordpro-song-skel-nav,
+.titan-chordpro-song-skel-list {
   pointer-events: auto;
 }
-.cpv-song-skel-head {
+.titan-chordpro-song-skel-head {
   flex: none;
   display: flex;
   align-items: center;
@@ -368,7 +368,7 @@
   padding: 0 8px 0 14px;
   border-radius: 16px;
 }
-.cpv-song-skel-title {
+.titan-chordpro-song-skel-title {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -383,7 +383,7 @@
   text-align: left;
   cursor: pointer;
 }
-.cpv-song-skel-pos {
+.titan-chordpro-song-skel-pos {
   flex: none;
   display: flex;
   align-items: center;
@@ -392,19 +392,19 @@
   border-radius: 7px;
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 11px;
   font-weight: 700;
   color: var(--chord);
 }
-.cpv-song-skel-name {
+.titan-chordpro-song-skel-name {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.cpv-song-skel-name > span:first-child {
+.titan-chordpro-song-skel-name > span:first-child {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -413,20 +413,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-song-skel-name > span:last-child {
+.titan-chordpro-song-skel-name > span:last-child {
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 600;
 }
-.cpv-song-skel-chev {
+.titan-chordpro-song-skel-chev {
   flex: none;
   font-size: 9px;
   color: var(--muted);
   padding-right: 4px;
 }
-.cpv-song-skel-page {
+.titan-chordpro-song-skel-page {
   flex: 1;
   min-height: 0;
   width: min(100%, 720px);
@@ -436,33 +436,33 @@
   gap: 18px;
   padding: 8px 4px 24px;
 }
-.cpv-song-skel-row {
+.titan-chordpro-song-skel-row {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.cpv-song-skel-bar {
+.titan-chordpro-song-skel-bar {
   display: block;
   height: 14px;
   border-radius: 7px;
   background: color-mix(in srgb, var(--muted) 22%, transparent);
-  animation: cpv-skel-pulse 1.25s ease-in-out infinite;
+  animation: titan-chordpro-skel-pulse 1.25s ease-in-out infinite;
   animation-delay: calc(var(--i, 1) * 70ms);
 }
-.cpv-song-skel-chords {
+.titan-chordpro-song-skel-chords {
   width: 42%;
   height: 12px;
   background: color-mix(in srgb, var(--chord) 18%, transparent);
 }
-.cpv-song-skel-lyric {
+.titan-chordpro-song-skel-lyric {
   width: 78%;
   height: 16px;
 }
-.cpv-song-skel-row:nth-child(2n) .cpv-song-skel-chords { width: 28%; }
-.cpv-song-skel-row:nth-child(2n) .cpv-song-skel-lyric { width: 64%; }
-.cpv-song-skel-row:nth-child(3n) .cpv-song-skel-chords { width: 55%; }
-.cpv-song-skel-row:nth-child(3n) .cpv-song-skel-lyric { width: 88%; }
-.cpv-song-skel-dock {
+.titan-chordpro-song-skel-row:nth-child(2n) .titan-chordpro-song-skel-chords { width: 28%; }
+.titan-chordpro-song-skel-row:nth-child(2n) .titan-chordpro-song-skel-lyric { width: 64%; }
+.titan-chordpro-song-skel-row:nth-child(3n) .titan-chordpro-song-skel-chords { width: 55%; }
+.titan-chordpro-song-skel-row:nth-child(3n) .titan-chordpro-song-skel-lyric { width: 88%; }
+.titan-chordpro-song-skel-dock {
   flex: none;
   align-self: center;
   display: flex;
@@ -471,7 +471,7 @@
   padding: 6px;
   border-radius: 16px;
 }
-.cpv-song-skel-nav {
+.titan-chordpro-song-skel-nav {
   width: 44px;
   height: 44px;
   border: 1px solid var(--line);
@@ -483,7 +483,7 @@
   justify-content: center;
   cursor: pointer;
 }
-.cpv-song-skel-list {
+.titan-chordpro-song-skel-list {
   height: 44px;
   padding: 0 16px;
   border: 1px solid var(--line);
@@ -496,29 +496,29 @@
   align-items: center;
   gap: 9px;
 }
-.cpv-song-skel-list > span:first-child {
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+.titan-chordpro-song-skel-list > span:first-child {
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 12.5px;
   font-weight: 700;
   color: var(--chord);
 }
-.cpv-song-skel-list > span:last-child {
+.titan-chordpro-song-skel-list > span:last-child {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--muted);
 }
-@keyframes cpv-skel-pulse {
+@keyframes titan-chordpro-skel-pulse {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 0.9; }
 }
-.cpv-ph {
+.titan-chordpro-ph {
   width: 46px;
   height: 46px;
   border-radius: 14px;
   border: 1px dashed var(--line);
   background: var(--veil);
 }
-.cpv-fatal-mark {
+.titan-chordpro-fatal-mark {
   width: 46px;
   height: 46px;
   border-radius: 14px;
@@ -528,20 +528,20 @@
   align-items: center;
   justify-content: center;
 }
-.cpv-spin {
+.titan-chordpro-spin {
   width: 22px;
   height: 22px;
   border-radius: 50%;
   border: 2px solid var(--line);
   border-top-color: var(--chord);
-  animation: cpv-spin 0.8s linear infinite;
+  animation: titan-chordpro-spin 0.8s linear infinite;
 }
-@keyframes cpv-spin {
+@keyframes titan-chordpro-spin {
   to {
     transform: rotate(360deg);
   }
 }
-@keyframes cpv-rise {
+@keyframes titan-chordpro-rise {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -551,7 +551,7 @@
     transform: translateY(0);
   }
 }
-@keyframes cpv-fade {
+@keyframes titan-chordpro-fade {
   from {
     opacity: 0;
   }
@@ -559,7 +559,7 @@
     opacity: 1;
   }
 }
-.cpv-note {
+.titan-chordpro-note {
   /* Same paper as a rehearsal comment: bold gray, no card. Chorus/tab keep theirs. */
   margin: 0 16px 0;
   padding: 0;
@@ -570,12 +570,12 @@
   flex-direction: column;
   gap: 4px;
 }
-.cpv-note-head {
+.titan-chordpro-note-head {
   display: none;
 }
-.cpv-note-item {
+.titan-chordpro-note-item {
   font-family: inherit;
-  font-size: calc(var(--cpv-lyric-px, 18px) * 0.88);
+  font-size: calc(var(--titan-chordpro-lyric-px, 18px) * 0.88);
   font-weight: 600;
   font-style: normal;
   line-height: 1.2;
@@ -583,13 +583,13 @@
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
-.cpv-note-item::before {
+.titan-chordpro-note-item::before {
   content: '(';
 }
-.cpv-note-item::after {
+.titan-chordpro-note-item::after {
   content: ')';
 }
-.cpv-comment {
+.titan-chordpro-comment {
   /* Labels the block below — sit in the section gap, flush to what follows. */
   display: flex;
   align-items: flex-start;
@@ -599,23 +599,23 @@
   background: none;
   border: 0;
 }
-.cpv-blockrow:has(.cpv-comment) + .cpv-blockrow .cpv-block,
-.cpv-blockrow:has(.cpv-note) + .cpv-blockrow .cpv-block {
+.titan-chordpro-blockrow:has(.titan-chordpro-comment) + .titan-chordpro-blockrow .titan-chordpro-block,
+.titan-chordpro-blockrow:has(.titan-chordpro-note) + .titan-chordpro-blockrow .titan-chordpro-block {
   padding-top: 1px;
 }
-.cpv-blockrow:has(.cpv-comment) + .cpv-blockrow .cpv-tab,
-.cpv-blockrow:has(.cpv-note) + .cpv-blockrow .cpv-tab {
+.titan-chordpro-blockrow:has(.titan-chordpro-comment) + .titan-chordpro-blockrow .titan-chordpro-tab,
+.titan-chordpro-blockrow:has(.titan-chordpro-note) + .titan-chordpro-blockrow .titan-chordpro-tab {
   margin-top: 2px;
 }
-.cpv-comment-dot {
+.titan-chordpro-comment-dot {
   display: none;
 }
-.cpv-comment-text {
+.titan-chordpro-comment-text {
   /* Stage cue: near lyric size, upright, washed toward the paper so
      --lyric stays the ink. No card — chorus already owns that. */
   flex: 1 1 auto;
   min-width: 0;
-  font-size: calc(var(--cpv-lyric-px, 18px) * 0.88);
+  font-size: calc(var(--titan-chordpro-lyric-px, 18px) * 0.88);
   font-weight: 600;
   font-style: normal;
   letter-spacing: 0.02em;
@@ -623,16 +623,16 @@
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
-.cpv-comment-text::before {
+.titan-chordpro-comment-text::before {
   content: '(';
 }
-.cpv-comment-text::after {
+.titan-chordpro-comment-text::after {
   content: ')';
 }
-.cpv-comment-line {
+.titan-chordpro-comment-line {
   display: none;
 }
-.cpv-tab {
+.titan-chordpro-tab {
   margin: 18px 0 26px;
   padding: 16px 18px 18px;
   border-radius: 14px;
@@ -641,7 +641,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   overflow-x: auto;
 }
-.cpv-tab-extra {
+.titan-chordpro-tab-extra {
   font-family: 'Space Mono', monospace;
   font-size: 10.5px;
   line-height: 1.5;
@@ -649,7 +649,7 @@
   white-space: pre;
   margin: 0 0 6px;
 }
-.cpv-tab-label {
+.titan-chordpro-tab-label {
   flex: none;
   width: 16px;
   display: flex;
@@ -658,68 +658,68 @@
   font-weight: 700;
   color: var(--muted);
 }
-.cpv-tab-rule {
+.titan-chordpro-tab-rule {
   flex: none;
   width: 1px;
   background: var(--line);
 }
-.cpv-tab-tokens {
+.titan-chordpro-tab-tokens {
   display: flex;
   align-items: stretch;
   padding-left: 6px;
 }
-.cpv-tab-gap,
-.cpv-tab-mark {
+.titan-chordpro-tab-gap,
+.titan-chordpro-tab-mark {
   display: flex;
   align-items: center;
 }
-.cpv-tab-gap > span,
-.cpv-tab-mark > span {
+.titan-chordpro-tab-gap > span,
+.titan-chordpro-tab-mark > span {
   font-family: 'Space Mono', monospace;
   white-space: pre;
 }
-.cpv-tab-gap {
+.titan-chordpro-tab-gap {
   color: transparent;
   background: linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat;
 }
-.cpv-tab-mark {
+.titan-chordpro-tab-mark {
   font-weight: 700;
   color: var(--text);
 }
-.cpv-tab-bar {
+.titan-chordpro-tab-bar {
   flex: none;
   width: 1px;
   margin: 0 5px;
   background: var(--chord);
   opacity: 0.35;
 }
-.cpv-tab-staves {
+.titan-chordpro-tab-staves {
   display: flex;
   flex-direction: column;
   width: max-content;
   min-width: 100%;
 }
-.cpv-tab-row {
+.titan-chordpro-tab-row {
   display: flex;
   align-items: stretch;
 }
 /* Design SoT: stanza and chorus share the box; the chorus only adds a wash. */
-.cpv-block {
+.titan-chordpro-block {
   position: relative;
   padding: 12px 16px 14px;
 }
 /* Só letra: lyric sheet for the vocalist — not a chord chart with the chords cut out. */
-.cpv-root[data-cpv-lens='letra'] .cpv-block {
+.titan-chordpro-root[data-titan-chordpro-lens='letra'] .titan-chordpro-block {
   padding: 4px 8px 6px;
 }
-.cpv-root[data-cpv-lens='letra'] .cpv-note {
+.titan-chordpro-root[data-titan-chordpro-lens='letra'] .titan-chordpro-note {
   margin: 0 16px 0;
   padding: 0;
 }
-.cpv-root[data-cpv-lens='letra'] .cpv-comment {
+.titan-chordpro-root[data-titan-chordpro-lens='letra'] .titan-chordpro-comment {
   margin: 0 16px 0;
 }
-.cpv-chorus::before {
+.titan-chordpro-chorus::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -728,10 +728,10 @@
   border: 1px solid var(--block-line);
   pointer-events: none;
 }
-.cpv-block > .cpv-row {
+.titan-chordpro-block > .titan-chordpro-row {
   position: relative;
 }
-.cpv-row {
+.titan-chordpro-row {
   position: relative;
   display: flex;
   flex-wrap: wrap;
@@ -740,14 +740,14 @@
 }
 /* A word may contain several chord anchors, but wraps only at real spaces.
    Intrinsic widths follow font loading, transpose, capo and resize without JS. */
-.cpv-reading-word {
+.titan-chordpro-reading-word {
   display: inline-flex;
   flex: 0 0 auto;
 }
-.cpv-reading-word > .cpv-word {
+.titan-chordpro-reading-word > .titan-chordpro-word {
   flex: 0 0 auto;
 }
-.cpv-reading-flow {
+.titan-chordpro-reading-flow {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -755,36 +755,36 @@
   width: 100%;
   overflow-x: auto;
 }
-.cpv-word {
+.titan-chordpro-word {
   display: flex;
   flex-direction: column;
   max-width: 100%;
 }
-.cpv-chord-box {
+.titan-chordpro-chord-box {
   display: flex;
   align-items: flex-end;
 }
 /* Chord lane: the shape above (capo), the sounding chord below. */
-.cpv-chord-stack {
+.titan-chordpro-chord-stack {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 1px;
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   line-height: 1;
   padding-right: 0.8em;
   white-space: nowrap;
 }
-.cpv-chord,
-.cpv-shape {
+.titan-chordpro-chord,
+.titan-chordpro-shape {
   letter-spacing: -0.005em;
   line-height: 1;
 }
-.cpv-chord {
+.titan-chordpro-chord {
   font-weight: 700;
   color: var(--chord);
 }
-.cpv-chord-hit {
+.titan-chordpro-chord-hit {
   appearance: none;
   border: 0;
   padding: 0;
@@ -796,23 +796,23 @@
   cursor: pointer;
 }
 /* Dual capo shape: quieter than the sounding chord so the green stays the read. */
-.cpv-shape {
+.titan-chordpro-shape {
   font-weight: 500;
   color: var(--capo);
   opacity: 0.72;
 }
 @media (max-width: 640px) {
-  .cpv-shape {
+  .titan-chordpro-shape {
     opacity: 0.55;
   }
 }
-.cpv-block-tag-row {
+.titan-chordpro-block-tag-row {
   display: flex;
   align-items: center;
   gap: 7px;
   margin: 0 0 6px;
 }
-.cpv-block-tag {
+.titan-chordpro-block-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -829,7 +829,7 @@
   white-space: nowrap;
 }
 /* Capo legend: said once, at the top, with the song's own first chord. */
-.cpv-legend {
+.titan-chordpro-legend {
   margin: 0 0 30px;
   display: flex;
   align-items: center;
@@ -839,39 +839,39 @@
   background: var(--veil);
   border: 1px solid var(--line-soft);
 }
-.cpv-legend-half {
+.titan-chordpro-legend-half {
   flex: none;
   display: flex;
   align-items: center;
   gap: 7px;
 }
-.cpv-legend-half:last-of-type {
+.titan-chordpro-legend-half:last-of-type {
   flex: 1;
   min-width: 0;
 }
-.cpv-legend-dot {
+.titan-chordpro-legend-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
-.cpv-legend-name {
+.titan-chordpro-legend-name {
   font-family: 'Space Mono', monospace;
   font-weight: 700;
   font-size: 13.5px;
 }
-.cpv-legend-note {
+.titan-chordpro-legend-note {
   font-size: 10.5px;
   letter-spacing: 0.04em;
   color: var(--muted);
 }
-.cpv-legend-sep {
+.titan-chordpro-legend-sep {
   flex: none;
   width: 1px;
   height: 20px;
   background: var(--line);
 }
 /* Capo hint: one row of soft chord chips — scroll sideways, never wrap. */
-.cpv-capo-hint {
+.titan-chordpro-capo-hint {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -881,7 +881,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
-.cpv-capo-hint--text {
+.titan-chordpro-capo-hint--text {
   display: block;
   min-height: 17px;
   font-size: 12px;
@@ -892,7 +892,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-capo-chip {
+.titan-chordpro-capo-chip {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -902,7 +902,7 @@
   background: var(--chord-soft);
   border: 1px solid color-mix(in srgb, var(--chord-edge) 55%, transparent);
   color: var(--chord);
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1;
@@ -910,19 +910,19 @@
   opacity: 0.72;
   white-space: nowrap;
 }
-.cpv-lyric {
-  font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
+.titan-chordpro-lyric {
+  font-family: var(--titan-chordpro-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
   line-height: 1.32;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.cpv-stanza .cpv-lyric {
+.titan-chordpro-stanza .titan-chordpro-lyric {
   color: var(--lyric);
 }
-.cpv-chorus .cpv-lyric {
+.titan-chordpro-chorus .titan-chordpro-lyric {
   color: var(--text);
 }
-.cpv-figure {
+.titan-chordpro-figure {
   border-radius: 16px;
   background: var(--veil);
   border: 1px solid var(--line-soft);
@@ -931,13 +931,13 @@
   gap: 9px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-.cpv-figure-cap {
+.titan-chordpro-figure-cap {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
-.cpv-figure-kind {
+.titan-chordpro-figure-kind {
   font-family: 'Space Mono', monospace;
   font-size: 9.5px;
   letter-spacing: 0.16em;
@@ -945,7 +945,7 @@
   color: var(--chord);
   font-weight: 700;
 }
-.cpv-figure-meta {
+.titan-chordpro-figure-meta {
   flex: 1;
   min-width: 0;
   font-family: 'Space Mono', monospace;
@@ -955,7 +955,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-figure-btn {
+.titan-chordpro-figure-btn {
   flex: none;
   height: 28px;
   padding: 0 10px;
@@ -968,10 +968,10 @@
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-figure-btn:hover {
+.titan-chordpro-figure-btn:hover {
   background: var(--hover);
 }
-.cpv-score-body {
+.titan-chordpro-score-body {
   overflow-x: auto;
   min-height: 48px;
   color: var(--text);
@@ -980,7 +980,7 @@
   line-height: 1.7;
   white-space: pre;
 }
-.cpv-image-frame {
+.titan-chordpro-image-frame {
   position: relative;
   border-radius: 11px;
   overflow: hidden;
@@ -988,41 +988,41 @@
   display: flex;
   justify-content: center;
 }
-.cpv-image-full {
+.titan-chordpro-image-full {
   display: block;
   width: 100%;
   height: auto;
 }
-.cpv-image-clip {
+.titan-chordpro-image-clip {
   display: block;
   width: 100%;
   max-height: 58vh;
   object-fit: cover;
   object-position: center top;
 }
-.cpv-chrome {
+.titan-chordpro-chrome {
   pointer-events: none;
   opacity: 1;
   transition: opacity 0.35s ease;
 }
-.cpv-chrome button,
-.cpv-chrome a,
-.cpv-chrome [role='button'] {
+.titan-chordpro-chrome button,
+.titan-chordpro-chrome a,
+.titan-chordpro-chrome [role='button'] {
   pointer-events: auto;
 }
-.cpv-chrome.is-hidden {
+.titan-chordpro-chrome.is-hidden {
   opacity: 0;
 }
-.cpv-chrome.is-hidden .cpv-hit {
+.titan-chordpro-chrome.is-hidden .titan-chordpro-hit {
   pointer-events: none;
 }
-.cpv-chrome.is-wide-wrap,
-.cpv-zen-title.is-wide-wrap {
+.titan-chordpro-chrome.is-wide-wrap,
+.titan-chordpro-zen-title.is-wide-wrap {
   display: flex;
   justify-content: center;
 }
 /* Zen: only the song name in the head band — no card, no controls. */
-.cpv-zen-title {
+.titan-chordpro-zen-title {
   position: absolute;
   top: 0;
   left: 0;
@@ -1031,7 +1031,7 @@
   pointer-events: none;
   background: linear-gradient(to bottom, var(--canvas) 62%, transparent);
 }
-.cpv-zen-title-text {
+.titan-chordpro-zen-title-text {
   display: block;
   width: 100%;
   min-height: 40px;
@@ -1045,23 +1045,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-hit {
+.titan-chordpro-hit {
   pointer-events: auto;
 }
-.cpv-ico {
+.titan-chordpro-ico {
   flex: none;
   display: block;
   color: inherit;
   pointer-events: none;
 }
-.cpv-scrim {
+.titan-chordpro-scrim {
   position: absolute;
   inset: 0;
   background: var(--scrim);
   backdrop-filter: blur(6px);
-  animation: cpv-fade 0.18s ease;
+  animation: titan-chordpro-fade 0.18s ease;
 }
-.cpv-dialog {
+.titan-chordpro-dialog {
   position: relative;
   width: 100%;
   max-width: 400px;
@@ -1070,9 +1070,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
 }
-.cpv-sheet {
+.titan-chordpro-sheet {
   position: absolute;
   inset: 0;
   z-index: 40;
@@ -1081,7 +1081,7 @@
   justify-content: center;
   padding: 20px;
 }
-.cpv-toast {
+.titan-chordpro-toast {
   position: absolute;
   left: 0;
   right: 0;
@@ -1097,15 +1097,15 @@
   line-height: 1.3;
   text-align: center;
   pointer-events: none;
-  animation: cpv-toast-in 0.45s ease;
+  animation: titan-chordpro-toast-in 0.45s ease;
   transition: opacity 0.42s ease, filter 0.42s ease;
 }
-.cpv-toast.is-out {
+.titan-chordpro-toast.is-out {
   opacity: 0;
   filter: blur(6px);
   animation: none;
 }
-@keyframes cpv-toast-in {
+@keyframes titan-chordpro-toast-in {
   from {
     opacity: 0;
     filter: blur(8px);
@@ -1115,7 +1115,7 @@
     filter: blur(0);
   }
 }
-.cpv-error-banner {
+.titan-chordpro-error-banner {
   position: absolute;
   left: 16px;
   right: 16px;
@@ -1132,10 +1132,10 @@
   border: 1px solid var(--danger);
   backdrop-filter: blur(20px);
   box-shadow: var(--shadow);
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
 }
 /* The host gave the frame no height: say it in place, and only once sure. */
-.cpv-surface-warn {
+.titan-chordpro-surface-warn {
   position: absolute;
   left: 14px;
   right: 14px;
@@ -1153,36 +1153,36 @@
   border: 1px solid var(--danger);
   backdrop-filter: blur(20px);
   box-shadow: var(--shadow);
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
 }
-.cpv-surface-warn-title {
+.titan-chordpro-surface-warn-title {
   display: block;
   margin-bottom: 4px;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--danger);
 }
-.cpv-surface-warn-body {
+.titan-chordpro-surface-warn-body {
   display: block;
   font-size: 12.5px;
   line-height: 1.55;
   text-wrap: pretty;
 }
-.cpv-surface-warn-body code {
+.titan-chordpro-surface-warn-body code {
   font-family: 'Space Mono', monospace;
   font-size: 11.5px;
 }
 
-.cpv-sheet.is-compact {
+.titan-chordpro-sheet.is-compact {
   align-items: flex-end;
   padding: 0;
 }
-.cpv-sheet.is-compact .cpv-dialog {
+.titan-chordpro-sheet.is-compact .titan-chordpro-dialog {
   max-width: 100%;
   border-radius: 20px 20px 0 0;
   padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
 }
-.cpv-live {
+.titan-chordpro-live {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1193,7 +1193,7 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.cpv-keypill {
+.titan-chordpro-keypill {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1204,7 +1204,7 @@
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
 }
-.cpv-keypill-split {
+.titan-chordpro-keypill-split {
   flex: none;
   width: 1px;
   height: 16px;
@@ -1213,36 +1213,36 @@
 }
 /*
  * Identity bar — floating card (same family as the dock). Compact controls
- * keep the height down; the reading column (`--cpv-page-max`) is a ceiling
+ * keep the height down; the reading column (`--titan-chordpro-page-max`) is a ceiling
  * for the chart, not the name (12rem floor + wrap).
  *
  * `margin-left: auto` on Tela cheia keeps it on the right of its flex line
  * even when it wraps alone.
  */
-.cpv-head {
+.titan-chordpro-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
 }
-.cpv-head.is-phone {
+.titan-chordpro-head.is-phone {
   gap: 6px;
   min-height: 40px;
   padding: 4px 6px 4px 12px;
   border-radius: 14px;
 }
-.cpv-head.is-wide {
+.titan-chordpro-head.is-wide {
   width: max-content;
   max-width: 100%;
-  min-width: min(100%, var(--cpv-page-max, 100%));
+  min-width: min(100%, var(--titan-chordpro-page-max, 100%));
   gap: 8px 12px;
   padding: 5px 8px 5px 14px;
   border-radius: 13px;
 }
-.cpv-head [data-fs] {
+.titan-chordpro-head [data-fs] {
   margin-left: auto;
 }
-.cpv-head-id {
+.titan-chordpro-head-id {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1255,25 +1255,25 @@
   font-family: inherit;
   text-align: left;
 }
-button.cpv-head-id {
+button.titan-chordpro-head-id {
   cursor: pointer;
 }
-span.cpv-head-id,
-div.cpv-head-id {
+span.titan-chordpro-head-id,
+div.titan-chordpro-head-id {
   cursor: default;
 }
-.cpv-head.is-phone .cpv-head-id {
+.titan-chordpro-head.is-phone .titan-chordpro-head-id {
   height: 32px;
 }
-.cpv-head.is-wide .cpv-head-id {
+.titan-chordpro-head.is-wide .titan-chordpro-head-id {
   gap: 9px;
   padding: 1px 4px 1px 0;
   min-height: 32px;
 }
-.cpv-head.is-wide button.cpv-head-id:hover {
+.titan-chordpro-head.is-wide button.titan-chordpro-head-id:hover {
   background: var(--hover);
 }
-.cpv-head-pos {
+.titan-chordpro-head-pos {
   flex: none;
   display: flex;
   align-items: center;
@@ -1282,25 +1282,25 @@ div.cpv-head-id {
   border-radius: 6px;
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 10.5px;
   font-weight: 700;
   color: var(--chord);
 }
-.cpv-head.is-wide .cpv-head-pos {
+.titan-chordpro-head.is-wide .titan-chordpro-head-pos {
   height: 22px;
   padding: 0 7px;
   border-radius: 7px;
   font-size: 11px;
 }
-.cpv-head-name {
+.titan-chordpro-head-name {
   flex: 1 1 12rem;
   min-width: 12rem;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
-.cpv-head-title {
+.titan-chordpro-head-title {
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -1309,11 +1309,11 @@ div.cpv-head-id {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-head.is-wide .cpv-head-title {
+.titan-chordpro-head.is-wide .titan-chordpro-head-title {
   font-size: 15px;
   line-height: 1.25;
 }
-.cpv-head-sub {
+.titan-chordpro-head-sub {
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1323,11 +1323,11 @@ div.cpv-head-id {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-head.is-wide .cpv-head-sub {
+.titan-chordpro-head.is-wide .titan-chordpro-head-sub {
   font-size: 10px;
   letter-spacing: 0.14em;
 }
-.cpv-head-meta {
+.titan-chordpro-head-meta {
   flex: none;
   display: flex;
   align-items: center;
@@ -1341,24 +1341,24 @@ div.cpv-head-id {
  * meta door + save cluster on the right (`margin-left: auto`), wrapping as
  * one unit so Metadados never lands alone on a middle row.
  */
-.cpv-head.is-edit.is-wide {
+.titan-chordpro-head.is-edit.is-wide {
   width: max-content;
   max-width: 100%;
-  min-width: min(100%, var(--cpv-page-max, 100%));
+  min-width: min(100%, var(--titan-chordpro-page-max, 100%));
   gap: 8px 10px;
   padding: 5px 8px 5px 12px;
   border-radius: 13px;
 }
-.cpv-head.is-edit.is-phone {
+.titan-chordpro-head.is-edit.is-phone {
   gap: 6px;
   min-height: 40px;
   padding: 4px 6px 4px 10px;
   border-radius: 14px;
 }
-.cpv-head.is-edit.is-content {
+.titan-chordpro-head.is-edit.is-content {
   border-color: var(--danger);
 }
-.cpv-edit-badge {
+.titan-chordpro-edit-badge {
   flex: none;
   display: flex;
   align-items: center;
@@ -1371,19 +1371,19 @@ div.cpv-head-id {
   text-transform: uppercase;
   font-weight: 700;
 }
-.cpv-head.is-edit .cpv-head-id {
+.titan-chordpro-head.is-edit .titan-chordpro-head-id {
   flex: 1 1 10rem;
   min-width: 0;
 }
-.cpv-head.is-edit .cpv-head-name {
+.titan-chordpro-head.is-edit .titan-chordpro-head-name {
   flex: 1 1 auto;
   min-width: 0;
 }
-.cpv-head.is-edit.is-phone .cpv-head-id {
+.titan-chordpro-head.is-edit.is-phone .titan-chordpro-head-id {
   height: auto;
   min-height: 32px;
 }
-.cpv-head-edit-acts {
+.titan-chordpro-head-edit-acts {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -1392,11 +1392,11 @@ div.cpv-head-id {
   min-width: 0;
   margin-left: auto;
 }
-.cpv-head.is-edit.is-phone .cpv-head-edit-acts {
+.titan-chordpro-head.is-edit.is-phone .titan-chordpro-head-edit-acts {
   flex: 1 1 100%;
   margin-left: 0;
 }
-.cpv-head-edit-meta {
+.titan-chordpro-head-edit-meta {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -1409,14 +1409,14 @@ div.cpv-head-id {
   white-space: nowrap;
   cursor: pointer;
 }
-.cpv-head.is-edit.is-phone .cpv-head-edit-meta {
+.titan-chordpro-head.is-edit.is-phone .titan-chordpro-head-edit-meta {
   height: 32px;
   padding: 0 9px;
 }
-.cpv-keypill > button:hover {
+.titan-chordpro-keypill > button:hover {
   background: var(--chord-hover);
 }
-.cpv-ghost {
+.titan-chordpro-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1426,13 +1426,13 @@ div.cpv-head-id {
   cursor: pointer;
   border-radius: 12px;
 }
-.cpv-ghost:hover {
+.titan-chordpro-ghost:hover {
   background: var(--hover);
 }
-.cpv-bar-btn:hover {
+.titan-chordpro-bar-btn:hover {
   background: var(--hover);
 }
-.cpv-surface-btn {
+.titan-chordpro-surface-btn {
   min-height: 52px;
   padding: 0 14px;
   border-radius: 13px;
@@ -1444,11 +1444,11 @@ div.cpv-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-surface-btn:hover {
+.titan-chordpro-surface-btn:hover {
   background: var(--surface-hover);
 }
 /* Hint shown while the chrome is out of the way. */
-.cpv-met-step {
+.titan-chordpro-met-step {
   width: 34px;
   height: 34px;
   border: 1px solid var(--line);
@@ -1457,11 +1457,11 @@ div.cpv-head-id {
   color: var(--text);
   cursor: pointer;
 }
-.cpv-met-step:hover {
+.titan-chordpro-met-step:hover {
   background: var(--hover);
   color: var(--text);
 }
-.cpv-met-switch {
+.titan-chordpro-met-switch {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1475,11 +1475,11 @@ div.cpv-head-id {
   text-align: left;
   cursor: pointer;
 }
-.cpv-met-switch:hover {
+.titan-chordpro-met-switch:hover {
   background: var(--surface-hover);
 }
 /* Tap tempo: a wide, forgiving target — it is hit repeatedly and in a hurry. */
-.cpv-met-tap {
+.titan-chordpro-met-tap {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1494,25 +1494,25 @@ div.cpv-head-id {
   cursor: pointer;
   transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
 }
-.cpv-met-tap:hover {
+.titan-chordpro-met-tap:hover {
   background: var(--surface-hover);
 }
-.cpv-met-tap:active {
+.titan-chordpro-met-tap:active {
   background: var(--chord-soft);
 }
 /* Beat count: original 20px cell, stacked left of the column, outside chrome. */
-.cpv-strum-dock {
-  /* Outside .cpv-scroll; opaque so lyrics never paint through the strip. */
+.titan-chordpro-strum-dock {
+  /* Outside .titan-chordpro-scroll; opaque so lyrics never paint through the strip. */
   max-width: 100%;
   background: var(--canvas);
   border-radius: 14px;
   transition: top 0.35s ease;
 }
-.cpv-strum-dock .strum-strip {
+.titan-chordpro-strum-dock .strum-strip {
   box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
 }
 
-.cpv-met-count {
+.titan-chordpro-met-count {
   position: absolute;
   z-index: 15;
   display: flex;
@@ -1531,7 +1531,7 @@ div.cpv-head-id {
    flex-start — not center: a ~51px word centered on a 20px column at
    left:2px hangs off the root and loses the leading E. Badge fill so
    the word stays readable on the lyric for the one bar of count-in. */
-.cpv-met-entrada {
+.titan-chordpro-met-entrada {
   flex: none;
   align-self: flex-start;
   width: max-content;
@@ -1550,7 +1550,7 @@ div.cpv-head-id {
   border-style: solid;
   border-color: var(--chord-edge);
 }
-.cpv-met-bpm {
+.titan-chordpro-met-bpm {
   flex: none;
   align-self: flex-start;
   width: max-content;
@@ -1568,7 +1568,7 @@ div.cpv-head-id {
   line-height: 1;
   letter-spacing: 0.02em;
 }
-.cpv-met-beat {
+.titan-chordpro-met-beat {
   width: 20px;
   height: 20px;
   border-radius: 6px;
@@ -1582,25 +1582,25 @@ div.cpv-head-id {
   opacity: 1;
   border: 0;
 }
-.cpv-met-beat.is-now {
+.titan-chordpro-met-beat.is-now {
   font-weight: 700;
   background: var(--chord);
   color: var(--chord-ink);
   border: 1px solid transparent;
 }
 /* Downbeat is ink (black/white of the theme); 2–4 keep --chord above. */
-.cpv-met-beat.is-now.is-one {
+.titan-chordpro-met-beat.is-now.is-one {
   background: var(--downbeat);
   color: var(--downbeat-ink);
   border-color: transparent;
 }
 
 /* Beat 1: the strip becomes ink. Do not remap --chord here — that is the
-   inverted background. Nested fills invert only via `.cpv-head-chip`.
+   inverted background. Nested fills invert only via `.titan-chordpro-head-chip`.
    Title / subtitle / meta / ghost sit on the strip. Anything with its own
-   fill (tom, capo, list index, a future chip) adds `cpv-head-chip` —
+   fill (tom, capo, list index, a future chip) adds `titan-chordpro-head-chip` —
    tests/vue/head-chip.test.ts fails the bar if a painted surface forgets it. */
-.cpv-head-hit-1 {
+.titan-chordpro-head-hit-1 {
   --veil: var(--downbeat);
   --line: var(--downbeat);
   --text: var(--downbeat-ink);
@@ -1610,7 +1610,7 @@ div.cpv-head-id {
   --hover: color-mix(in srgb, var(--downbeat-ink) 8%, transparent);
   color: var(--downbeat-ink);
 }
-.cpv-head-hit-1 .cpv-head-chip {
+.titan-chordpro-head-hit-1 .titan-chordpro-head-chip {
   --text: var(--downbeat);
   --muted: color-mix(in srgb, var(--downbeat) 72%, transparent);
   --chord: var(--downbeat);
@@ -1626,7 +1626,7 @@ div.cpv-head-id {
   --hover: color-mix(in srgb, var(--downbeat) 12%, transparent);
   color: var(--downbeat);
 }
-.cpv-head-hit-n {
+.titan-chordpro-head-hit-n {
   --veil: var(--chord);
   --line: var(--chord);
   --text: var(--chord-ink);
@@ -1636,7 +1636,7 @@ div.cpv-head-id {
   --hover: color-mix(in srgb, var(--chord-ink) 8%, transparent);
   color: var(--chord-ink);
 }
-.cpv-head-hit-n .cpv-head-chip {
+.titan-chordpro-head-hit-n .titan-chordpro-head-chip {
   --text: var(--chord);
   --muted: color-mix(in srgb, var(--chord) 72%, transparent);
   --chord-soft: var(--chord-ink);
@@ -1651,38 +1651,38 @@ div.cpv-head-id {
   color: var(--chord);
 }
 
-.cpv-met-hit-1 .cpv-chord {
-  animation: cpv-chord-1 var(--cpv-met-hit, 420ms) ease-out;
+.titan-chordpro-met-hit-1 .titan-chordpro-chord {
+  animation: titan-chordpro-chord-1 var(--titan-chordpro-met-hit, 420ms) ease-out;
 }
-.cpv-met-hit-n .cpv-chord {
-  animation: cpv-chord-n var(--cpv-met-hit, 420ms) ease-out;
+.titan-chordpro-met-hit-n .titan-chordpro-chord {
+  animation: titan-chordpro-chord-n var(--titan-chordpro-met-hit, 420ms) ease-out;
 }
-@keyframes cpv-chord-1 {
+@keyframes titan-chordpro-chord-1 {
   0%, 40% { color: var(--downbeat); }
   100% { color: var(--chord); }
 }
-@keyframes cpv-chord-n {
+@keyframes titan-chordpro-chord-n {
   0% { filter: brightness(1.18); }
   100% { filter: brightness(1); }
 }
-.cpv-more-item {
+.titan-chordpro-more-item {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   text-align: left;
 }
-.cpv-more-copy {
+.titan-chordpro-more-copy {
   flex: 1;
   min-width: 0;
 }
-.cpv-more-item > span:last-child {
+.titan-chordpro-more-item > span:last-child {
   flex: none;
   font-size: 11.5px;
   font-weight: 500;
   color: var(--muted);
 }
-.cpv-src-grip {
+.titan-chordpro-src-grip {
   flex: none;
   height: 16px;
   display: flex;
@@ -1691,13 +1691,13 @@ div.cpv-head-id {
   cursor: ns-resize;
   touch-action: none;
 }
-.cpv-src-grip > span {
+.titan-chordpro-src-grip > span {
   width: 44px;
   height: 4px;
   border-radius: 2px;
   background: var(--line);
 }
-.cpv-src {
+.titan-chordpro-src {
   position: absolute;
   left: 0;
   right: 0;
@@ -1708,9 +1708,9 @@ div.cpv-head-id {
   background: var(--canvas);
   border-top: 1px solid var(--line);
   box-shadow: 0 -24px 60px -24px rgba(0, 0, 0, 0.6);
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
 }
-.cpv-src textarea {
+.titan-chordpro-src textarea {
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -1726,10 +1726,10 @@ div.cpv-head-id {
   overflow: auto;
   resize: none;
 }
-.cpv-src textarea:focus {
+.titan-chordpro-src textarea:focus {
   outline: none;
 }
-.cpv-bottom-sheet {
+.titan-chordpro-bottom-sheet {
   position: absolute;
   left: 0;
   right: 0;
@@ -1742,10 +1742,10 @@ div.cpv-head-id {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
 }
 /* One line of a personal adjustment, shown in the source's own typeface. */
-.cpv-op-line {
+.titan-chordpro-op-line {
   font-family: 'Space Mono', monospace;
   font-size: 10.5px;
   line-height: 1.5;
@@ -1754,7 +1754,7 @@ div.cpv-head-id {
   text-overflow: ellipsis;
 }
 /* The dot beside a line the reader changed: their mark, and the way back. */
-.cpv-mine-dot {
+.titan-chordpro-mine-dot {
   position: absolute;
   left: -15px;
   bottom: 8px;
@@ -1769,17 +1769,17 @@ div.cpv-head-id {
   justify-content: center;
   cursor: pointer;
 }
-.cpv-mine-dot:hover {
+.titan-chordpro-mine-dot:hover {
   background: var(--chord-soft);
 }
-.cpv-mine-dot > span {
+.titan-chordpro-mine-dot > span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: var(--chord);
 }
 /* Cifra | Letra — session reading mode, one tap, never behind "Lentes". */
-.cpv-reading {
+.titan-chordpro-reading {
   display: flex;
   align-items: stretch;
   flex: none;
@@ -1788,7 +1788,7 @@ div.cpv-head-id {
   background: var(--surface);
   border: 1px solid var(--line);
 }
-.cpv-reading > button {
+.titan-chordpro-reading > button {
   margin: 0;
   border: 0;
   border-radius: 9px;
@@ -1798,28 +1798,28 @@ div.cpv-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-reading > button.is-on {
+.titan-chordpro-reading > button.is-on {
   background: var(--chord-fill);
   color: var(--chord);
 }
-.cpv-reading.is-bar {
+.titan-chordpro-reading.is-bar {
   height: 36px;
 }
-.cpv-reading.is-bar > button {
+.titan-chordpro-reading.is-bar > button {
   padding: 0 12px;
   font-size: 12.5px;
 }
-.cpv-reading.is-dock {
+.titan-chordpro-reading.is-dock {
   width: 100%;
   height: 40px;
 }
-.cpv-reading.is-dock > button {
+.titan-chordpro-reading.is-dock > button {
   flex: 1;
   font-size: 13.5px;
 }
 
 /* "Minha versão / Original": the switch stays with the chart, not in a menu. */
-.cpv-mine-switch {
+.titan-chordpro-mine-switch {
   pointer-events: auto;
   display: flex;
   align-items: center;
@@ -1827,7 +1827,7 @@ div.cpv-head-id {
   padding: 5px;
   border-radius: 14px;
 }
-.cpv-mine-switch > button {
+.titan-chordpro-mine-switch > button {
   height: 30px;
   padding: 0 11px;
   border-radius: 10px;
@@ -1836,7 +1836,7 @@ div.cpv-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-root button.cpv-queue-chip {
+.titan-chordpro-root button.titan-chordpro-queue-chip {
   position: absolute;
   left: 16px;
   bottom: 128px;
@@ -1858,33 +1858,33 @@ div.cpv-head-id {
   box-shadow:
     0 12px 28px -10px rgba(0, 0, 0, 0.55),
     0 0 0 4px var(--chord-soft);
-  animation: cpv-queue-pulse 1.8s ease-in-out infinite;
+  animation: titan-chordpro-queue-pulse 1.8s ease-in-out infinite;
 }
-.cpv-root button.cpv-queue-chip.is-compact {
+.titan-chordpro-root button.titan-chordpro-queue-chip.is-compact {
   left: 10px;
   bottom: calc(172px + env(safe-area-inset-bottom, 0px));
 }
-.cpv-root button.cpv-queue-chip.is-alone {
+.titan-chordpro-root button.titan-chordpro-queue-chip.is-alone {
   bottom: calc(18px + env(safe-area-inset-bottom, 0px));
 }
-.cpv-queue-chip-dot {
+.titan-chordpro-queue-chip-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--chord-ink);
   box-shadow: 0 0 0 3px rgba(16, 19, 26, 0.12);
 }
-.cpv-queue-chip-copy {
+.titan-chordpro-queue-chip-copy {
   line-height: 1;
 }
-.cpv-queue-chip-count {
+.titan-chordpro-queue-chip-count {
   min-width: 24px;
   height: 24px;
   padding: 0 7px;
   border-radius: 999px;
   background: var(--chord-ink);
   color: var(--chord);
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
@@ -1892,10 +1892,10 @@ div.cpv-head-id {
   align-items: center;
   justify-content: center;
 }
-.cpv-root button.cpv-queue-chip:hover {
+.titan-chordpro-root button.titan-chordpro-queue-chip:hover {
   filter: brightness(1.06);
 }
-@keyframes cpv-queue-pulse {
+@keyframes titan-chordpro-queue-pulse {
   0%,
   100% {
     box-shadow:
@@ -1908,10 +1908,10 @@ div.cpv-head-id {
       0 0 0 9px var(--chord-hover);
   }
 }
-.cpv-more-hit {
+.titan-chordpro-more-hit {
   position: relative;
 }
-.cpv-dock-queue-badge {
+.titan-chordpro-dock-queue-badge {
   position: absolute;
   top: 2px;
   right: 2px;
@@ -1921,20 +1921,20 @@ div.cpv-head-id {
   border-radius: 999px;
   background: var(--chord);
   color: var(--chord-ink);
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 9.5px;
   font-weight: 800;
   line-height: 16px;
   text-align: center;
 }
-.cpv-more-item.is-queue {
+.titan-chordpro-more-item.is-queue {
   border-color: var(--chord-edge);
   background: var(--chord-soft);
 }
 @media (prefers-reduced-motion: reduce) {
-  .cpv-root *,
-  .cpv-root *::before,
-  .cpv-root *::after {
+  .titan-chordpro-root *,
+  .titan-chordpro-root *::before,
+  .titan-chordpro-root *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -1943,20 +1943,20 @@ div.cpv-head-id {
 
 /* ---------------------------------------------------------------- editing */
 /* Grip column outside the block, so the chart itself keeps its width. */
-.cpv-blockrow {
+.titan-chordpro-blockrow {
   position: relative;
   display: flex;
   align-items: stretch;
   gap: 6px;
 }
-.cpv-blockbody {
+.titan-chordpro-blockbody {
   flex: 1;
   min-width: 0;
   position: relative;
   border-radius: 15px;
   outline-offset: 3px;
 }
-.cpv-grip {
+.titan-chordpro-grip {
   flex: none;
   width: 26px;
   display: flex;
@@ -1969,16 +1969,16 @@ div.cpv-head-id {
   line-height: 1;
   touch-action: none;
 }
-.cpv-grip:hover {
+.titan-chordpro-grip:hover {
   color: var(--text);
   opacity: 1 !important;
 }
-.cpv-grip:focus-visible {
+.titan-chordpro-grip:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 6px;
 }
-.cpv-drop-line {
+.titan-chordpro-drop-line {
   position: absolute;
   left: 0;
   right: 0;
@@ -1987,12 +1987,12 @@ div.cpv-head-id {
   border-radius: 2px;
   background: var(--chord);
 }
-.cpv-block-tag--key {
+.titan-chordpro-block-tag--key {
   background: var(--chord-soft);
   border-color: var(--chord-edge);
   color: var(--chord);
 }
-.cpv-block-tag-btn {
+.titan-chordpro-block-tag-btn {
   height: 20px;
   padding: 0 7px;
   border: 1px solid var(--line);
@@ -2006,12 +2006,12 @@ div.cpv-head-id {
   font-weight: 700;
   cursor: pointer;
 }
-.cpv-block-tag-btn:hover {
+.titan-chordpro-block-tag-btn:hover {
   background: var(--hover);
   color: var(--text);
 }
 /* Hidden is not deleted: the card keeps the words and the way back. */
-.cpv-hidden-card {
+.titan-chordpro-hidden-card {
   margin: 0 0 16px;
   padding: 10px 10px 10px 13px;
   border-radius: 13px;
@@ -2021,7 +2021,7 @@ div.cpv-head-id {
   align-items: center;
   gap: 12px;
 }
-.cpv-hidden-eye {
+.titan-chordpro-hidden-eye {
   flex: none;
   width: 11px;
   height: 11px;
@@ -2030,7 +2030,7 @@ div.cpv-head-id {
   position: relative;
   overflow: hidden;
 }
-.cpv-hidden-eye > span {
+.titan-chordpro-hidden-eye > span {
   position: absolute;
   left: -2px;
   top: 4px;
@@ -2039,21 +2039,21 @@ div.cpv-head-id {
   background: var(--muted);
   transform: rotate(-45deg);
 }
-.cpv-hidden-body {
+.titan-chordpro-hidden-body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
-.cpv-hidden-label {
+.titan-chordpro-hidden-label {
   font-size: 9.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 700;
   color: var(--muted);
 }
-.cpv-hidden-preview {
+.titan-chordpro-hidden-preview {
   font-family: 'Space Mono', monospace;
   font-size: 11px;
   color: var(--muted);
@@ -2061,7 +2061,7 @@ div.cpv-head-id {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cpv-hidden-btn {
+.titan-chordpro-hidden-btn {
   flex: none;
   height: 30px;
   padding: 0 11px;
@@ -2074,16 +2074,16 @@ div.cpv-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-hidden-btn:hover {
+.titan-chordpro-hidden-btn:hover {
   background: var(--chord-hover);
 }
 /* Text edited where it is read — no second surface to keep in sync. */
-.cpv-row-edit {
+.titan-chordpro-row-edit {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.cpv-row-input {
+.titan-chordpro-row-input {
   display: block;
   width: 100%;
   min-width: 0;
@@ -2098,11 +2098,11 @@ div.cpv-head-id {
   user-select: text;
   -webkit-touch-callout: default;
 }
-.cpv-row-edit .cpv-row-input {
+.titan-chordpro-row-edit .titan-chordpro-row-input {
   flex: 1;
   width: auto;
 }
-.cpv-insert-chord {
+.titan-chordpro-insert-chord {
   flex: none;
   height: 36px;
   padding: 0 12px;
@@ -2115,29 +2115,29 @@ div.cpv-head-id {
   font-weight: 700;
   cursor: pointer;
 }
-.cpv-insert-chord:hover {
+.titan-chordpro-insert-chord:hover {
   background: var(--chord-hover);
 }
-.cpv-row-input--comment {
+.titan-chordpro-row-input--comment {
   margin: 0 16px 0;
   max-width: calc(100% - 32px);
   padding: 8px 12px;
-  font-size: calc(var(--cpv-lyric-px, 18px) * 0.88);
+  font-size: calc(var(--titan-chordpro-lyric-px, 18px) * 0.88);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
-.cpv-row-input--note {
+.titan-chordpro-row-input--note {
   padding: 4px 8px;
   border-radius: 9px;
   font-family: inherit;
-  font-size: calc(var(--cpv-lyric-px, 18px) * 0.88);
+  font-size: calc(var(--titan-chordpro-lyric-px, 18px) * 0.88);
   line-height: 1.4;
 }
-.cpv-comment.is-editable,
-.cpv-note-item.is-editable {
+.titan-chordpro-comment.is-editable,
+.titan-chordpro-note-item.is-editable {
   cursor: text;
 }
-.cpv-editrow {
+.titan-chordpro-editrow {
   position: relative;
   padding: 2px 0 4px;
   cursor: text;
@@ -2149,26 +2149,26 @@ div.cpv-head-id {
 }
 /* Keep edge markers inside the scroll viewport without moving the lyric or
    changing its wrapping width. Includes the dot and its soft glow. */
-.cpv-editrow .cpv-reading-flow {
+.titan-chordpro-editrow .titan-chordpro-reading-flow {
   box-sizing: border-box;
   width: calc(100% + 16px);
   margin-inline: -8px;
   padding-inline: 8px;
 }
-.cpv-root.is-chord-drag,
-.cpv-root.is-chord-drag * {
+.titan-chordpro-root.is-chord-drag,
+.titan-chordpro-root.is-chord-drag * {
   -webkit-user-select: none !important;
   user-select: none !important;
   -webkit-touch-callout: none !important;
 }
-.cpv-tk-word {
+.titan-chordpro-tk-word {
   white-space: nowrap;
 }
-.cpv-tk-space {
+.titan-chordpro-tk-space {
   white-space: pre-wrap;
 }
 /* The chord as a thing you can pick up: out of the flow, over its syllable. */
-.cpv-pill {
+.titan-chordpro-pill {
   position: absolute;
   left: 0;
   top: 0;
@@ -2179,35 +2179,35 @@ div.cpv-head-id {
   background: var(--chord-soft);
   border: 1px solid var(--chord-edge);
   color: var(--chord);
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-weight: 700;
   line-height: 1;
   cursor: grab;
   touch-action: none;
   white-space: nowrap;
 }
-.cpv-pill:hover {
+.titan-chordpro-pill:hover {
   background: var(--chord-hover);
 }
 /* The chip stays in the column and keeps the same gap reading gives a chord. */
-.cpv-pill--flow {
+.titan-chordpro-pill--flow {
   position: relative;
   left: auto;
   top: auto;
   margin: 0 0.8em 0 0;
 }
 /* Room under the chip for the caret, so it never sits on the letter. */
-.cpv-editrow .cpv-word {
+.titan-chordpro-editrow .titan-chordpro-word {
   gap: 6px;
 }
-.cpv-editrow[data-played] {
+.titan-chordpro-editrow[data-played] {
   line-height: normal;
 }
 /* Anchor marker at the exact source offset. */
-.cpv-editrow .cpv-lyric [data-anchor] {
+.titan-chordpro-editrow .titan-chordpro-lyric [data-anchor] {
   position: relative;
 }
-.cpv-anchor-end {
+.titan-chordpro-anchor-end {
   display: inline-block;
   width: 0;
   height: 1em;
@@ -2215,7 +2215,7 @@ div.cpv-head-id {
   pointer-events: none;
 }
 /* A drawn hairline at the same source offset, without inserting lyric text. */
-.cpv-editrow .cpv-lyric [data-anchor]::before {
+.titan-chordpro-editrow .titan-chordpro-lyric [data-anchor]::before {
   content: '';
   position: absolute;
   z-index: 1;
@@ -2230,7 +2230,7 @@ div.cpv-head-id {
   box-shadow: 0 0 4px color-mix(in srgb, var(--chord) 35%, transparent);
   transform: none;
 }
-.cpv-editrow .cpv-lyric [data-anchor]::after {
+.titan-chordpro-editrow .titan-chordpro-lyric [data-anchor]::after {
   content: '';
   position: absolute;
   z-index: 1;
@@ -2243,12 +2243,12 @@ div.cpv-head-id {
   box-shadow: 0 0 5px color-mix(in srgb, var(--chord) 40%, transparent);
   pointer-events: none;
 }
-.cpv-pill:focus-visible {
+.titan-chordpro-pill:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
 /* The hold ring: on touch, dragging is earned before it starts. */
-.cpv-pill-ring {
+.titan-chordpro-pill-ring {
   position: absolute;
   inset: -4px;
   padding: 2.5px;
@@ -2264,11 +2264,11 @@ div.cpv-head-id {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
-.cpv-mine-dot--edit {
+.titan-chordpro-mine-dot--edit {
   left: -14px;
   bottom: auto;
 }
-.cpv-paste-btn {
+.titan-chordpro-paste-btn {
   position: absolute;
   right: 8px;
   top: -11px;
@@ -2284,10 +2284,10 @@ div.cpv-head-id {
   font-weight: 700;
   cursor: pointer;
 }
-.cpv-paste-btn:hover {
+.titan-chordpro-paste-btn:hover {
   background: var(--chord-hover);
 }
-.cpv-figure-btn--go {
+.titan-chordpro-figure-btn--go {
   border-color: var(--chord-edge);
   background: var(--chord-soft);
   color: var(--chord);
@@ -2295,7 +2295,7 @@ div.cpv-head-id {
 }
 
 /* Selection bar: what you can do to the block that is chosen, and only that. */
-.cpv-selbar {
+.titan-chordpro-selbar {
   pointer-events: auto;
   display: flex;
   overflow-y: visible;
@@ -2307,9 +2307,9 @@ div.cpv-head-id {
   padding: 6px;
   border-radius: 15px;
   border-color: var(--chord-edge);
-  animation: cpv-rise 0.18s ease-out;
+  animation: titan-chordpro-rise 0.18s ease-out;
 }
-.cpv-selbar-name {
+.titan-chordpro-selbar-name {
   flex: none;
   display: flex;
   align-items: center;
@@ -2322,7 +2322,7 @@ div.cpv-head-id {
   color: var(--chord);
   max-width: 190px;
 }
-.cpv-selbar-group {
+.titan-chordpro-selbar-group {
   flex: none;
   display: flex;
   align-items: center;
@@ -2331,14 +2331,14 @@ div.cpv-head-id {
   padding: 0 3px;
   border-radius: 10px;
 }
-.cpv-selbar-group--chord {
+.titan-chordpro-selbar-group--chord {
   background: var(--chord-soft);
 }
-.cpv-selbar-group--capo {
+.titan-chordpro-selbar-group--capo {
   background: var(--surface);
   border: 1px solid var(--line);
 }
-.cpv-selbar-group > button {
+.titan-chordpro-selbar-group > button {
   width: 32px;
   height: 30px;
   border: 0;
@@ -2349,19 +2349,19 @@ div.cpv-head-id {
   line-height: 1;
   cursor: pointer;
 }
-.cpv-selbar-group--chord > button {
+.titan-chordpro-selbar-group--chord > button {
   color: var(--chord);
 }
-.cpv-selbar-group--capo > button {
+.titan-chordpro-selbar-group--capo > button {
   color: var(--text);
 }
-.cpv-selbar-group--chord > button:hover {
+.titan-chordpro-selbar-group--chord > button:hover {
   background: var(--chord-hover);
 }
-.cpv-selbar-group--capo > button:hover {
+.titan-chordpro-selbar-group--capo > button:hover {
   background: var(--hover);
 }
-.cpv-selbar-val {
+.titan-chordpro-selbar-val {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2372,14 +2372,14 @@ div.cpv-head-id {
   font-weight: 700;
   white-space: nowrap;
 }
-.cpv-selbar-cap {
+.titan-chordpro-selbar-cap {
   font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 700;
-  font-family: var(--cpv-font-controls, Sora, system-ui, sans-serif);
+  font-family: var(--titan-chordpro-font-controls, Sora, system-ui, sans-serif);
 }
-.cpv-selbar-dual {
+.titan-chordpro-selbar-dual {
   height: 26px;
   width: auto !important;
   padding: 0 8px;
@@ -2392,7 +2392,7 @@ div.cpv-head-id {
   text-transform: uppercase;
   cursor: pointer;
 }
-.cpv-selbar-btn {
+.titan-chordpro-selbar-btn {
   flex: none;
   white-space: nowrap;
   height: 34px;
@@ -2406,18 +2406,18 @@ div.cpv-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-selbar-btn:hover {
+.titan-chordpro-selbar-btn:hover {
   background: var(--hover);
 }
-.cpv-selbar-btn--go {
+.titan-chordpro-selbar-btn--go {
   border-color: var(--chord-edge);
   background: var(--chord-soft);
   color: var(--chord);
 }
-.cpv-selbar-btn--go:hover {
+.titan-chordpro-selbar-btn--go:hover {
   background: var(--chord-hover);
 }
-.cpv-selbar-icon {
+.titan-chordpro-selbar-icon {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -2432,23 +2432,23 @@ div.cpv-head-id {
   font-size: 13px;
   cursor: pointer;
 }
-.cpv-selbar-icon:hover {
+.titan-chordpro-selbar-icon:hover {
   background: var(--hover);
 }
-.cpv-selbar-icon--danger {
+.titan-chordpro-selbar-icon--danger {
   color: var(--danger);
   font-size: 14px;
 }
-.cpv-selbar-icon--danger:hover {
+.titan-chordpro-selbar-icon--danger:hover {
   background: var(--danger-soft);
 }
-.cpv-selbar-icon--ghost {
+.titan-chordpro-selbar-icon--ghost {
   border: 0;
   color: var(--muted);
   font-size: 15px;
 }
 /* Harmony on the clipboard: it stays there until it is dropped. */
-.cpv-clip-bar {
+.titan-chordpro-clip-bar {
   pointer-events: auto;
   display: flex;
   align-items: center;
@@ -2457,9 +2457,9 @@ div.cpv-head-id {
   padding: 8px 8px 8px 13px;
   border-radius: 13px;
   border: 1px dashed var(--chord-edge);
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
 }
-.cpv-placing-bar {
+.titan-chordpro-placing-bar {
   position: absolute;
   left: 50%;
   top: 78px;
@@ -2471,10 +2471,10 @@ div.cpv-head-id {
   padding: 8px 9px 8px 13px;
   border-radius: 12px;
   border-color: var(--chord-edge);
-  animation: cpv-rise 0.18s ease-out;
+  animation: titan-chordpro-rise 0.18s ease-out;
 }
 /* The + lives in the gap it writes into. The menu hangs off that same gap. */
-.cpv-insert-slot {
+.titan-chordpro-insert-slot {
   position: relative;
   display: flex;
   align-items: center;
@@ -2483,15 +2483,15 @@ div.cpv-head-id {
   min-height: 28px;
   z-index: 4;
 }
-.cpv-insert-slot.is-open {
+.titan-chordpro-insert-slot.is-open {
   z-index: 14;
 }
-.cpv-insert-rule {
+.titan-chordpro-insert-rule {
   flex: 1;
   height: 1px;
   background: var(--line-soft);
 }
-.cpv-insert-plus {
+.titan-chordpro-insert-plus {
   flex: none;
   display: flex;
   align-items: center;
@@ -2505,17 +2505,17 @@ div.cpv-head-id {
   color: var(--chord);
   cursor: pointer;
 }
-.cpv-insert-plus:hover,
-.cpv-insert-slot.is-open .cpv-insert-plus {
+.titan-chordpro-insert-plus:hover,
+.titan-chordpro-insert-slot.is-open .titan-chordpro-insert-plus {
   border-style: solid;
   border-color: var(--chord-edge);
   background: var(--chord-soft);
 }
-.cpv-insert-plus:focus-visible {
+.titan-chordpro-insert-plus:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.cpv-insert-menu {
+.titan-chordpro-insert-menu {
   position: absolute;
   left: 0;
   top: calc(100% + 4px);
@@ -2527,13 +2527,13 @@ div.cpv-head-id {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  animation: cpv-rise 0.16s ease-out;
+  animation: titan-chordpro-rise 0.16s ease-out;
 }
-.cpv-insert-slot.is-up .cpv-insert-menu {
+.titan-chordpro-insert-slot.is-up .titan-chordpro-insert-menu {
   top: auto;
   bottom: calc(100% + 4px);
 }
-.cpv-insert-where {
+.titan-chordpro-insert-where {
   padding: 5px 10px;
   font-size: 9.5px;
   letter-spacing: 0.14em;
@@ -2541,7 +2541,7 @@ div.cpv-head-id {
   color: var(--muted);
   font-weight: 700;
 }
-.cpv-insert-item {
+.titan-chordpro-insert-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2558,10 +2558,10 @@ div.cpv-head-id {
   text-align: left;
   cursor: pointer;
 }
-.cpv-insert-item:hover {
+.titan-chordpro-insert-item:hover {
   background: var(--surface-hover);
 }
-.cpv-insert-item > span {
+.titan-chordpro-insert-item > span {
   flex: none;
   width: 22px;
   display: flex;
@@ -2571,36 +2571,36 @@ div.cpv-head-id {
   font-size: 14px;
 }
 /* Chord editor: one field, the chart's own vocabulary, and a way out. */
-.cpv-modal {
+.titan-chordpro-modal {
   position: absolute;
   inset: 0;
   z-index: 34;
   display: flex;
   justify-content: center;
 }
-.cpv-scrim {
+.titan-chordpro-scrim {
   position: absolute;
   inset: 0;
   background: var(--scrim);
   backdrop-filter: blur(5px);
-  animation: cpv-fade 0.16s ease;
+  animation: titan-chordpro-fade 0.16s ease;
 }
-.cpv-modal-card {
+.titan-chordpro-modal-card {
   position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 11px;
-  animation: cpv-rise 0.18s ease-out;
+  animation: titan-chordpro-rise 0.18s ease-out;
 }
-.cpv-modal-kicker {
+.titan-chordpro-modal-kicker {
   font-size: 9.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
 }
-.cpv-chord-input {
+.titan-chordpro-chord-input {
   width: 100%;
   height: 46px;
   padding: 0 12px;
@@ -2612,7 +2612,7 @@ div.cpv-head-id {
   font-size: 19px;
   font-weight: 700;
 }
-.cpv-vocab-btn {
+.titan-chordpro-vocab-btn {
   height: 30px;
   padding: 0 9px;
   border: 1px solid var(--line);
@@ -2624,10 +2624,10 @@ div.cpv-head-id {
   font-weight: 700;
   cursor: pointer;
 }
-.cpv-vocab-btn:hover {
+.titan-chordpro-vocab-btn:hover {
   background: var(--hover);
 }
-.cpv-modal-btn {
+.titan-chordpro-modal-btn {
   height: 38px;
   padding: 0 13px;
   border: 1px solid var(--line);
@@ -2639,25 +2639,25 @@ div.cpv-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.cpv-modal-btn:hover {
+.titan-chordpro-modal-btn:hover {
   background: var(--hover);
 }
-.cpv-modal-btn--danger {
+.titan-chordpro-modal-btn--danger {
   flex: none;
   padding: 0 12px;
   color: var(--danger);
 }
-.cpv-modal-btn--danger:hover {
+.titan-chordpro-modal-btn--danger:hover {
   background: var(--danger-soft);
 }
-.cpv-modal-btn--primary {
+.titan-chordpro-modal-btn--primary {
   border: 0;
   padding: 0 15px;
   background: var(--pill);
   color: var(--pill-ink);
   font-weight: 700;
 }
-.cpv-picker-item {
+.titan-chordpro-picker-item {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -2671,10 +2671,10 @@ div.cpv-head-id {
   text-align: left;
   cursor: pointer;
 }
-.cpv-picker-item:hover {
+.titan-chordpro-picker-item:hover {
   background: var(--surface-hover);
 }
-.cpv-picker-item > img {
+.titan-chordpro-picker-item > img {
   flex: none;
   width: 74px;
   height: 52px;
@@ -2683,13 +2683,13 @@ div.cpv-head-id {
   object-position: left top;
   background: #fff;
 }
-.cpv-image-drop {
+.titan-chordpro-image-drop {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
 }
-.cpv-image-file {
+.titan-chordpro-image-file {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2699,7 +2699,7 @@ div.cpv-head-id {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
-.cpv-image-preview {
+.titan-chordpro-image-preview {
   width: 100%;
   max-height: 220px;
   object-fit: contain;
@@ -2707,7 +2707,7 @@ div.cpv-head-id {
   border-radius: 12px;
   background: #fff;
 }
-.cpv-modal-btn:disabled {
+.titan-chordpro-modal-btn:disabled {
   opacity: 0.45;
   cursor: default;
 }
@@ -2722,7 +2722,7 @@ div.cpv-head-id {
   overflow: hidden;
   background: var(--canvas);
   color: var(--text);
-  font-family: var(--cpv-font-controls, Sora, system-ui, sans-serif);
+  font-family: var(--titan-chordpro-font-controls, Sora, system-ui, sans-serif);
   display: flex;
   flex-direction: column;
 }
@@ -2881,7 +2881,7 @@ div.cpv-head-id {
   border-radius: 14px;
   background: var(--veil-2);
   border: 1px solid var(--line-soft);
-  animation: cpv-rise 0.16s ease-out;
+  animation: titan-chordpro-rise 0.16s ease-out;
 }
 .edp-src > pre {
   margin: 0;
@@ -3024,28 +3024,28 @@ div.cpv-head-id {
   cursor: pointer;
 }
 /* The score editor takes the whole viewer: it is a workbench, not a sheet. */
-.cpv-score-modal {
+.titan-chordpro-score-modal {
   position: absolute;
   inset: 0;
   z-index: 36;
   background: var(--canvas);
-  animation: cpv-rise 0.18s ease-out;
+  animation: titan-chordpro-rise 0.18s ease-out;
 }
 
 /* Public typography tokens accept font-family lists and inherit from ancestors. Defaults are
    standalone; the host owns font loading. Source/TAB retain monospace. */
-.cpv-row-input:not(.cpv-row-input--comment):not(.cpv-row-input--note),
-.cpv-editrow {
-  font-family: var(--cpv-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
+.titan-chordpro-row-input:not(.titan-chordpro-row-input--comment):not(.titan-chordpro-row-input--note),
+.titan-chordpro-editrow {
+  font-family: var(--titan-chordpro-font-lyrics, Sora, system-ui, -apple-system, sans-serif);
 }
 
-.cpv-reading-word .cpv-lyric {
+.titan-chordpro-reading-word .titan-chordpro-lyric {
   white-space: pre;
   overflow-wrap: normal;
 }
 
 /* Solid --canvas: the chip sits on the chart and must stay opaque. */
-.cpv-audio-ref {
+.titan-chordpro-audio-ref {
   position: relative;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) 32px;
@@ -3066,7 +3066,7 @@ div.cpv-head-id {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-.cpv-audio-ref.is-closed {
+.titan-chordpro-audio-ref.is-closed {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3075,7 +3075,7 @@ div.cpv-head-id {
   padding: 5px 6px 5px 5px;
   border-radius: 999px;
 }
-.cpv-phone-stack {
+.titan-chordpro-phone-stack {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -3087,50 +3087,50 @@ div.cpv-head-id {
   align-items: stretch;
   gap: 8px;
 }
-.cpv-phone-stack .cpv-chrome.is-hidden {
+.titan-chordpro-phone-stack .titan-chordpro-chrome.is-hidden {
   display: none;
 }
-.cpv-phone-stack.is-zen .cpv-veil {
+.titan-chordpro-phone-stack.is-zen .titan-chordpro-veil {
   background: transparent;
   border: 0;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.cpv-phone-stack.is-zen .cpv-phone-lead {
+.titan-chordpro-phone-stack.is-zen .titan-chordpro-phone-lead {
   border: 0;
   padding: 0;
 }
-.cpv-phone-lead {
+.titan-chordpro-phone-lead {
   display: flex;
   align-items: stretch;
   gap: 8px;
   padding: 6px;
   border-bottom: 1px solid var(--line-soft);
 }
-.cpv-phone-lead .cpv-reading {
+.titan-chordpro-phone-lead .titan-chordpro-reading {
   flex: 1;
   min-width: 0;
   flex-shrink: 0;
 }
-.cpv-phone-lead:has(.cpv-audio-ref:not(.is-closed)) {
+.titan-chordpro-phone-lead:has(.titan-chordpro-audio-ref:not(.is-closed)) {
   flex-direction: column;
   align-items: stretch;
 }
-.cpv-phone-lead:has(.cpv-audio-ref:not(.is-closed)) .cpv-audio-ref {
+.titan-chordpro-phone-lead:has(.titan-chordpro-audio-ref:not(.is-closed)) .titan-chordpro-audio-ref {
   width: 100%;
   max-width: none;
   align-self: stretch;
   height: auto;
 }
-.cpv-phone-lead:has(.cpv-audio-ref:not(.is-closed)) .cpv-reading {
+.titan-chordpro-phone-lead:has(.titan-chordpro-audio-ref:not(.is-closed)) .titan-chordpro-reading {
   display: none;
 }
-.cpv-audio-ref.is-inline.is-closed {
+.titan-chordpro-audio-ref.is-inline.is-closed {
   display: flex;
   align-items: stretch;
   box-sizing: border-box;
-  height: var(--cpv-dock-ctrl-h, 44px);
+  height: var(--titan-chordpro-dock-ctrl-h, 44px);
   width: auto;
   max-width: none;
   margin: 0;
@@ -3140,10 +3140,10 @@ div.cpv-head-id {
   background: transparent;
   box-shadow: none;
 }
-.cpv-audio-ref-phones {
+.titan-chordpro-audio-ref-phones {
   flex: none;
-  width: var(--cpv-dock-ctrl-h, 44px);
-  height: var(--cpv-dock-ctrl-h, 44px);
+  width: var(--titan-chordpro-dock-ctrl-h, 44px);
+  height: var(--titan-chordpro-dock-ctrl-h, 44px);
   margin: 0;
   padding: 0;
   border: 0;
@@ -3155,24 +3155,24 @@ div.cpv-head-id {
   justify-content: center;
   cursor: pointer;
 }
-.cpv-audio-ref.is-playing .cpv-audio-ref-phones {
+.titan-chordpro-audio-ref.is-playing .titan-chordpro-audio-ref-phones {
   color: var(--chord);
 }
-.cpv-audio-ref [data-audio-wave] {
+.titan-chordpro-audio-ref [data-audio-wave] {
   opacity: 0;
   transform-box: fill-box;
   transform-origin: center;
 }
-.cpv-audio-ref.is-playing [data-audio-wave] {
+.titan-chordpro-audio-ref.is-playing [data-audio-wave] {
   opacity: 1;
-  animation: cpv-audio-wave 0.7s ease-in-out infinite;
+  animation: titan-chordpro-audio-wave 0.7s ease-in-out infinite;
 }
-.cpv-audio-ref.is-playing [data-audio-wave='2'] {
+.titan-chordpro-audio-ref.is-playing [data-audio-wave='2'] {
   opacity: 0.55;
   animation-duration: 1s;
   animation-direction: reverse;
 }
-@keyframes cpv-audio-wave {
+@keyframes titan-chordpro-audio-wave {
   0%,
   100% {
     transform: scaleY(0.45);
@@ -3182,18 +3182,18 @@ div.cpv-head-id {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cpv-audio-ref.is-playing [data-audio-wave] {
+  .titan-chordpro-audio-ref.is-playing [data-audio-wave] {
     animation: none;
     opacity: 1;
     transform: none;
   }
 }
-.cpv-phone-stack.is-zen .cpv-audio-ref-phones {
+.titan-chordpro-phone-stack.is-zen .titan-chordpro-audio-ref-phones {
   background: var(--canvas);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-.cpv-audio-ref-art {
+.titan-chordpro-audio-ref-art {
   grid-area: art;
   align-self: center;
   width: 56px;
@@ -3207,16 +3207,16 @@ div.cpv-head-id {
   justify-content: center;
   box-shadow: inset 0 0 0 1px var(--chord-edge);
 }
-.cpv-audio-ref.is-playing .cpv-audio-ref-art {
+.titan-chordpro-audio-ref.is-playing .titan-chordpro-audio-ref-art {
   box-shadow: inset 0 0 0 1px var(--chord), 0 0 0 1px color-mix(in srgb, var(--chord) 35%, transparent);
 }
-.cpv-audio-ref-art img {
+.titan-chordpro-audio-ref-art img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.cpv-audio-ref-id {
+.titan-chordpro-audio-ref-id {
   grid-area: id;
   min-width: 0;
   display: flex;
@@ -3225,29 +3225,29 @@ div.cpv-head-id {
   gap: 1px;
   padding-top: 1px;
 }
-.cpv-audio-ref-title,
-.cpv-audio-ref-artist {
+.titan-chordpro-audio-ref-title,
+.titan-chordpro-audio-ref-artist {
   margin: 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cpv-audio-ref-title {
-  font-family: var(--cpv-font-lyrics, Sora, system-ui, sans-serif);
+.titan-chordpro-audio-ref-title {
+  font-family: var(--titan-chordpro-font-lyrics, Sora, system-ui, sans-serif);
   font-size: 13.5px;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.25;
   color: var(--text);
 }
-.cpv-audio-ref-artist {
+.titan-chordpro-audio-ref-artist {
   font-size: 11.5px;
   font-weight: 500;
   line-height: 1.3;
   color: var(--muted);
 }
-.cpv-audio-ref-launch {
+.titan-chordpro-audio-ref-launch {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -3263,27 +3263,27 @@ div.cpv-head-id {
   text-align: left;
   cursor: pointer;
 }
-.cpv-audio-ref-art.is-chip {
+.titan-chordpro-audio-ref-art.is-chip {
   width: 36px;
   height: 36px;
   border-radius: 10px;
   flex: none;
 }
-.cpv-audio-ref-launch-copy {
+.titan-chordpro-audio-ref-launch-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
-.cpv-audio-ref-kicker {
+.titan-chordpro-audio-ref-kicker {
   font-size: 9.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 700;
   color: var(--muted);
 }
-.cpv-audio-ref-launch-title {
-  font-family: var(--cpv-font-lyrics, Sora, system-ui, sans-serif);
+.titan-chordpro-audio-ref-launch-title {
+  font-family: var(--titan-chordpro-font-lyrics, Sora, system-ui, sans-serif);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -3292,7 +3292,7 @@ div.cpv-head-id {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cpv-audio-ref-close {
+.titan-chordpro-audio-ref-close {
   grid-area: close;
   justify-self: end;
   align-self: start;
@@ -3307,19 +3307,19 @@ div.cpv-head-id {
   justify-content: center;
   cursor: pointer;
 }
-.cpv-audio-ref-close:hover {
+.titan-chordpro-audio-ref-close:hover {
   color: var(--text);
   background: var(--hover);
 }
-.cpv-audio-ref-kind {
+.titan-chordpro-audio-ref-kind {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
   margin-top: 12px;
 }
-.cpv-audio-ref-kind > button,
-.cpv-audio-ref-kind > span {
+.titan-chordpro-audio-ref-kind > button,
+.titan-chordpro-audio-ref-kind > span {
   margin: 0;
   padding: 0;
   border: 0;
@@ -3332,11 +3332,11 @@ div.cpv-head-id {
   color: var(--muted);
   line-height: 1.2;
 }
-.cpv-audio-ref-kind > .is-on {
+.titan-chordpro-audio-ref-kind > .is-on {
   color: var(--chord);
 }
 /* Choice: look tappable. Solo: just the type label. */
-.cpv-audio-ref-kind.is-switch > button {
+.titan-chordpro-audio-ref-kind.is-switch > button {
   height: 28px;
   padding: 0 11px;
   border: 1px solid var(--line);
@@ -3344,16 +3344,16 @@ div.cpv-head-id {
   color: var(--muted);
   cursor: pointer;
 }
-.cpv-audio-ref-kind.is-switch > button.is-on {
+.titan-chordpro-audio-ref-kind.is-switch > button.is-on {
   border-color: var(--chord-edge);
   background: var(--chord-fill);
   color: var(--chord);
 }
-.cpv-audio-ref-kind.is-switch > button:not(.is-on):hover {
+.titan-chordpro-audio-ref-kind.is-switch > button:not(.is-on):hover {
   border-color: var(--sel-line);
   color: var(--text);
 }
-.cpv-audio-ref-play {
+.titan-chordpro-audio-ref-play {
   flex: none;
   width: 36px;
   height: 36px;
@@ -3366,20 +3366,20 @@ div.cpv-head-id {
   justify-content: center;
   cursor: pointer;
 }
-.cpv-audio-ref:not(.is-playing) .cpv-audio-ref-play :deep(svg) {
+.titan-chordpro-audio-ref:not(.is-playing) .titan-chordpro-audio-ref-play :deep(svg) {
   /* Play triangle sits optically left in the circle. */
   transform: translateX(1px);
 }
-.cpv-audio-ref:not(.is-closed) .cpv-audio-ref-play {
+.titan-chordpro-audio-ref:not(.is-closed) .titan-chordpro-audio-ref-play {
   width: 52px;
   height: 52px;
   box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--chord) 70%, transparent);
 }
-.cpv-audio-ref-play:focus-visible {
+.titan-chordpro-audio-ref-play:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.cpv-audio-ref-transport {
+.titan-chordpro-audio-ref-transport {
   grid-area: ctrl;
   display: flex;
   align-items: center;
@@ -3388,7 +3388,7 @@ div.cpv-head-id {
   min-width: 0;
   padding: 6px 0 2px;
 }
-.cpv-audio-ref-skip {
+.titan-chordpro-audio-ref-skip {
   flex: none;
   min-width: 28px;
   height: 28px;
@@ -3403,11 +3403,11 @@ div.cpv-head-id {
   letter-spacing: 0.04em;
   cursor: pointer;
 }
-.cpv-audio-ref-skip:hover {
+.titan-chordpro-audio-ref-skip:hover {
   color: var(--muted);
   background: transparent;
 }
-.cpv-audio-ref-seek {
+.titan-chordpro-audio-ref-seek {
   grid-area: seek;
   position: relative;
   min-width: 0;
@@ -3416,7 +3416,7 @@ div.cpv-head-id {
   cursor: pointer;
   touch-action: none;
 }
-.cpv-audio-ref-seek::before {
+.titan-chordpro-audio-ref-seek::before {
   content: '';
   position: absolute;
   left: 0;
@@ -3426,7 +3426,7 @@ div.cpv-head-id {
   border-radius: 99px;
   background: var(--line);
 }
-.cpv-audio-ref-seek-fill {
+.titan-chordpro-audio-ref-seek-fill {
   position: absolute;
   left: 0;
   top: 9px;
@@ -3435,18 +3435,18 @@ div.cpv-head-id {
   background: var(--chord);
   pointer-events: none;
 }
-.cpv-audio-ref-times {
+.titan-chordpro-audio-ref-times {
   grid-area: times;
   display: flex;
   justify-content: space-between;
   padding: 0 10px;
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 10px;
   font-weight: 700;
   color: var(--muted);
   letter-spacing: 0.02em;
 }
-.cpv-audio-ref-error {
+.titan-chordpro-audio-ref-error {
   grid-area: ctrl;
   margin: 0;
   font-size: 12px;
@@ -3454,138 +3454,138 @@ div.cpv-head-id {
 }
 
 /* Imported notation reflows at a readable size; dense single bars can scroll. */
-.cpv-external-score { padding: 6px 10px 10px; min-width: 0; container-type: inline-size; }
-.cpv-external-score .cpv-figure-cap { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
-.cpv-score-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.cpv-score-controls { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
-.cpv-score-controls .cpv-note-names-toggle[aria-pressed="true"] { border-color: var(--chord); color: var(--chord); background: var(--chord-soft); }
-.cpv-score-controls .cpv-figure-btn, .cpv-score-controls .cpv-score-zoom-trigger { height: 32px; min-height: 32px; padding: 0 8px; font-size: 11.5px; border-radius: 8px; white-space: nowrap; }
+.titan-chordpro-external-score { padding: 6px 10px 10px; min-width: 0; container-type: inline-size; }
+.titan-chordpro-external-score .titan-chordpro-figure-cap { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.titan-chordpro-score-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.titan-chordpro-score-controls { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.titan-chordpro-score-controls .titan-chordpro-note-names-toggle[aria-pressed="true"] { border-color: var(--chord); color: var(--chord); background: var(--chord-soft); }
+.titan-chordpro-score-controls .titan-chordpro-figure-btn, .titan-chordpro-score-controls .titan-chordpro-score-zoom-trigger { height: 32px; min-height: 32px; padding: 0 8px; font-size: 11.5px; border-radius: 8px; white-space: nowrap; }
 @container (max-width: 640px) {
-  .cpv-score-controls .cpv-score-choice-compact .cpv-score-choice-value,
-  .cpv-score-controls .cpv-score-choice-compact .cpv-score-zoom-trigger > svg { display: none; }
-  .cpv-score-controls .cpv-score-choice-compact .cpv-score-zoom-label { color: var(--text); font-weight: 600; }
+  .titan-chordpro-score-controls .titan-chordpro-score-choice-compact .titan-chordpro-score-choice-value,
+  .titan-chordpro-score-controls .titan-chordpro-score-choice-compact .titan-chordpro-score-zoom-trigger > svg { display: none; }
+  .titan-chordpro-score-controls .titan-chordpro-score-choice-compact .titan-chordpro-score-zoom-label { color: var(--text); font-weight: 600; }
 }
-@container (max-width: 340px) { .cpv-score-controls { flex-wrap: wrap; } }
-.cpv-notation-paper { background: transparent; color: var(--text); overflow-x: auto; border-radius: 6px; }
-.cpv-note-names { position: relative; height: 20px; color: var(--chord); font: 600 11px/20px sans-serif; white-space: nowrap; }
-.cpv-note-name { position: absolute; transform: translateX(-50%); }
-.cpv-external-score p { font-size: 13px; line-height: 1.5; }
-.cpv-score-zoom { position: relative; max-width: 100%; }
-.cpv-score-zoom-trigger, .cpv-score-zoom-option {
+@container (max-width: 340px) { .titan-chordpro-score-controls { flex-wrap: wrap; } }
+.titan-chordpro-notation-paper { background: transparent; color: var(--text); overflow-x: auto; border-radius: 6px; }
+.titan-chordpro-note-names { position: relative; height: 20px; color: var(--chord); font: 600 11px/20px sans-serif; white-space: nowrap; }
+.titan-chordpro-note-name { position: absolute; transform: translateX(-50%); }
+.titan-chordpro-external-score p { font-size: 13px; line-height: 1.5; }
+.titan-chordpro-score-zoom { position: relative; max-width: 100%; }
+.titan-chordpro-score-zoom-trigger, .titan-chordpro-score-zoom-option {
   display: flex; align-items: center; gap: 8px; min-height: 40px;
   padding: 8px 10px; color: var(--text); font: inherit; font-size: 12px;
   cursor: pointer; text-align: left;
 }
-.cpv-score-zoom-trigger {
+.titan-chordpro-score-zoom-trigger {
   max-width: 100%; border: 1px solid var(--line, var(--muted)); border-radius: 10px;
   background: var(--canvas, var(--bg));
 }
-.cpv-score-zoom-label { color: var(--muted); }
-.cpv-score-zoom-trigger[aria-expanded="true"] { border-color: var(--chord); }
-.cpv-score-zoom-trigger[aria-expanded="true"] > .cpv-ico { transform: rotate(180deg); }
-.cpv-score-zoom-menu {
+.titan-chordpro-score-zoom-label { color: var(--muted); }
+.titan-chordpro-score-zoom-trigger[aria-expanded="true"] { border-color: var(--chord); }
+.titan-chordpro-score-zoom-trigger[aria-expanded="true"] > .titan-chordpro-ico { transform: rotate(180deg); }
+.titan-chordpro-score-zoom-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 20;
   width: max-content; min-width: 100%; max-width: calc(100vw - 48px);
   padding: 5px; border: 1px solid var(--line, var(--muted)); border-radius: 12px;
   background: var(--canvas, var(--bg)); color: var(--text); box-shadow: var(--shadow);
 }
-.cpv-score-zoom-option { width: 100%; justify-content: space-between; border: 0; border-radius: 7px; background: transparent; }
-.cpv-score-zoom-option[aria-selected="true"] { color: var(--chord); font-weight: 600; }
-.cpv-score-zoom-option:hover, .cpv-score-zoom-option:focus-visible {
+.titan-chordpro-score-zoom-option { width: 100%; justify-content: space-between; border: 0; border-radius: 7px; background: transparent; }
+.titan-chordpro-score-zoom-option[aria-selected="true"] { color: var(--chord); font-weight: 600; }
+.titan-chordpro-score-zoom-option:hover, .titan-chordpro-score-zoom-option:focus-visible {
   background: color-mix(in srgb, var(--chord) 12%, var(--canvas, var(--bg)));
 }
-.cpv-score-zoom-trigger:focus-visible, .cpv-score-zoom-option:focus-visible {
+.titan-chordpro-score-zoom-trigger:focus-visible, .titan-chordpro-score-zoom-option:focus-visible {
   outline: 2px solid var(--chord); outline-offset: 2px;
 }
-.cpv-import-score-modal { align-items: center; padding: 24px; }
-.cpv-import-score { width: min(1120px, 100%); max-height: 100%; min-height: 0; gap: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--canvas); box-shadow: var(--shadow); color: var(--text); }
-.cpv-import-score h2, .cpv-import-score p { margin: 0; }
-.cpv-import-score h2 { margin: 5px 0 7px; font-size: 24px; line-height: 1.2; letter-spacing: -.025em; }
-.cpv-import-score p { color: var(--muted); font-size: 13px; line-height: 1.55; }
-.cpv-import-score-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 24px 28px; border-bottom: 1px solid var(--line); }
-.cpv-import-score-close { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--muted); cursor: pointer; }
-.cpv-import-score-body { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; overflow: auto; overscroll-behavior: contain; }
-.cpv-import-score-controls { min-width: 0; margin: 0; padding: 24px; border: 0; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 24px; }
-.cpv-import-score-file { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 12px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
-.cpv-import-score-file-icon { display: grid; place-items: center; height: 40px; border-radius: 12px; background: var(--chord-soft); color: var(--chord); }
-.cpv-import-score-file strong { display: block; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.cpv-import-score-file p { font-size: 11px; margin-top: 3px; }
-.cpv-import-score-file > button { grid-column: 1 / -1; width: 100%; }
-.cpv-import-score-file--drop { padding: 16px; border: 1px dashed var(--line); border-radius: 14px; }
-.cpv-import-score-file--dragging { border-color: var(--chord); background: var(--chord-soft); }
-.cpv-import-score-file .cpv-import-score-drop-hint { grid-column: 1 / -1; margin: 0; text-align: center; }
+.titan-chordpro-import-score-modal { align-items: center; padding: 24px; }
+.titan-chordpro-import-score { width: min(1120px, 100%); max-height: 100%; min-height: 0; gap: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--canvas); box-shadow: var(--shadow); color: var(--text); }
+.titan-chordpro-import-score h2, .titan-chordpro-import-score p { margin: 0; }
+.titan-chordpro-import-score h2 { margin: 5px 0 7px; font-size: 24px; line-height: 1.2; letter-spacing: -.025em; }
+.titan-chordpro-import-score p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+.titan-chordpro-import-score-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 24px 28px; border-bottom: 1px solid var(--line); }
+.titan-chordpro-import-score-close { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--muted); cursor: pointer; }
+.titan-chordpro-import-score-body { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.titan-chordpro-import-score-controls { min-width: 0; margin: 0; padding: 24px; border: 0; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 24px; }
+.titan-chordpro-import-score-file { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 12px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.titan-chordpro-import-score-file-icon { display: grid; place-items: center; height: 40px; border-radius: 12px; background: var(--chord-soft); color: var(--chord); }
+.titan-chordpro-import-score-file strong { display: block; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.titan-chordpro-import-score-file p { font-size: 11px; margin-top: 3px; }
+.titan-chordpro-import-score-file > button { grid-column: 1 / -1; width: 100%; }
+.titan-chordpro-import-score-file--drop { padding: 16px; border: 1px dashed var(--line); border-radius: 14px; }
+.titan-chordpro-import-score-file--dragging { border-color: var(--chord); background: var(--chord-soft); }
+.titan-chordpro-import-score-file .titan-chordpro-import-score-drop-hint { grid-column: 1 / -1; margin: 0; text-align: center; }
 @media (hover: none) and (pointer: coarse) {
-  .cpv-import-score-drop-hint { display: none; }
+  .titan-chordpro-import-score-drop-hint { display: none; }
 }
-.cpv-import-score-field { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-.cpv-import-score-label, .cpv-bar-range-heading { font-size: 12px; font-weight: 650; }
-.cpv-import-score-field p { font-size: 12px; }
-.cpv-import-score-field .cpv-score-zoom-trigger { width: 100%; justify-content: space-between; min-height: 44px; font-size: 13px; }
-.cpv-import-score-field .cpv-score-zoom-trigger > span { overflow-wrap: anywhere; min-width: 0; }
-.cpv-import-score-field .cpv-score-zoom-trigger > svg { flex: none; }
-.cpv-import-score-field .cpv-score-zoom-menu { width: 100%; max-height: 220px; overflow-y: auto; }
-.cpv-import-score-field .cpv-score-zoom-option { min-height: 44px; overflow-wrap: anywhere; }
-.cpv-import-score-preview { min-width: 0; padding: 24px; background: var(--surface); }
-.cpv-import-score-preview-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 18px; }
-.cpv-import-score-preview-head > span:last-child:not(:first-child) { color: var(--muted); font-size: 11px; }
-.cpv-import-score-preview .cpv-external-score { margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
-.cpv-import-score-preview .cpv-figure-cap { padding-bottom: 4px; }
+.titan-chordpro-import-score-field { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.titan-chordpro-import-score-label, .titan-chordpro-bar-range-heading { font-size: 12px; font-weight: 650; }
+.titan-chordpro-import-score-field p { font-size: 12px; }
+.titan-chordpro-import-score-field .titan-chordpro-score-zoom-trigger { width: 100%; justify-content: space-between; min-height: 44px; font-size: 13px; }
+.titan-chordpro-import-score-field .titan-chordpro-score-zoom-trigger > span { overflow-wrap: anywhere; min-width: 0; }
+.titan-chordpro-import-score-field .titan-chordpro-score-zoom-trigger > svg { flex: none; }
+.titan-chordpro-import-score-field .titan-chordpro-score-zoom-menu { width: 100%; max-height: 220px; overflow-y: auto; }
+.titan-chordpro-import-score-field .titan-chordpro-score-zoom-option { min-height: 44px; overflow-wrap: anywhere; }
+.titan-chordpro-import-score-preview { min-width: 0; padding: 24px; background: var(--surface); }
+.titan-chordpro-import-score-preview-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 18px; }
+.titan-chordpro-import-score-preview-head > span:last-child:not(:first-child) { color: var(--muted); font-size: 11px; }
+.titan-chordpro-import-score-preview .titan-chordpro-external-score { margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.titan-chordpro-import-score-preview .titan-chordpro-figure-cap { padding-bottom: 4px; }
 
-.cpv-import-score-empty { min-height: 240px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 16px; color: var(--muted); padding: 24px; border: 1px dashed var(--line); border-radius: 14px; }
-.cpv-import-score-empty p { max-width: 260px; }
-.cpv-import-score-actions { display: flex; flex: none; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--canvas); }
-.cpv-import-score-actions > span { margin-right: auto; color: var(--muted); font-size: 12px; }
-.cpv-import-score .cpv-modal-btn { min-height: 44px; height: auto; padding: 10px 14px; }
-.cpv-import-score .cpv-modal-btn--primary { background: var(--chord); color: var(--chord-ink); }
-.cpv-import-score .cpv-import-score-error { color: var(--danger); }
-.cpv-import-score button:focus-visible, .cpv-bar-range input:focus-visible { outline: 2px solid var(--chord); outline-offset: 3px; }
-.cpv-bar-range { padding: 18px 14px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-.cpv-bar-range-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
-.cpv-bar-range-heading > span:last-child { color: var(--chord); font-variant-numeric: tabular-nums; }
-.cpv-bar-range-values { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 6px; }
-.cpv-bar-range-values label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.cpv-bar-range-values label > span { color: var(--muted); font-size: 11px; }
-.cpv-bar-range-values input { box-sizing: border-box; width: 100%; min-width: 0; height: 46px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font-family: 'Space Mono', monospace; font-size: 18px; }
-.cpv-bar-range-to { text-align: center; color: var(--muted); margin-top: 20px; }
-.cpv-bar-range-sliders { position: relative; height: 44px; margin: 14px 0 0; }
-.cpv-bar-range-rail { position: absolute; top: 20px; left: 12px; right: 12px; height: 4px; border-radius: 4px; background: var(--line); }
-.cpv-bar-range-rail > div { position: absolute; height: 100%; border-radius: inherit; background: var(--chord); }
-.cpv-bar-range-sliders input { position: absolute; inset: 0; width: 100%; height: 44px; margin: 0; padding: 0; appearance: none; -webkit-appearance: none; background: transparent; pointer-events: none; }
-.cpv-bar-range-sliders input:focus-visible { z-index: 2; outline: none; }
-.cpv-bar-range-sliders input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 24px; height: 24px; border: 3px solid var(--chord); border-radius: 50%; background: var(--canvas); cursor: ew-resize; pointer-events: auto; box-shadow: 0 2px 6px #0002; }
-.cpv-bar-range-sliders input::-moz-range-thumb { width: 18px; height: 18px; border: 3px solid var(--chord); border-radius: 50%; background: var(--canvas); cursor: ew-resize; pointer-events: auto; }
-.cpv-bar-range-sliders input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--chord-soft); }
-.cpv-bar-range-sliders input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--chord-soft); }
-.cpv-bar-range-sliders input:disabled { opacity: .45; }
-.cpv-bar-range-scale { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.cpv-bar-range-scale button { border: 0; background: transparent; color: var(--chord); font: inherit; font-weight: 600; padding: 8px; min-height: 36px; cursor: pointer; }
+.titan-chordpro-import-score-empty { min-height: 240px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 16px; color: var(--muted); padding: 24px; border: 1px dashed var(--line); border-radius: 14px; }
+.titan-chordpro-import-score-empty p { max-width: 260px; }
+.titan-chordpro-import-score-actions { display: flex; flex: none; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--canvas); }
+.titan-chordpro-import-score-actions > span { margin-right: auto; color: var(--muted); font-size: 12px; }
+.titan-chordpro-import-score .titan-chordpro-modal-btn { min-height: 44px; height: auto; padding: 10px 14px; }
+.titan-chordpro-import-score .titan-chordpro-modal-btn--primary { background: var(--chord); color: var(--chord-ink); }
+.titan-chordpro-import-score .titan-chordpro-import-score-error { color: var(--danger); }
+.titan-chordpro-import-score button:focus-visible, .titan-chordpro-bar-range input:focus-visible { outline: 2px solid var(--chord); outline-offset: 3px; }
+.titan-chordpro-bar-range { padding: 18px 14px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.titan-chordpro-bar-range-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.titan-chordpro-bar-range-heading > span:last-child { color: var(--chord); font-variant-numeric: tabular-nums; }
+.titan-chordpro-bar-range-values { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 6px; }
+.titan-chordpro-bar-range-values label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.titan-chordpro-bar-range-values label > span { color: var(--muted); font-size: 11px; }
+.titan-chordpro-bar-range-values input { box-sizing: border-box; width: 100%; min-width: 0; height: 46px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font-family: 'Space Mono', monospace; font-size: 18px; }
+.titan-chordpro-bar-range-to { text-align: center; color: var(--muted); margin-top: 20px; }
+.titan-chordpro-bar-range-sliders { position: relative; height: 44px; margin: 14px 0 0; }
+.titan-chordpro-bar-range-rail { position: absolute; top: 20px; left: 12px; right: 12px; height: 4px; border-radius: 4px; background: var(--line); }
+.titan-chordpro-bar-range-rail > div { position: absolute; height: 100%; border-radius: inherit; background: var(--chord); }
+.titan-chordpro-bar-range-sliders input { position: absolute; inset: 0; width: 100%; height: 44px; margin: 0; padding: 0; appearance: none; -webkit-appearance: none; background: transparent; pointer-events: none; }
+.titan-chordpro-bar-range-sliders input:focus-visible { z-index: 2; outline: none; }
+.titan-chordpro-bar-range-sliders input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 24px; height: 24px; border: 3px solid var(--chord); border-radius: 50%; background: var(--canvas); cursor: ew-resize; pointer-events: auto; box-shadow: 0 2px 6px #0002; }
+.titan-chordpro-bar-range-sliders input::-moz-range-thumb { width: 18px; height: 18px; border: 3px solid var(--chord); border-radius: 50%; background: var(--canvas); cursor: ew-resize; pointer-events: auto; }
+.titan-chordpro-bar-range-sliders input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--chord-soft); }
+.titan-chordpro-bar-range-sliders input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--chord-soft); }
+.titan-chordpro-bar-range-sliders input:disabled { opacity: .45; }
+.titan-chordpro-bar-range-scale { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.titan-chordpro-bar-range-scale button { border: 0; background: transparent; color: var(--chord); font: inherit; font-weight: 600; padding: 8px; min-height: 36px; cursor: pointer; }
 @media (max-width: 760px) {
-  .cpv-import-score-modal { padding: 12px; }
-  .cpv-import-score { border-radius: 18px; }
-  .cpv-import-score-head { padding: 18px; }
-  .cpv-import-score h2 { font-size: 22px; }
-  .cpv-import-score-body { grid-template-columns: minmax(0, 1fr); }
-  .cpv-import-score-controls { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px; gap: 20px; }
-  .cpv-import-score-preview { padding: 18px; }
-  .cpv-import-score-actions { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); gap: 8px; }
-  .cpv-import-score-actions > span { width: 100%; font-size: 11px; }
-  .cpv-import-score-actions .cpv-modal-btn--primary { flex: 1; }
+  .titan-chordpro-import-score-modal { padding: 12px; }
+  .titan-chordpro-import-score { border-radius: 18px; }
+  .titan-chordpro-import-score-head { padding: 18px; }
+  .titan-chordpro-import-score h2 { font-size: 22px; }
+  .titan-chordpro-import-score-body { grid-template-columns: minmax(0, 1fr); }
+  .titan-chordpro-import-score-controls { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px; gap: 20px; }
+  .titan-chordpro-import-score-preview { padding: 18px; }
+  .titan-chordpro-import-score-actions { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); gap: 8px; }
+  .titan-chordpro-import-score-actions > span { width: 100%; font-size: 11px; }
+  .titan-chordpro-import-score-actions .titan-chordpro-modal-btn--primary { flex: 1; }
 }
 
-.cpv-notation-system { margin: 0 0 8px; }
-.cpv-notation-system svg { display: block; }
-.cpv-external-score .cpv-figure-kind { font-size: 12px; white-space: normal; letter-spacing: normal; text-transform: none; }
+.titan-chordpro-notation-system { margin: 0 0 8px; }
+.titan-chordpro-notation-system svg { display: block; }
+.titan-chordpro-external-score .titan-chordpro-figure-kind { font-size: 12px; white-space: normal; letter-spacing: normal; text-transform: none; }
 
 /* A notation card retains its title when folded; its control never floats. */
-.cpv-notation-row { margin-inline: calc(-1 * var(--cpv-notation-outset, 0px)); margin-bottom: 16px; }
-.cpv-notation-card { border: 1px solid var(--line-soft); background: var(--veil); overflow: visible; }
-.cpv-notation-fold { padding: 0; }
-.cpv-notation-title { min-width: 0; overflow-wrap: anywhere; color: var(--chord); font-size: 14px; font-weight: 650; }
-.cpv-notation-fold-toggle { position: relative; z-index: 12; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 8px 19px 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; touch-action: manipulation; }
-.cpv-notation-fold-toggle:hover { background: var(--hover); color: var(--text); }
-.cpv-notation-fold-toggle:focus-visible { outline: 2px solid var(--chord); outline-offset: -2px; }
-.cpv-notation-fold-toggle svg { flex: none; }
-.cpv-notation-fold-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-.cpv-notation-card > .cpv-figure, .cpv-notation-card > .cpv-tab { margin: 0 !important; border: 0; background: transparent; box-shadow: none; }
-.cpv-import-score-name { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font: inherit; font-size: 13px; }
-.cpv-import-score-name:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }
+.titan-chordpro-notation-row { margin-inline: calc(-1 * var(--titan-chordpro-notation-outset, 0px)); margin-bottom: 16px; }
+.titan-chordpro-notation-card { border: 1px solid var(--line-soft); background: var(--veil); overflow: visible; }
+.titan-chordpro-notation-fold { padding: 0; }
+.titan-chordpro-notation-title { min-width: 0; overflow-wrap: anywhere; color: var(--chord); font-size: 14px; font-weight: 650; }
+.titan-chordpro-notation-fold-toggle { position: relative; z-index: 12; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 8px 19px 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; touch-action: manipulation; }
+.titan-chordpro-notation-fold-toggle:hover { background: var(--hover); color: var(--text); }
+.titan-chordpro-notation-fold-toggle:focus-visible { outline: 2px solid var(--chord); outline-offset: -2px; }
+.titan-chordpro-notation-fold-toggle svg { flex: none; }
+.titan-chordpro-notation-fold-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.titan-chordpro-notation-card > .titan-chordpro-figure, .titan-chordpro-notation-card > .titan-chordpro-tab { margin: 0 !important; border: 0; background: transparent; box-shadow: none; }
+.titan-chordpro-import-score-name { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font: inherit; font-size: 13px; }
+.titan-chordpro-import-score-name:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }

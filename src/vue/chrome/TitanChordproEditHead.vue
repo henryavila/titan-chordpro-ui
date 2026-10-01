@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import type { WriteMode } from '../public'
 
 defineProps<{
@@ -40,33 +40,33 @@ const emit = defineEmits<{
   >
     <div
       :ref="(el) => emit('bindHead', el)"
-      class="cpv-veil cpv-head is-edit"
+      class="titan-chordpro-veil titan-chordpro-head is-edit"
       :class="[phone ? 'is-phone' : 'is-wide', contentEdit ? 'is-content' : '']"
-      data-cpv-head
-      :style="{ '--cpv-page-max': pageMax }"
+      data-titan-chordpro-head
+      :style="{ '--titan-chordpro-page-max': pageMax }"
     >
       <span
         data-edit-badge
-        class="cpv-edit-badge"
+        class="titan-chordpro-edit-badge"
         :style="{
           background: wMode === 'persisted' ? 'var(--danger-soft)' : 'var(--chord-fill)',
           color: wMode === 'persisted' ? 'var(--danger)' : 'var(--chord)',
         }"
       >{{ editBadge }}</span>
 
-      <div class="cpv-head-id">
-        <span class="cpv-head-name">
-          <span data-chart-title class="cpv-head-title">{{ title }}</span>
-          <span v-if="subtitle" class="cpv-head-sub">{{ subtitle }}</span>
-          <span v-else-if="wMode === 'local' && !compact" class="cpv-head-sub">ajuste local · ainda não vai para todos</span>
+      <div class="titan-chordpro-head-id">
+        <span class="titan-chordpro-head-name">
+          <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
+          <span v-if="subtitle" class="titan-chordpro-head-sub">{{ subtitle }}</span>
+          <span v-else-if="wMode === 'local' && !compact" class="titan-chordpro-head-sub">ajuste local · ainda não vai para todos</span>
         </span>
       </div>
 
-      <div class="cpv-head-edit-acts">
+      <div class="titan-chordpro-head-edit-acts">
         <button
           data-meta-open
           type="button"
-          class="cpv-head-edit-meta"
+          class="titan-chordpro-head-edit-meta"
           :title="metaGapLabel || `Metadados · ${metaSummary}`"
           :aria-label="metaGapLabel ? `Metadados — ${metaGapLabel}` : 'Editar metadados'"
           :style="{
@@ -76,7 +76,7 @@ const emit = defineEmits<{
           }"
           @click="emit('openMeta')"
         >
-          <CpvIcon name="list" :size="14" />
+          <TitanChordproIcon name="list" :size="14" />
           <span style="font-size:12px;font-weight:700;">Metadados</span>
           <span
             v-if="!compact && metaSummary !== 'preencher'"
@@ -99,7 +99,7 @@ const emit = defineEmits<{
           :style="{ opacity: canUndo ? '1' : '0.4', width: compact ? '32px' : '34px', height: compact ? '32px' : '34px' }"
           style="border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
           @click="emit('undo')"
-        ><CpvIcon name="undo2" :size="16" /></button>
+        ><TitanChordproIcon name="undo2" :size="16" /></button>
         <button
           v-if="canRedo"
           data-redo
@@ -108,7 +108,7 @@ const emit = defineEmits<{
           :style="{ width: compact ? '32px' : '34px', height: compact ? '32px' : '34px' }"
           style="border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
           @click="emit('redo')"
-        ><CpvIcon name="redo2" :size="16" /></button>
+        ><TitanChordproIcon name="redo2" :size="16" /></button>
         <span
           v-if="wMode === 'local'"
           style="display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:9px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-size:11px;font-weight:600;color:var(--chord);"

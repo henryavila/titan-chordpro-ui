@@ -16,7 +16,7 @@ import refPlaybackUrl from './ref-nasce-playback.m4a?url'
 import altAudioUrl from './ref-audio.wav?url'
 import altPlaybackUrl from './ref-audio-playback.wav?url'
 import refArtUrl from './ref-audio-art.jpg?url'
-import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
+import { TitanChordpro } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
   FAIL_ID,
@@ -293,7 +293,7 @@ onUnmounted(() => window.removeEventListener('storage', onDemoStorage))
     :lista="lista"
     :live-href="liveHref"
   >
-    <ChordproViewer
+    <TitanChordpro
       :source="source"
       :theme="theme"
       theme-control="host"
@@ -332,7 +332,7 @@ onUnmounted(() => window.removeEventListener('storage', onDemoStorage))
     :data-carga="listaMode"
     :style="lab.quebrar ? 'height:auto;' : 'height:100%;'"
   >
-    <ChordproViewer
+    <TitanChordpro
       :source="source"
       :theme="theme"
       :accent="lab.accent || 'verde'"

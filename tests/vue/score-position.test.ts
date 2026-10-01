@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { flushPromises, mount } from '@vue/test-utils'
 import { expect, it } from 'vitest'
-import ChordproViewer from '../../src/vue/ChordproViewer.vue'
+import TitanChordpro from '../../src/vue/TitanChordpro.vue'
 import ImportScoreDialog from '../../src/vue/edit/ImportScoreDialog.vue'
 import { layoutChart, normalizeSource, parse, writeScoreReference } from '../../src/core'
 
@@ -9,7 +9,7 @@ const source = normalizeSource(readFileSync('fixtures/013-ele-vive-em-mim-partit
 const reference = writeScoreReference({ src: 'fixtures/notation/notes.gp', track: 1, start: 1 })
 
 it('inserts Guitar Pro after the introduction and preserves its position through undo, redo, save and host echo', async () => {
-  const wrapper = mount(ChordproViewer, {
+  const wrapper = mount(TitanChordpro, {
     props: { source, modes: 'content', theme: 'light', autoHide: false, uploadScore: async () => ({ ref: 'fixtures/notation/notes.gp' }) },
     global: { stubs: { ExternalScore: { props: ['text'], template: '<div data-external-stub>{{ text }}</div>' } } },
   })
@@ -20,7 +20,7 @@ it('inserts Guitar Pro after the introduction and preserves its position through
     if (wrapper.find('[data-mode-content]').exists()) await wrapper.get('[data-mode-content]').trigger('click')
     const at = source.split('\n').findIndex(l => l.startsWith('Por [G]onde'))
     await wrapper.get(`[data-insert-at="${at}"]`).trigger('click')
-    await wrapper.findAll('.cpv-insert-item').find(b => b.text().includes('Guitar Pro'))!.trigger('click')
+    await wrapper.findAll('.titan-chordpro-insert-item').find(b => b.text().includes('Guitar Pro'))!.trigger('click')
     wrapper.getComponent(ImportScoreDialog).vm.$emit('save', reference)
     await flushPromises()
     const expected = source.split('\n')

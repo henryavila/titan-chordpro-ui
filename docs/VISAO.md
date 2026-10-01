@@ -2,7 +2,7 @@
 
 > **Fonte de verdade de produto:** entrevista viewer (2026-08-28) + **refocus naming/editor** (2026-08-28/29), ratificados.  
 > **Naming:** [`docs/NAMING.md`](./NAMING.md). **Design do editor:** [`projects/titan-chordpro-ui/editor/design.md`](../projects/titan-chordpro-ui/editor/design.md).  
-> **`SPEC.md`:** contrato de engenharia / inventário técnico — alinhar §2/§9 ao editor em follow-up; não redefine o produto sozinho.
+> **`SPEC.md`:** contrato de engenharia / inventário técnico — §9 ainda cobre o aceite de base do core + Vue; os gates E0–E4 do editor vêm do design aprovado.
 
 ---
 
@@ -14,7 +14,7 @@
 | **In-scope** | Camada **autossuficiente** de **1 cifra**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; standalone demo ou **embutida** (`sda-v2` primeiro). Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
 | **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`). |
 | **Done-when (esta fase)** | Visão + naming + design do editor alinhados; implementação segue SPEC + gates E0–E4. |
-| **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<ChordproViewer>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
+| **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<TitanChordpro>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
 | **Fontes** | Esta visão; `docs/NAMING.md`; design do editor; `fixtures/`; researches OnSong / auto-ajuste; `SPEC.md` como catálogo técnico. |
 
 ---
@@ -36,9 +36,9 @@ ChordPro (1 string)
 
 ---
 
-## 3. Fronteira: viewer vs consumer
+## 3. Fronteira: TitanChordpro vs consumer
 
-| Responsabilidade | Viewer (nós) | Consumer (SDA / outros) |
+| Responsabilidade | TitanChordpro (nós) | Consumer (SDA / outros) |
 |---|---|---|
 | Parse / modelo interno da cifra | ✅ | |
 | Render visual da cifra | ✅ | |
@@ -139,7 +139,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 | Peça | Papel |
 |---|---|
 | **titan-chordpro-gen** | Gera ChordPro a partir de áudio — **fora**. Pode consumir a UI para preview. |
-| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Importa `<ChordproViewer>` na ficha e/ou numa rota `100dvh`. Sem iframe. |
+| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Importa `<TitanChordpro>` na ficha e/ou numa rota `100dvh`. Sem iframe. |
 | **titan-chordpro** (futuro) | App standalone Titan (shell + extras) — **repo separado**; consome a mesma UI. |
 | **Este repo → `titan-chordpro-ui`** | UI 1-cifra view+edit como componente Vue. |
 
@@ -152,7 +152,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
    ~~Host: iframe vs página.~~ **Locked 2026-09-10:** componente Vue na ficha **e/ou** rota `100dvh`; iframe cancelado (`docs/CONSUMER.md`).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
 4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `@henryavila/titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
-5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING). Diagramas de acorde saíram de *later* (leitura) e estão na fronteira de `SPEC.md` §3.
+5. Alinhar `SPEC.md` §9 e o handoff de design aos gates do editor E0–E4. A fronteira do editor em §2 já foi alinhada à visão; a tabela §9 ainda cobre o aceite de base do core + Vue.
 
 ---
 

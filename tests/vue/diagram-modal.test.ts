@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { STORE_KEYS, memoryStore, type ChartStore } from '../../src/core/index'
 
 const SRC = `{title: Teste}
@@ -46,7 +46,7 @@ afterEach(() => {
 })
 
 function mountViewer(props: Record<string, unknown> = {}, store: ChartStore = memoryStore()) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: SRC, theme: 'dark', autoHide: false, storage: store, ...props },
     attachTo: document.body,
   })
@@ -58,7 +58,7 @@ describe('diagram modal', () => {
   it('opens the guitar shape on tap and does not change the chart height', async () => {
     const { w } = mountViewer()
     await flushPromises()
-    const scroller = w.get('[data-cpv-scroll]').element as HTMLElement
+    const scroller = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     const before = scroller.scrollHeight
     expect(w.find('[data-diagram-modal]').exists()).toBe(false)
     await w.get('[data-diagram-hit]').trigger('click')
@@ -145,7 +145,7 @@ describe('diagram modal', () => {
       expect(html).not.toContain('diagram-dot-note')
     }
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
-    const stageRule = css.split('}').find((block) => block.includes('cpv-diagram-stage'))
+    const stageRule = css.split('}').find((block) => block.includes('titan-chordpro-diagram-stage'))
     expect(stageRule).toContain('overflow: hidden')
     expect(css).toContain('--inv-cols: 1')
     expect(css).toContain('width: var(--diagram-card)')
@@ -193,11 +193,11 @@ describe('diagram modal', () => {
     await w.get('[data-diagram-instrument="ukulele"]').trigger('click')
     await flushPromises()
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
-    const stageRule = css.split('}').find((block) => block.includes('cpv-diagram-stage'))
+    const stageRule = css.split('}').find((block) => block.includes('titan-chordpro-diagram-stage'))
     expect(stageRule).toBeTruthy()
     expect(stageRule).toContain('overflow: hidden')
     expect(stageRule).not.toMatch(/overflow(-[xy])?:\s*(auto|scroll)/)
-    const svgRule = css.split('}').find((block) => block.includes('cpv-diagram-draw') && block.includes('svg'))
+    const svgRule = css.split('}').find((block) => block.includes('titan-chordpro-diagram-draw') && block.includes('svg'))
     expect(svgRule).toBeTruthy()
     expect(svgRule).toContain('max-height: 100%')
     expect(svgRule).toContain('max-width: 100%')
@@ -326,7 +326,7 @@ describe('diagram modal', () => {
   })
 
   async function roomy(w: ReturnType<typeof mountViewer>['w']) {
-    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     Object.defineProperty(el, 'scrollHeight', { configurable: true, get: () => 2400 })
     Object.defineProperty(el, 'clientHeight', { configurable: true, get: () => 400 })
     observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))

@@ -9,7 +9,7 @@ async function swipeFrom(
 ) {
   await page.evaluate(
     ({ dx, dy, along }) => {
-      const el = document.querySelector('[data-cpv-root]') as HTMLElement
+      const el = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
       const r = el.getBoundingClientRect()
       const x = r.left + r.width * along
       const y = r.top + r.height * 0.4
@@ -32,7 +32,7 @@ async function liftFrom(
 ) {
   await page.evaluate(
     ({ dx, dy, along }) => {
-      const el = document.querySelector('[data-cpv-root]') as HTMLElement
+      const el = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
       const r = el.getBoundingClientRect()
       const x = r.left + r.width * along
       const y = r.top + r.height * 0.4
@@ -58,7 +58,7 @@ test('the next stamp sits above the finger at mid-screen, not under the hand', a
   await page.locator('[data-setlist-open]').first().waitFor()
 
   const fingerY = await page.evaluate(() => {
-    const el = document.querySelector('[data-cpv-root]') as HTMLElement
+    const el = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
     const r = el.getBoundingClientRect()
     const x = r.left + r.width * 0.95
     const y = r.top + r.height * 0.5
@@ -69,7 +69,7 @@ test('the next stamp sits above the finger at mid-screen, not under the hand', a
     return y
   })
 
-  const stamp = page.locator('.cpv-swipe-stamp')
+  const stamp = page.locator('.titan-chordpro-swipe-stamp')
   await expect(stamp).toBeVisible()
   const box = await stamp.boundingBox()
   expect(box).not.toBeNull()
@@ -93,7 +93,7 @@ test('swipe left from the right rail paints the next stamp and commits past the 
   await liftFrom(page, -160, 8, 0.95)
   await expect(page.locator('[data-chart-title]').first()).toContainText(/Jesus/i)
   await expect(page.locator('[data-song-swipe]')).toHaveCount(0)
-  await expect(page.locator('[data-cpv-root]')).not.toHaveAttribute('data-swipe')
+  await expect(page.locator('[data-titan-chordpro-root]')).not.toHaveAttribute('data-swipe')
 })
 
 test('a horizontal drag from the centre of the chart does not change song', async ({ page }) => {
@@ -126,7 +126,7 @@ async function touchDownOnRootAt(
 ) {
   return page.evaluate((selector) => {
     const btn = document.querySelector(selector) as HTMLElement
-    const root = document.querySelector('[data-cpv-root]') as HTMLElement
+    const root = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
     const r = btn.getBoundingClientRect()
     const x = r.left + Math.min(12, r.width / 2)
     const y = r.top + r.height / 2
@@ -154,9 +154,9 @@ test('rails stop above the phone dock so Rolar and Mais keep their rectangle', a
   await page.goto('/?lista=1')
   await page.locator('[data-scroll]').waitFor()
   const overlap = await page.evaluate(() => {
-    const stack = document.querySelector('.cpv-phone-stack') as HTMLElement
+    const stack = document.querySelector('.titan-chordpro-phone-stack') as HTMLElement
     const s = stack.getBoundingClientRect()
-    return [...document.querySelectorAll('.cpv-swipe-rail')].some((rail) => {
+    return [...document.querySelectorAll('.titan-chordpro-swipe-rail')].some((rail) => {
       const r = rail.getBoundingClientRect()
       return r.bottom > s.top + 0.5 && r.top < s.bottom && r.right > s.left && r.left < s.right
     })

@@ -1,14 +1,14 @@
 import { parse, transpose } from './parse'
 import { renderHtml } from './render-html'
 import { resolveTheme } from './themes'
-import type { ThemeId, ViewerAction, ViewerController, ViewerState } from './types'
+import type { ThemeId, TitanChordproAction, TitanChordproController, TitanChordproState } from './types'
 
 function fileOffset(src: string): number {
   const n = Number(parse(src).meta.transpose)
   return Number.isFinite(n) && n !== 0 ? n : 0
 }
 
-export function createViewerController(opts: { source: string; theme?: ThemeId }): ViewerController {
+export function createTitanChordproController(opts: { source: string; theme?: ThemeId }): TitanChordproController {
   let source = opts.source
   let transposeSemitones = fileOffset(source)
   let capo = 0
@@ -16,9 +16,9 @@ export function createViewerController(opts: { source: string; theme?: ThemeId }
   let bias = 0
   let fit = false
   let mode: 'view' | 'edit' = 'view'
-  const listeners = new Set<(state: ViewerState) => void>()
+  const listeners = new Set<(state: TitanChordproState) => void>()
 
-  const snapshot = (): ViewerState => {
+  const snapshot = (): TitanChordproState => {
     const parsed = parse(source)
     const view = transpose(parsed, mode === 'edit' ? 0 : transposeSemitones)
     const resolved = resolveTheme(theme)
@@ -51,7 +51,7 @@ export function createViewerController(opts: { source: string; theme?: ThemeId }
       fn(state)
       return () => listeners.delete(fn)
     },
-    dispatch: (action: ViewerAction) => {
+    dispatch: (action: TitanChordproAction) => {
       switch (action.type) {
         case 'transpose':
           transposeSemitones = Math.max(-11, Math.min(11, transposeSemitones + action.delta))

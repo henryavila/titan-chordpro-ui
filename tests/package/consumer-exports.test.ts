@@ -3,8 +3,8 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import * as core from '@henryavila/titan-chordpro-ui'
-import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
-import type { ChordproViewerProps, EditMode, ImageChoice, ModesProp } from '../../src/vue/public'
+import { TitanChordpro } from '@henryavila/titan-chordpro-ui/vue'
+import type { TitanChordproProps, EditMode, ImageChoice, ModesProp } from '../../src/vue/public'
 import { resolveEditMode } from '../../src/vue/public'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -90,7 +90,7 @@ describe('SPEC §4 public API is importable from the package name', () => {
       'exportCho',
       'calcScrollSpeed',
       'adjustScrollSpeed',
-      'createViewerController',
+      'createTitanChordproController',
       'STORE_KEYS',
       'overlayKey',
       'memoryStore',
@@ -105,17 +105,19 @@ describe('SPEC §4 public API is importable from the package name', () => {
         name === 'STORE_KEYS' ? 'object' : 'function',
       )
     }
+    expect(core).not.toHaveProperty('createViewerController')
   })
 
-  it('vue entry exports ChordproViewer as named and default', async () => {
+  it('vue entry exports TitanChordpro as named and default', async () => {
     const mod = await import('@henryavila/titan-chordpro-ui/vue')
-    expect(mod.ChordproViewer).toBeTypeOf('object')
-    expect(mod.default).toBe(mod.ChordproViewer)
-    expect(ChordproViewer).toBe(mod.ChordproViewer)
+    expect(mod.TitanChordpro).toBeTypeOf('object')
+    expect(mod.default).toBe(mod.TitanChordpro)
+    expect(TitanChordpro).toBe(mod.TitanChordpro)
+    expect(mod).not.toHaveProperty('ChordproViewer')
   })
 
   it('vue prop types are the host contract', () => {
-    const props: ChordproViewerProps = { source: '', editMode: 'local' }
+    const props: TitanChordproProps = { source: '', editMode: 'local' }
     const images: ImageChoice[] = [{ file: 'a.png' }]
     const both: ModesProp = 'both'
     const persisted: EditMode = 'persisted'
@@ -152,8 +154,9 @@ describe('built dist (consumer tarball shape)', () => {
     expect(existsSync(join(root, 'dist/vue/index.js'))).toBe(true)
     expect(existsSync(join(root, 'dist/vue/style.css'))).toBe(true)
     const dts = readFileSync(join(root, 'dist/vue/index.d.ts'), 'utf8')
-    expect(dts).toMatch(/ChordproViewer/)
-    expect(dts).toMatch(/ChordproViewerProps/)
+    expect(dts).toMatch(/TitanChordpro/)
+    expect(dts).toMatch(/TitanChordproProps/)
+    expect(dts).not.toMatch(/ChordproViewer/)
     expect(dts).toMatch(/from ['"]vue['"]/)
   })
 
@@ -181,7 +184,8 @@ describe('built dist (consumer tarball shape)', () => {
     expect(existsSync(join(root, 'dist/slides/index.d.ts'))).toBe(true)
     const coreDts = readFileSync(join(root, 'dist/core/index.d.ts'), 'utf8')
     expect(coreDts).toMatch(/export \{/)
-    expect(coreDts).toMatch(/type ChordProView/)
+    expect(coreDts).toMatch(/type TitanChordproDocument/)
+    expect(coreDts).not.toMatch(/type ChordProView\b|createViewerController/)
     expect(coreDts).toMatch(/type SectionKind/)
     expect(coreDts).toMatch(/THEME_VARS/)
   })

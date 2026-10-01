@@ -1,7 +1,7 @@
 # Titan Chordpro UI — camada de edição: o que ficou aberto
 
 Estado de `Titan Chordpro UI.dc.html` (view + edit no mesmo componente, prop `mode`).
-O viewer `Chordpro Viewer v2.dc.html` fica intacto como referência da leitura ratificada.
+O viewer `TitanChordpro v2.dc.html` fica intacto como referência da leitura ratificada.
 
 ## Decisões que este protótipo tomou (revisar)
 
@@ -74,7 +74,7 @@ Bugs de estrutura e de estado encontrados na leitura do código contra o spec:
   de uma estrofe/refrão é o nome daquele bloco: mover, duplicar e excluir levam os dois juntos,
   a seleção contorna o par e soltar entre rótulo e corpo ancora no rótulo. Comment separado por
   linha em branco continua sendo bloco independente.
-- **Primeira visita na edição** tem dica única (`cpv:editSeen`) com as três regras de toque.
+- **Primeira visita na edição** tem dica única (`titan-chordpro:editSeen`) com as três regras de toque.
 
 ## Limites conhecidos
 
@@ -94,14 +94,14 @@ Bugs de estrutura e de estado encontrados na leitura do código contra o spec:
 
 ## Camada de dois modos — `Titan Chordpro UI v2.dc.html` (2026-08-30)
 
-Spec: `design_handoff_chordpro_viewer/SPEC-modos-edicao.md`. O v1 fica intacto como referência
+Spec: `design_handoff_titan_chordpro/SPEC-modos-edicao.md`. O v1 fica intacto como referência
 do editor de modo único.
 
 Implementado:
 
 - **Três camadas.** `officialSource()` (BD do consumer, no mock a fixture ou o último save do
   modo "para todos") → overlay ancorado → `baseSource()` efetiva. O overlay é diff por linha
-  (LCS) em operações `{type, at, anchor, before, after, ctx}`, gravado em `cpv:my:{songId}`.
+  (LCS) em operações `{type, at, anchor, before, after, ctx}`, gravado em `titan-chordpro:my:{songId}`.
   A reaplicação busca pelo conteúdo original a partir do índice antigo, em leque — mexer
   acima não desloca o ajuste.
 - **`ctx` de leitura** viaja com cada operação (transpose, capo, dual no momento da criação) e
@@ -119,7 +119,7 @@ Implementado:
 - **Atualização.** Versão oficial ≠ `baseVersion` do overlay → diálogo item por item, com
   comparação lado a lado nas colisões. Ajuste que o responsável aceitou é detectado como
   absorvido e sai do overlay sem virar conflito consigo mesmo.
-- **Sugestões.** Envia o overlay inteiro para `cpv:sug`, sem status para o autor. Fila do
+- **Sugestões.** Envia o overlay inteiro para `titan-chordpro:sug`, sem status para o autor. Fila do
   responsável em três níveis (cifras → pedidos → ajustes), aceitar/recusar por item; aceitar
   grava no oficial e sobe a versão.
 - **Ponto na linha divergente** em leitura e em edição: botão de 16px na margem esquerda da

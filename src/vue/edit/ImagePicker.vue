@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
 import type { ImageChoice } from '../use/useBlockEdit'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 const props = defineProps<{
   items: ImageChoice[]
@@ -62,39 +62,39 @@ onUnmounted(clearPreview)
 </script>
 
 <template>
-  <div class="cpv-modal" data-image-picker style="align-items:center;padding:20px;">
-    <div class="cpv-scrim" @click="emit('close')" />
+  <div class="titan-chordpro-modal" data-image-picker style="align-items:center;padding:20px;">
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
     <div
-      class="cpv-veil-2 cpv-modal-card"
+      class="titan-chordpro-veil-2 titan-chordpro-modal-card"
       role="dialog"
       aria-modal="true"
       aria-label="Imagem da partitura"
       style="max-width:430px;max-height:min(560px,86%);overflow-y:auto;padding:15px;border-radius:18px;"
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span class="cpv-modal-kicker">{{ replacing ? 'Trocar imagem' : 'Imagem da partitura' }}</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
+        <span class="titan-chordpro-modal-kicker">{{ replacing ? 'Trocar imagem' : 'Imagem da partitura' }}</span>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
       </div>
       <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">
         A cifra guarda só o nome. O arquivo fica no app.
       </span>
 
-      <div v-if="uploadImage" class="cpv-image-drop">
+      <div v-if="uploadImage" class="titan-chordpro-image-drop">
         <input
           ref="inputEl"
-          class="cpv-image-file"
+          class="titan-chordpro-image-file"
           data-image-file
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           @change="onFile"
         >
-        <button class="cpv-modal-btn" type="button" data-image-browse :disabled="busy" @click="inputEl?.click()">
+        <button class="titan-chordpro-modal-btn" type="button" data-image-browse :disabled="busy" @click="inputEl?.click()">
           Escolher imagem
         </button>
-        <img v-if="preview" class="cpv-image-preview" :src="preview" alt="">
+        <img v-if="preview" class="titan-chordpro-image-preview" :src="preview" alt="">
         <span v-if="chosen" style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ chosen.name }}</span>
         <button
-          class="cpv-modal-btn cpv-modal-btn--primary"
+          class="titan-chordpro-modal-btn titan-chordpro-modal-btn--primary"
           type="button"
           data-image-send
           :disabled="!chosen || busy"
@@ -109,7 +109,7 @@ onUnmounted(clearPreview)
         <button
           v-for="p in items"
           :key="p.file"
-          class="cpv-picker-item"
+          class="titan-chordpro-picker-item"
           type="button"
           :disabled="busy"
           @click="emit('pick', p.file)"

@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { useSetlist, type SetlistSong, type SongSpot } from '../../src/vue/use/useSetlist'
 import { JESUS_1, loadFixture, withDuration } from '../helpers/load-fixture'
@@ -228,7 +228,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 function viewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: CHART, autoHide: false, storage: memoryStore(), ...props },
     attachTo: document.body,
   })
@@ -284,13 +284,13 @@ describe('the viewer in a rehearsal', () => {
     const w = viewer({ source: '', songs: songs(2), lens: 'letra' })
     await flushPromises()
     expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     await w.get('[data-song-next]').trigger('click')
     await flushPromises()
     await nextTick()
     expect(w.text()).toContain('Escuta')
     expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
   })
 
   it('keeps a lens the musician picked, across song changes', async () => {
@@ -298,12 +298,12 @@ describe('the viewer in a rehearsal', () => {
     await flushPromises()
     await w.get('[data-reading=letra]').trigger('click')
     await flushPromises()
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     await w.get('[data-song-next]').trigger('click')
     await flushPromises()
     await nextTick()
     expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
   })
 
   it('Escape closes the list', async () => {
@@ -326,7 +326,7 @@ describe('the viewer in a rehearsal', () => {
     await flushPromises()
     await nextTick()
     expect(w.find('[data-song-loading]').exists()).toBe(true)
-    expect(w.find('.cpv-song-skel-page').exists(), 'skeleton stands in for the chart').toBe(true)
+    expect(w.find('.titan-chordpro-song-skel-page').exists(), 'skeleton stands in for the chart').toBe(true)
     expect(w.text()).toContain('Buscando')
     expect(w.find('[data-setlist-open]').exists()).toBe(true)
     expect(w.find('[data-song-next]').exists()).toBe(true)
@@ -389,7 +389,7 @@ describe('the viewer in a rehearsal', () => {
 })
 
 /**
- * The window wheel handler used to steal every gesture outside `.cpv-scroll`
+ * The window wheel handler used to steal every gesture outside `.titan-chordpro-scroll`
  * and feed it to the chart — including when the rehearsal list was open on
  * top. The list has its own scrollbar; the chart underneath must stay put.
  */
@@ -403,7 +403,7 @@ describe('wheel over the open rehearsal list stays on the list', () => {
   it('does not scroll the chart when the wheel is over a list item', async () => {
     const w = viewer({ source: '', songs: songs(12) })
     await flushPromises()
-    const scroll = w.get('[data-cpv-scroll]').element as HTMLElement
+    const scroll = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     Object.defineProperty(scroll, 'scrollHeight', { configurable: true, value: 4000 })
     Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 500 })
     scroll.scrollTop = 120
@@ -419,14 +419,14 @@ describe('wheel over the open rehearsal list stays on the list', () => {
   it('does not scroll the chart when the wheel is over the scrim', async () => {
     const w = viewer({ source: '', songs: songs(12) })
     await flushPromises()
-    const scroll = w.get('[data-cpv-scroll]').element as HTMLElement
+    const scroll = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     Object.defineProperty(scroll, 'scrollHeight', { configurable: true, value: 4000 })
     Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 500 })
     scroll.scrollTop = 90
 
     await w.get('[data-setlist-open]').trigger('click')
     await nextTick()
-    const scrim = w.get('.cpv-scrim').element
+    const scrim = w.get('.titan-chordpro-scrim').element
     const ev = wheel(scrim, 60)
 
     expect(scroll.scrollTop).toBe(90)
@@ -436,7 +436,7 @@ describe('wheel over the open rehearsal list stays on the list', () => {
   it('still scrolls the chart from chrome when the list is closed', async () => {
     const w = viewer({ source: '', songs: songs(3) })
     await flushPromises()
-    const scroll = w.get('[data-cpv-scroll]').element as HTMLElement
+    const scroll = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     Object.defineProperty(scroll, 'scrollHeight', { configurable: true, value: 4000 })
     Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 500 })
     scroll.scrollTop = 40
@@ -530,7 +530,7 @@ describe('the end-of-song offer does not fire mid-chart', () => {
   async function rehearsalWithRoom(list: SetlistSong[] = songs(2)) {
     const w = viewer({ source: '', songs: list, autoHide: false })
     await flushPromises()
-    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     fakePaper(el)
     observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
     await flushPromises()
@@ -547,7 +547,7 @@ describe('the end-of-song offer does not fire mid-chart', () => {
   async function rehearsalLinked(list: SetlistSong[] = tinySongs(2)) {
     const w = viewer({ source: '', songs: list, autoHide: false })
     await flushPromises()
-    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     fakePaper(el)
     observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
     await flushPromises()
@@ -628,13 +628,13 @@ describe('the end-of-song offer does not fire mid-chart', () => {
     await flushPromises()
     await w.get('[data-song-next]').trigger('click')
     await flushPromises()
-    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     fakePaper(el)
     observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
     await flushPromises()
     await w.get('[data-met-btn]').trigger('click')
     await flushPromises()
-    await w.findAll('.cpv-met-switch')[1]!.trigger('click')
+    await w.findAll('.titan-chordpro-met-switch')[1]!.trigger('click')
     await flushPromises()
     await w.get('[aria-label="Fechar"]').trigger('click')
     await flushPromises()

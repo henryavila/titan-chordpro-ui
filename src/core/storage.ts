@@ -1,9 +1,9 @@
 /**
- * Where the viewer's state is kept between visits.
+ * Where TitanChordpro's state is kept between visits.
  *
  * The component owns every behaviour built on this — the personal overlay, the
  * suggestion queue, the per-song tempo, the reading preferences. It does not
- * own the storage those behaviours land in: a host embedding the viewer may
+ * own the storage those behaviours land in: a host embedding TitanChordpro may
  * want them on the device, on the user's account, or nowhere at all. So the
  * package writes through this seam and the consumer decides the destination.
  *
@@ -23,21 +23,21 @@ export type ChartStore = {
 /** Every key the package writes, so a host can route or namespace them. */
 export const STORE_KEYS = {
   /** Device/account reading preferences, including TAB rhythm. */
-  prefs: 'cpv:user-preferences',
+  prefs: 'titan-chordpro:user-preferences',
   /** Per-song, per-reference display choices. */
-  notationPrefix: 'cpv:notation:',
+  notationPrefix: 'titan-chordpro:notation:',
   /** `"1"` once the fit-mode hint has actually been seen. */
-  fitSeen: 'cpv:fitSeen',
+  fitSeen: 'titan-chordpro:fitSeen',
   /** `"1"` once the three touch rules of the editor have been shown. */
-  editSeen: 'cpv:editSeen',
+  editSeen: 'titan-chordpro:editSeen',
   /** Manual tempo per song, so one chart's BPM never leaks into the next. */
-  bpm: 'cpv:bpm',
+  bpm: 'titan-chordpro:bpm',
   /** Suggestions waiting for whoever owns the chart. */
-  suggestions: 'cpv:sug',
+  suggestions: 'titan-chordpro:sug',
   /** Last display name typed when sending a suggestion. */
-  actorName: 'cpv:actor-name',
-  /** Prefix of the reader's personal version: `cpv:my:{songId}`. */
-  overlayPrefix: 'cpv:my:',
+  actorName: 'titan-chordpro:actor-name',
+  /** Prefix of the reader's personal version: `titan-chordpro:my:{songId}`. */
+  overlayPrefix: 'titan-chordpro:my:',
 } as const
 
 /** The key a given chart's personal version is stored under. */

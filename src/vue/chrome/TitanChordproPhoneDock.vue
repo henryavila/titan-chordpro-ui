@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import ReadingSwitch from '../ReadingSwitch.vue'
 
 defineProps<{
@@ -51,21 +51,21 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="cpv-phone-stack"
+    class="titan-chordpro-phone-stack"
     :class="{ 'is-zen': hidden }"
-    :style="{ '--cpv-dock-ctrl-h': dockCtrlH }"
+    :style="{ '--titan-chordpro-dock-ctrl-h': dockCtrlH }"
   >
-    <div v-if="hintFit && !hidden" class="cpv-hit cpv-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:cpv-rise .25s ease-out;">
+    <div v-if="hintFit && !hidden" class="titan-chordpro-hit titan-chordpro-veil-2" style="display:flex;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-radius:14px;animation:titan-chordpro-rise .25s ease-out;">
       <span style="flex:1;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
-      <button class="cpv-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);" @click="emit('dismissHint')"><CpvIcon name="x" :size="14" /></button>
+      <button class="titan-chordpro-ghost" aria-label="Entendi" style="flex:none;width:32px;height:32px;color:var(--muted);" @click="emit('dismissHint')"><TitanChordproIcon name="x" :size="14" /></button>
     </div>
 
-    <div class="cpv-hit cpv-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
-      <div data-phone-lead class="cpv-phone-lead">
+    <div class="titan-chordpro-hit titan-chordpro-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
+      <div data-phone-lead class="titan-chordpro-phone-lead">
         <slot />
         <ReadingSwitch v-show="!hidden" variant="dock" :letra="letra" :height="dockCtrlH" @cifra="emit('cifra')" @letra="emit('letra')" />
       </div>
-      <div class="cpv-chrome" :class="{ 'is-hidden': hidden }">
+      <div class="titan-chordpro-chrome" :class="{ 'is-hidden': hidden }">
       <div v-if="setlistOn" style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid var(--line-soft);">
         <button
           data-song-prev
@@ -74,16 +74,16 @@ const emit = defineEmits<{
           :style="{ opacity: noPrev ? '0.32' : '1' }"
           style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
           @click="emit('prev')"
-        ><CpvIcon name="chevronLeft" :size="16" /></button>
+        ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
         <button
           data-setlist-open
           title="Abrir a lista do ensaio"
           style="flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:13px;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:9px;"
           @click="emit('openList')"
         >
-          <span style="flex:none;font-family:var(--cpv-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
+          <span style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
           <span style="flex:1;min-width:0;font-size:11.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">{{ nextChipShort }}</span>
-          <CpvIcon name="listMusic" :size="14" />
+          <TitanChordproIcon name="listMusic" :size="14" />
         </button>
         <button
           data-song-next
@@ -92,7 +92,7 @@ const emit = defineEmits<{
           :style="{ opacity: noNext ? '0.32' : '1' }"
           style="flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
           @click="emit('next')"
-        ><CpvIcon name="chevronRight" :size="16" /></button>
+        ><TitanChordproIcon name="chevronRight" :size="16" /></button>
       </div>
       <div v-if="scrolling" style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line-soft);">
         <button aria-label="Mais devagar" style="flex:none;width:40px;height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('slower')">−</button>
@@ -114,25 +114,25 @@ const emit = defineEmits<{
           style="flex:none;overflow:hidden;border-radius:14px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap;"
           @click="emit('toggleScroll')"
         >
-          <CpvIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ dockPlayLabel }}
+          <TitanChordproIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ dockPlayLabel }}
         </button>
         <span :style="{ height: dockCtrlH }" style="flex:none;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:14px;background:var(--surface);">
-          <button class="cpv-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="emit('smallerType')">A−</button>
-          <button class="cpv-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="emit('biggerType')">A+</button>
+          <button class="titan-chordpro-ghost" aria-label="Diminuir tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:13px;font-weight:600;" @click="emit('smallerType')">A−</button>
+          <button class="titan-chordpro-ghost" aria-label="Aumentar tipografia" :style="{ width: dockTypeW, height: bp === 'xs' ? '40px' : '44px' }" style="flex:none;font-size:17px;font-weight:600;" @click="emit('biggerType')">A+</button>
         </span>
         <button
           v-if="canEdit"
           data-edit
-          class="cpv-ghost"
+          class="titan-chordpro-ghost"
           aria-label="Editar esta cifra"
           title="Editar esta cifra"
           :style="{ width: dockIconSize, height: dockCtrlH }"
           style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
           @click="emit('edit')"
-        ><CpvIcon name="pencil" :size="16" /></button>
+        ><TitanChordproIcon name="pencil" :size="16" /></button>
         <button
           data-fit
-          class="cpv-ghost"
+          class="titan-chordpro-ghost"
           aria-label="Ajuste ao espaço"
           title="Modo ajuste ao espaço"
           :aria-pressed="fitOn ? 'true' : 'false'"
@@ -144,9 +144,9 @@ const emit = defineEmits<{
           }"
           style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;"
           @click="emit('toggleFit')"
-        ><CpvIcon name="scan" :size="16" /></button>
+        ><TitanChordproIcon name="scan" :size="16" /></button>
         <button
-          class="cpv-ghost cpv-more-hit"
+          class="titan-chordpro-ghost titan-chordpro-more-hit"
           aria-label="Mais controles"
           title="Mais controles"
           data-more
@@ -154,10 +154,10 @@ const emit = defineEmits<{
           style="flex:none;border-radius:14px;"
           @click="emit('more')"
         >
-          <CpvIcon name="ellipsis" :size="16" />
+          <TitanChordproIcon name="ellipsis" :size="16" />
           <span
             v-if="(queueCount ?? 0) > 0"
-            class="cpv-dock-queue-badge"
+            class="titan-chordpro-dock-queue-badge"
             data-more-queue-badge
           >{{ queueCount }}</span>
         </button>

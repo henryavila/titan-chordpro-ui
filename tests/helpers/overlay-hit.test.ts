@@ -14,20 +14,20 @@ function node(tag: string, attrs: Record<string, string> = {}) {
 describe('overlayThiefOf', () => {
   it('flags a swipe rail sitting on Mais — the iPhone setlist freeze', () => {
     const more = node('button', { 'data-more': '', 'aria-label': 'Mais controles' })
-    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'next' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail', 'data-swipe-rail': 'next' })
     expect(overlayThiefOf(rail, more)).toBe('rail:next')
   })
 
   it('flags a swipe rail sitting on Rolar', () => {
     const roll = node('button', { 'data-scroll': '', 'aria-label': 'Rolar' })
-    const rail = node('div', { class: 'cpv-swipe-rail', 'data-swipe-rail': 'prev' })
+    const rail = node('div', { class: 'titan-chordpro-swipe-rail', 'data-swipe-rail': 'prev' })
     expect(overlayThiefOf(rail, roll)).toBe('rail:prev')
   })
 
   it('flags the debug paint layer over a dock control', () => {
     const roll = node('button', { 'data-scroll': '' })
-    const debug = node('div', { class: 'cpv-swipe-debug' })
-    expect(overlayThiefOf(debug, roll)).toBe('cpv-swipe-debug')
+    const debug = node('div', { class: 'titan-chordpro-swipe-debug' })
+    expect(overlayThiefOf(debug, roll)).toBe('titan-chordpro-swipe-debug')
   })
 
   it('does not flag the control itself', () => {
@@ -37,13 +37,13 @@ describe('overlayThiefOf', () => {
 
   it('does not flag an icon inside the control', () => {
     const more = node('button', { 'data-more': '' })
-    const icon = node('span', { class: 'cpv-ico' })
+    const icon = node('span', { class: 'titan-chordpro-ico' })
     more.appendChild(icon)
     expect(overlayThiefOf(icon, more)).toBeNull()
   })
 
   it('does not flag a parent that wraps the control (phone stack)', () => {
-    const stack = node('div', { class: 'cpv-phone-stack' })
+    const stack = node('div', { class: 'titan-chordpro-phone-stack' })
     const more = node('button', { 'data-more': '' })
     stack.appendChild(more)
     expect(overlayThiefOf(stack, more)).toBeNull()
@@ -55,7 +55,7 @@ describe('overlayThiefOf', () => {
   })
 
   it('does not treat a chord diagram button as a thief of itself', () => {
-    const chord = node('button', { class: 'cpv-chord-hit', 'data-diagram-hit': '' })
+    const chord = node('button', { class: 'titan-chordpro-chord-hit', 'data-diagram-hit': '' })
     expect(overlayThiefOf(chord, chord)).toBeNull()
   })
 })
@@ -69,6 +69,6 @@ describe('samplePoints', () => {
     expect(left.x).toBeLessThan(10 + 22)
     expect(right.x).toBeLessThanOrEqual(54)
     expect(right.x).toBeGreaterThan(10 + 22)
-    expect(OVERLAY_THIEF_SEL).toContain('.cpv-swipe-rail')
+    expect(OVERLAY_THIEF_SEL).toContain('.titan-chordpro-swipe-rail')
   })
 })

@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import ImportScoreDialog from '../../src/vue/edit/ImportScoreDialog.vue'
-import ChordproViewer from '../../src/vue/ChordproViewer.vue'
+import TitanChordpro from '../../src/vue/TitanChordpro.vue'
 import { layoutChart, parse, normalizeSource, writeScoreReference } from '../../src/core'
 
 const original = normalizeSource(readFileSync('fixtures/013-ele-vive-em-mim-partitura.cho', 'utf8'))
@@ -10,7 +10,7 @@ const reference = writeScoreReference({ src: '/solo.gp', track: 1, start: 1, end
 
 describe('external solo integration', () => {
   it('renders the external score separately from the legacy editor; hides it in lyrics only', async () => {
-    const wrapper = mount(ChordproViewer, {
+    const wrapper = mount(TitanChordpro, {
       props: { source: `${original}\n${reference}`, theme: 'light', autoHide: false },
       global: { stubs: { ExternalScore: { props: ['text'], template: '<div data-external-stub>{{ text }}</div>' } } },
     })
@@ -22,7 +22,7 @@ describe('external solo integration', () => {
   })
   it.each(['external', 'invalid'] as const)('removes a %s score in content edit and supports undo', async kind => {
     const text = kind === 'external' ? reference : reference.replace('{x_titan_score:', '{x_titan_start_of_score:') + '\n{x_titan_end_of_score}'
-    const wrapper = mount(ChordproViewer, {
+    const wrapper = mount(TitanChordpro, {
       props: { source: `${original}\n${text}`, modes: 'content', theme: 'light', autoHide: false },
       attachTo: document.body,
       global: { stubs: { ExternalScore: { template: '<div data-external-stub />' } } },
@@ -56,7 +56,7 @@ describe('external solo integration', () => {
   })
   it('duplicates, adjusts and moves a solo after a chorus, preserving the saved source', async () => {
     const source = `${reference}\n\n${original}`
-    const wrapper = mount(ChordproViewer, {
+    const wrapper = mount(TitanChordpro, {
       props: { source, modes: 'content', theme: 'light', autoHide: false },
       global: { stubs: { ExternalScore: { props: ['text'], template: '<div data-external-stub>{{ text }}</div>' } } },
     })

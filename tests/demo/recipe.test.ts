@@ -110,9 +110,9 @@ describe('the catalog', () => {
     expect(hrefs).toContain('/media.html')
   })
 
-  it('ships a compact ChordproViewer call on every catalog entry', () => {
+  it('ships a compact TitanChordpro call on every catalog entry', () => {
     for (const demo of DEMOS) {
-      expect(demo.call, demo.id).toMatch(/<ChordproViewer/)
+      expect(demo.call, demo.id).toMatch(/<TitanChordpro/)
       expect(demo.call, demo.id).toMatch(/\/>/)
     }
     expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).toMatch(/:songs="songs"/)
@@ -307,7 +307,7 @@ describe('Hub', () => {
     expect(w.text()).not.toMatch(/\bEnsaio\b/)
     expect(w.get('[data-demo-ephemeral]').text()).toMatch(/Sem persistência/i)
     for (const demo of DEMOS) {
-      expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('ChordproViewer')
+      expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('TitanChordpro')
     }
     expect(w.get('[data-demo="standalone"] .more').text()).toMatch(/Partitura/)
     expect(w.get('[data-demo="standalone-apresentacao"] .more').text()).toMatch(/demanda/i)
@@ -334,7 +334,7 @@ describe('Hub', () => {
 })
 
 describe('CifraDemo', () => {
-  const stub = { ChordproViewer: true }
+  const stub = { TitanChordpro: true }
 
   async function mountReady(
     props: { surface: 'standalone' | 'site'; lista: boolean },
@@ -342,7 +342,7 @@ describe('CifraDemo', () => {
     const w = mount(CifraDemo, { props, global: { stubs: stub } })
     if (w.find('[data-boot-shell]').exists()) {
       await flushPromises()
-      await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists(), {
+      await vi.waitUntil(() => w.findComponent({ name: 'TitanChordpro' }).exists(), {
         timeout: 5000,
       })
     }
@@ -354,7 +354,7 @@ describe('CifraDemo', () => {
       props: { surface: 'standalone', lista: false },
       global: { stubs: stub },
     })
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('songs')).toBeUndefined()
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('songs')).toBeUndefined()
   })
 
   it('uses default device storage so overlay/suggestions survive navigation', () => {
@@ -363,14 +363,14 @@ describe('CifraDemo', () => {
       global: { stubs: stub },
     })
     // Omitted `storage` → package default (localStorage) for local→persisted lab.
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('storage')).toBeUndefined()
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('local')
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('storage')).toBeUndefined()
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('editMode')).toBe('local')
     w.unmount()
   })
 
   it('passes a rehearsal list when the recipe has one', async () => {
     const w = await mountReady({ surface: 'standalone', lista: true })
-    const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
+    const songs = w.getComponent({ name: 'TitanChordpro' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
     w.unmount()
   })
@@ -380,7 +380,7 @@ describe('CifraDemo', () => {
     window.history.replaceState({}, '', '?audio=1')
     try {
       const w = await mountReady({ surface: 'standalone', lista: true })
-      const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as {
+      const songs = w.getComponent({ name: 'TitanChordpro' }).props('songs') as {
         source?: string
       }[]
       expect(songs.length).toBeGreaterThanOrEqual(2)
@@ -399,13 +399,13 @@ describe('CifraDemo', () => {
 
   it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
     const juntas = await mountReady({ surface: 'standalone', lista: true })
-    expect(juntas.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBeUndefined()
+    expect(juntas.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBeUndefined()
 
     const prev = window.location.search
     window.history.replaceState({}, '', '?ensaio=demanda')
     try {
       const demanda = await mountReady({ surface: 'standalone', lista: true })
-      expect(typeof demanda.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBe(
+      expect(typeof demanda.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBe(
         'function',
       )
       demanda.unmount()
@@ -436,7 +436,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: true },
         global: { stubs: stub },
       })
-      const viewer = w.getComponent({ name: 'ChordproViewer' })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
       expect(viewer.props('source')).toBe('')
       expect(viewer.props('editMode')).toBe('persisted')
       expect(viewer.props('songs')).toBeUndefined()
@@ -457,7 +457,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      expect(w.getComponent({ name: 'ChordproViewer' }).props('accent')).toBe('teal')
+      expect(w.getComponent({ name: 'TitanChordpro' }).props('accent')).toBe('teal')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
@@ -472,7 +472,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('persisted')
+      expect(w.getComponent({ name: 'TitanChordpro' }).props('editMode')).toBe('persisted')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
@@ -487,7 +487,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      const viewer = w.getComponent({ name: 'ChordproViewer' })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
       expect(String(viewer.props('source'))).toMatch(/\{/)
       expect(viewer.props('editMode')).toBe('local')
       expect(viewer.props('actorKey')).toBe('demo-musico')

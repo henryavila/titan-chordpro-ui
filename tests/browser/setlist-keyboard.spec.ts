@@ -54,7 +54,7 @@ test('compact setlist stays above a simulated soft keyboard', async ({ page }) =
     .poll(async () => page.locator('[data-setlist-overlay]').evaluate((el) => getComputedStyle(el).alignItems))
     .toBe('flex-start')
   const lifted = await page.evaluate(() => {
-    const root = document.querySelector('.cpv-root') as HTMLElement
+    const root = document.querySelector('.titan-chordpro-root') as HTMLElement
     const dialog = document.querySelector('[aria-label="Lista do ensaio"]') as HTMLElement
     // Harness keeps a small host toolbar above the chart — measure inside the viewer.
     return Math.round(dialog.getBoundingClientRect().top - root.getBoundingClientRect().top)

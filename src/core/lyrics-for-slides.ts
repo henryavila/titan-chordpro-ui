@@ -1,6 +1,6 @@
 import { layoutChartFull } from './layout'
 import { parse } from './parse'
-import type { ChordProView } from './types'
+import type { TitanChordproDocument } from './types'
 
 /**
  * One sung line as the chart wrote it. `sectionIndex` is a closed
@@ -17,7 +17,7 @@ export type SlideSourceLine = {
  * section closures stay. Unlike the Só letra *reading* lens, comments do
  * not belong on a projector.
  */
-export function lyricsForSlides(view: ChordProView): SlideSourceLine[] {
+export function lyricsForSlides(view: TitanChordproDocument): SlideSourceLine[] {
   const { blocks } = layoutChartFull(view, { lens: 'letra' })
   const out: SlideSourceLine[] = []
   let sectionIndex = -1
@@ -36,7 +36,7 @@ export function lyricsForSlides(view: ChordProView): SlideSourceLine[] {
 }
 
 /** Plaintext: one chart line per line, blank line between sections. */
-export function lyricsText(view: ChordProView): string {
+export function lyricsText(view: TitanChordproDocument): string {
   const rows = lyricsForSlides(view)
   const lines: string[] = []
   let prev: number | null = null

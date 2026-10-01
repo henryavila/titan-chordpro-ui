@@ -141,20 +141,20 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
 </script>
 
 <template>
-  <figure class="cpv-figure cpv-external-score" data-external-score :style="{ margin: `0 0 ${blockGap}` }">
-    <figcaption class="cpv-figure-cap">
-      <div v-if="!hideTitle" class="cpv-score-heading">
-        <span class="cpv-figure-kind">{{ label }}</span>
-        <button v-if="canEdit" type="button" class="cpv-figure-btn" @click="emit('editScore')">Ajustar trecho</button>
+  <figure class="titan-chordpro-figure titan-chordpro-external-score" data-external-score :style="{ margin: `0 0 ${blockGap}` }">
+    <figcaption class="titan-chordpro-figure-cap">
+      <div v-if="!hideTitle" class="titan-chordpro-score-heading">
+        <span class="titan-chordpro-figure-kind">{{ label }}</span>
+        <button v-if="canEdit" type="button" class="titan-chordpro-figure-btn" @click="emit('editScore')">Ajustar trecho</button>
       </div>
-      <div class="cpv-score-controls">
-      <button v-for="option in (['tab', 'score'] as const)" :key="option" type="button" class="cpv-figure-btn"
+      <div class="titan-chordpro-score-controls">
+      <button v-for="option in (['tab', 'score'] as const)" :key="option" type="button" class="titan-chordpro-figure-btn"
         :disabled="option === 'tab' && !tabAvailable" :aria-pressed="view === option" @click="view = option">
         {{ option === 'tab' ? 'TAB' : 'Partitura' }}
       </button>
       <ScoreChoice v-if="view === 'tab' && tabAvailable && !preview" :model-value="preference.value.value ?? 'default'"
         label="Ritmo da TAB" caption="Ritmo" compact :options="rhythmOptions" @update:model-value="preference.set" />
-      <button v-if="!preview" type="button" class="cpv-figure-btn cpv-note-names-toggle"
+      <button v-if="!preview" type="button" class="titan-chordpro-figure-btn titan-chordpro-note-names-toggle"
         :aria-pressed="noteNames.value.value" aria-label="Notas"
         @click="noteNames.set(!noteNames.value.value)">Notas</button>
       <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
@@ -163,12 +163,12 @@ onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generati
     <p v-if="loading && !error" role="status">Abrindo solo…</p>
     <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">Tentar novamente</button></p>
     <p v-else-if="!loading && !tabAvailable">Este arquivo não traz posições nas cordas para exibir TAB.</p>
-    <div class="cpv-notation-paper"><div ref="host" class="cpv-notation-systems">
-      <div v-for="(system, i) in systems" :key="i" class="cpv-notation-system"
+    <div class="titan-chordpro-notation-paper"><div ref="host" class="titan-chordpro-notation-systems">
+      <div v-for="(system, i) in systems" :key="i" class="titan-chordpro-notation-system"
         :data-first-bar="system.first" :data-last-bar="system.last" :style="{ width: `${system.width}px` }">
-        <div v-if="noteNames.value.value && !preview && system.noteNames.length" class="cpv-note-names"
+        <div v-if="noteNames.value.value && !preview && system.noteNames.length" class="titan-chordpro-note-names"
           :style="{ width: `${system.width}px`, height: noteLaneHeight(system) }" :aria-label="view === 'tab' ? 'Notas da TAB' : 'Notas da partitura'">
-          <span v-for="(name, n) in system.noteNames" :key="n" class="cpv-note-name" :style="{ left: `${name.x}px`, top: `${name.row * 20}px` }">{{ name.text }}</span>
+          <span v-for="(name, n) in system.noteNames" :key="n" class="titan-chordpro-note-name" :style="{ left: `${name.x}px`, top: `${name.row * 20}px` }">{{ name.text }}</span>
         </div>
         <div v-html="system.content" />
       </div>

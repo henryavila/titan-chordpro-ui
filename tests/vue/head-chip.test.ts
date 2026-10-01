@@ -1,11 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /**
- * Beat-1 invert is keyed to `.cpv-head-chip`, not to today's widgets.
+ * Beat-1 invert is keyed to `.titan-chordpro-head-chip`, not to today's widgets.
  * A new painted control on the identity bar that forgets the class fails here
  * instead of shipping unreadable on the pulse.
  */
@@ -28,7 +28,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -45,7 +45,7 @@ const rehearsal = [
 ]
 
 async function viewerAt(width: number) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: '',
       songs: rehearsal,
@@ -80,8 +80,8 @@ function paintedOrphans(head: HTMLElement) {
   const headBg = getComputedStyle(head).backgroundColor
   const orphans: string[] = []
   for (const el of head.querySelectorAll<HTMLElement>('*')) {
-    if (el.closest('.cpv-veil-2')) continue
-    if (el.classList.contains('cpv-head-chip') || el.closest('.cpv-head-chip')) continue
+    if (el.closest('.titan-chordpro-veil-2')) continue
+    if (el.classList.contains('titan-chordpro-head-chip') || el.closest('.titan-chordpro-head-chip')) continue
     const bg = getComputedStyle(el).backgroundColor
     if (transparent(bg) || bg === headBg) continue
     const style = el.getAttribute('style') ?? ''
@@ -94,8 +94,8 @@ function paintedOrphans(head: HTMLElement) {
 function chordPaintOutsideChip(head: HTMLElement) {
   const bad: string[] = []
   for (const el of head.querySelectorAll<HTMLElement>('*')) {
-    if (el.closest('.cpv-veil-2')) continue
-    if (el.classList.contains('cpv-head-chip') || el.closest('.cpv-head-chip')) continue
+    if (el.closest('.titan-chordpro-veil-2')) continue
+    if (el.classList.contains('titan-chordpro-head-chip') || el.closest('.titan-chordpro-head-chip')) continue
     const style = el.getAttribute('style') ?? ''
     if (/var\(--chord/.test(style)) bad.push(labelOf(el))
   }
@@ -105,7 +105,7 @@ function chordPaintOutsideChip(head: HTMLElement) {
 function colorLiterals(head: HTMLElement) {
   const bad: string[] = []
   for (const el of head.querySelectorAll<HTMLElement>('[style]')) {
-    if (el.closest('.cpv-veil-2')) continue
+    if (el.closest('.titan-chordpro-veil-2')) continue
     const style = el.getAttribute('style') ?? ''
     if (/(?:^|;)\s*(?:color|background|border(?:-color)?)\s*:[^;]*(#|rgb\(|hsl\()/i.test(style)) {
       bad.push(labelOf(el))
@@ -115,21 +115,21 @@ function colorLiterals(head: HTMLElement) {
 }
 
 describe('identity-bar chips opt into the beat-1 invert', () => {
-  it('the wide bar paints tom/capo/list index only through cpv-head-chip', async () => {
+  it('the wide bar paints tom/capo/list index only through titan-chordpro-head-chip', async () => {
     const w = await viewerAt(800)
-    const head = w.get('[data-cpv-head]').element as HTMLElement
-    expect(w.get('.cpv-keypill').classes()).toContain('cpv-head-chip')
-    expect(w.get('.cpv-head-pos').classes()).toContain('cpv-head-chip')
+    const head = w.get('[data-titan-chordpro-head]').element as HTMLElement
+    expect(w.get('.titan-chordpro-keypill').classes()).toContain('titan-chordpro-head-chip')
+    expect(w.get('.titan-chordpro-head-pos').classes()).toContain('titan-chordpro-head-chip')
     expect(paintedOrphans(head), paintedOrphans(head).join('\n')).toEqual([])
     expect(chordPaintOutsideChip(head), chordPaintOutsideChip(head).join('\n')).toEqual([])
     expect(colorLiterals(head), colorLiterals(head).join('\n')).toEqual([])
   })
 
-  it('the phone bar paints the tom door only through cpv-head-chip', async () => {
+  it('the phone bar paints the tom door only through titan-chordpro-head-chip', async () => {
     const w = await viewerAt(390)
-    const head = w.get('[data-cpv-head]').element as HTMLElement
-    expect(w.get('[data-tone]').classes()).toContain('cpv-head-chip')
-    expect(w.get('.cpv-head-pos').classes()).toContain('cpv-head-chip')
+    const head = w.get('[data-titan-chordpro-head]').element as HTMLElement
+    expect(w.get('[data-tone]').classes()).toContain('titan-chordpro-head-chip')
+    expect(w.get('.titan-chordpro-head-pos').classes()).toContain('titan-chordpro-head-chip')
     expect(paintedOrphans(head), paintedOrphans(head).join('\n')).toEqual([])
     expect(chordPaintOutsideChip(head), chordPaintOutsideChip(head).join('\n')).toEqual([])
     expect(colorLiterals(head), colorLiterals(head).join('\n')).toEqual([])

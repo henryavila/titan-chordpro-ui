@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 defineProps<{
   failing: boolean
@@ -27,8 +27,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="failing" class="cpv-center" role="alert" data-song-fail>
-    <div class="cpv-veil-2" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);">
+  <div v-if="failing" class="titan-chordpro-center" role="alert" data-song-fail>
+    <div class="titan-chordpro-veil-2" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);">
       <div style="display:flex;flex-direction:column;gap:6px;text-align:left;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Não carregou</span>
         <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.3;text-wrap:pretty;">{{ failTitle }}</span>
@@ -51,50 +51,50 @@ const emit = defineEmits<{
           :style="{ opacity: noPrev ? '0.32' : '1' }"
           style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
           @click="emit('prev')"
-        ><CpvIcon name="chevronLeft" :size="16" /></button>
+        ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
         <button
           aria-label="Próxima música"
           :disabled="noNext"
           :style="{ opacity: noNext ? '0.32' : '1' }"
           style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
           @click="emit('next')"
-        ><CpvIcon name="chevronRight" :size="16" /></button>
+        ><TitanChordproIcon name="chevronRight" :size="16" /></button>
       </div>
     </div>
   </div>
 
   <div
     v-else-if="songLoading"
-    class="cpv-song-skel"
+    class="titan-chordpro-song-skel"
     data-song-loading
     role="status"
     :aria-label="`Buscando ${loadTitle || 'cifra'}`"
   >
-    <div class="cpv-song-skel-head cpv-veil">
-      <button data-setlist-open title="Abrir a lista do ensaio" class="cpv-song-skel-title" @click="emit('openList')">
-        <span class="cpv-song-skel-pos">{{ posLabel }}</span>
-        <span class="cpv-song-skel-name">
+    <div class="titan-chordpro-song-skel-head titan-chordpro-veil">
+      <button data-setlist-open title="Abrir a lista do ensaio" class="titan-chordpro-song-skel-title" @click="emit('openList')">
+        <span class="titan-chordpro-song-skel-pos">{{ posLabel }}</span>
+        <span class="titan-chordpro-song-skel-name">
           <span>{{ loadTitle || '…' }}</span>
           <span>Buscando cifra…</span>
         </span>
       </button>
     </div>
-    <div class="cpv-song-skel-page" aria-hidden="true">
-      <div v-for="n in 6" :key="n" class="cpv-song-skel-row" :style="{ '--i': n }">
-        <span class="cpv-song-skel-bar cpv-song-skel-chords" />
-        <span class="cpv-song-skel-bar cpv-song-skel-lyric" />
+    <div class="titan-chordpro-song-skel-page" aria-hidden="true">
+      <div v-for="n in 6" :key="n" class="titan-chordpro-song-skel-row" :style="{ '--i': n }">
+        <span class="titan-chordpro-song-skel-bar titan-chordpro-song-skel-chords" />
+        <span class="titan-chordpro-song-skel-bar titan-chordpro-song-skel-lyric" />
       </div>
     </div>
-    <div class="cpv-song-skel-dock cpv-veil">
+    <div class="titan-chordpro-song-skel-dock titan-chordpro-veil">
       <button
         data-song-prev
         aria-label="Música anterior"
         :disabled="noPrev"
         :style="{ opacity: noPrev ? '0.32' : '1' }"
-        class="cpv-song-skel-nav"
+        class="titan-chordpro-song-skel-nav"
         @click="emit('prev')"
-      ><CpvIcon name="chevronLeft" :size="16" /></button>
-      <button data-setlist-open class="cpv-song-skel-list" @click="emit('openList')">
+      ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
+      <button data-setlist-open class="titan-chordpro-song-skel-list" @click="emit('openList')">
         <span>{{ posLabel }}</span>
         <span>Lista</span>
       </button>
@@ -103,19 +103,19 @@ const emit = defineEmits<{
         aria-label="Próxima música"
         :disabled="noNext"
         :style="{ opacity: noNext ? '0.32' : '1' }"
-        class="cpv-song-skel-nav"
+        class="titan-chordpro-song-skel-nav"
         @click="emit('next')"
-      ><CpvIcon name="chevronRight" :size="16" /></button>
+      ><TitanChordproIcon name="chevronRight" :size="16" /></button>
     </div>
   </div>
 
-  <div v-else-if="listEmpty" class="cpv-center" data-empty-setlist>
-    <div class="cpv-ph" />
+  <div v-else-if="listEmpty" class="titan-chordpro-center" data-empty-setlist>
+    <div class="titan-chordpro-ph" />
     <div style="font-size:15px;font-weight:600;">Nenhuma música na lista</div>
     <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O ensaio ainda não tem repertório.</div>
   </div>
 
-  <div v-else-if="isEmpty" class="cpv-center">
+  <div v-else-if="isEmpty" class="titan-chordpro-center">
     <div v-if="canStartNew" style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;text-align:left;">
       <div style="display:flex;flex-direction:column;gap:7px;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);font-weight:700;">Para todos</span>
@@ -128,7 +128,7 @@ const emit = defineEmits<{
           style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--chord-edge);border-radius:15px;background:var(--chord-soft);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
           @click="emit('start', 'import')"
         >
-          <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;"><CpvIcon name="fileInput" :size="16" /></span>
+          <span style="flex:none;width:34px;height:34px;border-radius:11px;background:var(--chord);color:var(--chord-ink);display:flex;align-items:center;justify-content:center;"><TitanChordproIcon name="fileInput" :size="16" /></span>
           <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
             <span style="font-size:14.5px;font-weight:700;">Importar</span>
             <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Link do CifraClub, arquivo .cho ou PDF, ou texto colado — inclusive OnSong.</span>
@@ -139,7 +139,7 @@ const emit = defineEmits<{
           style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:15px;background:transparent;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
           @click="emit('start', 'blank')"
         >
-          <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);"><CpvIcon name="filePlus" :size="16" /></span>
+          <span style="flex:none;width:34px;height:34px;border-radius:11px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);"><TitanChordproIcon name="filePlus" :size="16" /></span>
           <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
             <span style="font-size:14.5px;font-weight:700;">Começar em branco</span>
             <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Digitar letra e acordes no editor, do zero.</span>
@@ -148,20 +148,20 @@ const emit = defineEmits<{
       </div>
     </div>
     <template v-else>
-      <div class="cpv-ph" />
+      <div class="titan-chordpro-ph" />
       <div style="font-size:15px;font-weight:600;">Nenhuma cifra carregada</div>
-      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O host ainda não entregou uma fonte ChordPro para este viewer.</div>
+      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.55;">O host ainda não entregou uma fonte ChordPro para esta cifra.</div>
     </template>
   </div>
 
-  <div v-else-if="fatal" class="cpv-center" role="alert">
-    <div class="cpv-fatal-mark"><CpvIcon name="alertTri" :size="22" /></div>
+  <div v-else-if="fatal" class="titan-chordpro-center" role="alert">
+    <div class="titan-chordpro-fatal-mark"><TitanChordproIcon name="alertTri" :size="22" /></div>
     <div style="font-size:15px;font-weight:600;">Não foi possível ler esta cifra</div>
     <div style="font-size:13px;color:var(--muted);max-width:340px;line-height:1.55;text-wrap:pretty;">{{ fatal }}</div>
   </div>
 
-  <div v-else-if="isLoading" class="cpv-center">
-    <div class="cpv-spin" />
+  <div v-else-if="isLoading" class="titan-chordpro-center">
+    <div class="titan-chordpro-spin" />
     <div style="font-size:13px;color:var(--muted);">Preparando a cifra…</div>
   </div>
 </template>

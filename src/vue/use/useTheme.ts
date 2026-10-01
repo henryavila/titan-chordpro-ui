@@ -10,9 +10,9 @@ export function applyThemeVars(
   const vars = { ...THEME_VARS[mode], ...accentVars(accent, mode, strength) }
   for (const [k, v] of Object.entries(vars)) {
     el.style.setProperty(k, v)
-    el.style.setProperty(k.replace('--cpv-', '--'), v)
+    el.style.setProperty(k.replace('--titan-chordpro-', '--'), v)
   }
-  el.style.background = vars['--cpv-canvas']
+  el.style.background = vars['--titan-chordpro-canvas']
 }
 
 /** Lucide names that replaced the typed ◐ ○ ● glyphs. */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import type { ViewHeadModel } from './view-head'
 
 defineProps<ViewHeadModel>()
@@ -21,34 +21,34 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="cpv-hit cpv-veil cpv-head"
+    class="titan-chordpro-hit titan-chordpro-veil titan-chordpro-head"
     :class="[variant === 'phone' ? 'is-phone' : 'is-wide', hitClass]"
-    data-cpv-head
-    :style="variant === 'wide' ? { '--cpv-page-max': pageMax } : undefined"
+    data-titan-chordpro-head
+    :style="variant === 'wide' ? { '--titan-chordpro-page-max': pageMax } : undefined"
   >
     <button
       v-if="setlistOn"
       data-setlist-open
-      class="cpv-head-id"
+      class="titan-chordpro-head-id"
       title="Abrir a lista do ensaio"
       @click="emit('open-setlist')"
     >
-      <span class="cpv-head-pos cpv-head-chip">{{ posLabel }}</span>
-      <span class="cpv-head-name">
-        <span data-chart-title class="cpv-head-title">{{ title }}</span>
-        <span class="cpv-head-sub">{{ variant === 'phone' ? phoneSub : nextChip }}</span>
+      <span class="titan-chordpro-head-pos titan-chordpro-head-chip">{{ posLabel }}</span>
+      <span class="titan-chordpro-head-name">
+        <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
+        <span class="titan-chordpro-head-sub">{{ variant === 'phone' ? phoneSub : nextChip }}</span>
       </span>
     </button>
-    <span v-else-if="variant === 'phone'" class="cpv-head-id">
-      <span class="cpv-head-name">
-        <span data-chart-title class="cpv-head-title">{{ title }}</span>
-        <span class="cpv-head-sub">{{ phoneSub }}</span>
+    <span v-else-if="variant === 'phone'" class="titan-chordpro-head-id">
+      <span class="titan-chordpro-head-name">
+        <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
+        <span class="titan-chordpro-head-sub">{{ phoneSub }}</span>
       </span>
     </span>
-    <div v-else class="cpv-head-id">
-      <span class="cpv-head-name">
-        <span data-chart-title class="cpv-head-title">{{ title }}</span>
-        <span v-if="subtitle" class="cpv-head-sub">{{ subtitle }}</span>
+    <div v-else class="titan-chordpro-head-id">
+      <span class="titan-chordpro-head-name">
+        <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
+        <span v-if="subtitle" class="titan-chordpro-head-sub">{{ subtitle }}</span>
       </span>
     </div>
 
@@ -56,7 +56,7 @@ const emit = defineEmits<{
       <button
         v-if="hasKey"
         data-tone
-        class="cpv-head-chip"
+        class="titan-chordpro-head-chip"
         aria-label="Tom e capotraste"
         title="Tom e capotraste"
         :style="{ background: hasReset ? 'var(--chord-fill)' : 'var(--chord-soft)' }"
@@ -65,7 +65,7 @@ const emit = defineEmits<{
       >
         <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom</span>
         <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ toneLabel }}</span>
-        <CpvIcon name="chevronDown" :size="10" />
+        <TitanChordproIcon name="chevronDown" :size="10" />
       </button>
       <button
         v-if="canWinScreen"
@@ -75,17 +75,17 @@ const emit = defineEmits<{
         :style="{ width: '28px', height: '28px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
         style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;color:var(--text);cursor:pointer;"
         @click="emit('toggle-fs')"
-      ><CpvIcon name="maximize2" :size="14" /></button>
+      ><TitanChordproIcon name="maximize2" :size="14" /></button>
     </template>
 
     <template v-else>
-      <div v-if="metaTempo || metaTime || metaDuration" class="cpv-head-meta">
+      <div v-if="metaTempo || metaTime || metaDuration" class="titan-chordpro-head-meta">
         <span v-if="metaTempo">{{ metaTempo }} BPM</span>
         <span v-if="metaTime">{{ metaTime }}</span>
         <span v-if="metaDuration">{{ metaDuration }}</span>
       </div>
       <div v-if="hasKey" :ref="(el) => emit('bind-capo', el)" style="position:relative;flex:none;">
-        <div class="cpv-keypill cpv-head-chip">
+        <div class="titan-chordpro-keypill titan-chordpro-head-chip">
           <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="emit('shift', -1)">−</button>
           <div style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 5px;">
             <span style="display:flex;align-items:baseline;gap:5px;">
@@ -95,26 +95,26 @@ const emit = defineEmits<{
             <span v-if="songKeyCaption" data-tone-shift style="font-size:9.5px;font-weight:600;color:var(--muted);line-height:1.2;">{{ songKeyCaption }}</span>
           </div>
           <button data-transpose-up aria-label="Subir meio tom" title="Subir meio tom (+)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="emit('shift', 1)">+</button>
-          <span class="cpv-keypill-split" aria-hidden="true" />
+          <span class="titan-chordpro-keypill-split" aria-hidden="true" />
           <button data-capo title="Capotraste (C)" :style="{ background: hasCapo ? 'var(--chord-fill)' : 'transparent' }" style="display:flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:0;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;color:var(--chord);line-height:1;" @click="capoOpen = !capoOpen">
-            {{ capoBtnLabel }}<CpvIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
+            {{ capoBtnLabel }}<TitanChordproIcon name="chevronDown" :size="11" :style="{ transform: capoOpen ? 'rotate(180deg)' : 'rotate(0deg)', opacity: '0.75', transition: 'transform .18s ease' }" />
           </button>
           <button v-if="hasReset" title="Voltar ao tom original" style="height:26px;padding:0 8px;margin-left:2px;border:0;border-radius:7px;background:var(--chord-fill);color:var(--chord);font-size:11px;font-weight:600;cursor:pointer;" @click="emit('reset-tone')">Original</button>
         </div>
-        <div v-if="capoOpen" class="cpv-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:cpv-rise .18s ease-out;">
+        <div v-if="capoOpen" class="titan-chordpro-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:titan-chordpro-rise .18s ease-out;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Capotraste</span>
-            <button class="cpv-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);" @click="capoOpen = false"><CpvIcon name="x" :size="14" /></button>
+            <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);" @click="capoOpen = false"><TitanChordproIcon name="x" :size="14" /></button>
           </div>
           <div style="display:flex;align-items:center;gap:7px;">
             <button aria-label="Capo abaixo" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('capo-nudge', -1)">−</button>
             <div style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</div>
             <button aria-label="Capo acima" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('capo-nudge', 1)">+</button>
           </div>
-          <div v-if="capoShapes.length" data-capo-hint class="cpv-capo-hint">
-            <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="cpv-capo-chip" data-capo-chip>{{ s }}</span>
+          <div v-if="capoShapes.length" data-capo-hint class="titan-chordpro-capo-hint">
+            <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="titan-chordpro-capo-chip" data-capo-chip>{{ s }}</span>
           </div>
-          <div v-else data-capo-hint class="cpv-capo-hint--text" style="font-size:11.5px;">{{ capoHint }}</div>
+          <div v-else data-capo-hint class="titan-chordpro-capo-hint--text" style="font-size:11.5px;">{{ capoHint }}</div>
           <button
             data-dual
             role="switch"
@@ -153,7 +153,7 @@ const emit = defineEmits<{
         :style="{ width: '30px', height: '30px', background: fs ? 'var(--sel)' : 'transparent', border: `1px solid ${fs ? 'var(--sel-line)' : 'transparent'}` }"
         style="flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;color:var(--text);cursor:pointer;"
         @click="emit('toggle-fs')"
-      ><CpvIcon name="maximize2" :size="14" /></button>
+      ><TitanChordproIcon name="maximize2" :size="14" /></button>
     </template>
   </div>
 </template>

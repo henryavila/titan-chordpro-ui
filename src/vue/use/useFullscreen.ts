@@ -147,9 +147,9 @@ export function useFullscreen(opts: FullscreenOpts = {}) {
 }
 
 const HOST_WARNING =
-  '[Titan Chordpro] Tela cheia bloqueada: este documento está num <iframe> ' +
+  '[TitanChordpro] Tela cheia bloqueada: este documento está num <iframe> ' +
   'cross-origin sem `allow="fullscreen"`. Iframe não é caminho de integração — ' +
-  'o consumer Vue/Nuxt importa <ChordproViewer> na própria página (ficha com ' +
+  'o consumer Vue/Nuxt importa <TitanChordpro> na própria página (ficha com ' +
   'altura, ou rota 100dvh). `position:fixed` não escapa de um iframe. ' +
   'Ver docs/CONSUMER.md.'
 

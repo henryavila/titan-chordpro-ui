@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 defineProps<{
   shownKey: string
   hasOffset: boolean
@@ -27,11 +27,11 @@ const emit = defineEmits<{
 
 <template>
   <div style="position:absolute;inset:0;z-index:28;">
-    <div class="cpv-scrim" @click="emit('close')" />
-    <div class="cpv-bottom-sheet cpv-veil-2" role="dialog" aria-label="Tom e capotraste">
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
+    <div class="titan-chordpro-bottom-sheet titan-chordpro-veil-2" role="dialog" aria-label="Tom e capotraste">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom e capotraste</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:36px;height:36px;border-radius:12px;background:var(--surface);color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="16" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:36px;height:36px;border-radius:12px;background:var(--surface);color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <button aria-label="Baixar meio tom" style="flex:none;width:60px;height:56px;border:1px solid var(--chord-edge);border-radius:16px;background:var(--chord-soft);color:var(--chord);font-size:22px;cursor:pointer;" @click="emit('down')">−</button>
@@ -47,10 +47,10 @@ const emit = defineEmits<{
         <span style="flex:none;min-width:86px;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</span>
         <button aria-label="Capo acima" style="flex:none;width:48px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:18px;cursor:pointer;" @click="emit('capoUp')">+</button>
       </div>
-      <div v-if="capoShapes?.length" data-capo-hint class="cpv-capo-hint">
-        <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="cpv-capo-chip" data-capo-chip>{{ s }}</span>
+      <div v-if="capoShapes?.length" data-capo-hint class="titan-chordpro-capo-hint">
+        <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="titan-chordpro-capo-chip" data-capo-chip>{{ s }}</span>
       </div>
-      <span v-else data-capo-hint class="cpv-capo-hint--text">{{ capoHint }}</span>
+      <span v-else data-capo-hint class="titan-chordpro-capo-hint--text">{{ capoHint }}</span>
       <button
         data-dual
         role="switch"

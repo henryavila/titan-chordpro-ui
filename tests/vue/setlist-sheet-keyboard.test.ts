@@ -49,7 +49,7 @@ function mockVisualViewport(view: { w: number; h: number; x?: number; y?: number
 function hostBox(w: number, h: number) {
   const host = document.createElement('div')
   // Same containing block the viewer uses in production — Vue's data-v-app wrapper is not it.
-  host.className = 'cpv-root'
+  host.className = 'titan-chordpro-root'
   host.style.position = 'relative'
   host.style.width = `${w}px`
   host.style.height = `${h}px`

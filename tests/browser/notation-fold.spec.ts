@@ -9,19 +9,19 @@ test.describe('touch fold control', () => {
     test(`tap folds and unfolds ${file} on a phone${setlist ? ' with a setlist' : ''}`, async ({ page }) => {
       await page.goto(`/notation.html?pdf=1&file=${file}${setlist ? '&setlist=1' : ''}`)
       const button = file === 'tab'
-        ? page.locator('.cpv-notation-card').filter({ has: page.locator('.cpv-tab') }).first().locator('[data-toggle-notation]')
+        ? page.locator('.titan-chordpro-notation-card').filter({ has: page.locator('.titan-chordpro-tab') }).first().locator('[data-toggle-notation]')
         : page.locator('[data-toggle-notation]').first()
       const hint = page.getByRole('button', { name: 'Entendi' })
       if (await hint.isVisible()) await hint.tap()
       const centerButton = async () => button.evaluate(el => {
-        const scroll = el.closest('.cpv-scroll')!
+        const scroll = el.closest('.titan-chordpro-scroll')!
         scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 240
       })
       await expect(button).toHaveAttribute('aria-expanded', 'true')
       await centerButton()
-      await button.locator('.cpv-notation-title').tap()
+      await button.locator('.titan-chordpro-notation-title').tap()
       await expect(button).toHaveAttribute('aria-expanded', 'false')
-      await expect(page.locator('.cpv-chrome').first()).not.toHaveClass(/is-hidden/)
+      await expect(page.locator('.titan-chordpro-chrome').first()).not.toHaveClass(/is-hidden/)
       await centerButton()
       await button.tap()
       await expect(button).toHaveAttribute('aria-expanded', 'true')
@@ -32,20 +32,20 @@ test.describe('touch fold control', () => {
     await page.goto('/notation.html?pdf=1&file=tab')
     const hint = page.getByRole('button', { name: 'Entendi' })
     if (await hint.isVisible()) await hint.tap()
-    const tab = page.locator('.cpv-notation-card .cpv-tab').first()
+    const tab = page.locator('.titan-chordpro-notation-card .titan-chordpro-tab').first()
     await tab.evaluate(el => {
-      const scroll = el.closest('.cpv-scroll')!
+      const scroll = el.closest('.titan-chordpro-scroll')!
       scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 240
     })
     await tab.tap()
-    await expect(page.locator('.cpv-chrome').first()).not.toHaveClass(/is-hidden/)
+    await expect(page.locator('.titan-chordpro-chrome').first()).not.toHaveClass(/is-hidden/)
     await expect(page.locator('[data-toggle-notation]').first()).toHaveAttribute('aria-expanded', 'true')
   })
 })
 
 test('the reader keeps each solo view and fold across visits, independently by song', async ({ page }) => {
   await page.goto('/notation.html?pdf=1&file=gp')
-  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-notation-system').first()).toBeVisible()
   await page.getByRole('button', { name: 'Partitura', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.locator('[data-toggle-notation]').click()
@@ -55,16 +55,16 @@ test('the reader keeps each solo view and fold across visits, independently by s
   await page.locator('[data-toggle-notation]').click()
   await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.goto('/notation.html?pdf=1&file=xml')
-  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-notation-system').first()).toBeVisible()
   await expect(page.locator('[data-toggle-notation]')).toHaveAttribute('aria-expanded', 'true')
   await expect(page.getByRole('button', { name: 'TAB', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.goto('/notation.html?pdf=1&file=gp')
-  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-notation-system').first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toHaveAttribute('aria-pressed', 'true')
 })
 
 async function progress(page: Page) {
-  return page.locator('.cpv-progress > span').evaluate(el => parseFloat((el as HTMLElement).style.width) / 100)
+  return page.locator('.titan-chordpro-progress > span').evaluate(el => parseFloat((el as HTMLElement).style.width) / 100)
 }
 async function toggle(page: Page) {
   // The fold control can be above the viewport. Do not let Playwright seek
@@ -74,29 +74,29 @@ async function toggle(page: Page) {
 for (const width of [390, 1280]) {
   test(`folding a large reference preserves a running clock at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
-    await page.addInitScript(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ metFollow: false })))
+    await page.addInitScript(() => localStorage.setItem('titan-chordpro:user-preferences', JSON.stringify({ metFollow: false })))
     await page.goto('/notation.html?pdf=1&file=piano-long')
-    await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+    await expect(page.locator('.titan-chordpro-notation-system').first()).toBeVisible()
     await expect(page.locator('[data-external-score] [role="status"]')).toHaveCount(0)
     await page.clock.install()
     await page.clock.pauseAt(new Date(Date.now() + 1000))
-    await page.locator('.cpv-scroll').evaluate(el => { el.scrollTop = el.scrollHeight * 0.65 })
+    await page.locator('.titan-chordpro-scroll').evaluate(el => { el.scrollTop = el.scrollHeight * 0.65 })
     await page.getByRole('button', { name: 'Rolar', exact: true }).first().evaluate((el: HTMLButtonElement) => el.click())
     await page.clock.runFor(2000)
     await expect(page.getByRole('button', { name: 'Parar', exact: true }).first()).toBeVisible()
     const before = await progress(page)
     expect(before).toBeGreaterThan(0.1)
     expect(before).toBeLessThan(0.98)
-    const height = await page.locator('.cpv-scroll').evaluate(el => el.scrollHeight)
-    const visibleRow = await page.locator('.cpv-reading-row').evaluateAll(rows => rows.findIndex(el => {
+    const height = await page.locator('.titan-chordpro-scroll').evaluate(el => el.scrollHeight)
+    const visibleRow = await page.locator('.titan-chordpro-reading-row').evaluateAll(rows => rows.findIndex(el => {
       const r = el.getBoundingClientRect(); return r.top > 180 && r.top < 600
     }))
-    const rowTop = visibleRow >= 0 ? await page.locator('.cpv-reading-row').nth(visibleRow).evaluate(el => el.getBoundingClientRect().top) : null
+    const rowTop = visibleRow >= 0 ? await page.locator('.titan-chordpro-reading-row').nth(visibleRow).evaluate(el => el.getBoundingClientRect().top) : null
     await toggle(page)
-    if (rowTop !== null) expect(Math.abs(await page.locator('.cpv-reading-row').nth(visibleRow).evaluate(el => el.getBoundingClientRect().top) - rowTop)).toBeLessThan(2)
+    if (rowTop !== null) expect(Math.abs(await page.locator('.titan-chordpro-reading-row').nth(visibleRow).evaluate(el => el.getBoundingClientRect().top) - rowTop)).toBeLessThan(2)
     await page.clock.runFor(100)
     await expect(page.locator('[data-toggle-notation]').first()).toHaveAttribute('aria-expanded', 'false')
-    expect(await page.locator('.cpv-scroll').evaluate(el => el.scrollHeight)).toBeLessThan(height - 100)
+    expect(await page.locator('.titan-chordpro-scroll').evaluate(el => el.scrollHeight)).toBeLessThan(height - 100)
     // Progress is painted once per second, so allow one display tick. No
     // unmarked-row estimate is used: seconds come from the fixture duration.
     expect(Math.abs(await progress(page) - before)).toBeLessThan(1.2 / duration)
@@ -114,10 +114,10 @@ for (const width of [390, 1280]) {
 test('paused fold keeps the same lyric on screen, and reopening restores the reference', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/notation.html?pdf=1&file=piano-long')
-  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
-  const row = page.locator('.cpv-reading-row').nth(4)
+  await expect(page.locator('.titan-chordpro-notation-system').first()).toBeVisible()
+  const row = page.locator('.titan-chordpro-reading-row').nth(4)
   await row.evaluate(el => {
-    const scroll = el.closest('.cpv-scroll')!
+    const scroll = el.closest('.titan-chordpro-scroll')!
     scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 300
   })
   const before = await row.evaluate(el => el.getBoundingClientRect().top)
@@ -131,9 +131,9 @@ test('paused fold keeps the same lyric on screen, and reopening restores the ref
 
 test('folding while the playhead is inside the reference retains its remaining time', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ metFollow: false })))
+  await page.addInitScript(() => localStorage.setItem('titan-chordpro:user-preferences', JSON.stringify({ metFollow: false })))
   await page.goto('/notation.html?pdf=1&file=piano-long')
-  await expect(page.locator('.cpv-notation-system').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-notation-system').first()).toBeVisible()
   await page.clock.install()
   await page.clock.pauseAt(new Date(Date.now() + 1000))
   await page.getByRole('button', { name: 'Rolar', exact: true }).first().evaluate((el: HTMLButtonElement) => el.click())
@@ -151,26 +151,26 @@ for (const width of [390, 1280]) {
   test(`fold control stays inside a wide card with its title at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/notation.html?pdf=1&file=piano-long')
-    const card = page.locator('.cpv-notation-card').first()
-    await expect(card.locator('.cpv-notation-system').first()).toBeVisible()
+    const card = page.locator('.titan-chordpro-notation-card').first()
+    await expect(card.locator('.titan-chordpro-notation-system').first()).toBeVisible()
     const button = card.locator('[data-toggle-notation]')
-    await expect(card.locator('.cpv-notation-title')).toHaveText('Solo')
+    await expect(card.locator('.titan-chordpro-notation-title')).toHaveText('Solo')
     await expect(card).not.toContainText(/Tom do arquivo|compassos/)
     const bounds = (await card.boundingBox())!
-    const content = await page.locator('.cpv-page').evaluate(el => el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight))
+    const content = await page.locator('.titan-chordpro-page').evaluate(el => el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight))
     if (width === 1280) expect(bounds.width).toBeGreaterThan(content + 100)
     expect(bounds.x).toBeGreaterThanOrEqual(0)
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
     expect(await button.locator('..').evaluate(el => getComputedStyle(el).position)).toBe('static')
     await button.click()
     await expect(button).toHaveAttribute('aria-expanded', 'false')
-    await expect(card.locator('.cpv-notation-title')).toBeVisible()
+    await expect(card.locator('.titan-chordpro-notation-title')).toBeVisible()
     await expect(card.locator('[data-external-score]')).toBeHidden()
     expect((await card.boundingBox())!.height).toBeLessThan(80)
     await page.screenshot({ path: info.outputPath(`named-folded-${width}.png`) })
     await button.click()
     await expect(button).toHaveAttribute('aria-expanded', 'true')
-    await expect(card.locator('.cpv-notation-system').first()).toBeVisible()
+    await expect(card.locator('.titan-chordpro-notation-system').first()).toBeVisible()
     await page.screenshot({ path: info.outputPath(`named-expanded-${width}.png`) })
   })
 }

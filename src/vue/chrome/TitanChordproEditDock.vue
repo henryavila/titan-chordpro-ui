@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import SelectionBar from '../edit/SelectionBar.vue'
-import type { CpvIconName } from '../icon/paths'
+import type { TitanChordproIconName } from '../icon/paths'
 import type { WriteMode } from '../public'
 import type { BlockEditApi } from '../use/useBlockEdit'
 
@@ -15,7 +15,7 @@ const props = defineProps<{
   showSource: boolean
   lintOk: boolean
   themeTitle: string
-  themeIcon: CpvIconName
+  themeIcon: TitanChordproIconName
   /** Batida create/edit is available in local and persisted edit. */
   hasStrum: boolean
 }>()
@@ -39,21 +39,21 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
   <div
     style="position:absolute;bottom:0;left:0;right:0;z-index:13;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 16px 18px;pointer-events:none;"
   >
-    <div v-if="editHint" class="cpv-clip-bar cpv-veil-2" data-edit-hint style="border-style:solid;">
+    <div v-if="editHint" class="titan-chordpro-clip-bar titan-chordpro-veil-2" data-edit-hint style="border-style:solid;">
       <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
         Toque na linha para editar a letra · Cifra entra onde está o cursor ·
         segure o acorde e arraste até a sílaba · o + insere naquele lugar ·
-        <CpvIcon name="gripV" :size="14" /> seleciona e reordena o bloco.
+        <TitanChordproIcon name="gripV" :size="14" /> seleciona e reordena o bloco.
       </span>
       <button
-        class="cpv-ghost"
+        class="titan-chordpro-ghost"
         aria-label="Entendi"
         style="flex:none;width:26px;height:26px;color:var(--muted);font-size:14px;line-height:1;"
         @click="emit('seenHint')"
-      ><CpvIcon name="x" :size="14" /></button>
+      ><TitanChordproIcon name="x" :size="14" /></button>
     </div>
 
-    <div v-if="clipLabel" class="cpv-clip-bar cpv-veil-2">
+    <div v-if="clipLabel" class="titan-chordpro-clip-bar titan-chordpro-veil-2">
       <span style="font-size:11.5px;line-height:1.4;color:var(--text);text-wrap:pretty;">
         Harmonia de <strong style="color:var(--chord);">{{ clipLabel }}</strong> na mão — toque em “Colar harmonia aqui” nos blocos destino.
       </span>
@@ -71,21 +71,21 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
       @edit-score="emit('editScore')"
     />
 
-    <div class="cpv-veil" style="pointer-events:auto;position:relative;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
+    <div class="titan-chordpro-veil" style="pointer-events:auto;position:relative;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
       <button
         v-if="showBatidaTools && !hasStrum"
         data-batida-create
         title="Criar batida"
         style="height:36px;padding:0 12px;border-radius:12px;border:1px dashed var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('createBatida')"
-      ><CpvIcon name="plus" :size="14" />Criar batida</button>
+      ><TitanChordproIcon name="plus" :size="14" />Criar batida</button>
       <button
         v-if="showBatidaTools && hasStrum"
         data-batida-edit-chrome
         title="Editar batida"
         style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('editBatida')"
-      ><CpvIcon name="pencil" :size="14" />Editar batida</button>
+      ><TitanChordproIcon name="pencil" :size="14" />Editar batida</button>
 
       <span v-if="showBatidaTools" style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
 
@@ -96,12 +96,12 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
         style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('source')"
       >
-        <CpvIcon name="braces" :size="16" />Fonte
+        <TitanChordproIcon name="braces" :size="16" />Fonte
         <span v-if="!lintOk" title="Diretiva sem par nesta cifra" style="width:6px;height:6px;border-radius:50%;background:var(--danger);" />
       </button>
-      <button class="cpv-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="emit('smallerType')">A−</button>
-      <button class="cpv-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="emit('biggerType')">A+</button>
-      <button data-theme-btn class="cpv-ghost" :title="themeTitle" style="width:36px;height:36px;" @click="emit('theme')"><CpvIcon :name="themeIcon" :size="16" /></button>
+      <button class="titan-chordpro-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="emit('smallerType')">A−</button>
+      <button class="titan-chordpro-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="emit('biggerType')">A+</button>
+      <button data-theme-btn class="titan-chordpro-ghost" :title="themeTitle" style="width:36px;height:36px;" @click="emit('theme')"><TitanChordproIcon :name="themeIcon" :size="16" /></button>
     </div>
   </div>
 </template>

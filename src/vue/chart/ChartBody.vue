@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, ref, watch, useId } from 'vue'
 import type { ChartBlock, NotationPreferences } from '@henryavila/titan-chordpro-ui'
-import type { CpvIconName } from '../icon/paths'
+import type { TitanChordproIconName } from '../icon/paths'
 import InsertSlot from '../edit/InsertSlot.vue'
 import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import EditLyric from './EditLyric.vue'
 import ScoreFigure from './ScoreFigure.vue'
 import ExternalScore from './ExternalScore.vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import { isInlineScore, isScoreReference, readScoreReference } from '@henryavila/titan-chordpro-ui'
 import { readingWords, type ReadingWord } from './readingWords'
 import type { NoteNameFormat } from '../public'
@@ -45,7 +45,7 @@ const props = withDefaults(
     /** View tap opens the shape modal. Off in edit and in só letra. */
     diagrams?: boolean
     /** What a + between blocks can insert. Empty outside edit. */
-    insertItems?: Array<{ icon: CpvIconName; label: string; go: () => void }>
+    insertItems?: Array<{ icon: TitanChordproIconName; label: string; go: () => void }>
   }>(),
   {
     resolveImage: (src: string) => src,
@@ -70,7 +70,7 @@ function slotBefore(i: number): boolean {
 
 function onInsertChord(e: Event) {
   const host = (e.currentTarget as HTMLElement | null) ?? (e.target as HTMLElement | null)
-  const input = host?.closest('.cpv-row-edit')?.querySelector('input')
+  const input = host?.closest('.titan-chordpro-row-edit')?.querySelector('input')
   const caret = input?.selectionStart
   const fallback = props.edit?.rowCaret.value ?? input?.value.length ?? 0
   props.edit?.insertChordAtCaret(caret ?? fallback)
@@ -281,10 +281,10 @@ watch(
     if (!props.edit?.wantRowFocus.value) return
     props.edit.wantRowFocus.value = false
     await nextTick()
-    const el = bodyEl.value?.querySelector<HTMLInputElement>('.cpv-row-input')
+    const el = bodyEl.value?.querySelector<HTMLInputElement>('.titan-chordpro-row-input')
     if (!el) return
     el.focus()
-    const lyric = !el.classList.contains('cpv-row-input--comment') && !el.classList.contains('cpv-row-input--note')
+    const lyric = !el.classList.contains('titan-chordpro-row-input--comment') && !el.classList.contains('titan-chordpro-row-input--note')
     const caret = lyric ? props.edit.rowCaret.value : null
     const at = caret == null ? el.value.length : Math.max(0, Math.min(caret, el.value.length))
     try {
@@ -297,7 +297,7 @@ watch(
 </script>
 
 <template>
-  <div ref="bodyEl" class="cpv-chart" :style="{ '--cpv-lyric-px': lyricPx }">
+  <div ref="bodyEl" class="titan-chordpro-chart" :style="{ '--titan-chordpro-lyric-px': lyricPx }">
     <template v-for="(block, i) in blocks" :key="i">
       <InsertSlot
         v-if="edit && slotBefore(i)"
@@ -305,12 +305,12 @@ watch(
         :edit="edit"
         :items="insertItems"
       />
-      <div :data-block="i" class="cpv-blockrow" :class="{ 'cpv-notation-row': !edit && canFold(block) }" :data-notation-collapsed="canFold(block) ? isFolded(i) : undefined">
+      <div :data-block="i" class="titan-chordpro-blockrow" :class="{ 'titan-chordpro-notation-row': !edit && canFold(block) }" :data-notation-collapsed="canFold(block) ? isFolded(i) : undefined">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
-        <span v-if="edit && edit.dropAt.value === i" class="cpv-drop-line" />
+        <span v-if="edit && edit.dropAt.value === i" class="titan-chordpro-drop-line" />
         <span
           v-if="edit"
-          class="cpv-grip"
+          class="titan-chordpro-grip"
           role="button"
           tabindex="0"
           :aria-pressed="edit.inSel(i) ? 'true' : 'false'"
@@ -323,69 +323,69 @@ watch(
         >⋮⋮</span>
 
         <div
-          class="cpv-blockbody"
-          :class="{ 'cpv-notation-card': !edit && canFold(block) }"
+          class="titan-chordpro-blockbody"
+          :class="{ 'titan-chordpro-notation-card': !edit && canFold(block) }"
           :style="{
             outline: edit && edit.inSel(i) ? '2px solid var(--chord-edge)' : 'none',
             opacity: edit && edit.inDrag(i) ? '0.45' : '1',
           }"
         >
-          <div v-if="!edit && canFold(block)" class="cpv-notation-fold">
-            <button type="button" class="cpv-notation-fold-toggle" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
+          <div v-if="!edit && canFold(block)" class="titan-chordpro-notation-fold">
+            <button type="button" class="titan-chordpro-notation-fold-toggle" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
               :aria-label="`${isFolded(i) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
               :title="isFolded(i) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
               @click.stop="emit('toggleNotation', i)">
-              <span class="cpv-notation-title">{{ notationTitle(block) }}</span>
-              <CpvIcon name="chevronDown" :size="18" />
+              <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
+              <TitanChordproIcon name="chevronDown" :size="18" />
             </button>
           </div>
-          <div v-if="edit?.canDelete.value && block.kind === 'score'" class="cpv-figure-cap">
-            <button type="button" class="cpv-figure-btn" data-remove-score @click="edit.deleteBlock(i)">Excluir trecho</button>
+          <div v-if="edit?.canDelete.value && block.kind === 'score'" class="titan-chordpro-figure-cap">
+            <button type="button" class="titan-chordpro-figure-btn" data-remove-score @click="edit.deleteBlock(i)">Excluir trecho</button>
           </div>
           <!-- A block with a capo of its own explains itself, right there. -->
           <div
             v-if="(block.kind === 'stanza' || block.kind === 'chorus') && block.hasOwnCapo"
-            class="cpv-block-tag-row"
+            class="titan-chordpro-block-tag-row"
           >
-            <span class="cpv-block-tag">capo {{ block.blockCapo ?? 0 }} neste bloco</span>
+            <span class="titan-chordpro-block-tag">capo {{ block.blockCapo ?? 0 }} neste bloco</span>
           </div>
           <!-- A section transposed on its own says so, and offers the way back. -->
           <div
             v-if="edit && (block.kind === 'stanza' || block.kind === 'chorus') && block.shift !== 0"
-            class="cpv-block-tag-row"
+            class="titan-chordpro-block-tag-row"
           >
-            <span class="cpv-block-tag cpv-block-tag--key">{{ shiftBadge(block.shift) }}</span>
+            <span class="titan-chordpro-block-tag titan-chordpro-block-tag--key">{{ shiftBadge(block.shift) }}</span>
             <button
-              class="cpv-block-tag-btn"
+              class="titan-chordpro-block-tag-btn"
               type="button"
               title="Voltar este bloco ao tom da música"
               @click="edit.resetBlockShift(i)"
             >↺ tom da música</button>
           </div>
 
-          <div v-if="block.kind === 'hidden'" class="cpv-hidden-card">
-            <span class="cpv-hidden-eye"><span /></span>
-            <span class="cpv-hidden-body">
-              <span class="cpv-hidden-label">Oculto na leitura · {{ hiddenCount(block) }}</span>
-              <span class="cpv-hidden-preview">{{ hiddenPreview(block) }}</span>
+          <div v-if="block.kind === 'hidden'" class="titan-chordpro-hidden-card">
+            <span class="titan-chordpro-hidden-eye"><span /></span>
+            <span class="titan-chordpro-hidden-body">
+              <span class="titan-chordpro-hidden-label">Oculto na leitura · {{ hiddenCount(block) }}</span>
+              <span class="titan-chordpro-hidden-preview">{{ hiddenPreview(block) }}</span>
             </span>
             <button
-              class="cpv-hidden-btn"
+              class="titan-chordpro-hidden-btn"
               type="button"
               title="Voltar a exibir este bloco"
               @click="edit?.unhideBlock(i)"
             >Reexibir</button>
           </div>
 
-          <div v-else-if="block.kind === 'note'" class="cpv-note">
-            <div class="cpv-note-head">
-              <span class="cpv-note-rule" />
-              <span class="cpv-note-label">Execução</span>
+          <div v-else-if="block.kind === 'note'" class="titan-chordpro-note">
+            <div class="titan-chordpro-note-head">
+              <span class="titan-chordpro-note-rule" />
+              <span class="titan-chordpro-note-label">Execução</span>
             </div>
             <template v-for="(item, j) in block.items" :key="j">
               <input
                 v-if="edit && typingAt(block.lis[j] ?? -1)"
-                class="cpv-row-input cpv-row-input--note"
+                class="titan-chordpro-row-input titan-chordpro-row-input--note"
                 :value="edit.rowText.value"
                 aria-label="Nota de execução"
                 @input="edit.rowText.value = ($event.target as HTMLInputElement).value"
@@ -394,7 +394,7 @@ watch(
               >
               <div
                 v-else
-                class="cpv-note-item"
+                class="titan-chordpro-note-item"
                 :class="{ 'is-editable': !!edit }"
                 @click="edit?.editComment(block.lis[j] ?? -1, item)"
               >{{ item }}</div>
@@ -405,7 +405,7 @@ watch(
             <input
               v-if="edit && typingAt(block.li0)"
               ref="rowInput"
-              class="cpv-row-input cpv-row-input--comment"
+              class="titan-chordpro-row-input titan-chordpro-row-input--comment"
               :value="edit.rowText.value"
               aria-label="Comentário de ensaio"
               @input="edit.rowText.value = ($event.target as HTMLInputElement).value"
@@ -414,42 +414,42 @@ watch(
             >
             <div
               v-else
-              class="cpv-comment"
+              class="titan-chordpro-comment"
               :class="{ 'is-editable': !!edit }"
               @click="edit?.editComment(block.li0, block.text)"
             >
-              <span class="cpv-comment-dot" />
-              <span class="cpv-comment-text">{{ block.text }}</span>
-              <span class="cpv-comment-line" />
+              <span class="titan-chordpro-comment-dot" />
+              <span class="titan-chordpro-comment-text">{{ block.text }}</span>
+              <span class="titan-chordpro-comment-line" />
             </div>
           </template>
 
-          <div v-else-if="block.kind === 'tab'" v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="cpv-tab">
-            <div v-for="(ex, j) in block.extras" :key="'e' + j" class="cpv-tab-extra">{{ ex }}</div>
-            <div class="cpv-tab-staves">
+          <div v-else-if="block.kind === 'tab'" v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="titan-chordpro-tab">
+            <div v-for="(ex, j) in block.extras" :key="'e' + j" class="titan-chordpro-tab-extra">{{ ex }}</div>
+            <div class="titan-chordpro-tab-staves">
               <div
                 v-for="(st, j) in block.staves"
                 :key="j"
-                class="cpv-tab-row"
+                class="titan-chordpro-tab-row"
                 :style="{ height: tabRow }"
               >
-                <span class="cpv-tab-label" :style="{ fontSize: tabLabelPx }">{{ st.label }}</span>
-                <span class="cpv-tab-rule" />
-                <span class="cpv-tab-tokens">
+                <span class="titan-chordpro-tab-label" :style="{ fontSize: tabLabelPx }">{{ st.label }}</span>
+                <span class="titan-chordpro-tab-rule" />
+                <span class="titan-chordpro-tab-tokens">
                   <template v-for="(tk, k) in st.tokens" :key="k">
                     <!-- The run sits in its own element: a whitespace-only text
                          run inside a flex box is dropped, and the stave rule and
                          the column alignment would go with it. -->
-                    <span v-if="tk.kind === 'gap'" class="cpv-tab-gap" :style="{ fontSize: tabPx }"><span>{{ tk.text }}</span></span>
-                    <span v-else-if="tk.kind === 'mark'" class="cpv-tab-mark" :style="{ fontSize: tabPx }"><span>{{ tk.text }}</span></span>
-                    <span v-else class="cpv-tab-bar" />
+                    <span v-if="tk.kind === 'gap'" class="titan-chordpro-tab-gap" :style="{ fontSize: tabPx }"><span>{{ tk.text }}</span></span>
+                    <span v-else-if="tk.kind === 'mark'" class="titan-chordpro-tab-mark" :style="{ fontSize: tabPx }"><span>{{ tk.text }}</span></span>
+                    <span v-else class="titan-chordpro-tab-bar" />
                   </template>
                 </span>
               </div>
             </div>
-            <div v-if="edit" class="cpv-figure-cap" style="padding-top:8px;">
+            <div v-if="edit" class="titan-chordpro-figure-cap" style="padding-top:8px;">
               <span style="flex:1;" />
-              <button class="cpv-figure-btn cpv-figure-btn--go" type="button" @click="emit('editScore', i)">Editar</button>
+              <button class="titan-chordpro-figure-btn titan-chordpro-figure-btn--go" type="button" @click="emit('editScore', i)">Editar</button>
             </div>
           </div>
 
@@ -462,7 +462,7 @@ watch(
             @edit-score="emit('editScore', i)"
           />
           <div v-else-if="block.kind === 'score' && !isInlineScore(block.text)"
-            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="cpv-figure" data-invalid-score
+            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="titan-chordpro-figure" data-invalid-score
             style="padding:12px" >
             <p role="status">Trecho de partitura inválido. Remova este trecho e importe o arquivo novamente.</p>
           </div>
@@ -479,21 +479,21 @@ watch(
           <figure
             v-else-if="block.kind === 'image'"
             v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
-            class="cpv-figure"
+            class="titan-chordpro-figure"
             :style="{ margin: `0 0 ${blockGap}`, padding: '10px 10px 8px' }"
           >
-            <div class="cpv-image-frame">
+            <div class="titan-chordpro-image-frame">
               <img
                 :src="resolveImage(block.src)"
                 :alt="`Partitura da música: ${fileName(block.src)}`"
-                :class="full[block.li0] ? 'cpv-image-full' : 'cpv-image-clip'"
+                :class="full[block.li0] ? 'titan-chordpro-image-full' : 'titan-chordpro-image-clip'"
                 @load="gradeImage"
               >
             </div>
-            <figcaption class="cpv-figure-cap">
-              <span class="cpv-figure-kind">Partitura</span>
-              <span class="cpv-figure-meta">{{ fileName(block.src) }}</span>
-              <button class="cpv-figure-btn" type="button" @click="toggleFull(block.li0)">
+            <figcaption class="titan-chordpro-figure-cap">
+              <span class="titan-chordpro-figure-kind">Partitura</span>
+              <span class="titan-chordpro-figure-meta">{{ fileName(block.src) }}</span>
+              <button class="titan-chordpro-figure-btn" type="button" @click="toggleFull(block.li0)">
                 {{ full[block.li0] ? 'Reduzir' : 'Ver inteira' }}
               </button>
             </figcaption>
@@ -501,14 +501,14 @@ watch(
 
           <div
             v-else-if="block.kind === 'chorus' || block.kind === 'stanza'"
-            class="cpv-block"
-            :class="block.kind === 'chorus' ? 'cpv-chorus' : 'cpv-stanza'"
+            class="titan-chordpro-block"
+            :class="block.kind === 'chorus' ? 'titan-chordpro-chorus' : 'titan-chordpro-stanza'"
             :style="{ margin: `0 0 ${blockGap}` }"
           >
             <!-- Harmony travels between blocks: the target says where it lands. -->
             <button
               v-if="edit && edit.clip.value && edit.clip.value.bi !== i"
-              class="cpv-paste-btn"
+              class="titan-chordpro-paste-btn"
               type="button"
               @click="edit.pasteHarmony(i)"
             >Colar harmonia aqui</button>
@@ -518,56 +518,56 @@ watch(
               <div
                 v-for="(row, ri) in block.rows"
                 :key="ri"
-                class="cpv-row cpv-reading-row"
+                class="titan-chordpro-row titan-chordpro-reading-row"
                 :style="{ padding: `${rowPad} 0` }"
               >
                 <!-- A line the reader changed carries their mark, and the mark is
                      the way back: one tap reverts that stretch to the original. -->
                 <button
                   v-if="mineLines && mineLines.get(row.li)"
-                  class="cpv-mine-dot"
+                  class="titan-chordpro-mine-dot"
                   data-mine-dot
                   title="Ajuste seu — toque para voltar este trecho ao original"
                   aria-label="Voltar este trecho ao original"
                   @click.stop="emit('revertLine', row.li)"
                 ><span /></button>
-                <span class="cpv-reading-flow">
-                  <span v-for="(word, wi) in wordsOf(row.li)" :key="wi" class="cpv-reading-word">
-                    <span v-for="(c, ci) in word.cells" :key="ci" class="cpv-word">
+                <span class="titan-chordpro-reading-flow">
+                  <span v-for="(word, wi) in wordsOf(row.li)" :key="wi" class="titan-chordpro-reading-word">
+                    <span v-for="(c, ci) in word.cells" :key="ci" class="titan-chordpro-word">
                       <span
-                        class="cpv-chord-box"
+                        class="titan-chordpro-chord-box"
                         :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
                       >
                         <button
                           v-if="diagrams && c.hasChord"
                           type="button"
-                          class="cpv-chord-hit"
+                          class="titan-chordpro-chord-hit"
                           data-diagram-hit
                           :data-shape="c.shapeName || c.chord"
                           :data-concert="c.concert || c.chord"
                           :aria-label="`Forma de ${c.shapeName || c.chord}`"
                           @click.stop="emit('diagram', { shapeName: c.shapeName || c.chord, concert: c.concert || c.chord, capoFret: c.capoFret || 0 })"
                         >
-                          <span class="cpv-chord-stack">
-                            <span v-if="c.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
-                            <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
+                          <span class="titan-chordpro-chord-stack">
+                            <span v-if="c.hasShape" class="titan-chordpro-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
+                            <span class="titan-chordpro-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
                           </span>
                         </button>
-                        <span v-else-if="c.hasChord" class="cpv-chord-stack">
-                          <span v-if="c.hasShape" class="cpv-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
-                          <span class="cpv-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
+                        <span v-else-if="c.hasChord" class="titan-chordpro-chord-stack">
+                          <span v-if="c.hasShape" class="titan-chordpro-shape" :style="{ fontSize: shapePx }">{{ c.shape }}</span>
+                          <span class="titan-chordpro-chord" :style="{ fontSize: chordPx }">{{ c.chord }}</span>
                         </span>
                       </span>
-                      <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ c.text }}</span>
+                      <span class="titan-chordpro-lyric" :style="{ fontSize: lyricPx }">{{ c.text }}</span>
                     </span>
                     <!-- The space that followed the word, carried as its own
                          column so the chord lane keeps its height across it. -->
-                    <span v-if="word.hasTail" class="cpv-word">
+                    <span v-if="word.hasTail" class="titan-chordpro-word">
                       <span
-                        class="cpv-chord-box"
+                        class="titan-chordpro-chord-box"
                         :style="{ height: block.shapeCapo > 0 ? chordBox : chordBoxPlain }"
                       />
-                      <span class="cpv-lyric" :style="{ fontSize: lyricPx }">{{ word.tail }}</span>
+                      <span class="titan-chordpro-lyric" :style="{ fontSize: lyricPx }">{{ word.tail }}</span>
                     </span>
                   </span>
                 </span>
@@ -580,11 +580,11 @@ watch(
               <div v-for="(row, ri) in block.rows" :key="ri">
                 <div
                   v-if="edit.editRow.value === row.li && edit.editKind.value === 'lyric'"
-                  class="cpv-row-edit"
+                  class="titan-chordpro-row-edit"
                   :style="{ margin: `${pillLane} 0 4px` }"
                 >
                   <input
-                    class="cpv-row-input"
+                    class="titan-chordpro-row-input"
                     :value="edit.rowText.value"
                     aria-label="Letra desta linha"
                     :style="{ fontSize: lyricPx }"
@@ -594,7 +594,7 @@ watch(
                   >
                   <button
                     type="button"
-                    class="cpv-insert-chord"
+                    class="titan-chordpro-insert-chord"
                     data-insert-chord
                     title="Inserir cifra onde está o cursor"
                     aria-label="Inserir cifra onde está o cursor"
@@ -607,30 +607,30 @@ watch(
                   v-else-if="rowOf(row.li).played"
                   :data-row="row.li"
                   data-played
-                  class="cpv-editrow"
+                  class="titan-chordpro-editrow"
                   title="Toque para editar a letra"
                   :style="{ fontSize: lyricPx }"
                   @click="edit.rowClick($event, row.li, rowOf(row.li).plain)"
                 >
                   <button
                     v-if="mineLines && mineLines.get(row.li)"
-                    class="cpv-mine-dot cpv-mine-dot--edit"
+                    class="titan-chordpro-mine-dot titan-chordpro-mine-dot--edit"
                     data-mine-dot
                     title="Ajuste seu — toque para voltar este trecho ao original"
                     aria-label="Voltar este trecho ao original"
                     @click.stop="emit('revertLine', row.li)"
                   ><span /></button>
-                  <span class="cpv-reading-flow">
+                  <span class="titan-chordpro-reading-flow">
                     <span
                       v-for="col in rowOf(row.li).columns"
                       :key="col.idx"
-                      class="cpv-reading-word"
+                      class="titan-chordpro-reading-word"
                     >
-                      <span class="cpv-word">
-                        <span class="cpv-chord-box" :style="{ minHeight: pillH }">
+                      <span class="titan-chordpro-word">
+                        <span class="titan-chordpro-chord-box" :style="{ minHeight: pillH }">
                           <span
                             :data-pill="col.off"
-                            class="cpv-pill cpv-pill--flow"
+                            class="titan-chordpro-pill titan-chordpro-pill--flow"
                             role="button"
                             tabindex="0"
                             title="Arraste para mover · toque para editar · ←/→ ajusta a sílaba"
@@ -645,8 +645,8 @@ watch(
                           :end="col.off === rowOf(row.li).plain.length"
                         />
                       </span>
-                      <span v-if="col.tail.length" class="cpv-word">
-                        <span class="cpv-chord-box" :style="{ minHeight: pillH }" />
+                      <span v-if="col.tail.length" class="titan-chordpro-word">
+                        <span class="titan-chordpro-chord-box" :style="{ minHeight: pillH }" />
                         <EditLyric :chars="col.tail" :anchors="rowOf(row.li).anchors" />
                       </span>
                     </span>
@@ -655,32 +655,32 @@ watch(
                 <div
                   v-else
                   :data-row="row.li"
-                  class="cpv-editrow"
+                  class="titan-chordpro-editrow"
                   title="Toque para editar a letra"
                   :style="{ fontSize: lyricPx }"
                   @click="edit.rowClick($event, row.li, rowOf(row.li).plain)"
                 >
                   <button
                     v-if="mineLines && mineLines.get(row.li)"
-                    class="cpv-mine-dot cpv-mine-dot--edit"
+                    class="titan-chordpro-mine-dot titan-chordpro-mine-dot--edit"
                     data-mine-dot
                     title="Ajuste seu — toque para voltar este trecho ao original"
                     aria-label="Voltar este trecho ao original"
                     :style="{ top: `calc(${pillH} + 4px)` }"
                     @click.stop="emit('revertLine', row.li)"
                   ><span /></button>
-                  <span class="cpv-reading-flow">
+                  <span class="titan-chordpro-reading-flow">
                     <span
                       v-for="(word, wi) in rowOf(row.li).words"
                       :key="wi"
-                      class="cpv-reading-word"
+                      class="titan-chordpro-reading-word"
                     >
-                      <span v-for="(cell, ci) in word.cells" :key="ci" class="cpv-word">
-                        <span class="cpv-chord-box" :style="{ height: pillH }">
+                      <span v-for="(cell, ci) in word.cells" :key="ci" class="titan-chordpro-word">
+                        <span class="titan-chordpro-chord-box" :style="{ height: pillH }">
                           <span
                             v-if="cell.chord"
                             :data-pill="cell.chord.off"
-                            class="cpv-pill cpv-pill--flow"
+                            class="titan-chordpro-pill titan-chordpro-pill--flow"
                             role="button"
                             tabindex="0"
                             title="Arraste para mover · toque para editar · ←/→ ajusta a sílaba"
@@ -695,12 +695,12 @@ watch(
                           :end="!!cell.chord && cell.chord.off === rowOf(row.li).plain.length"
                         />
                       </span>
-                      <span v-if="word.tail.length" class="cpv-word">
-                        <span class="cpv-chord-box" :style="{ height: pillH }" />
+                      <span v-if="word.tail.length" class="titan-chordpro-word">
+                        <span class="titan-chordpro-chord-box" :style="{ height: pillH }" />
                         <EditLyric :chars="word.tail" :anchors="rowOf(row.li).anchors" />
                       </span>
                     </span>
-                    <span v-if="!rowOf(row.li).words.length" class="cpv-lyric">&nbsp;</span>
+                    <span v-if="!rowOf(row.li).words.length" class="titan-chordpro-lyric">&nbsp;</span>
                   </span>
                 </div>
               </div>

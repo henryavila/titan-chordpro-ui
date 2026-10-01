@@ -5,7 +5,7 @@ import {
   type AudioCacheEntry,
 } from '@henryavila/titan-chordpro-ui'
 
-const CACHE_NAME = 'cpv-audio-ref-v1'
+const CACHE_NAME = 'titan-chordpro-audio-ref-v1'
 /** Synthetic key inside the same Cache Storage bucket — not an audio URL. */
 const INDEX_URL = 'https://titan-chordpro-ui.local/audio-ref-index'
 

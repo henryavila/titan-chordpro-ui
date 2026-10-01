@@ -142,8 +142,8 @@ onSaveContent(source)            // modo para todos, já vale para todos
 onSuggest({ baseVersion, ops })  // sugestão
 ```
 
-Storage local: `cpv:my:{songId}` = `{ baseVersion, ops[] }`, por cifra. As preferências de
-leitura seguem em `cpv:prefs`, global — são coisas diferentes e não devem se misturar.
+Storage local: `titan-chordpro:my:{songId}` = `{ baseVersion, ops[] }`, por cifra. As preferências de
+leitura seguem em `titan-chordpro:prefs`, global — são coisas diferentes e não devem se misturar.
 
 ## 8. Export
 

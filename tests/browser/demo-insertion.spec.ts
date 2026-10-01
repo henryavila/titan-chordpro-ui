@@ -5,7 +5,7 @@ for (const unavailable of [true, false]) {
   test(`real demo inserts and saves notation with randomUUID ${unavailable ? 'unavailable' : 'available'}`, async ({ page, browserName }) => {
     await page.addInitScript(missing => {
       if (missing) Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true })
-      localStorage.setItem('cpv:editSeen', '1')
+      localStorage.setItem('titan-chordpro:editSeen', '1')
     }, unavailable)
     await page.goto('/demo-insertion.html?editMode=persisted')
     expect(await page.evaluate(() => typeof crypto.randomUUID)).toBe(unavailable ? 'undefined' : 'function')
@@ -33,7 +33,7 @@ for (const unavailable of [true, false]) {
         dialog.getByRole('button', { name: 'Escolher arquivo', exact: true }).click(),
       ])
       await chooser.setFiles(`fixtures/notation/${file}`)
-      await expect(dialog.locator('.cpv-notation-paper svg').first()).toBeVisible()
+      await expect(dialog.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
       await expect(dialog.getByRole('textbox', { name: 'Nome do trecho' })).toHaveValue('Solo')
       await dialog.getByRole('textbox', { name: 'Nome do trecho' }).fill(`Entrada ${file}`)
       await dialog.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
@@ -73,14 +73,14 @@ for (const unavailable of [true, false]) {
     await expect(page.locator('[data-edit]')).toBeVisible()
     await expect(page.locator('[data-external-score]')).toHaveCount(2)
     await expect(page.locator('[data-external-score] [role="alert"]')).toHaveCount(0)
-    const card = page.locator('.cpv-notation-card').filter({ hasText: 'Entrada chords.gp' })
-    await expect(card.locator('.cpv-notation-title')).toHaveText('Entrada chords.gp')
+    const card = page.locator('.titan-chordpro-notation-card').filter({ hasText: 'Entrada chords.gp' })
+    await expect(card.locator('.titan-chordpro-notation-title')).toHaveText('Entrada chords.gp')
     await expect(card).not.toContainText(/Tom do arquivo|Steel Guitar|compassos/)
     await card.getByRole('button', { name: 'Ocultar Entrada chords.gp' }).click()
-    await expect(card.locator('.cpv-notation-title')).toBeVisible()
+    await expect(card.locator('.titan-chordpro-notation-title')).toBeVisible()
     await expect(card.locator('[data-external-score]')).toBeHidden()
     await card.getByRole('button', { name: 'Mostrar Entrada chords.gp' }).click()
-    await expect(card.locator('.cpv-notation-paper svg').first()).toBeVisible()
+    await expect(card.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
     // Cover backward compatibility with the demo's former Blob storage format.
     // Chromium can write that format; the WebKit failure is why new writes use bytes.
     if (browserName === 'chromium') await page.evaluate(async key => {
@@ -109,7 +109,7 @@ for (const unavailable of [true, false]) {
     await page.getByRole('button', { name: 'Fechar painel de source' }).click()
     await expect(page.locator('[data-external-score]')).toHaveCount(2)
     for (const block of await page.locator('[data-external-score]').all()) {
-      await expect(block.locator('.cpv-notation-paper svg').first()).toBeVisible()
+      await expect(block.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
       await expect(block.getByRole('alert')).toHaveCount(0)
     }
   })

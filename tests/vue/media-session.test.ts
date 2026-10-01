@@ -6,7 +6,7 @@ import {
   AUDIO_ART_MEDIA_PX,
   setRehearsalAudio,
 } from '../../src/core/index'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import {
   mediaSessionArtwork,
   readMediaSession,
@@ -490,7 +490,7 @@ describe('viewer setlist skip on the media session', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     observers.length = 0
     realRO = globalThis.ResizeObserver
     globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -516,7 +516,7 @@ describe('viewer setlist skip on the media session', () => {
   })
 
   async function viewerAt(width: number, props: Record<string, unknown> = {}) {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: {
         source: loadFixture(JESUS_1),
         theme: 'dark',

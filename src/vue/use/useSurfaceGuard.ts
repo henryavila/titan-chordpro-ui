@@ -1,7 +1,7 @@
 import { ref, type Ref } from 'vue'
 
 export type SurfaceGuardOpts = {
-  /** The viewer root — `.cpv-root`, whose height the host is supposed to set. */
+  /** The TitanChordpro root — `.titan-chordpro-root`, whose height the host is supposed to set. */
   root: Ref<HTMLElement | null>
   /** True while immersive: the root is `position:fixed`, so no parent governs. */
   immersive: Ref<boolean>
@@ -17,13 +17,13 @@ const FIRST_MS = 500
 const CONFIRM_MS = 1200
 
 const WARNING =
-  '[Titan Chordpro] Viewer sem altura resolvível: caiu no piso de min-height:460px dentro ' +
+  '[TitanChordpro] Cifra sem altura resolvível: caiu no piso de min-height:460px dentro ' +
   'de uma página que rola. Dê ao ancestral imediato uma altura definida (ex.: ' +
   'height:calc(100dvh - 88px)) e não sobrescreva height/overflow/position do root nem do ' +
   'scroller. Numa ficha, o frame é 100dvh no fluxo (snap no topo). Ver docs/CONSUMER.md.'
 
 /**
- * The viewer only works with a scroll region of its own: it is `height:100%`
+ * TitanChordpro only works with a scroll region of its own: it is `height:100%`
  * over a `min-height` floor, and every bar is absolute against that box. A host
  * that embeds it without giving the parent a height gets the floor instead —
  * the chart grows past it, the page scrolls, and `bottom:0` quietly means "end

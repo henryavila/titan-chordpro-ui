@@ -8,18 +8,18 @@ const source = readFileSync(new URL('../../fixtures/sda/084-escuta-meu-clamor.ch
 const rows = (semitones = 0, capo = 0) => layoutChartFull(parse(source), { semitones, capo }).blocks
   .flatMap(b => b.kind === 'stanza' || b.kind === 'chorus' ? b.rows : [])
 
-/** Dock buttons sit in `.cpv-hit` under `.cpv-chrome { pointer-events: none }`. Playwright's hit test names the veil. */
+/** Dock buttons sit in `.titan-chordpro-hit` under `.titan-chordpro-chrome { pointer-events: none }`. Playwright's hit test names the veil. */
 async function tapControl(page: Page, sel: string) {
   await page.locator(sel).click({ force: true })
 }
 
 async function checkGeometry(page: Page, semitones = 0, capo = 0) {
   const expected = rows(semitones, capo)
-  await expect(page.locator('.cpv-chord').first()).toHaveText(expected.flatMap(r => r.segs).find(s => s.chord)!.chord)
-  const actual = await page.locator('.cpv-row').evaluateAll(elements => elements.map(row => {
-    const chords = Array.from(row.querySelectorAll('.cpv-chord'))
+  await expect(page.locator('.titan-chordpro-chord').first()).toHaveText(expected.flatMap(r => r.segs).find(s => s.chord)!.chord)
+  const actual = await page.locator('.titan-chordpro-row').evaluateAll(elements => elements.map(row => {
+    const chords = Array.from(row.querySelectorAll('.titan-chordpro-chord'))
     const failures: string[] = []
-    for (const lane of ['.cpv-chord', '.cpv-shape']) {
+    for (const lane of ['.titan-chordpro-chord', '.titan-chordpro-shape']) {
       const boxes = Array.from(row.querySelectorAll(lane))
       boxes.slice(1).forEach((b, i) => {
         const a = boxes[i]!, ar = a.getBoundingClientRect(), br = b.getBoundingClientRect()
@@ -28,27 +28,27 @@ async function checkGeometry(page: Page, semitones = 0, capo = 0) {
       })
     }
     for (const chord of chords) {
-      const lyric = chord.closest('.cpv-word')!.querySelector('.cpv-lyric')!
+      const lyric = chord.closest('.titan-chordpro-word')!.querySelector('.titan-chordpro-lyric')!
       if (Math.abs(chord.getBoundingClientRect().x - lyric.getBoundingClientRect().x) > 1)
         failures.push(`anchor ${chord.textContent}`)
     }
-    for (const word of row.querySelectorAll('.cpv-reading-word')) {
-      const ys = [...word.querySelectorAll('.cpv-lyric')].map(el => el.getBoundingClientRect().y)
+    for (const word of row.querySelectorAll('.titan-chordpro-reading-word')) {
+      const ys = [...word.querySelectorAll('.titan-chordpro-lyric')].map(el => el.getBoundingClientRect().y)
       if (Math.max(...ys) - Math.min(...ys) > 1) failures.push('word broken at internal chord')
     }
     // The clearance a chord reserves cannot depend on where it landed: a chord
     // inside a word used to get a thinner one, which is what made two chords in
     // "cura" collide in the first place.
-    const reserves = new Set([...row.querySelectorAll('.cpv-chord-stack')]
+    const reserves = new Set([...row.querySelectorAll('.titan-chordpro-chord-stack')]
       .map(el => getComputedStyle(el).paddingRight))
     if (reserves.size > 1) failures.push(`uneven chord reserve: ${[...reserves].join(' / ')}`)
-    const flow = row.querySelector('.cpv-reading-flow')!
+    const flow = row.querySelector('.titan-chordpro-reading-flow')!
     if (flow.scrollWidth > flow.clientWidth + 1) failures.push('reading flow overflows container')
     return {
       failures,
-      lyric: [...row.querySelectorAll('.cpv-lyric')].map(e => e.textContent).join(''),
+      lyric: [...row.querySelectorAll('.titan-chordpro-lyric')].map(e => e.textContent).join(''),
       chords: chords.map(e => e.textContent),
-      shapes: [...row.querySelectorAll('.cpv-shape')].map(e => e.textContent),
+      shapes: [...row.querySelectorAll('.titan-chordpro-shape')].map(e => e.textContent),
     }
   }))
   expect(actual.flatMap(r => r.failures)).toEqual([])
@@ -62,13 +62,13 @@ for (const width of [1280, 375]) {
     expect(createHash('sha256').update(source).digest('hex')).toBe('65280dffc3eedb99f0d7a3eae0a39b0eb57e629066cdd0586f0e90fe1a56bd2c')
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
-    await page.locator('.cpv-chord').first().waitFor()
+    await page.locator('.titan-chordpro-chord').first().waitFor()
     // No webfont stylesheet exists yet: exercise the standalone fallback.
     await page.evaluate(() => document.fonts.ready)
     await checkGeometry(page)
     for (const [a, b] of [['Bm', 'E'], ['B', 'E'], ['Em7/D', 'A'], ['Fsus4', 'F']]) {
-      const pairs = await page.locator('.cpv-row').evaluateAll(elements => elements.flatMap(row => {
-        const ch = [...row.querySelectorAll('.cpv-chord')]
+      const pairs = await page.locator('.titan-chordpro-row').evaluateAll(elements => elements.flatMap(row => {
+        const ch = [...row.querySelectorAll('.titan-chordpro-chord')]
         return ch.slice(1).map((el, i) => [ch[i]!.textContent, el.textContent])
       }))
       expect(pairs).toContainEqual([a, b])
@@ -77,19 +77,19 @@ for (const width of [1280, 375]) {
     await expect(page.locator('#fonts-state')).toHaveText('loaded')
     await checkGeometry(page)
     // Embed font contract, independent choices for lyric, controls and chords.
-    await page.locator('[data-cpv-root]').evaluate(el => {
+    await page.locator('[data-titan-chordpro-root]').evaluate(el => {
       const style = (el as HTMLElement).style
-      style.setProperty('--cpv-font-lyrics', 'Figtree, sans-serif')
+      style.setProperty('--titan-chordpro-font-lyrics', 'Figtree, sans-serif')
       // CSS-wide inherit belongs on font-family, not on a custom property.
       style.fontFamily = 'inherit'
-      style.setProperty('--cpv-font-chords', 'Sora, sans-serif')
+      style.setProperty('--titan-chordpro-font-chords', 'Sora, sans-serif')
     })
-    expect(await page.locator('.cpv-lyric').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
+    expect(await page.locator('.titan-chordpro-lyric').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
     // Phone dock keeps fit on the row; theme lives in Mais. Desktop keeps theme
     // on the wide bar. Either control proves the chrome still inherits Arial.
     const chromeFont = width < 640 ? '[data-fit]' : '[data-theme-btn]'
     expect(await page.locator(chromeFont).first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Arial')
-    expect(await page.locator('.cpv-chord').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
+    expect(await page.locator('.titan-chordpro-chord').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
     await checkGeometry(page)
     // Keyboard is the same user control on phone and desktop.
     await page.locator('#load-fonts').blur()
@@ -102,14 +102,14 @@ for (const width of [1280, 375]) {
     await page.getByRole('button', { name: 'Capo acima', exact: true }).click()
     await page.getByRole('button', { name: 'Capo acima', exact: true }).click()
     await page.keyboard.press('Escape')
-    await expect(page.locator('.cpv-shape').first()).toBeVisible()
+    await expect(page.locator('.titan-chordpro-shape').first()).toBeVisible()
     await checkGeometry(page, 2, 2)
     await page.setViewportSize({ width: 320, height: 900 })
     await checkGeometry(page, 2, 2)
-    await page.locator('[data-cpv-root]').evaluate(el => {
+    await page.locator('[data-titan-chordpro-root]').evaluate(el => {
       const s = (el as HTMLElement).style
-      s.setProperty('--cpv-font-lyrics', 'UnavailableTestFont, serif')
-      s.setProperty('--cpv-font-chords', 'UnavailableTestFont, monospace')
+      s.setProperty('--titan-chordpro-font-lyrics', 'UnavailableTestFont, serif')
+      s.setProperty('--titan-chordpro-font-chords', 'UnavailableTestFont, monospace')
     })
     await checkGeometry(page, 2, 2)
     await page.setViewportSize({ width, height: 900 })
@@ -121,10 +121,10 @@ for (const width of [1280, 375]) {
 }
 
 test('controlled auto follows system changes, explicit host theme wins old preference', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('cpv:user-preferences', JSON.stringify({ theme: 'dark' })))
+  await page.addInitScript(() => localStorage.setItem('titan-chordpro:user-preferences', JSON.stringify({ theme: 'dark' })))
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto('/')
-  const root = page.locator('[data-cpv-root]')
+  const root = page.locator('[data-titan-chordpro-root]')
   await expect(root).toHaveAttribute('data-theme', 'light')
   await page.locator('#host-theme').selectOption('auto')
   await expect(root).toHaveAttribute('data-theme', 'dark')
@@ -141,7 +141,7 @@ test('editor spaces a voiceless intro like reading — pills do not pile', async
   await page.locator('[data-edit]').click()
   const pick = page.locator('[data-mode-content]')
   if (await pick.count()) await pick.click()
-  const pills = page.locator('[data-played] .cpv-pill--flow')
+  const pills = page.locator('[data-played] .titan-chordpro-pill--flow')
   await expect(pills).toHaveCount(5)
   await expect(pills).toHaveText(['G/D', 'D7(4)', 'G', 'C/E', 'D/F#'])
   const failures = await pills.evaluateAll((els) => {
@@ -165,15 +165,15 @@ test('editor reserves the reading gap and marks the chord anchor', async ({ page
     await page.goto('/')
     await page.locator('#load-fonts').click()
     await expect(page.locator('#fonts-state')).toHaveText('loaded')
-    await page.locator('.cpv-chord').first().waitFor()
+    await page.locator('.titan-chordpro-chord').first().waitFor()
     await page.evaluate(() => document.fonts.ready)
     const viewShot = info.outputPath(`reading-${width}.png`)
-    await page.locator('.cpv-block', { has: page.locator('.cpv-lyric', { hasText: 'oro' }) }).first().screenshot({ path: viewShot })
+    await page.locator('.titan-chordpro-block', { has: page.locator('.titan-chordpro-lyric', { hasText: 'oro' }) }).first().screenshot({ path: viewShot })
     await page.locator('[data-edit]').click()
     const pick = page.locator('[data-mode-content]')
     if (await pick.count()) await pick.click()
-    await expect(page.locator('.cpv-editrow .cpv-pill--flow').first()).toBeVisible()
-    const anchor = page.locator('.cpv-editrow [data-anchor]').first()
+    await expect(page.locator('.titan-chordpro-editrow .titan-chordpro-pill--flow').first()).toBeVisible()
+    const anchor = page.locator('.titan-chordpro-editrow [data-anchor]').first()
     const pipe = await anchor.evaluate(el => {
       const s = getComputedStyle(el, '::before')
       return { width: s.width, height: parseFloat(s.height), border: s.borderTopWidth, content: s.content }
@@ -182,15 +182,15 @@ test('editor reserves the reading gap and marks the chord anchor', async ({ page
     expect(pipe.height).toBeGreaterThan(10)
     expect(pipe.border).toBe('0px')
     expect(pipe.content).toBe('""')
-    const failures = await page.locator('.cpv-editrow:not([data-played])').evaluateAll((rows) => {
+    const failures = await page.locator('.titan-chordpro-editrow:not([data-played])').evaluateAll((rows) => {
       const fails: string[] = []
       for (const row of rows) {
-        const flow = row.querySelector('.cpv-reading-flow')!.getBoundingClientRect()
+        const flow = row.querySelector('.titan-chordpro-reading-flow')!.getBoundingClientRect()
         for (const anchor of row.querySelectorAll('[data-anchor]')) {
           const bounds = anchor.getBoundingClientRect()
           if (bounds.left - flow.left < 7.9) fails.push('anchor glow clipped at line start')
         }
-        const pills = [...row.querySelectorAll<HTMLElement>('.cpv-pill--flow')]
+        const pills = [...row.querySelectorAll<HTMLElement>('.titan-chordpro-pill--flow')]
         const boxes = pills.map((el) => el.getBoundingClientRect())
         for (let i = 1; i < boxes.length; i++) {
           const a = boxes[i - 1]!
@@ -200,7 +200,7 @@ test('editor reserves the reading gap and marks the chord anchor', async ({ page
           }
         }
         for (const pill of pills) {
-          const cell = pill.closest('.cpv-word')
+          const cell = pill.closest('.titan-chordpro-word')
           const first = cell?.querySelector<HTMLElement>('[data-i]')
           const pr = pill.getBoundingClientRect()
           if (first && Math.abs(pr.left - first.getBoundingClientRect().left) > 2) {
@@ -211,8 +211,8 @@ test('editor reserves the reading gap and marks the chord anchor', async ({ page
           const end = !row.querySelector(`[data-i="${off}"]`) && row.querySelector('[data-anchor]:not([data-i])')
           if (!marked && !end) fails.push(`no caret for ${pill.textContent} @${off}`)
         }
-        for (const word of row.querySelectorAll('.cpv-reading-word')) {
-          const ys = [...word.querySelectorAll('.cpv-lyric')].map((el) => el.getBoundingClientRect().y)
+        for (const word of row.querySelectorAll('.titan-chordpro-reading-word')) {
+          const ys = [...word.querySelectorAll('.titan-chordpro-lyric')].map((el) => el.getBoundingClientRect().y)
           if (ys.length > 1 && Math.max(...ys) - Math.min(...ys) > 1) fails.push('word broken at internal chord')
         }
       }
@@ -220,16 +220,16 @@ test('editor reserves the reading gap and marks the chord anchor', async ({ page
     })
     expect(failures, `edit geometry at ${width}px`).toEqual([])
     const editShot = info.outputPath(`edit-${width}.png`)
-    await page.locator('.cpv-block', { has: page.locator('.cpv-editrow .cpv-lyric', { hasText: 'oro' }) }).first().screenshot({ path: editShot })
+    await page.locator('.titan-chordpro-block', { has: page.locator('.titan-chordpro-editrow .titan-chordpro-lyric', { hasText: 'oro' }) }).first().screenshot({ path: editShot })
     await info.attach(`reading-${width}`, { path: viewShot, contentType: 'image/png' })
     await info.attach(`edit-${width}`, { path: editShot, contentType: 'image/png' })
     if (width === 1280) {
       await page.locator('#host-theme').selectOption('dark')
-      await expect(page.locator('[data-cpv-root]')).toHaveAttribute('data-theme', 'dark')
-      const caret = await page.locator('.cpv-editrow [data-anchor]').first().evaluate((el) => getComputedStyle(el, '::after').backgroundColor)
+      await expect(page.locator('[data-titan-chordpro-root]')).toHaveAttribute('data-theme', 'dark')
+      const caret = await page.locator('.titan-chordpro-editrow [data-anchor]').first().evaluate((el) => getComputedStyle(el, '::after').backgroundColor)
       expect(caret).not.toBe('rgba(0, 0, 0, 0)')
       const darkShot = info.outputPath('edit-dark.png')
-      const motivos = page.locator('.cpv-editrow', { hasText: 'tivos' }).first()
+      const motivos = page.locator('.titan-chordpro-editrow', { hasText: 'tivos' }).first()
       await motivos.scrollIntoViewIfNeeded()
       await motivos.screenshot({ path: darkShot })
       await info.attach('edit-dark', { path: darkShot, contentType: 'image/png' })
@@ -241,22 +241,22 @@ test('font tokens reach edit lyrics and pills while source remains monospace', a
   await page.goto('/')
   await page.locator('#load-fonts').click()
   await expect(page.locator('#fonts-state')).toHaveText('loaded')
-  await page.locator('[data-cpv-root]').evaluate(el => {
+  await page.locator('[data-titan-chordpro-root]').evaluate(el => {
     const s = (el as HTMLElement).style
-    s.setProperty('--cpv-font-controls', 'Figtree, sans-serif')
-    s.setProperty('--cpv-font-lyrics', 'Sora, sans-serif')
-    s.setProperty('--cpv-font-chords', 'Figtree, sans-serif')
+    s.setProperty('--titan-chordpro-font-controls', 'Figtree, sans-serif')
+    s.setProperty('--titan-chordpro-font-lyrics', 'Sora, sans-serif')
+    s.setProperty('--titan-chordpro-font-chords', 'Figtree, sans-serif')
   })
   await page.locator('[data-edit]').click()
-  await expect(page.locator('.cpv-editrow').first()).toBeVisible()
-  expect(await page.locator('.cpv-editrow').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
-  expect(await page.locator('.cpv-pill').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
+  await expect(page.locator('.titan-chordpro-editrow').first()).toBeVisible()
+  expect(await page.locator('.titan-chordpro-editrow').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
+  expect(await page.locator('.titan-chordpro-pill').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
   expect(await page.locator('[data-theme-btn]').first().evaluate(el => getComputedStyle(el).fontFamily)).toContain('Figtree')
-  await page.locator('.cpv-editrow').first().click()
+  await page.locator('.titan-chordpro-editrow').first().click()
   expect(await page.getByRole('textbox', { name: 'Letra desta linha' }).evaluate(el => getComputedStyle(el).fontFamily)).toContain('Sora')
   await page.getByRole('textbox', { name: 'Letra desta linha' }).press('Escape')
   await page.locator('[data-source]').click()
-  expect(await page.locator('.cpv-src textarea').evaluate(el => getComputedStyle(el).fontFamily)).toContain('monospace')
+  expect(await page.locator('.titan-chordpro-src textarea').evaluate(el => getComputedStyle(el).fontFamily)).toContain('monospace')
 })
 
 
@@ -266,13 +266,13 @@ test('personal marker stays clickable outside horizontal flow and reverts the re
   await page.locator('[data-edit]').click()
   const pick = page.locator('[data-mode-local]')
   if (await pick.isVisible()) await pick.click()
-  await page.locator('.cpv-editrow').filter({ has: page.locator('.cpv-lyric', { hasText: 'oro' }) }).first().locator('.cpv-lyric').first().click()
+  await page.locator('.titan-chordpro-editrow').filter({ has: page.locator('.titan-chordpro-lyric', { hasText: 'oro' }) }).first().locator('.titan-chordpro-lyric').first().click()
   const input = page.getByRole('textbox', { name: 'Letra desta linha' })
   const original = await input.inputValue()
   await input.fill(`${original} (meu)`)
   await input.press('Enter')
   await page.locator('[data-read]').click()
-  const row = page.locator('.cpv-row').filter({ hasText: '(meu)' })
+  const row = page.locator('.titan-chordpro-row').filter({ hasText: '(meu)' })
   const marker = row.locator('[data-mine-dot]')
   await marker.scrollIntoViewIfNeeded()
   expect(await marker.evaluate(el => {
@@ -280,9 +280,9 @@ test('personal marker stays clickable outside horizontal flow and reverts the re
     return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2))
   })).toBe(true)
   await marker.click()
-  await expect(page.locator('.cpv-row').filter({ hasText: '(meu)' })).toHaveCount(0)
-  expect(await page.locator('.cpv-row').evaluateAll(rows => rows.map(row =>
-    [...row.querySelectorAll('.cpv-lyric')].map(el => el.textContent).join(''),
+  await expect(page.locator('.titan-chordpro-row').filter({ hasText: '(meu)' })).toHaveCount(0)
+  expect(await page.locator('.titan-chordpro-row').evaluateAll(rows => rows.map(row =>
+    [...row.querySelectorAll('.titan-chordpro-lyric')].map(el => el.textContent).join(''),
   ))).toContain(original)
 })
 
@@ -294,8 +294,8 @@ test('personal marker stays clickable outside horizontal flow and reverts the re
 test('the page starts moving at once, and the beat badge hangs off the column', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
-  const scroll = page.locator('.cpv-scroll')
+  await page.locator('.titan-chordpro-chord').first().waitFor()
+  const scroll = page.locator('.titan-chordpro-scroll')
 
   // Rolar starts a silent count-in; the chart joins on the downbeat. The old
   // scroll then stood dead still until the music had covered a whole anchor
@@ -305,14 +305,14 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
   // motion of Rolar, not the keyboard hit target.
   await tapControl(page, '[data-scroll]')
   await expect(page.locator('[data-met-countin]')).toBeVisible()
-  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
-  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/, { timeout: 6000 })
+  await expect(page.locator('.titan-chordpro-progress')).not.toHaveClass(/is-live/)
+  await expect(page.locator('.titan-chordpro-progress')).toHaveClass(/is-live/, { timeout: 6000 })
   // 084's intro sits in the rest zone for many seconds; motion of that chart
   // is tests/browser/autoscroll.spec.ts. This test owns the beat badge.
   // Nothing is drawn across the chart while it is being read.
-  await expect(page.locator('.cpv-guide')).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-guide')).toHaveCount(0)
   await page.keyboard.press(' ')
-  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+  await expect(page.locator('.titan-chordpro-progress')).not.toHaveClass(/is-live/)
 
   // The count belongs to the chart, on the left of the column — not the
   // far corner of the glass, which at 1280 is 150px of empty background.
@@ -320,7 +320,7 @@ test('the page starts moving at once, and the beat badge hangs off the column', 
   const count = page.locator('[data-met-count]')
   await expect(count).toBeVisible()
   const box = await count.evaluate((el) => {
-    const col = document.querySelector('.cpv-page')!.getBoundingClientRect()
+    const col = document.querySelector('.titan-chordpro-page')!.getBoundingClientRect()
     const b = el.getBoundingClientRect()
     return { leftOfColumn: col.left - b.right, fromGlass: b.left }
   })
@@ -334,7 +334,7 @@ test('a chord tap opens the diagram and Space does not start Rolar until it clos
   await page.locator('[data-diagram-hit]').first().click()
   await expect(page.locator('[data-diagram-modal]')).toBeVisible()
   await page.keyboard.press(' ')
-  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+  await expect(page.locator('.titan-chordpro-progress')).not.toHaveClass(/is-live/)
   await expect(page.locator('[data-diagram-modal]')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.locator('[data-diagram-modal]')).toHaveCount(0)
@@ -349,9 +349,9 @@ test('a chord tap opens the diagram and Space does not start Rolar until it clos
 test('phone beat count overlays the margin — page left pad does not jump to 44px', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
-  const before = await page.locator('.cpv-page').evaluate((el) => {
+  const before = await page.locator('.titan-chordpro-page').evaluate((el) => {
     const cs = getComputedStyle(el)
     return { left: parseFloat(cs.paddingLeft), right: parseFloat(cs.paddingRight) }
   })
@@ -361,7 +361,7 @@ test('phone beat count overlays the margin — page left pad does not jump to 44
   await tapControl(page, '[data-scroll]')
   await expect(page.locator('[data-met-count]')).toBeVisible()
 
-  const after = await page.locator('.cpv-page').evaluate((el) => {
+  const after = await page.locator('.titan-chordpro-page').evaluate((el) => {
     const cs = getComputedStyle(el)
     const count = document.querySelector('[data-met-count]')!.getBoundingClientRect()
     const page = el.getBoundingClientRect()
@@ -381,7 +381,7 @@ test('phone beat count overlays the margin — page left pad does not jump to 44
   const fill = await entrada.evaluate((el) => getComputedStyle(el).backgroundColor)
   expect(fill === 'transparent' || fill === 'rgba(0, 0, 0, 0)', 'entrada sat on the lyric with no fill').toBe(false)
 
-  const beats = await page.locator('.cpv-met-beat').evaluateAll((els) =>
+  const beats = await page.locator('.titan-chordpro-met-beat').evaluateAll((els) =>
     els.map((el) => {
       const bg = getComputedStyle(el).backgroundColor
       const empty = bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)'
@@ -402,16 +402,16 @@ test('phone beat count overlays the margin — page left pad does not jump to 44
 test('tela cheia: beat column stays flush left, entrada is a filled badge', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(400)
 
-  const padBefore = await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft))
+  const padBefore = await page.locator('.titan-chordpro-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft))
   await tapControl(page, '[data-scroll]')
   await expect(page.locator('[data-met-count]')).toBeVisible()
 
   const spot = await page.evaluate(() => {
-    const pageEl = document.querySelector('.cpv-page')!
+    const pageEl = document.querySelector('.titan-chordpro-page')!
     const count = document.querySelector('[data-met-count]')!
     const entrada = document.querySelector('[data-met-countin]')
     const pr = pageEl.getBoundingClientRect()
@@ -437,21 +437,21 @@ test('tela cheia: beat column stays flush left, entrada is a filled badge', asyn
 test('Rolar starts a silent count-in before the chart moves', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   await tapControl(page, '[data-scroll]')
   await expect(page.locator('[data-met-count]')).toBeVisible()
   await expect(page.locator('[data-met-countin]')).toBeVisible()
-  await expect(page.locator('.cpv-head-hit-1, .cpv-head-hit-n')).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-head-hit-1, .titan-chordpro-head-hit-n')).toHaveCount(0)
   await expect(page.locator('[data-scroll]')).toContainText('Parar')
-  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+  await expect(page.locator('.titan-chordpro-progress')).not.toHaveClass(/is-live/)
 
   await page.locator('[data-met-btn]').click()
   await expect(page.locator('[data-met-source="mute"]')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('[data-met-sound]')).toContainText('Só pulso visual')
   await page.locator('[aria-label="Fechar"]').click()
 
-  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/, { timeout: 6000 })
+  await expect(page.locator('.titan-chordpro-progress')).toHaveClass(/is-live/, { timeout: 6000 })
   await expect(page.locator('[data-met-countin]')).toHaveCount(0)
 })
 
@@ -463,7 +463,7 @@ test('Rolar starts a silent count-in before the chart moves', async ({ page }) =
 test('Rolar goes dead when the chart fits the frame, and comes back when it does not', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
   const roll = page.locator('[data-scroll]')
 
   // The fixture is far taller than the frame: the control is live, and the
@@ -478,7 +478,7 @@ test('Rolar goes dead when the chart fits the frame, and comes back when it does
   await page.keyboard.press('m')
 
   // Shrink the chart until it fits: the control goes dead and says why.
-  await page.locator('[data-cpv-root]').evaluate((el) => {
+  await page.locator('[data-titan-chordpro-root]').evaluate((el) => {
     ;(el as HTMLElement).style.height = '4000px'
   })
   await expect(roll).toBeDisabled()
@@ -486,9 +486,9 @@ test('Rolar goes dead when the chart fits the frame, and comes back when it does
   // Nothing starts, by button or by keyboard.
   await roll.click({ force: true })
   await page.keyboard.press(' ')
-  await expect(page.locator('.cpv-progress')).not.toHaveClass(/is-live/)
+  await expect(page.locator('.titan-chordpro-progress')).not.toHaveClass(/is-live/)
 
-  await page.locator('[data-cpv-root]').evaluate((el) => {
+  await page.locator('[data-titan-chordpro-root]').evaluate((el) => {
     ;(el as HTMLElement).style.height = ''
   })
   await expect(roll).toBeEnabled()
@@ -505,14 +505,14 @@ test('Rolar goes dead when the chart fits the frame, and comes back when it does
 test('the chart moves continuously, never a pixel at a time', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 860 })
   await page.goto('/?fit=0&chart=009-verdadeira-alegria.cho')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
   await tapControl(page, '[data-scroll]')
   // Count-in holds the paper still for a bar; the continuity under test is
   // the motion after the song has started, not the wait before it.
-  await expect(page.locator('.cpv-progress')).toHaveClass(/is-live/, { timeout: 6000 })
+  await expect(page.locator('.titan-chordpro-progress')).toHaveClass(/is-live/, { timeout: 6000 })
   await expect.poll(async () => {
     return page.evaluate(() => {
-      const el = document.querySelector('.cpv-scroll') as HTMLElement
+      const el = document.querySelector('.titan-chordpro-scroll') as HTMLElement
       const m = new DOMMatrixReadOnly(getComputedStyle(el).transform)
       return el.scrollTop - m.m42
     })
@@ -521,7 +521,7 @@ test('the chart moves continuously, never a pixel at a time', async ({ page }) =
   const seen = await page.evaluate(
     () =>
       new Promise<number[]>((res) => {
-        const el = document.querySelector('.cpv-scroll') as HTMLElement
+        const el = document.querySelector('.titan-chordpro-scroll') as HTMLElement
         const out: number[] = []
         const t0 = performance.now()
         const tick = () => {
@@ -547,7 +547,7 @@ test('the chart moves continuously, never a pixel at a time', async ({ page }) =
   // and the scrollbar are never left riding a transform.
   await page.keyboard.press('Space')
   await expect
-    .poll(() => page.locator('.cpv-scroll').evaluate((el) => (el as HTMLElement).style.transform))
+    .poll(() => page.locator('.titan-chordpro-scroll').evaluate((el) => (el as HTMLElement).style.transform))
     .toBe('')
 })
 
@@ -561,7 +561,7 @@ test('every dock control stays reachable across phone widths', async ({ page }) 
   for (const width of [320, 360, 375, 390, 412, 430, 470]) {
     await page.setViewportSize({ width, height: 860 })
     await page.goto('/')
-    await page.locator('.cpv-chord').first().waitFor()
+    await page.locator('.titan-chordpro-chord').first().waitFor()
 
     const dock = await page.evaluate(() => {
       const row = document.querySelector('[data-scroll]')!.parentElement as HTMLElement
@@ -602,7 +602,7 @@ test('dock leftover is not a hole after Rolar', async ({ page }) => {
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 860 })
     await page.goto('/')
-    await page.locator('.cpv-chord').first().waitFor()
+    await page.locator('.titan-chordpro-chord').first().waitFor()
 
     const gaps = await page.evaluate(() => {
       const row = document.querySelector('[data-scroll]')!.parentElement as HTMLElement
@@ -623,7 +623,7 @@ test('dock leftover is not a hole after Rolar', async ({ page }) => {
 test('Tela cheia is on the header, and not also buried in Mais', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 860 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   // Where native fullscreen exists — which is the case in both engines here —
   // the button is on the header and nowhere else. Where it does not, it is on
@@ -641,7 +641,7 @@ test('Tela cheia is on the header, and not also buried in Mais', async ({ page }
   const ink = await page.evaluate(() => {
     const box = (sel: string) => {
       const el = document.querySelector(sel)
-      const ico = el?.querySelector('.cpv-ico') ?? el
+      const ico = el?.querySelector('.titan-chordpro-ico') ?? el
       const r = ico!.getBoundingClientRect()
       return Math.max(r.width, r.height)
     }
@@ -654,8 +654,8 @@ test('Tela cheia is on the header, and not also buried in Mais', async ({ page }
 
   // The same control in two places on one screen is clutter, not redundancy.
   await tapControl(page, '[data-more]')
-  await expect(page.locator('.cpv-more-item').first()).toBeVisible()
-  await expect(page.locator('.cpv-more-item', { hasText: 'Tela cheia' })).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-more-item').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-more-item', { hasText: 'Tela cheia' })).toHaveCount(0)
 })
 
 /** Offset of Tela cheia from the viewer root — header is near the top. */
@@ -665,7 +665,7 @@ const fsPlace = (page: Page) => page.evaluate(() => {
     (el) => el.hasAttribute('data-fs') || labels.has(el.getAttribute('aria-label') ?? ''),
   )
   const btn = btns[0]
-  const root = document.querySelector('[data-cpv-root]') as HTMLElement
+  const root = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
   if (!btn) return { count: 0, fromTop: Infinity, fromBottom: Infinity }
   const br = btn.getBoundingClientRect()
   const rr = root.getBoundingClientRect()
@@ -687,17 +687,17 @@ test('Editar sits inside the bottom bar on desktop, not floating beside it', asy
   for (const width of [640, 768, 1024, 1280, 1600]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/')
-    await page.locator('.cpv-chord').first().waitFor()
+    await page.locator('.titan-chordpro-chord').first().waitFor()
 
     const place = await page.evaluate(() => {
       const edit = document.querySelector('[data-edit]') as HTMLElement | null
-      const bar = document.querySelector('[data-scroll]')?.closest('.cpv-chrome') as HTMLElement | null
-      if (!edit || !bar) return { missing: true, chip: !!document.querySelector('.cpv-edit-chip') }
+      const bar = document.querySelector('[data-scroll]')?.closest('.titan-chordpro-chrome') as HTMLElement | null
+      if (!edit || !bar) return { missing: true, chip: !!document.querySelector('.titan-chordpro-edit-chip') }
       const er = edit.getBoundingClientRect()
       const br = bar.getBoundingClientRect()
       return {
         missing: false,
-        chip: !!document.querySelector('.cpv-edit-chip'),
+        chip: !!document.querySelector('.titan-chordpro-edit-chip'),
         count: document.querySelectorAll('[data-edit]').length,
         inBar: bar.contains(edit),
         position: getComputedStyle(edit).position,
@@ -729,7 +729,7 @@ test('Editar sits inside the bottom bar on desktop, not floating beside it', asy
 test('Edit on the dock is a sibling of the other icons, not a highlight', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 860 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   const look = await page.evaluate(() => {
     const paint = (sel: string) => {
@@ -738,7 +738,7 @@ test('Edit on the dock is a sibling of the other icons, not a highlight', async 
     }
     const box = (sel: string) => {
       const el = document.querySelector(sel)
-      const ico = el?.querySelector('.cpv-ico') ?? el
+      const ico = el?.querySelector('.titan-chordpro-ico') ?? el
       const r = ico!.getBoundingClientRect()
       return { w: r.width, h: r.height }
     }
@@ -770,7 +770,7 @@ test('Edit on the dock is a sibling of the other icons, not a highlight', async 
 test('Tela cheia on a phone keeps the live controls', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(600)
@@ -778,7 +778,7 @@ test('Tela cheia on a phone keeps the live controls', async ({ page }) => {
   const after = await immersiveSpot(page)
   expect(after.dockGone, 'tela cheia hid the dock').toBe(false)
   expect(after.label).toBe('Sair da tela cheia')
-  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-chrome-hint')).toHaveCount(0)
 
   const roll = page.locator('[data-scroll]')
   await expect(roll).toBeVisible()
@@ -787,7 +787,7 @@ test('Tela cheia on a phone keeps the live controls', async ({ page }) => {
 
   // Usable, not merely painted: Mais still opens on top of the chart.
   await tapControl(page, '[data-more]')
-  await expect(page.locator('.cpv-more-item').first()).toBeVisible()
+  await expect(page.locator('.titan-chordpro-more-item').first()).toBeVisible()
 })
 
 /**
@@ -806,16 +806,16 @@ test('Tela cheia on a phone keeps the live controls', async ({ page }) => {
  * once made a tap hide the controls it was reaching for.
  */
 const tapChart = async (scope: Page | ReturnType<Page['frameLocator']>) => {
-  const page = scope.locator('.cpv-page')
+  const page = scope.locator('.titan-chordpro-page')
   await page.dispatchEvent('pointerdown')
   await page.dispatchEvent('click')
 }
 
 const immersiveSpot = (page: Page) => page.evaluate(() => {
-  const pg = document.querySelector('.cpv-page') as HTMLElement
-  const row = document.querySelector('.cpv-row') as HTMLElement
-  const scroll = document.querySelector('.cpv-scroll') as HTMLElement
-  const dock = document.querySelector('[data-scroll]')!.closest('.cpv-chrome')!
+  const pg = document.querySelector('.titan-chordpro-page') as HTMLElement
+  const row = document.querySelector('.titan-chordpro-row') as HTMLElement
+  const scroll = document.querySelector('.titan-chordpro-scroll') as HTMLElement
+  const dock = document.querySelector('[data-scroll]')!.closest('.titan-chordpro-chrome')!
   const btn = document.querySelector('[data-fs]')
   const cs = getComputedStyle(pg)
   return {
@@ -831,7 +831,7 @@ const immersiveSpot = (page: Page) => page.evaluate(() => {
 test('Tela cheia wins the screen and a tap still hides the chrome without leaving', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   const before = await immersiveSpot(page)
   expect(before.dockGone).toBe(false)
@@ -842,7 +842,7 @@ test('Tela cheia wins the screen and a tap still hides the chrome without leavin
   const inFs = await immersiveSpot(page)
   expect(inFs.dockGone).toBe(false)
   expect(inFs.label).toBe('Sair da tela cheia')
-  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-chrome-hint')).toHaveCount(0)
 
   // Zen is a separate gesture: hide our chrome, keep the screen the button won.
   // Padding stays — reclaiming the band used to jump the chart under the eye.
@@ -851,8 +851,8 @@ test('Tela cheia wins the screen and a tap still hides the chrome without leavin
   const zen = await immersiveSpot(page)
   expect(zen.dockGone).toBe(true)
   expect(zen.label).toBe('Sair da tela cheia')
-  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
-  await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
+  await expect(page.locator('.titan-chordpro-chrome-hint')).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-toast')).toHaveText('Toque na tela para mostrar os controles')
   expect(zen.padTop).toBe(inFs.padTop)
   expect(zen.padBottom).toBe(inFs.padBottom)
   expect(zen.firstRowY).toBe(inFs.firstRowY)
@@ -880,7 +880,7 @@ test('a tap hides the chrome without jumping the chart when there is no screen t
   })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   const before = await immersiveSpot(page)
   expect(before.padTop + before.padBottom).toBeGreaterThan(180)
@@ -893,8 +893,8 @@ test('a tap hides the chrome without jumping the chart when there is no screen t
 
   expect(after.dockGone).toBe(true)
   expect(after.label).toBe(null)
-  await expect(page.locator('.cpv-chrome-hint')).toHaveCount(0)
-  await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
+  await expect(page.locator('.titan-chordpro-chrome-hint')).toHaveCount(0)
+  await expect(page.locator('.titan-chordpro-toast')).toHaveText('Toque na tela para mostrar os controles')
   expect(after.padTop).toBe(before.padTop)
   expect(after.padBottom).toBe(before.padBottom)
   expect(after.firstRowY).toBe(before.firstRowY)
@@ -908,7 +908,7 @@ test('a tap hides the chrome without jumping the chart when there is no screen t
 test('immersive mid-song holds the line the reader was on, and the top stays the top', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   // Entering tela cheia still moves padding a little (the fs chrome is
   // tighter). Standing at the top of the song is a place, not an offset.
@@ -919,12 +919,12 @@ test('immersive mid-song holds the line the reader was on, and the top stays the
   await page.waitForTimeout(500)
 
   // Mid-song the pixel under their eye is what has to survive.
-  await page.evaluate(() => { (document.querySelector('.cpv-scroll') as HTMLElement).scrollTop = 800 })
+  await page.evaluate(() => { (document.querySelector('.titan-chordpro-scroll') as HTMLElement).scrollTop = 800 })
   await page.waitForTimeout(200)
   const line = () => page.evaluate(() => {
-    const sc = document.querySelector('.cpv-scroll') as HTMLElement
+    const sc = document.querySelector('.titan-chordpro-scroll') as HTMLElement
     const eye = sc.getBoundingClientRect().top + sc.clientHeight * 0.4
-    return ([...document.querySelectorAll('.cpv-lyric')] as HTMLElement[])
+    return ([...document.querySelectorAll('.titan-chordpro-lyric')] as HTMLElement[])
       .map((w) => ({ text: w.textContent, d: Math.abs(w.getBoundingClientRect().top - eye) }))
       .sort((a, b) => a.d - b.d)[0]?.text
   })
@@ -952,14 +952,14 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?ficha=1')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
-  const rootBox = () => page.locator('.cpv-root').evaluate((el) => {
+  const rootBox = () => page.locator('.titan-chordpro-root').evaluate((el) => {
     const r = el.getBoundingClientRect()
     return { pos: getComputedStyle(el).position, y: Math.round(r.y), h: Math.round(r.height) }
   })
   const dockBox = () => page.locator('[data-scroll]').evaluate((el) => {
-    const r = el.closest('.cpv-chrome')!.getBoundingClientRect()
+    const r = el.closest('.titan-chordpro-chrome')!.getBoundingClientRect()
     return { top: r.top, bottom: r.bottom }
   })
 
@@ -984,10 +984,10 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(pinned.h).toBeGreaterThanOrEqual(840)
   // The host chrome is gone. Ours stays: a live set needs Rolar and Tom.
   // Top pad (from the measured head) keeps the lyric under the name.
-  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
+  expect(await page.locator('.titan-chordpro-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
   await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) => ({
-    opacity: getComputedStyle(el.closest('.cpv-chrome')!).opacity,
+    opacity: getComputedStyle(el.closest('.titan-chordpro-chrome')!).opacity,
     pointer: getComputedStyle(el).pointerEvents,
   }))).toEqual({ opacity: '1', pointer: 'auto' })
   await expect(page.locator('[data-scroll]')).toBeVisible()
@@ -1002,9 +1002,9 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(zen.y).toBe(0)
   await expect(page.locator('[data-fs]')).toHaveAttribute('aria-label', 'Sair da tela cheia')
   expect(await page.locator('[data-fs]').evaluate((el) =>
-    getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('0')
-  await expect(page.locator('[data-cpv-zen-title]')).toContainText(/Escuta/i)
-  expect(await page.locator('[data-cpv-zen-title]').evaluate((el) => getComputedStyle(el).position)).toMatch(
+    getComputedStyle(el.closest('.titan-chordpro-chrome')!).opacity)).toBe('0')
+  await expect(page.locator('[data-titan-chordpro-zen-title]')).toContainText(/Escuta/i)
+  expect(await page.locator('[data-titan-chordpro-zen-title]').evaluate((el) => getComputedStyle(el).position)).toMatch(
     /absolute|fixed/,
   )
 
@@ -1014,9 +1014,9 @@ test('in a host page without native fullscreen, the button pins the viewer over 
   expect(shown.pos).toBe('fixed')
   expect(shown.y).toBe(0)
   expect(await page.locator('[data-fs]').evaluate((el) =>
-    getComputedStyle(el.closest('.cpv-chrome')!).opacity)).toBe('1')
-  await expect(page.locator('[data-cpv-zen-title]')).toHaveCount(0)
-  expect(await page.locator('.cpv-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
+    getComputedStyle(el.closest('.titan-chordpro-chrome')!).opacity)).toBe('1')
+  await expect(page.locator('[data-titan-chordpro-zen-title]')).toHaveCount(0)
+  expect(await page.locator('.titan-chordpro-page').evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))).toBeGreaterThan(40)
 
   await page.locator('[data-fs]').click()
   await page.waitForTimeout(700)
@@ -1036,7 +1036,7 @@ test('in a host page without native fullscreen, the button pins the viewer over 
 test('parking a ficha with native fullscreen keeps Tela cheia in the header', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?ficha=1')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   const atLoad = await fsPlace(page)
   expect(atLoad.count).toBe(1)
@@ -1055,7 +1055,7 @@ test('parking a ficha with native fullscreen keeps Tela cheia in the header', as
 test('on a desktop the fullscreen control is in the top bar', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
 
   const place = await fsPlace(page)
   expect(place.count).toBe(1)
@@ -1066,7 +1066,7 @@ test('on a desktop the fullscreen control is in the top bar', async ({ page }) =
 test('rotating a parked ficha to landscape keeps Tela cheia at the top', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?ficha=1')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
   await page.locator('#host-frame').evaluate((el) => el.scrollIntoView({ block: 'start' }))
   await page.waitForTimeout(300)
 
@@ -1091,9 +1091,9 @@ test('rotating a parked ficha to landscape keeps Tela cheia at the top', async (
 test('during auto-scroll, a tap brings the controls back — every time, not every other time', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?autoHide=1')
-  await page.locator('.cpv-chord').first().waitFor()
+  await page.locator('.titan-chordpro-chord').first().waitFor()
   const dockGone = () => page.locator('[data-scroll]').evaluate((el) =>
-    el.closest('.cpv-chrome')!.classList.contains('is-hidden'))
+    el.closest('.titan-chordpro-chrome')!.classList.contains('is-hidden'))
 
   // Started from the keyboard on purpose: a mouse resting over the chart keeps
   // firing `pointermove` as the page scrolls under it, and the viewer never

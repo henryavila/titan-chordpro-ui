@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { ELE_VIVE_IMG, JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 const JESUS = JESUS_1
@@ -20,7 +20,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -32,7 +32,7 @@ afterEach(() => {
 })
 
 async function viewerAt(width: number, props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: loadFixture(JESUS),
       theme: 'dark',
@@ -72,13 +72,13 @@ describe('lens Só letra', () => {
 
   it('hides chords and the chord lane with one tap on Letra', async () => {
     const w = await viewerAt(1024)
-    expect(w.find('.cpv-chord').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(true)
     await pickLetra(w)
     expect(pressed(w, 'letra')).toBe('true')
     expect(pressed(w, 'cifra')).toBe('false')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     expect(w.text()).toMatch(/Jesus/i)
-    const box = w.get('.cpv-chord-box')
+    const box = w.get('.titan-chordpro-chord-box')
     expect(box.attributes('style') || '').toMatch(/height:\s*0px/)
   })
 
@@ -86,11 +86,11 @@ describe('lens Só letra', () => {
     const w = await viewerAt(1024)
     expect(w.text()).toMatch(/x\/\/\//)
     await pickLetra(w)
-    const lyrics = w.findAll('.cpv-lyric').map((n) => n.text()).join('')
+    const lyrics = w.findAll('.titan-chordpro-lyric').map((n) => n.text()).join('')
     expect(lyrics).toMatch(/Jesus/)
     expect(lyrics).not.toMatch(/x\/+/)
     expect(lyrics).not.toMatch(/(^|\s)\/+(\s|$)/)
-    expect(w.findAll('.cpv-reading-row').some((row) => /^[xX/\s]+$/.test(row.text().trim()))).toBe(false)
+    expect(w.findAll('.titan-chordpro-reading-row').some((row) => /^[xX/\s]+$/.test(row.text().trim()))).toBe(false)
   })
 
   it('drops tab, score and image on a chart that has them', async () => {
@@ -98,18 +98,18 @@ describe('lens Só letra', () => {
       source: loadFixture(ELE_VIVE_IMG),
       songId: 'ele-vive',
     })
-    expect(w.find('.cpv-tab').exists()).toBe(true)
-    expect(w.find('.cpv-figure').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-tab').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-figure').exists()).toBe(true)
     await pickLetra(w)
-    expect(w.find('.cpv-tab').exists()).toBe(false)
-    expect(w.find('.cpv-figure').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-tab').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-figure').exists()).toBe(false)
     expect(w.text()).toMatch(/Ele Vive/i)
   })
 
   it('does not project in edit — chords come back with the editor', async () => {
     const w = await viewerAt(1024, { canEdit: true, modes: 'content' })
     await pickLetra(w)
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
     const pick = w.find('[data-mode-content]')
@@ -118,7 +118,7 @@ describe('lens Só letra', () => {
       await flushPromises()
     }
     expect(w.find('[data-read]').exists()).toBe(true)
-    expect(w.find('.cpv-chord').exists() || w.find('[data-pill]').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-chord').exists() || w.find('[data-pill]').exists()).toBe(true)
   })
 
   it('on a phone, Letra is one tap on the dock — Mais is not required', async () => {
@@ -126,7 +126,7 @@ describe('lens Só letra', () => {
     expect(w.find('[role="dialog"][aria-label="Mais controles"]').exists()).toBe(false)
     await pickLetra(w)
     expect(pressed(w, 'letra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
   })
 
   it('the phone Mais lists Nashville and comments, not a Lentes submenu', async () => {
@@ -139,45 +139,45 @@ describe('lens Só letra', () => {
     expect(dlg.text()).not.toContain('Lentes de leitura')
     expect(dlg.find('[data-lens=nashville]').exists()).toBe(true)
     expect(dlg.find('[data-comments-toggle]').exists()).toBe(true)
-    expect(w.get('.cpv-phone-stack .cpv-chrome').classes()).toContain('is-hidden')
+    expect(w.get('.titan-chordpro-phone-stack .titan-chordpro-chrome').classes()).toContain('is-hidden')
   })
 
   it('Cifra brings named chords back after Letra', async () => {
     const w = await viewerAt(1024)
     await pickLetra(w)
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     await w.get('[data-reading=cifra]').trigger('click')
     await flushPromises()
-    expect(w.find('.cpv-chord').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(true)
     expect(pressed(w, 'cifra')).toBe('true')
   })
 
   it('opens already in Letra when the host passes lens=letra', async () => {
     const w = await viewerAt(1024, { lens: 'letra' })
     expect(pressed(w, 'letra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     expect(w.text()).toMatch(/Jesus/i)
   })
 
   it('opens already in Letra even when this device last used Cifra', async () => {
-    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'none' }))
+    localStorage.setItem('titan-chordpro:user-preferences', JSON.stringify({ lens: 'none' }))
     const w = await viewerAt(1024, { lens: 'letra' })
     expect(pressed(w, 'letra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
   })
 
   it('opens already in Cifra when the host passes lens=none, even if prefs were Letra', async () => {
-    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'letra' }))
+    localStorage.setItem('titan-chordpro:user-preferences', JSON.stringify({ lens: 'letra' }))
     const w = await viewerAt(1024, { lens: 'none' })
     expect(pressed(w, 'cifra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(true)
   })
 
   it('restores the last Letra choice when the host omits lens', async () => {
-    localStorage.setItem('cpv:user-preferences', JSON.stringify({ lens: 'letra' }))
+    localStorage.setItem('titan-chordpro:user-preferences', JSON.stringify({ lens: 'letra' }))
     const w = await viewerAt(1024)
     expect(pressed(w, 'letra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
   })
 
   it('follows the host when the lens prop changes to Cifra', async () => {
@@ -186,7 +186,7 @@ describe('lens Só letra', () => {
     await w.setProps({ lens: 'none' })
     await flushPromises()
     expect(pressed(w, 'cifra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(true)
   })
 
   it('opens with Nashville when the host passes lens=nashville', async () => {
@@ -206,12 +206,12 @@ describe('lens Só letra', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
     await flushPromises()
     expect(pressed(w, 'letra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
     expect(w.find('[role="dialog"][aria-label="Lentes de leitura"]').exists()).toBe(false)
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
     await flushPromises()
     expect(pressed(w, 'cifra')).toBe('true')
-    expect(w.find('.cpv-chord').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-chord').exists()).toBe(true)
   })
 
   it('Nashville from the bar, and Cifra restores it after Letra', async () => {

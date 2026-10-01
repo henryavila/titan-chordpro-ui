@@ -406,13 +406,13 @@ class Component extends DCLogic {
 
   componentDidMount() {
     try {
-      const p = JSON.parse(localStorage.getItem("cpv:prefs") || "{}");
+      const p = JSON.parse(localStorage.getItem("titan-chordpro:prefs") || "{}");
       const st = {};
       if (p.theme) st.theme = p.theme;
       if (typeof p.bias === "number") st.bias = p.bias;
       if (typeof p.fit === "boolean") st.fit = p.fit;
       if (Object.keys(st).length) this.setState(st);
-      this.fitSeen = localStorage.getItem("cpv:fitSeen") === "1";
+      this.fitSeen = localStorage.getItem("titan-chordpro:fitSeen") === "1";
     } catch (e) { this.fitSeen = true; }
 
     import(new URL("./fixtures.js", location.href).href)
@@ -517,8 +517,8 @@ class Component extends DCLogic {
       if (this.state.theme) p.theme = this.state.theme;
       if (this.state.bias) p.bias = this.state.bias;
       if (this.state.fit !== null && this.state.fit !== undefined) p.fit = this.state.fit;
-      if (Object.keys(p).length) localStorage.setItem("cpv:prefs", JSON.stringify(p));
-      else localStorage.removeItem("cpv:prefs");
+      if (Object.keys(p).length) localStorage.setItem("titan-chordpro:prefs", JSON.stringify(p));
+      else localStorage.removeItem("titan-chordpro:prefs");
     } catch (e) {}
   }
   dismissHint = (explicit) => {
@@ -527,7 +527,7 @@ class Component extends DCLogic {
     // Nunca queima o flag sem a pessoa ter visto a dica.
     if (explicit || this.hintVisible) {
       this.fitSeen = true;
-      try { localStorage.setItem("cpv:fitSeen", "1"); } catch (e) {}
+      try { localStorage.setItem("titan-chordpro:fitSeen", "1"); } catch (e) {}
     }
     if (!this.state.hintOff) this.setState({ hintOff: true });
   };

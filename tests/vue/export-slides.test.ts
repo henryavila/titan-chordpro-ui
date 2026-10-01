@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { loadFixture } from '../helpers/load-fixture'
 
 const sljaCalls: Array<Record<string, unknown> | undefined> = []
@@ -12,7 +12,7 @@ vi.mock('@henryavila/titan-chordpro-ui/slides', () => ({
 }))
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: {
       source: loadFixture('sda/101-fala-comigo.cho'),
       theme: 'dark',

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { chartBody, memoryStore } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import MetaDialog from '../../src/vue/edit/MetaDialog.vue'
 import { loadFixture } from '../helpers/load-fixture'
 
@@ -43,7 +43,7 @@ function dialog(source = SRC, extra: Record<string, unknown> = {}) {
 }
 
 function viewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: SRC,
       storage: memoryStore(),
@@ -130,7 +130,7 @@ describe('MetaDialog', () => {
 
 describe('rewrite of a registered mismatch', () => {
   it('does not offer rewrite in view, even for fake capo', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
     await flushPromises()
     expect(w.find('[data-rewrite-go]').exists()).toBe(false)
@@ -139,7 +139,7 @@ describe('rewrite of a registered mismatch', () => {
   })
 
   it('does not offer rewrite in view when V outnumbers the tonic', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = viewer({ source: loadFixture('sda/091-o-melhor-lugar-do-mundo.cho') })
     await flushPromises()
     expect(w.find('[data-rewrite-go]').exists()).toBe(false)
@@ -147,14 +147,14 @@ describe('rewrite of a registered mismatch', () => {
   })
 
   it('does not turn on capo from {capo:} in the file, and keeps the written chords', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = viewer({ source: loadFixture('sda/082-o-rei-vem-vindo.cho') })
     await flushPromises()
     expect(w.get('[data-display-key]').text()).toBe('Ab')
     expect(w.get('[data-capo]').text()).toMatch(/^Capo$/i)
-    expect(w.findAll('.cpv-chord').map((n) => n.text()).filter(Boolean)[0]).toBe('D')
-    expect(w.findAll('.cpv-chord').map((n) => n.text())).toContain('G')
-    expect(w.findAll('.cpv-chord').map((n) => n.text())).not.toContain('Db')
+    expect(w.findAll('.titan-chordpro-chord').map((n) => n.text()).filter(Boolean)[0]).toBe('D')
+    expect(w.findAll('.titan-chordpro-chord').map((n) => n.text())).toContain('G')
+    expect(w.findAll('.titan-chordpro-chord').map((n) => n.text())).not.toContain('Db')
     w.unmount()
   })
 })
@@ -207,7 +207,7 @@ describe('edit chrome · dedicated metadata door', () => {
     await flushPromises()
     expect((w.vm as { getSource: () => string }).getSource()).toMatch(/\{duration:04:26\}/)
     expect(w.emitted('update:source')?.length ?? 0).toBe(before)
-    expect(storage.get('cpv:my:uma')).toBeTruthy()
+    expect(storage.get('titan-chordpro:my:uma')).toBeTruthy()
   })
 
   it('flags a missing duration on the dedicated button', async () => {
@@ -406,7 +406,7 @@ describe('MetaDialog · Começar de novo', () => {
   })
 
   it('is absent in local edit on the viewer', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = viewer({ source: SDA, modes: 'local', songId: 'tua' })
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
@@ -433,7 +433,7 @@ describe('MetaDialog · Começar de novo', () => {
   })
 
   it('opens Nova cifra from a populated chart only after confirm, and cancel keeps the body', async () => {
-    localStorage.setItem('cpv:fitSeen', '1')
+    localStorage.setItem('titan-chordpro:fitSeen', '1')
     const w = viewer({ source: SDA, fetchChart: vi.fn(async () => TU_ES) })
     await enterContent(w)
     await w.get('[data-meta-open]').trigger('click')

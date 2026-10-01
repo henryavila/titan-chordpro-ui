@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [
     vue(),
     {
-      name: 'cpv-css-import',
+      name: 'titan-chordpro-css-import',
       generateBundle(_opts, bundle) {
         for (const chunk of Object.values(bundle)) {
           if (chunk.type !== 'chunk' || chunk.fileName !== 'vue/index.js') continue

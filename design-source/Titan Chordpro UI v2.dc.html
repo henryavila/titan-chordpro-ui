@@ -1559,7 +1559,7 @@ class Component extends DCLogic {
     this.onScoreResize = () => { this._sigs = {}; this.drawScores(); this.checkSurface(); };
     window.addEventListener("resize", this.onScoreResize);
     try {
-      const p = JSON.parse(localStorage.getItem("cpv:prefs") || "{}");
+      const p = JSON.parse(localStorage.getItem("titan-chordpro:prefs") || "{}");
       const st = {};
       if (p.theme) st.theme = p.theme;
       if (typeof p.bias === "number") st.bias = p.bias;
@@ -1567,8 +1567,8 @@ class Component extends DCLogic {
       if (typeof p.metSound === "boolean") st.metSound = p.metSound;
       if (typeof p.metFollow === "boolean") st.metFollow = p.metFollow;
       if (Object.keys(st).length) this.setState(st);
-      this.fitSeen = localStorage.getItem("cpv:fitSeen") === "1";
-      this.editSeen = localStorage.getItem("cpv:editSeen") === "1";
+      this.fitSeen = localStorage.getItem("titan-chordpro:fitSeen") === "1";
+      this.editSeen = localStorage.getItem("titan-chordpro:editSeen") === "1";
     } catch (e) { this.fitSeen = true; this.editSeen = true; }
 
     import(new URL("./fixtures.js", location.href).href)
@@ -1762,8 +1762,8 @@ class Component extends DCLogic {
       if (this.state.fit !== null && this.state.fit !== undefined) p.fit = this.state.fit;
       if (this.state.metSound === false) p.metSound = false;
       if (this.state.metFollow === false) p.metFollow = false;
-      if (Object.keys(p).length) localStorage.setItem("cpv:prefs", JSON.stringify(p));
-      else localStorage.removeItem("cpv:prefs");
+      if (Object.keys(p).length) localStorage.setItem("titan-chordpro:prefs", JSON.stringify(p));
+      else localStorage.removeItem("titan-chordpro:prefs");
     } catch (e) {}
   }
   dismissHint = (explicit) => {
@@ -1772,7 +1772,7 @@ class Component extends DCLogic {
     // Nunca queima o flag sem a pessoa ter visto a dica.
     if (explicit || this.hintVisible) {
       this.fitSeen = true;
-      try { localStorage.setItem("cpv:fitSeen", "1"); } catch (e) {}
+      try { localStorage.setItem("titan-chordpro:fitSeen", "1"); } catch (e) {}
     }
     if (!this.state.hintOff) this.setState({ hintOff: true });
   };
@@ -2739,7 +2739,7 @@ class Component extends DCLogic {
     return s ? s.id : (this.props.songId || this.props.fixture || "song");
   }
   get officialVersion() { return this.state.officialV || this.props.version || "v1"; }
-  ovKey() { return "cpv:my:" + this.songId; }
+  ovKey() { return "titan-chordpro:my:" + this.songId; }
 
   hash(s) {
     let h = 0; const t = String(s);
@@ -3023,9 +3023,9 @@ class Component extends DCLogic {
   };
 
   // ---- sugerir alteração ----
-  allSug() { try { return JSON.parse(localStorage.getItem("cpv:sug") || "[]"); } catch (e) { return []; } }
+  allSug() { try { return JSON.parse(localStorage.getItem("titan-chordpro:sug") || "[]"); } catch (e) { return []; } }
   writeSug(list) {
-    try { localStorage.setItem("cpv:sug", JSON.stringify(list)); } catch (e) {}
+    try { localStorage.setItem("titan-chordpro:sug", JSON.stringify(list)); } catch (e) {}
     this.setState({ sugTick: (this.state.sugTick || 0) + 1 });
   }
   suggest = () => {
@@ -3415,7 +3415,7 @@ class Component extends DCLogic {
   };
   markEditSeen() {
     this.editSeen = true;
-    try { localStorage.setItem("cpv:editSeen", "1"); } catch (e) {}
+    try { localStorage.setItem("titan-chordpro:editSeen", "1"); } catch (e) {}
     if (!this.state.editHintOff) this.setState({ editHintOff: true });
   }
   dismissEditHint = () => this.markEditSeen();
@@ -4334,16 +4334,16 @@ class Component extends DCLogic {
   }
   loadBpm() {
     try {
-      const all = JSON.parse(localStorage.getItem("cpv:bpm") || "{}");
+      const all = JSON.parse(localStorage.getItem("titan-chordpro:bpm") || "{}");
       const v = Number(all[this.songKey()]);
       return v >= 30 && v <= 300 ? Math.round(v) : null;
     } catch (e) { return null; }
   }
   saveBpm(v) {
     try {
-      const all = JSON.parse(localStorage.getItem("cpv:bpm") || "{}");
+      const all = JSON.parse(localStorage.getItem("titan-chordpro:bpm") || "{}");
       if (v) all[this.songKey()] = v; else delete all[this.songKey()];
-      localStorage.setItem("cpv:bpm", JSON.stringify(all));
+      localStorage.setItem("titan-chordpro:bpm", JSON.stringify(all));
     } catch (e) {}
   }
   sheetBpm() {

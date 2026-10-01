@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 defineProps<{
   nextTitle: string
@@ -15,9 +15,9 @@ const emit = defineEmits<{ next: []; dismiss: [] }>()
     style="position:absolute;left:0;right:0;z-index:15;display:flex;justify-content:center;padding:0 12px;pointer-events:none;"
   >
     <div
-      class="cpv-veil-2"
+      class="titan-chordpro-veil-2"
       data-end-offer
-      style="pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:420px;padding:9px 10px 9px 15px;border-radius:16px;border:1px solid var(--chord-edge);box-shadow:var(--shadow);animation:cpv-rise .2s ease-out;"
+      style="pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:420px;padding:9px 10px 9px 15px;border-radius:16px;border:1px solid var(--chord-edge);box-shadow:var(--shadow);animation:titan-chordpro-rise .2s ease-out;"
     >
       <span style="min-width:0;display:flex;flex-direction:column;gap:2px;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Fim da música</span>
@@ -29,12 +29,12 @@ const emit = defineEmits<{ next: []; dismiss: [] }>()
         @click="emit('next')"
       >Próxima</button>
       <button
-        class="cpv-ghost"
+        class="titan-chordpro-ghost"
         aria-label="Ficar nesta música"
         title="Ficar nesta música"
         style="flex:none;width:34px;height:34px;color:var(--muted);font-size:16px;"
         @click="emit('dismiss')"
-      ><CpvIcon name="x" :size="16" /></button>
+      ><TitanChordproIcon name="x" :size="16" /></button>
     </div>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import {
   softClickFromPrefs,
   sourceFromPrefs,
@@ -150,31 +150,31 @@ const geom = computed(() =>
   <!-- No scrim: the click runs while the chart is being read. -->
   <div style="position:absolute;inset:0;z-index:26;pointer-events:none;">
     <div
-      class="cpv-veil-2"
+      class="titan-chordpro-veil-2"
       role="dialog"
       aria-label="Metrônomo"
       :style="geom"
-      style="pointer-events:auto;position:absolute;overflow-y:auto;display:flex;flex-direction:column;gap:13px;animation:cpv-rise .2s ease-out;"
+      style="pointer-events:auto;position:absolute;overflow-y:auto;display:flex;flex-direction:column;gap:13px;animation:titan-chordpro-rise .2s ease-out;"
     >
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Metrônomo</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
+        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <button class="cpv-met-step" aria-label="−5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', -5)">−5</button>
-        <button class="cpv-met-step" aria-label="−1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', -1)">−</button>
+        <button class="titan-chordpro-met-step" aria-label="−5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', -5)">−5</button>
+        <button class="titan-chordpro-met-step" aria-label="−1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', -1)">−</button>
         <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">
           <span data-bpm style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;">{{ bpm }}</span>
           <span style="font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">BPM</span>
         </span>
-        <button class="cpv-met-step" aria-label="+1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', 1)">+</button>
-        <button class="cpv-met-step" aria-label="+5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', 5)">+5</button>
+        <button class="titan-chordpro-met-step" aria-label="+1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', 1)">+</button>
+        <button class="titan-chordpro-met-step" aria-label="+5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', 5)">+5</button>
       </div>
 
       <button
         data-met-tap
-        class="cpv-met-tap"
+        class="titan-chordpro-met-tap"
         :style="{ height: compact ? '44px' : '38px', borderColor: tapCount > 1 ? 'var(--chord-edge)' : 'var(--line)', color: tapCount > 1 ? 'var(--chord)' : 'var(--text)' }"
         @click="emit('tap')"
       >
@@ -203,7 +203,7 @@ const geom = computed(() =>
           style="flex:1;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:12px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
           @click="emit('toggle')"
         >
-          <CpvIcon :name="running ? 'square' : 'play'" :size="14" />{{ runLabel }}
+          <TitanChordproIcon :name="running ? 'square' : 'play'" :size="14" />{{ runLabel }}
         </button>
         <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:74px;">
           <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">{{ time || `${bar}/4` }}</span>
@@ -244,7 +244,7 @@ const geom = computed(() =>
         </p>
         <button
           v-if="hasStrum && source === 'batida'"
-          class="cpv-met-switch"
+          class="titan-chordpro-met-switch"
           data-met-soft-click
           type="button"
           @click="toggleSoftClick"
@@ -259,7 +259,7 @@ const geom = computed(() =>
         </button>
       </div>
 
-      <button class="cpv-met-switch" data-met-follow @click="emit('toggleFollow')">
+      <button class="titan-chordpro-met-switch" data-met-follow @click="emit('toggleFollow')">
         <span :style="{ background: follow ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
           <span :style="{ left: follow ? '14px' : '2px', background: follow ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
         </span>
@@ -269,7 +269,7 @@ const geom = computed(() =>
         </span>
       </button>
 
-      <button class="cpv-met-switch" data-met-head @click="emit('togglePulseHead')">
+      <button class="titan-chordpro-met-switch" data-met-head @click="emit('togglePulseHead')">
         <span :style="{ background: pulseHead ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
           <span :style="{ left: pulseHead ? '14px' : '2px', background: pulseHead ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
         </span>
@@ -279,7 +279,7 @@ const geom = computed(() =>
         </span>
       </button>
 
-      <button class="cpv-met-switch" data-met-countin-switch @click="emit('toggleCountIn')">
+      <button class="titan-chordpro-met-switch" data-met-countin-switch @click="emit('toggleCountIn')">
         <span :style="{ background: countInOn ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
           <span :style="{ left: countInOn ? '14px' : '2px', background: countInOn ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
         </span>

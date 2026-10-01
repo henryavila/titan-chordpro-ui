@@ -7,7 +7,7 @@ import type { TabRhythm } from '@henryavila/titan-chordpro-ui'
 import { TAB_RHYTHM_OPTIONS } from '../use/useTabRhythm'
 import ScoreChoice from '../chart/ScoreChoice.vue'
 import ScoreBarRange from './ScoreBarRange.vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import ExternalScore from '../chart/ExternalScore.vue'
 
 const props = defineProps<{
@@ -148,54 +148,54 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
 </script>
 
 <template>
-  <div class="cpv-modal cpv-import-score-modal" @keydown.stop="keydown" @dragover.prevent @drop.prevent>
-    <div class="cpv-scrim" />
-    <form ref="dialog" class="cpv-veil-2 cpv-modal-card cpv-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save">
-      <header class="cpv-import-score-head">
-        <div><span class="cpv-modal-kicker">Guitar Pro · MusicXML</span><h2>{{ text ? 'Ajustar trecho' : 'Importar solo' }}</h2><p>Escolha o que entra na cifra e confira a prévia.</p></div>
-        <button type="button" class="cpv-import-score-close" aria-label="Fechar importação" :disabled="busy" @click="emit('close')"><CpvIcon name="x" :size="20" /></button>
+  <div class="titan-chordpro-modal titan-chordpro-import-score-modal" @keydown.stop="keydown" @dragover.prevent @drop.prevent>
+    <div class="titan-chordpro-scrim" />
+    <form ref="dialog" class="titan-chordpro-veil-2 titan-chordpro-modal-card titan-chordpro-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save">
+      <header class="titan-chordpro-import-score-head">
+        <div><span class="titan-chordpro-modal-kicker">Guitar Pro · MusicXML</span><h2>{{ text ? 'Ajustar trecho' : 'Importar solo' }}</h2><p>Escolha o que entra na cifra e confira a prévia.</p></div>
+        <button type="button" class="titan-chordpro-import-score-close" aria-label="Fechar importação" :disabled="busy" @click="emit('close')"><TitanChordproIcon name="x" :size="20" /></button>
       </header>
-      <div class="cpv-import-score-body">
-        <fieldset class="cpv-import-score-controls" :disabled="busy">
-          <div class="cpv-import-score-file" :class="{ 'cpv-import-score-file--drop': uploadScore, 'cpv-import-score-file--dragging': dragging }"
+      <div class="titan-chordpro-import-score-body">
+        <fieldset class="titan-chordpro-import-score-controls" :disabled="busy">
+          <div class="titan-chordpro-import-score-file" :class="{ 'titan-chordpro-import-score-file--drop': uploadScore, 'titan-chordpro-import-score-file--dragging': dragging }"
             @dragenter.prevent="dragEnter" @dragover.prevent.stop="dragOver"
             @dragleave.prevent="dragDepth = Math.max(0, dragDepth - 1)" @drop.prevent.stop="dropFile">
-            <span class="cpv-import-score-file-icon"><CpvIcon name="fileInput" :size="22" /></span>
+            <span class="titan-chordpro-import-score-file-icon"><TitanChordproIcon name="fileInput" :size="22" /></span>
             <div><strong>{{ file || src ? fileName : 'Seu arquivo musical' }}</strong><p>{{ total ? `${total} compassos disponíveis` : '.gp, .gp3–5, .gpx, .xml, .musicxml ou .mxl' }}</p></div>
             <!-- iOS Files may disable .gp with an accept filter. Validate after selection instead. -->
             <input v-if="uploadScore" ref="fileInput" type="file" hidden @change="selectFile">
-            <button v-if="uploadScore" type="button" class="cpv-modal-btn" @click="fileInput?.click()">{{ file || src ? 'Trocar arquivo' : 'Escolher arquivo' }}</button>
-            <p v-if="uploadScore" class="cpv-import-score-drop-hint" role="status">{{ dragging ? 'Solte o arquivo aqui' : 'Ou arraste e solte o arquivo aqui' }}</p>
+            <button v-if="uploadScore" type="button" class="titan-chordpro-modal-btn" @click="fileInput?.click()">{{ file || src ? 'Trocar arquivo' : 'Escolher arquivo' }}</button>
+            <p v-if="uploadScore" class="titan-chordpro-import-score-drop-hint" role="status">{{ dragging ? 'Solte o arquivo aqui' : 'Ou arraste e solte o arquivo aqui' }}</p>
           </div>
           <template v-if="tracks.length">
-            <label class="cpv-import-score-field"><span class="cpv-import-score-label">Nome do trecho</span>
-              <input v-model="name" class="cpv-import-score-name" aria-label="Nome do trecho" required placeholder="Solo">
+            <label class="titan-chordpro-import-score-field"><span class="titan-chordpro-import-score-label">Nome do trecho</span>
+              <input v-model="name" class="titan-chordpro-import-score-name" aria-label="Nome do trecho" required placeholder="Solo">
             </label>
-            <div class="cpv-import-score-field">
-              <span class="cpv-import-score-label">Instrumento / faixa</span>
+            <div class="titan-chordpro-import-score-field">
+              <span class="titan-chordpro-import-score-label">Instrumento / faixa</span>
               <ScoreChoice :model-value="track" label="Faixa" caption="" :options="trackOptions" @update:model-value="track = Number($event)" />
             </div>
             <ScoreBarRange :start="start" :end="end" :total="total" @change="changeRange" />
-            <div class="cpv-import-score-field">
-              <span class="cpv-import-score-label">Ritmo padrão da TAB</span>
+            <div class="titan-chordpro-import-score-field">
+              <span class="titan-chordpro-import-score-label">Ritmo padrão da TAB</span>
               <ScoreChoice :model-value="rhythm" label="Ritmo padrão da TAB" caption="" :options="TAB_RHYTHM_OPTIONS"
                 @update:model-value="value => { if (isTabRhythm(value)) rhythm = value }" />
               <p>Quem lê pode escolher outro visual, sem alterar este padrão.</p>
             </div>
           </template>
-          <p v-if="busy" class="cpv-import-score-status" role="status">Abrindo ou guardando arquivo…</p>
-          <p v-if="error" class="cpv-import-score-error" role="alert">{{ error }}</p>
+          <p v-if="busy" class="titan-chordpro-import-score-status" role="status">Abrindo ou guardando arquivo…</p>
+          <p v-if="error" class="titan-chordpro-import-score-error" role="alert">{{ error }}</p>
         </fieldset>
-        <section class="cpv-import-score-preview" aria-label="Prévia do trecho">
-          <div class="cpv-import-score-preview-head"><span class="cpv-modal-kicker">Prévia do trecho</span><span v-if="preview">{{ start === end ? `Compasso ${start}` : `Compassos ${start}–${end}` }}</span></div>
+        <section class="titan-chordpro-import-score-preview" aria-label="Prévia do trecho">
+          <div class="titan-chordpro-import-score-preview-head"><span class="titan-chordpro-modal-kicker">Prévia do trecho</span><span v-if="preview">{{ start === end ? `Compasso ${start}` : `Compassos ${start}–${end}` }}</span></div>
           <ExternalScore v-if="preview" :text="preview" preview block-gap="0" :theme="theme" />
-          <div v-else class="cpv-import-score-empty"><CpvIcon name="fileInput" :size="32" /><p>{{ busy ? 'Preparando a prévia…' : 'Abra um arquivo para visualizar e selecionar seu trecho.' }}</p></div>
+          <div v-else class="titan-chordpro-import-score-empty"><TitanChordproIcon name="fileInput" :size="32" /><p>{{ busy ? 'Preparando a prévia…' : 'Abra um arquivo para visualizar e selecionar seu trecho.' }}</p></div>
         </section>
       </div>
-      <footer class="cpv-import-score-actions">
+      <footer class="titan-chordpro-import-score-actions">
         <span v-if="preview">{{ end - start + 1 }} {{ end === start ? 'compasso selecionado' : 'compassos selecionados' }}</span>
-        <button type="button" class="cpv-modal-btn" :disabled="busy" @click="emit('close')">Cancelar</button>
-        <button type="submit" class="cpv-modal-btn cpv-modal-btn--primary" :disabled="busy || !preview">Salvar trecho na cifra</button>
+        <button type="button" class="titan-chordpro-modal-btn" :disabled="busy" @click="emit('close')">Cancelar</button>
+        <button type="submit" class="titan-chordpro-modal-btn titan-chordpro-modal-btn--primary" :disabled="busy || !preview">Salvar trecho na cifra</button>
       </footer>
     </form>
   </div>

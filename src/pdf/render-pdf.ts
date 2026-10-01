@@ -4,7 +4,7 @@ import { layoutChartFull } from '../core/layout'
 import { readingWords, type ReadingWord } from '../core/reading-words'
 import { accentVars, type AccentProp } from '../core/themes'
 import { transposeToken, usesFlats } from '../core/transpose'
-import type { CapoLegend, ChartRow, ChordProView } from '../core/types'
+import type { CapoLegend, ChartRow, TitanChordproDocument } from '../core/types'
 import { MONO, registerPdfFonts, SANS } from './fonts'
 
 export type PdfNotationMode = 'tab' | 'score' | 'none'
@@ -64,7 +64,7 @@ function mixWhite(c: RGB, a: number): RGB {
 
 /** Print is a light page, so the chord is the light (AA) swatch of the host accent. */
 function paperInk(accent: AccentProp = 'verde'): Ink {
-  const hex = accentVars(accent, 'light')['--cpv-chord'] ?? '#17713C'
+  const hex = accentVars(accent, 'light')['--titan-chordpro-chord'] ?? '#17713C'
   const chord = hexRgb(hex)
   return {
     text: [19, 22, 29],
@@ -257,7 +257,7 @@ function drawSungLine(doc: jsPDF, line: SungLine, x0: number, y: number, chorus:
   }
 }
 
-function keyNoteOf(view: ChordProView): string {
+function keyNoteOf(view: TitanChordproDocument): string {
   const meta = view.meta
   const flats = usesFlats(meta.key)
   if (view.displayKey) return `Tom ${view.displayKey}`
@@ -265,7 +265,7 @@ function keyNoteOf(view: ChordProView): string {
   return ''
 }
 
-function metaBits(view: ChordProView): string[] {
+function metaBits(view: TitanChordproDocument): string[] {
   const meta = view.meta
   const bits: string[] = []
   if (meta.tempo) bits.push(`${meta.tempo} BPM`)
@@ -278,7 +278,7 @@ function rounded(doc: jsPDF, x: number, y: number, w: number, h: number, r: numb
   doc.roundedRect(x, y, w, h, r, r, style)
 }
 
-export async function renderPdf(view: ChordProView, opts: PdfOptions = {}): Promise<Uint8Array> {
+export async function renderPdf(view: TitanChordproDocument, opts: PdfOptions = {}): Promise<Uint8Array> {
   const meta = view.meta
   const { blocks, legend } = layoutChartFull(view, { capo: 0 })
   const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true })

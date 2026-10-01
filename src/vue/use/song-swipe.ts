@@ -9,7 +9,7 @@
 /** Ignore a touch that starts on the viewport's left edge (Safari back). */
 export const SWIPE_EDGE_PX = 24
 /**
- * Exclusive rail width per viewer breakpoint. Same cuts as ChordproViewer `bp`:
+ * Exclusive rail width per viewer breakpoint. Same cuts as TitanChordpro `bp`:
  * xs <400, sm <640, md <900, lg <1280, xl. Phone (xs/sm) keeps the 64px that
  * worked on the handset; tablet+ (md/lg/xl) keeps the 128px that worked there.
  */
@@ -129,14 +129,14 @@ export function swipeZone(x: number, width: number): SwipeZone {
  * Includes generic `button` because the dock's Rolar/Mais are buttons.
  */
 export const SWIPE_CHROME_SEL =
-  "button,input,textarea,select,a,[role='dialog'],[role='button'],.cpv-chrome,[data-end-offer],.cpv-scrim,.cpv-phone-stack,.cpv-hit,[data-scroll],[data-more]"
+  "button,input,textarea,select,a,[role='dialog'],[role='button'],.titan-chordpro-chrome,[data-end-offer],.titan-chordpro-scrim,.titan-chordpro-phone-stack,.titan-chordpro-hit,[data-scroll],[data-more]"
 
 /**
  * Paint stack under an iOS rail hit. Must not include generic `button`:
  * reading chords are buttons (diagrams) and sit under the rail.
  */
 export const SWIPE_DOCK_SEL =
-  ".cpv-phone-stack,.cpv-chrome,.cpv-hit,[data-scroll],[data-more],[data-end-offer],.cpv-scrim,[role='dialog']"
+  ".titan-chordpro-phone-stack,.titan-chordpro-chrome,.titan-chordpro-hit,[data-scroll],[data-more],[data-end-offer],.titan-chordpro-scrim,[role='dialog']"
 
 function closestSel(node: EventTarget | null, sel: string): boolean {
   return !!(node instanceof Element && node.closest(sel))

@@ -16,14 +16,14 @@ test.describe('rehearsal comments on the reading surface', () => {
   test('long comments wrap on a phone and stay inside the paper', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
-    await page.locator('.cpv-comment').first().waitFor()
+    await page.locator('.titan-chordpro-comment').first().waitFor()
 
     const report = await page.evaluate(() => {
-      const scroll = document.querySelector('.cpv-scroll') as HTMLElement
+      const scroll = document.querySelector('.titan-chordpro-scroll') as HTMLElement
       const sr = scroll.getBoundingClientRect()
-      return [...document.querySelectorAll('.cpv-comment')].map((node) => {
+      return [...document.querySelectorAll('.titan-chordpro-comment')].map((node) => {
         const el = node as HTMLElement
-        const text = el.querySelector('.cpv-comment-text') as HTMLElement
+        const text = el.querySelector('.titan-chordpro-comment-text') as HTMLElement
         const r = el.getBoundingClientRect()
         const cs = getComputedStyle(text)
         return {
@@ -54,12 +54,12 @@ test.describe('rehearsal comments on the reading surface', () => {
   test('a comment is a rubric, not a chorus card', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
-    await page.locator('.cpv-comment').first().waitFor()
-    await page.locator('.cpv-chorus').first().waitFor()
+    await page.locator('.titan-chordpro-comment').first().waitFor()
+    await page.locator('.titan-chordpro-chorus').first().waitFor()
 
     const pair = await page.evaluate(() => {
-      const comment = document.querySelector('.cpv-comment') as HTMLElement
-      const chorus = document.querySelector('.cpv-chorus') as HTMLElement
+      const comment = document.querySelector('.titan-chordpro-comment') as HTMLElement
+      const chorus = document.querySelector('.titan-chordpro-chorus') as HTMLElement
       const cs = getComputedStyle(comment)
       const before = getComputedStyle(chorus, '::before')
       return {
@@ -77,11 +77,11 @@ test.describe('rehearsal comments on the reading surface', () => {
   test('a comment is near the lyric size, upright, and still the washed ink', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
-    await page.locator('.cpv-comment-text').first().waitFor()
-    await page.locator('.cpv-lyric').first().waitFor()
+    await page.locator('.titan-chordpro-comment-text').first().waitFor()
+    await page.locator('.titan-chordpro-lyric').first().waitFor()
     const pair = await page.evaluate(() => {
-      const comment = getComputedStyle(document.querySelector('.cpv-comment-text') as HTMLElement)
-      const lyric = getComputedStyle(document.querySelector('.cpv-stanza .cpv-lyric') as HTMLElement)
+      const comment = getComputedStyle(document.querySelector('.titan-chordpro-comment-text') as HTMLElement)
+      const lyric = getComputedStyle(document.querySelector('.titan-chordpro-stanza .titan-chordpro-lyric') as HTMLElement)
       return {
         commentPx: parseFloat(comment.fontSize),
         lyricPx: parseFloat(lyric.fontSize),
@@ -99,13 +99,13 @@ test.describe('rehearsal comments on the reading surface', () => {
   test('a comment sits against the block it labels, not in the section gap', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto(`/?chart=${LONG.replace(/^sda\//, '')}&fit=0`)
-    await page.locator('.cpv-comment').first().waitFor()
+    await page.locator('.titan-chordpro-comment').first().waitFor()
     const gaps = await page.evaluate(() => {
-      const rows = [...document.querySelectorAll('.cpv-blockrow')] as HTMLElement[]
+      const rows = [...document.querySelectorAll('.titan-chordpro-blockrow')] as HTMLElement[]
       const out: number[] = []
       for (let i = 0; i < rows.length - 1; i++) {
-        if (!rows[i]!.querySelector('.cpv-comment, .cpv-note')) continue
-        const next = rows[i + 1]!.querySelector('.cpv-block, .cpv-tab') as HTMLElement | null
+        if (!rows[i]!.querySelector('.titan-chordpro-comment, .titan-chordpro-note')) continue
+        const next = rows[i + 1]!.querySelector('.titan-chordpro-block, .titan-chordpro-tab') as HTMLElement | null
         if (!next) continue
         const a = rows[i]!.getBoundingClientRect()
         const b = next.getBoundingClientRect()
@@ -120,10 +120,10 @@ test.describe('rehearsal comments on the reading surface', () => {
   test('execução notes wrap and read as body text, not tiny mono', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/?chart=${NOTES.replace(/^sda\//, '')}&fit=0`)
-    await page.locator('.cpv-note-item').first().waitFor()
+    await page.locator('.titan-chordpro-note-item').first().waitFor()
 
     const items = await page.evaluate(() =>
-      [...document.querySelectorAll('.cpv-note-item')].map((node) => {
+      [...document.querySelectorAll('.titan-chordpro-note-item')].map((node) => {
         const el = node as HTMLElement
         const cs = getComputedStyle(el)
         return {
@@ -148,7 +148,7 @@ test.describe('rehearsal comments on the reading surface', () => {
     await page.locator('[data-block]').first().waitFor()
 
     const m = await page.evaluate(() => {
-      const el = document.querySelector('.cpv-scroll') as HTMLElement
+      const el = document.querySelector('.titan-chordpro-scroll') as HTMLElement
       const base = el.getBoundingClientRect().top - el.scrollTop
       const nodes = [...el.querySelectorAll('[data-block]')] as HTMLElement[]
       return {

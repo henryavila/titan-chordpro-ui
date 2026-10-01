@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, useId } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 const props = defineProps<{ modelValue: string | number; label: string; caption?: string; compact?: boolean; options: Array<{ value: string | number; label: string }> }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string | number] }>()
@@ -88,23 +88,23 @@ onUnmounted(() => document.removeEventListener('pointerdown', onPointerdown))
 </script>
 
 <template>
-  <div ref="root" class="cpv-score-zoom" :class="{ 'cpv-score-choice-compact': compact }" @focusout="onFocusout">
-    <button ref="trigger" type="button" class="cpv-score-zoom-trigger" :aria-label="label" :title="`${label}: ${options[selected]!.label}`"
+  <div ref="root" class="titan-chordpro-score-zoom" :class="{ 'titan-chordpro-score-choice-compact': compact }" @focusout="onFocusout">
+    <button ref="trigger" type="button" class="titan-chordpro-score-zoom-trigger" :aria-label="label" :title="`${label}: ${options[selected]!.label}`"
       aria-haspopup="listbox" :aria-expanded="open" :aria-controls="open ? listId : undefined"
       @keydown.space.stop @keydown.enter.stop
       @click="open ? close() : show()" @keydown.down.prevent.stop="show" @keydown.up.prevent.stop="show">
-      <span v-if="caption !== ''" class="cpv-score-zoom-label">{{ caption ?? label }}</span>
-      <span class="cpv-score-choice-value">{{ options[selected]!.label }}</span>
-      <CpvIcon name="chevronDown" :size="14" />
+      <span v-if="caption !== ''" class="titan-chordpro-score-zoom-label">{{ caption ?? label }}</span>
+      <span class="titan-chordpro-score-choice-value">{{ options[selected]!.label }}</span>
+      <TitanChordproIcon name="chevronDown" :size="14" />
     </button>
     <div v-if="open" ref="menu" :id="listId"
-      :style="{ transform: `translateX(${menuShift}px)`, top: above ? 'auto' : undefined, bottom: above ? 'calc(100% + 6px)' : undefined, maxHeight: `${menuHeight}px`, overflowY: 'auto' }" class="cpv-score-zoom-menu" role="listbox" :aria-label="label"
+      :style="{ transform: `translateX(${menuShift}px)`, top: above ? 'auto' : undefined, bottom: above ? 'calc(100% + 6px)' : undefined, maxHeight: `${menuHeight}px`, overflowY: 'auto' }" class="titan-chordpro-score-zoom-menu" role="listbox" :aria-label="label"
       @keydown="onKeydown">
       <button v-for="(option, index) in options" :key="option.value" type="button" role="option"
-        class="cpv-score-zoom-option" :aria-selected="modelValue === option.value"
+        class="titan-chordpro-score-zoom-option" :aria-selected="modelValue === option.value"
         :tabindex="active === index ? 0 : -1" @click="choose(index)" @focus="active = index">
         <span>{{ option.label }}</span>
-        <CpvIcon v-if="modelValue === option.value" name="check" :size="16" />
+        <TitanChordproIcon v-if="modelValue === option.value" name="check" :size="16" />
       </button>
     </div>
   </div>

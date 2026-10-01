@@ -1,6 +1,6 @@
 import type { ChordDefine } from './define'
 
-export type ChordProView = {
+export type TitanChordproDocument = {
   meta: {
     title?: string
     subtitle?: string
@@ -16,7 +16,7 @@ export type ChordProView = {
   displayKey: string | null
   transposeSemitones: number
   source: string
-  sections: ChordProSection[]
+  sections: TitanChordproSection[]
   /** `{soc}` line → its `{eoc}`: what makes a chorus move with its envelope. */
   eocOf: Record<number, number>
   /** `{define}` / `{define-guitar}` / `{define-ukulele}` overrides in this file. */
@@ -34,10 +34,10 @@ export type SectionKind =
   | 'note'
   | 'score'
 
-export type ChordProSection = {
+export type TitanChordproSection = {
   kind: SectionKind
   label?: string
-  lines: ChordProLine[]
+  lines: TitanChordproLine[]
 }
 
 /** Source line span (0-based indices into `source.split('\n')`). */
@@ -61,7 +61,7 @@ export type BlockMarks = {
   blockCapoMap: boolean
 }
 
-export type ChordProLine = LineSpan &
+export type TitanChordproLine = LineSpan &
   (
     | ({
       type: 'lyrics'
@@ -80,7 +80,7 @@ export type ChordProLine = LineSpan &
 
 export type ThemeId = 'light' | 'dark' | 'print' | 'default' | 'stage' | 'auto'
 
-export type ViewerAction =
+export type TitanChordproAction =
   | { type: 'transpose'; delta: number }
   | { type: 'setTranspose'; semitones: number }
   | { type: 'resetTranspose' }
@@ -91,9 +91,9 @@ export type ViewerAction =
   | { type: 'setSource'; source: string }
   | { type: 'setMode'; mode: 'view' | 'edit' }
 
-export type ViewerState = {
+export type TitanChordproState = {
   source: string
-  view: ChordProView
+  view: TitanChordproDocument
   html: string
   theme: ThemeId
   resolvedTheme: 'light' | 'dark' | 'print'
@@ -105,10 +105,10 @@ export type ViewerState = {
   displayKey: string | null
 }
 
-export type ViewerController = {
-  getState: () => ViewerState
-  subscribe: (fn: (state: ViewerState) => void) => () => void
-  dispatch: (action: ViewerAction) => void
+export type TitanChordproController = {
+  getState: () => TitanChordproState
+  subscribe: (fn: (state: TitanChordproState) => void) => () => void
+  dispatch: (action: TitanChordproAction) => void
   attachScroll?: (el: HTMLElement) => () => void
 }
 

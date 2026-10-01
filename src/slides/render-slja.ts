@@ -1,7 +1,7 @@
 import { buildSljaFilename } from '../core/filenames'
 import { lyricsForSlides } from '../core/lyrics-for-slides'
 import { parse } from '../core/parse'
-import type { ChordProView } from '../core/types'
+import type { TitanChordproDocument } from '../core/types'
 import { encodeCp1252 } from './cp1252'
 import { DEFAULT_COVER_JPEG, DEFAULT_SLIDES_JPEG } from './default-image'
 import { planSlides, type SlideLayoutConfig, type SlidePlan } from './layout'
@@ -83,7 +83,7 @@ export async function exportSlja(source: string, opts: SljaOptions = {}): Promis
   return { bytes, filename: buildSljaFilename(title), title }
 }
 
-export async function renderSlja(view: ChordProView, opts: SljaOptions = {}): Promise<Uint8Array> {
+export async function renderSlja(view: TitanChordproDocument, opts: SljaOptions = {}): Promise<Uint8Array> {
   const rows = lyricsForSlides(view)
   if (!rows.length) throw new NoSlideLyricsError()
   const slides = planSlides(rows, opts)

@@ -4,10 +4,10 @@
  * class of bug (swipe rails over Rolar/Mais, debug paint over the dock).
  */
 export const OVERLAY_THIEF_SELECTORS = [
-  '.cpv-swipe-rail',
-  '.cpv-swipe-debug',
-  '.cpv-glow',
-  '.cpv-progress',
+  '.titan-chordpro-swipe-rail',
+  '.titan-chordpro-swipe-debug',
+  '.titan-chordpro-glow',
+  '.titan-chordpro-progress',
   '[data-song-swipe]',
 ] as const
 
