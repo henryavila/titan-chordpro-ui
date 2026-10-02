@@ -6,6 +6,11 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   plugins: [vue()],
+  server: {
+    fs: {
+      allow: [root, fileURLToPath(new URL('../../node_modules', import.meta.url))],
+    },
+  },
   resolve: {
     alias: {
       '@henryavila/titan-chordpro-ui/pdf': `${root}src/pdf/index.ts`,

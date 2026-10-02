@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import ReadingSwitch from '../ReadingSwitch.vue'
+import TitanChordproRollButton from '../ui/TitanChordproRollButton.vue'
+import TitanChordproTypePair from '../ui/TitanChordproTypePair.vue'
+import TitanChordproBarButton from '../ui/TitanChordproBarButton.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
+import TitanChordproFitHint from '../ui/TitanChordproFitHint.vue'
+import TitanChordproSpeedHud from '../ui/TitanChordproSpeedHud.vue'
+import TitanChordproSetlistNav from '../ui/TitanChordproSetlistNav.vue'
 import type { TitanChordproIconName } from '../icon/paths'
 
 defineProps<{
@@ -100,159 +107,123 @@ const emit = defineEmits<{
       ><TitanChordproIcon name="ellipsis" :size="16" /></button>
     </div>
 
-    <div v-if="hintFit" class="titan-chordpro-hit titan-chordpro-veil-2" style="display:flex;align-items:center;gap:8px;max-width:360px;padding:7px 8px 7px 13px;border-radius:13px;animation:titan-chordpro-rise .25s ease-out;">
-      <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Ajuste encaixa a cifra no espaço da tela — e dá para voltar ao padrão quando quiser.</span>
-      <button class="titan-chordpro-ghost" aria-label="Entendi" style="flex:none;width:26px;height:26px;color:var(--muted);" @click="emit('dismissHint')"><TitanChordproIcon name="x" :size="14" /></button>
-    </div>
+    <TitanChordproFitHint v-if="hintFit" density="wide" @dismiss="emit('dismissHint')" />
 
-    <div v-if="scrolling" class="titan-chordpro-hit titan-chordpro-veil-2" style="display:flex;align-items:center;gap:10px;padding:7px 8px 7px 14px;border-radius:14px;animation:titan-chordpro-rise .2s ease-out;">
-      <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Velocidade</span>
-      <button aria-label="Mais devagar" title="Mais devagar (←)" style="width:32px;height:30px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:15px;line-height:1;cursor:pointer;" @click="emit('slower')">−</button>
-      <span style="min-width:56px;text-align:center;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">{{ mul.toFixed(2) }}×</span>
-      <button aria-label="Mais rápido" title="Mais rápido (→)" style="width:32px;height:30px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:15px;line-height:1;cursor:pointer;" @click="emit('faster')">+</button>
-      <span style="width:1px;height:22px;background:var(--line);" />
-      <span style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;min-width:52px;padding-right:6px;">
-        <span data-eta style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text);">−{{ etaLabel }}</span>
-        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ Math.round(progress * 100) }}%</span>
-      </span>
-    </div>
+    <TitanChordproSpeedHud
+      v-if="scrolling"
+      density="chip"
+      :mul="mul"
+      :eta-label="etaLabel"
+      :progress="progress"
+      @slower="emit('slower')"
+      @faster="emit('faster')"
+    />
 
     <div class="titan-chordpro-hit titan-chordpro-veil" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
       <template v-if="setlistOn">
-        <button
-          data-song-prev
-          aria-label="Música anterior"
-          title="Música anterior"
-          :disabled="noPrev"
-          :style="{ opacity: noPrev ? '0.32' : '1' }"
-          style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-          @click="emit('prev')"
-        ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
-        <button
-          data-setlist-open
-          title="Abrir a lista do ensaio"
-          style="height:38px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text);font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;"
-          @click="emit('openList')"
-        >
-          <span style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;color:var(--chord);">{{ posLabel }}</span>
-          <span style="flex:none;font-size:12px;font-weight:600;color:var(--muted);">Lista</span>
-          <TitanChordproIcon name="listMusic" :size="14" />
-        </button>
-        <button
-          data-song-next
-          aria-label="Próxima música"
-          title="Próxima música"
-          :disabled="noNext"
-          :style="{ opacity: noNext ? '0.32' : '1' }"
-          style="width:38px;height:38px;border:0;border-radius:12px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-          @click="emit('next')"
-        ><TitanChordproIcon name="chevronRight" :size="16" /></button>
+        <TitanChordproSetlistNav
+          density="wide"
+          :no-prev="noPrev"
+          :no-next="noNext"
+          :pos-label="posLabel"
+          next-label=""
+          @prev="emit('prev')"
+          @open-list="emit('openList')"
+          @next="emit('next')"
+        />
         <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
       </template>
-      <button
-        data-scroll
+      <TitanChordproRollButton
+        density="wide"
+        :live="rollLive"
+        :off="scrollOff"
+        labeled
+        :label="rollLive ? 'Parar' : 'Rolar'"
+        :name="rollLive ? 'Parar' : 'Rolar'"
         :title="scrollTitle"
-        :disabled="scrollOff"
-        :style="{ background: rollLive ? 'var(--pill)' : 'var(--chord)', color: rollLive ? 'var(--pill-ink)' : 'var(--chord-ink)', border: `1px solid ${rollLive ? 'var(--pill)' : 'var(--chord)'}`, opacity: scrollOff ? '0.32' : '1', cursor: scrollOff ? 'default' : 'pointer' }"
-        class="titan-chordpro-bar-btn"
-        style="height:36px;padding:0 14px 0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:9px;"
         @click="emit('toggleScroll')"
-      >
-        <TitanChordproIcon :name="rollLive ? 'square' : 'chevronsDown'" :size="14" />{{ rollLive ? 'Parar' : 'Rolar' }}
-      </button>
+      />
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-      <button class="titan-chordpro-ghost" aria-label="Diminuir tipografia" title="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="emit('smallerType')">A−</button>
-      <button class="titan-chordpro-ghost" aria-label="Aumentar tipografia" title="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="emit('biggerType')">A+</button>
-      <button
+      <TitanChordproTypePair density="bar" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
+      <TitanChordproBarButton
         data-fit
+        icon="scan"
+        label="Ajuste"
         title="Modo ajuste ao espaço"
-        :style="{ background: fitOn ? 'var(--sel)' : 'transparent', border: `1px solid ${fitOn ? 'var(--sel-line)' : 'transparent'}`, color: 'var(--text)' }"
-        class="titan-chordpro-bar-btn"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        toggle
+        :pressed="fitOn ? 'sel' : false"
         @click="emit('toggleFit')"
-      >
-        <TitanChordproIcon name="scan" :size="16" />Ajuste
-      </button>
+      />
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
       <ReadingSwitch variant="bar" :letra="letra" @cifra="emit('cifra')" @letra="emit('letra')" />
-      <button
+      <TitanChordproBarButton
         data-lens="nashville"
-        title="Nashville — graus no lugar dos nomes"
-        class="titan-chordpro-bar-btn"
+        icon="glasses"
+        label="Graus"
+        title="Graus — no lugar dos nomes"
+        toggle
         :disabled="!hasKey"
-        :aria-pressed="nashvilleOn ? 'true' : 'false'"
-        :style="{
-          background: nashvilleOn ? 'var(--chord-fill)' : 'transparent',
-          color: nashvilleOn ? 'var(--chord)' : 'var(--text)',
-          border: `1px solid ${nashvilleOn ? 'var(--chord-edge)' : 'var(--line)'}`,
-          opacity: hasKey ? '1' : '0.4',
-          cursor: hasKey ? 'pointer' : 'default',
-        }"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
+        :pressed="nashvilleOn ? 'chord' : false"
         @click="emit('toggleNashville')"
-      >
-        <TitanChordproIcon name="glasses" :size="16" />Graus
-      </button>
-      <button
+      />
+      <TitanChordproBarButton
         data-comments-toggle
+        :icon="hideComments ? 'eyeOff' : 'eye'"
+        label="Comentários"
         :title="hideComments ? 'Mostrar comentários de ensaio' : 'Ocultar comentários de ensaio'"
-        class="titan-chordpro-bar-btn"
-        :aria-pressed="hideComments ? 'true' : 'false'"
-        :style="{
-          background: hideComments ? 'var(--sel)' : 'transparent',
-          color: 'var(--text)',
-          border: `1px solid ${hideComments ? 'var(--sel-line)' : 'var(--line)'}`,
-        }"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        toggle
+        :pressed="hideComments ? 'sel' : false"
         @click="emit('toggleComments')"
-      >
-        <TitanChordproIcon name="eyeOff" :size="16" />Comentários
-      </button>
-      <button
+      />
+      <TitanChordproBarButton
         data-met-btn
+        icon="metronome"
         title="Metrônomo (M)"
-        class="titan-chordpro-bar-btn"
-        :style="{ background: metRunning ? 'var(--chord-fill)' : 'transparent', color: metRunning ? 'var(--chord)' : 'var(--text)', border: `1px solid ${metRunning ? 'var(--chord-edge)' : 'var(--line)'}` }"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;"
+        toggle
+        :pressed="metRunning ? 'chord' : false"
         @click="emit('toggleMet')"
-      >
-        <TitanChordproIcon name="metronome" :size="16" />{{ metRunning ? `${metBpm} BPM` : 'Metrônomo' }}
-      </button>
-      <button
+      >{{ metRunning ? `${metBpm} BPM` : 'Metrônomo' }}</TitanChordproBarButton>
+      <TitanChordproBarButton
         v-if="hasStrum"
         data-strum-btn
         title="Batida"
-        class="titan-chordpro-bar-btn"
-        :style="{ background: strumOn ? 'var(--chord-fill)' : 'transparent', color: strumOn ? 'var(--chord)' : 'var(--text)', border: `1px solid ${strumOn ? 'var(--chord-edge)' : 'var(--line)'}` }"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        toggle
+        :pressed="strumOn ? 'chord' : false"
         @click="emit('toggleStrum')"
-      >↓↑ Batida</button>
-      <button
+      >↓↑ Batida</TitanChordproBarButton>
+      <TitanChordproBarButton
         v-if="hasStrum"
         data-ensaio-batida
+        icon="guitar"
+        :label="ensaioBatida ? 'Sair do ensaio' : 'Ensaio batida'"
         title="Ensaio batida"
-        class="titan-chordpro-bar-btn"
-        :aria-pressed="ensaioBatida ? 'true' : 'false'"
-        :style="{ background: ensaioBatida ? 'var(--chord-fill)' : 'transparent', color: ensaioBatida ? 'var(--chord)' : 'var(--text)', border: `1px solid ${ensaioBatida ? 'var(--chord-edge)' : 'var(--line)'}` }"
-        style="height:36px;padding:0 12px;border-radius:12px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        toggle
+        :pressed="ensaioBatida ? 'chord' : false"
         @click="emit('toggleEnsaioBatida')"
-      ><TitanChordproIcon name="guitar" :size="16" />{{ ensaioBatida ? 'Sair do ensaio' : 'Ensaio batida' }}</button>
+      />
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-      <button data-theme-btn class="titan-chordpro-ghost" :title="themeTitle" style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;" @click="emit('theme')">
-        <TitanChordproIcon :name="themeIcon" :size="16" />{{ themeLabel }}
-      </button>
-      <button
+      <TitanChordproIconButton
+        data-theme-btn
+        labeled
+        :icon="themeIcon"
+        :title="themeTitle"
+        @click="emit('theme')"
+      >{{ themeLabel }}</TitanChordproIconButton>
+      <TitanChordproIconButton
         v-if="canEdit"
         data-edit
-        class="titan-chordpro-ghost"
-        aria-label="Editar esta cifra"
+        labeled
+        icon="pencil"
         :title="dirty ? 'Editar esta cifra · rascunho' : 'Editar esta cifra'"
-        style="height:36px;padding:0 12px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;"
+        aria-label="Editar esta cifra"
         @click="emit('edit')"
-      >
-        <TitanChordproIcon name="pencil" :size="16" />{{ dirty ? 'Editar · rascunho' : 'Editar' }}
-      </button>
-      <button class="titan-chordpro-ghost" aria-label="Exportar" title="Exportar CHO, PDF ou slides" style="width:36px;height:36px;" @click="emit('export')"><TitanChordproIcon name="download" :size="16" /></button>
+      >{{ dirty ? 'Editar · rascunho' : 'Editar' }}</TitanChordproIconButton>
+      <TitanChordproIconButton
+        icon="download"
+        title="Exportar CHO, PDF ou slides"
+        aria-label="Exportar"
+        @click="emit('export')"
+      />
     </div>
   </div>
 </template>

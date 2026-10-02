@@ -129,13 +129,13 @@ describe('lens Só letra', () => {
     expect(w.find('.titan-chordpro-chord').exists()).toBe(false)
   })
 
-  it('the phone Mais lists Nashville and comments, not a Lentes submenu', async () => {
+  it('the phone Mais lists Graus and comments, not a Lentes submenu', async () => {
     const w = await viewerAt(390)
     await w.get('[aria-label="Mais controles"]').trigger('click')
     await flushPromises()
     const dlg = w.get('[role="dialog"][aria-label="Mais controles"]')
-    expect(dlg.text()).toContain('Nashville')
-    expect(dlg.text()).toContain('Comentários de ensaio')
+    expect(dlg.text()).toContain('Graus')
+    expect(dlg.text()).toContain('Comentários')
     expect(dlg.text()).not.toContain('Lentes de leitura')
     expect(dlg.find('[data-lens=nashville]').exists()).toBe(true)
     expect(dlg.find('[data-comments-toggle]').exists()).toBe(true)

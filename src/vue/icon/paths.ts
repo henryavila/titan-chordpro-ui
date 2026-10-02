@@ -181,6 +181,15 @@ export const ICONS = {
     { tag: 'line', attrs: { x1: '10', x2: '10', y1: '11', y2: '17' } },
     { tag: 'line', attrs: { x1: '14', x2: '14', y1: '11', y2: '17' } },
   ],
+  eye: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+      },
+    },
+    { tag: 'circle', attrs: { cx: '12', cy: '12', r: '3' } },
+  ],
   eyeOff: [
     {
       tag: 'path',
@@ -326,6 +335,7 @@ export const PICKED_ICONS = [
   'chevronDown',
   'copy',
   'trash2',
+  'eye',
   'eyeOff',
   'rotateCcw',
   'x',

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import ExportFileButton from './ExportFileButton.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
@@ -35,20 +35,12 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
 </script>
 
 <template>
-  <div class="titan-chordpro-sheet" :class="{ 'is-compact': compact }">
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div
-      class="titan-chordpro-dialog titan-chordpro-veil-2"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Exportar"
-    >
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-        <span style="font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">
-          Exportar {{ exportKeyNote }}
-        </span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
-      </div>
+  <TitanChordproDialogShell
+    :compact="compact"
+    label="Exportar"
+    :kicker="`Exportar ${exportKeyNote}`"
+    @close="emit('close')"
+  >
       <div v-if="hasOverlay" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;">
         <button
           data-export-mine
@@ -110,6 +102,5 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
         :busy="ppsxBusy"
         @click="emit('ppsx')"
       />
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

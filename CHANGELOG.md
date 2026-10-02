@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Rolar no telefone e no computador:** o botão usa a mesma receita (verde parado, cinza ao tocar Parar). No telefone continua maior; no computador, menor. A palavra some só em telas bem estreitas.
+- **Graus:** no menu Mais do telefone o controle passa a se chamar Graus, igual à barra do computador.
+- **Comentários:** o ícone mostra olho aberto quando os comentários estão visíveis e olho tapado quando estão ocultos.
+- **Sugestões no telefone:** o atalho fica no botão Mais (número no canto). O cartão flutuante “Sugestões” continua no computador.
+
 ### Added
 - **Slides em PowerPoint:** em Exportar, baixe a letra em `.ppsx`. Ao abrir o arquivo, a apresentação começa na hora. A capa e o fundo são as mesmas imagens do Louvor JA. Cada slide mostra a letra grande no centro, no mesmo recorte do `.slja`. Título e letra vão em caixa alta, para ler no projetor. Na capa, o título da música fica maior e um pouco acima do centro. O app que usa o Titan gera o mesmo arquivo a partir da cifra, sem abrir a tela (`exportPpsx`).
 - **Importar cifra completa (.zip):** o app que usa o Titan pode abrir o pacote baixado em Exportar e guardar cifra, solos Guitar Pro/GPX/MusicXML, imagens, cantado, playback e capas no próprio armazenamento. Os caminhos locais do ZIP viram as referências do app; YouTube e origem voltam na cifra. Não há tela de importar no Titan — a integração é pelo código (`importChartBundle`). Se um anexo faltar, o tipo não bater, o ZIP estiver cortado, o arquivo for uma página de erro ou a referência de áudio não puder ser tocada, a importação para e a cifra não entra incompleta.

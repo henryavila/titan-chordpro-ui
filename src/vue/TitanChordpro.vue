@@ -1942,6 +1942,20 @@ const fsTitle = computed(() => {
   return fs.value ? 'Sair do modo imersivo' : 'Modo imersivo'
 })
 
+const audioRefBind = computed(() => ({
+  playing: audio.playing.value,
+  current: audio.current.value,
+  duration: audio.duration.value,
+  error: audio.error.value,
+  title: audioTitle.value,
+  artist: audioArtist.value,
+  art: audioArt.value?.url,
+  artWidth: audioArt.value?.width,
+  artHeight: audioArt.value?.height,
+  kind: audioKind.value,
+  kinds: audioKinds.value,
+}))
+
 const viewHeadBind = computed((): ViewHeadModel => ({
   variant: (phone.value ? 'phone' : 'wide') as 'phone' | 'wide',
   pageMax: pageMax.value,
@@ -3287,17 +3301,7 @@ defineExpose({
       <TitanChordproAudioRef
         v-if="audioUrl"
         :key="audioKey"
-        :playing="audio.playing.value"
-        :current="audio.current.value"
-        :duration="audio.duration.value"
-        :error="audio.error.value"
-        :title="audioTitle"
-        :artist="audioArtist"
-        :art="audioArt?.url"
-        :art-width="audioArt?.width"
-        :art-height="audioArt?.height"
-        :kind="audioKind"
-        :kinds="audioKinds"
+        v-bind="audioRefBind"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"
@@ -3330,6 +3334,7 @@ defineExpose({
       :dock-type-w="dockTypeW"
       :bp="bp"
       :can-edit="canEditNow"
+      :dirty="dirty"
       :dock-icon-size="dockIconSize"
       :fit-on="fitOn"
       :queue-count="queueCount"
@@ -3351,17 +3356,7 @@ defineExpose({
       <TitanChordproAudioRef
         v-if="audioUrl"
         :key="audioKey"
-        :playing="audio.playing.value"
-        :current="audio.current.value"
-        :duration="audio.duration.value"
-        :error="audio.error.value"
-        :title="audioTitle"
-        :artist="audioArtist"
-        :art="audioArt?.url"
-        :art-width="audioArt?.width"
-        :art-height="audioArt?.height"
-        :kind="audioKind"
-        :kinds="audioKinds"
+        v-bind="audioRefBind"
         inline
         :chrome-gone="chromeHidden"
         @toggle="audio.toggle"
@@ -3373,7 +3368,7 @@ defineExpose({
     </TitanChordproPhoneDock>
 
     <button
-      v-if="queueEntry"
+      v-if="queueEntry && !phone"
       class="titan-chordpro-queue-chip"
       :class="{ 'is-compact': compact, 'is-alone': chromeHidden }"
       data-queue-chip

@@ -71,7 +71,7 @@ describe('TitanChordpro', () => {
     })
     await flushPromises()
     const btn = w.get('[data-scroll]')
-    expect(btn.attributes('style') || '').toMatch(/--text|--pill-ink|--chord-ink/)
+    expect(btn.classes()).toContain('titan-chordpro-roll')
     w.unmount()
   })
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UpdCard } from '../use/useOverlay'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 
 defineProps<{ compact: boolean; items: UpdCard[] }>()
 const emit = defineEmits<{ toggle: [id: string]; keep: []; adopt: [] }>()
@@ -9,16 +10,15 @@ const emit = defineEmits<{ toggle: [id: string]; keep: []; adopt: [] }>()
 <template>
   <!-- No scrim click and no ×: until the reader decides, they keep reading the
        version they knew — the dialog is the decision, not an interruption. -->
-  <div class="titan-chordpro-sheet" :class="{ 'is-compact': compact }" style="z-index:39;">
-    <div class="titan-chordpro-scrim" />
-    <div
-      class="titan-chordpro-dialog titan-chordpro-veil-2"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Esta cifra foi atualizada"
-      data-upd-dlg
-      style="max-width:520px;max-height:min(640px,88%);overflow-y:auto;gap:10px;"
-    >
+  <TitanChordproDialogShell
+    :compact="compact"
+    label="Esta cifra foi atualizada"
+    :closable="false"
+    :scrim-click="false"
+    :z="39"
+    panel-class="is-upd"
+    data-upd-dlg
+  >
       <span style="font-size:15px;font-weight:700;color:var(--text);">Esta cifra foi atualizada</span>
       <span style="font-size:12px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Escolha o que manter dos seus ajustes. Enquanto não decidir, você continua lendo a versão que conhecia.</span>
 
@@ -66,6 +66,5 @@ const emit = defineEmits<{ toggle: [id: string]; keep: []; adopt: [] }>()
           @click="emit('keep')"
         >Manter os marcados</button>
       </div>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

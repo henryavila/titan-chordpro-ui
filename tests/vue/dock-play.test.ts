@@ -72,28 +72,19 @@ describe('dock Rolar label', () => {
   })
 })
 
-function idleRollPaint(style: string) {
-  return {
-    chordFill: /background:\s*var\(--chord\)/.test(style),
-    chordInk: /color:\s*var\(--chord-ink\)/.test(style),
-    ghost: /background:\s*transparent/.test(style),
-  }
-}
-
 describe('dock Rolar fill', () => {
   it.each([
     [390, 'phone'],
     [768, 'tablet'],
     [1280, 'desktop'],
-  ] as const)('idle Rolar is the chord colour at %ipx (%s)', async (width, _device) => {
+  ] as const)('idle Rolar uses the roll recipe at %ipx (%s)', async (width, _device) => {
     const w = await viewerAt(width)
-    const paint = idleRollPaint(w.get('[data-scroll]').attributes('style') ?? '')
-    expect(paint.ghost, 'Rolar is still a ghost on this width').toBe(false)
-    expect(paint.chordFill, 'idle fill is not --chord').toBe(true)
-    expect(paint.chordInk, 'idle ink is not --chord-ink').toBe(true)
+    const btn = w.get('[data-scroll]')
+    expect(btn.classes()).toContain('titan-chordpro-roll')
+    expect(btn.classes()).not.toContain('is-live')
   })
 
-  it('Parar on the wide bar uses the pill, so rolling is not the same green', async () => {
+  it('Parar on the wide bar uses the live roll recipe, so rolling is not idle green', async () => {
     const { default: TitanChordproWideDock } = await import('../../src/vue/chrome/TitanChordproWideDock.vue')
     const w = mount(TitanChordproWideDock, {
       props: {
@@ -132,8 +123,8 @@ describe('dock Rolar fill', () => {
       attachTo: document.body,
     })
     mounted.push(w)
-    const style = w.get('[data-scroll]').attributes('style') ?? ''
-    expect(style).toMatch(/background:\s*var\(--pill\)/)
-    expect(style).not.toMatch(/background:\s*var\(--chord\)/)
+    const btn = w.get('[data-scroll]')
+    expect(btn.classes()).toContain('titan-chordpro-roll')
+    expect(btn.classes()).toContain('is-live')
   })
 })
