@@ -355,6 +355,8 @@ type Song = {
   title: string
   subtitle?: string
   key?: string
+  tempo?: string | number // {tempo:} na lista, mesmo sem o ChordPro
+  time?: string           // {time:} — 4/4, 6/8… — some se vazio
   source?: string // se já veio, toca offline
 }
 
@@ -366,7 +368,9 @@ async function buscarCifra(id: string): Promise<string> {
 
 Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 `loadSong`. A atual e as duas vizinhas são buscadas na frente. Uma que não
-chega vira painel *Não carregou*.
+chega vira painel *Não carregou*. `time` e `tempo` rotulam a lista mesmo
+sem o arquivo; se faltarem, o Titan lê `{time:}` e `{tempo:}` do ChordPro
+em cache. Sem `{time:}`, o chip de compasso não aparece.
 
 `{key:}` no `.cho` é o tom original. `{transpose:N}` hidrata o −/+ ao abrir
 (não soma com o overlay). `{capo:}` no arquivo é dica de arranjo — o capotraste

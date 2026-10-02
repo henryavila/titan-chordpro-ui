@@ -70,6 +70,7 @@ export function songsFor(
       title: meta.title || k,
       subtitle: meta.subtitle ?? '',
       key: meta.key ?? '',
+      time: meta.time || undefined,
       ...(mode === 'juntas' ? { source: fixtures[k] ?? '' } : {}),
     }
   })

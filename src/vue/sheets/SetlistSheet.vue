@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproChip from '../ui/TitanChordproChip.vue'
 import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproListRow from '../ui/TitanChordproListRow.vue'
@@ -15,6 +16,7 @@ export type SetlistItem = {
   keyLabel: string
   hasKey: boolean
   bpmLabel: string
+  timeLabel: string
   current: boolean
   failed: boolean
   busy: boolean
@@ -150,6 +152,13 @@ const wrapStyle = computed(() => ({
               v-if="it.hasKey"
               style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);"
             >{{ it.keyLabel }}</span>
+            <TitanChordproChip
+              v-if="it.timeLabel"
+              data-setlist-time
+              size="time"
+              static
+              :on="true"
+            >{{ it.timeLabel }}</TitanChordproChip>
             <span
               v-if="it.bpmLabel"
               data-setlist-bpm

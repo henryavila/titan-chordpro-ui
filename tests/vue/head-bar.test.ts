@@ -160,6 +160,53 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
     expect(kids.at(-1)?.hasAttribute('data-fs')).toBe(true)
   })
 
+  it('on a phone, the compass sits on the shared time chip next to Tom', async () => {
+    const w = await viewerAt(390)
+    const time = w.get('[data-head-time]')
+    expect(time.text()).toBe('3/4')
+    expect(time.classes()).toEqual(
+      expect.arrayContaining(['titan-chordpro-chip', 'is-time', 'is-on', 'titan-chordpro-head-chip']),
+    )
+    expect(time.element.tagName).toBe('DIV')
+  })
+
+  it('on a wide bar, the same time chip sits by Tom and leaves BPM/duration in the meta', async () => {
+    const w = await viewerAt(800)
+    const time = w.get('[data-head-time]')
+    expect(time.text()).toBe('3/4')
+    expect(time.classes()).toEqual(
+      expect.arrayContaining(['titan-chordpro-chip', 'is-time', 'is-on', 'titan-chordpro-head-chip']),
+    )
+    expect(w.get('.titan-chordpro-head-meta').text()).toMatch(/100/)
+    expect(w.get('.titan-chordpro-head-meta').text()).not.toMatch(/3\/4/)
+  })
+
+  it('keeps BPM and duration on the phone sub — compass lives on the chip', async () => {
+    const w = await viewerAt(390, {
+      songs: [
+        {
+          id: 'a',
+          title: 'Uma',
+          source: '{title: Uma}\n{tempo:60}\n{time:4/4}\n{duration: 03:03}\n[C]oi',
+        },
+        { id: 'b', title: 'Outra', source: '{title: Outra}\n{time:3/4}\n[G]oi' },
+      ],
+    })
+    expect(w.get('[data-head-time]').text()).toBe('4/4')
+    expect(w.get('.titan-chordpro-head-sub').text()).toMatch(/60/)
+    expect(w.get('.titan-chordpro-head-sub').text()).not.toMatch(/4\/4/)
+  })
+
+  it('hides the time chip when the cifra has no {time:}', async () => {
+    const w = await viewerAt(390, {
+      songs: [
+        { id: 'a', title: 'Uma', source: '{title: Uma}\n{key:C}\n[C]oi' },
+        { id: 'b', title: 'Outra', source: '{title: Outra}\n{key:G}\n[G]oi' },
+      ],
+    })
+    expect(w.find('[data-head-time]').exists()).toBe(false)
+  })
+
   it('on a tablet column, the floating head may grow past the reading column', async () => {
     // md: pageMax is 760px; the frame here is 800px. Capo + 1/n used to eat
     // the title because the pill could not use the leftover 40px (nor wrap).
