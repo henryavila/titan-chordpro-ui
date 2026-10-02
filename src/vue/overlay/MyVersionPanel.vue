@@ -61,7 +61,7 @@ function statusLabel(s: Suggestion): string {
         v-for="op in ops"
         :key="op.id"
         data-my-op
-        style="display:flex;align-items:flex-start;gap:10px;padding:10px 11px;border:1px solid var(--line-soft);border-radius:13px;background:var(--surface);"
+        class="titan-chordpro-list-card is-op"
       >
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">{{ op.label }}</span>

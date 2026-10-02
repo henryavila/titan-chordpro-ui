@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproStepper from '../ui/TitanChordproStepper.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 defineProps<{
   shownKey: string
@@ -34,19 +35,17 @@ const emit = defineEmits<{
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom e capotraste</span>
         <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:36px;height:36px;border-radius:12px;background:var(--surface);color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button aria-label="Baixar meio tom" style="flex:none;width:60px;height:56px;border:1px solid var(--chord-edge);border-radius:16px;background:var(--chord-soft);color:var(--chord);font-size:22px;cursor:pointer;" @click="emit('down')">−</button>
+      <TitanChordproStepper size="lg" down-label="Baixar meio tom" up-label="Subir meio tom" @down="emit('down')" @up="emit('up')">
         <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
           <span data-tone-playing-key style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
           <span data-tone-shift style="font-size:12px;font-weight:600;color:var(--muted);text-align:center;min-height:18px;">{{ songCaption || '\u00a0' }}</span>
         </span>
-        <button aria-label="Subir meio tom" style="flex:none;width:60px;height:56px;border:1px solid var(--chord-edge);border-radius:16px;background:var(--chord-soft);color:var(--chord);font-size:22px;cursor:pointer;" @click="emit('up')">+</button>
-      </div>
+      </TitanChordproStepper>
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="flex:1;font-size:13px;font-weight:600;color:var(--text);">Capotraste</span>
-        <button aria-label="Capo abaixo" style="flex:none;width:48px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:18px;cursor:pointer;" @click="emit('capoDown')">−</button>
-        <span style="flex:none;min-width:86px;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</span>
-        <button aria-label="Capo acima" style="flex:none;width:48px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-size:18px;cursor:pointer;" @click="emit('capoUp')">+</button>
+        <TitanChordproStepper size="md" down-label="Capo abaixo" up-label="Capo acima" @down="emit('capoDown')" @up="emit('capoUp')">
+          <span style="flex:none;min-width:86px;text-align:center;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--chord);">{{ capoLabel }}</span>
+        </TitanChordproStepper>
       </div>
       <div v-if="capoShapes?.length" data-capo-hint class="titan-chordpro-capo-hint">
         <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="titan-chordpro-capo-chip" data-capo-chip>{{ s }}</span>

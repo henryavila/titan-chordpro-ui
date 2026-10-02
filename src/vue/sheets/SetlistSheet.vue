@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproListRow from '../ui/TitanChordproListRow.vue'
 import { overlayVisualInsets, type EdgeInsets } from '../use/viewportPin'
 
 export type SetlistItem = {
@@ -122,51 +123,42 @@ const wrapStyle = computed(() => ({
       </div>
 
       <div style="flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:5px;padding:10px 12px calc(14px + env(safe-area-inset-bottom));">
-        <button
+        <TitanChordproListRow
           v-for="it in items"
           :key="it.id"
           data-setlist-item
-          :aria-current="it.current ? 'true' : undefined"
-          :style="{
-            border: `1px solid ${it.current ? 'var(--chord-edge)' : 'var(--line-soft)'}`,
-            background: it.current ? 'var(--chord-soft)' : 'var(--surface)',
-            opacity: it.failed ? '0.72' : '1',
-          }"
-          style="display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 12px;border-radius:14px;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
+          :current="it.current"
+          :dim="it.failed"
           @click="emit('pick', it.i)"
         >
-          <span
-            :style="{ color: it.current ? 'var(--chord)' : 'var(--muted)' }"
-            style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12px;font-weight:700;"
-          >{{ it.num }}</span>
-          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+          <template #lead>
+            <span class="titan-chordpro-list-row-num" :class="{ 'is-current': it.current }">{{ it.num }}</span>
+          </template>
+          <span class="titan-chordpro-list-row-title" :class="{ 'is-current': it.current }">{{ it.title }}</span>
+          <span v-if="it.sub" class="titan-chordpro-list-row-sub">{{ it.sub }}</span>
+          <template #trail>
             <span
-              :style="{ color: it.current ? 'var(--chord)' : 'var(--text)' }"
-              style="font-size:13.5px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-            >{{ it.title }}</span>
-            <span v-if="it.sub" style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.sub }}</span>
-          </span>
-          <span
-            v-if="it.hasKey"
-            style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);"
-          >{{ it.keyLabel }}</span>
-          <span
-            v-if="it.bpmLabel"
-            data-setlist-bpm
-            :title="`${it.bpmLabel} BPM`"
-            style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);letter-spacing:0.02em;"
-          >{{ it.bpmLabel }}</span>
-          <span
-            v-if="it.failed || it.busy || it.seen"
-            :style="{ color: it.failed ? 'var(--danger)' : 'var(--muted)' }"
-            data-setlist-mark
-            style="flex:none;width:20px;display:flex;align-items:center;justify-content:center;"
-          >
-            <TitanChordproIcon v-if="it.failed" name="alertTri" :size="14" />
-            <TitanChordproIcon v-else-if="it.seen" name="check" :size="13" :weight="2" />
-            <span v-else style="font-size:12px;font-weight:700;">…</span>
-          </span>
-        </button>
+              v-if="it.hasKey"
+              style="flex:none;display:flex;align-items:center;height:24px;padding:0 8px;border-radius:8px;background:var(--chord-soft);border:1px solid var(--chord-edge);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;color:var(--chord);"
+            >{{ it.keyLabel }}</span>
+            <span
+              v-if="it.bpmLabel"
+              data-setlist-bpm
+              :title="`${it.bpmLabel} BPM`"
+              style="flex:none;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);letter-spacing:0.02em;"
+            >{{ it.bpmLabel }}</span>
+            <span
+              v-if="it.failed || it.busy || it.seen"
+              :style="{ color: it.failed ? 'var(--danger)' : 'var(--muted)' }"
+              data-setlist-mark
+              style="flex:none;width:20px;display:flex;align-items:center;justify-content:center;"
+            >
+              <TitanChordproIcon v-if="it.failed" name="alertTri" :size="14" />
+              <TitanChordproIcon v-else-if="it.seen" name="check" :size="13" :weight="2" />
+              <span v-else style="font-size:12px;font-weight:700;">…</span>
+            </span>
+          </template>
+        </TitanChordproListRow>
         <div v-if="noHit" style="padding:22px 4px;text-align:center;font-size:12.5px;color:var(--muted);">Nenhuma música com esse nome.</div>
       </div>
     </div>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproActionButton from '../ui/TitanChordproActionButton.vue'
+import TitanChordproChartIdentityFields from '../ui/TitanChordproChartIdentityFields.vue'
 import {
-  convert, detect, durationFromYoutubeHtml, hostOk, maskDurationMmSs, missingOf, MISSING_LABEL,
+  convert, detect, durationFromYoutubeHtml, hostOk, missingOf, MISSING_LABEL,
   normalizeDurationMmSs, readMeta, rewriteToKey, titleFromUrl, writeMeta,
   type ChartMeta, type KeyRewriteOffer, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
@@ -42,8 +44,7 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ close: []; commit: [source: string] }>()
 
-const SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-const TIMES = ['4/4', '3/4', '6/8', '2/4']
+
 const BLANK_BODY = '{c:INTRODUÇÃO}\n[G] [C] [D]\n\n{c:Verso 1}\n[G]Primeira linha da letra'
 
 const BLANK_NOTE =
@@ -77,8 +78,6 @@ const meta = ref<ChartMeta>({ ...readMeta(props.initialSource) })
 const keyEdit = ref(!String(readMeta(props.initialSource).key ?? '').trim())
 const keyRewrite = ref<KeyRewriteOffer | null>(null)
 
-const taps = ref<number[]>([])
-
 const sniff = computed(() => (pasted.value.trim() ? detect(pasted.value) : ''))
 const SNIFF_LABEL: Record<string, string> = {
   chordpro: 'ChordPro',
@@ -100,18 +99,6 @@ const missingList = computed(() => {
   const w = softMissing.value.map((k) => MISSING_LABEL[k] ?? k)
   return w.length > 1 ? `${w.slice(0, -1).join(', ')} e ${w[w.length - 1]}` : (w[0] ?? '')
 })
-/** Saving for everyone is where a blank field stops being acceptable. */
-const strict = computed(() => from.value === 'save')
-const flag = (k: string) => (missing.value.includes(k) ? '· falta' : '')
-const edge = (k: string) => {
-  if (!missing.value.includes(k)) return 'var(--chord-edge)'
-  return k === 'duration' || strict.value ? 'var(--danger)' : 'var(--line)'
-}
-
-const keyRoot = computed(() => String(meta.value.key ?? '').replace(/m$/, ''))
-const minor = computed(() => /m$/.test(String(meta.value.key ?? '')))
-const showKeyPad = computed(() => keyEdit.value || !keyRoot.value)
-
 const others = computed(() => ORIGINS.filter((o) => o.id !== tab.value))
 const canFetch = computed(() => !!props.fetchChart)
 const urlGuess = computed(() => {
@@ -295,37 +282,6 @@ function onDrop(e: DragEvent) {
 function setMeta(k: MetaKey, v: string) {
   meta.value = { ...meta.value, [k]: v }
 }
-function onDurationInput(e: Event) {
-  setMeta('duration', maskDurationMmSs((e.target as HTMLInputElement).value))
-}
-function onDurationBlur() {
-  setMeta('duration', normalizeDurationMmSs(meta.value.duration ?? ''))
-}
-function bpmStep(d: number) {
-  const cur = parseInt(String(meta.value.tempo ?? ''), 10)
-  setMeta('tempo', String(Math.max(30, Math.min(260, (Number.isNaN(cur) ? 90 : cur) + d))))
-}
-/** Nobody knows a bpm by heart; everybody can tap their foot. */
-function tapTempo() {
-  const now = Date.now()
-  taps.value = [...taps.value.filter((t) => now - t < 3000), now]
-  if (taps.value.length < 2) return
-  const gaps = taps.value.slice(1).map((t, i) => t - (taps.value[i] as number))
-  const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length
-  setMeta('tempo', String(Math.round(60000 / avg)))
-}
-const tapLabel = computed(() => {
-  const live = taps.value.filter((t) => Date.now() - t < 3000).length
-  return live > 1 ? `batendo… ${live}` : 'bater no ritmo'
-})
-function pickKey(root: string) {
-  setMeta('key', root + (minor.value ? 'm' : ''))
-}
-function toggleMinor() {
-  const cur = String(meta.value.key ?? '')
-  if (!cur) return
-  setMeta('key', /m$/.test(cur) ? cur.replace(/m$/, '') : `${cur}m`)
-}
 
 function back() {
   if (from.value === 'blank' || from.value === 'save') return emit('close')
@@ -372,12 +328,6 @@ const geom = computed(() =>
     ? { align: 'flex-end', wrapPad: '0', max: '100%', maxH: '92%', pad: '18px 16px calc(18px + env(safe-area-inset-bottom))', radius: '22px 22px 0 0', cols: 'minmax(0,1fr)', titleSize: '18px', textH: '150px' }
     : { align: 'center', wrapPad: '20px', max: step.value === 'ficha' ? '480px' : '420px', maxH: step.value === 'ficha' ? '92%' : '86%', pad: '20px 18px 16px', radius: '20px', cols: 'minmax(0,1fr) minmax(0,1fr)', titleSize: '20px', textH: '160px' },
 )
-const chip = (on: boolean) => ({
-  background: on ? 'var(--chord)' : 'transparent',
-  color: on ? 'var(--chord-ink)' : 'var(--text)',
-  borderColor: on ? 'var(--chord)' : 'var(--line)',
-})
-
 onMounted(() => {
   if (step.value === 'import' && tab.value === 'url') urlEl.value?.focus()
 })
@@ -437,15 +387,9 @@ onMounted(() => {
             <span style="font-size:12.5px;font-weight:700;">Buscar no Cifra Club não está disponível</span>
             <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">A página precisa ser buscada pelo servidor do site. Use Arquivo ou Texto.</span>
           </div>
-          <button
-            :disabled="busy || !canFetch"
-            data-nova-url-go
-            :style="{ opacity: busy || !canFetch ? 0.5 : 1, cursor: busy || !canFetch ? 'not-allowed' : 'pointer' }"
-            style="width:100%;height:48px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;"
-            @click="runUrl"
-          >
+          <TitanChordproActionButton block data-nova-url-go :disabled="busy || !canFetch" @click="runUrl">
             <span v-if="busy" class="titan-chordpro-spin" style="width:14px;height:14px;" />{{ busy ? 'Buscando…' : 'Buscar cifra' }}
-          </button>
+          </TitanChordproActionButton>
         </div>
 
         <div
@@ -477,7 +421,7 @@ onMounted(() => {
             style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--canvas);color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12px;line-height:1.6;resize:vertical;"
           />
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <button data-nova-text-go style="flex:1;min-width:140px;height:48px;padding:0 18px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;" @click="runText">Converter</button>
+            <TitanChordproActionButton data-nova-text-go style="flex:1;min-width:140px" @click="runText">Converter</TitanChordproActionButton>
             <span v-if="sniff && sniff !== 'vazio'" style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);">
               <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />reconhecido: {{ SNIFF_LABEL[sniff] }}
             </span>
@@ -551,85 +495,28 @@ onMounted(() => {
           </div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:15px;background:var(--surface);border:1px solid var(--line-soft);">
-          <input :value="meta.title ?? ''" data-nova-title placeholder="Nome da música" :style="{ fontSize: geom.titleSize }" style="width:100%;border:0;background:transparent;color:var(--text);font-family:inherit;font-weight:700;letter-spacing:-0.02em;padding:4px 0;" @input="setMeta('title', ($event.target as HTMLInputElement).value)" />
-          <input :value="meta.subtitle ?? ''" placeholder="Artista ou ministério" style="width:100%;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;padding:4px 0;" @input="setMeta('subtitle', ($event.target as HTMLInputElement).value)" />
-        </div>
-
-        <div :style="{ borderColor: edge('duration') }" style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:15px;background:var(--canvas);border:1px solid;">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Duração {{ flag('duration') }}</span>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <input
-              :value="meta.duration ?? ''"
-              placeholder="MM:SS"
-              inputmode="numeric"
-              autocomplete="off"
-              spellcheck="false"
-              maxlength="5"
-              aria-label="Duração em minutos e segundos"
-              data-nova-duration
-              :style="{ fontSize: meta.duration ? '22px' : '16px' }"
-              style="flex:1;min-width:0;height:36px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-weight:700;letter-spacing:-0.02em;"
-              @input="onDurationInput"
-              @blur="onDurationBlur"
-            />
-            <span style="font-size:11px;color:var(--muted);">MM:SS</span>
-          </div>
-          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Tempo da música, como no YouTube. A rolagem precisa disso.</span>
-          <a
-            v-if="meta.x_titan_youtube"
-            :href="'https://www.youtube.com/watch?v=' + meta.x_titan_youtube"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-nova-youtube
-            style="font-size:11.5px;font-weight:600;color:var(--chord);text-decoration:none;"
-          >Abrir no YouTube</a>
-        </div>
-
-        <div :style="{ gridTemplateColumns: geom.cols }" style="display:grid;gap:9px;">
-          <div :style="{ borderColor: edge('tempo') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
-            <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Andamento {{ flag('tempo') }}</span>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <button class="titan-chordpro-ghost" aria-label="Diminuir" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(-1)">−</button>
-              <input :value="meta.tempo ?? ''" inputmode="numeric" placeholder="—" data-nova-bpm style="flex:1;min-width:0;height:32px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:16px;font-weight:700;text-align:center;" @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))" />
-              <button class="titan-chordpro-ghost" aria-label="Aumentar" style="flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;font-size:15px;" @click="bpmStep(1)">+</button>
-              <span style="font-size:10.5px;color:var(--muted);">bpm</span>
-            </div>
-            <button data-nova-tap style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="tapTempo">{{ tapLabel }}</button>
-          </div>
-
-          <div :style="{ borderColor: edge('time') }" style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
-            <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Compasso {{ flag('time') }}</span>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;">
-              <button v-for="t in TIMES" :key="t" :data-time-chip="t" :style="chip(meta.time === t)" style="height:32px;padding:0 12px;border:1px solid;border-radius:10px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12.5px;font-weight:700;cursor:pointer;" @click="setMeta('time', t)">{{ t }}</button>
-            </div>
-          </div>
-        </div>
-
-        <div :style="{ borderColor: edge('key') }" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom {{ flag('key') }}</span>
-            <button
-              v-if="!showKeyPad && keyRoot"
-              style="height:28px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;"
-              @click="keyEdit = true"
-            >Trocar</button>
-          </div>
-          <div v-if="!showKeyPad" style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:22px;font-weight:700;color:var(--chord);">{{ meta.key }}</span>
-          </div>
-          <template v-else>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;">
-              <button v-for="r in SHARP" :key="r" :data-key-chip="r" :style="chip(keyRoot === r)" style="min-width:34px;height:30px;padding:0 7px;border:1px solid;border-radius:9px;font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;font-weight:700;cursor:pointer;" @click="pickKey(r)">{{ r }}</button>
-            </div>
-            <button :style="chip(minor)" style="align-self:flex-start;height:28px;padding:0 10px;border:1px solid;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;" @click="toggleMinor">menor (m)</button>
+        <TitanChordproChartIdentityFields
+          :meta="meta"
+          surface="nova"
+          v-model:key-edit="keyEdit"
+          :title-size="geom.titleSize"
+          :columns="geom.cols"
+          :strict="from === 'save'"
+          show-source
+          duration-hint="Tempo da música, como no YouTube. A rolagem precisa disso."
+          @patch="setMeta"
+        >
+          <template #duration-extra>
+            <a
+              v-if="meta.x_titan_youtube"
+              :href="'https://www.youtube.com/watch?v=' + meta.x_titan_youtube"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-nova-youtube
+              style="font-size:11.5px;font-weight:600;color:var(--chord);text-decoration:none;"
+            >Abrir no YouTube</a>
           </template>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft);">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Referência</span>
-          <input :value="meta.x_titan_source ?? ''" placeholder="Link de onde veio, ou vídeo de referência" spellcheck="false" style="width:100%;height:30px;border:0;background:transparent;color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:11.5px;" @input="setMeta('x_titan_source', ($event.target as HTMLInputElement).value)" />
-        </div>
+        </TitanChordproChartIdentityFields>
 
         <div style="display:flex;flex-direction:column;gap:4px;">
           <span v-if="softMissing.length" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Falta {{ missingList }}. Dá para seguir e preencher depois — vai ser pedido de novo ao salvar.</span>
@@ -638,8 +525,8 @@ onMounted(() => {
         </div>
 
         <div style="position:sticky;bottom:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 0;margin-top:4px;background:var(--canvas);border-top:1px solid var(--line-soft);">
-          <button style="min-height:40px;padding:0 12px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" @click="back">{{ from === 'blank' || from === 'save' ? 'Cancelar' : 'Voltar' }}</button>
-          <button data-nova-go :disabled="durationMissing || !!keyRewrite" :style="{ opacity: durationMissing || keyRewrite ? 0.45 : 1, cursor: durationMissing || keyRewrite ? 'not-allowed' : 'pointer' }" style="height:48px;padding:0 20px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:14px;font-weight:700;" @click="go">{{ goLabel }}</button>
+          <TitanChordproActionButton tone="ghost" @click="back">{{ from === 'blank' || from === 'save' ? 'Cancelar' : 'Voltar' }}</TitanChordproActionButton>
+          <TitanChordproActionButton data-nova-go :disabled="durationMissing || !!keyRewrite" @click="go">{{ goLabel }}</TitanChordproActionButton>
         </div>
       </template>
     </div>
