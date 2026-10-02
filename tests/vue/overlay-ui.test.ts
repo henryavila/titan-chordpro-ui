@@ -435,8 +435,7 @@ describe('suggesting to whoever owns the chart', () => {
       await flushPromises()
       observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
       await flushPromises()
-      expect(admin.get('[data-queue-chip]').classes()).not.toContain('is-hidden')
-      expect(admin.get('[data-queue-count]').text()).toBe('1')
+      expect(admin.find('[data-queue-chip]').exists()).toBe(false)
       expect(admin.get('[data-more-queue-badge]').text()).toBe('1')
       admin.unmount()
     } finally {

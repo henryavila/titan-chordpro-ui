@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
+import { demoBootHtmlPlugin } from './demo/boot-html'
 import { previewDirPlugin } from './demo/preview-plugin'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
@@ -8,7 +9,7 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 const pages = process.env.TITAN_PAGES === '1'
 
 export default defineConfig({
-  plugins: [vue(), previewDirPlugin()],
+  plugins: [demoBootHtmlPlugin(), vue(), previewDirPlugin()],
   root: 'demo',
   publicDir: false,
   // The Worker serves the project at the host root (`*.workers.dev` / custom domain).

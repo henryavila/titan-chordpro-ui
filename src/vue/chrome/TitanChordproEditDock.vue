@@ -2,23 +2,12 @@
 import { computed } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import SelectionBar from '../edit/SelectionBar.vue'
-import type { TitanChordproIconName } from '../icon/paths'
-import type { WriteMode } from '../public'
-import type { BlockEditApi } from '../use/useBlockEdit'
+import TitanChordproBarButton from '../ui/TitanChordproBarButton.vue'
+import TitanChordproTypePair from '../ui/TitanChordproTypePair.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
+import type { EditDockModel } from './dock-model'
 
-const props = defineProps<{
-  compact: boolean
-  editHint: boolean
-  clipLabel: string | null
-  edit: BlockEditApi
-  wMode: WriteMode | null
-  showSource: boolean
-  lintOk: boolean
-  themeTitle: string
-  themeIcon: TitanChordproIconName
-  /** Batida create/edit is available in local and persisted edit. */
-  hasStrum: boolean
-}>()
+const props = defineProps<EditDockModel>()
 
 const emit = defineEmits<{
   seenHint: []
@@ -72,36 +61,38 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
     />
 
     <div class="titan-chordpro-veil" style="pointer-events:auto;position:relative;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;padding:6px;border-radius:17px;">
-      <button
+      <TitanChordproBarButton
         v-if="showBatidaTools && !hasStrum"
         data-batida-create
+        icon="plus"
+        label="Criar batida"
         title="Criar batida"
-        style="height:36px;padding:0 12px;border-radius:12px;border:1px dashed var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        dash
         @click="emit('createBatida')"
-      ><TitanChordproIcon name="plus" :size="14" />Criar batida</button>
-      <button
+      />
+      <TitanChordproBarButton
         v-if="showBatidaTools && hasStrum"
         data-batida-edit-chrome
+        icon="pencil"
+        label="Editar batida"
         title="Editar batida"
-        style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('editBatida')"
-      ><TitanChordproIcon name="pencil" :size="14" />Editar batida</button>
+      />
 
       <span v-if="showBatidaTools" style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
 
-      <button
+      <TitanChordproBarButton
         v-if="showSource"
         data-source
+        icon="braces"
         title="Fonte ChordPro assistida"
-        style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
         @click="emit('source')"
       >
-        <TitanChordproIcon name="braces" :size="16" />Fonte
+        Fonte
         <span v-if="!lintOk" title="Diretiva sem par nesta cifra" style="width:6px;height:6px;border-radius:50%;background:var(--danger);" />
-      </button>
-      <button class="titan-chordpro-ghost" aria-label="Diminuir tipografia" style="width:36px;height:36px;font-size:12px;font-weight:600;" @click="emit('smallerType')">A−</button>
-      <button class="titan-chordpro-ghost" aria-label="Aumentar tipografia" style="width:36px;height:36px;font-size:16px;font-weight:600;" @click="emit('biggerType')">A+</button>
-      <button data-theme-btn class="titan-chordpro-ghost" :title="themeTitle" style="width:36px;height:36px;" @click="emit('theme')"><TitanChordproIcon :name="themeIcon" :size="16" /></button>
+      </TitanChordproBarButton>
+      <TitanChordproTypePair density="bar" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
+      <TitanChordproIconButton data-theme-btn :icon="themeIcon" :title="themeTitle" @click="emit('theme')" />
     </div>
   </div>
 </template>

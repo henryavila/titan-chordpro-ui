@@ -4,6 +4,7 @@
  */
 
 import { PIANO_MIDI_FLOOR, pianoKeysAreMidi } from './chord-dict'
+import { notationEdge } from './notation-region'
 import { parseChordToken } from './parse-chord'
 import { keyIndex, transposeToken } from './transpose'
 
@@ -312,14 +313,16 @@ function lineKey(line: string): string {
 }
 
 function notationOpen(key: string): 'tab' | 'score' | null {
-  if (key === 'sot' || key === 'start_of_tab') return 'tab'
-  if (key === 'x_titan_start_of_score') return 'score'
+  const edge = notationEdge(key)
+  if (edge === 'tab-open') return 'tab'
+  if (edge === 'score-open') return 'score'
   return null
 }
 
 function notationClose(key: string, region: 'tab' | 'score'): boolean {
-  if (region === 'tab') return key === 'eot' || key === 'end_of_tab'
-  return key === 'x_titan_end_of_score'
+  const edge = notationEdge(key)
+  if (region === 'tab') return edge === 'tab-close'
+  return edge === 'score-close'
 }
 
 /**

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import ExportFileButton from './ExportFileButton.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
+import TitanChordproSeg from '../ui/TitanChordproSeg.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
@@ -35,40 +36,22 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
 </script>
 
 <template>
-  <div class="titan-chordpro-sheet" :class="{ 'is-compact': compact }">
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div
-      class="titan-chordpro-dialog titan-chordpro-veil-2"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Exportar"
-    >
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-        <span style="font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">
-          Exportar {{ exportKeyNote }}
-        </span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:28px;height:28px;border-radius:8px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
-      </div>
-      <div v-if="hasOverlay" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;">
-        <button
-          data-export-mine
-          :style="{
-            border: `1px solid ${exportOrig ? 'var(--line)' : 'var(--chord-edge)'}`,
-            background: exportOrig ? 'transparent' : 'var(--chord-fill)',
-          }"
-          style="flex:1;height:34px;border-radius:10px;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-          @click="emit('pick', false)"
-        >Minha versão</button>
-        <button
-          data-export-orig
-          :style="{
-            border: `1px solid ${exportOrig ? 'var(--sel-line)' : 'var(--line)'}`,
-            background: exportOrig ? 'var(--sel)' : 'transparent',
-          }"
-          style="flex:1;height:34px;border-radius:10px;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-          @click="emit('pick', true)"
-        >Oficial</button>
-      </div>
+  <TitanChordproDialogShell
+    :compact="compact"
+    label="Exportar"
+    :kicker="`Exportar ${exportKeyNote}`"
+    @close="emit('close')"
+  >
+      <TitanChordproSeg
+        v-if="hasOverlay"
+        label="Qual versão exportar"
+        :value="exportOrig ? 'orig' : 'mine'"
+        :options="[
+          { value: 'mine', label: 'Minha versão', attrs: { 'data-export-mine': '' } },
+          { value: 'orig', label: 'Oficial', attrs: { 'data-export-orig': '' } },
+        ]"
+        @pick="emit('pick', $event === 'orig')"
+      />
       <ExportFileButton id="cho" ext=".cho" label="ChordPro" @click="emit('cho')" />
       <ExportFileButton
         id="bundle"
@@ -110,6 +93,5 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
         :busy="ppsxBusy"
         @click="emit('ppsx')"
       />
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

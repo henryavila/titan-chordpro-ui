@@ -87,7 +87,9 @@
     "publish:npm": "bash scripts/publish-npm.sh",
     "release": "tsx scripts/release.ts",
     "release:apply": "tsx scripts/release.ts --apply",
-    "release:ship": "tsx scripts/release.ts --ship"
+    "release:ship": "tsx scripts/release.ts --ship",
+    "docs:build": "tsx scripts/docs-features.ts",
+    "docs:check": "tsx scripts/docs-features.ts --check"
   },
   "dependencies": {
     "jspdf": "^4.2.1"

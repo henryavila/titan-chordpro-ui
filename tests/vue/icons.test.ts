@@ -122,7 +122,7 @@ describe('chrome uses the locked set', () => {
     await flushPromises()
     const dlg = w.get('[role="dialog"][aria-label="Mais controles"]')
     const icons = dlg.findAll('.titan-chordpro-ico').map((n) => n.attributes('data-icon'))
-    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'eyeOff', 'metronome', 'download']))
+    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'eye', 'metronome', 'download']))
     expect(icons).not.toContain('scan')
     expect(dlg.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
     expect(dlg.find('[data-icon=x]').exists()).toBe(true)

@@ -1173,6 +1173,25 @@
   font-size: 11.5px;
 }
 
+.titan-chordpro-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+}
+.titan-chordpro-dialog.is-my {
+  max-width: 470px;
+  max-height: min(600px, 86%);
+  overflow-y: auto;
+  padding: 15px;
+  gap: 9px;
+}
+.titan-chordpro-dialog.is-upd {
+  max-width: 520px;
+  max-height: min(640px, 88%);
+  overflow-y: auto;
+  gap: 10px;
+}
 .titan-chordpro-sheet.is-compact {
   align-items: flex-end;
   padding: 0;
@@ -1181,6 +1200,26 @@
   max-width: 100%;
   border-radius: 20px 20px 0 0;
   padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+}
+/* Anchor: the chart stays live. The card is positioned by the panel style. */
+.titan-chordpro-sheet.is-anchor {
+  pointer-events: none;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+.titan-chordpro-sheet.is-anchor .titan-chordpro-dialog {
+  pointer-events: auto;
+  position: absolute;
+  max-width: none;
+  width: auto;
+  overflow-y: auto;
+  gap: 13px;
+}
+.titan-chordpro-song-skel-dock .titan-chordpro-setlist-nav.is-phone,
+.titan-chordpro-song-fail-nav .titan-chordpro-setlist-nav.is-phone {
+  padding: 0;
+  border-bottom: 0;
 }
 .titan-chordpro-live {
   position: absolute;
@@ -1429,10 +1468,471 @@ div.titan-chordpro-head-id {
 .titan-chordpro-ghost:hover {
   background: var(--hover);
 }
-.titan-chordpro-bar-btn:hover {
+.titan-chordpro-bar-btn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.titan-chordpro-bar-btn:hover:not(:disabled):not(.is-chord):not(.is-sel) {
   background: var(--hover);
 }
-.titan-chordpro-surface-btn {
+.titan-chordpro-bar-btn.is-chord {
+  background: var(--chord-fill);
+  color: var(--chord);
+  border-color: var(--chord-edge);
+}
+.titan-chordpro-bar-btn.is-sel {
+  background: var(--sel);
+  color: var(--text);
+  border-color: var(--sel-line);
+}
+.titan-chordpro-bar-btn.is-dash {
+  border-style: dashed;
+}
+.titan-chordpro-bar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Beats `.titan-chordpro-root button`, which resets every button to a
+   transparent face. Without the element, idle Rolar loses its fill. */
+.titan-chordpro-root button.titan-chordpro-roll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 14px 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--chord);
+  background: var(--chord);
+  color: var(--chord-ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.titan-chordpro-root button.titan-chordpro-roll.is-live {
+  background: var(--pill);
+  color: var(--pill-ink);
+  border-color: var(--pill);
+}
+.titan-chordpro-root button.titan-chordpro-roll:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+.titan-chordpro-root button.titan-chordpro-roll.is-phone {
+  flex: none;
+  height: var(--titan-chordpro-dock-ctrl-h, 44px);
+  min-width: var(--titan-chordpro-dock-ctrl-h, 44px);
+  border-radius: 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 0 20px;
+}
+.titan-chordpro-root button.titan-chordpro-roll.is-phone.is-icon {
+  padding: 0;
+  gap: 0;
+}
+.titan-chordpro-type-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.titan-chordpro-type-pair.is-phone {
+  flex: none;
+  height: var(--titan-chordpro-dock-ctrl-h, 44px);
+  padding: 0 2px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+.titan-chordpro-type-pair.is-phone .titan-chordpro-ghost {
+  flex: none;
+  width: var(--titan-chordpro-dock-type-w, 38px);
+  height: 44px;
+  font-weight: 600;
+}
+.titan-chordpro-type-pair.is-phone .titan-chordpro-type-minus {
+  font-size: 13px;
+}
+.titan-chordpro-type-pair.is-phone .titan-chordpro-type-plus {
+  font-size: 17px;
+}
+.titan-chordpro-type-pair.is-bar .titan-chordpro-ghost {
+  width: 36px;
+  height: 36px;
+}
+.titan-chordpro-type-pair.is-bar .titan-chordpro-type-minus {
+  font-size: 12px;
+  font-weight: 600;
+}
+.titan-chordpro-type-pair.is-bar .titan-chordpro-type-plus {
+  font-size: 16px;
+  font-weight: 600;
+}
+.titan-chordpro-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  position: relative;
+}
+.titan-chordpro-icon-btn.is-phone {
+  flex: none;
+  width: var(--titan-chordpro-dock-ctrl-h, 44px);
+  height: var(--titan-chordpro-dock-ctrl-h, 44px);
+  border-radius: 14px;
+}
+.titan-chordpro-icon-btn.is-labeled {
+  width: auto;
+  height: 36px;
+  padding: 0 12px;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.titan-chordpro-root button.titan-chordpro-icon-btn.is-workbench {
+  width: 40px;
+  height: 40px;
+}
+.titan-chordpro-root button.titan-chordpro-icon-btn.is-import {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.titan-chordpro-root button.titan-chordpro-icon-btn.is-pill {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+.titan-chordpro-root button.titan-chordpro-icon-btn.is-muted {
+  color: var(--muted);
+}
+.titan-chordpro-edit-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--chord);
+  pointer-events: none;
+}
+.titan-chordpro-icon-btn.is-sel {
+  background: var(--sel);
+  border: 1px solid var(--sel-line);
+}
+.titan-chordpro-root button.titan-chordpro-more-item.is-chord {
+  border-color: var(--chord-edge);
+  background: var(--chord-fill);
+  color: var(--chord);
+}
+.titan-chordpro-more-item.is-sel {
+  border-color: var(--sel-line);
+  background: var(--sel);
+}
+.titan-chordpro-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 13px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.titan-chordpro-switch-row.is-on {
+  border-color: var(--chord-edge);
+  background: var(--chord-soft);
+}
+.titan-chordpro-switch-row:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.titan-chordpro-switch {
+  flex: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--line);
+  position: relative;
+}
+.titan-chordpro-switch-row.is-on .titan-chordpro-switch,
+.titan-chordpro-switch.is-on {
+  background: var(--chord);
+}
+.titan-chordpro-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left 0.16s ease;
+}
+.titan-chordpro-switch-row.is-on .titan-chordpro-switch-thumb,
+.titan-chordpro-switch.is-on .titan-chordpro-switch-thumb {
+  left: 16px;
+  background: var(--chord-ink);
+}
+.titan-chordpro-switch-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.titan-chordpro-switch-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.titan-chordpro-switch-hint {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  text-wrap: pretty;
+  min-height: 32px;
+}
+.titan-chordpro-fit-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: titan-chordpro-rise 0.25s ease-out;
+}
+.titan-chordpro-fit-hint.is-phone {
+  padding: 9px 8px 9px 13px;
+  border-radius: 14px;
+}
+.titan-chordpro-fit-hint.is-wide {
+  max-width: 360px;
+  padding: 7px 8px 7px 13px;
+  border-radius: 13px;
+}
+.titan-chordpro-fit-hint-copy {
+  flex: 1;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.titan-chordpro-root button.titan-chordpro-fit-hint-x {
+  flex: none;
+  color: var(--muted);
+}
+.titan-chordpro-fit-hint.is-phone .titan-chordpro-fit-hint-x {
+  width: 32px;
+  height: 32px;
+}
+.titan-chordpro-fit-hint.is-wide .titan-chordpro-fit-hint-x {
+  width: 26px;
+  height: 26px;
+}
+.titan-chordpro-speed-hud {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.titan-chordpro-speed-hud.is-row {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.titan-chordpro-speed-hud.is-chip {
+  gap: 10px;
+  padding: 7px 8px 7px 14px;
+  border-radius: 14px;
+  animation: titan-chordpro-rise 0.2s ease-out;
+}
+.titan-chordpro-speed-hud > button {
+  flex: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  line-height: 1;
+  cursor: pointer;
+  font-size: 16px;
+}
+.titan-chordpro-speed-hud.is-row > button {
+  width: 40px;
+  height: 36px;
+  border-radius: 11px;
+}
+.titan-chordpro-speed-hud.is-chip > button {
+  width: 32px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 15px;
+}
+.titan-chordpro-speed-hud-mul {
+  flex: none;
+  min-width: 58px;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.titan-chordpro-speed-hud.is-chip .titan-chordpro-speed-hud-mul {
+  min-width: 56px;
+  font-size: 13px;
+}
+.titan-chordpro-speed-hud-gap {
+  flex: 1;
+}
+.titan-chordpro-speed-hud.is-chip .titan-chordpro-speed-hud-gap {
+  flex: none;
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+}
+.titan-chordpro-speed-hud-eta {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-right: 6px;
+  font-family: 'Space Mono', monospace;
+}
+.titan-chordpro-speed-hud.is-chip .titan-chordpro-speed-hud-eta {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 52px;
+}
+.titan-chordpro-speed-hud-eta [data-eta] {
+  font-size: 12px;
+  color: var(--text);
+}
+.titan-chordpro-speed-hud.is-chip .titan-chordpro-speed-hud-eta [data-eta] {
+  font-size: 11px;
+}
+.titan-chordpro-speed-hud-eta [data-eta] + span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.titan-chordpro-speed-hud.is-chip .titan-chordpro-speed-hud-eta [data-eta] + span {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.titan-chordpro-setlist-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.titan-chordpro-setlist-nav.is-phone {
+  padding: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.titan-chordpro-setlist-nav > button:first-child,
+.titan-chordpro-setlist-nav > button:last-child {
+  flex: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.titan-chordpro-setlist-nav > button:first-child:disabled,
+.titan-chordpro-setlist-nav > button:last-child:disabled {
+  opacity: 0.32;
+}
+.titan-chordpro-setlist-nav.is-phone > button:first-child,
+.titan-chordpro-setlist-nav.is-phone > button:last-child {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+}
+.titan-chordpro-setlist-nav.is-wide > button:first-child,
+.titan-chordpro-setlist-nav.is-wide > button:last-child {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+.titan-chordpro-setlist-nav > [data-setlist-open] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+}
+.titan-chordpro-setlist-nav.is-phone > [data-setlist-open] {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--surface);
+  gap: 9px;
+}
+.titan-chordpro-setlist-nav.is-wide > [data-setlist-open] {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+}
+.titan-chordpro-setlist-nav-pos {
+  flex: none;
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-weight: 700;
+  color: var(--chord);
+}
+.titan-chordpro-setlist-nav.is-phone .titan-chordpro-setlist-nav-pos {
+  font-size: 12.5px;
+}
+.titan-chordpro-setlist-nav.is-wide .titan-chordpro-setlist-nav-pos {
+  font-size: 12px;
+}
+.titan-chordpro-setlist-nav-mid {
+  font-weight: 600;
+  color: var(--muted);
+}
+.titan-chordpro-setlist-nav.is-phone .titan-chordpro-setlist-nav-mid {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.titan-chordpro-setlist-nav.is-wide .titan-chordpro-setlist-nav-mid {
+  flex: none;
+  font-size: 12px;
+}
+.titan-chordpro-root button.titan-chordpro-surface-btn {
   min-height: 52px;
   padding: 0 14px;
   border-radius: 13px;
@@ -1816,6 +2316,40 @@ div.titan-chordpro-head-id {
 .titan-chordpro-reading.is-dock > button {
   flex: 1;
   font-size: 13.5px;
+}
+.titan-chordpro-seg {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.titan-chordpro-root button.titan-chordpro-seg > button,
+.titan-chordpro-seg > button {
+  flex: 1;
+  margin: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-height: 34px;
+  cursor: pointer;
+}
+.titan-chordpro-root .titan-chordpro-seg > button.is-on,
+.titan-chordpro-seg > button.is-on {
+  background: var(--chord-fill);
+  color: var(--chord);
+}
+.titan-chordpro-choice-pair {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* "Minha versão / Original": the switch stays with the chart, not in a menu. */
@@ -2578,13 +3112,6 @@ div.titan-chordpro-head-id {
   display: flex;
   justify-content: center;
 }
-.titan-chordpro-scrim {
-  position: absolute;
-  inset: 0;
-  background: var(--scrim);
-  backdrop-filter: blur(5px);
-  animation: titan-chordpro-fade 0.16s ease;
-}
 .titan-chordpro-modal-card {
   position: relative;
   width: 100%;
@@ -2715,7 +3242,7 @@ div.titan-chordpro-head-id {
 /* ------------------------------------------------- score editor (Phase E) */
 /* Embedded in the chart, the editor anchors on the dialog box rather than
    growing with its content — the host mount has no height of its own. */
-.edp {
+.titan-chordpro-edp {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2726,10 +3253,10 @@ div.titan-chordpro-head-id {
   display: flex;
   flex-direction: column;
 }
-.edp button {
+.titan-chordpro-edp button {
   font-family: inherit;
 }
-.edp-head {
+.titan-chordpro-edp-head {
   flex: none;
   display: flex;
   flex-wrap: wrap;
@@ -2739,13 +3266,13 @@ div.titan-chordpro-head-id {
   border-bottom: 1px solid var(--line);
   background: var(--veil);
 }
-.edp-title {
+.titan-chordpro-edp-title {
   display: flex;
   align-items: center;
   gap: 10px;
   flex: 1;
 }
-.edp-title-line {
+.titan-chordpro-edp-title-line {
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -2753,12 +3280,12 @@ div.titan-chordpro-head-id {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.edp-meta {
+.titan-chordpro-edp-meta {
   font-family: 'Space Mono', monospace;
   font-size: 10.5px;
   color: var(--muted);
 }
-.edp-dirty {
+.titan-chordpro-edp-dirty {
   flex: none;
   display: flex;
   align-items: center;
@@ -2772,20 +3299,20 @@ div.titan-chordpro-head-id {
   font-size: 10px;
   font-weight: 700;
 }
-.edp-kicker {
+.titan-chordpro-edp-kicker {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
 }
-.edp-ctrls {
+.titan-chordpro-edp-ctrls {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
-.edp-btn {
+.titan-chordpro-edp-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2799,21 +3326,21 @@ div.titan-chordpro-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.edp-btn--soft {
+.titan-chordpro-edp-btn--soft {
   background: var(--surface);
   padding: 0 12px;
 }
-.edp-btn--soft:hover {
+.titan-chordpro-edp-btn--soft:hover {
   border-color: var(--sel-line);
 }
-.edp-btn--primary {
+.titan-chordpro-edp-btn--primary {
   border: 0;
   padding: 0 15px;
   background: var(--pill);
   color: var(--pill-ink);
   font-weight: 700;
 }
-.edp-seg {
+.titan-chordpro-edp-seg {
   display: flex;
   align-items: center;
   gap: 3px;
@@ -2822,7 +3349,7 @@ div.titan-chordpro-head-id {
   border-radius: 12px;
   background: var(--surface);
 }
-.edp-seg > button {
+.titan-chordpro-edp-seg > button {
   height: 28px;
   padding: 0 12px;
   border: 0;
@@ -2830,7 +3357,7 @@ div.titan-chordpro-head-id {
   font-size: 12px;
   cursor: pointer;
 }
-.edp-stage {
+.titan-chordpro-edp-stage {
   flex: 1;
   overflow: auto;
   padding: 16px 14px 6px;
@@ -2839,7 +3366,7 @@ div.titan-chordpro-head-id {
   align-items: center;
   gap: 10px;
 }
-.edp-paper {
+.titan-chordpro-edp-paper {
   flex: none;
   width: 100%;
   max-width: 1080px;
@@ -2850,7 +3377,7 @@ div.titan-chordpro-head-id {
   overflow-x: auto;
   overflow-y: visible;
 }
-.edp-empty {
+.titan-chordpro-edp-empty {
   margin: 40px 0;
   text-align: center;
   font-family: 'Space Mono', monospace;
@@ -2858,7 +3385,7 @@ div.titan-chordpro-head-id {
   color: var(--muted);
   text-wrap: pretty;
 }
-.edp-imported {
+.titan-chordpro-edp-imported {
   flex: none;
   width: 100%;
   max-width: 1080px;
@@ -2873,7 +3400,7 @@ div.titan-chordpro-head-id {
   color: var(--chord);
   line-height: 1.45;
 }
-.edp-src {
+.titan-chordpro-edp-src {
   flex: none;
   width: 100%;
   max-width: 1080px;
@@ -2883,7 +3410,7 @@ div.titan-chordpro-head-id {
   border: 1px solid var(--line-soft);
   animation: titan-chordpro-rise 0.16s ease-out;
 }
-.edp-src > pre {
+.titan-chordpro-edp-src > pre {
   margin: 0;
   font-family: 'Space Mono', monospace;
   font-size: 11.5px;
@@ -2892,7 +3419,7 @@ div.titan-chordpro-head-id {
   white-space: pre;
   overflow-x: auto;
 }
-.edp-bars {
+.titan-chordpro-edp-bars {
   flex: none;
   display: flex;
   flex-wrap: wrap;
@@ -2900,7 +3427,7 @@ div.titan-chordpro-head-id {
   gap: 8px 12px;
   padding: 4px 14px 8px;
 }
-.edp-bar {
+.titan-chordpro-edp-bar {
   flex: none;
   display: flex;
   align-items: center;
@@ -2911,7 +3438,7 @@ div.titan-chordpro-head-id {
   background: transparent;
   cursor: pointer;
 }
-.edp-mini {
+.titan-chordpro-edp-mini {
   height: 28px;
   padding: 0 11px;
   border: 1px solid var(--line);
@@ -2922,11 +3449,11 @@ div.titan-chordpro-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.edp-mini:disabled {
+.titan-chordpro-edp-mini:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
-.edp-foot {
+.titan-chordpro-edp-foot {
   flex: none;
   max-height: 44vh;
   overflow-y: auto;
@@ -2937,7 +3464,7 @@ div.titan-chordpro-head-id {
   border-top: 1px solid var(--line);
   background: var(--veil-2);
 }
-.edp-dur {
+.titan-chordpro-edp-dur {
   width: 44px;
   height: 50px;
   display: flex;
@@ -2949,7 +3476,7 @@ div.titan-chordpro-head-id {
   border-radius: 11px;
   cursor: pointer;
 }
-.edp-flat {
+.titan-chordpro-edp-flat {
   flex: 1;
   height: 32px;
   border: 1px solid var(--line);
@@ -2960,10 +3487,10 @@ div.titan-chordpro-head-id {
   font-weight: 600;
   cursor: pointer;
 }
-.edp-flat:disabled {
+.titan-chordpro-edp-flat:disabled {
   cursor: not-allowed;
 }
-.edp-cell {
+.titan-chordpro-edp-cell {
   flex: none;
   margin-right: 2px;
   display: flex;
@@ -2977,10 +3504,10 @@ div.titan-chordpro-head-id {
   cursor: pointer;
   position: relative;
 }
-.edp-cell:disabled {
+.titan-chordpro-edp-cell:disabled {
   cursor: default;
 }
-.edp-fret {
+.titan-chordpro-edp-fret {
   height: 26px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2989,7 +3516,7 @@ div.titan-chordpro-head-id {
   font-weight: 700;
   cursor: pointer;
 }
-.edp-oct {
+.titan-chordpro-edp-oct {
   width: 28px;
   height: 24px;
   border: 1px solid var(--line);
@@ -3000,7 +3527,7 @@ div.titan-chordpro-head-id {
   line-height: 1;
   cursor: pointer;
 }
-.edp-white {
+.titan-chordpro-edp-white {
   width: 38px;
   height: 84px;
   display: flex;
@@ -3014,7 +3541,7 @@ div.titan-chordpro-head-id {
   font-weight: 700;
   cursor: pointer;
 }
-.edp-black {
+.titan-chordpro-edp-black {
   position: absolute;
   top: 0;
   width: 24px;
@@ -3656,3 +4183,380 @@ div.titan-chordpro-head-id {
 .titan-chordpro-notation-card > .titan-chordpro-figure, .titan-chordpro-notation-card > .titan-chordpro-tab { margin: 0 !important; border: 0; background: transparent; box-shadow: none; }
 .titan-chordpro-import-score-name { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font: inherit; font-size: 13px; }
 .titan-chordpro-import-score-name:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }
+
+/* Ficha: chip, stepper, action, list row, identity fields. */
+.titan-chordpro-chip {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+.titan-chordpro-chip.is-on {
+  background: var(--chord);
+  color: var(--chord-ink);
+  border-color: var(--chord);
+}
+.titan-chordpro-chip.is-time {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.titan-chordpro-chip.is-key {
+  min-width: 34px;
+  height: 30px;
+  padding: 0 7px;
+  border-radius: 9px;
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.titan-chordpro-chip.is-word {
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.titan-chordpro-chip.is-choice {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.titan-chordpro-chip.is-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: auto;
+  padding: 10px;
+  border-radius: 14px;
+  font-weight: 400;
+  text-align: left;
+}
+.titan-chordpro-stepper {
+  display: flex;
+  align-items: center;
+}
+.titan-chordpro-stepper.is-lg { gap: 8px; width: 100%; }
+.titan-chordpro-stepper.is-md { gap: 10px; }
+.titan-chordpro-stepper.is-sm { gap: 8px; flex: 1; min-width: 0; }
+.titan-chordpro-stepper-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+.titan-chordpro-stepper.is-lg .titan-chordpro-stepper-btn {
+  width: 60px;
+  height: 56px;
+  border: 1px solid var(--chord-edge);
+  border-radius: 16px;
+  background: var(--chord-soft);
+  color: var(--chord);
+  font-size: 22px;
+}
+.titan-chordpro-stepper.is-md .titan-chordpro-stepper-btn {
+  width: 48px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  font-size: 18px;
+}
+.titan-chordpro-stepper.is-sm .titan-chordpro-stepper-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+}
+.titan-chordpro-stepper.is-md .titan-chordpro-stepper-btn:hover,
+.titan-chordpro-stepper.is-sm .titan-chordpro-stepper-btn:hover {
+  background: var(--hover);
+}
+.titan-chordpro-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.titan-chordpro-action.is-lg {
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 13px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.titan-chordpro-action.is-md {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.titan-chordpro-action.is-sm {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.titan-chordpro-action.is-chord { background: var(--chord); color: var(--chord-ink); }
+.titan-chordpro-action.is-pill { background: var(--pill); color: var(--pill-ink); }
+.titan-chordpro-action.is-danger { background: var(--danger); color: #fff; }
+.titan-chordpro-action.is-ghost {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  min-height: 40px;
+  height: auto;
+  padding: 0 12px;
+  border-radius: 11px;
+  font-size: 12.5px;
+}
+.titan-chordpro-action.is-ghost.is-sm {
+  min-height: 0;
+  height: 32px;
+  padding: 0 11px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.titan-chordpro-action.is-bordered { border: 1px solid var(--line); }
+.titan-chordpro-action.is-block { width: 100%; }
+.titan-chordpro-action:disabled { opacity: 0.45; cursor: not-allowed; }
+.titan-chordpro-root button.titan-chordpro-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.titan-chordpro-list-row.is-current {
+  border-color: var(--chord-edge);
+  background: var(--chord-soft);
+}
+.titan-chordpro-list-row.is-dim { opacity: 0.72; }
+.titan-chordpro-list-row:hover { background: var(--surface-hover); }
+.titan-chordpro-list-row.is-current:hover { background: var(--chord-soft); }
+.titan-chordpro-list-row-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.titan-chordpro-list-row-num {
+  flex: none;
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.titan-chordpro-list-row-num.is-current,
+.titan-chordpro-list-row-title.is-current { color: var(--chord); }
+.titan-chordpro-list-row-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.titan-chordpro-list-row-sub {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.titan-chordpro-list-row-hint {
+  margin-left: auto;
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.titan-chordpro-list-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.titan-chordpro-list-card.is-op { flex-wrap: nowrap; padding: 10px 11px; }
+.titan-chordpro-meta-rhythm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 9px;
+}
+@media (max-width: 359px) {
+  .titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-rhythm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.titan-chordpro-id-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+}
+.titan-chordpro-id-name input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  padding: 4px 0;
+}
+.titan-chordpro-id-title {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.titan-chordpro-id-sub {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.titan-chordpro-id-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid;
+  background: var(--surface);
+}
+.titan-chordpro-id-card.is-duration {
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  background: var(--canvas);
+}
+.titan-chordpro-id-card.is-field {
+  gap: 7px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+.titan-chordpro-id-card.is-key { gap: 8px; }
+.titan-chordpro-id-kicker {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.titan-chordpro-id-duration-row,
+.titan-chordpro-id-bpm-row,
+.titan-chordpro-id-key-head,
+.titan-chordpro-id-key-shown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.titan-chordpro-id-duration-row { align-items: baseline; }
+.titan-chordpro-id-key-head { justify-content: space-between; }
+.titan-chordpro-id-duration {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.titan-chordpro-id-mmss { font-size: 11px; color: var(--muted); }
+.titan-chordpro-id-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.titan-chordpro-id-bpm {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+.titan-chordpro-id-bpm-unit { font-size: 10.5px; color: var(--muted); }
+.titan-chordpro-id-chips,
+.titan-chordpro-id-keys { display: flex; flex-wrap: wrap; }
+.titan-chordpro-id-chips { gap: 5px; }
+.titan-chordpro-id-keys { gap: 4px; }
+.titan-chordpro-id-key-shown span {
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--chord);
+}
+.titan-chordpro-root button.titan-chordpro-quiet-btn {
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.titan-chordpro-id-source {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+}
+.titan-chordpro-id-source-input {
+  width: 100%;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
+  font-size: 11.5px;
+}

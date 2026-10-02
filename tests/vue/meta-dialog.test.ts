@@ -93,7 +93,7 @@ describe('MetaDialog', () => {
     expect((w.get('[data-meta-tempo]').element as HTMLInputElement).value).toBe('90')
     expect((w.get('[data-meta-duration]').element as HTMLInputElement).value).toBe('04:26')
     expect(w.get('[data-meta-key-shown]').text()).toBe('G')
-    expect(w.get('[data-meta-time="4/4"]').attributes('style')).toContain('var(--chord)')
+    expect(w.get('[data-meta-time="4/4"]').classes()).toContain('is-on')
   })
 
   it('writes duration, time and reference back into the source on apply', async () => {

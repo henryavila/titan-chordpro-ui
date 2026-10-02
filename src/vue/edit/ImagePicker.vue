@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
 import type { ImageChoice } from '../use/useBlockEdit'
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 
 const props = defineProps<{
   items: ImageChoice[]
@@ -62,19 +62,16 @@ onUnmounted(clearPreview)
 </script>
 
 <template>
-  <div class="titan-chordpro-modal" data-image-picker style="align-items:center;padding:20px;">
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div
-      class="titan-chordpro-veil-2 titan-chordpro-modal-card"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Imagem da partitura"
-      style="max-width:430px;max-height:min(560px,86%);overflow-y:auto;padding:15px;border-radius:18px;"
-    >
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span class="titan-chordpro-modal-kicker">{{ replacing ? 'Trocar imagem' : 'Imagem da partitura' }}</span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
-      </div>
+  <TitanChordproDialogShell
+    variant="center"
+    :z="34"
+    :label="replacing ? 'Trocar imagem' : 'Imagem da partitura'"
+    :kicker="replacing ? 'Trocar imagem' : 'Imagem da partitura'"
+    :root-attrs="{ 'data-image-picker': '' }"
+    panel-class="titan-chordpro-modal-card"
+    :panel-style="{ maxWidth: '430px', maxHeight: 'min(560px, 86%)', overflowY: 'auto', padding: '15px', borderRadius: '18px' }"
+    @close="emit('close')"
+  >
       <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">
         A cifra guarda só o nome. O arquivo fica no app.
       </span>
@@ -124,6 +121,5 @@ onUnmounted(clearPreview)
       <div v-else-if="!uploadImage" style="font-size:12px;line-height:1.5;color:var(--muted);padding:6px 0;">
         Este app ainda não recebe imagem.
       </div>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

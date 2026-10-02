@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
+import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 import type { ViewHeadModel } from './view-head'
 
 defineProps<ViewHeadModel>()
@@ -103,8 +105,8 @@ const emit = defineEmits<{
         </div>
         <div v-if="capoOpen" class="titan-chordpro-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:titan-chordpro-rise .18s ease-out;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Capotraste</span>
-            <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);" @click="capoOpen = false"><TitanChordproIcon name="x" :size="14" /></button>
+            <span class="titan-chordpro-modal-kicker">Capotraste</span>
+            <TitanChordproIconButton icon="x" density="bar" muted aria-label="Fechar" @click="capoOpen = false" />
           </div>
           <div style="display:flex;align-items:center;gap:7px;">
             <button aria-label="Capo abaixo" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('capo-nudge', -1)">−</button>
@@ -115,28 +117,14 @@ const emit = defineEmits<{
             <span v-for="(s, i) in capoShapes" :key="`${s}-${i}`" class="titan-chordpro-capo-chip" data-capo-chip>{{ s }}</span>
           </div>
           <div v-else data-capo-hint class="titan-chordpro-capo-hint--text" style="font-size:11.5px;">{{ capoHint }}</div>
-          <button
+          <TitanChordproSwitchRow
             data-dual
-            role="switch"
-            :aria-checked="mapOn"
+            :on="mapOn"
             :disabled="!hasCapo"
-            :style="{
-              border: `1px solid ${hasCapo && twin ? 'var(--chord-edge)' : 'var(--line)'}`,
-              background: hasCapo && twin ? 'var(--chord-soft)' : 'transparent',
-              opacity: hasCapo ? '1' : '0.45',
-              cursor: hasCapo ? 'pointer' : 'default',
-            }"
-            style="display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:12px;color:var(--text);font-family:inherit;text-align:left;"
+            title="Modo dual"
+            :hint="hasCapo ? (mapOn ? 'Duas cifras na mesma linha: quem está com capo e quem não está.' : 'Desligado, a cifra vira as formas do capo — quem toca sozinho.') : 'Liga com o capotraste: duas cifras, ou só as formas.'"
             @click="hasCapo && emit('toggle-map')"
-          >
-            <span :style="{ background: hasCapo && twin ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-              <span :style="{ left: hasCapo && twin ? '14px' : '2px', background: hasCapo && twin ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-            </span>
-            <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-              <span style="font-size:12.5px;font-weight:600;">Modo dual</span>
-              <span style="font-size:11px;line-height:1.4;color:var(--muted);text-wrap:pretty;min-height:30px;">{{ hasCapo ? (mapOn ? 'Duas cifras na mesma linha: quem está com capo e quem não está.' : 'Desligado, a cifra vira as formas do capo — quem toca sozinho.') : 'Liga com o capotraste: duas cifras, ou só as formas.' }}</span>
-            </span>
-          </button>
+          />
           <button
             :disabled="!hasCapo"
             :style="{ opacity: hasCapo ? '1' : '0.4', cursor: hasCapo ? 'pointer' : 'default' }"

@@ -18,6 +18,7 @@ import {
 import type { Dur, ScoreMeta, ScoreNote } from '@henryavila/titan-chordpro-ui'
 import { drawScore, loadVex } from './score-draw'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproSeg from '../ui/TitanChordproSeg.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -499,42 +500,40 @@ const emptyHint = computed(() =>
 </script>
 
 <template>
-  <div ref="rootEl" class="edp" data-score-editor>
-    <header class="edp-head">
-      <div class="edp-title" :style="{ minWidth: narrow ? '150px' : '220px' }">
+  <div ref="rootEl" class="titan-chordpro-edp" data-score-editor>
+    <header class="titan-chordpro-edp-head">
+      <div class="titan-chordpro-edp-title" :style="{ minWidth: narrow ? '150px' : '220px' }">
         <div style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;">
-          <span class="edp-title-line">{{ title || 'Partitura' }} <span style="color:var(--muted);font-weight:400;">·</span> {{ subtitle }}</span>
-          <span class="edp-meta">{{ metaLine }}</span>
+          <span class="titan-chordpro-edp-title-line">{{ title || 'Partitura' }} <span style="color:var(--muted);font-weight:400;">·</span> {{ subtitle }}</span>
+          <span class="titan-chordpro-edp-meta">{{ metaLine }}</span>
         </div>
-        <span v-if="dirty" class="edp-dirty">alterado</span>
+        <span v-if="dirty" class="titan-chordpro-edp-dirty">alterado</span>
       </div>
 
-      <div class="edp-ctrls" :style="{ order: narrow ? 1 : 0 }">
+      <div class="titan-chordpro-edp-ctrls" :style="{ order: narrow ? 1 : 0 }">
         <button
-          class="edp-btn edp-btn--soft"
+          class="titan-chordpro-edp-btn titan-chordpro-edp-btn--soft"
           data-swap-inst
           title="Alterna só a forma de digitar — o que fica salvo é o mesmo"
           @click="inst = guitar ? 'piano' : 'guitar'"
         >
-          <span class="edp-kicker">Entrada</span>{{ guitar ? 'Violão' : 'Piano' }}<TitanChordproIcon name="arrowLR" :size="14" style="color:var(--muted)" />
+          <span class="titan-chordpro-edp-kicker">Entrada</span>{{ guitar ? 'Violão' : 'Piano' }}<TitanChordproIcon name="arrowLR" :size="14" style="color:var(--muted)" />
         </button>
 
-        <div class="edp-seg">
-          <button
-            v-for="v in ([['score', 'Partitura'], ['tab', 'TAB'], ['both', 'Ambos']] as const)"
-            :key="v[0]"
-            :aria-pressed="!grand && view === v[0]"
-            :style="{
-              background: !grand && view === v[0] ? 'var(--pill)' : 'transparent',
-              color: !grand && view === v[0] ? 'var(--pill-ink)' : 'var(--muted)',
-              fontWeight: !grand && view === v[0] ? 700 : 500,
-            }"
-            @click="view = v[0]; grand = false"
-          >{{ v[1] }}</button>
-        </div>
+        <TitanChordproSeg
+          class="titan-chordpro-edp-seg"
+          label="Vista da partitura"
+          :value="grand ? '' : view"
+          :options="[
+            { value: 'score', label: 'Partitura' },
+            { value: 'tab', label: 'TAB' },
+            { value: 'both', label: 'Ambos' },
+          ]"
+          @pick="(next) => { view = next as 'score' | 'tab' | 'both'; grand = false }"
+        />
 
         <button
-          class="edp-btn"
+          class="titan-chordpro-edp-btn"
           data-grand
           title="Duas pautas, sol e fá"
           :aria-pressed="grand"
@@ -547,7 +546,7 @@ const emptyHint = computed(() =>
         >Pauta dupla</button>
 
         <button
-          class="edp-btn"
+          class="titan-chordpro-edp-btn"
           data-play
           :style="{
             borderColor: playing ? 'var(--pill)' : 'var(--line)',
@@ -563,7 +562,7 @@ const emptyHint = computed(() =>
 
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto;" :style="{ order: narrow ? 0 : 1 }">
         <button
-          class="edp-btn"
+          class="titan-chordpro-edp-btn"
           data-score-cancel
           title="Sai sem gravar no bloco"
           :style="{
@@ -572,40 +571,40 @@ const emptyHint = computed(() =>
           }"
           @click="discard"
         >{{ confirmDiscard ? 'Confirmar' : 'Descartar' }}</button>
-        <button class="edp-btn edp-btn--primary" data-score-save :style="{ opacity: dirty ? 1 : 0.6 }" @click="save">Salvar no bloco</button>
+        <button class="titan-chordpro-edp-btn titan-chordpro-edp-btn--primary" data-score-save :style="{ opacity: dirty ? 1 : 0.6 }" @click="save">Salvar no bloco</button>
       </div>
     </header>
 
-    <section class="edp-stage" :style="{ minHeight: narrow ? '210px' : '0' }">
-      <div class="edp-paper">
+    <section class="titan-chordpro-edp-stage" :style="{ minHeight: narrow ? '210px' : '0' }">
+      <div class="titan-chordpro-edp-paper">
         <div ref="hostEl" style="min-height:140px;" />
-        <p v-if="!notes.length" class="edp-empty">{{ emptyHint }}</p>
-        <p v-else-if="!vexReady" class="edp-empty">
+        <p v-if="!notes.length" class="titan-chordpro-edp-empty">{{ emptyHint }}</p>
+        <p v-else-if="!vexReady" class="titan-chordpro-edp-empty">
           O desenho da pauta precisa da biblioteca VexFlow — a partitura continua sendo salva na cifra.
         </p>
       </div>
 
-      <div v-if="imported" class="edp-imported">
+      <div v-if="imported" class="titan-chordpro-edp-imported">
         <span>TAB em texto importada: {{ imported }} notas lidas como semínimas. O texto não trazia ritmo — ajuste a figura de cada nota antes de salvar.</span>
       </div>
 
-      <div v-if="showSrc" class="edp-src">
+      <div v-if="showSrc" class="titan-chordpro-edp-src">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <span class="edp-kicker">Como fica salvo na cifra</span>
+          <span class="titan-chordpro-edp-kicker">Como fica salvo na cifra</span>
           <span style="flex:1;height:1px;background:var(--line-soft);" />
-          <span class="edp-meta">extensão ChordPro</span>
+          <span class="titan-chordpro-edp-meta">extensão ChordPro</span>
         </div>
         <pre>{{ source }}</pre>
       </div>
     </section>
 
-    <div class="edp-bars">
-      <span class="edp-kicker">Compassos</span>
+    <div class="titan-chordpro-edp-bars">
+      <span class="titan-chordpro-edp-kicker">Compassos</span>
       <div style="display:flex;gap:7px;overflow-x:auto;max-width:100%;">
         <button
           v-for="b in bars"
           :key="b.bi"
-          class="edp-bar"
+          class="titan-chordpro-edp-bar"
           title="Ir para este compasso"
           :style="{ borderColor: b.on ? 'var(--chord-edge)' : 'var(--line)' }"
           @click="goBar(b.bi)"
@@ -625,18 +624,18 @@ const emptyHint = computed(() =>
       <span :style="{ color: closed ? 'var(--muted)' : 'var(--danger)' }" style="font-family:'Space Mono',monospace;font-size:11px;">{{ fillStatus }}</span>
       <div style="flex:1;" />
       <span v-if="!narrow" style="font-size:11px;color:var(--muted);">a nota nova entra depois da selecionada · {{ keyHint }}</span>
-      <button class="edp-mini" :disabled="!hist.length" title="Desfazer (Ctrl+Z)" @click="undo">Desfazer</button>
-      <button class="edp-mini" data-score-src @click="showSrc = !showSrc">{{ showSrc ? 'Ocultar fonte' : 'Ver fonte' }}</button>
+      <button class="titan-chordpro-edp-mini" :disabled="!hist.length" title="Desfazer (Ctrl+Z)" @click="undo">Desfazer</button>
+      <button class="titan-chordpro-edp-mini" data-score-src @click="showSrc = !showSrc">{{ showSrc ? 'Ocultar fonte' : 'Ver fonte' }}</button>
     </div>
 
-    <footer class="edp-foot">
+    <footer class="titan-chordpro-edp-foot">
       <div style="flex:none;display:flex;flex-direction:column;gap:7px;">
-        <span class="edp-kicker">Figura</span>
+        <span class="titan-chordpro-edp-kicker">Figura</span>
         <div style="display:flex;gap:5px;">
           <button
             v-for="d in DURS"
             :key="d.d"
-            class="edp-dur"
+            class="titan-chordpro-edp-dur"
             :title="d.name"
             :aria-pressed="dur === d.d"
             :style="{
@@ -657,7 +656,7 @@ const emptyHint = computed(() =>
         </div>
         <div style="display:flex;gap:5px;">
           <button
-            class="edp-flat"
+            class="titan-chordpro-edp-flat"
             :aria-pressed="slide"
             :style="{
               borderColor: slide ? 'var(--chord-edge)' : 'var(--line)',
@@ -666,9 +665,9 @@ const emptyHint = computed(() =>
             }"
             @click="toggleSlide"
           >Slide</button>
-          <button class="edp-flat" data-add-rest @click="addRest">Pausa</button>
+          <button class="titan-chordpro-edp-flat" data-add-rest @click="addRest">Pausa</button>
           <button
-            class="edp-flat"
+            class="titan-chordpro-edp-flat"
             data-del-note
             :disabled="!cur"
             title="Remove a nota selecionada (Backspace)"
@@ -680,7 +679,7 @@ const emptyHint = computed(() =>
 
       <div v-if="guitar" style="flex:1;min-width:260px;display:flex;flex-wrap:wrap;gap:14px;">
         <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:7px;">
-          <span class="edp-kicker">Cordas · toque para escrever</span>
+          <span class="titan-chordpro-edp-kicker">Cordas · toque para escrever</span>
           <div style="flex:1;overflow-x:auto;padding-bottom:4px;">
             <div style="display:flex;flex-direction:column;gap:2px;width:max-content;min-width:100%;">
               <div v-for="r in rows" :key="r.label" style="display:flex;align-items:stretch;height:26px;">
@@ -688,7 +687,7 @@ const emptyHint = computed(() =>
                 <button
                   v-for="(c, ci) in r.cells"
                   :key="ci"
-                  class="edp-cell"
+                  class="titan-chordpro-edp-cell"
                   :aria-label="c.aria"
                   :aria-pressed="c.on"
                   :disabled="c.bar"
@@ -705,12 +704,12 @@ const emptyHint = computed(() =>
           </div>
         </div>
         <div style="flex:none;display:flex;flex-direction:column;gap:7px;">
-          <span class="edp-kicker">Casa</span>
+          <span class="titan-chordpro-edp-kicker">Casa</span>
           <div style="display:grid;grid-template-columns:repeat(7,34px);gap:4px;">
             <button
               v-for="f in 14"
               :key="f"
-              class="edp-fret"
+              class="titan-chordpro-edp-fret"
               :aria-pressed="curTab?.fret === f - 1"
               :style="{
                 borderColor: curTab?.fret === f - 1 ? 'var(--chord-edge)' : 'var(--line)',
@@ -725,10 +724,10 @@ const emptyHint = computed(() =>
 
       <div v-else style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:7px;">
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
-          <span class="edp-kicker">Teclas · toque para escrever</span>
-          <span class="edp-meta">oitavas {{ oct }}–{{ oct + 2 }}</span>
-          <button class="edp-oct" aria-label="Uma oitava abaixo" @click="oct = Math.max(2, oct - 1)">−</button>
-          <button class="edp-oct" aria-label="Uma oitava acima" @click="oct = Math.min(6, oct + 1)">+</button>
+          <span class="titan-chordpro-edp-kicker">Teclas · toque para escrever</span>
+          <span class="titan-chordpro-edp-meta">oitavas {{ oct }}–{{ oct + 2 }}</span>
+          <button class="titan-chordpro-edp-oct" aria-label="Uma oitava abaixo" @click="oct = Math.max(2, oct - 1)">−</button>
+          <button class="titan-chordpro-edp-oct" aria-label="Uma oitava acima" @click="oct = Math.min(6, oct + 1)">+</button>
           <span style="flex:1;" />
           <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--chord);">{{ tabHint }}</span>
         </div>
@@ -738,7 +737,7 @@ const emptyHint = computed(() =>
               <button
                 v-for="w in keys.whites"
                 :key="w.midi"
-                class="edp-white"
+                class="titan-chordpro-edp-white"
                 :aria-label="w.aria"
                 :style="{
                   borderColor: w.on ? 'var(--chord-edge)' : 'var(--line)',
@@ -751,7 +750,7 @@ const emptyHint = computed(() =>
             <button
               v-for="b in keys.blacks"
               :key="b.midi"
-              class="edp-black"
+              class="titan-chordpro-edp-black"
               :aria-label="b.aria"
               :style="{
                 left: b.left,

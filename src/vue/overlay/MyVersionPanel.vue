@@ -2,7 +2,7 @@
 import { nextTick, ref, watch } from 'vue'
 import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 import type { OpCard } from '../use/useOverlay'
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -47,26 +47,21 @@ function statusLabel(s: Suggestion): string {
 <template>
   <!-- Every adjustment on its own, revertable on its own: a personal version
        that cannot be undone piece by piece is a fork, not a personalisation. -->
-  <div class="titan-chordpro-sheet" :class="{ 'is-compact': compact }" style="z-index:37;">
-    <div class="titan-chordpro-scrim" style="backdrop-filter:blur(5px);" @click="emit('close')" />
-    <div
-      class="titan-chordpro-dialog titan-chordpro-veil-2"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Minha versão"
-      data-my-panel
-      style="max-width:470px;max-height:min(600px,86%);overflow-y:auto;padding:15px;gap:9px;"
-    >
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ mineLabel }}</span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:26px;height:26px;border-radius:8px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="14" /></button>
-      </div>
+  <TitanChordproDialogShell
+    :compact="compact"
+    label="Minha versão"
+    :kicker="mineLabel"
+    :z="37"
+    panel-class="is-my"
+    data-my-panel
+    @close="emit('close')"
+  >
 
       <div
         v-for="op in ops"
         :key="op.id"
         data-my-op
-        style="display:flex;align-items:flex-start;gap:10px;padding:10px 11px;border:1px solid var(--line-soft);border-radius:13px;background:var(--surface);"
+        class="titan-chordpro-list-card is-op"
       >
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">{{ op.label }}</span>
@@ -160,6 +155,5 @@ function statusLabel(s: Suggestion): string {
         style="display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;border:0;border-radius:12px;font-size:12.5px;"
         @click="emit('revertAll')"
       >{{ revertAllLabel }}</button>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

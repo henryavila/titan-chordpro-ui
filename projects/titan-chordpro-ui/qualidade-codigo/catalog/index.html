@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B0D12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Canônico · Ajuste</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root, [data-theme="dark"] {
+      color-scheme: dark;
+      --canvas: #0B0D12;
+      --text: #EAECF2;
+      --muted: #888F9E;
+      --chord: #84DFA6;
+      --chord-ink: #10131A;
+      --chord-fill: rgba(132, 223, 166, 0.17);
+      --chord-edge: rgba(132, 223, 166, 0.3);
+      --line: rgba(255, 255, 255, 0.1);
+      --line-soft: rgba(255, 255, 255, 0.06);
+      --surface: rgba(255, 255, 255, 0.04);
+      --sel: rgba(255, 255, 255, 0.1);
+      --sel-line: rgba(255, 255, 255, 0.22);
+      --focus: #84DFA6;
+      --page: #07090D;
+    }
+    [data-theme="light"] {
+      color-scheme: light;
+      --canvas: #F5F6F8;
+      --text: #13161D;
+      --muted: #5B6270;
+      --chord: #17713C;
+      --chord-ink: #FFFFFF;
+      --chord-fill: rgba(23, 113, 60, 0.17);
+      --chord-edge: rgba(23, 113, 60, 0.3);
+      --line: rgba(19, 22, 29, 0.12);
+      --line-soft: rgba(19, 22, 29, 0.07);
+      --surface: rgba(19, 22, 29, 0.035);
+      --sel: rgba(19, 22, 29, 0.07);
+      --sel-line: rgba(19, 22, 29, 0.2);
+      --focus: #17713C;
+      --page: #ECEEF2;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--page); color: var(--text); font-family: Sora, system-ui, sans-serif; }
+    body { padding: 16px 16px calc(128px + env(safe-area-inset-bottom)); }
+    header { margin: 8px 0 16px; }
+    .kicker { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 6px; }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 8px; }
+    .lede { font-size: 15px; line-height: 1.45; color: var(--muted); margin: 0; }
+    .done {
+      margin: 14px 0 0; padding: 12px 14px; border-radius: 14px;
+      border: 1px solid var(--chord-edge); background: var(--chord-fill);
+      font-size: 14px; line-height: 1.4;
+    }
+    .done b { color: var(--chord); }
+    .done + .done { margin-top: 8px; }
+    .tools { display: flex; gap: 8px; margin: 14px 0 0; }
+    .tools button {
+      min-height: 44px; padding: 0 14px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--surface); color: var(--text);
+      font: 600 14px Sora, system-ui; cursor: pointer;
+    }
+    .tools button[aria-pressed="true"] { border-color: var(--chord-edge); background: var(--chord-fill); color: var(--chord); }
+    h2 { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 28px 0 10px; }
+    .card {
+      background: var(--canvas);
+      border: 1px solid var(--line-soft);
+      border-radius: 18px;
+      padding: 16px;
+      margin: 0 0 12px;
+    }
+    .tag { font-size: 12px; font-weight: 700; color: var(--chord); margin: 0 0 4px; }
+    .card p { font-size: 14px; line-height: 1.4; color: var(--muted); margin: 0 0 14px; }
+    .stage { display: flex; align-items: center; gap: 10px; min-height: 56px; flex-wrap: wrap; }
+    .ghost {
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; background: transparent; color: var(--text);
+      font-family: inherit; cursor: default; border-radius: 14px;
+    }
+    .bar {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 36px; padding: 0 12px; border-radius: 12px;
+      font: 600 12.5px Sora, system-ui; color: var(--text); cursor: default;
+    }
+    .choice {
+      display: block; width: 100%; text-align: left;
+      background: var(--canvas); color: var(--text);
+      border: 1px solid var(--line); border-radius: 16px;
+      padding: 14px 14px 14px 16px; margin: 0 0 10px;
+      font: inherit; cursor: pointer; min-height: 72px;
+    }
+    .choice .n {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 9px;
+      background: var(--chord); color: var(--chord-ink);
+      font-size: 14px; font-weight: 700; margin-right: 8px; vertical-align: middle;
+    }
+    .choice strong { font-size: 16px; }
+    .choice span { display: block; margin: 6px 0 0 36px; font-size: 14px; line-height: 1.4; color: var(--muted); }
+    .choice.is-rec { border-color: var(--chord-edge); background: var(--chord-fill); }
+    .choice.is-rec .n { background: var(--text); color: var(--canvas); }
+    .foot {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--page) 88%, transparent);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line-soft);
+      font-size: 14px; line-height: 1.35; color: var(--muted);
+    }
+    .foot b { color: var(--text); }
+  </style>
+</head>
+<body data-theme="dark">
+  <header>
+    <p class="kicker">Dicionário · família 3</p>
+    <h1>Ajuste</h1>
+    <p class="lede">No telefone é só o ícone. No computador tem a palavra. Ligado usa --sel nos dois.</p>
+    <p class="done"><b>Rolar</b> — visual do computador, 44 / 36 por tela.</p>
+    <p class="done"><b>A− A+</b> — bandeja 44 no telefone; 36×36 no computador e na edição.</p>
+    <div class="tools">
+      <button type="button" id="dark" aria-pressed="true">Escuro</button>
+      <button type="button" id="light" aria-pressed="false">Claro</button>
+    </div>
+  </header>
+
+  <h2>O que vale</h2>
+
+  <article class="card">
+    <p class="tag">A · telefone · só ícone</p>
+    <p>Ghost 44×44, raio 14. Tem aria-pressed. Ligado: fundo --sel e borda --sel-line.</p>
+    <div class="stage">
+      <button type="button" class="ghost" style="width:44px;height:44px;" tabindex="-1" aria-label="desligado">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+      </button>
+      <button type="button" class="ghost" style="width:44px;height:44px;background:var(--sel);border:1px solid var(--sel-line);" tabindex="-1" aria-label="ligado">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+      </button>
+    </div>
+  </article>
+
+  <article class="card">
+    <p class="tag">B · computador · ícone + “Ajuste”</p>
+    <p>Barra 36px, peso 600. Tem aria-pressed, igual ao telefone. Idle com borda transparente (não ghost puro).</p>
+    <div class="stage">
+      <button type="button" class="bar" style="background:transparent;border:1px solid transparent;" tabindex="-1" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+        Ajuste
+      </button>
+      <button type="button" class="bar" style="background:var(--sel);border:1px solid var(--sel-line);" tabindex="-1" aria-pressed="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+        Ajuste
+      </button>
+    </div>
+  </article>
+
+  <h2>Escolha fechada</h2>
+
+  <button type="button" class="choice" data-pick="1">
+    <span class="n">1</span><strong>Só ícone em todo lugar</strong>
+    <span>O A do telefone, também no computador. Sem a palavra.</span>
+  </button>
+  <button type="button" class="choice" data-pick="2">
+    <span class="n">2</span><strong>Ícone + “Ajuste” em todo lugar</strong>
+    <span>O B do computador, também no telefone (a barra aperta).</span>
+  </button>
+  <button type="button" class="choice is-rec" data-pick="3">
+    <span class="n">3</span><strong>Um componente: ícone no telefone, palavra no computador</strong>
+    <span>Recomendado. Mesmo ligado (--sel), aria-pressed nos dois. Só muda o rótulo e o tamanho (44 / 36).</span>
+  </button>
+  <button type="button" class="choice" data-pick="4">
+    <span class="n">4</span><strong>Outro</strong>
+    <span>Descreva no chat.</span>
+  </button>
+
+  <p class="foot">A opção 3 está fechada: ícone no telefone, palavra no computador, aria-pressed nos dois.</p>
+
+  <script>
+    const root = document.body
+    const dark = document.getElementById('dark')
+    const light = document.getElementById('light')
+    function setTheme(t) {
+      root.dataset.theme = t
+      dark.setAttribute('aria-pressed', String(t === 'dark'))
+      light.setAttribute('aria-pressed', String(t === 'light'))
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#0B0D12' : '#F5F6F8')
+    }
+    dark.onclick = () => setTheme('dark')
+    light.onclick = () => setTheme('light')
+    document.querySelectorAll('[data-pick]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const n = btn.dataset.pick
+        try { await navigator.clipboard.writeText(n) } catch {}
+        document.querySelectorAll('[data-pick]').forEach((b) => b.style.outline = '')
+        btn.style.outline = '2px solid var(--focus)'
+        document.querySelector('.foot').innerHTML = 'Copiado: <b>' + n + '</b>. Confirme esse número no chat.'
+      })
+    })
+  </script>
+</body>
+</html>

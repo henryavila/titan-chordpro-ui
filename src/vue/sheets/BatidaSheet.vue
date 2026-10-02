@@ -25,6 +25,7 @@ import {
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import BatidaPresets from '../edit/BatidaPresets.vue'
 import BatidaSlotPicker from '../edit/BatidaSlotPicker.vue'
 import { slotIndexAtClock } from '../use/useStrumSound'
@@ -454,10 +455,8 @@ function save() {
     >
       <div v-if="compact" class="batida-sheet-grab" />
       <div class="batida-sheet-head">
-        <span class="batida-sheet-kicker">Batida</span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
-          <TitanChordproIcon name="x" :size="16" />
-        </button>
+        <span class="titan-chordpro-modal-kicker">Batida</span>
+        <TitanChordproIconButton icon="x" :density="compact ? 'phone' : 'bar'" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
       <div data-batida-patterns class="batida-patterns">
@@ -552,13 +551,13 @@ function save() {
           type="button"
           class="batida-sound-chip"
           data-batida-sound
+          role="switch"
+          :aria-checked="soundEnabled ? 'true' : 'false'"
           :aria-pressed="soundEnabled ? 'true' : 'false'"
           :aria-label="soundEnabled ? 'Som ligado' : 'Som desligado'"
           @click="emit('toggle-sound')"
         >
-          <span class="batida-sound-knob" :class="{ 'is-on': soundEnabled }">
-            <span class="batida-sound-thumb" :class="{ 'is-on': soundEnabled }" />
-          </span>
+          <span class="titan-chordpro-switch" :class="{ 'is-on': soundEnabled }"><span class="titan-chordpro-switch-thumb" /></span>
           <span data-batida-sound-label>{{ soundEnabled ? 'Som' : 'Mudo' }}</span>
         </button>
         <button
@@ -821,31 +820,6 @@ function save() {
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-}
-.batida-sound-knob {
-  flex: none;
-  width: 28px;
-  height: 16px;
-  border-radius: 8px;
-  background: var(--line);
-  position: relative;
-}
-.batida-sound-knob.is-on {
-  background: var(--chord);
-}
-.batida-sound-thumb {
-  position: absolute;
-  top: 1px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition: left 0.16s ease;
-}
-.batida-sound-thumb.is-on {
-  left: 12px;
-  background: var(--chord-ink);
 }
 .batida-preview-btn {
   min-width: 88px;

@@ -7,18 +7,7 @@ import {
   blockSpan,
   isScoreReference,
   isInlineScore,
-  buildTimeline,
-  buildPdfFilename,
-  buildPpsxFilename,
-  buildSljaFilename,
-  EXPORT_MIME,
-  clockOf,
-  createSourceSession,
   editTypeScale,
-  etaSec,
-  exportCho,
-  exportChoFile,
-  formatEta,
   hasSongDuration,
   isParseFatal,
   layoutChartFull,
@@ -33,11 +22,7 @@ import {
   transpose,
   isCompleteStrumPattern,
   repairStrumPattern,
-  playheadAtScroll,
-  readMeta,
   readStrumPatterns,
-  runSec,
-  scrollAtPlayhead,
   sheetBpm,
   transposeToken,
   typeScale,
@@ -60,26 +45,20 @@ import {
   readUserPreferences,
   updateUserPreferences,
   notationBlockIds,
-  readNotationPreferences,
-  writeNotationPreferences,
-  type NotationPreferences,
   type StrumPattern,
   type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
 import type {
+  ChartBlock,
   ChartStore,
   Lens,
-  ReadingCtx,
   SaveStrumPresetPayload,
   StrumPreset,
   ThemeId,
-  Timeline,
-  TimelineBlock,
 } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import DiagramModal from './overlay/DiagramModal.vue'
 import type { DiagramInstrumentChoice } from './overlay/DiagramModal.vue'
-import { downloadExportedFile, runExportJob } from './export/run-export'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
@@ -98,6 +77,13 @@ import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
 import TitanChordproViewHead from './chrome/TitanChordproViewHead.vue'
 import type { ViewHeadModel } from './chrome/view-head'
+import type {
+  EditDockModel,
+  EditHeadModel,
+  MoreSheetModel,
+  PhoneDockModel,
+  WideDockModel,
+} from './chrome/dock-model'
 import TitanChordproCapoLegend from './chrome/TitanChordproCapoLegend.vue'
 import TitanChordproStates from './chrome/TitanChordproStates.vue'
 import TitanChordproEditHead from './chrome/TitanChordproEditHead.vue'
@@ -121,18 +107,24 @@ import {
   type SoundSource,
 } from './use/rehearsal-audio'
 import { useOverlay } from './use/useOverlay'
-import { useSetlist, type SongSpot } from './use/useSetlist'
+import { useSetlist } from './use/useSetlist'
 import { useSongSwipe } from './use/useSongSwipe'
 import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
+import { useAutoScroll } from './use/useAutoScroll'
+import { useChromeLayout } from './use/useChromeLayout'
+import { useEditSession } from './use/useEditSession'
+import { useExport } from './use/useExport'
+import { useNotationPrefs } from './use/useNotationPrefs'
 import { mediaSessionArtwork, useMediaSession } from './use/useMediaSession'
 import defaultArt from './assets/audio-ref-default.jpg'
 import type { TitanChordproProps, EditMode, RehearsalFocus, WriteMode } from './public'
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
 import TitanChordproIcon from './icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from './ui/TitanChordproIconButton.vue'
 import type { TitanChordproIconName } from './icon/paths'
 import './titan-chordpro.css'
 
@@ -272,20 +264,88 @@ const sysDark = ref(
 )
 const bias = ref(0)
 const fit = ref<boolean | null>(null)
-const scrolling = ref(false)
-/** Paper the chart has left to give, in px. Zero when it fits the frame. */
-const scrollRoom = ref(0)
-const mul = ref(1)
-const progress = ref(0)
-const etaLabel = ref('—')
-const sheet = ref(false)
-const pdf = ref<'idle' | 'busy' | 'error'>('idle')
-const slides = ref<'idle' | 'busy' | 'error'>('idle')
-const ppsx = ref<'idle' | 'busy' | 'error'>('idle')
+/**
+ * Clock and edit-session inputs that do not exist yet. Assigned before mount,
+ * read only when a gesture or the host actually runs. One binding each —
+ * `lastSrc` lives in the session, `raf` and `swipePeekHold` in the clock.
+ */
+let parsedNow: (() => ReturnType<typeof parse>) | null = null
+let blocksNow: (() => ChartBlock[]) | null = null
+let barPxNow: (() => number) | null = null
+let followNow = () => false
+let metRunningNow = () => false
+let stopMetNow = () => {}
+let dismissEndNow = () => {}
+let offerNextNow = () => {}
+let canScrollNow = () => false
+let startLinkedNow = () => {}
+let notationReflow = false
+let ovBind: ReturnType<typeof useOverlay> | null = null
+let metBind: ReturnType<typeof useMetronome> | null = null
+let setlistBind: ReturnType<typeof useSetlist> | null = null
+let sheetBind: { value: boolean } | null = null
+let pdfBind: { value: 'idle' | 'busy' | 'error' } | null = null
+let slidesBind: { value: 'idle' | 'busy' | 'error' } | null = null
+let resetBlocks = () => {}
+let clearScoreEditors = () => {}
+let canEditNowOf = () => false
+let editModeOf: () => EditMode = () => 'none'
+let hostSourceOf: () => string = () => props.source ?? ''
+
+const {
+  scrolling,
+  scrollRoom,
+  mul,
+  progress,
+  etaLabel,
+  idle,
+  setSubPixel,
+  stopScroll,
+  startScroll,
+  toggleScroll,
+  reseatScroll,
+  reflowPage,
+  pageSpot,
+  syncScrollRoom,
+  rebuildTimeline,
+  clearTimeline,
+  stampWritten,
+  readPlayhead,
+  parkPlayhead,
+  zeroPlayhead,
+  setSwipePeekHold,
+  wake,
+  snapIdle,
+  clearIdleTimer,
+} = useAutoScroll({
+  scroller,
+  page,
+  parsed: () => {
+    if (!parsedNow) throw new Error('auto-scroll: chart not ready')
+    return parsedNow()
+  },
+  blocks: () => {
+    if (!blocksNow) throw new Error('auto-scroll: blocks not ready')
+    return blocksNow()
+  },
+  barPx: () => {
+    if (!barPxNow) throw new Error('auto-scroll: scale not ready')
+    return barPxNow()
+  },
+  notationReflow: () => notationReflow,
+  autoHide: () => props.autoHide,
+  follow: () => followNow(),
+  metRunning: () => metRunningNow(),
+  stopMet: () => stopMetNow(),
+  dismissEnd: () => dismissEndNow(),
+  offerNext: () => offerNextNow(),
+  canScroll: () => canScrollNow(),
+  startLinked: () => startLinkedNow(),
+})
+
 const toast = ref<string | null>(null)
 const toastOut = ref(false)
 const fs = ref(false)
-const idle = ref(false)
 const zen = ref(false)
 const hintOff = ref(false)
 const fitSeen = ref(false)
@@ -300,70 +360,99 @@ const lens = ref<Lens>(props.lens ?? 'none')
 const capoMap = ref(true)
 const hideComments = ref(props.hideComments)
 const srcOpen = ref(false)
-const localMode = ref<'view' | 'edit' | null>(null)
-/** Where the current edit lands: this phone, or everyone's chart. */
-const wMode = ref<WriteMode | null>(null)
-const confirmDiscard = ref(false)
 const metaOpen = ref(false)
 
-const session = createSourceSession({ source: props.source ?? '' })
-/** Working source: the draft while editing, the host source otherwise. */
-const working = ref(props.source ?? '')
-const rev = ref(0)
-let lastSrc: string | null = null
-function touch() {
-  working.value = session.getSource()
-  rev.value += 1
-  // Editing something IS the lesson: the hint has nothing left to teach.
-  if (isEdit.value && !editSeen.value) markEditSeen()
-  // A local edit saves itself: there is no button, so every keystroke becomes
-  // an anchored adjustment on top of the official text.
-  if (isEdit.value && wMode.value === 'local') ov.commitLocalFrom(working.value, enterCtx)
-  // Content mode is the official chart: the host must see the draft so a
-  // form submit (Nova, etc.) can persist it even before "Salvar para todos".
-  publishContentSource()
-  emit('dirty', dirty.value)
-}
+const {
+  session,
+  working,
+  mode,
+  isEdit,
+  wMode,
+  confirmDiscard,
+  dirty,
+  lint,
+  canUndo,
+  canRedo,
+  discardLabel,
+  touch,
+  forceBase,
+  publishBatidaSource,
+  acceptHostEcho,
+  save,
+  discard,
+  undo,
+  redo,
+  onDraft,
+  applyMeta,
+  beginEdit,
+  enterEdit,
+  exitEdit,
+  syncHostSource,
+  clearDiscardTimer,
+} = useEditSession({
+  initialSource: props.source ?? '',
+  propMode: () => props.mode,
+  editSeen: () => editSeen.value,
+  markEditSeen: () => markEditSeen(),
+  emitDirty: (value) => emit('dirty', value),
+  emitSource: (value) => emit('update:source', value),
+  emitSave: (value) => emit('save', value),
+  emitMode: (value) => emit('update:mode', value),
+  toast: (msg) => toastMsg(msg),
+  ov: () => {
+    if (!ovBind) throw new Error('edit session: overlay not ready')
+    return ovBind
+  },
+  stopScroll,
+  met: () => {
+    if (!metBind) throw new Error('edit session: metronome not ready')
+    return metBind
+  },
+  offset,
+  capo,
+  capoMap,
+  zen,
+  lens,
+  hideComments,
+  metOpen,
+  capoOpen,
+  toneOpen,
+  moreOpen,
+  metaOpen,
+  srcOpen,
+  sheet: () => {
+    if (!sheetBind) throw new Error('edit session: export sheet not ready')
+    return sheetBind
+  },
+  pdf: () => {
+    if (!pdfBind) throw new Error('edit session: pdf job not ready')
+    return pdfBind
+  },
+  slides: () => {
+    if (!slidesBind) throw new Error('edit session: slides job not ready')
+    return slidesBind
+  },
+  closeBatida: () => closeBatida(),
+  exitEnsaioBatida: () => exitEnsaioBatida(),
+  beditReset: () => resetBlocks(),
+  clearScoreEditors: () => clearScoreEditors(),
+  hostSource: () => hostSourceOf(),
+  setlist: () => {
+    if (!setlistBind) throw new Error('edit session: setlist not ready')
+    return setlistBind
+  },
+  initialCapo: () => props.initialCapo,
+  initialDual: () => props.initialDual,
+  scroller,
+  mul,
+  parkPlayhead,
+  canEditNow: () => canEditNowOf(),
+  editModeResolved: () => editModeOf(),
+})
 
-/**
- * Echo the working source to the host without the watcher treating it as a
- * new chart. `lastSrc` is the same guard `save()` uses.
- */
-function publishContentSource() {
-  if (!isEdit.value || wMode.value !== 'persisted') return
-  const cur = session.getSource()
-  lastSrc = cur
-  emit('update:source', cur)
-}
-
-/**
- * Re-baseline the editor on the current base text. Every overlay change makes
- * the reader's version a different text — the draft cannot survive it, which
- * is why reverting an adjustment drops what was typed on top of it.
- */
-function forceBase() {
-  const b = ov.baseFor(wMode.value)
-  // Also when the text already matches: `reset` is what moves the saved
-  // baseline, and a local edit that ends level with its base is not a draft.
-  if (session.getSource() === b && !session.dirty()) return
-  session.reset(b)
-  touch()
-}
-
-let raf = 0
-let written = 0
-/** Fraction of the song already played by the reading playhead. */
-let playhead = 0
-let timeline: Timeline | null = null
-let etaTick = -1
-let idleT = 0
 let toastT = 0
 let hintT = 0
-let discardT = 0
-/** Reading context at the moment the edit started — it travels with the ops. */
-let enterCtx: ReadingCtx = { transpose: 0, capo: 0 }
 let lastFocus: HTMLElement | null = null
-let userScroll: (() => void) | null = null
 let mq: MediaQueryList | null = null
 let ro: ResizeObserver | null = null
 let headRo: ResizeObserver | null = null
@@ -372,8 +461,6 @@ let dockRo: ResizeObserver | null = null
 let zenSeen = false
 let idleSeen = false
 
-const mode = computed(() => localMode.value ?? props.mode)
-const isEdit = computed(() => mode.value === 'edit')
 const themeMode = computed(() =>
   props.themeControl === 'host' ? props.theme : theme.value ?? props.theme,
 )
@@ -413,6 +500,7 @@ watch(
 )
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
 const parsed = computed(() => parse(liveSource.value))
+parsedNow = () => parsed.value
 const audioArt = computed(() => {
   if (isEdit.value) return null
   return resolveRehearsalArt(audioArtOf(liveSource.value), props.defaultAudioArt)
@@ -438,69 +526,25 @@ const fatal = computed(() => {
 const isLoading = computed(() => props.loading)
 const isEmpty = computed(() => !isLoading.value && !liveSource.value.trim())
 const isPopulated = computed(() => !isLoading.value && !isEmpty.value && !fatal.value)
-const phone = computed(() => width.value < 640)
-const compact = computed(() => phone.value)
-const bp = computed(() => {
-  const W = width.value
-  return W < 400 ? 'xs' : W < 640 ? 'sm' : W < 900 ? 'md' : W < 1280 ? 'lg' : 'xl'
-})
-const pageMax = computed(() =>
-  fs.value
-    ? ({ xs: '100%', sm: '100%', md: '100%', lg: '1040px', xl: '1180px' } as const)[bp.value]
-    : ({ xs: '100%', sm: '100%', md: '760px', lg: '880px', xl: '980px' } as const)[bp.value],
-)
-const padX = computed(() =>
-  fs.value
-    ? ({ xs: '8px', sm: '10px', md: '14px', lg: '18px', xl: '24px' } as const)[bp.value]
-    : ({ xs: '14px', sm: '16px', md: '22px', lg: '28px', xl: '40px' } as const)[bp.value],
-)
-/** Floating chrome inset above the chart (head + edit). Slightly tighter than
- * the old band so a compact head still reads as a card, not a strip. */
-const chromePad = computed(() =>
-  fs.value
-    ? ({ xs: '4px 6px 0', sm: '5px 8px 0', md: '6px 12px 0', lg: '7px 14px 0', xl: '8px 18px 0' } as const)[bp.value]
-    : ({ xs: '8px 10px 0', sm: '10px 12px 0', md: '12px 16px 0', lg: '14px 20px 0', xl: '16px 26px 0' } as const)[
-        bp.value
-      ],
-)
-const chromeTop = computed(
-  () =>
-    (fs.value
-      ? ({ xs: 4, sm: 5, md: 6, lg: 7, xl: 8 } as const)
-      : ({ xs: 8, sm: 10, md: 12, lg: 14, xl: 16 } as const))[bp.value],
-)
-const padBottom = computed(() => {
-  const base = fs.value
-    ? ({ xs: 104, sm: 106, md: 104, lg: 106, xl: 110 } as const)[bp.value]
-    : ({ xs: 124, sm: 128, md: 128, lg: 132, xl: 140 } as const)[bp.value]
-  // The dock grows when auto-scroll starts: the last line must not hide under it.
-  const reserve = base + (phone.value ? (scrolling.value ? 54 : 10) : 0)
-  // The phone dock can be taller than the fixed reserve (notably in a setlist).
-  // Keep the last row's controls above it, including a folded score's handle.
-  return `${phone.value ? Math.max(reserve, visibleDockBottom.value + 56) : reserve}px`
-})
 /**
- * Zen only fades the chrome. The page pad stays put on phone and desktop —
- * reclaiming the band used to shove the line under the eye, which a chart
- * may never do. Idle auto-hide follows the same rule (opacity only).
+ * Zen only fades the chrome. The page pad stays put — reclaiming the band
+ * used to shove the line under the eye. Idle auto-hide follows the same rule.
  */
-/**
- * Right edge of the reading column. Chrome that belongs to the chart hangs
- * here rather than off the window: on a phone the two are the same place, but
- * at 1600px the column is centred and the corner of the glass is 300px of
- * empty background away from anything the musician is looking at.
- */
-/** Flush-left overlay on a full-width frame (2px, not 12 — 20px cells at 12px sat on the lyric). */
-const countLeft = computed(() =>
-  pageMax.value === '100%' ? '2px' : `max(12px, calc((100% - ${pageMax.value}) / 2 - 28px))`,
-)
-/**
- * Below the padded title strip (chromeTop + head), not `headH` alone — that
- * ignored the chrome pad and parked "entrada" against the title.
- */
-const countTop = computed(
-  () => `${chromeTop.value + Math.max(40, headH.value || 56) + 8}px`,
-)
+const {
+  phone,
+  compact,
+  bp,
+  pageMax,
+  padX,
+  chromePad,
+  chromeTop,
+  padBottom,
+  countLeft,
+  countTop,
+  dockCtrlH,
+  dockTypeW,
+  dockPlayLabeled,
+} = useChromeLayout({ width, fs, scrolling, visibleDockBottom, headH })
 /**
  * Hard gate: no `{duration:}`, no auto-scroll. A BPM and unmarked chords are
  * not a duration. A chart that fits the frame also has nowhere to go. The
@@ -508,24 +552,8 @@ const countTop = computed(
  */
 const hasDuration = computed(() => hasSongDuration(parsed.value.meta.duration))
 const canScroll = computed(() => hasDuration.value && scrollRoom.value > 1)
+canScrollNow = () => canScroll.value
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
-/**
- * Three tiers, not two. At 320px — the narrowest phone still in use — six
- * controls at 44px plus the type pair overflow the frame by 34px, and what
- * falls off the end is the button furthest right, unreachable rather than
- * merely tight. 40px is under the 44px a thumb wants, and it is the smaller
- * concession.
- */
-const dockCtrlH = computed(() => (width.value < 360 ? '40px' : bp.value === 'xs' ? '44px' : '48px'))
-const dockIconSize = computed(() => dockCtrlH.value)
-const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs' ? '38px' : '42px'))
-/**
- * The word stays on from 360px up — Tela cheia left the dock, so 390px has
- * room again. Below that the row cannot hold it; leftover is shared across
- * the fileira (`space-between`), not parked in a flex hole after a play
- * triangle that then reads as "tocar a música".
- */
-const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
 /** Batida from `{x_titan_strum:}` / `{x_titan_strum_set:}` — toggle is the reader's choice. */
@@ -615,17 +643,6 @@ function onBatidaTogglePreview(payload: { pattern: StrumPattern; barBeats: numbe
   const bpm = pattern.bpm || sheetBpm(meta.value.tempo) || met.bpm.value
   // barBeats must be the sheet's grid math (meter × pulse), not a parallel guess.
   strumSound.togglePreview(pattern, bpm, payload.barBeats)
-}
-
-function publishBatidaSource(next: string) {
-  session.replace(next)
-  // Local edit is overlay-only — the official chart changes when the musician
-  // suggests and the owner accepts. Persisted (and view cycle) write through.
-  if (wMode.value !== 'local') {
-    lastSrc = next
-    emit('update:source', next)
-  }
-  touch()
 }
 
 function cycleStrumPattern() {
@@ -719,6 +736,7 @@ const strumDockStyle = computed(() => {
 const editModeResolved = computed<EditMode>(() =>
   resolveEditMode({ editMode: props.editMode, modes: props.modes }),
 )
+editModeOf = () => editModeResolved.value
 /** @deprecated internal alias — prefer editModeResolved */
 const modes = computed<WriteMode[]>(() => {
   const m = editModeResolved.value
@@ -735,6 +753,9 @@ const setlist = useSetlist({
   songs: computed(() => props.songs),
   loadSong: computed(() => props.loadSong),
 })
+setlistBind = setlist
+dismissEndNow = () => setlist.dismissEnd()
+offerNextNow = () => setlist.offerNext()
 const audioIdentity = computed(
   () => (setlist.on.value ? (setlist.current.value?.id ?? '') : props.songId || ''),
 )
@@ -751,6 +772,7 @@ const audio = useAudioRef(audioUrl, { identity: audioIdentity })
 const hostSource = computed(() =>
   setlist.on.value ? (setlist.currentSource.value ?? '') : (props.source ?? ''),
 )
+hostSourceOf = () => hostSource.value
 
 /** A song of the list still on its way: empty, but not "no chart loaded". */
 const songLoading = computed(
@@ -801,7 +823,7 @@ const ov = useOverlay({
     // That echo is the chart just saved, not a different song: without this
     // the source watcher resets the screen and closes the suggestion review
     // while other requests are still open.
-    lastSrc = text
+    acceptHostEcho(text)
     emit('save-content', text)
   },
   persistSuggestion: computed(() => props.persistSuggestion),
@@ -819,6 +841,7 @@ const ov = useOverlay({
   onSuggestionRefused: (p) => emit('suggestion-refused', p),
   onSuggestionQueue: (q) => emit('update:suggestionQueue', q),
 })
+ovBind = ov
 
 const phoneSub = computed(
   () =>
@@ -858,6 +881,44 @@ const originalKey = computed(() => meta.value.key || '')
 const shownKey = computed(() =>
   originalKey.value ? transposeToken(originalKey.value, offset.value, flats.value) : '',
 )
+const {
+  sheet,
+  pdf,
+  slides,
+  ppsx,
+  bundleBusy,
+  bundleError,
+  pdfExportError,
+  exportHasNotation,
+  exportAlerts,
+  doExportCho,
+  doExportBundle,
+  doExportPdf,
+  doExportSlides,
+  doExportPpsx,
+} = useExport({
+  source: () => (ov.exportOrig.value ? ov.official.value : liveSource.value),
+  semitones: () => offset.value,
+  capo: () => capo.value,
+  title: () => meta.value.title,
+  key: () => shownKey.value || null,
+  personal: () => !ov.exportOrig.value && ov.hasOverlay.value,
+  accent: () => props.accent,
+  pdfShouldFail: () => props.pdfShouldFail,
+  slidesShouldFail: () => props.slidesShouldFail,
+  ppsxShouldFail: () => props.ppsxShouldFail,
+  resolveScore: () => props.resolveScore,
+  resolveImage: () => props.resolveImage,
+  loadBundleAsset: () => props.loadBundleAsset,
+  defaultAudioArt: () => props.defaultAudioArt,
+  coverImage: () => props.coverImage,
+  slidesImage: () => props.slidesImage,
+  tabRhythm: () => tabRhythmPreference.value.value,
+  toast: (msg) => toastMsg(msg),
+})
+sheetBind = sheet
+pdfBind = pdf
+slidesBind = slides
 const playingKey = computed(() =>
   originalKey.value ? transposeToken(originalKey.value, viewSemis.value, flats.value) : '',
 )
@@ -895,6 +956,7 @@ const blocks = computed(() => {
   if (isEdit.value || !hideComments.value) return all
   return all.filter((b) => b.kind !== 'comment' && b.kind !== 'note')
 })
+blocksNow = () => blocks.value
 const twin = computed(() => layout.value.twin)
 const legend = computed(() => layout.value.legend)
 const capoPairs = computed(() => layout.value.capoPairs)
@@ -920,6 +982,7 @@ const bedit = useBlockEdit({
   },
   toast: (m) => toastMsg(m),
 })
+resetBlocks = () => bedit.reset()
 const editScale = computed(() => editTypeScale(bias.value, compact.value))
 /** The chart's own chord names, so a new one is a tap and not a spelling test. */
 const chordVocab = computed(() =>
@@ -961,6 +1024,7 @@ const scale = computed(() => {
   // No chord lane: the lyric sits where the chord used to, and wrap is tighter.
   return { ...s, chordBox: '0px', chordBoxPlain: '0px' }
 })
+barPxNow = () => scale.value.barPx
 const chartScale = computed(() => {
   const { barPx: _barPx, ...rest } = scale.value
   return rest
@@ -975,6 +1039,7 @@ const fileCapo = computed(() => Math.max(0, Number(meta.value.capo) || 0))
 const canEditNow = computed(
   () => !isEdit.value && isPopulated.value && props.canEdit && modes.value.length > 0,
 )
+canEditNowOf = () => canEditNow.value
 /** The owner's entry into the queue: only where a chart can be changed at all. */
 const queueEntry = computed(
   () =>
@@ -1045,25 +1110,6 @@ const canEditBatida = computed(
   () => isEdit.value && (wMode.value === 'local' || wMode.value === 'persisted'),
 )
 
-const dirty = computed(() => {
-  rev.value
-  // The phone version has no save: each keystroke is already stored.
-  if (wMode.value === 'local') return false
-  return session.dirty()
-})
-const lint = computed(() => {
-  rev.value
-  return session.lint()
-})
-const canUndo = computed(() => {
-  rev.value
-  return session.canUndo()
-})
-const canRedo = computed(() => {
-  rev.value
-  return session.canRedo()
-})
-const discardLabel = computed(() => (confirmDiscard.value ? 'Confirmar descarte' : 'Descartar'))
 const exportKeyNote = computed(() =>
   meta.value.key ? `em ${playingKey.value}${capo.value ? ` · capo ${capo.value}` : ''}` : '',
 )
@@ -1118,7 +1164,20 @@ const met = useMetronome({
   onFollowStop: () => stopScroll(),
   onPanelClose: () => (metOpen.value = false),
 })
+metBind = met
+followNow = () => met.follow.value
+metRunningNow = () => met.running.value
+stopMetNow = () => met.stop()
 const strumSound = useStrumSound()
+startLinkedNow = () => {
+  const silent = shouldRollSilent(rehearsalFocus.value)
+  if (!silent) {
+    applySoundSource('batida', false)
+    strumOn.value = true
+    if (strumSound.enabled.value) void strumSound.arm()
+  }
+  met.start({ silent })
+}
 const scrollTitle = computed(() => {
   if (scrollOff.value) {
     if (!hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
@@ -1208,10 +1267,7 @@ watch(chromeHidden, (gone) => {
   }
 })
 watch(rollLive, (on) => {
-  if (on && props.autoHide) {
-    window.clearTimeout(idleT)
-    idle.value = true
-  }
+  if (on && props.autoHide) snapIdle()
 })
 const toastBottom = computed(() => {
   if (chromeHidden.value) {
@@ -1289,30 +1345,18 @@ function toastMsg(msg: string) {
   }, TOAST_HOLD_MS)
 }
 
-// ---------------------------------------------------------------- auto-scroll
-// The playhead walks the chart in musical time (see core/timeline.ts); the page
-// only moves once it passes the reading line.
+// ---------------------------------------------------------------- notation
+// Collapse of tab and score blocks. The scroll clock lives in useAutoScroll.
 
 // Display choices belong to this reader, keyed by song and notation identity.
 const notationSongId = computed(() => setlist.on.value
   ? (setlist.current.value?.id ?? '')
   : (props.songId || parse(normalizeSource(hostSource.value)).meta.title || 'song'))
 const notationIds = computed(() => notationBlockIds(blocks.value))
-const notationChoices = ref<NotationPreferences>({})
+const { choices: notationChoices, save: saveNotationChoice } = useNotationPrefs(store, notationSongId)
 const collapsedNotation = computed(() => new Set(
   notationIds.value.filter((id): id is string => !!id && notationChoices.value[id]?.collapsed === true),
 ))
-function saveNotationChoice(id: string, patch: { view?: 'tab' | 'score'; collapsed?: boolean }) {
-  const current = notationChoices.value[id] ?? {}
-  const next = { ...current, ...patch }
-  const all = { ...notationChoices.value }
-  if (next.view === undefined && next.collapsed !== true) delete all[id]
-  else all[id] = next
-  notationChoices.value = all
-  writeNotationPreferences(store, notationSongId.value, all)
-}
-watch(notationSongId, songId => { notationChoices.value = readNotationPreferences(store, songId) }, { immediate: true })
-let notationReflow = false
 let notationReflowId = 0
 
 async function toggleNotation(bi: number) {
@@ -1340,7 +1384,7 @@ async function toggleNotation(bi: number) {
   const willCollapse = !collapsedNotation.value.has(id)
   saveNotationChoice(id, { collapsed: willCollapse })
   await nextTick()
-  timeline = null
+  clearTimeline()
   syncScrollRoom()
   if (scrolling.value) {
     // Keep the existing playhead. Do not infer time from the browser's clamp
@@ -1355,7 +1399,7 @@ async function toggleNotation(bi: number) {
       const keepAt = anchor === targetNode && willCollapse ? readingY : anchorTop
       el.scrollTop += anchor.getBoundingClientRect().top - keepAt
     }
-    written = el.scrollTop
+    stampWritten(el.scrollTop)
     rebuildTimeline()
   }
   requestAnimationFrame(() => {
@@ -1363,294 +1407,6 @@ async function toggleNotation(bi: number) {
     el.style.overflowAnchor = savedAnchor
     notationReflow = false
   })
-}
-
-function measureBlocks(): TimelineBlock[] {
-  const el = scroller.value
-  if (!el) return []
-  // The sub-pixel carrier is a transform on the column, and every rect below
-  // would come back shifted by it. Measure the paper, not where it is riding.
-  const carrier = page.value?.style.transform ?? ''
-  if (carrier && page.value) page.value.style.transform = ''
-  const base = el.getBoundingClientRect().top - el.scrollTop
-  const nodes = el.querySelectorAll('[data-block]')
-  const list = blocks.value
-  const out: TimelineBlock[] = []
-  for (let i = 0; i < nodes.length; i++) {
-    const b = list[i]
-    if (!b) continue
-    const r = (nodes[i] as HTMLElement).getBoundingClientRect()
-    out.push({ top: r.top - base, h: Math.max(1, r.height), music: b.music, kind: b.kind })
-  }
-  if (carrier && page.value) page.value.style.transform = carrier
-  return out
-}
-
-function rebuildTimeline(): Timeline | null {
-  const el = scroller.value
-  if (!el) {
-    timeline = null
-    return null
-  }
-  const clock = clockOf(parsed.value)
-  timeline = buildTimeline(measureBlocks(), {
-    bpm: clock.bpm,
-    beatsPerBar: clock.beatsPerBar,
-    marksPerBeat: clock.marksPerBeat,
-    durationSec: clock.durationSec,
-    barPx: scale.value.barPx,
-    doc: el.scrollHeight,
-    viewport: el.clientHeight,
-  })
-  return timeline
-}
-
-function timelineFor(): Timeline | null {
-  const el = scroller.value
-  if (!el) return null
-  if (
-    !timeline ||
-    Math.abs(timeline.doc - el.scrollHeight) > 2 ||
-    Math.abs(timeline.viewport - el.clientHeight) > 2
-  ) {
-    return rebuildTimeline()
-  }
-  return timeline
-}
-
-/**
-  * The anchor is read from the live frame, not cached: the reader changes type
-  * size and turns fit on mid-song, and both move how much paper there is.
-  */
-/**
- * Measured, never derived: the chart's height moves with type size, fit, the
- * key it was transposed to and the width it wraps at, and only the DOM knows.
- */
-function syncScrollRoom() {
-  const el = scroller.value
-  scrollRoom.value = el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0
-}
-
-/** Put a running scroll back on its musical position after a relayout. */
-function reseatScroll() {
-  const el = scroller.value
-  if (!el) return
-  rebuildTimeline()
-  const max = el.scrollHeight - el.clientHeight
-  el.scrollTop = Math.max(0, Math.min(max, scrollAtPlayhead(timelineFor(), playhead, el.clientHeight)))
-  written = el.scrollTop
-}
-
-/** Where the reader was, taken before anything is allowed to move. */
-type PageSpot = {
-  padTop: number
-  scroll: number
-  max: number
-  anchor: HTMLElement | null
-  anchorFromEye: number
-}
-
-function pageSpot(): PageSpot {
-  const el = scroller.value
-  const eye = el ? el.getBoundingClientRect().top + el.clientHeight * 0.4 : 0
-  let anchor: HTMLElement | null = null
-  let distance = Infinity
-  for (const node of el?.querySelectorAll<HTMLElement>('.titan-chordpro-lyric') ?? []) {
-    const d = Math.abs(node.getBoundingClientRect().top - eye)
-    if (d < distance) {
-      anchor = node
-      distance = d
-    }
-  }
-  return {
-    padTop: pageTopPad(),
-    scroll: el?.scrollTop ?? 0,
-    max: el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0,
-    anchor,
-    anchorFromEye: anchor ? anchor.getBoundingClientRect().top - eye : 0,
-  }
-}
-
-/**
- * The reserved chrome band changes height without the frame changing size, so
- * no ResizeObserver fires and nothing puts the chart back under the reader's
- * eye. Mid-song the musical position is the truth — the playhead survives any
- * relayout; standing still, the pixel they were reading is.
- */
-function reflowPage(before: PageSpot) {
-  void nextTick(() => {
-    const el = scroller.value
-    timeline = null
-    if (!el) return
-    syncScrollRoom()
-    if (scrolling.value) {
-      reseatScroll()
-      return
-    }
-    const max = Math.max(0, el.scrollHeight - el.clientHeight)
-    // The two ends are places, not offsets. Somebody parked at the top is at
-    // the *start of the song*, and giving the reserve back must not shove them
-    // into the first verse; the same holds for the last line.
-    if (before.scroll <= 1) el.scrollTop = 0
-    else if (before.scroll >= before.max - 1) el.scrollTop = max
-    else if (before.anchor?.isConnected) {
-      const eye = el.getBoundingClientRect().top + el.clientHeight * 0.4
-      const target = eye + before.anchorFromEye
-      el.scrollTop = Math.max(0, Math.min(max, el.scrollTop + before.anchor.getBoundingClientRect().top - target))
-    } else {
-      const shift = (pageTopPad() || before.padTop) - before.padTop
-      el.scrollTop = Math.max(0, Math.min(max, before.scroll + shift))
-    }
-    written = el.scrollTop
-  })
-}
-
-/**
- * The fraction of a pixel `scrollTop` will not carry.
- *
- * A scroll offset is snapped to whole pixels — measured, `scrollTop` reads back
- * as an integer on every frame, whatever we write. At the speeds a chart really
- * moves (5 px/s and under), that means eleven frames dead still and then a 1px
- * teleport, six times a second. A discrete jump is what a vestibular system
- * reads as motion, so the page looked calm and felt awful.
- *
- * So the whole pixels go to `scrollTop`, which keeps the scrollbar, the drag
- * and every measurement honest, and the remainder rides on a composited
- * transform, which is not snapped. Together they move continuously.
- */
-function setSubPixel(dy: number) {
-  const el = page.value
-  if (!el) return
-  el.style.transform = dy > 0.001 ? `translate3d(0,${-dy}px,0)` : ''
-}
-
-function stopScroll() {
-  if (raf) cancelAnimationFrame(raf)
-  raf = 0
-  window.clearTimeout(idleT)
-  if (scroller.value && userScroll) scroller.value.removeEventListener('scroll', userScroll)
-  userScroll = null
-  scrolling.value = false
-  idle.value = false
-  setSubPixel(0)
-  // Every way out of the scroll passes through here — the end of the song, a
-  // transpose, a song change — and with the two linked, none of them may leave
-  // a click ticking over a chart that has stopped. `met.stop()` is a no-op when
-  // the click is already down, which is what ends the call back into here.
-  if (met.follow.value) met.stop()
-}
-
-function startScroll() {
-  const el = scroller.value
-  if (!el) return
-  if (!hasSongDuration(parsed.value.meta.duration)) return
-  // Hitting Rolar again is continuing the song, not confirming the end.
-  setlist.dismissEnd()
-  scrolling.value = true
-  window.clearTimeout(idleT)
-  if (props.autoHide) idle.value = true
-  rebuildTimeline()
-  // From the top the playhead starts at 0 and the page stays put until it
-  // reaches the reading line — the whole intro stays on screen. Resuming
-  // mid-song, the playhead adopts the current reading line.
-  const max0 = Math.max(0, el.scrollHeight - el.clientHeight)
-  const mapped = playheadAtScroll(timelineFor(), el.scrollTop, el.clientHeight)
-  const atPaperEnd = max0 <= 1 || el.scrollTop >= max0 - 2
-  playhead = el.scrollTop <= 1 ? 0 : Math.min(atPaperEnd ? 1 : 0.999, Math.max(0, mapped))
-  written = el.scrollTop
-  etaTick = -1
-  let prev = performance.now()
-
-  // The musician may drag the chart while it rolls (back a bit, skip ahead).
-  // The playhead adopts that position and carries on from there.
-  userScroll = () => {
-    if (!scrolling.value || notationReflow) return
-    if (Math.abs(el.scrollTop - written) > 1.5) {
-      const maxS = Math.max(0, el.scrollHeight - el.clientHeight)
-      const atEnd = maxS <= 1 || el.scrollTop >= maxS - 2
-      const u = playheadAtScroll(timelineFor(), el.scrollTop, el.clientHeight)
-      playhead = Math.min(atEnd ? 1 : 0.999, Math.max(0, u))
-    }
-  }
-  el.addEventListener('scroll', userScroll, { passive: true })
-
-  const dur = clockOf(parsed.value).durationSec
-  const step = (now: number) => {
-    if (!scrolling.value) return
-    if (swipePeekHold) {
-      prev = now
-      raf = requestAnimationFrame(step)
-      return
-    }
-    // One timeline per frame: each call may re-measure every block in the DOM,
-    // and asking four times over lands four full layouts in the same frame.
-    const t = timelineFor()
-    // Coming back from a background tab must not teleport the chart — but a
-    // dropped frame is time the music really spent, so the interval is capped
-    // rather than thrown away, which used to lose it for good.
-    const dt = Math.min(Math.max((now - prev) / 1000, 0), 0.25)
-    prev = now
-    const run = runSec(t, dur)
-    if (run > 0 && dt > 0) playhead = Math.min(1, playhead + (dt / run) * mul.value)
-    const max = el.scrollHeight - el.clientHeight
-    const target = Math.max(0, Math.min(max, scrollAtPlayhead(t, playhead, el.clientHeight)))
-    // Floor, never round: rounding would put the page half a pixel ahead of
-    // the transform and hand back the jump this is here to remove.
-    const whole = Math.floor(target)
-    el.scrollTop = whole
-    setSubPixel(target - whole)
-    written = el.scrollTop
-    // One update per clock second, not per frame: re-rendering the whole sheet
-    // 60 times a second ate the frames of the scroll itself.
-    const sec = Math.round(etaSec(t, dur, playhead, mul.value))
-    if (sec !== etaTick) {
-      etaTick = sec
-      progress.value = playhead
-      etaLabel.value = formatEta(sec)
-    }
-    if (playhead >= 1) {
-      // The clock can claim "done" while the paper still has room — resume
-      // after a drag used to fire "Fim da música" in the middle of the chart.
-      // The offer is the end of the paper, not the end of the fraction.
-      if (max <= 1 || el.scrollTop >= max - 2) {
-        progress.value = 1
-        stopScroll()
-        setlist.offerNext()
-        return
-      }
-      playhead = 0.999
-    }
-    raf = requestAnimationFrame(step)
-  }
-  raf = requestAnimationFrame(step)
-}
-
-/**
- * Linked (the default): Rolar is the same start as the click — count-in, then
- * the chart. Independent: the two stay two controls, and Rolar only rolls.
- * Stopping still goes through `stopScroll`, which silences a linked click.
- *
- * Audio: outside Ensaio Batida, linked Rolar always starts silent so practice
- * Fonte (Batida/Click) does not leak onto the stage. Inside Ensaio Batida,
- * Rolar inherits Batida sound.
- */
-function toggleScroll() {
-  if (scrolling.value || (met.follow.value && met.running.value)) {
-    stopScroll()
-    return
-  }
-  if (!canScroll.value) return
-  // Count-in delays startScroll; the leftover "Fim da música" must leave now.
-  setlist.dismissEnd()
-  if (met.follow.value) {
-    const silent = shouldRollSilent(rehearsalFocus.value)
-    if (!silent) {
-      applySoundSource('batida', false)
-      strumOn.value = true
-      if (strumSound.enabled.value) void strumSound.arm()
-    }
-    met.start({ silent })
-  } else startScroll()
 }
 
 function applySoundSource(source: SoundSource, softClick: boolean) {
@@ -1697,9 +1453,7 @@ function shift(n: number) {
   if (!hasKey.value) return
   stopScroll()
   offset.value = Math.max(-11, Math.min(11, offset.value + n))
-  playhead = 0
-  timeline = null
-  progress.value = 0
+  zeroPlayhead()
   if (scroller.value) scroller.value.scrollTop = 0
 }
 
@@ -1861,12 +1615,6 @@ function setImmersive(on: boolean, opts: { native?: boolean } = {}): Promise<boo
   return nativeFs.request(root.value)
 }
 
-/** The reserve the chart is standing on right now, before anything moves it. */
-function pageTopPad(): number {
-  const pg = page.value
-  return pg ? parseFloat(getComputedStyle(pg).paddingTop) || 0 : 0
-}
-
 async function toggleFs() {
   const want = !fs.value
   // The word for what happened, never the word for what was asked: the request
@@ -1942,6 +1690,20 @@ const fsTitle = computed(() => {
   return fs.value ? 'Sair do modo imersivo' : 'Modo imersivo'
 })
 
+const audioRefBind = computed(() => ({
+  playing: audio.playing.value,
+  current: audio.current.value,
+  duration: audio.duration.value,
+  error: audio.error.value,
+  title: audioTitle.value,
+  artist: audioArtist.value,
+  art: audioArt.value?.url,
+  artWidth: audioArt.value?.width,
+  artHeight: audioArt.value?.height,
+  kind: audioKind.value,
+  kinds: audioKinds.value,
+}))
+
 const viewHeadBind = computed((): ViewHeadModel => ({
   variant: (phone.value ? 'phone' : 'wide') as 'phone' | 'wide',
   pageMax: pageMax.value,
@@ -1963,13 +1725,128 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   capoHint: capoHint.value,
   capoShapes: capoShapes.value,
   mapOn: mapOn.value,
-  twin: twin.value,
   metaTempo: meta.value.tempo,
   metaTime: meta.value.time,
   metaDuration: meta.value.duration,
   canWinScreen: canWinScreen.value,
   fs: fs.value,
   fsTitle: fsTitle.value,
+}))
+
+const wideDockBind = computed((): WideDockModel => ({
+  hidden: chromeHidden.value,
+  showMine: showMine.value,
+  mineLabel: ov.mineLabel.value,
+  showOriginal: ov.showOriginal.value,
+  hintFit: hintFit.value,
+  scrolling: scrolling.value,
+  mul: mul.value,
+  etaLabel: etaLabel.value,
+  progress: progress.value,
+  setlistOn: setlist.on.value,
+  noPrev: setlist.noPrev.value,
+  noNext: setlist.noNext.value,
+  posLabel: setlist.posLabel.value,
+  scrollTitle: scrollTitle.value,
+  scrollOff: scrollOff.value,
+  rollLive: rollLive.value,
+  fitOn: fitOn.value,
+  letra: activeLens.value === 'letra',
+  hasKey: hasKey.value,
+  nashvilleOn: nashvilleOn.value,
+  hideComments: hideComments.value,
+  metRunning: met.running.value,
+  metBpm: met.bpm.value,
+  hasStrum: hasStrum.value,
+  strumOn: strumOn.value,
+  ensaioBatida: rehearsalFocus.value === 'batida',
+  themeTitle: themeTitle.value,
+  themeIcon: themeIcon(themeMode.value),
+  themeLabel: themeLabel(themeMode.value),
+  canEdit: canEditNow.value,
+  dirty: dirty.value,
+}))
+
+const phoneDockBind = computed((): PhoneDockModel => ({
+  hidden: chromeHidden.value || moreOpen.value,
+  hintFit: hintFit.value,
+  letra: activeLens.value === 'letra',
+  dockCtrlH: dockCtrlH.value,
+  setlistOn: setlist.on.value,
+  noPrev: setlist.noPrev.value,
+  noNext: setlist.noNext.value,
+  posLabel: setlist.posLabel.value,
+  nextChipShort: setlist.nextChipShort.value,
+  scrolling: scrolling.value,
+  mul: mul.value,
+  etaLabel: etaLabel.value,
+  progress: progress.value,
+  width: width.value,
+  dockPlayName: dockPlayName.value,
+  scrollTitle: scrollTitle.value,
+  scrollOff: scrollOff.value,
+  rollLive: rollLive.value,
+  dockPlayLabeled: dockPlayLabeled.value,
+  dockPlayLabel: dockPlayLabel.value,
+  dockTypeW: dockTypeW.value,
+  bp: bp.value,
+  canEdit: canEditNow.value,
+  dirty: dirty.value,
+  fitOn: fitOn.value,
+  queueCount: queueCount.value,
+}))
+
+const editHeadBind = computed((): EditHeadModel => ({
+  phone: phone.value,
+  compact: compact.value,
+  contentEdit: isContentEdit.value,
+  pageMax: pageMax.value,
+  chromePad: chromePad.value,
+  editBadge: editBadge.value,
+  wMode: wMode.value,
+  title: meta.value.title || 'Sem título',
+  subtitle: meta.value.subtitle || '',
+  metaGapLabel: metaGapLabel.value,
+  metaSummary: metaSummary.value,
+  metaGaps: metaGaps.value.length,
+  dirty: dirty.value,
+  canUndo: canUndo.value,
+  canRedo: canRedo.value,
+  confirmDiscard: confirmDiscard.value,
+  discardLabel: discardLabel.value,
+}))
+
+const editDockBind = computed((): EditDockModel => ({
+  compact: compact.value,
+  editHint: editHint.value,
+  clipLabel: bedit.clip.value?.label ?? null,
+  edit: bedit,
+  wMode: wMode.value,
+  showSource: isContentEdit.value && props.capabilities?.sourcePane !== false,
+  lintOk: lint.value.ok,
+  themeTitle: themeTitle.value,
+  themeIcon: themeIcon(themeMode.value),
+  hasStrum: hasStrum.value,
+}))
+
+const moreSheetBind = computed((): MoreSheetModel => ({
+  themeTitle: themeTitle.value,
+  themeIcon: themeIcon(themeMode.value),
+  themeLabel: themeLabel(themeMode.value),
+  hasKey: hasKey.value,
+  nashvilleOn: nashvilleOn.value,
+  nashvilleHint: nashvilleHint.value,
+  hideComments: hideComments.value,
+  metBpm: met.bpm.value,
+  metRunning: met.running.value,
+  hasStrum: hasStrum.value,
+  strumOn: strumOn.value,
+  ensaioBatida: rehearsalFocus.value === 'batida',
+  showMine: showMine.value,
+  showOriginal: ov.showOriginal.value,
+  mineCount: ov.mineCount.value,
+  showQueue: modes.value.includes('persisted') && ov.pendingCount.value > 0,
+  pendingCount: ov.pendingCount.value,
 }))
 
 // ------------------------------------------------------------------ edit (E0)
@@ -2005,7 +1882,7 @@ function commitNewChart(src: string) {
   novaOpen.value = false
   // A host that persists `save-content` into `source` must not look like a
   // different song: that watcher would drop the editor we are about to open.
-  lastSrc = src
+  acceptHostEcho(src)
   ov.setOfficial(src)
   forceBase()
   beginEdit('persisted')
@@ -2020,90 +1897,6 @@ function restartFromMeta() {
   if (!isContentEdit.value) return
   metaOpen.value = false
   startNew('import')
-}
-
-function enterEdit() {
-  if (!canEditNow.value) return
-  const role = editModeResolved.value
-  if (role === 'none') return
-  beginEdit(role)
-}
-
-function beginEdit(kind: WriteMode) {
-  stopScroll()
-  // The badge and the panel are both hidden in edit: a click left running here
-  // would be audible with nothing on screen able to stop it.
-  met.stop()
-  // The adjustment was made against what was on screen: the reading context
-  // travels with it, so it can be read back for what it was.
-  enterCtx = { transpose: offset.value, capo: capo.value, dual: !!(capo.value && capoMap.value) }
-  // You do not edit a projection: transpose goes back to neutral, and `fitOn`
-  // already answers false while editing. Writing `fit` here instead would turn
-  // "the reader never chose" into "the reader chose off" — and, once persisted,
-  // hold the fit off for good after a single visit to the editor.
-  offset.value = 0
-  capo.value = 0
-  zen.value = false
-  lens.value = 'none'
-  hideComments.value = false
-  metOpen.value = false
-  met.stop()
-  exitEnsaioBatida()
-  sheet.value = false
-  capoOpen.value = false
-  toneOpen.value = false
-  moreOpen.value = false
-  metaOpen.value = false
-  closeBatida()
-  ov.myPanel.value = false
-  ov.showOriginal.value = false
-  bedit.reset()
-  scoreEd.value = null
-  externalEd.value = null
-  wMode.value = kind
-  localMode.value = 'edit'
-  if (!session.dirty()) forceBase()
-  emit('update:mode', 'edit')
-  toastMsg(
-    kind === 'local'
-      ? 'Só para você — salva neste celular, dá para voltar ao original'
-      : 'Para todos — salvar altera a cifra do sistema',
-  )
-}
-
-function exitEdit() {
-  if (!isEdit.value) return
-  const local = wMode.value === 'local'
-  if (!local && dirty.value) toastMsg('Rascunho não salvo — continua aqui quando você voltar')
-  srcOpen.value = false
-  metaOpen.value = false
-  bedit.reset()
-  scoreEd.value = null
-  externalEd.value = null
-  wMode.value = null
-  localMode.value = 'view'
-  // The local draft has already become the overlay; a "for everyone" draft
-  // that was never saved stays on screen, so it cannot be lost by leaving.
-  if (local || !session.dirty()) forceBase()
-  offset.value = enterCtx.transpose
-  capo.value = enterCtx.capo
-  capoMap.value = !!enterCtx.dual
-  emit('update:mode', 'view')
-}
-
-/** "For everyone" has no server draft: saving IS publishing. */
-function save() {
-  if (wMode.value === 'local') return
-  session.commit()
-  touch()
-  const cur = session.getSource()
-  // The host may echo the saved text straight back as `source`: without this
-  // the watcher would read it as a new chart and reset tone, scroll and draft.
-  lastSrc = cur
-  emit('update:source', cur)
-  emit('save', cur)
-  ov.setOfficial(cur)
-  toastMsg('Salvo — todos os músicos passam a ler assim')
 }
 
 /** Reading the original is a lens on the same chart, not a second document. */
@@ -2133,6 +1926,10 @@ function onFixTune() {
 type ScoreEdit = { li0: number; li1: number; kind: 'score' | 'tab'; text: string; fresh: boolean }
 const scoreEd = ref<ScoreEdit | null>(null)
 const externalEd = ref<{ text: string; li0?: number; li1?: number } | null>(null)
+clearScoreEditors = () => {
+  scoreEd.value = null
+  externalEd.value = null
+}
 watch(() => props.source, () => { externalEd.value = null })
 function saveExternalScore(text: string) {
   const edit = externalEd.value
@@ -2196,280 +1993,12 @@ function cancelScore() {
   externalEd.value = null
 }
 
-/**
- * Discard goes back to the last SAVED text, not to the host source: what has
- * already been handed to the app cannot be thrown away by one click. And the
- * click is double, because the undo stack cannot bring it back.
- */
-function discard() {
-  if (!confirmDiscard.value) {
-    confirmDiscard.value = true
-    window.clearTimeout(discardT)
-    discardT = window.setTimeout(() => (confirmDiscard.value = false), 4000)
-    return
-  }
-  window.clearTimeout(discardT)
-  confirmDiscard.value = false
-  session.discard()
-  metaOpen.value = false
-  touch()
-}
-
-function onDraft(next: string) {
-  // The step was already opened by the pane: keystrokes coalesce into it.
-  session.edit(next)
-  touch()
-}
-
-function undo() {
-  session.undo()
-  touch()
-}
-function redo() {
-  session.redo()
-  touch()
-}
-
 function openMeta() {
   if (!isEdit.value) return
   metaOpen.value = true
 }
-function applyMeta(next: string) {
-  session.replace(next)
-  metaOpen.value = false
-  touch()
-}
-
-// ------------------------------------------------------------------- exports
-
-/** What leaves the app: the reader's version, or the official one. */
-function exportSource(): string {
-  return ov.exportOrig.value ? ov.official.value : liveSource.value
-}
-
-function exportedView() {
-  return transpose(parse(exportSource()), offset.value)
-}
-
-function doExportCho() {
-  const mark =
-    !ov.exportOrig.value && ov.hasOverlay.value
-      ? '# versão pessoal — não é a cifra oficial da equipe\n'
-      : ''
-  downloadExportedFile(
-    exportChoFile(exportSource(), {
-      semitones: offset.value,
-      capo: capo.value,
-      title: meta.value.title ?? 'cifra',
-      key: shownKey.value || null,
-      preamble: mark,
-    }),
-  )
-  sheet.value = false
-  toastMsg('Arquivo .cho baixado')
-}
-
-const bundleBusy = ref(false)
-const bundleError = ref('')
-async function doExportBundle() {
-  if (bundleBusy.value) return
-  bundleBusy.value = true
-  bundleError.value = ''
-  const source = exportCho(exportSource(), { semitones: offset.value, capo: capo.value })
-  const personal = !ov.exportOrig.value && ov.hasOverlay.value
-  const title = meta.value.title || 'cifra'
-  const key = shownKey.value || null
-  const resolveScore = props.resolveScore
-  const resolveImage = props.resolveImage
-  const loadBundleAsset = props.loadBundleAsset
-  const hostArt = props.defaultAudioArt
-  const cover = props.coverImage
-  const background = props.slidesImage
-  try {
-    const { exportChartBundle } = await import('@henryavila/titan-chordpro-ui/bundle')
-    const extras: import('@henryavila/titan-chordpro-ui/bundle').BundleExtra[] = []
-    const tracks = audioTracksOf(source)
-    if ((tracks.sung || tracks.playback) && !audioArtOf(source)) {
-      const art = hostArt
-      extras.push({ role: 'audio-cover', reference: art?.url ?? defaultArt,
-        width: art?.width ?? AUDIO_ART_DEFAULT_PX, height: art?.height ?? AUDIO_ART_DEFAULT_PX })
-    }
-    const { DEFAULT_COVER_JPEG, DEFAULT_SLIDES_JPEG } = await import('@henryavila/titan-chordpro-ui/slides')
-    extras.push({ role: 'slide-cover', data: { bytes: await imageBytes(cover) ?? DEFAULT_COVER_JPEG } })
-    extras.push({ role: 'slide-background', data: { bytes: await imageBytes(background) ?? DEFAULT_SLIDES_JPEG } })
-    const file = await exportChartBundle(source, {
-      personal, title, key, extras, onlineReferences: 'provenance',
-      loadAsset: async (ref, kind) => {
-        if (loadBundleAsset && ref !== defaultArt) return loadBundleAsset(ref, kind)
-        const resolved = ref === defaultArt ? ref : kind === 'score' ? resolveScore?.(ref) ?? ref : kind === 'image' ? resolveImage(ref) : ref
-        const url = new URL(resolved, document.baseURI)
-        if (!['http:', 'https:', 'blob:', 'data:'].includes(url.protocol)) throw new Error('Endereço inválido')
-        const abort = new AbortController()
-        const timer = setTimeout(() => abort.abort(), 60000)
-        try {
-          const response = await fetch(url.href, { signal: abort.signal })
-          if (!response.ok) throw new Error('Arquivo indisponível')
-          return { bytes: new Uint8Array(await response.arrayBuffer()), contentType: response.headers.get('content-type') ?? undefined }
-        } finally { clearTimeout(timer) }
-      },
-    })
-    downloadExportedFile(file)
-    sheet.value = false
-    toastMsg('Cifra completa baixada')
-  } catch (error) {
-    bundleError.value = error instanceof Error ? error.message : 'Não foi possível gerar a cifra completa. Tente novamente.'
-  } finally { bundleBusy.value = false }
-}
-
-const pdfExportError = ref('')
-const exportHasNotation = computed(() => layoutChartFull(parse(exportSource())).blocks.some(b => b.kind === 'score' && isScoreReference(b.text)))
-async function doExportPdf(notation: 'tab' | 'score' | 'none' = 'score') {
-  const title = meta.value.title ?? 'cifra'
-  await runExportJob({
-    state: pdf,
-    errorText: pdfExportError,
-    shouldFail: props.pdfShouldFail,
-    produce: async () => {
-      const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
-      const bytes = await renderPdf(exportedView(), {
-        notation,
-        renderNotation: async (text, mode) => {
-          const { renderPdfNotation } = await import('./chart/pdf-notation')
-          return renderPdfNotation(text, mode, props.resolveScore, tabRhythmPreference.value.value)
-        },
-        personal: !ov.exportOrig.value && ov.hasOverlay.value,
-        accent: props.accent,
-      })
-      return {
-        bytes,
-        filename: buildPdfFilename(title, shownKey.value || null),
-        mime: EXPORT_MIME.pdf,
-        title,
-      }
-    },
-    onSuccess: () => {
-      sheet.value = false
-      toastMsg('PDF gerado')
-    },
-  })
-}
-
-async function imageBytes(
-  input: Blob | ArrayBuffer | Uint8Array | undefined,
-): Promise<Uint8Array | undefined> {
-  if (!input) return undefined
-  if (input instanceof Uint8Array) return input
-  if (input instanceof ArrayBuffer) return new Uint8Array(input)
-  return new Uint8Array(await input.arrayBuffer())
-}
-
-async function slideImageOpts() {
-  return {
-    title: meta.value.title ?? 'cifra',
-    coverImage: await imageBytes(props.coverImage),
-    slidesImage: await imageBytes(props.slidesImage),
-  }
-}
-
-async function doExportSlides() {
-  await runExportJob({
-    state: slides,
-    shouldFail: props.slidesShouldFail,
-    produce: async () => {
-      const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-      const opts = await slideImageOpts()
-      return {
-        bytes: await renderSlja(exportedView(), opts),
-        filename: buildSljaFilename(opts.title),
-        mime: EXPORT_MIME.slja,
-        title: opts.title,
-      }
-    },
-    onSuccess: () => {
-      sheet.value = false
-      toastMsg('Slides gerados')
-    },
-    onError: () => {
-      sheet.value = false
-    },
-  })
-}
-
-async function doExportPpsx() {
-  await runExportJob({
-    state: ppsx,
-    shouldFail: props.ppsxShouldFail,
-    produce: async () => {
-      const { renderPpsx } = await import('@henryavila/titan-chordpro-ui/slides')
-      const opts = await slideImageOpts()
-      return {
-        bytes: await renderPpsx(exportedView(), opts),
-        filename: buildPpsxFilename(opts.title),
-        mime: EXPORT_MIME.ppsx,
-        title: opts.title,
-      }
-    },
-    onSuccess: () => {
-      sheet.value = false
-      toastMsg('Apresentação gerada')
-    },
-    onError: () => {
-      sheet.value = false
-    },
-  })
-}
-
-const exportAlerts = computed(() => {
-  const rows: Array<{ id: string; text: string; retry: () => void; dismiss: () => void }> = []
-  if (slides.value === 'error') {
-    rows.push({
-      id: 'slides',
-      text: 'A exportação em slides falhou.',
-      retry: () => {
-        slides.value = 'idle'
-        void doExportSlides()
-      },
-      dismiss: () => {
-        slides.value = 'idle'
-      },
-    })
-  }
-  if (ppsx.value === 'error') {
-    rows.push({
-      id: 'ppsx',
-      text: 'A exportação em PowerPoint falhou.',
-      retry: () => {
-        ppsx.value = 'idle'
-        void doExportPpsx()
-      },
-      dismiss: () => {
-        ppsx.value = 'idle'
-      },
-    })
-  }
-  if (pdf.value === 'error') {
-    rows.push({
-      id: 'pdf',
-      text: 'A exportação em PDF falhou.',
-      retry: () => {
-        pdf.value = 'idle'
-        void doExportPdf()
-      },
-      dismiss: () => {
-        pdf.value = 'idle'
-      },
-    })
-  }
-  return rows
-})
 
 // ------------------------------------------------------------------ listeners
-
-function wake() {
-  if (idle.value) idle.value = false
-  window.clearTimeout(idleT)
-  if (scrolling.value && props.autoHide) idleT = window.setTimeout(() => (idle.value = true), 2600)
-}
 
 function onKey(e: KeyboardEvent) {
   const target = e.target as HTMLElement | null
@@ -2478,6 +2007,13 @@ function onKey(e: KeyboardEvent) {
   if (isEdit.value && (e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
     e.preventDefault()
     save()
+    return
+  }
+  // Nova focuses its address field on open. Escape still cancels that dialog
+  // before the "don't steal keys from a field" guard, and before every other panel.
+  if (e.key === 'Escape' && novaOpen.value) {
+    e.preventDefault()
+    novaOpen.value = false
     return
   }
   if (typing) return
@@ -2515,7 +2051,8 @@ function onKey(e: KeyboardEvent) {
     // Escape closes what is open on top; it never drops the reader out of the
     // editor, which would put an unsaved draft one keystroke from being missed.
     if (k === 'Escape') {
-      if (bedit.picker.value) bedit.picker.value = null
+      if (novaOpen.value) novaOpen.value = false
+      else if (bedit.picker.value) bedit.picker.value = null
       else if (bedit.chordEdit.value) bedit.chordEdit.value = null
       else if (bedit.insertMenu.value) bedit.insertMenu.value = false
       else if (bedit.placing.value) bedit.placing.value = false
@@ -2557,7 +2094,8 @@ function onKey(e: KeyboardEvent) {
   else if (k === 'a' || k === 'A') toggleFit()
   else if (k === 'c' || k === 'C') capoOpen.value = !capoOpen.value
   else if (k === 'Escape') {
-    if (ov.myPanel.value) ov.closeMy()
+    if (novaOpen.value) novaOpen.value = false
+    else if (ov.myPanel.value) ov.closeMy()
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
@@ -2623,80 +2161,6 @@ function onMq() {
 }
 
 /**
- * A new source (host or fixture) stops the scroll and resets tone and position.
- * File `{capo:}` is not the live capo — that starts at 0 unless the musician
- * already pinned one (setlist spot, host initialCapo, personal overlay).
- */
-function syncHostSource() {
-  const raw = hostSource.value
-  if (raw === lastSrc) return
-  // Where the song being opened was left, when it has been read before.
-  const spot: SongSpot | null = setlist.takeRestore()
-  const first = lastSrc === null
-  const lost = !first && session.dirty()
-  lastSrc = raw
-  const src = normalizeSource(raw)
-  session.reset(src)
-  metaOpen.value = false
-  confirmDiscard.value = false
-  wMode.value = null
-  capo.value = 0
-  stopScroll()
-  const fileT = Number(readMeta(src).transpose)
-  offset.value = Number.isFinite(fileT) ? fileT : 0
-  mul.value = 1
-  // Coming back to a song already rehearsed: tone, capo and speed are picked
-  // back up. A tone the reader pinned still wins, just below.
-  if (spot) {
-    offset.value = spot.offset
-    capo.value = spot.capo
-    mul.value = spot.mul
-  }
-  if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
-  // Reading lens and comment filter stay: they are the reader's choice for the
-  // rehearsal, not part of the chart. Song switch must not kick a singer out
-  // of Só letra (or Nashville) mid-set.
-  capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
-  metOpen.value = false
-  met.stop()
-  playhead = spot ? spot.u || 0 : 0
-  timeline = null
-  progress.value = spot ? spot.u || 0 : 0
-  etaLabel.value = '—'
-  pdf.value = 'idle'
-  slides.value = 'idle'
-  sheet.value = false
-  touch()
-  // The reader's own version of THIS chart, and the key they pinned to it.
-  ov.reset()
-  const tune = ov.load()
-  if (tune) {
-    offset.value = tune.transpose || 0
-    capo.value = tune.capo || 0
-    capoMap.value = !!tune.dual
-  }
-  forceBase()
-  // The stored BPM belongs to the song: it reloads with the chart.
-  met.loadBpm()
-  if (spot) {
-    // The saved place only exists once the new chart has painted.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (scroller.value) scroller.value.scrollTop = spot.top
-      }),
-    )
-  } else if (!first && scroller.value) scroller.value.scrollTop = 0
-  // Swapping the chart drops the draft — but the loss has to be said, not silent.
-  if (lost) {
-    toastMsg(
-      setlist.on.value
-        ? 'Você trocou de música — o rascunho anterior foi descartado'
-        : 'Nova cifra recebida — o rascunho anterior foi descartado',
-    )
-  }
-}
-
-/**
  * Change song, putting down where this one was left. The chart itself swaps
  * through the same path a host `source` change takes, so the personal version,
  * the metronome and the timeline all reload exactly as they always did.
@@ -2708,7 +2172,7 @@ function goSong(i: number) {
     capo: capo.value,
     mul: mul.value,
     top: scroller.value?.scrollTop ?? 0,
-    u: playhead,
+    u: readPlayhead(),
   })
 }
 const goPrev = () => goSong(setlist.si.value - 1)
@@ -2739,7 +2203,6 @@ const endNext = () => {
 
 const swipeBusy = ref(false)
 let swipeGen = 0
-let swipePeekHold = false
 
 const swipeBlocked = computed(
   () =>
@@ -2789,7 +2252,7 @@ const songSwipe = useSongSwipe({
     void playSwipeCommit(intent)
   },
   onPeek: (peeking) => {
-    swipePeekHold = peeking
+    setSwipePeekHold(peeking)
   },
 })
 const swipeView = songSwipe.view
@@ -2917,7 +2380,7 @@ watch(sheet, async (open) => {
 watch([blocks, fitOn, bias, width], () => {
   // Reflow changes scrollHeight: what is preserved is the musical instant,
   // not the pixel — the clock line stays at the same point of the song.
-  timeline = null
+  clearTimeline()
 })
 watch([offset, capo, themeMode, fitOn, bias, mode, dirty, activeLens, hideComments], () => {
   emit('state', {
@@ -2979,7 +2442,7 @@ onMounted(() => {
     if (Math.abs(w - width.value) <= 4) return
     width.value = w
     void nextTick(() => {
-      timeline = null
+      clearTimeline()
       if (!scroller.value || !scrolling.value) return
       reseatScroll()
     })
@@ -3012,7 +2475,7 @@ onMounted(() => {
 onUnmounted(() => {
   swipeGen += 1
   swipeBusy.value = false
-  swipePeekHold = false
+  setSwipePeekHold(false)
   wakeLock.stop()
   songSwipe.detach()
   stopScroll()
@@ -3020,10 +2483,10 @@ onUnmounted(() => {
   strumSound.dispose()
   ov.dispose()
   guard.dispose()
-  window.clearTimeout(idleT)
+  clearIdleTimer()
   window.clearTimeout(toastT)
   window.clearTimeout(hintT)
-  window.clearTimeout(discardT)
+  clearDiscardTimer()
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('pointerdown', onDocDown, true)
   window.removeEventListener('wheel', onWheel)
@@ -3202,23 +2665,7 @@ defineExpose({
     </div>
     <TitanChordproEditHead
       v-if="isEdit"
-      :phone="phone"
-      :compact="compact"
-      :content-edit="isContentEdit"
-      :page-max="pageMax"
-      :chrome-pad="chromePad"
-      :edit-badge="editBadge"
-      :w-mode="wMode"
-      :title="meta.title || 'Sem título'"
-      :subtitle="meta.subtitle || ''"
-      :meta-gap-label="metaGapLabel"
-      :meta-summary="metaSummary"
-      :meta-gaps="metaGaps.length"
-      :dirty="dirty"
-      :can-undo="canUndo"
-      :can-redo="canRedo"
-      :confirm-discard="confirmDiscard"
-      :discard-label="discardLabel"
+      v-bind="editHeadBind"
       @bind-head="bindHead"
       @open-meta="openMeta"
       @undo="undo"
@@ -3230,37 +2677,7 @@ defineExpose({
 
     <TitanChordproWideDock
       v-if="!isEdit && !phone && isPopulated"
-      :hidden="chromeHidden"
-      :show-mine="showMine"
-      :mine-label="ov.mineLabel.value"
-      :show-original="ov.showOriginal.value"
-      :hint-fit="hintFit"
-      :scrolling="scrolling"
-      :mul="mul"
-      :eta-label="etaLabel"
-      :progress="progress"
-      :setlist-on="setlist.on.value"
-      :no-prev="setlist.noPrev.value"
-      :no-next="setlist.noNext.value"
-      :pos-label="setlist.posLabel.value"
-      :scroll-title="scrollTitle"
-      :scroll-off="scrollOff"
-      :roll-live="rollLive"
-      :fit-on="fitOn"
-      :letra="activeLens === 'letra'"
-      :has-key="hasKey"
-      :nashville-on="nashvilleOn"
-      :hide-comments="hideComments"
-      :met-running="met.running.value"
-      :met-bpm="met.bpm.value"
-      :has-strum="hasStrum"
-      :strum-on="strumOn"
-      :ensaio-batida="rehearsalFocus === 'batida'"
-      :theme-title="themeTitle"
-      :theme-icon="themeIcon(themeMode)"
-      :theme-label="themeLabel(themeMode)"
-      :can-edit="canEditNow"
-      :dirty="dirty"
+      v-bind="wideDockBind"
       @original="toggleOriginal"
       @open-my="ov.myPanel.value = true"
       @dismiss-hint="dismissHint(true)"
@@ -3287,17 +2704,7 @@ defineExpose({
       <TitanChordproAudioRef
         v-if="audioUrl"
         :key="audioKey"
-        :playing="audio.playing.value"
-        :current="audio.current.value"
-        :duration="audio.duration.value"
-        :error="audio.error.value"
-        :title="audioTitle"
-        :artist="audioArtist"
-        :art="audioArt?.url"
-        :art-width="audioArt?.width"
-        :art-height="audioArt?.height"
-        :kind="audioKind"
-        :kinds="audioKinds"
+        v-bind="audioRefBind"
         @toggle="audio.toggle"
         @skip="audio.skip"
         @seek="audio.seek"
@@ -3307,32 +2714,7 @@ defineExpose({
 
     <TitanChordproPhoneDock
       v-if="!isEdit && phone && isPopulated"
-      :hidden="chromeHidden || moreOpen"
-      :hint-fit="hintFit"
-      :letra="activeLens === 'letra'"
-      :dock-ctrl-h="dockCtrlH"
-      :setlist-on="setlist.on.value"
-      :no-prev="setlist.noPrev.value"
-      :no-next="setlist.noNext.value"
-      :pos-label="setlist.posLabel.value"
-      :next-chip-short="setlist.nextChipShort.value"
-      :scrolling="scrolling"
-      :mul="mul"
-      :eta-label="etaLabel"
-      :progress="progress"
-      :width="width"
-      :dock-play-name="dockPlayName"
-      :scroll-title="scrollTitle"
-      :scroll-off="scrollOff"
-      :roll-live="rollLive"
-      :dock-play-labeled="dockPlayLabeled"
-      :dock-play-label="dockPlayLabel"
-      :dock-type-w="dockTypeW"
-      :bp="bp"
-      :can-edit="canEditNow"
-      :dock-icon-size="dockIconSize"
-      :fit-on="fitOn"
-      :queue-count="queueCount"
+      v-bind="phoneDockBind"
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
@@ -3351,17 +2733,7 @@ defineExpose({
       <TitanChordproAudioRef
         v-if="audioUrl"
         :key="audioKey"
-        :playing="audio.playing.value"
-        :current="audio.current.value"
-        :duration="audio.duration.value"
-        :error="audio.error.value"
-        :title="audioTitle"
-        :artist="audioArtist"
-        :art="audioArt?.url"
-        :art-width="audioArt?.width"
-        :art-height="audioArt?.height"
-        :kind="audioKind"
-        :kinds="audioKinds"
+        v-bind="audioRefBind"
         inline
         :chrome-gone="chromeHidden"
         @toggle="audio.toggle"
@@ -3373,7 +2745,7 @@ defineExpose({
     </TitanChordproPhoneDock>
 
     <button
-      v-if="queueEntry"
+      v-if="queueEntry && !phone"
       class="titan-chordpro-queue-chip"
       :class="{ 'is-compact': compact, 'is-alone': chromeHidden }"
       data-queue-chip
@@ -3388,16 +2760,7 @@ defineExpose({
 
     <TitanChordproEditDock
       v-if="isEdit && !srcOpen"
-      :compact="compact"
-      :edit-hint="editHint"
-      :clip-label="bedit.clip.value?.label ?? null"
-      :edit="bedit"
-      :w-mode="wMode"
-      :show-source="isContentEdit && capabilities.sourcePane !== false"
-      :lint-ok="lint.ok"
-      :theme-title="themeTitle"
-      :theme-icon="themeIcon(themeMode)"
-      :has-strum="hasStrum"
+      v-bind="editDockBind"
       @seen-hint="markEditSeen()"
       @drop-clip="bedit.clip.value = null"
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
@@ -3459,7 +2822,7 @@ defineExpose({
       <TitanChordproIcon name="alertTri" :size="18" style="color:var(--danger)" />
       <span style="flex:1;font-size:13px;line-height:1.4;">{{ alert.text }}</span>
       <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="alert.retry()">Tentar de novo</button>
-      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="alert.dismiss()"><TitanChordproIcon name="x" :size="14" /></button>
+      <TitanChordproIconButton icon="x" density="bar" muted aria-label="Fechar" @click="alert.dismiss()" />
     </div>
 
     <div
@@ -3653,7 +3016,7 @@ defineExpose({
       :capo-shapes="capoShapes"
       :has-capo="hasCapo"
       :has-reset="hasReset"
-      :dual="twin"
+      :dual="mapOn"
       @dual="toggleMap"
       @close="toneOpen = false"
       @down="shift(-1)"
@@ -3665,23 +3028,7 @@ defineExpose({
 
     <TitanChordproMoreSheet
       v-if="moreOpen && compact"
-      :theme-title="themeTitle"
-      :theme-icon="themeIcon(themeMode)"
-      :theme-label="themeLabel(themeMode)"
-      :has-key="hasKey"
-      :nashville-on="nashvilleOn"
-      :nashville-hint="nashvilleHint"
-      :hide-comments="hideComments"
-      :met-bpm="met.bpm.value"
-      :met-running="met.running.value"
-      :has-strum="hasStrum"
-      :strum-on="strumOn"
-      :ensaio-batida="rehearsalFocus === 'batida'"
-      :show-mine="showMine"
-      :show-original="ov.showOriginal.value"
-      :mine-count="ov.mineCount.value"
-      :show-queue="modes.includes('persisted') && ov.pendingCount.value > 0"
-      :pending-count="ov.pendingCount.value"
+      v-bind="moreSheetBind"
       @close="moreOpen = false"
       @theme="requestTheme"
       @toggle-nashville="toggleNashville"

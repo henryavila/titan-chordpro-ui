@@ -585,7 +585,7 @@ test('every dock control stays reachable across phone widths', async ({ page }) 
     }
 
     const labeled = await page.locator('[data-scroll]').textContent()
-    if (width >= 360) {
+    if (width > 320) {
       expect(labeled, `${width}px hid Rolar and left a hole`).toMatch(/Rolar|Parar/)
     } else {
       expect((labeled ?? '').trim(), `${width}px should drop the word`).toBe('')

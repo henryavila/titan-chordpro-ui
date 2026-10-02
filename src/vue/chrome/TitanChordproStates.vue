@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproSetlistNav from '../ui/TitanChordproSetlistNav.vue'
 
 defineProps<{
   failing: boolean
@@ -34,31 +35,24 @@ const emit = defineEmits<{
         <span style="font-size:15px;font-weight:600;letter-spacing:-0.015em;line-height:1.3;text-wrap:pretty;">{{ failTitle }}</span>
         <span style="font-size:12.5px;line-height:1.55;color:var(--muted);text-wrap:pretty;">Esta cifra não chegou. As outras da lista continuam disponíveis.</span>
       </div>
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
         <button
           data-song-retry
           style="height:44px;padding:0 16px;border:0;border-radius:13px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
           @click="emit('retry')"
         >Tentar de novo</button>
-        <button
-          style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;"
-          @click="emit('openList')"
-        >Abrir a lista</button>
-        <span style="flex:1;" />
-        <button
-          aria-label="Música anterior"
-          :disabled="noPrev"
-          :style="{ opacity: noPrev ? '0.32' : '1' }"
-          style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-          @click="emit('prev')"
-        ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
-        <button
-          aria-label="Próxima música"
-          :disabled="noNext"
-          :style="{ opacity: noNext ? '0.32' : '1' }"
-          style="width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;"
-          @click="emit('next')"
-        ><TitanChordproIcon name="chevronRight" :size="16" /></button>
+        <div class="titan-chordpro-song-fail-nav">
+          <TitanChordproSetlistNav
+            density="phone"
+            :no-prev="noPrev"
+            :no-next="noNext"
+            :pos-label="posLabel"
+            next-label="Lista"
+            @prev="emit('prev')"
+            @open-list="emit('openList')"
+            @next="emit('next')"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -86,26 +80,16 @@ const emit = defineEmits<{
       </div>
     </div>
     <div class="titan-chordpro-song-skel-dock titan-chordpro-veil">
-      <button
-        data-song-prev
-        aria-label="Música anterior"
-        :disabled="noPrev"
-        :style="{ opacity: noPrev ? '0.32' : '1' }"
-        class="titan-chordpro-song-skel-nav"
-        @click="emit('prev')"
-      ><TitanChordproIcon name="chevronLeft" :size="16" /></button>
-      <button data-setlist-open class="titan-chordpro-song-skel-list" @click="emit('openList')">
-        <span>{{ posLabel }}</span>
-        <span>Lista</span>
-      </button>
-      <button
-        data-song-next
-        aria-label="Próxima música"
-        :disabled="noNext"
-        :style="{ opacity: noNext ? '0.32' : '1' }"
-        class="titan-chordpro-song-skel-nav"
-        @click="emit('next')"
-      ><TitanChordproIcon name="chevronRight" :size="16" /></button>
+      <TitanChordproSetlistNav
+        density="phone"
+        :no-prev="noPrev"
+        :no-next="noNext"
+        :pos-label="posLabel"
+        next-label="Lista"
+        @prev="emit('prev')"
+        @open-list="emit('openList')"
+        @next="emit('next')"
+      />
     </div>
   </div>
 

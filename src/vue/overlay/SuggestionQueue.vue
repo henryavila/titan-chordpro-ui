@@ -2,6 +2,8 @@
 import { beatsInMeter, type StrumPattern } from '@henryavila/titan-chordpro-ui'
 import type { QueueOpCard, QueueRow } from '../use/useOverlay'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproChoicePair from '../ui/TitanChordproChoicePair.vue'
+import TitanChordproListRow from '../ui/TitanChordproListRow.vue'
 import StrumStrip from '../StrumStrip.vue'
 import ScoreReview from './ScoreReview.vue'
 
@@ -76,29 +78,27 @@ const emit = defineEmits<{
     <div class="titan-chordpro-q-body">
       <span v-if="empty" style="font-size:12.5px;color:var(--muted);">Nenhuma sugestão pendente.</span>
 
-      <button
+      <TitanChordproListRow
         v-for="s in level === 1 ? songs : []"
         :key="s.key"
-        class="titan-chordpro-surface-btn"
         data-q-song
-        style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;"
+        :stack="false"
         @click="emit('pickSong', s.key)"
-      >{{ s.label }}<span style="font-size:11.5px;font-weight:500;color:var(--muted);">{{ s.hint }}</span></button>
+      >{{ s.label }}<span class="titan-chordpro-list-row-hint">{{ s.hint }}</span></TitanChordproListRow>
 
-      <button
+      <TitanChordproListRow
         v-for="s in level === 2 ? sugs : []"
         :key="s.key"
-        class="titan-chordpro-surface-btn"
         data-q-sug
-        style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;"
+        :stack="false"
         @click="emit('pickSug', s.key)"
       >
         <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
           <span v-if="s.actor" data-q-actor style="font-size:13px;font-weight:700;">{{ s.actor }}</span>
           <span>{{ s.actor ? s.hint : s.label }}</span>
         </span>
-        <span v-if="!s.actor" style="font-size:11.5px;font-weight:500;color:var(--muted);">{{ s.hint }}</span>
-      </button>
+        <span v-if="!s.actor" class="titan-chordpro-list-row-hint">{{ s.hint }}</span>
+      </TitanChordproListRow>
 
       <div
         v-if="level === 3 && ops.length"
@@ -109,20 +109,16 @@ const emit = defineEmits<{
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">
             Preview: {{ batchApplies ?? 0 }} encaixam{{ (batchConflicts ?? 0) > 0 ? ` · ${batchConflicts} conflito(s)` : '' }}
           </span>
-          <span class="titan-chordpro-q-batch-actions">
-            <button
-              data-q-refuse-batch
-              :disabled="busy"
-              style="height:32px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-              @click="emit('refuseBatch')"
-            >Recusar lote</button>
-            <button
-              data-q-accept-batch
-              :disabled="busy"
-              style="height:32px;padding:0 12px;border:0;border-radius:10px;background:var(--pill);color:var(--pill-ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
-              @click="emit('acceptBatch')"
-            >Aceitar lote</button>
-          </span>
+          <TitanChordproChoicePair
+            class="titan-chordpro-q-batch-actions"
+            refuse-label="Recusar lote"
+            accept-label="Aceitar lote"
+            :busy="busy"
+            :refuse-attrs="{ 'data-q-refuse-batch': '' }"
+            :accept-attrs="{ 'data-q-accept-batch': '' }"
+            @refuse="emit('refuseBatch')"
+            @accept="emit('acceptBatch')"
+          />
         </div>
         <div v-if="previewStrum?.length" class="titan-chordpro-q-strum" data-q-strum-preview>
           <StrumStrip
@@ -143,7 +139,7 @@ const emit = defineEmits<{
         v-for="op in level === 3 ? ops : []"
         :key="op.id"
         data-q-op
-        style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--line-soft);border-radius:13px;background:var(--surface);"
+        class="titan-chordpro-list-card"
       >
         <span style="flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:5px;">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">{{ op.label }}</span>
@@ -170,20 +166,14 @@ const emit = defineEmits<{
             >Destaque = mudou · seta riscada = era</span>
           </div>
         </span>
-        <span style="flex:none;display:flex;align-items:center;gap:6px;">
-          <button
-            data-q-refuse
-            :disabled="busy"
-            style="height:32px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-            @click="emit('refuse', op.id)"
-          >Recusar</button>
-          <button
-            data-q-accept
-            :disabled="busy || !op.fits"
-            style="height:32px;padding:0 12px;border:0;border-radius:10px;background:var(--pill);color:var(--pill-ink);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;"
-            @click="emit('accept', op.id)"
-          >Aceitar</button>
-        </span>
+        <TitanChordproChoicePair
+          :busy="busy"
+          :accept-disabled="!op.fits"
+          :refuse-attrs="{ 'data-q-refuse': '' }"
+          :accept-attrs="{ 'data-q-accept': '' }"
+          @refuse="emit('refuse', op.id)"
+          @accept="emit('accept', op.id)"
+        />
       </div>
     </div>
   </div>

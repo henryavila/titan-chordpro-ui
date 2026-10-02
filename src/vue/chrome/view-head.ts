@@ -21,7 +21,6 @@ export type ViewHeadModel = {
   /** New capo shapes as chips; empty → show `capoHint` text. */
   capoShapes: string[]
   mapOn: boolean
-  twin: boolean
   metaTempo: string | number | undefined
   metaTime: string | undefined
   metaDuration: string | undefined

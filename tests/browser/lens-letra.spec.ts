@@ -44,8 +44,8 @@ test('phone Letra is one tap on the dock, not through Mais', async ({ page }) =>
   await page.getByRole('button', { name: 'Mais controles' }).click()
   const mais = page.getByRole('dialog', { name: 'Mais controles' })
   await expect(mais).toBeVisible()
-  await expect(mais).toContainText('Nashville')
-  await expect(mais).toContainText('Comentários de ensaio')
+  await expect(mais).toContainText('Graus')
+  await expect(mais).toContainText('Comentários')
   await expect(mais).not.toContainText('Lentes de leitura')
 })
 

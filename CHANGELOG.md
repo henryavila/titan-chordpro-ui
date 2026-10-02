@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Nova cifra e a tecla Esc:** Esc fecha a cifra nova antes dos outros painéis, na leitura e na edição.
+- **Véu dos painéis:** o fundo atrás de Tom, Mais, lista e os outros painéis usa um só véu.
+- **Rolar no telefone:** os controles da barra de baixo ficam com 44px. A palavra Rolar ou Parar some só quando a tela tem 320px.
+- **Rascunho no telefone:** o botão Editar ganha um ponto quando a cifra ainda não foi gravada.
+- **Editor de partitura:** a barra do editor (entrada, vista, pauta, tocar) segue o mesmo visual do restante da cifra.
+- **Rolar no telefone e no computador:** o botão usa a mesma receita (verde parado, cinza ao tocar Parar). No telefone continua maior; no computador, menor. A palavra some só em telas bem estreitas.
+- **Graus:** no menu Mais do telefone o controle passa a se chamar Graus, igual à barra do computador.
+- **Comentários:** o ícone mostra olho aberto quando os comentários estão visíveis e olho tapado quando estão ocultos.
+- **Sugestões no telefone:** o atalho fica no botão Mais (número no canto). O cartão flutuante “Sugestões” continua no computador.
+
 ### Added
 - **Baixar o arquivo do solo:** em um trecho Guitar Pro/MusicXML, toque nos três pontos ao lado do nome e em **Baixar** para receber o arquivo original no aparelho. O download usa o nome do trecho na cifra, com a extensão do arquivo (por exemplo, `Solo de entrada.gp`).
 - **Opções do trecho num só lugar:** TAB, Partitura, ritmo, notas, zoom e o download ficam no menu dos três pontos, na linha do nome. Um toque no nome ou na seta continua abrindo ou recolhendo o trecho na hora. No celular o menu sobe como o de Mais da cifra; no computador a lista fica presa nos três pontos. TAB e Partitura usam o mesmo interruptor de Cifra e Letra, e cada escolha mostra o estado à direita, como as outras opções.

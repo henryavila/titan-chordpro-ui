@@ -8,6 +8,7 @@ import { TAB_RHYTHM_OPTIONS } from '../use/useTabRhythm'
 import ScoreChoice from '../chart/ScoreChoice.vue'
 import ScoreBarRange from './ScoreBarRange.vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import ExternalScore from '../chart/ExternalScore.vue'
 
 const props = defineProps<{
@@ -153,7 +154,7 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
     <form ref="dialog" class="titan-chordpro-veil-2 titan-chordpro-modal-card titan-chordpro-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save">
       <header class="titan-chordpro-import-score-head">
         <div><span class="titan-chordpro-modal-kicker">Guitar Pro · MusicXML</span><h2>{{ text ? 'Ajustar trecho' : 'Importar solo' }}</h2><p>Escolha o que entra na cifra e confira a prévia.</p></div>
-        <button type="button" class="titan-chordpro-import-score-close" aria-label="Fechar importação" :disabled="busy" @click="emit('close')"><TitanChordproIcon name="x" :size="20" /></button>
+        <TitanChordproIconButton icon="x" density="import" class="titan-chordpro-import-score-close" aria-label="Fechar importação" :disabled="busy" @click="emit('close')" />
       </header>
       <div class="titan-chordpro-import-score-body">
         <fieldset class="titan-chordpro-import-score-controls" :disabled="busy">
