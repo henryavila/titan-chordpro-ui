@@ -83,6 +83,9 @@ describe('dock Rolar fill', () => {
     const live = css.match(/\.titan-chordpro-root button\.titan-chordpro-roll\.is-live\s*\{[^}]+\}/)?.[0] ?? ''
     expect(live).toMatch(/background:\s*var\(--pill\)/)
     expect(live).toMatch(/color:\s*var\(--pill-ink\)/)
+    for (const name of ['titan-chordpro-list-row', 'titan-chordpro-quiet-btn', 'titan-chordpro-fit-hint-x', 'titan-chordpro-surface-btn']) {
+      expect(css, name).toMatch(new RegExp(`\\.titan-chordpro-root button\\.${name}\\s*\\{`))
+    }
   })
 
   it.each([

@@ -87,14 +87,14 @@ function parseRaw(src: string): {
 
     if (score !== null) {
       score.push(raw)
-      if (d && /^x_titan_end_of_score$/i.test(d[1] ?? '')) {
+      if (d && notationEdge((d[1] ?? '').toLowerCase()) === 'score-close') {
         lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: li })
         score = null
       }
       continue
     }
     if (tab !== null) {
-      if (d && /^(eot|end_of_tab)$/i.test(d[1] ?? '')) {
+      if (d && notationEdge((d[1] ?? '').toLowerCase()) === 'tab-close') {
         lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: li })
         tab = null
       } else tab.push(raw)

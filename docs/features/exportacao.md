@@ -1,6 +1,6 @@
 ---
 id: exportacao
-status: in-progress
+status: stable
 audiences: [musician, host, agent]
 exports: []
 dom:

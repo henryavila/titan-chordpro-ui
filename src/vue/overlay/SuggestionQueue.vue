@@ -2,7 +2,7 @@
 import { beatsInMeter, type StrumPattern } from '@henryavila/titan-chordpro-ui'
 import type { QueueOpCard, QueueRow } from '../use/useOverlay'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
-import TitanChordproActionButton from '../ui/TitanChordproActionButton.vue'
+import TitanChordproChoicePair from '../ui/TitanChordproChoicePair.vue'
 import TitanChordproListRow from '../ui/TitanChordproListRow.vue'
 import StrumStrip from '../StrumStrip.vue'
 import ScoreReview from './ScoreReview.vue'
@@ -109,10 +109,16 @@ const emit = defineEmits<{
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">
             Preview: {{ batchApplies ?? 0 }} encaixam{{ (batchConflicts ?? 0) > 0 ? ` · ${batchConflicts} conflito(s)` : '' }}
           </span>
-          <span class="titan-chordpro-q-batch-actions">
-            <TitanChordproActionButton data-q-refuse-batch tone="ghost" size="sm" bordered :disabled="busy" @click="emit('refuseBatch')">Recusar lote</TitanChordproActionButton>
-            <TitanChordproActionButton data-q-accept-batch tone="pill" size="sm" :disabled="busy" @click="emit('acceptBatch')">Aceitar lote</TitanChordproActionButton>
-          </span>
+          <TitanChordproChoicePair
+            class="titan-chordpro-q-batch-actions"
+            refuse-label="Recusar lote"
+            accept-label="Aceitar lote"
+            :busy="busy"
+            :refuse-attrs="{ 'data-q-refuse-batch': '' }"
+            :accept-attrs="{ 'data-q-accept-batch': '' }"
+            @refuse="emit('refuseBatch')"
+            @accept="emit('acceptBatch')"
+          />
         </div>
         <div v-if="previewStrum?.length" class="titan-chordpro-q-strum" data-q-strum-preview>
           <StrumStrip
@@ -160,10 +166,14 @@ const emit = defineEmits<{
             >Destaque = mudou · seta riscada = era</span>
           </div>
         </span>
-        <span style="flex:none;display:flex;align-items:center;gap:6px;">
-          <TitanChordproActionButton data-q-refuse tone="ghost" size="sm" bordered :disabled="busy" @click="emit('refuse', op.id)">Recusar</TitanChordproActionButton>
-          <TitanChordproActionButton data-q-accept tone="pill" size="sm" :disabled="busy || !op.fits" @click="emit('accept', op.id)">Aceitar</TitanChordproActionButton>
-        </span>
+        <TitanChordproChoicePair
+          :busy="busy"
+          :accept-disabled="!op.fits"
+          :refuse-attrs="{ 'data-q-refuse': '' }"
+          :accept-attrs="{ 'data-q-accept': '' }"
+          @refuse="emit('refuse', op.id)"
+          @accept="emit('accept', op.id)"
+        />
       </div>
     </div>
   </div>

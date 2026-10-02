@@ -16,17 +16,19 @@ const TIMES = ['4/4', '3/4', '6/8', '2/4']
 const props = withDefaults(
   defineProps<{
     meta: ChartMeta
-    /** Test hooks already differ: Meta uses data-meta-*, Nova uses data-nova-* / data-*-chip. */
-    surface: 'meta' | 'nova'
+    /** soft: missing field keeps a quiet line. chord: missing field uses the chord edge. */
+    missingEdge?: 'soft' | 'chord'
+    /** meta: data-meta-*. plain: data-time-chip / data-key-chip. */
+    chipHook?: 'meta' | 'plain'
     keyEdit: boolean
     durationHint: string
     titleSize?: string
-    /** Nova grid. Meta uses the stylesheet (and the compact override). */
+    /** Inline columns when the form is a grid. Empty uses the stylesheet. */
     columns?: string
     strict?: boolean
     showSource?: boolean
   }>(),
-  { titleSize: '20px', strict: false, showSource: false },
+  { titleSize: '20px', strict: false, showSource: false, missingEdge: 'chord', chipHook: 'plain' },
 )
 
 const emit = defineEmits<{
@@ -52,7 +54,7 @@ function flag(k: string) {
 
 function edge(k: string) {
   const miss = missing.value.includes(k)
-  if (props.surface === 'meta') {
+  if (props.missingEdge === 'soft') {
     if (!miss) return 'var(--line-soft)'
     return k === 'duration' ? 'color-mix(in srgb, var(--danger) 45%, transparent)' : 'var(--line)'
   }
@@ -97,11 +99,11 @@ function toggleMinor() {
 }
 
 function timeAttr(t: string): Record<string, string> {
-  return props.surface === 'meta' ? { 'data-meta-time': t } : { 'data-time-chip': t }
+  return props.chipHook === 'meta' ? { 'data-meta-time': t } : { 'data-time-chip': t }
 }
 
 function keyAttr(r: string): Record<string, string> {
-  return props.surface === 'meta' ? { 'data-meta-key': r } : { 'data-key-chip': r }
+  return props.chipHook === 'meta' ? { 'data-meta-key': r } : { 'data-key-chip': r }
 }
 
 defineExpose({
@@ -119,17 +121,17 @@ defineExpose({
       class="titan-chordpro-id-title"
       :style="{ fontSize: titleSize }"
       :value="meta.title ?? ''"
-      :data-meta-title="surface === 'meta' ? '' : undefined"
-      :data-nova-title="surface === 'nova' ? '' : undefined"
-      :aria-label="surface === 'meta' ? 'Nome da música' : undefined"
+      :data-meta-title="chipHook === 'meta' ? '' : undefined"
+      :data-nova-title="chipHook === 'plain' ? '' : undefined"
+      :aria-label="chipHook === 'meta' ? 'Nome da música' : undefined"
       placeholder="Nome da música"
       @input="setMeta('title', ($event.target as HTMLInputElement).value)"
     >
     <input
       class="titan-chordpro-id-sub"
       :value="meta.subtitle ?? ''"
-      :data-meta-subtitle="surface === 'meta' ? '' : undefined"
-      :aria-label="surface === 'meta' ? 'Artista ou ministério' : undefined"
+      :data-meta-subtitle="chipHook === 'meta' ? '' : undefined"
+      :aria-label="chipHook === 'meta' ? 'Artista ou ministério' : undefined"
       placeholder="Artista ou ministério"
       @input="setMeta('subtitle', ($event.target as HTMLInputElement).value)"
     >
@@ -147,8 +149,8 @@ defineExpose({
         spellcheck="false"
         maxlength="5"
         aria-label="Duração em minutos e segundos"
-        :data-meta-duration="surface === 'meta' ? '' : undefined"
-        :data-nova-duration="surface === 'nova' ? '' : undefined"
+        :data-meta-duration="chipHook === 'meta' ? '' : undefined"
+        :data-nova-duration="chipHook === 'plain' ? '' : undefined"
         :style="{ fontSize: meta.duration ? '22px' : '16px' }"
         @input="onDurationInput"
         @blur="onDurationBlur"
@@ -167,11 +169,11 @@ defineExpose({
           <input
             class="titan-chordpro-id-bpm"
             :value="meta.tempo ?? ''"
-            :aria-label="surface === 'meta' ? 'Andamento em bpm' : undefined"
+            :aria-label="chipHook === 'meta' ? 'Andamento em bpm' : undefined"
             inputmode="numeric"
             placeholder="—"
-            :data-meta-tempo="surface === 'meta' ? '' : undefined"
-            :data-nova-bpm="surface === 'nova' ? '' : undefined"
+            :data-meta-tempo="chipHook === 'meta' ? '' : undefined"
+            :data-nova-bpm="chipHook === 'plain' ? '' : undefined"
             @input="setMeta('tempo', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 3))"
           >
         </TitanChordproStepper>
@@ -180,8 +182,8 @@ defineExpose({
       <button
         type="button"
         class="titan-chordpro-quiet-btn"
-        :data-meta-tap="surface === 'meta' ? '' : undefined"
-        :data-nova-tap="surface === 'nova' ? '' : undefined"
+        :data-meta-tap="chipHook === 'meta' ? '' : undefined"
+        :data-nova-tap="chipHook === 'plain' ? '' : undefined"
         @click="tapTempo"
       >{{ tapLabel }}</button>
     </div>
@@ -212,7 +214,7 @@ defineExpose({
       >Trocar</button>
     </div>
     <div v-if="!showKeyPad" class="titan-chordpro-id-key-shown">
-      <span :data-meta-key-shown="surface === 'meta' ? '' : undefined">{{ meta.key }}</span>
+      <span :data-meta-key-shown="chipHook === 'meta' ? '' : undefined">{{ meta.key }}</span>
     </div>
     <template v-else>
       <div class="titan-chordpro-id-keys">

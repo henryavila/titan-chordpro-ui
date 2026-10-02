@@ -7,6 +7,7 @@ import {
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -141,9 +142,7 @@ const titleHint = computed(() => {
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ beatLabel }} · {{ titleHint }}</span>
           <span style="font-size:14px;font-weight:700;color:var(--text);">Escolher batida</span>
         </span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
-          <TitanChordproIcon name="x" :size="16" />
-        </button>
+        <TitanChordproIconButton icon="x" density="bar" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
       <!-- Dual direction: column Baixo | column Cima (never mix in one row). -->

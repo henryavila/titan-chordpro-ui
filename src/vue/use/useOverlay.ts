@@ -48,7 +48,7 @@ import {
 } from './overlay/queue'
 import { adoptUpdateChoice, keepUpdateChoice, toggledUpdate, updateCards } from './overlay/update'
 
-export type { ModesProp, WriteMode } from '../public'
+export type { WriteMode } from '../public'
 export type { OpCard } from './overlay/mine'
 export type { UpdCard } from './overlay/update'
 export type { QueueRow, QueueOpCard } from './overlay/queue'

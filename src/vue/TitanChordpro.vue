@@ -124,6 +124,7 @@ import type { TitanChordproProps, EditMode, RehearsalFocus, WriteMode } from './
 import { resolveEditMode } from './public'
 import { applyThemeVars, cycleTheme, themeIcon, themeLabel } from './use/useTheme'
 import TitanChordproIcon from './icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from './ui/TitanChordproIconButton.vue'
 import type { TitanChordproIconName } from './icon/paths'
 import './titan-chordpro.css'
 
@@ -541,7 +542,6 @@ const {
   countLeft,
   countTop,
   dockCtrlH,
-  dockIconSize,
   dockTypeW,
   dockPlayLabeled,
 } = useChromeLayout({ width, fs, scrolling, visibleDockBottom, headH })
@@ -1345,9 +1345,8 @@ function toastMsg(msg: string) {
   }, TOAST_HOLD_MS)
 }
 
-// ---------------------------------------------------------------- auto-scroll
-// The playhead walks the chart in musical time (see core/timeline.ts); the page
-// only moves once it passes the reading line.
+// ---------------------------------------------------------------- notation
+// Collapse of tab and score blocks. The scroll clock lives in useAutoScroll.
 
 // Display choices belong to this reader, keyed by song and notation identity.
 const notationSongId = computed(() => setlist.on.value
@@ -1726,7 +1725,6 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   capoHint: capoHint.value,
   capoShapes: capoShapes.value,
   mapOn: mapOn.value,
-  twin: twin.value,
   metaTempo: meta.value.tempo,
   metaTime: meta.value.time,
   metaDuration: meta.value.duration,
@@ -1794,7 +1792,6 @@ const phoneDockBind = computed((): PhoneDockModel => ({
   bp: bp.value,
   canEdit: canEditNow.value,
   dirty: dirty.value,
-  dockIconSize: dockIconSize.value,
   fitOn: fitOn.value,
   queueCount: queueCount.value,
 }))
@@ -2012,6 +2009,13 @@ function onKey(e: KeyboardEvent) {
     save()
     return
   }
+  // Nova focuses its address field on open. Escape still cancels that dialog
+  // before the "don't steal keys from a field" guard, and before every other panel.
+  if (e.key === 'Escape' && novaOpen.value) {
+    e.preventDefault()
+    novaOpen.value = false
+    return
+  }
   if (typing) return
   // The score editor owns the keyboard while it is open: Esc, the arrows and
   // undo all mean something in there, and the chart behind it must not act on
@@ -2047,7 +2051,8 @@ function onKey(e: KeyboardEvent) {
     // Escape closes what is open on top; it never drops the reader out of the
     // editor, which would put an unsaved draft one keystroke from being missed.
     if (k === 'Escape') {
-      if (bedit.picker.value) bedit.picker.value = null
+      if (novaOpen.value) novaOpen.value = false
+      else if (bedit.picker.value) bedit.picker.value = null
       else if (bedit.chordEdit.value) bedit.chordEdit.value = null
       else if (bedit.insertMenu.value) bedit.insertMenu.value = false
       else if (bedit.placing.value) bedit.placing.value = false
@@ -2089,7 +2094,8 @@ function onKey(e: KeyboardEvent) {
   else if (k === 'a' || k === 'A') toggleFit()
   else if (k === 'c' || k === 'C') capoOpen.value = !capoOpen.value
   else if (k === 'Escape') {
-    if (ov.myPanel.value) ov.closeMy()
+    if (novaOpen.value) novaOpen.value = false
+    else if (ov.myPanel.value) ov.closeMy()
     else if (ov.queueOpen.value) ov.closeQueue()
     else if (capoOpen.value) capoOpen.value = false
     else if (setlist.listOpen.value) setlist.close()
@@ -2816,7 +2822,7 @@ defineExpose({
       <TitanChordproIcon name="alertTri" :size="18" style="color:var(--danger)" />
       <span style="flex:1;font-size:13px;line-height:1.4;">{{ alert.text }}</span>
       <button style="flex:none;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;" @click="alert.retry()">Tentar de novo</button>
-      <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:30px;height:30px;color:var(--muted);" @click="alert.dismiss()"><TitanChordproIcon name="x" :size="14" /></button>
+      <TitanChordproIconButton icon="x" density="bar" muted aria-label="Fechar" @click="alert.dismiss()" />
     </div>
 
     <div
@@ -3010,7 +3016,7 @@ defineExpose({
       :capo-shapes="capoShapes"
       :has-capo="hasCapo"
       :has-reset="hasReset"
-      :dual="twin"
+      :dual="mapOn"
       @dual="toggleMap"
       @close="toneOpen = false"
       @down="shift(-1)"

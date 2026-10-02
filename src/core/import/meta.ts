@@ -99,6 +99,14 @@ export function writeStrumPatterns(source: string, set: StrumPatternSet): string
   return writeMeta(source, cur)
 }
 
+/** A body line: not a directive, or a directive that is not canonical meta. */
+function keepsBodyLine(l: string): boolean {
+  const d = l.match(DIR)
+  if (!d) return true
+  const k = (d[1] ?? '').toLowerCase()
+  return canonicalMetaKey(k) === null
+}
+
 /**
  * Rewrites the header: the known keys leave the body and come back on top, in
  * the canonical order. No two `{key:}` lines competing.
@@ -106,12 +114,7 @@ export function writeStrumPatterns(source: string, set: StrumPatternSet): string
 export function writeMeta(source: string, meta: ChartMeta): string {
   const body = String(source ?? '')
     .split('\n')
-    .filter((l) => {
-      const d = l.match(DIR)
-      if (!d) return true
-      const k = (d[1] ?? '').toLowerCase()
-      return canonicalMetaKey(k) === null
-    })
+    .filter(keepsBodyLine)
   const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
     (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
   )
@@ -139,12 +142,7 @@ export function missingOf(meta: ChartMeta): string[] {
 export function chartBody(source: string): string {
   return String(source ?? '')
     .split('\n')
-    .filter((l) => {
-      const d = l.match(DIR)
-      if (!d) return true
-      const k = (d[1] ?? '').toLowerCase()
-      return canonicalMetaKey(k) === null
-    })
+    .filter(keepsBodyLine)
     .join('\n')
     .replace(/^\n+/, '')
 }

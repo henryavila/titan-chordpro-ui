@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproListRow from '../ui/TitanChordproListRow.vue'
 import { overlayVisualInsets, type EdgeInsets } from '../use/viewportPin'
 
@@ -56,10 +58,10 @@ const geom = computed(() =>
 )
 
 /** Also pin to the visual viewport when the keyboard does resize it. */
-const root = ref<HTMLElement | null>(null)
+const shell = ref<{ rootEl: HTMLElement | null } | null>(null)
 const insets = shallowRef<EdgeInsets>({ top: 0, left: 0, right: 0, bottom: 0 })
 function syncInsets() {
-  insets.value = overlayVisualInsets(root.value)
+  insets.value = overlayVisualInsets(shell.value?.rootEl ?? null)
 }
 onMounted(() => {
   syncInsets()
@@ -86,26 +88,33 @@ const wrapStyle = computed(() => ({
 </script>
 
 <template>
-  <div
-    ref="root"
-    data-setlist-overlay
-    :style="wrapStyle"
-    style="position:absolute;z-index:29;display:flex;justify-content:center;"
+  <TitanChordproDialogShell
+    ref="shell"
+    variant="center"
+    :compact="compact"
+    :z="29"
+    label="Lista do ensaio"
+    :closable="false"
+    :root-attrs="{ 'data-setlist-overlay': '' }"
+    :root-style="wrapStyle"
+    :panel-style="{
+      maxWidth: geom.max,
+      borderRadius: geom.radius,
+      maxHeight: '78%',
+      overflow: 'hidden',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+    }"
+    @close="emit('close')"
   >
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div
-      class="titan-chordpro-veil-2"
-      role="dialog"
-      aria-label="Lista do ensaio"
-      :style="{ maxWidth: geom.max, borderRadius: geom.radius }"
-      style="position:relative;width:100%;max-height:78%;display:flex;flex-direction:column;overflow:hidden;animation:titan-chordpro-rise .2s ease-out;"
-    >
       <div style="flex:none;display:flex;align-items:center;gap:10px;padding:14px 10px 12px 16px;border-bottom:1px solid var(--line-soft);">
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Ensaio · {{ headLabel }}</span>
+          <span class="titan-chordpro-modal-kicker">Ensaio · {{ headLabel }}</span>
           <span style="font-size:11.5px;color:var(--muted);">{{ seenLabel }}</span>
         </span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:38px;height:38px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="18" /></button>
+        <TitanChordproIconButton icon="x" :density="compact ? 'phone' : 'bar'" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
       <!-- Search earns its place only once the list is too long to scan. -->
@@ -161,6 +170,5 @@ const wrapStyle = computed(() => ({
         </TitanChordproListRow>
         <div v-if="noHit" style="padding:22px 4px;text-align:center;font-size:12.5px;color:var(--muted);">Nenhuma música com esse nome.</div>
       </div>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

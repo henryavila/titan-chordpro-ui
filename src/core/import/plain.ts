@@ -1,39 +1,14 @@
 import { DIR } from '../define'
+import { isChord, isChordLine, isTabLine, unwrapChord } from './chord-line'
+import { stripPlainCifraClubTabs } from './cifraclub-tabs'
+
+export { isChord, isChordLine, isTabLine }
 
 export const SECTION =
   /^\s*(intro|introdu(?:ç|c)(?:ã|a)o|verso?|vers[eo]\s*\d*|estrofe\s*\d*|refr(?:ã|a)o|chorus|pr[eé][- ]?chorus|pr[eé][- ]?refr(?:ã|a)o|ponte|bridge|solo|instrumental|interl[uú]dio|final|ending|outro|tag|coda|parte\s*\d*|primeira parte|segunda parte|terceira parte|dedilhado|riff)\s*\d*\s*[:\]]?\s*$/i
 const CHORUS = /^(refr(?:ã|a)o|chorus)/i
 /** Cifra Club (and plain paste) say Intro; Titan charts say INTRODUÇÃO. */
 const INTRO_LABEL = /^(intro|introdu(?:ç|c)(?:ã|a)o)\s*$/i
-
-/** Only a parenthesis around the whole token — not the `(4)` in `D7(4)`. */
-function unwrapChord(token: string): string {
-  return /^\(.+\)$/.test(token) ? token.slice(1, -1) : token
-}
-
-/**
- * Brazilian / Cifra Club names: C7M, D7(4), Em7(11), D7(9/11), C9/E, Eb°.
- */
-
-export function isChord(token: string): boolean {
-  const t = unwrapChord(token)
-  if (!t || !/^[A-H]/.test(t)) return false
-  return /^[A-H](?:#|b)?(?:m(?![aj])|M(?!aj)|maj|min|dim|aug|sus|add|º|°|\+)?(?:\d{1,2})?(?:M|maj)?(?:\([^)]+\))?(?:(?:add|sus|maj|min|dim|aug|no)\d{0,2})?(?:[#b+-]\d{1,2})?(?:\/[A-H](?:#|b)?)?$/.test(
-    t,
-  )
-}
-
-/** A line that is only chord names — an intro, a passing bar, a turnaround. */
-export function isChordLine(line: string): boolean {
-  const t = line.trim()
-  if (!t || t.length > 200) return false
-  const toks = t.split(/\s+/)
-  if (toks.length > 24) return false
-  return toks.every(isChord)
-}
-
-export const isTabLine = (l: string) =>
-  /\|/.test(l) && (l.match(/-/g) || []).length >= 5 && !/[a-z]{4}/i.test(l.replace(/^[eEADGBb]/, ''))
 
 export const clean = (s: string) =>
   String(s ?? '')
@@ -77,67 +52,6 @@ function sectionName(label: string): string {
 function sectionDirective(label: string, open: boolean): string {
   const name = sectionName(label)
   return CHORUS.test(name) ? (open ? '{soc}' : '{eoc}') : '{c:' + name + '}'
-}
-
-/**
- * Cifra Club writes a tab as `[TAB - …]` / `[Tab - …]`, then the same chords
- * again, often `Parte N de M`, then the ASCII staff. That chord line only
- * labels the fingering. Drop the whole block. A staff with no caption stays,
- * so a pasted tab the musician wrote is still `{sot}`.
- */
-const TAB_CAPTION = /^\s*\[(?:tab|tablatura)\b[^\]]*\]\s*$/i
-const TAB_PARTE = /^\s*parte\s+\d+\s+de\s+\d+\s*$/i
-
-function stripHashTabMarkers(text: string): string {
-  if (!text.includes('#t1#') && !text.includes('#t2#')) return text
-  return text.replace(/#t1#[\s\S]*?#\/t1#/g, '\n').replace(/#t2#[\s\S]*?#\/t2#/g, '\n')
-}
-
-function staffAhead(lines: string[], from: number): boolean {
-  let seen = 0
-  for (let i = from + 1; i < lines.length && seen < 8; i++) {
-    const raw = lines[i] ?? ''
-    const bare = raw.trim()
-    if (!bare) continue
-    seen++
-    if (isTabLine(raw)) return true
-    if (TAB_CAPTION.test(bare) || /^\[[^\]]+\]/.test(bare)) return false
-  }
-  return false
-}
-
-export function stripPlainCifraClubTabs(text: string): string {
-  const lines = stripHashTabMarkers(text).split('\n')
-  const out: string[] = []
-  let inTab = false
-  // Chord names above the staff label the fingering. The same shape after
-  // the staff is the song again.
-  let seenStaff = false
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i] ?? ''
-    const bare = raw.trim()
-    if (TAB_CAPTION.test(bare) || (TAB_PARTE.test(bare) && staffAhead(lines, i))) {
-      inTab = true
-      seenStaff = false
-      continue
-    }
-    if (inTab) {
-      if (!bare) continue
-      if (TAB_PARTE.test(bare)) {
-        seenStaff = false
-        continue
-      }
-      if (isTabLine(raw)) {
-        seenStaff = true
-        continue
-      }
-      if (isChordLine(raw) && !seenStaff) continue
-      inTab = false
-      if (out.length && (out[out.length - 1] ?? '').trim()) out.push('')
-    }
-    out.push(raw)
-  }
-  return out.join('\n')
 }
 
 /** Plain body → ChordPro. A bare staff stays a tab: `{sot}`…`{eot}`. */

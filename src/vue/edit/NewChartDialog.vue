@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import TitanChordproActionButton from '../ui/TitanChordproActionButton.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproChartIdentityFields from '../ui/TitanChordproChartIdentityFields.vue'
 import {
   convert, detect, durationFromYoutubeHtml, hostOk, missingOf, MISSING_LABEL,
@@ -338,7 +339,7 @@ onMounted(() => {
     :style="{ alignItems: geom.align, padding: geom.wrapPad }"
     style="position:absolute;inset:0;z-index:40;display:flex;justify-content:center;"
   >
-    <div class="titan-chordpro-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
     <div
       role="dialog"
       aria-modal="true"
@@ -349,11 +350,11 @@ onMounted(() => {
     >
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
         <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
-          <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ label }}</span>
+          <span class="titan-chordpro-modal-kicker">{{ label }}</span>
           <span v-if="headline" style="font-size:20px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;">{{ headline }}</span>
           <span v-if="step === 'import'" style="font-size:12.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ lede }}</span>
         </div>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:32px;height:32px;border-radius:10px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
+        <TitanChordproIconButton icon="x" :density="compact ? 'phone' : 'bar'" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
       <!-- Step one: where the chart comes from. Cifra Club is the normal way in. -->
@@ -480,24 +481,28 @@ onMounted(() => {
             style="font-size:12px;line-height:1.45;color:var(--muted);"
           >Cifra sugere capo {{ keyRewrite.capo }}. O capo é o seu, no aparelho — começa em 0.</span>
           <div style="display:flex;flex-direction:column;gap:7px;">
-            <button
-              type="button"
+            <TitanChordproActionButton
               data-nova-key-rewrite-go
-              style="height:42px;border:0;border-radius:12px;background:var(--chord);color:var(--chord-ink);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
+              tone="chord"
+              size="md"
+              block
               @click="acceptKeyRewrite"
-            >Reescrever em {{ keyRewrite.declaredKey }}</button>
-            <button
-              type="button"
+            >Reescrever em {{ keyRewrite.declaredKey }}</TitanChordproActionButton>
+            <TitanChordproActionButton
               data-nova-key-rewrite-keep
-              style="height:36px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;"
+              tone="ghost"
+              size="sm"
+              bordered
+              block
               @click="keepKeyRewrite"
-            >Manter</button>
+            >Manter</TitanChordproActionButton>
           </div>
         </div>
 
         <TitanChordproChartIdentityFields
           :meta="meta"
-          surface="nova"
+          missing-edge="chord"
+          chip-hook="plain"
           v-model:key-edit="keyEdit"
           :title-size="geom.titleSize"
           :columns="geom.cols"

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Nova cifra e a tecla Esc:** Esc fecha a cifra nova antes dos outros painéis, na leitura e na edição.
+- **Véu dos painéis:** o fundo atrás de Tom, Mais, lista e os outros painéis usa um só véu.
+- **Rolar no telefone:** os controles da barra de baixo ficam com 44px. A palavra Rolar ou Parar some só quando a tela tem 320px.
+- **Rascunho no telefone:** o botão Editar ganha um ponto quando a cifra ainda não foi gravada.
+- **Editor de partitura:** a barra do editor (entrada, vista, pauta, tocar) segue o mesmo visual do restante da cifra.
 - **Rolar no telefone e no computador:** o botão usa a mesma receita (verde parado, cinza ao tocar Parar). No telefone continua maior; no computador, menor. A palavra some só em telas bem estreitas.
 - **Graus:** no menu Mais do telefone o controle passa a se chamar Graus, igual à barra do computador.
 - **Comentários:** o ícone mostra olho aberto quando os comentários estão visíveis e olho tapado quando estão ocultos.

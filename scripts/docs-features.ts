@@ -1,9 +1,9 @@
 /**
  * Index of docs/features for README and CONSUMER.
  *
- * Rewrites only the span between the titan-features markers.
- * Missing markers get one block appended. VISAO, SPEC, NAMING,
- * MARCAS-X and CHANGELOG stay manual.
+ * A pair is rewritten in place. No markers means one block is appended.
+ * A start without an end is an error and the file is left unchanged.
+ * VISAO, SPEC, NAMING, MARCAS-X and CHANGELOG stay manual.
  *
  *   pnpm docs:build
  *   pnpm docs:check
@@ -146,7 +146,11 @@ function markerSpan(markdown: string): { start: number; end: number } | null {
   const start = markdown.indexOf(FEATURE_INDEX_START)
   if (start < 0) return null
   const end = markdown.indexOf(FEATURE_INDEX_END, start + FEATURE_INDEX_START.length)
-  if (end < 0) return null
+  if (end < 0) {
+    throw new Error(
+      `orphan ${FEATURE_INDEX_START} without ${FEATURE_INDEX_END}; the file is left unchanged`,
+    )
+  }
   return { start, end }
 }
 

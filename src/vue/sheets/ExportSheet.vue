@@ -2,6 +2,7 @@
 import { ref, useId } from 'vue'
 import ExportFileButton from './ExportFileButton.vue'
 import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
+import TitanChordproSeg from '../ui/TitanChordproSeg.vue'
 withDefaults(
   defineProps<{
     exportKeyNote: string
@@ -41,26 +42,16 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
     :kicker="`Exportar ${exportKeyNote}`"
     @close="emit('close')"
   >
-      <div v-if="hasOverlay" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;">
-        <button
-          data-export-mine
-          :style="{
-            border: `1px solid ${exportOrig ? 'var(--line)' : 'var(--chord-edge)'}`,
-            background: exportOrig ? 'transparent' : 'var(--chord-fill)',
-          }"
-          style="flex:1;height:34px;border-radius:10px;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-          @click="emit('pick', false)"
-        >Minha versão</button>
-        <button
-          data-export-orig
-          :style="{
-            border: `1px solid ${exportOrig ? 'var(--sel-line)' : 'var(--line)'}`,
-            background: exportOrig ? 'var(--sel)' : 'transparent',
-          }"
-          style="flex:1;height:34px;border-radius:10px;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;"
-          @click="emit('pick', true)"
-        >Oficial</button>
-      </div>
+      <TitanChordproSeg
+        v-if="hasOverlay"
+        label="Qual versão exportar"
+        :value="exportOrig ? 'orig' : 'mine'"
+        :options="[
+          { value: 'mine', label: 'Minha versão', attrs: { 'data-export-mine': '' } },
+          { value: 'orig', label: 'Oficial', attrs: { 'data-export-orig': '' } },
+        ]"
+        @pick="emit('pick', $event === 'orig')"
+      />
       <ExportFileButton id="cho" ext=".cho" label="ChordPro" @click="emit('cho')" />
       <ExportFileButton
         id="bundle"

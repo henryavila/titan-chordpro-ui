@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproActionButton from '../ui/TitanChordproActionButton.vue'
 import TitanChordproChartIdentityFields from '../ui/TitanChordproChartIdentityFields.vue'
 import TitanChordproChip from '../ui/TitanChordproChip.vue'
@@ -270,7 +270,7 @@ onMounted(() => {
 
 <template>
   <div class="titan-chordpro-meta-overlay" :class="{ 'is-compact': props.compact }">
-    <div class="titan-chordpro-scrim" style="background:color-mix(in srgb, var(--scrim) 55%, #000);" @click="emit('close')" />
+    <div class="titan-chordpro-scrim" @click="emit('close')" />
     <div
       role="dialog"
       aria-modal="true"
@@ -280,10 +280,10 @@ onMounted(() => {
     >
       <div class="titan-chordpro-meta-header">
         <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-          <span class="titan-chordpro-meta-eyebrow">Editar cifra</span>
+          <span class="titan-chordpro-modal-kicker">Editar cifra</span>
           <span style="font-size:20px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;">Metadados</span>
         </div>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="flex:none;width:40px;height:40px;border-radius:10px;color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="18" /></button>
+        <TitanChordproIconButton icon="x" density="workbench" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
       <div v-if="props.compact" class="titan-chordpro-meta-tabs" role="tablist" aria-label="Áreas dos metadados">
@@ -300,7 +300,8 @@ onMounted(() => {
       <TitanChordproChartIdentityFields
         ref="fieldsEl"
         :meta="meta"
-        surface="meta"
+        missing-edge="soft"
+        chip-hook="meta"
         v-model:key-edit="keyEdit"
         duration-hint="Necessária para a rolagem automática."
         @patch="setMeta"
@@ -393,10 +394,11 @@ onMounted(() => {
             <span data-meta-enrich-yt-title style="font-size:12px;color:var(--muted);">{{ proposal.youtube.songTitle }}</span>
           </div>
           <div :style="{ gridTemplateColumns: props.compact ? '1fr' : '1fr 1fr' }" style="display:grid;gap:10px;">
-            <div
+            <TitanChordproChip
               v-if="proposal.youtube.remoteId"
+              static
+              size="pad"
               data-meta-enrich-yt-remote
-              class="titan-chordpro-chip is-pad"
               :class="{ 'is-on': ytPick === 'remote' }"
               @click="ytPick = 'remote'"
             >
@@ -424,11 +426,12 @@ onMounted(() => {
                 :on="ytPick === 'remote'"
                 @click.stop="ytPick = 'remote'"
               >Usar este</TitanChordproChip>
-            </div>
-            <div
+            </TitanChordproChip>
+            <TitanChordproChip
               v-if="proposal.youtube.localId"
+              static
+              size="pad"
               data-meta-enrich-yt-local
-              class="titan-chordpro-chip is-pad"
               :class="{ 'is-on': ytPick === 'local' }"
               @click="ytPick = 'local'"
             >
@@ -456,7 +459,7 @@ onMounted(() => {
                 :on="ytPick === 'local'"
                 @click.stop="ytPick = 'local'"
               >Usar este</TitanChordproChip>
-            </div>
+            </TitanChordproChip>
           </div>
           <button
             type="button"
@@ -551,7 +554,7 @@ onMounted(() => {
           class="titan-chordpro-meta-restart"
         >
           <template v-if="!restartAsk">
-            <span class="titan-chordpro-meta-eyebrow">Nova cifra</span>
+            <span class="titan-chordpro-modal-kicker">Nova cifra</span>
             <button
               type="button"
               data-meta-restart
@@ -625,13 +628,6 @@ onMounted(() => {
 .titan-chordpro-meta-footer button {
   min-height: 44px;
 }
-.titan-chordpro-meta-eyebrow {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-}
 .titan-chordpro-meta-body {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
@@ -658,11 +654,6 @@ onMounted(() => {
 }
 .titan-chordpro-meta-section-head strong { font-size: 13px; }
 .titan-chordpro-meta-section-head span { color: var(--muted); font-size: 11px; }
-.titan-chordpro-meta-rhythm {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 9px;
-}
 .titan-chordpro-meta-notes {
   display: flex;
   flex-direction: column;
@@ -674,13 +665,13 @@ onMounted(() => {
   align-items: flex-end;
   padding: 0;
 }
-.is-compact .titan-chordpro-meta-dialog {
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-dialog {
   width: 100%;
   height: min(720px, 94%);
   border-radius: 22px 22px 0 0;
 }
-.is-compact .titan-chordpro-meta-header { padding: 15px 16px 12px; }
-.is-compact .titan-chordpro-meta-tabs {
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-header { padding: 15px 16px 12px; }
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
@@ -726,17 +717,14 @@ onMounted(() => {
   font-size: 11.5px;
 }
 .titan-chordpro-meta-reference .titan-chordpro-meta-url { flex: none; }
-.is-compact .titan-chordpro-meta-body {
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-body {
   display: block;
   padding: 14px 16px 22px;
 }
-.is-compact .titan-chordpro-meta-chart,
-.is-compact .titan-chordpro-meta-extras { gap: 10px; }
-.is-compact .titan-chordpro-meta-footer {
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-chart,
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-extras { gap: 10px; }
+.titan-chordpro-meta-overlay.is-compact .titan-chordpro-meta-footer {
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-}
-@media (max-width: 359px) {
-  .is-compact .titan-chordpro-meta-rhythm { grid-template-columns: minmax(0, 1fr); }
 }
 [data-meta-dialog] input::placeholder {
   color: var(--muted);

@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import { bootShellHtml } from './boot-shell'
 
 /**
  * Static flash markup for the demo pages. Markers in each HTML file expand
@@ -48,23 +49,8 @@ function requiredAttr(attrs: Map<string, string>, name: string, marker: string):
   return value
 }
 
-function text(value: string): string {
-  return value.replace(/[&<>]/g, (ch) => (ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : '&gt;'))
-}
-
 function bootLines(theme: string, title: string, message: string): string[] {
-  return [
-    `<div class="titan-chordpro-boot" data-boot-theme="${theme}" data-boot-shell role="status" aria-busy="true" aria-live="polite">`,
-    '  <div class="titan-chordpro-boot-head">',
-    '    <span class="titan-chordpro-boot-kicker">titan-chordpro-ui</span>',
-    `    <span class="titan-chordpro-boot-title">${text(title)}</span>`,
-    '  </div>',
-    '  <div class="titan-chordpro-boot-page">',
-    '    <div class="titan-chordpro-boot-spin" aria-hidden="true"></div>',
-    `    <p class="titan-chordpro-boot-msg">${text(message)}</p>`,
-    '  </div>',
-    '</div>',
-  ]
+  return bootShellHtml(theme, title, message).split('\n')
 }
 
 /** Replace demo font and boot markers. Pages without markers are unchanged. */

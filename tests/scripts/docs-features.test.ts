@@ -116,6 +116,16 @@ describe('feature index', () => {
     expect(next).not.toContain('miolo velho')
     expect(featureIndexMatches(next, interior)).toBe(true)
   })
+
+  it('throws when the start marker has no end and does not append', () => {
+    const interior = featureIndexInterior([
+      { id: 'exportacao', title: 'Exportar a cifra', sentence: 'Abre Exportar.' },
+    ])
+    const source = `${FEATURE_INDEX_START}\nalgum texto depois\n`
+    expect(() => upsertFeatureIndex(source, interior)).toThrow(/end/)
+    expect(source).toBe(`${FEATURE_INDEX_START}\nalgum texto depois\n`)
+    expect(source).not.toContain(FEATURE_INDEX_END)
+  })
 })
 
 describe('syncFeatureIndexes', () => {

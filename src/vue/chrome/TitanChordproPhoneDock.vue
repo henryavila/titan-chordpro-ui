@@ -63,7 +63,7 @@ const emit = defineEmits<{
         @slower="emit('slower')"
         @faster="emit('faster')"
       />
-      <div :style="{ gap: width < 360 ? '3px' : '4px' }" style="display:flex;align-items:center;justify-content:space-between;padding:6px;">
+      <div :style="{ gap: width <= 360 ? '3px' : '4px' }" style="display:flex;align-items:center;justify-content:space-between;padding:6px;">
         <TitanChordproRollButton
           density="phone"
           :live="rollLive"
@@ -80,6 +80,7 @@ const emit = defineEmits<{
           data-edit
           density="phone"
           icon="pencil"
+          :dot="dirty"
           :title="dirty ? 'Editar esta cifra · rascunho' : 'Editar esta cifra'"
           :aria-label="dirty ? 'Editar esta cifra · rascunho' : 'Editar esta cifra'"
           @click="emit('edit')"
@@ -101,6 +102,7 @@ const emit = defineEmits<{
           icon="ellipsis"
           title="Mais controles"
           aria-label="Mais controles"
+          data-more-queue-badge
           :badge="queueCount"
           @click="emit('more')"
         />

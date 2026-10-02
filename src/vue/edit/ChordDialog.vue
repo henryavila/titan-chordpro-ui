@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 
 const props = defineProps<{
   modelValue: string
@@ -39,24 +40,22 @@ function onKey(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div
-    class="titan-chordpro-modal"
-    data-chord-dialog
-    :style="{ alignItems: compact ? 'flex-end' : 'center', padding: compact ? '0' : '20px' }"
+  <TitanChordproDialogShell
+    variant="center"
+    :compact="compact"
+    :z="34"
+    label="Acorde"
+    kicker="Acorde"
+    :closable="false"
+    :root-attrs="{ 'data-chord-dialog': '' }"
+    panel-class="titan-chordpro-modal-card"
+    :panel-style="{
+      maxWidth: compact ? '100%' : '340px',
+      padding: compact ? '15px 15px 22px' : '15px',
+      borderRadius: compact ? '20px 20px 0 0' : '18px',
+    }"
+    @close="emit('close')"
   >
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div
-      class="titan-chordpro-veil-2 titan-chordpro-modal-card"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Acorde"
-      :style="{
-        maxWidth: compact ? '100%' : '340px',
-        padding: compact ? '15px 15px 22px' : '15px',
-        borderRadius: compact ? '20px 20px 0 0' : '18px',
-      }"
-    >
-      <span class="titan-chordpro-modal-kicker">Acorde</span>
       <input
         ref="input"
         data-chord-input
@@ -81,6 +80,5 @@ function onKey(e: KeyboardEvent) {
         <button class="titan-chordpro-modal-btn" type="button" @click="emit('close')">Cancelar</button>
         <button class="titan-chordpro-modal-btn titan-chordpro-modal-btn--primary" data-chord-apply type="button" @click="emit('apply')">Aplicar</button>
       </div>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

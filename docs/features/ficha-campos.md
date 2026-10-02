@@ -1,6 +1,6 @@
 ---
 id: ficha-campos
-status: in-progress
+status: stable
 audiences: [musician, agent]
 exports: []
 dom:

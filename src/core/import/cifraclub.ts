@@ -13,7 +13,9 @@ import {
   type ChartMeta,
   type MetaKey,
 } from './meta'
-import { SECTION, isChordLine, isTabLine, stripPlainCifraClubTabs } from './plain'
+import { isChordLine, isTabLine } from './chord-line'
+import { stripPlainCifraClubTabs } from './cifraclub-tabs'
+import { SECTION } from './plain'
 
 export function titleFromUrl(url: string): { title: string; subtitle: string } {
   try {

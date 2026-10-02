@@ -64,7 +64,6 @@ export type PhoneDockModel = {
   bp: string
   canEdit: boolean
   dirty: boolean
-  dockIconSize: string
   fitOn: boolean
   queueCount?: number
 }

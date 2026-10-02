@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 import type { ViewHeadModel } from './view-head'
 
@@ -104,8 +105,8 @@ const emit = defineEmits<{
         </div>
         <div v-if="capoOpen" class="titan-chordpro-veil-2" style="position:absolute;top:calc(100% + 8px);right:0;z-index:22;width:250px;padding:13px;border-radius:15px;display:flex;flex-direction:column;gap:11px;animation:titan-chordpro-rise .18s ease-out;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Capotraste</span>
-            <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:24px;height:24px;color:var(--muted);" @click="capoOpen = false"><TitanChordproIcon name="x" :size="14" /></button>
+            <span class="titan-chordpro-modal-kicker">Capotraste</span>
+            <TitanChordproIconButton icon="x" density="bar" muted aria-label="Fechar" @click="capoOpen = false" />
           </div>
           <div style="display:flex;align-items:center;gap:7px;">
             <button aria-label="Capo abaixo" style="width:34px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-size:16px;line-height:1;cursor:pointer;" @click="emit('capo-nudge', -1)">−</button>

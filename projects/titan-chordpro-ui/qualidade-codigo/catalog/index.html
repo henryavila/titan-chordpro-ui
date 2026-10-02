@@ -127,7 +127,7 @@
     </div>
   </header>
 
-  <h2>Como está hoje</h2>
+  <h2>O que vale</h2>
 
   <article class="card">
     <p class="tag">A · telefone · só ícone</p>
@@ -144,20 +144,20 @@
 
   <article class="card">
     <p class="tag">B · computador · ícone + “Ajuste”</p>
-    <p>Barra 36px, peso 600. Sem aria-pressed. Idle com borda transparente (não ghost puro).</p>
+    <p>Barra 36px, peso 600. Tem aria-pressed, igual ao telefone. Idle com borda transparente (não ghost puro).</p>
     <div class="stage">
-      <button type="button" class="bar" style="background:transparent;border:1px solid transparent;" tabindex="-1">
+      <button type="button" class="bar" style="background:transparent;border:1px solid transparent;" tabindex="-1" aria-pressed="false">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
         Ajuste
       </button>
-      <button type="button" class="bar" style="background:var(--sel);border:1px solid var(--sel-line);" tabindex="-1">
+      <button type="button" class="bar" style="background:var(--sel);border:1px solid var(--sel-line);" tabindex="-1" aria-pressed="true">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
         Ajuste
       </button>
     </div>
   </article>
 
-  <h2>O que fica</h2>
+  <h2>Escolha fechada</h2>
 
   <button type="button" class="choice" data-pick="1">
     <span class="n">1</span><strong>Só ícone em todo lugar</strong>
@@ -176,7 +176,7 @@
     <span>Descreva no chat.</span>
   </button>
 
-  <p class="foot">Toque numa opção para copiar o número. <b>Confirme no chat</b> (1, 2, 3 ou 4).</p>
+  <p class="foot">A opção 3 está fechada: ícone no telefone, palavra no computador, aria-pressed nos dois.</p>
 
   <script>
     const root = document.body

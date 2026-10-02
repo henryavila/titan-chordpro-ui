@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 import type { MoreSheetModel } from './dock-model'
 
 defineProps<MoreSheetModel>()
@@ -20,13 +21,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div style="position:absolute;inset:0;z-index:27;">
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div class="titan-chordpro-bottom-sheet titan-chordpro-veil-2" role="dialog" aria-label="Mais controles" style="gap:6px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-        <span class="titan-chordpro-modal-kicker">Mais controles</span>
-        <button class="titan-chordpro-ghost titan-chordpro-icon-btn" aria-label="Fechar" style="color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
-      </div>
+  <TitanChordproDialogShell
+    variant="sheet"
+    :z="27"
+    label="Mais controles"
+    kicker="Mais controles"
+    :panel-style="{ gap: '6px' }"
+    @close="emit('close')"
+  >
       <button data-theme-btn class="titan-chordpro-surface-btn titan-chordpro-more-item" :title="themeTitle" @click="emit('theme')"><TitanChordproIcon :name="themeIcon" :size="18" /><span class="titan-chordpro-more-copy">Tema</span><span>{{ themeLabel }}</span></button>
       <button
         class="titan-chordpro-surface-btn titan-chordpro-more-item"
@@ -73,6 +75,5 @@ const emit = defineEmits<{
         data-more-queue
         @click="emit('openQueue')"
       ><TitanChordproIcon name="msgQuote" :size="18" /><span class="titan-chordpro-more-copy">Sugestões dos músicos</span><span>{{ pendingCount }} {{ pendingCount === 1 ? 'pendente' : 'pendentes' }}</span></button>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

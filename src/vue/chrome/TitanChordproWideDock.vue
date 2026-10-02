@@ -137,7 +137,7 @@ const emit = defineEmits<{
         data-comments-toggle
         :icon="hideComments ? 'eyeOff' : 'eye'"
         label="Comentários"
-        :title="hideComments ? 'Mostrar comentários de ensaio' : 'Ocultar comentários de ensaio'"
+        :title="hideComments ? 'Mostrar comentários' : 'Ocultar comentários'"
         toggle
         :pressed="hideComments ? 'sel' : false"
         @click="emit('toggleComments')"

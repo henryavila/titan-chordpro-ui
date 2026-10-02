@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { drawDiagram, resolveDiagram, type ChordDefine } from '@henryavila/titan-chordpro-ui'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
+import TitanChordproSeg from '../ui/TitanChordproSeg.vue'
 
 /** Movement below this stays a tap, so the instrument buttons still click. */
 const DRAG_SLOP_PX = 12
@@ -243,24 +245,27 @@ onBeforeUnmount(() => {
           <h2 id="titan-chordpro-diagram-title" data-diagram-name>{{ shownName }}</h2>
           <p v-if="sounds" data-diagram-sounds>soa {{ concert }}</p>
         </div>
-        <button type="button" class="titan-chordpro-diagram-close" data-diagram-close aria-label="Fechar" @click="emit('close')">
-          <TitanChordproIcon name="x" :size="18" />
-        </button>
+        <TitanChordproIconButton
+          icon="x"
+          density="pill"
+          class="titan-chordpro-diagram-close"
+          data-diagram-close
+          aria-label="Fechar"
+          @click="emit('close')"
+        />
       </header>
 
-      <div class="titan-chordpro-diagram-instruments" role="group" aria-label="Instrumento">
-        <button
-          v-for="item in instruments"
-          :key="item.id"
-          type="button"
-          class="titan-chordpro-diagram-instrument"
-          :data-diagram-instrument="item.id"
-          :aria-pressed="instrument === item.id"
-          @click="emit('instrument', item.id)"
-        >
-          {{ item.label }}
-        </button>
-      </div>
+      <TitanChordproSeg
+        class="titan-chordpro-diagram-instruments"
+        label="Instrumento"
+        :value="instrument"
+        :options="instruments.map((item) => ({
+          value: item.id,
+          label: item.label,
+          attrs: { 'data-diagram-instrument': item.id, class: 'titan-chordpro-diagram-instrument' },
+        }))"
+        @pick="emit('instrument', $event as DiagramInstrumentChoice)"
+      />
     </div>
   </div>
 </template>

@@ -60,15 +60,10 @@ export function useChromeLayout(opts: {
   const countTop = computed(
     () => `${chromeTop.value + Math.max(40, opts.headH.value || 56) + 8}px`,
   )
-  /**
-   * At 320px six 44px controls overflow. 40px is the smaller concession
-   * so the last button stays on screen.
-   */
-  const dockCtrlH = computed(() => (opts.width.value < 360 ? '40px' : bp.value === 'xs' ? '44px' : '48px'))
-  const dockIconSize = computed(() => dockCtrlH.value)
-  const dockTypeW = computed(() => (opts.width.value < 360 ? '34px' : bp.value === 'xs' ? '38px' : '42px'))
-  /** The word "Rolar" stays from 360px up. Below that the row cannot hold it. */
-  const dockPlayLabeled = computed(() => opts.width.value >= 360)
+  /** Phone dock targets stay 44. The word on Rolar drops only at 320. */
+  const dockCtrlH = computed(() => '44px')
+  const dockTypeW = computed(() => '38px')
+  const dockPlayLabeled = computed(() => opts.width.value > 320)
 
   return {
     phone,
@@ -82,7 +77,6 @@ export function useChromeLayout(opts: {
     countLeft,
     countTop,
     dockCtrlH,
-    dockIconSize,
     dockTypeW,
     dockPlayLabeled,
   }

@@ -1,6 +1,6 @@
 ---
 id: chrome-botoes
-status: in-progress
+status: stable
 audiences: [musician, host, agent]
 exports: []
 dom:
@@ -20,5 +20,7 @@ tests:
 # Botões da cifra
 
 O músico vê Rolar, A−/A+, Ajuste, Graus, Comentários, Metrônomo, Editar e Mais. Telefone 44px, computador 36px, mesma cor e o mesmo `data-*`.
+
+A palavra Rolar some só aos 320px; acima disso o botão mostra Rolar ou Parar.
 
 Peças em `src/vue/ui/`: RollButton, TypePair, BarButton, IconButton.

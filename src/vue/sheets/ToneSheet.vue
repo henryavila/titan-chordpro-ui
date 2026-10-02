@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 import TitanChordproStepper from '../ui/TitanChordproStepper.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 defineProps<{
@@ -28,13 +28,13 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div style="position:absolute;inset:0;z-index:28;">
-    <div class="titan-chordpro-scrim" @click="emit('close')" />
-    <div class="titan-chordpro-bottom-sheet titan-chordpro-veil-2" role="dialog" aria-label="Tom e capotraste">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom e capotraste</span>
-        <button class="titan-chordpro-ghost" aria-label="Fechar" style="width:36px;height:36px;border-radius:12px;background:var(--surface);color:var(--muted);" @click="emit('close')"><TitanChordproIcon name="x" :size="16" /></button>
-      </div>
+  <TitanChordproDialogShell
+    variant="sheet"
+    :z="28"
+    label="Tom e capotraste"
+    kicker="Tom e capotraste"
+    @close="emit('close')"
+  >
       <TitanChordproStepper size="lg" down-label="Baixar meio tom" up-label="Subir meio tom" @down="emit('down')" @up="emit('up')">
         <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
           <span data-tone-playing-key style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--chord);line-height:1;">{{ shownKey }}</span>
@@ -71,6 +71,5 @@ const emit = defineEmits<{
       >
         Voltar ao tom original
       </button>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>
