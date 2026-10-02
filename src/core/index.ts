@@ -63,7 +63,7 @@ export type { DiagramDraw, DrawDiagramOpts, FretDot, FretDraw, PianoDraw } from 
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
-export { buildChoFilename, buildPdfFilename, buildSljaFilename, buildPpsxFilename } from './filenames'
+export { buildChoFilename, buildPdfFilename, buildSljaFilename, buildPpsxFilename, buildScoreFilename } from './filenames'
 export { lyricsForSlides, lyricsText, exportLyrics } from './lyrics-for-slides'
 export type { SlideSourceLine, ChartLyrics } from './lyrics-for-slides'
 export { exportCho, exportChoFile, patchMeta } from './export-cho'

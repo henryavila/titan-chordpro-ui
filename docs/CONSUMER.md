@@ -991,8 +991,7 @@ Novos solos começam com **Ritmo na base** selecionado. Na criação ou em
 **Ajustar trecho**, escolha o **Ritmo padrão da TAB**:
 **Ritmo estendido** (hastes até as notas), **Ritmo na base** (hastes somente
 abaixo das cordas) ou **Sem ritmo** (sem hastes e barras de duração).
-Na leitura, o próprio trecho oferece **TAB / Partitura**, **Ritmo da TAB**, **Notas** e **Zoom Auto**. No celular,
-os detalhes de ritmo e zoom aparecem somente ao abrir o menu.
+Na leitura, a linha do trecho traz o nome, os três pontos e a seta. Um toque no nome ou na seta abre ou recolhe o trecho. Os três pontos abrem **TAB**, **Partitura**, **Ritmo da TAB**, **Notas**, **Zoom** e **Baixar**.
 A escolha de ritmo na leitura vale para os solos neste navegador, persiste entre
 visitas e não altera o source, o estado de edição nem o padrão definido pelo autor.
 **Padrão do trecho** remove a preferência e volta a respeitar cada trecho.
@@ -1050,7 +1049,9 @@ O source usa uma diretiva única para cada referência externa:
 O atributo opcional `name="Solo de entrada"` (`ScoreReference.name`) identifica
 o trecho na cifra e no PDF. Referências antigas, sem nome, mostram **Solo**.
 Na leitura, o cabeçalho mostra somente esse nome, sem faixa, intervalo ou aviso
-de tom original. A notação continua no tom do arquivo. A seta no canto do card
+de tom original. Nos três pontos, **Baixar** entrega o arquivo original no aparelho, com esse
+mesmo nome e a extensão do Guitar Pro/MusicXML (`Solo de entrada.gp`). Sem
+nome, o arquivo baixa como `Solo` mais a extensão original. A notação continua no tom do arquivo. A seta no canto do card
 oculta ou mostra o conteúdo, mantendo o título visível; não flutua sobre a cifra.
 O card aproveita uma área mais larga que a coluna da letra no desktop e respeita
 a largura disponível no celular e no componente incorporado.

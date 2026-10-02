@@ -5,10 +5,11 @@ import type { model } from '@coderline/alphatab'
 import type { ScoreReference } from '@henryavila/titan-chordpro-ui'
 import { drawNotation, type NotationSystem } from './notation-renderer'
 import { excerptTrack, hasTab, loadNotation } from './notation-loader'
-import ScoreChoice from './ScoreChoice.vue'
-import { useTabRhythm, TAB_RHYTHM_OPTIONS } from '../use/useTabRhythm'
+import { useTabRhythm } from '../use/useTabRhythm'
 import { useNoteNames } from '../use/useNoteNames'
 import ScoreZoom from './ScoreZoom.vue'
+import ScoreOptionsMenu from './ScoreOptionsMenu.vue'
+import { downloadScoreFile } from './download-score'
 import type { NoteNameFormat } from '../public'
 
 const props = defineProps<{
@@ -27,7 +28,6 @@ const emit = defineEmits<{ editScore: []; viewChange: [view: 'tab' | 'score'] }>
 const host = ref<HTMLElement | null>(null)
 const preference = useTabRhythm()
 const noteNames = useNoteNames()
-const rhythmOptions = [{ value: 'default', label: 'Padrão do trecho' }, ...TAB_RHYTHM_OPTIONS]
 const localView = ref<'tab' | 'score'>('tab')
 const view = computed<'tab' | 'score'>({
   get: () => {
@@ -41,7 +41,11 @@ const view = computed<'tab' | 'score'>({
 })
 const tabAvailable = ref(false)
 const error = ref('')
+const downloadError = ref('')
+const downloading = ref(false)
 const loading = ref(true)
+const fileBytes = ref<Uint8Array | null>(null)
+const fileType = ref('')
 const label = computed(() => {
   try { return readScoreReference(props.text)?.name ?? 'Solo' } catch { return 'Solo' }
 })
@@ -53,7 +57,7 @@ const resolvedUrl = computed(() => {
     return reference ? (props.resolveScore?.(reference.src) ?? reference.src) : ''
   } catch { return '' }
 })
-const zoomLabel = computed(() => `${Math.round(scale.value * 100)}%`)
+const zoomLabel = computed(() => `${Math.round(scoreAutoScale(host.value?.clientWidth || 320) * 100)}%`)
 const noteLaneHeight = (system: NotationSystem) => `${(system.noteNames.reduce((max, name) => Math.max(max, name.row), 0) + 1) * 20}px`
 let score: model.Score | null = null
 let reference: ScoreReference | null = null
@@ -97,6 +101,9 @@ async function load() {
   reference = null
   systems.value = []
   error.value = ''
+  downloadError.value = ''
+  fileBytes.value = null
+  fileType.value = ''
   loading.value = true
   const controller = new AbortController()
   abort = controller
@@ -108,7 +115,11 @@ async function load() {
     if (!['http:', 'https:', 'blob:'].includes(parsedUrl.protocol)) throw new Error('Use um endereço HTTP ou HTTPS para o arquivo.')
     const response = await fetch(parsedUrl.href, { signal: controller.signal })
     if (!response.ok) throw new Error('Não foi possível abrir o arquivo do solo.')
-    const loaded = await loadNotation(new Uint8Array(await response.arrayBuffer()))
+    const buffer = new Uint8Array(await response.arrayBuffer())
+    if (disposed || ticket !== generation) return
+    fileBytes.value = buffer
+    fileType.value = response.headers.get('content-type') ?? ''
+    const loaded = await loadNotation(buffer)
     if (disposed || ticket !== generation || !host.value) return
     score = loaded
     const track = excerptTrack(score, reference.track, reference.start, reference.end)
@@ -120,6 +131,23 @@ async function load() {
     if (disposed || ticket !== generation) return
     error.value = e instanceof Error ? e.message : 'Não foi possível abrir o solo.'
     loading.value = false
+  }
+}
+async function onDownload() {
+  if (downloading.value) return
+  downloading.value = true
+  downloadError.value = ''
+  try {
+    await downloadScoreFile({
+      text: props.text,
+      resolveScore: props.resolveScore,
+      bytes: fileBytes.value,
+      contentType: fileType.value,
+    })
+  } catch (e) {
+    downloadError.value = e instanceof Error ? e.message : 'Não foi possível baixar o arquivo.'
+  } finally {
+    downloading.value = false
   }
 }
 watch([() => props.text, resolvedUrl], () => { localView.value = 'tab'; load() })
@@ -138,30 +166,61 @@ onMounted(() => {
   if (host.value) observer.observe(host.value)
 })
 onUnmounted(() => { disposed = true; cancelAnimationFrame(resizeFrame); generation++; abort?.abort(); observer?.disconnect(); drawing++ })
+
+const rhythm = computed(() => preference.value.value ?? 'default')
+defineExpose({
+  view,
+  tabAvailable,
+  zoom,
+  zoomLabel,
+  downloading,
+  download: onDownload,
+  fileBytes,
+  fileType,
+  rhythm,
+  setRhythm: preference.set,
+  noteNamesOn: computed(() => !!noteNames.value.value),
+  setNoteNames: (value: boolean) => noteNames.set(value),
+})
 </script>
 
 <template>
   <figure class="titan-chordpro-figure titan-chordpro-external-score" data-external-score :style="{ margin: `0 0 ${blockGap}` }">
-    <figcaption class="titan-chordpro-figure-cap">
-      <div v-if="!hideTitle" class="titan-chordpro-score-heading">
+    <figcaption v-if="preview || !hideTitle" class="titan-chordpro-figure-cap">
+      <div v-if="!preview" class="titan-chordpro-score-heading">
         <span class="titan-chordpro-figure-kind">{{ label }}</span>
-        <button v-if="canEdit" type="button" class="titan-chordpro-figure-btn" @click="emit('editScore')">Ajustar trecho</button>
+        <ScoreOptionsMenu
+          :label="label"
+          :view="view"
+          :tab-available="tabAvailable"
+          :rhythm="rhythm"
+          :note-names="!!noteNames.value.value"
+          :zoom="zoom"
+          :zoom-label="zoomLabel"
+          :downloading="downloading"
+          :can-edit="canEdit"
+          :text="text"
+          :resolve-score="resolveScore"
+          :bytes="fileBytes"
+          :file-type="fileType"
+          @view="view = $event"
+          @rhythm="preference.set"
+          @notes="noteNames.set"
+          @zoom="zoom = $event"
+          @adjust="emit('editScore')"
+        />
       </div>
-      <div class="titan-chordpro-score-controls">
-      <button v-for="option in (['tab', 'score'] as const)" :key="option" type="button" class="titan-chordpro-figure-btn"
-        :disabled="option === 'tab' && !tabAvailable" :aria-pressed="view === option" @click="view = option">
-        {{ option === 'tab' ? 'TAB' : 'Partitura' }}
-      </button>
-      <ScoreChoice v-if="view === 'tab' && tabAvailable && !preview" :model-value="preference.value.value ?? 'default'"
-        label="Ritmo da TAB" caption="Ritmo" compact :options="rhythmOptions" @update:model-value="preference.set" />
-      <button v-if="!preview" type="button" class="titan-chordpro-figure-btn titan-chordpro-note-names-toggle"
-        :aria-pressed="noteNames.value.value" aria-label="Notas"
-        @click="noteNames.set(!noteNames.value.value)">Notas</button>
-      <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
+      <div v-else class="titan-chordpro-score-controls">
+        <button v-for="option in (['tab', 'score'] as const)" :key="option" type="button" class="titan-chordpro-figure-btn"
+          :disabled="option === 'tab' && !tabAvailable" :aria-pressed="view === option" @click="view = option">
+          {{ option === 'tab' ? 'TAB' : 'Partitura' }}
+        </button>
+        <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
       </div>
     </figcaption>
     <p v-if="loading && !error" role="status">Abrindo solo…</p>
     <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">Tentar novamente</button></p>
+    <p v-if="downloadError" role="alert">{{ downloadError }}</p>
     <p v-else-if="!loading && !tabAvailable">Este arquivo não traz posições nas cordas para exibir TAB.</p>
     <div class="titan-chordpro-notation-paper"><div ref="host" class="titan-chordpro-notation-systems">
       <div v-for="(system, i) in systems" :key="i" class="titan-chordpro-notation-system"

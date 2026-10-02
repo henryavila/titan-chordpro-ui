@@ -1,7 +1,16 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+async function openScoreOptions(page: Page, name = 'Solo') {
+  const trigger = page.getByRole('button', { name: `Opções de ${name}` })
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click()
+  await expect(page.getByRole('dialog', { name: `Opções de ${name}` })).toBeVisible()
+  return trigger
+}
+
 test('shows letter notes above TAB and partitura, switches to solfege, and remembers visibility', async ({ page }, info) => {
   await page.goto('/notation.html?file=notes.gp')
   await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
+  await openScoreOptions(page)
   const toggle = page.getByRole('button', { name: 'Notas', exact: true })
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await toggle.click()
@@ -17,6 +26,7 @@ test('shows letter notes above TAB and partitura, switches to solfege, and remem
   await page.screenshot({ path: info.outputPath('note-names-tab.png') })
   expect(await tabLane.evaluate(el => el.compareDocumentPosition(el.parentElement!.querySelector('svg')!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy()
   const tabSvg = await page.locator('.titan-chordpro-notation-paper svg').first().innerHTML()
+  await openScoreOptions(page)
   await page.getByRole('button', { name: 'Partitura', exact: true }).click()
   await expect.poll(() => page.locator('.titan-chordpro-notation-paper svg').first().innerHTML()).not.toBe(tabSvg)
   const scoreLane = page.getByLabel('Notas da partitura').first()
@@ -24,30 +34,30 @@ test('shows letter notes above TAB and partitura, switches to solfege, and remem
   await expect(scoreLane.locator('.titan-chordpro-note-name').first()).toHaveText('F')
   await page.screenshot({ path: info.outputPath('note-names-score.png') })
   expect(await scoreLane.evaluate(el => el.compareDocumentPosition(el.parentElement!.querySelector('svg')!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy()
+  await page.keyboard.press('Escape')
   await page.locator('#toggle-format').click()
   await expect(scoreLane.locator('.titan-chordpro-note-name').first()).toHaveText('Fá')
   await page.reload()
+  await openScoreOptions(page)
   await expect(page.getByRole('button', { name: 'Notas', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByLabel('Notas da TAB').locator('.titan-chordpro-note-name').first()).toHaveText('F')
   await page.setViewportSize({ width: 375, height: 850 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
   const cardBox = (await page.locator('.titan-chordpro-external-score').boundingBox())!
-  const zoomBox = (await page.getByRole('button', { name: 'Zoom do solo' }).boundingBox())!
-  expect(zoomBox.x + zoomBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width)
+  const moreBox = (await page.getByRole('button', { name: 'Opções de Solo' }).boundingBox())!
+  expect(moreBox.x + moreBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width)
   await page.setViewportSize({ width: 320, height: 850 })
   const narrowCard = (await page.locator('.titan-chordpro-external-score').boundingBox())!
-  const narrowZoom = (await page.getByRole('button', { name: 'Zoom do solo' }).boundingBox())!
-  expect(narrowZoom.x + narrowZoom.width).toBeLessThanOrEqual(narrowCard.x + narrowCard.width)
-  const narrowNotes = (await page.getByRole('button', { name: 'Notas', exact: true }).boundingBox())!
-  const narrowTab = (await page.getByRole('button', { name: 'TAB', exact: true }).boundingBox())!
-  expect(narrowNotes.y).toBe(narrowZoom.y)
-  expect(narrowTab.y).toBe(narrowZoom.y)
+  const narrowMore = (await page.getByRole('button', { name: 'Opções de Solo' }).boundingBox())!
+  expect(narrowMore.x + narrowMore.width).toBeLessThanOrEqual(narrowCard.x + narrowCard.width)
+  await openScoreOptions(page)
   await page.getByRole('button', { name: 'Notas', exact: true }).click()
   await expect(page.locator('.titan-chordpro-note-names')).toHaveCount(0)
 })
 test('shows note names above MusicXML when the file has only a partitura', async ({ page }) => {
   await page.goto('/notation.html?file=piano.musicxml')
   await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
+  await openScoreOptions(page)
   await page.getByRole('button', { name: 'Notas', exact: true }).click()
   const scoreLane = page.getByLabel('Notas da partitura').first()
   await expect(scoreLane.locator('.titan-chordpro-note-name').first()).toBeVisible()
@@ -63,11 +73,13 @@ for (const file of ['notes.gp', 'notes.gp5', 'bends.musicxml', 'bends.gp', 'pian
     await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible({ timeout: 30000 })
     await expect(page.getByRole('status')).toHaveCount(0)
     await expect(page.getByRole('alert')).toHaveCount(0)
+    await openScoreOptions(page)
     const partitura = page.getByRole('button', { name: 'Partitura', exact: true })
     await partitura.click()
     await expect(partitura).toHaveAttribute('aria-pressed', 'true')
     await page.setViewportSize({ width: 375, height: 850 })
-    await expect(page.getByRole('button', { name: 'Zoom do solo', exact: true })).toContainText('Auto (110%)')
+    await openScoreOptions(page)
+    await expect(page.getByRole('button', { name: /^Auto \(/ })).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
     const tab = page.getByRole('button', { name: 'TAB', exact: true })
@@ -77,9 +89,8 @@ for (const file of ['notes.gp', 'notes.gp5', 'bends.musicxml', 'bends.gp', 'pian
     }
     if (file.endsWith('.gp') || file.endsWith('.gp5')) await expect(tab).toBeEnabled()
     if (await tab.isEnabled()) { await tab.click(); await expect(tab).toHaveAttribute('aria-pressed', 'true') }
-    await page.getByRole('button', { name: 'Zoom do solo', exact: true }).click()
-    await page.getByRole('option', { name: '150%', exact: true }).click()
-    await expect(page.getByRole('button', { name: 'Zoom do solo', exact: true })).toContainText('150%')
+    await page.getByRole('button', { name: '150%', exact: true }).click()
+    await expect(page.getByRole('button', { name: '150%', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await page.screenshot({ path: info.outputPath(`${file}-phone.png`), fullPage: true })
     expect(errors).toEqual([])
   })
@@ -91,6 +102,28 @@ test('edits the selected excerpt and saves the reference', async ({ page }) => {
   await page.getByLabel('Último compasso').fill('2')
   await page.getByRole('button', { name: 'Salvar trecho na cifra' }).click()
   await expect(page.locator('body')).toHaveAttribute('data-saved', /track=1 start=2 end=2/)
+})
+
+test('downloads the original file named after the Titan block', async ({ page }) => {
+  await page.goto('/notation.html?file=notes.gp&name=Solo%20de%20entrada')
+  await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
+  await openScoreOptions(page, 'Solo de entrada')
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Baixar Solo de entrada' }).click(),
+  ])
+  expect(download.suggestedFilename()).toBe('Solo de entrada.gp')
+})
+
+test('downloads MusicXML with the block name and the original extension', async ({ page }) => {
+  await page.goto('/notation.html?file=piano.musicxml&name=Melodia')
+  await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
+  await openScoreOptions(page, 'Melodia')
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Baixar Melodia' }).click(),
+  ])
+  expect(download.suggestedFilename()).toBe('Melodia.musicxml')
 })
 
 test('uploads an original Guitar Pro file and stores only its reference', async ({ page }) => {
@@ -125,15 +158,16 @@ test('Titan zoom menu follows both themes and supports keyboard and dismissal', 
   await page.setViewportSize({ width: 375, height: 850 })
   await page.goto('/notation.html?file=notes.gp&dark=1')
   await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
-  const trigger = page.getByRole('button', { name: 'Zoom do solo', exact: true })
-  const menu = page.getByRole('listbox', { name: 'Zoom do solo' })
+  const trigger = page.getByRole('button', { name: 'Opções de Solo' })
+  const menu = page.getByRole('dialog', { name: 'Opções de Solo' })
   await expect(page.locator('.titan-chordpro-external-score select')).toHaveCount(0)
   for (const theme of ['dark', 'light']) {
-    await trigger.click()
+    await openScoreOptions(page)
     await expect(menu).toBeVisible()
-    await expect(menu).toHaveCSS('background-color', theme === 'dark' ? 'rgb(23, 27, 36)' : 'rgb(255, 255, 255)')
-    await expect(menu).toHaveCSS('color', theme === 'dark' ? 'rgb(234, 236, 242)' : 'rgb(19, 22, 29)')
-    await expect(page.getByRole('option', { selected: true })).toHaveCSS('color', theme === 'dark' ? 'rgb(132, 223, 166)' : 'rgb(23, 113, 60)')
+    const card = page.locator('.titan-chordpro-score-more-card')
+    await expect(card).toHaveCSS('background-color', theme === 'dark' ? 'rgb(23, 27, 36)' : 'rgb(255, 255, 255)')
+    await expect(card).toHaveCSS('color', theme === 'dark' ? 'rgb(234, 236, 242)' : 'rgb(19, 22, 29)')
+    await expect(page.getByRole('button', { name: /^Auto \(/ })).toHaveCSS('color', theme === 'dark' ? 'rgb(132, 223, 166)' : 'rgb(23, 113, 60)')
     const bounds = await menu.boundingBox()
     expect(bounds!.x).toBeGreaterThanOrEqual(0)
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(375)
@@ -143,24 +177,16 @@ test('Titan zoom menu follows both themes and supports keyboard and dismissal', 
     await expect(trigger).toBeFocused()
     if (theme === 'dark') await page.locator('#toggle-theme').click()
   }
-  await trigger.focus()
-  await page.keyboard.press('ArrowDown')
-  await expect(page.getByRole('option', { name: 'Auto (110%)' })).toBeFocused()
-  await page.keyboard.press('End')
-  await page.keyboard.press('ArrowUp')
-  await page.keyboard.press('Enter')
-  await expect(trigger).toContainText('150%')
-  await expect(trigger).toBeFocused()
-  await trigger.click()
-  await expect(page.getByRole('option', { name: '150%', exact: true })).toHaveAttribute('aria-selected', 'true')
-  await page.keyboard.press('Home')
-  await page.keyboard.press('Space')
-  await expect(trigger).toContainText('Auto (110%)')
-  await trigger.click()
-  await page.keyboard.press('Tab')
+  await openScoreOptions(page)
+  await page.getByRole('button', { name: '150%', exact: true }).click()
+  await expect(page.getByRole('button', { name: '150%', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: /^Auto \(/ }).click()
+  await expect(page.getByRole('button', { name: /^Auto \(/ })).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('Escape')
   await expect(menu).toHaveCount(0)
   await trigger.click()
-  await page.locator('#toggle-theme').click()
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(menu).toHaveCount(0)
 })
 
@@ -170,23 +196,21 @@ test('three TAB rhythms render differently, persist and reset without editing th
   const paper = page.locator('.titan-chordpro-notation-paper')
   await expect(paper.locator('svg').first()).toBeVisible()
   const initial = await paper.innerHTML()
-  const choice = page.getByRole('button', { name: 'Ritmo da TAB', exact: true })
-  await choice.click()
-  await page.getByRole('option', { name: 'Ritmo na base', exact: true }).click()
+  await openScoreOptions(page)
+  await page.getByRole('button', { name: 'Ritmo na base', exact: true }).click()
   await expect.poll(() => paper.innerHTML()).not.toBe(initial)
   const base = await paper.innerHTML()
   await page.screenshot({ path: info.outputPath('rhythm-base.png'), fullPage: true })
   await page.reload()
   await expect(paper.locator('svg').first()).toBeVisible()
-  await expect(choice).toContainText('Ritmo na base')
+  await openScoreOptions(page)
+  await expect(page.getByRole('button', { name: 'Ritmo na base', exact: true })).toHaveAttribute('aria-pressed', 'true')
   expect(await paper.innerHTML()).toBe(base)
-  await choice.click()
-  await page.getByRole('option', { name: 'Sem ritmo', exact: true }).click()
+  await page.getByRole('button', { name: 'Sem ritmo', exact: true }).click()
   await expect.poll(() => paper.innerHTML()).not.toBe(base)
   expect(await paper.innerHTML()).not.toBe(initial)
   await page.screenshot({ path: info.outputPath('rhythm-none.png'), fullPage: true })
-  await choice.click()
-  await page.getByRole('option', { name: 'Padrão do trecho', exact: true }).click()
+  await page.getByRole('button', { name: 'Padrão do trecho', exact: true }).click()
   await expect.poll(() => paper.innerHTML()).toBe(initial)
   await page.screenshot({ path: info.outputPath('rhythm-extended.png'), fullPage: true })
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem('titan-chordpro:user-preferences') ?? '{}'))).not.toHaveProperty('tabRhythm')
@@ -301,25 +325,21 @@ test('range handles drag independently and cannot cross', async ({ page }) => {
 })
 
 for (const width of [375, 1280]) {
-  test(`notation controls share one compact row at ${width}px`, async ({ page }, info) => {
+  test(`score options sit on the title row at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/notation.html?file=chords.gp')
     await expect(page.locator('.titan-chordpro-notation-paper svg').first()).toBeVisible()
-    const controls = ['TAB', 'Partitura', 'Ritmo da TAB', 'Zoom do solo'].map(name => page.getByRole('button', { name, exact: true }))
-    const boxes = await Promise.all(controls.map(control => control.boundingBox()))
-    for (const box of boxes) {
-      expect(Math.abs(box!.y - boxes[0]!.y)).toBeLessThan(1)
-      expect(box!.height).toBe(boxes[0]!.height)
-      expect(box!.x + box!.width).toBeLessThanOrEqual(width)
-    }
-    const details = page.locator('.titan-chordpro-score-controls .titan-chordpro-score-choice-value')
-    for (const detail of await details.all()) {
-      if (width < 640) await expect(detail).toBeHidden()
-      else await expect(detail).toBeVisible()
-    }
-    await controls[3]!.click()
-    await expect(page.getByRole('option', { name: /Auto \(/ })).toBeVisible()
-    const menu = (await page.getByRole('listbox', { name: 'Zoom do solo' }).boundingBox())!
+    await expect(page.locator('.titan-chordpro-score-controls')).toHaveCount(0)
+    const more = page.getByRole('button', { name: 'Opções de Solo' })
+    const title = page.locator('.titan-chordpro-score-heading .titan-chordpro-figure-kind, .titan-chordpro-notation-title').first()
+    const moreBox = (await more.boundingBox())!
+    const titleBox = (await title.boundingBox())!
+    expect(Math.abs(moreBox.y - titleBox.y)).toBeLessThan(24)
+    expect(moreBox.x + moreBox.width).toBeLessThanOrEqual(width)
+    await openScoreOptions(page)
+    await expect(page.getByRole('button', { name: 'TAB', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Partitura', exact: true })).toBeVisible()
+    const menu = (await page.getByRole('dialog', { name: 'Opções de Solo' }).boundingBox())!
     expect(menu.x).toBeGreaterThanOrEqual(0)
     expect(menu.x + menu.width).toBeLessThanOrEqual(width)
     await page.screenshot({ path: info.outputPath(`compact-controls-${width}.png`) })

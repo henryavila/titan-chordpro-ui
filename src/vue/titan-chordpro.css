@@ -3457,6 +3457,7 @@ div.titan-chordpro-head-id {
 .titan-chordpro-external-score { padding: 6px 10px 10px; min-width: 0; container-type: inline-size; }
 .titan-chordpro-external-score .titan-chordpro-figure-cap { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .titan-chordpro-score-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.titan-chordpro-score-edit-head { padding: 8px 12px 0; }
 .titan-chordpro-score-controls { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
 .titan-chordpro-score-controls .titan-chordpro-note-names-toggle[aria-pressed="true"] { border-color: var(--chord); color: var(--chord); background: var(--chord-soft); }
 .titan-chordpro-score-controls .titan-chordpro-figure-btn, .titan-chordpro-score-controls .titan-chordpro-score-zoom-trigger { height: 32px; min-height: 32px; padding: 0 8px; font-size: 11.5px; border-radius: 8px; white-space: nowrap; }
@@ -3579,13 +3580,79 @@ div.titan-chordpro-head-id {
 /* A notation card retains its title when folded; its control never floats. */
 .titan-chordpro-notation-row { margin-inline: calc(-1 * var(--titan-chordpro-notation-outset, 0px)); margin-bottom: 16px; }
 .titan-chordpro-notation-card { border: 1px solid var(--line-soft); background: var(--veil); overflow: visible; }
-.titan-chordpro-notation-fold { padding: 0; }
+.titan-chordpro-notation-fold { display: flex; align-items: stretch; padding: 0; }
 .titan-chordpro-notation-title { min-width: 0; overflow-wrap: anywhere; color: var(--chord); font-size: 14px; font-weight: 650; }
-.titan-chordpro-notation-fold-toggle { position: relative; z-index: 12; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 8px 19px 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; touch-action: manipulation; }
+.titan-chordpro-notation-fold-toggle { position: relative; z-index: 12; display: flex; align-items: center; justify-content: flex-start; gap: 8px; flex: 1; min-width: 0; min-height: 52px; padding: 8px 8px 8px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; touch-action: manipulation; }
 .titan-chordpro-notation-fold-toggle:hover { background: var(--hover); color: var(--text); }
 .titan-chordpro-notation-fold-toggle:focus-visible { outline: 2px solid var(--chord); outline-offset: -2px; }
-.titan-chordpro-notation-fold-toggle svg { flex: none; }
-.titan-chordpro-notation-fold-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.titan-chordpro-notation-fold-toggle > svg { flex: none; }
+.titan-chordpro-notation-fold-toggle[aria-expanded="true"] > svg { transform: rotate(180deg); }
+.titan-chordpro-score-more { position: relative; z-index: 13; flex: none; display: flex; align-items: center; }
+.titan-chordpro-score-more-trigger { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; }
+.titan-chordpro-score-more-trigger:hover { background: var(--hover); color: var(--text); }
+.titan-chordpro-score-more-trigger:focus-visible { outline: 2px solid var(--chord); outline-offset: -2px; }
+.titan-chordpro-score-more-trigger[aria-expanded="true"] { color: var(--chord); background: var(--chord-soft); }
+.titan-chordpro-score-sheet { position: fixed; inset: 0; z-index: 80; }
+.titan-chordpro-score-sheet,
+.titan-chordpro-score-sheet *,
+.titan-chordpro-score-sheet *::before,
+.titan-chordpro-score-sheet *::after { box-sizing: border-box; }
+.titan-chordpro-score-sheet.is-sheet { display: flex; flex-direction: column; justify-content: flex-end; pointer-events: auto; }
+.titan-chordpro-score-sheet.is-menu { pointer-events: none; }
+.titan-chordpro-score-more-card {
+  z-index: 1;
+  max-width: 100%;
+  background: var(--veil-2, var(--canvas));
+  color: var(--text);
+  font-family: var(--titan-chordpro-font-controls, Sora, system-ui, sans-serif);
+  gap: 6px;
+}
+.titan-chordpro-score-more-card button {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+}
+.titan-chordpro-score-sheet.is-sheet .titan-chordpro-score-more-card { width: 100%; gap: 6px; }
+.titan-chordpro-score-more-popover {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  pointer-events: auto;
+  width: min(320px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  padding: 10px;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: titan-chordpro-rise 0.16s ease-out;
+}
+.titan-chordpro-score-more-popover .titan-chordpro-surface-btn { min-height: 44px; }
+.titan-chordpro-score-more-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+}
+.titan-chordpro-score-more-head > span {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.titan-chordpro-score-more-head .titan-chordpro-ghost {
+  width: 34px;
+  height: 34px;
+  color: var(--muted);
+}
+.titan-chordpro-score-more-card .titan-chordpro-reading { width: 100%; }
+.titan-chordpro-score-more-card .titan-chordpro-reading > button:disabled { opacity: 0.4; cursor: default; }
+.titan-chordpro-score-more-pick { display: flex; flex-direction: column; gap: 3px; }
+.titan-chordpro-score-more-card .titan-chordpro-score-zoom-option { width: 100%; }
+.titan-chordpro-score-more-card .titan-chordpro-insert-where { padding: 8px 10px 2px; }
+.titan-chordpro-score-zoom-option[aria-pressed="true"] { color: var(--chord); font-weight: 600; }
 .titan-chordpro-notation-card > .titan-chordpro-figure, .titan-chordpro-notation-card > .titan-chordpro-tab { margin: 0 !important; border: 0; background: transparent; box-shadow: none; }
 .titan-chordpro-import-score-name { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--text); font: inherit; font-size: 13px; }
 .titan-chordpro-import-score-name:focus-visible { outline: 2px solid var(--chord); outline-offset: 2px; }
