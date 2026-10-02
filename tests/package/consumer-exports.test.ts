@@ -90,6 +90,7 @@ describe('SPEC §4 public API is importable from the package name', () => {
       'buildPdfFilename',
       'buildSljaFilename',
       'buildPpsxFilename',
+      'buildScoreFilename',
       'lyricsForSlides',
       'lyricsText',
       'exportLyrics',

@@ -14,7 +14,8 @@ const params = new URLSearchParams(location.search)
 const dark = ref(params.has('dark'))
 const noteNameFormat = ref<'letter' | 'solfege'>(params.get('format') === 'solfege' ? 'solfege' : 'letter')
 const file = new URLSearchParams(location.search).get('file') || 'notes.gp'
-const text = writeScoreReference({ src: ({ 'chords.gp': chordsUrl, 'piano.musicxml': pianoUrl, 'bends.gp': bendsUrl, 'notes.gp': gpUrl, 'notes.gp5': gp5Url, 'bends.musicxml': xmlUrl }[file] || gpUrl), track: 1, start: Number(params.get('start')) || 1, ...(params.has('end') ? { end: Number(params.get('end')) } : {}), ...(file === 'piano.musicxml' ? { end: 2 } : {}) })
+const blockName = params.get('name')
+const text = writeScoreReference({ src: ({ 'chords.gp': chordsUrl, 'piano.musicxml': pianoUrl, 'bends.gp': bendsUrl, 'notes.gp': gpUrl, 'notes.gp5': gp5Url, 'bends.musicxml': xmlUrl }[file] || gpUrl), track: 1, start: Number(params.get('start')) || 1, ...(params.has('end') ? { end: Number(params.get('end')) } : {}), ...(file === 'piano.musicxml' ? { end: 2 } : {}), ...(blockName ? { name: blockName } : {}) })
 const stored = new Map<string, string>()
 const uploadScore = async (file: File) => {
   stored.set('stored/solo.gp', URL.createObjectURL(file))

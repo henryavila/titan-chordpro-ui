@@ -93,6 +93,7 @@ export function buildChoFilename(title: string, key: string | null): string
 export function buildPdfFilename(title: string, key: string | null): string
 export function buildSljaFilename(title: string): string
 export function buildPpsxFilename(title: string): string
+export function buildScoreFilename(name: string | undefined, src: string, contentType?: string): string
 export function lyricsForSlides(view: TitanChordproDocument): SlideSourceLine[]
 export function lyricsText(view: TitanChordproDocument): string
 export function exportLyrics(source: string): ChartLyrics
@@ -257,6 +258,11 @@ in `docs/CONSUMER.md`; the release notes must state those required adjustments.
 | `buildPpsxFilename('Lindo És')` | `slides-lindo-es.ppsx` |
 
 Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
+
+`buildScoreFilename(name, src)` names a Guitar Pro/MusicXML download after the
+Titan block (`ScoreReference.name`, default `Solo`) and keeps the source
+extension (`.gp`, `.gp5`, `.musicxml`, …). Illegal filename characters are
+stripped; the display name is otherwise preserved.
 
 ### 4.6 Scroll speed (exact — migrate tests)
 

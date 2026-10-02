@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildChoFilename, buildPdfFilename, buildPpsxFilename, buildSljaFilename } from '../../src/core/filenames'
+import { buildChoFilename, buildPdfFilename, buildPpsxFilename, buildScoreFilename, buildSljaFilename } from '../../src/core/filenames'
 
 describe('buildChoFilename', () => {
   it('creates filename with key', () => {
@@ -50,5 +50,24 @@ describe('buildPpsxFilename', () => {
   it('uses the same slug as LouvorJA with a .ppsx suffix', () => {
     expect(buildPpsxFilename('Fala Comigo')).toBe('slides-fala-comigo.ppsx')
     expect(buildPpsxFilename('Lindo És')).toBe('slides-lindo-es.ppsx')
+  })
+})
+
+describe('buildScoreFilename', () => {
+  it('uses the Titan block name and the original extension', () => {
+    expect(buildScoreFilename('Solo de entrada', 'solos/uuid.gp')).toBe('Solo de entrada.gp')
+    expect(buildScoreFilename('Melodia', 'https://cdn.example/piano.musicxml?token=1')).toBe('Melodia.musicxml')
+    expect(buildScoreFilename('Intro', 'notas.gp5')).toBe('Intro.gp5')
+  })
+
+  it('falls back to Solo and the Guitar Pro extension', () => {
+    expect(buildScoreFilename(undefined, 'solos/uuid.gp')).toBe('Solo.gp')
+    expect(buildScoreFilename('   ', 'blob:http://localhost/abc')).toBe('Solo.gp')
+    expect(buildScoreFilename('Ponte', 'solos/uuid', 'application/vnd.recordare.musicxml+xml')).toBe('Ponte.musicxml')
+  })
+
+  it('keeps the block name readable and filesystem-safe', () => {
+    expect(buildScoreFilename('Solo "track=99" / ritmo', 'a.gp')).toBe('Solo track=99 ritmo.gp')
+    expect(buildScoreFilename('CON', 'a.gp')).toBe('_CON.gp')
   })
 })

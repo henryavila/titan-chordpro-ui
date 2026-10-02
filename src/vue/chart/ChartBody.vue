@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUpdated, ref, watch, useId } from 'vue'
+import { computed, nextTick, onMounted, onUpdated, ref, shallowReactive, watch, useId } from 'vue'
 import type { ChartBlock, NotationPreferences } from '@henryavila/titan-chordpro-ui'
 import type { TitanChordproIconName } from '../icon/paths'
 import InsertSlot from '../edit/InsertSlot.vue'
@@ -7,6 +7,7 @@ import type { BlockEditApi, EditRow } from '../use/useBlockEdit'
 import EditLyric from './EditLyric.vue'
 import ScoreFigure from './ScoreFigure.vue'
 import ExternalScore from './ExternalScore.vue'
+import ScoreOptionsMenu from './ScoreOptionsMenu.vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import { isInlineScore, isScoreReference, readScoreReference } from '@henryavila/titan-chordpro-ui'
 import { readingWords, type ReadingWord } from './readingWords'
@@ -94,6 +95,34 @@ function notationTitle(block: ChartBlock): string {
   }
   return block.kind === 'tab' ? 'Tablatura' : 'Partitura'
 }
+function isExternalScore(block: ChartBlock): boolean {
+  return block.kind === 'score' && isScoreReference(block.text)
+}
+function scoreText(block: ChartBlock): string {
+  return block.kind === 'score' ? block.text : ''
+}
+
+type ScoreHost = {
+  view: 'tab' | 'score'
+  tabAvailable: boolean
+  zoom: number
+  zoomLabel: string
+  downloading: boolean
+  download: () => void
+  fileBytes: Uint8Array | null
+  fileType: string
+  rhythm: string
+  setRhythm: (value: string | number) => void
+  noteNamesOn: boolean
+  setNoteNames: (value: boolean) => void
+}
+const scoreHosts = shallowReactive<Record<number, ScoreHost | undefined>>({})
+function bindScore(i: number, el: unknown) {
+  const host = el as ScoreHost | null
+  if (host) scoreHosts[i] = host
+  else delete scoreHosts[i]
+}
+
 function isFolded(i: number): boolean {
   const id = props.notationIds?.[i]
   return !props.edit && !!id && !!props.collapsedNotation?.has(id)
@@ -330,16 +359,60 @@ watch(
             opacity: edit && edit.inDrag(i) ? '0.45' : '1',
           }"
         >
-          <div v-if="!edit && canFold(block)" class="titan-chordpro-notation-fold">
+          <div v-if="!edit && canFold(block)" class="titan-chordpro-notation-fold" :class="{ 'has-more': isExternalScore(block) }" @click.stop="emit('toggleNotation', i)">
             <button type="button" class="titan-chordpro-notation-fold-toggle" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
               :aria-label="`${isFolded(i) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
               :title="isFolded(i) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
               @click.stop="emit('toggleNotation', i)">
-              <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
               <TitanChordproIcon name="chevronDown" :size="18" />
+              <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
             </button>
+            <ScoreOptionsMenu
+              v-if="isExternalScore(block) && !isFolded(i)"
+              :label="notationTitle(block)"
+              :view="scoreHosts[i]?.view ?? 'tab'"
+              :tab-available="scoreHosts[i]?.tabAvailable ?? false"
+              :rhythm="scoreHosts[i]?.rhythm ?? 'default'"
+              :note-names="!!scoreHosts[i]?.noteNamesOn"
+              :zoom="scoreHosts[i]?.zoom ?? 0"
+              :zoom-label="scoreHosts[i]?.zoomLabel ?? '110%'"
+              :downloading="!!scoreHosts[i]?.downloading"
+              :text="scoreText(block)"
+              :resolve-score="resolveScore"
+              :get-bytes="() => scoreHosts[i]?.fileBytes ?? null"
+              :file-type="scoreHosts[i]?.fileType"
+              @view="view => { const host = scoreHosts[i]; if (host) host.view = view }"
+              @rhythm="value => scoreHosts[i]?.setRhythm(value)"
+              @notes="value => scoreHosts[i]?.setNoteNames(value)"
+              @zoom="value => { const host = scoreHosts[i]; if (host) host.zoom = value }"
+            />
           </div>
-          <div v-if="edit?.canDelete.value && block.kind === 'score'" class="titan-chordpro-figure-cap">
+          <div v-else-if="edit && isExternalScore(block)" class="titan-chordpro-score-heading titan-chordpro-score-edit-head">
+            <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
+            <ScoreOptionsMenu
+              :label="notationTitle(block)"
+              :view="scoreHosts[i]?.view ?? 'tab'"
+              :tab-available="scoreHosts[i]?.tabAvailable ?? false"
+              :rhythm="scoreHosts[i]?.rhythm ?? 'default'"
+              :note-names="!!scoreHosts[i]?.noteNamesOn"
+              :zoom="scoreHosts[i]?.zoom ?? 0"
+              :zoom-label="scoreHosts[i]?.zoomLabel ?? '110%'"
+              :downloading="!!scoreHosts[i]?.downloading"
+              :text="scoreText(block)"
+              :resolve-score="resolveScore"
+              :get-bytes="() => scoreHosts[i]?.fileBytes ?? null"
+              :file-type="scoreHosts[i]?.fileType"
+              can-edit
+              :can-delete="!!edit.canDelete.value"
+              @view="view => { const host = scoreHosts[i]; if (host) host.view = view }"
+              @rhythm="value => scoreHosts[i]?.setRhythm(value)"
+              @notes="value => scoreHosts[i]?.setNoteNames(value)"
+              @zoom="value => { const host = scoreHosts[i]; if (host) host.zoom = value }"
+              @adjust="() => emit('editScore', i)"
+              @remove="() => edit?.deleteBlock(i)"
+            />
+          </div>
+          <div v-if="edit?.canDelete.value && block.kind === 'score' && !isExternalScore(block)" class="titan-chordpro-figure-cap">
             <button type="button" class="titan-chordpro-figure-btn" data-remove-score @click="edit.deleteBlock(i)">Excluir trecho</button>
           </div>
           <!-- A block with a capo of its own explains itself, right there. -->
@@ -456,7 +529,8 @@ watch(
           <ExternalScore
             v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score' && isScoreReference(block.text)"
-            :text="block.text" :hide-title="!edit" :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme" :note-name-format="noteNameFormat"
+            :text="block.text" hide-title :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme" :note-name-format="noteNameFormat"
+            :ref="el => bindScore(i, el)"
             :preferred-view="preferredView(i)"
             @view-change="view => emit('scoreViewChange', i, view)"
             @edit-score="emit('editScore', i)"

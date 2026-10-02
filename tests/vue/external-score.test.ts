@@ -41,7 +41,11 @@ describe('external solo integration', () => {
       expect(wrapper.find('[data-edit-score]').exists()).toBe(false)
       expect(wrapper.find('[data-adjust-score]').exists()).toBe(kind === 'external')
       expect(wrapper.find('[aria-label="Editor de partitura"]').exists()).toBe(false)
-      await wrapper.get(`[data-block="${bi}"] [data-remove-score]`).trigger('click')
+      if (kind === 'external') {
+        await wrapper.get('[data-delete]').trigger('click')
+      } else {
+        await wrapper.get(`[data-block="${bi}"] [data-remove-score]`).trigger('click')
+      }
       await flushPromises()
       expect(wrapper.find(kind === 'external' ? '[data-external-stub]' : '[data-invalid-score]').exists()).toBe(false)
       await wrapper.get('[data-source]').trigger('click')
