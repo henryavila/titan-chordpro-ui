@@ -7,12 +7,7 @@ import {
   blockSpan,
   isScoreReference,
   isInlineScore,
-  buildTimeline,
-  clockOf,
-  createSourceSession,
   editTypeScale,
-  etaSec,
-  formatEta,
   hasSongDuration,
   isParseFatal,
   layoutChartFull,
@@ -27,11 +22,7 @@ import {
   transpose,
   isCompleteStrumPattern,
   repairStrumPattern,
-  playheadAtScroll,
-  readMeta,
   readStrumPatterns,
-  runSec,
-  scrollAtPlayhead,
   sheetBpm,
   transposeToken,
   typeScale,
@@ -58,14 +49,12 @@ import {
   type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
 import type {
+  ChartBlock,
   ChartStore,
   Lens,
-  ReadingCtx,
   SaveStrumPresetPayload,
   StrumPreset,
   ThemeId,
-  Timeline,
-  TimelineBlock,
 } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
 import DiagramModal from './overlay/DiagramModal.vue'
@@ -118,13 +107,15 @@ import {
   type SoundSource,
 } from './use/rehearsal-audio'
 import { useOverlay } from './use/useOverlay'
-import { useSetlist, type SongSpot } from './use/useSetlist'
+import { useSetlist } from './use/useSetlist'
 import { useSongSwipe } from './use/useSongSwipe'
 import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
+import { useAutoScroll } from './use/useAutoScroll'
 import { useChromeLayout } from './use/useChromeLayout'
+import { useEditSession } from './use/useEditSession'
 import { useExport } from './use/useExport'
 import { useNotationPrefs } from './use/useNotationPrefs'
 import { mediaSessionArtwork, useMediaSession } from './use/useMediaSession'
@@ -272,16 +263,88 @@ const sysDark = ref(
 )
 const bias = ref(0)
 const fit = ref<boolean | null>(null)
-const scrolling = ref(false)
-/** Paper the chart has left to give, in px. Zero when it fits the frame. */
-const scrollRoom = ref(0)
-const mul = ref(1)
-const progress = ref(0)
-const etaLabel = ref('—')
+/**
+ * Clock and edit-session inputs that do not exist yet. Assigned before mount,
+ * read only when a gesture or the host actually runs. One binding each —
+ * `lastSrc` lives in the session, `raf` and `swipePeekHold` in the clock.
+ */
+let parsedNow: (() => ReturnType<typeof parse>) | null = null
+let blocksNow: (() => ChartBlock[]) | null = null
+let barPxNow: (() => number) | null = null
+let followNow = () => false
+let metRunningNow = () => false
+let stopMetNow = () => {}
+let dismissEndNow = () => {}
+let offerNextNow = () => {}
+let canScrollNow = () => false
+let startLinkedNow = () => {}
+let notationReflow = false
+let ovBind: ReturnType<typeof useOverlay> | null = null
+let metBind: ReturnType<typeof useMetronome> | null = null
+let setlistBind: ReturnType<typeof useSetlist> | null = null
+let sheetBind: { value: boolean } | null = null
+let pdfBind: { value: 'idle' | 'busy' | 'error' } | null = null
+let slidesBind: { value: 'idle' | 'busy' | 'error' } | null = null
+let resetBlocks = () => {}
+let clearScoreEditors = () => {}
+let canEditNowOf = () => false
+let editModeOf: () => EditMode = () => 'none'
+let hostSourceOf: () => string = () => props.source ?? ''
+
+const {
+  scrolling,
+  scrollRoom,
+  mul,
+  progress,
+  etaLabel,
+  idle,
+  setSubPixel,
+  stopScroll,
+  startScroll,
+  toggleScroll,
+  reseatScroll,
+  reflowPage,
+  pageSpot,
+  syncScrollRoom,
+  rebuildTimeline,
+  clearTimeline,
+  stampWritten,
+  readPlayhead,
+  parkPlayhead,
+  zeroPlayhead,
+  setSwipePeekHold,
+  wake,
+  snapIdle,
+  clearIdleTimer,
+} = useAutoScroll({
+  scroller,
+  page,
+  parsed: () => {
+    if (!parsedNow) throw new Error('auto-scroll: chart not ready')
+    return parsedNow()
+  },
+  blocks: () => {
+    if (!blocksNow) throw new Error('auto-scroll: blocks not ready')
+    return blocksNow()
+  },
+  barPx: () => {
+    if (!barPxNow) throw new Error('auto-scroll: scale not ready')
+    return barPxNow()
+  },
+  notationReflow: () => notationReflow,
+  autoHide: () => props.autoHide,
+  follow: () => followNow(),
+  metRunning: () => metRunningNow(),
+  stopMet: () => stopMetNow(),
+  dismissEnd: () => dismissEndNow(),
+  offerNext: () => offerNextNow(),
+  canScroll: () => canScrollNow(),
+  startLinked: () => startLinkedNow(),
+})
+
 const toast = ref<string | null>(null)
 const toastOut = ref(false)
 const fs = ref(false)
-const idle = ref(false)
 const zen = ref(false)
 const hintOff = ref(false)
 const fitSeen = ref(false)
@@ -296,70 +359,99 @@ const lens = ref<Lens>(props.lens ?? 'none')
 const capoMap = ref(true)
 const hideComments = ref(props.hideComments)
 const srcOpen = ref(false)
-const localMode = ref<'view' | 'edit' | null>(null)
-/** Where the current edit lands: this phone, or everyone's chart. */
-const wMode = ref<WriteMode | null>(null)
-const confirmDiscard = ref(false)
 const metaOpen = ref(false)
 
-const session = createSourceSession({ source: props.source ?? '' })
-/** Working source: the draft while editing, the host source otherwise. */
-const working = ref(props.source ?? '')
-const rev = ref(0)
-let lastSrc: string | null = null
-function touch() {
-  working.value = session.getSource()
-  rev.value += 1
-  // Editing something IS the lesson: the hint has nothing left to teach.
-  if (isEdit.value && !editSeen.value) markEditSeen()
-  // A local edit saves itself: there is no button, so every keystroke becomes
-  // an anchored adjustment on top of the official text.
-  if (isEdit.value && wMode.value === 'local') ov.commitLocalFrom(working.value, enterCtx)
-  // Content mode is the official chart: the host must see the draft so a
-  // form submit (Nova, etc.) can persist it even before "Salvar para todos".
-  publishContentSource()
-  emit('dirty', dirty.value)
-}
+const {
+  session,
+  working,
+  mode,
+  isEdit,
+  wMode,
+  confirmDiscard,
+  dirty,
+  lint,
+  canUndo,
+  canRedo,
+  discardLabel,
+  touch,
+  forceBase,
+  publishBatidaSource,
+  acceptHostEcho,
+  save,
+  discard,
+  undo,
+  redo,
+  onDraft,
+  applyMeta,
+  beginEdit,
+  enterEdit,
+  exitEdit,
+  syncHostSource,
+  clearDiscardTimer,
+} = useEditSession({
+  initialSource: props.source ?? '',
+  propMode: () => props.mode,
+  editSeen: () => editSeen.value,
+  markEditSeen: () => markEditSeen(),
+  emitDirty: (value) => emit('dirty', value),
+  emitSource: (value) => emit('update:source', value),
+  emitSave: (value) => emit('save', value),
+  emitMode: (value) => emit('update:mode', value),
+  toast: (msg) => toastMsg(msg),
+  ov: () => {
+    if (!ovBind) throw new Error('edit session: overlay not ready')
+    return ovBind
+  },
+  stopScroll,
+  met: () => {
+    if (!metBind) throw new Error('edit session: metronome not ready')
+    return metBind
+  },
+  offset,
+  capo,
+  capoMap,
+  zen,
+  lens,
+  hideComments,
+  metOpen,
+  capoOpen,
+  toneOpen,
+  moreOpen,
+  metaOpen,
+  srcOpen,
+  sheet: () => {
+    if (!sheetBind) throw new Error('edit session: export sheet not ready')
+    return sheetBind
+  },
+  pdf: () => {
+    if (!pdfBind) throw new Error('edit session: pdf job not ready')
+    return pdfBind
+  },
+  slides: () => {
+    if (!slidesBind) throw new Error('edit session: slides job not ready')
+    return slidesBind
+  },
+  closeBatida: () => closeBatida(),
+  exitEnsaioBatida: () => exitEnsaioBatida(),
+  beditReset: () => resetBlocks(),
+  clearScoreEditors: () => clearScoreEditors(),
+  hostSource: () => hostSourceOf(),
+  setlist: () => {
+    if (!setlistBind) throw new Error('edit session: setlist not ready')
+    return setlistBind
+  },
+  initialCapo: () => props.initialCapo,
+  initialDual: () => props.initialDual,
+  scroller,
+  mul,
+  parkPlayhead,
+  canEditNow: () => canEditNowOf(),
+  editModeResolved: () => editModeOf(),
+})
 
-/**
- * Echo the working source to the host without the watcher treating it as a
- * new chart. `lastSrc` is the same guard `save()` uses.
- */
-function publishContentSource() {
-  if (!isEdit.value || wMode.value !== 'persisted') return
-  const cur = session.getSource()
-  lastSrc = cur
-  emit('update:source', cur)
-}
-
-/**
- * Re-baseline the editor on the current base text. Every overlay change makes
- * the reader's version a different text — the draft cannot survive it, which
- * is why reverting an adjustment drops what was typed on top of it.
- */
-function forceBase() {
-  const b = ov.baseFor(wMode.value)
-  // Also when the text already matches: `reset` is what moves the saved
-  // baseline, and a local edit that ends level with its base is not a draft.
-  if (session.getSource() === b && !session.dirty()) return
-  session.reset(b)
-  touch()
-}
-
-let raf = 0
-let written = 0
-/** Fraction of the song already played by the reading playhead. */
-let playhead = 0
-let timeline: Timeline | null = null
-let etaTick = -1
-let idleT = 0
 let toastT = 0
 let hintT = 0
-let discardT = 0
-/** Reading context at the moment the edit started — it travels with the ops. */
-let enterCtx: ReadingCtx = { transpose: 0, capo: 0 }
 let lastFocus: HTMLElement | null = null
-let userScroll: (() => void) | null = null
 let mq: MediaQueryList | null = null
 let ro: ResizeObserver | null = null
 let headRo: ResizeObserver | null = null
@@ -368,8 +460,6 @@ let dockRo: ResizeObserver | null = null
 let zenSeen = false
 let idleSeen = false
 
-const mode = computed(() => localMode.value ?? props.mode)
-const isEdit = computed(() => mode.value === 'edit')
 const themeMode = computed(() =>
   props.themeControl === 'host' ? props.theme : theme.value ?? props.theme,
 )
@@ -409,6 +499,7 @@ watch(
 )
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
 const parsed = computed(() => parse(liveSource.value))
+parsedNow = () => parsed.value
 const audioArt = computed(() => {
   if (isEdit.value) return null
   return resolveRehearsalArt(audioArtOf(liveSource.value), props.defaultAudioArt)
@@ -461,6 +552,7 @@ const {
  */
 const hasDuration = computed(() => hasSongDuration(parsed.value.meta.duration))
 const canScroll = computed(() => hasDuration.value && scrollRoom.value > 1)
+canScrollNow = () => canScroll.value
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
 const meta = computed(() => parsed.value.meta)
 
@@ -551,17 +643,6 @@ function onBatidaTogglePreview(payload: { pattern: StrumPattern; barBeats: numbe
   const bpm = pattern.bpm || sheetBpm(meta.value.tempo) || met.bpm.value
   // barBeats must be the sheet's grid math (meter × pulse), not a parallel guess.
   strumSound.togglePreview(pattern, bpm, payload.barBeats)
-}
-
-function publishBatidaSource(next: string) {
-  session.replace(next)
-  // Local edit is overlay-only — the official chart changes when the musician
-  // suggests and the owner accepts. Persisted (and view cycle) write through.
-  if (wMode.value !== 'local') {
-    lastSrc = next
-    emit('update:source', next)
-  }
-  touch()
 }
 
 function cycleStrumPattern() {
@@ -655,6 +736,7 @@ const strumDockStyle = computed(() => {
 const editModeResolved = computed<EditMode>(() =>
   resolveEditMode({ editMode: props.editMode, modes: props.modes }),
 )
+editModeOf = () => editModeResolved.value
 /** @deprecated internal alias — prefer editModeResolved */
 const modes = computed<WriteMode[]>(() => {
   const m = editModeResolved.value
@@ -671,6 +753,9 @@ const setlist = useSetlist({
   songs: computed(() => props.songs),
   loadSong: computed(() => props.loadSong),
 })
+setlistBind = setlist
+dismissEndNow = () => setlist.dismissEnd()
+offerNextNow = () => setlist.offerNext()
 const audioIdentity = computed(
   () => (setlist.on.value ? (setlist.current.value?.id ?? '') : props.songId || ''),
 )
@@ -687,6 +772,7 @@ const audio = useAudioRef(audioUrl, { identity: audioIdentity })
 const hostSource = computed(() =>
   setlist.on.value ? (setlist.currentSource.value ?? '') : (props.source ?? ''),
 )
+hostSourceOf = () => hostSource.value
 
 /** A song of the list still on its way: empty, but not "no chart loaded". */
 const songLoading = computed(
@@ -737,7 +823,7 @@ const ov = useOverlay({
     // That echo is the chart just saved, not a different song: without this
     // the source watcher resets the screen and closes the suggestion review
     // while other requests are still open.
-    lastSrc = text
+    acceptHostEcho(text)
     emit('save-content', text)
   },
   persistSuggestion: computed(() => props.persistSuggestion),
@@ -755,6 +841,7 @@ const ov = useOverlay({
   onSuggestionRefused: (p) => emit('suggestion-refused', p),
   onSuggestionQueue: (q) => emit('update:suggestionQueue', q),
 })
+ovBind = ov
 
 const phoneSub = computed(
   () =>
@@ -829,6 +916,9 @@ const {
   tabRhythm: () => tabRhythmPreference.value.value,
   toast: (msg) => toastMsg(msg),
 })
+sheetBind = sheet
+pdfBind = pdf
+slidesBind = slides
 const playingKey = computed(() =>
   originalKey.value ? transposeToken(originalKey.value, viewSemis.value, flats.value) : '',
 )
@@ -866,6 +956,7 @@ const blocks = computed(() => {
   if (isEdit.value || !hideComments.value) return all
   return all.filter((b) => b.kind !== 'comment' && b.kind !== 'note')
 })
+blocksNow = () => blocks.value
 const twin = computed(() => layout.value.twin)
 const legend = computed(() => layout.value.legend)
 const capoPairs = computed(() => layout.value.capoPairs)
@@ -891,6 +982,7 @@ const bedit = useBlockEdit({
   },
   toast: (m) => toastMsg(m),
 })
+resetBlocks = () => bedit.reset()
 const editScale = computed(() => editTypeScale(bias.value, compact.value))
 /** The chart's own chord names, so a new one is a tap and not a spelling test. */
 const chordVocab = computed(() =>
@@ -932,6 +1024,7 @@ const scale = computed(() => {
   // No chord lane: the lyric sits where the chord used to, and wrap is tighter.
   return { ...s, chordBox: '0px', chordBoxPlain: '0px' }
 })
+barPxNow = () => scale.value.barPx
 const chartScale = computed(() => {
   const { barPx: _barPx, ...rest } = scale.value
   return rest
@@ -946,6 +1039,7 @@ const fileCapo = computed(() => Math.max(0, Number(meta.value.capo) || 0))
 const canEditNow = computed(
   () => !isEdit.value && isPopulated.value && props.canEdit && modes.value.length > 0,
 )
+canEditNowOf = () => canEditNow.value
 /** The owner's entry into the queue: only where a chart can be changed at all. */
 const queueEntry = computed(
   () =>
@@ -1016,25 +1110,6 @@ const canEditBatida = computed(
   () => isEdit.value && (wMode.value === 'local' || wMode.value === 'persisted'),
 )
 
-const dirty = computed(() => {
-  rev.value
-  // The phone version has no save: each keystroke is already stored.
-  if (wMode.value === 'local') return false
-  return session.dirty()
-})
-const lint = computed(() => {
-  rev.value
-  return session.lint()
-})
-const canUndo = computed(() => {
-  rev.value
-  return session.canUndo()
-})
-const canRedo = computed(() => {
-  rev.value
-  return session.canRedo()
-})
-const discardLabel = computed(() => (confirmDiscard.value ? 'Confirmar descarte' : 'Descartar'))
 const exportKeyNote = computed(() =>
   meta.value.key ? `em ${playingKey.value}${capo.value ? ` · capo ${capo.value}` : ''}` : '',
 )
@@ -1089,7 +1164,20 @@ const met = useMetronome({
   onFollowStop: () => stopScroll(),
   onPanelClose: () => (metOpen.value = false),
 })
+metBind = met
+followNow = () => met.follow.value
+metRunningNow = () => met.running.value
+stopMetNow = () => met.stop()
 const strumSound = useStrumSound()
+startLinkedNow = () => {
+  const silent = shouldRollSilent(rehearsalFocus.value)
+  if (!silent) {
+    applySoundSource('batida', false)
+    strumOn.value = true
+    if (strumSound.enabled.value) void strumSound.arm()
+  }
+  met.start({ silent })
+}
 const scrollTitle = computed(() => {
   if (scrollOff.value) {
     if (!hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
@@ -1179,10 +1267,7 @@ watch(chromeHidden, (gone) => {
   }
 })
 watch(rollLive, (on) => {
-  if (on && props.autoHide) {
-    window.clearTimeout(idleT)
-    idle.value = true
-  }
+  if (on && props.autoHide) snapIdle()
 })
 const toastBottom = computed(() => {
   if (chromeHidden.value) {
@@ -1273,7 +1358,6 @@ const { choices: notationChoices, save: saveNotationChoice } = useNotationPrefs(
 const collapsedNotation = computed(() => new Set(
   notationIds.value.filter((id): id is string => !!id && notationChoices.value[id]?.collapsed === true),
 ))
-let notationReflow = false
 let notationReflowId = 0
 
 async function toggleNotation(bi: number) {
@@ -1301,7 +1385,7 @@ async function toggleNotation(bi: number) {
   const willCollapse = !collapsedNotation.value.has(id)
   saveNotationChoice(id, { collapsed: willCollapse })
   await nextTick()
-  timeline = null
+  clearTimeline()
   syncScrollRoom()
   if (scrolling.value) {
     // Keep the existing playhead. Do not infer time from the browser's clamp
@@ -1316,7 +1400,7 @@ async function toggleNotation(bi: number) {
       const keepAt = anchor === targetNode && willCollapse ? readingY : anchorTop
       el.scrollTop += anchor.getBoundingClientRect().top - keepAt
     }
-    written = el.scrollTop
+    stampWritten(el.scrollTop)
     rebuildTimeline()
   }
   requestAnimationFrame(() => {
@@ -1324,294 +1408,6 @@ async function toggleNotation(bi: number) {
     el.style.overflowAnchor = savedAnchor
     notationReflow = false
   })
-}
-
-function measureBlocks(): TimelineBlock[] {
-  const el = scroller.value
-  if (!el) return []
-  // The sub-pixel carrier is a transform on the column, and every rect below
-  // would come back shifted by it. Measure the paper, not where it is riding.
-  const carrier = page.value?.style.transform ?? ''
-  if (carrier && page.value) page.value.style.transform = ''
-  const base = el.getBoundingClientRect().top - el.scrollTop
-  const nodes = el.querySelectorAll('[data-block]')
-  const list = blocks.value
-  const out: TimelineBlock[] = []
-  for (let i = 0; i < nodes.length; i++) {
-    const b = list[i]
-    if (!b) continue
-    const r = (nodes[i] as HTMLElement).getBoundingClientRect()
-    out.push({ top: r.top - base, h: Math.max(1, r.height), music: b.music, kind: b.kind })
-  }
-  if (carrier && page.value) page.value.style.transform = carrier
-  return out
-}
-
-function rebuildTimeline(): Timeline | null {
-  const el = scroller.value
-  if (!el) {
-    timeline = null
-    return null
-  }
-  const clock = clockOf(parsed.value)
-  timeline = buildTimeline(measureBlocks(), {
-    bpm: clock.bpm,
-    beatsPerBar: clock.beatsPerBar,
-    marksPerBeat: clock.marksPerBeat,
-    durationSec: clock.durationSec,
-    barPx: scale.value.barPx,
-    doc: el.scrollHeight,
-    viewport: el.clientHeight,
-  })
-  return timeline
-}
-
-function timelineFor(): Timeline | null {
-  const el = scroller.value
-  if (!el) return null
-  if (
-    !timeline ||
-    Math.abs(timeline.doc - el.scrollHeight) > 2 ||
-    Math.abs(timeline.viewport - el.clientHeight) > 2
-  ) {
-    return rebuildTimeline()
-  }
-  return timeline
-}
-
-/**
-  * The anchor is read from the live frame, not cached: the reader changes type
-  * size and turns fit on mid-song, and both move how much paper there is.
-  */
-/**
- * Measured, never derived: the chart's height moves with type size, fit, the
- * key it was transposed to and the width it wraps at, and only the DOM knows.
- */
-function syncScrollRoom() {
-  const el = scroller.value
-  scrollRoom.value = el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0
-}
-
-/** Put a running scroll back on its musical position after a relayout. */
-function reseatScroll() {
-  const el = scroller.value
-  if (!el) return
-  rebuildTimeline()
-  const max = el.scrollHeight - el.clientHeight
-  el.scrollTop = Math.max(0, Math.min(max, scrollAtPlayhead(timelineFor(), playhead, el.clientHeight)))
-  written = el.scrollTop
-}
-
-/** Where the reader was, taken before anything is allowed to move. */
-type PageSpot = {
-  padTop: number
-  scroll: number
-  max: number
-  anchor: HTMLElement | null
-  anchorFromEye: number
-}
-
-function pageSpot(): PageSpot {
-  const el = scroller.value
-  const eye = el ? el.getBoundingClientRect().top + el.clientHeight * 0.4 : 0
-  let anchor: HTMLElement | null = null
-  let distance = Infinity
-  for (const node of el?.querySelectorAll<HTMLElement>('.titan-chordpro-lyric') ?? []) {
-    const d = Math.abs(node.getBoundingClientRect().top - eye)
-    if (d < distance) {
-      anchor = node
-      distance = d
-    }
-  }
-  return {
-    padTop: pageTopPad(),
-    scroll: el?.scrollTop ?? 0,
-    max: el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0,
-    anchor,
-    anchorFromEye: anchor ? anchor.getBoundingClientRect().top - eye : 0,
-  }
-}
-
-/**
- * The reserved chrome band changes height without the frame changing size, so
- * no ResizeObserver fires and nothing puts the chart back under the reader's
- * eye. Mid-song the musical position is the truth — the playhead survives any
- * relayout; standing still, the pixel they were reading is.
- */
-function reflowPage(before: PageSpot) {
-  void nextTick(() => {
-    const el = scroller.value
-    timeline = null
-    if (!el) return
-    syncScrollRoom()
-    if (scrolling.value) {
-      reseatScroll()
-      return
-    }
-    const max = Math.max(0, el.scrollHeight - el.clientHeight)
-    // The two ends are places, not offsets. Somebody parked at the top is at
-    // the *start of the song*, and giving the reserve back must not shove them
-    // into the first verse; the same holds for the last line.
-    if (before.scroll <= 1) el.scrollTop = 0
-    else if (before.scroll >= before.max - 1) el.scrollTop = max
-    else if (before.anchor?.isConnected) {
-      const eye = el.getBoundingClientRect().top + el.clientHeight * 0.4
-      const target = eye + before.anchorFromEye
-      el.scrollTop = Math.max(0, Math.min(max, el.scrollTop + before.anchor.getBoundingClientRect().top - target))
-    } else {
-      const shift = (pageTopPad() || before.padTop) - before.padTop
-      el.scrollTop = Math.max(0, Math.min(max, before.scroll + shift))
-    }
-    written = el.scrollTop
-  })
-}
-
-/**
- * The fraction of a pixel `scrollTop` will not carry.
- *
- * A scroll offset is snapped to whole pixels — measured, `scrollTop` reads back
- * as an integer on every frame, whatever we write. At the speeds a chart really
- * moves (5 px/s and under), that means eleven frames dead still and then a 1px
- * teleport, six times a second. A discrete jump is what a vestibular system
- * reads as motion, so the page looked calm and felt awful.
- *
- * So the whole pixels go to `scrollTop`, which keeps the scrollbar, the drag
- * and every measurement honest, and the remainder rides on a composited
- * transform, which is not snapped. Together they move continuously.
- */
-function setSubPixel(dy: number) {
-  const el = page.value
-  if (!el) return
-  el.style.transform = dy > 0.001 ? `translate3d(0,${-dy}px,0)` : ''
-}
-
-function stopScroll() {
-  if (raf) cancelAnimationFrame(raf)
-  raf = 0
-  window.clearTimeout(idleT)
-  if (scroller.value && userScroll) scroller.value.removeEventListener('scroll', userScroll)
-  userScroll = null
-  scrolling.value = false
-  idle.value = false
-  setSubPixel(0)
-  // Every way out of the scroll passes through here — the end of the song, a
-  // transpose, a song change — and with the two linked, none of them may leave
-  // a click ticking over a chart that has stopped. `met.stop()` is a no-op when
-  // the click is already down, which is what ends the call back into here.
-  if (met.follow.value) met.stop()
-}
-
-function startScroll() {
-  const el = scroller.value
-  if (!el) return
-  if (!hasSongDuration(parsed.value.meta.duration)) return
-  // Hitting Rolar again is continuing the song, not confirming the end.
-  setlist.dismissEnd()
-  scrolling.value = true
-  window.clearTimeout(idleT)
-  if (props.autoHide) idle.value = true
-  rebuildTimeline()
-  // From the top the playhead starts at 0 and the page stays put until it
-  // reaches the reading line — the whole intro stays on screen. Resuming
-  // mid-song, the playhead adopts the current reading line.
-  const max0 = Math.max(0, el.scrollHeight - el.clientHeight)
-  const mapped = playheadAtScroll(timelineFor(), el.scrollTop, el.clientHeight)
-  const atPaperEnd = max0 <= 1 || el.scrollTop >= max0 - 2
-  playhead = el.scrollTop <= 1 ? 0 : Math.min(atPaperEnd ? 1 : 0.999, Math.max(0, mapped))
-  written = el.scrollTop
-  etaTick = -1
-  let prev = performance.now()
-
-  // The musician may drag the chart while it rolls (back a bit, skip ahead).
-  // The playhead adopts that position and carries on from there.
-  userScroll = () => {
-    if (!scrolling.value || notationReflow) return
-    if (Math.abs(el.scrollTop - written) > 1.5) {
-      const maxS = Math.max(0, el.scrollHeight - el.clientHeight)
-      const atEnd = maxS <= 1 || el.scrollTop >= maxS - 2
-      const u = playheadAtScroll(timelineFor(), el.scrollTop, el.clientHeight)
-      playhead = Math.min(atEnd ? 1 : 0.999, Math.max(0, u))
-    }
-  }
-  el.addEventListener('scroll', userScroll, { passive: true })
-
-  const dur = clockOf(parsed.value).durationSec
-  const step = (now: number) => {
-    if (!scrolling.value) return
-    if (swipePeekHold) {
-      prev = now
-      raf = requestAnimationFrame(step)
-      return
-    }
-    // One timeline per frame: each call may re-measure every block in the DOM,
-    // and asking four times over lands four full layouts in the same frame.
-    const t = timelineFor()
-    // Coming back from a background tab must not teleport the chart — but a
-    // dropped frame is time the music really spent, so the interval is capped
-    // rather than thrown away, which used to lose it for good.
-    const dt = Math.min(Math.max((now - prev) / 1000, 0), 0.25)
-    prev = now
-    const run = runSec(t, dur)
-    if (run > 0 && dt > 0) playhead = Math.min(1, playhead + (dt / run) * mul.value)
-    const max = el.scrollHeight - el.clientHeight
-    const target = Math.max(0, Math.min(max, scrollAtPlayhead(t, playhead, el.clientHeight)))
-    // Floor, never round: rounding would put the page half a pixel ahead of
-    // the transform and hand back the jump this is here to remove.
-    const whole = Math.floor(target)
-    el.scrollTop = whole
-    setSubPixel(target - whole)
-    written = el.scrollTop
-    // One update per clock second, not per frame: re-rendering the whole sheet
-    // 60 times a second ate the frames of the scroll itself.
-    const sec = Math.round(etaSec(t, dur, playhead, mul.value))
-    if (sec !== etaTick) {
-      etaTick = sec
-      progress.value = playhead
-      etaLabel.value = formatEta(sec)
-    }
-    if (playhead >= 1) {
-      // The clock can claim "done" while the paper still has room — resume
-      // after a drag used to fire "Fim da música" in the middle of the chart.
-      // The offer is the end of the paper, not the end of the fraction.
-      if (max <= 1 || el.scrollTop >= max - 2) {
-        progress.value = 1
-        stopScroll()
-        setlist.offerNext()
-        return
-      }
-      playhead = 0.999
-    }
-    raf = requestAnimationFrame(step)
-  }
-  raf = requestAnimationFrame(step)
-}
-
-/**
- * Linked (the default): Rolar is the same start as the click — count-in, then
- * the chart. Independent: the two stay two controls, and Rolar only rolls.
- * Stopping still goes through `stopScroll`, which silences a linked click.
- *
- * Audio: outside Ensaio Batida, linked Rolar always starts silent so practice
- * Fonte (Batida/Click) does not leak onto the stage. Inside Ensaio Batida,
- * Rolar inherits Batida sound.
- */
-function toggleScroll() {
-  if (scrolling.value || (met.follow.value && met.running.value)) {
-    stopScroll()
-    return
-  }
-  if (!canScroll.value) return
-  // Count-in delays startScroll; the leftover "Fim da música" must leave now.
-  setlist.dismissEnd()
-  if (met.follow.value) {
-    const silent = shouldRollSilent(rehearsalFocus.value)
-    if (!silent) {
-      applySoundSource('batida', false)
-      strumOn.value = true
-      if (strumSound.enabled.value) void strumSound.arm()
-    }
-    met.start({ silent })
-  } else startScroll()
 }
 
 function applySoundSource(source: SoundSource, softClick: boolean) {
@@ -1658,9 +1454,7 @@ function shift(n: number) {
   if (!hasKey.value) return
   stopScroll()
   offset.value = Math.max(-11, Math.min(11, offset.value + n))
-  playhead = 0
-  timeline = null
-  progress.value = 0
+  zeroPlayhead()
   if (scroller.value) scroller.value.scrollTop = 0
 }
 
@@ -1820,12 +1614,6 @@ function setImmersive(on: boolean, opts: { native?: boolean } = {}): Promise<boo
   }
   if (opts.native === false) return Promise.resolve(false)
   return nativeFs.request(root.value)
-}
-
-/** The reserve the chart is standing on right now, before anything moves it. */
-function pageTopPad(): number {
-  const pg = page.value
-  return pg ? parseFloat(getComputedStyle(pg).paddingTop) || 0 : 0
 }
 
 async function toggleFs() {
@@ -2097,7 +1885,7 @@ function commitNewChart(src: string) {
   novaOpen.value = false
   // A host that persists `save-content` into `source` must not look like a
   // different song: that watcher would drop the editor we are about to open.
-  lastSrc = src
+  acceptHostEcho(src)
   ov.setOfficial(src)
   forceBase()
   beginEdit('persisted')
@@ -2112,90 +1900,6 @@ function restartFromMeta() {
   if (!isContentEdit.value) return
   metaOpen.value = false
   startNew('import')
-}
-
-function enterEdit() {
-  if (!canEditNow.value) return
-  const role = editModeResolved.value
-  if (role === 'none') return
-  beginEdit(role)
-}
-
-function beginEdit(kind: WriteMode) {
-  stopScroll()
-  // The badge and the panel are both hidden in edit: a click left running here
-  // would be audible with nothing on screen able to stop it.
-  met.stop()
-  // The adjustment was made against what was on screen: the reading context
-  // travels with it, so it can be read back for what it was.
-  enterCtx = { transpose: offset.value, capo: capo.value, dual: !!(capo.value && capoMap.value) }
-  // You do not edit a projection: transpose goes back to neutral, and `fitOn`
-  // already answers false while editing. Writing `fit` here instead would turn
-  // "the reader never chose" into "the reader chose off" — and, once persisted,
-  // hold the fit off for good after a single visit to the editor.
-  offset.value = 0
-  capo.value = 0
-  zen.value = false
-  lens.value = 'none'
-  hideComments.value = false
-  metOpen.value = false
-  met.stop()
-  exitEnsaioBatida()
-  sheet.value = false
-  capoOpen.value = false
-  toneOpen.value = false
-  moreOpen.value = false
-  metaOpen.value = false
-  closeBatida()
-  ov.myPanel.value = false
-  ov.showOriginal.value = false
-  bedit.reset()
-  scoreEd.value = null
-  externalEd.value = null
-  wMode.value = kind
-  localMode.value = 'edit'
-  if (!session.dirty()) forceBase()
-  emit('update:mode', 'edit')
-  toastMsg(
-    kind === 'local'
-      ? 'Só para você — salva neste celular, dá para voltar ao original'
-      : 'Para todos — salvar altera a cifra do sistema',
-  )
-}
-
-function exitEdit() {
-  if (!isEdit.value) return
-  const local = wMode.value === 'local'
-  if (!local && dirty.value) toastMsg('Rascunho não salvo — continua aqui quando você voltar')
-  srcOpen.value = false
-  metaOpen.value = false
-  bedit.reset()
-  scoreEd.value = null
-  externalEd.value = null
-  wMode.value = null
-  localMode.value = 'view'
-  // The local draft has already become the overlay; a "for everyone" draft
-  // that was never saved stays on screen, so it cannot be lost by leaving.
-  if (local || !session.dirty()) forceBase()
-  offset.value = enterCtx.transpose
-  capo.value = enterCtx.capo
-  capoMap.value = !!enterCtx.dual
-  emit('update:mode', 'view')
-}
-
-/** "For everyone" has no server draft: saving IS publishing. */
-function save() {
-  if (wMode.value === 'local') return
-  session.commit()
-  touch()
-  const cur = session.getSource()
-  // The host may echo the saved text straight back as `source`: without this
-  // the watcher would read it as a new chart and reset tone, scroll and draft.
-  lastSrc = cur
-  emit('update:source', cur)
-  emit('save', cur)
-  ov.setOfficial(cur)
-  toastMsg('Salvo — todos os músicos passam a ler assim')
 }
 
 /** Reading the original is a lens on the same chart, not a second document. */
@@ -2225,6 +1929,10 @@ function onFixTune() {
 type ScoreEdit = { li0: number; li1: number; kind: 'score' | 'tab'; text: string; fresh: boolean }
 const scoreEd = ref<ScoreEdit | null>(null)
 const externalEd = ref<{ text: string; li0?: number; li1?: number } | null>(null)
+clearScoreEditors = () => {
+  scoreEd.value = null
+  externalEd.value = null
+}
 watch(() => props.source, () => { externalEd.value = null })
 function saveExternalScore(text: string) {
   const edit = externalEd.value
@@ -2288,58 +1996,12 @@ function cancelScore() {
   externalEd.value = null
 }
 
-/**
- * Discard goes back to the last SAVED text, not to the host source: what has
- * already been handed to the app cannot be thrown away by one click. And the
- * click is double, because the undo stack cannot bring it back.
- */
-function discard() {
-  if (!confirmDiscard.value) {
-    confirmDiscard.value = true
-    window.clearTimeout(discardT)
-    discardT = window.setTimeout(() => (confirmDiscard.value = false), 4000)
-    return
-  }
-  window.clearTimeout(discardT)
-  confirmDiscard.value = false
-  session.discard()
-  metaOpen.value = false
-  touch()
-}
-
-function onDraft(next: string) {
-  // The step was already opened by the pane: keystrokes coalesce into it.
-  session.edit(next)
-  touch()
-}
-
-function undo() {
-  session.undo()
-  touch()
-}
-function redo() {
-  session.redo()
-  touch()
-}
-
 function openMeta() {
   if (!isEdit.value) return
   metaOpen.value = true
 }
-function applyMeta(next: string) {
-  session.replace(next)
-  metaOpen.value = false
-  touch()
-}
-
 
 // ------------------------------------------------------------------ listeners
-
-function wake() {
-  if (idle.value) idle.value = false
-  window.clearTimeout(idleT)
-  if (scrolling.value && props.autoHide) idleT = window.setTimeout(() => (idle.value = true), 2600)
-}
 
 function onKey(e: KeyboardEvent) {
   const target = e.target as HTMLElement | null
@@ -2493,80 +2155,6 @@ function onMq() {
 }
 
 /**
- * A new source (host or fixture) stops the scroll and resets tone and position.
- * File `{capo:}` is not the live capo — that starts at 0 unless the musician
- * already pinned one (setlist spot, host initialCapo, personal overlay).
- */
-function syncHostSource() {
-  const raw = hostSource.value
-  if (raw === lastSrc) return
-  // Where the song being opened was left, when it has been read before.
-  const spot: SongSpot | null = setlist.takeRestore()
-  const first = lastSrc === null
-  const lost = !first && session.dirty()
-  lastSrc = raw
-  const src = normalizeSource(raw)
-  session.reset(src)
-  metaOpen.value = false
-  confirmDiscard.value = false
-  wMode.value = null
-  capo.value = 0
-  stopScroll()
-  const fileT = Number(readMeta(src).transpose)
-  offset.value = Number.isFinite(fileT) ? fileT : 0
-  mul.value = 1
-  // Coming back to a song already rehearsed: tone, capo and speed are picked
-  // back up. A tone the reader pinned still wins, just below.
-  if (spot) {
-    offset.value = spot.offset
-    capo.value = spot.capo
-    mul.value = spot.mul
-  }
-  if (typeof props.initialCapo === 'number') capo.value = Math.max(0, Math.min(9, props.initialCapo))
-  // Reading lens and comment filter stay: they are the reader's choice for the
-  // rehearsal, not part of the chart. Song switch must not kick a singer out
-  // of Só letra (or Nashville) mid-set.
-  capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
-  metOpen.value = false
-  met.stop()
-  playhead = spot ? spot.u || 0 : 0
-  timeline = null
-  progress.value = spot ? spot.u || 0 : 0
-  etaLabel.value = '—'
-  pdf.value = 'idle'
-  slides.value = 'idle'
-  sheet.value = false
-  touch()
-  // The reader's own version of THIS chart, and the key they pinned to it.
-  ov.reset()
-  const tune = ov.load()
-  if (tune) {
-    offset.value = tune.transpose || 0
-    capo.value = tune.capo || 0
-    capoMap.value = !!tune.dual
-  }
-  forceBase()
-  // The stored BPM belongs to the song: it reloads with the chart.
-  met.loadBpm()
-  if (spot) {
-    // The saved place only exists once the new chart has painted.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (scroller.value) scroller.value.scrollTop = spot.top
-      }),
-    )
-  } else if (!first && scroller.value) scroller.value.scrollTop = 0
-  // Swapping the chart drops the draft — but the loss has to be said, not silent.
-  if (lost) {
-    toastMsg(
-      setlist.on.value
-        ? 'Você trocou de música — o rascunho anterior foi descartado'
-        : 'Nova cifra recebida — o rascunho anterior foi descartado',
-    )
-  }
-}
-
-/**
  * Change song, putting down where this one was left. The chart itself swaps
  * through the same path a host `source` change takes, so the personal version,
  * the metronome and the timeline all reload exactly as they always did.
@@ -2578,7 +2166,7 @@ function goSong(i: number) {
     capo: capo.value,
     mul: mul.value,
     top: scroller.value?.scrollTop ?? 0,
-    u: playhead,
+    u: readPlayhead(),
   })
 }
 const goPrev = () => goSong(setlist.si.value - 1)
@@ -2609,7 +2197,6 @@ const endNext = () => {
 
 const swipeBusy = ref(false)
 let swipeGen = 0
-let swipePeekHold = false
 
 const swipeBlocked = computed(
   () =>
@@ -2659,7 +2246,7 @@ const songSwipe = useSongSwipe({
     void playSwipeCommit(intent)
   },
   onPeek: (peeking) => {
-    swipePeekHold = peeking
+    setSwipePeekHold(peeking)
   },
 })
 const swipeView = songSwipe.view
@@ -2787,7 +2374,7 @@ watch(sheet, async (open) => {
 watch([blocks, fitOn, bias, width], () => {
   // Reflow changes scrollHeight: what is preserved is the musical instant,
   // not the pixel — the clock line stays at the same point of the song.
-  timeline = null
+  clearTimeline()
 })
 watch([offset, capo, themeMode, fitOn, bias, mode, dirty, activeLens, hideComments], () => {
   emit('state', {
@@ -2849,7 +2436,7 @@ onMounted(() => {
     if (Math.abs(w - width.value) <= 4) return
     width.value = w
     void nextTick(() => {
-      timeline = null
+      clearTimeline()
       if (!scroller.value || !scrolling.value) return
       reseatScroll()
     })
@@ -2882,7 +2469,7 @@ onMounted(() => {
 onUnmounted(() => {
   swipeGen += 1
   swipeBusy.value = false
-  swipePeekHold = false
+  setSwipePeekHold(false)
   wakeLock.stop()
   songSwipe.detach()
   stopScroll()
@@ -2890,10 +2477,10 @@ onUnmounted(() => {
   strumSound.dispose()
   ov.dispose()
   guard.dispose()
-  window.clearTimeout(idleT)
+  clearIdleTimer()
   window.clearTimeout(toastT)
   window.clearTimeout(hintT)
-  window.clearTimeout(discardT)
+  clearDiscardTimer()
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('pointerdown', onDocDown, true)
   window.removeEventListener('wheel', onWheel)

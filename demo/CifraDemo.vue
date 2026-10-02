@@ -240,6 +240,41 @@ const readPdf = async (file: File) => {
   return pdfText(file)
 }
 
+const chartBind = computed(() => ({
+  source: source.value,
+  theme: theme.value,
+  accent: lab.accent || 'verde',
+  lens: lab.lens ?? undefined,
+  hideComments: lab.hideComments,
+  songId: id.value,
+  version: listaMode.value === 'off' ? version.value : undefined,
+  songs: songs.value,
+  loadSong: lazyLista.value ? loadSong : undefined,
+  fetchChart,
+  fetchYoutubeDuration,
+  readPdf,
+  editMode,
+  actorKey,
+  resolveImage,
+  uploadImage,
+  uploadScore,
+  resolveScore: resolveImage,
+  loadBundleAsset: loadDemoAsset,
+  persistSuggestion: persistDemoSuggestion,
+  suggestionQueue: suggestionQueue.value,
+  capabilities: { batidaPresets: true, debugSwipe: lab.zonas },
+  strumPresets: strumPresets.value,
+}))
+
+const chartOn = {
+  'update:source': (value: string) => {
+    source.value = value
+  },
+  'save-content': saveOfficial,
+  'update:suggestionQueue': updateSuggestionQueue,
+  'save-strum-preset': onSaveStrumPreset,
+}
+
 onMounted(async () => {
   window.addEventListener('storage', onDemoStorage)
   try {
@@ -293,36 +328,7 @@ onUnmounted(() => window.removeEventListener('storage', onDemoStorage))
     :lista="lista"
     :live-href="liveHref"
   >
-    <TitanChordpro
-      :source="source"
-      :theme="theme"
-      theme-control="host"
-      :accent="lab.accent || 'verde'"
-      :lens="lab.lens ?? undefined"
-      :hide-comments="lab.hideComments"
-      :song-id="id"
-      :version="listaMode === 'off' ? version : undefined"
-      :songs="songs"
-      :load-song="lazyLista ? loadSong : undefined"
-      :fetch-chart="fetchChart"
-      :fetch-youtube-duration="fetchYoutubeDuration"
-      :read-pdf="readPdf"
-      :edit-mode="editMode"
-      :actor-key="actorKey"
-      :resolve-image="resolveImage"
-      :upload-image="uploadImage"
-      :upload-score="uploadScore"
-      :resolve-score="resolveImage"
-      :load-bundle-asset="loadDemoAsset"
-      :persist-suggestion="persistDemoSuggestion"
-      :suggestion-queue="suggestionQueue"
-      :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
-      :strum-presets="strumPresets"
-      @update:source="source = $event"
-      @save-content="saveOfficial"
-      @update:suggestionQueue="updateSuggestionQueue"
-      @save-strum-preset="onSaveStrumPreset"
-    />
+    <TitanChordpro v-bind="chartBind" theme-control="host" v-on="chartOn" />
   </HostSite>
 
   <div
@@ -332,34 +338,6 @@ onUnmounted(() => window.removeEventListener('storage', onDemoStorage))
     :data-carga="listaMode"
     :style="lab.quebrar ? 'height:auto;' : 'height:100%;'"
   >
-    <TitanChordpro
-      :source="source"
-      :theme="theme"
-      :accent="lab.accent || 'verde'"
-      :lens="lab.lens ?? undefined"
-      :hide-comments="lab.hideComments"
-      :song-id="id"
-      :version="listaMode === 'off' ? version : undefined"
-      :songs="songs"
-      :load-song="lazyLista ? loadSong : undefined"
-      :fetch-chart="fetchChart"
-      :fetch-youtube-duration="fetchYoutubeDuration"
-      :read-pdf="readPdf"
-      :edit-mode="editMode"
-      :actor-key="actorKey"
-      :resolve-image="resolveImage"
-      :upload-image="uploadImage"
-      :upload-score="uploadScore"
-      :resolve-score="resolveImage"
-      :load-bundle-asset="loadDemoAsset"
-      :persist-suggestion="persistDemoSuggestion"
-      :suggestion-queue="suggestionQueue"
-      :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
-      :strum-presets="strumPresets"
-      @update:source="source = $event"
-      @save-content="saveOfficial"
-      @update:suggestionQueue="updateSuggestionQueue"
-      @save-strum-preset="onSaveStrumPreset"
-    />
+    <TitanChordpro v-bind="chartBind" v-on="chartOn" />
   </div>
 </template>

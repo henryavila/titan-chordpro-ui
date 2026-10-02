@@ -1483,7 +1483,9 @@ div.titan-chordpro-head-id {
   opacity: 0.4;
   cursor: default;
 }
-.titan-chordpro-roll {
+/* Beats `.titan-chordpro-root button`, which resets every button to a
+   transparent face. Without the element, idle Rolar loses its fill. */
+.titan-chordpro-root button.titan-chordpro-roll {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1501,16 +1503,16 @@ div.titan-chordpro-head-id {
   white-space: nowrap;
   overflow: hidden;
 }
-.titan-chordpro-roll.is-live {
+.titan-chordpro-root button.titan-chordpro-roll.is-live {
   background: var(--pill);
   color: var(--pill-ink);
   border-color: var(--pill);
 }
-.titan-chordpro-roll:disabled {
+.titan-chordpro-root button.titan-chordpro-roll:disabled {
   opacity: 0.32;
   cursor: default;
 }
-.titan-chordpro-roll.is-phone {
+.titan-chordpro-root button.titan-chordpro-roll.is-phone {
   flex: none;
   height: var(--titan-chordpro-dock-ctrl-h, 44px);
   min-width: var(--titan-chordpro-dock-ctrl-h, 44px);
@@ -1519,7 +1521,7 @@ div.titan-chordpro-head-id {
   font-weight: 700;
   padding: 0 20px;
 }
-.titan-chordpro-roll.is-phone.is-icon {
+.titan-chordpro-root button.titan-chordpro-roll.is-phone.is-icon {
   padding: 0;
   gap: 0;
 }

@@ -17,8 +17,8 @@ tests:
   - tests/vue/lens-letra.test.ts
 ---
 
-# Chrome — botões da cifra
-
-Peças em `src/vue/ui/`: RollButton, TypePair, BarButton, IconButton.
+# Botões da cifra
 
 O músico vê Rolar, A−/A+, Ajuste, Graus, Comentários, Metrônomo, Editar e Mais. Telefone 44px, computador 36px, mesma cor e o mesmo `data-*`.
+
+Peças em `src/vue/ui/`: RollButton, TypePair, BarButton, IconButton.

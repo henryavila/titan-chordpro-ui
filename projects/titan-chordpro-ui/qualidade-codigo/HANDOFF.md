@@ -38,18 +38,27 @@ Ligados em PhoneDock, WideDock, EditDock, MoreSheet, ViewHead, ToneSheet, Export
 
 Também: `audioRefBind` e os binds `viewHeadBind`, `wideDockBind`, `phoneDockBind`, `editHeadBind`, `editDockBind`, `moreSheetBind`; `useExport`, `useChromeLayout`, `useNotationPrefs`. Fila no telefone só no Mais; Graus no Mais; ícone de comentários `eye`/`eyeOff`; CSS base de `bar-btn` / `roll`.
 
-Vue: **629 testes** (`pnpm exec vitest run tests/vue`).
+Onda seguinte, neste branch:
+
+- `useOverlay` ficou com o estado; fila, gravação, minha versão e o diálogo de atualização estão em `src/vue/use/overlay/`. O import continua `use/useOverlay`.
+- `useBlockEdit` ficou com os refs; gestos, comandos, seleção, sessão e a linha estão em `src/vue/use/block-edit/`. O import continua `use/useBlockEdit`.
+- `import-chordpro.ts` é barrel. O corpo está em `src/core/import/` (`plain`, `meta`, `key-rewrite`, `cifraclub`, `convert`). `notationEdge` em `src/core/notation-region.ts` só classifica a chave de tab e partitura. OnSong silencioso e o de import continuam dois.
+- Demo: `demo/boot-html.ts` repete fontes e o shell de abertura. O HTML expandido das seis páginas é o mesmo de antes. `CifraDemo` usa `chartBind` / `chartOn`; `theme-control="host"` só no site. Zip de produção não foi unido (`src/slides/zip.ts` escreve, `src/bundle/unzip.ts` abre).
+- `docs/features/exportacao.md` é o terceiro pacote. `pnpm docs:build` e `pnpm docs:check` só reescrevem o índice entre `<!-- titan-features:start -->` e `<!-- titan-features:end -->` no README e no CONSUMER.
+- `useAutoScroll` é o relógio da página (`raf`, `swipePeekHold`, subpixel, timeline). `useEditSession` é a sessão em volta de `createSourceSession` e o único dono de `lastSrc`. O pulso do metrônomo continua em `TitanChordpro.vue`.
+
+Vue + timeline + a trava de estimativa da rolagem: **668 testes** verdes depois da extração do relógio. `vue-tsc --noEmit` passou. Não houve verificação no navegador.
 
 ## Falta (ondas)
 
 1. ~~Chip, Stepper, ChartIdentityFields (Meta/Nova), ActionButton, ListRow~~ feito
 2. ~~Bind objects dos docks (como `viewHeadBind`)~~ feito — tipos em `src/vue/chrome/dock-model.ts`
-3. ~~`useExport`, `useChromeLayout`, `useNotationPrefs`~~ feito. Falta `useAutoScroll` / `useEditSession` (por último)
-4. Partir `useOverlay` / `useBlockEdit`
-5. Core: fatiar `import-chordpro.ts`; walker `{sot}`/`x_titan_start_of_score`; **não** unificar `beatsPerBar` 6/8 nem wrap PDF/CSS/slides
-6. Demo HTML / `CifraDemo` bind; zip interno
-7. `docs:build` a partir de `docs/features/`
-8. Relatório final para o usuário (a partir de `decisions.md`)
+3. ~~`useExport`, `useChromeLayout`, `useNotationPrefs`, `useAutoScroll`, `useEditSession`~~ feito. `lastSrc` só na sessão; `raf` da rolagem e `swipePeekHold` só no relógio
+4. ~~Partir `useOverlay` / `useBlockEdit`~~ feito
+5. ~~Core: fatiar `import-chordpro.ts`; classificador `{sot}` / `x_titan_start_of_score`~~ feito. Não unificar `beatsPerBar` 6/8 nem wrap PDF/CSS/slides
+6. ~~Demo HTML / `CifraDemo` bind~~ feito. Zip interno já eram dois papéis
+7. ~~`docs:build` a partir de `docs/features/`~~ feito
+8. ~~Relatório opções × escolha~~ entregue na conversa, a partir de `decisions.md`. O usuário aprovou. O Rolar parado fica pintado na cor do acorde.
 
 ## Não fazer
 

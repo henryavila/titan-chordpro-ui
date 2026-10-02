@@ -1,3 +1,4 @@
+import { notationEdge } from './notation-region'
 import { isPlayedLine, lineBeats } from './timeline'
 
 export type LintResult = {
@@ -28,19 +29,20 @@ function voicelessWithoutMarks(src: string): number {
   for (const raw of lines) {
     const d = raw.match(/^\s*\{\s*([a-zA-Z_]+)/)
     const k = (d?.[1] ?? '').toLowerCase()
-    if (k === 'sot' || k === 'start_of_tab') {
+    const edge = notationEdge(k)
+    if (edge === 'tab-open') {
       tab = true
       continue
     }
-    if (k === 'eot' || k === 'end_of_tab') {
+    if (edge === 'tab-close') {
       tab = false
       continue
     }
-    if (k === 'x_titan_start_of_score') {
+    if (edge === 'score-open') {
       score = true
       continue
     }
-    if (k === 'x_titan_end_of_score') {
+    if (edge === 'score-close') {
       score = false
       continue
     }

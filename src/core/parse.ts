@@ -6,6 +6,7 @@ import {
   transposeDefines,
   type ChordDefine,
 } from './define'
+import { notationEdge } from './notation-region'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
 import type { TitanChordproLine, TitanChordproSection, TitanChordproDocument, SectionKind } from './types'
@@ -130,12 +131,12 @@ function parseRaw(src: string): {
         lines.push({ kind: 'score', text: raw, li0: li, li1: li })
         continue
       }
-      if (k === 'x_titan_start_of_score') {
+      if (notationEdge(k) === 'score-open') {
         score = [raw]
         scoreStart = li
         continue
       }
-      if (k === 'sot' || k === 'start_of_tab') {
+      if (notationEdge(k) === 'tab-open') {
         tab = []
         tabStart = li
         continue

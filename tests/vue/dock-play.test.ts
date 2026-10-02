@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { TitanChordpro } from '../../src/vue/index'
@@ -73,6 +75,16 @@ describe('dock Rolar label', () => {
 })
 
 describe('dock Rolar fill', () => {
+  it('idle Rolar keeps the chord fill over the transparent button reset', () => {
+    const css = readFileSync(join(process.cwd(), 'src/vue/titan-chordpro.css'), 'utf8')
+    const idle = css.match(/\.titan-chordpro-root button\.titan-chordpro-roll\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(idle).toMatch(/background:\s*var\(--chord\)/)
+    expect(idle).toMatch(/color:\s*var\(--chord-ink\)/)
+    const live = css.match(/\.titan-chordpro-root button\.titan-chordpro-roll\.is-live\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(live).toMatch(/background:\s*var\(--pill\)/)
+    expect(live).toMatch(/color:\s*var\(--pill-ink\)/)
+  })
+
   it.each([
     [390, 'phone'],
     [768, 'tablet'],

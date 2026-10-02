@@ -1193,3 +1193,11 @@ gravação falhar, a Promise rejeita e a cifra oficial não deve ser substituíd
 
 O mesmo `loadBundleAsset` / `uploadScore` / `uploadImage` da edição serve aqui:
 exportar lê os bytes; importar os grava de novo no armazenamento do app.
+
+<!-- titan-features:start -->
+## Na tela
+
+- **Botões da cifra.** O músico vê Rolar, A−/A+, Ajuste, Graus, Comentários, Metrônomo, Editar e Mais.
+- **Exportar a cifra.** No computador, o ícone de baixar na barra de baixo abre Exportar; no telefone, o item Exportar fica em Mais.
+- **Ficha — campos da cifra.** Meta e Nova cifra usam a mesma ficha: nome, duração, andamento, compasso e tom.
+<!-- titan-features:end -->
