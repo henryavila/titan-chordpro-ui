@@ -1,26 +1,8 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
-import type { WriteMode } from '../public'
+import type { EditHeadModel } from './dock-model'
 
-defineProps<{
-  phone: boolean
-  compact: boolean
-  contentEdit: boolean
-  pageMax: string
-  chromePad: string
-  editBadge: string
-  wMode: WriteMode | null
-  title: string
-  subtitle: string
-  metaGapLabel: string
-  metaSummary: string
-  metaGaps: number
-  dirty: boolean
-  canUndo: boolean
-  canRedo: boolean
-  confirmDiscard: boolean
-  discardLabel: string
-}>()
+defineProps<EditHeadModel>()
 
 const emit = defineEmits<{
   bindHead: [el: unknown]

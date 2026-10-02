@@ -98,6 +98,13 @@ import SuggestionQueue from './overlay/SuggestionQueue.vue'
 import UpdateDialog from './overlay/UpdateDialog.vue'
 import TitanChordproViewHead from './chrome/TitanChordproViewHead.vue'
 import type { ViewHeadModel } from './chrome/view-head'
+import type {
+  EditDockModel,
+  EditHeadModel,
+  MoreSheetModel,
+  PhoneDockModel,
+  WideDockModel,
+} from './chrome/dock-model'
 import TitanChordproCapoLegend from './chrome/TitanChordproCapoLegend.vue'
 import TitanChordproStates from './chrome/TitanChordproStates.vue'
 import TitanChordproEditHead from './chrome/TitanChordproEditHead.vue'
@@ -1986,6 +1993,123 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   fsTitle: fsTitle.value,
 }))
 
+const wideDockBind = computed((): WideDockModel => ({
+  hidden: chromeHidden.value,
+  showMine: showMine.value,
+  mineLabel: ov.mineLabel.value,
+  showOriginal: ov.showOriginal.value,
+  hintFit: hintFit.value,
+  scrolling: scrolling.value,
+  mul: mul.value,
+  etaLabel: etaLabel.value,
+  progress: progress.value,
+  setlistOn: setlist.on.value,
+  noPrev: setlist.noPrev.value,
+  noNext: setlist.noNext.value,
+  posLabel: setlist.posLabel.value,
+  scrollTitle: scrollTitle.value,
+  scrollOff: scrollOff.value,
+  rollLive: rollLive.value,
+  fitOn: fitOn.value,
+  letra: activeLens.value === 'letra',
+  hasKey: hasKey.value,
+  nashvilleOn: nashvilleOn.value,
+  hideComments: hideComments.value,
+  metRunning: met.running.value,
+  metBpm: met.bpm.value,
+  hasStrum: hasStrum.value,
+  strumOn: strumOn.value,
+  ensaioBatida: rehearsalFocus.value === 'batida',
+  themeTitle: themeTitle.value,
+  themeIcon: themeIcon(themeMode.value),
+  themeLabel: themeLabel(themeMode.value),
+  canEdit: canEditNow.value,
+  dirty: dirty.value,
+}))
+
+const phoneDockBind = computed((): PhoneDockModel => ({
+  hidden: chromeHidden.value || moreOpen.value,
+  hintFit: hintFit.value,
+  letra: activeLens.value === 'letra',
+  dockCtrlH: dockCtrlH.value,
+  setlistOn: setlist.on.value,
+  noPrev: setlist.noPrev.value,
+  noNext: setlist.noNext.value,
+  posLabel: setlist.posLabel.value,
+  nextChipShort: setlist.nextChipShort.value,
+  scrolling: scrolling.value,
+  mul: mul.value,
+  etaLabel: etaLabel.value,
+  progress: progress.value,
+  width: width.value,
+  dockPlayName: dockPlayName.value,
+  scrollTitle: scrollTitle.value,
+  scrollOff: scrollOff.value,
+  rollLive: rollLive.value,
+  dockPlayLabeled: dockPlayLabeled.value,
+  dockPlayLabel: dockPlayLabel.value,
+  dockTypeW: dockTypeW.value,
+  bp: bp.value,
+  canEdit: canEditNow.value,
+  dirty: dirty.value,
+  dockIconSize: dockIconSize.value,
+  fitOn: fitOn.value,
+  queueCount: queueCount.value,
+}))
+
+const editHeadBind = computed((): EditHeadModel => ({
+  phone: phone.value,
+  compact: compact.value,
+  contentEdit: isContentEdit.value,
+  pageMax: pageMax.value,
+  chromePad: chromePad.value,
+  editBadge: editBadge.value,
+  wMode: wMode.value,
+  title: meta.value.title || 'Sem título',
+  subtitle: meta.value.subtitle || '',
+  metaGapLabel: metaGapLabel.value,
+  metaSummary: metaSummary.value,
+  metaGaps: metaGaps.value.length,
+  dirty: dirty.value,
+  canUndo: canUndo.value,
+  canRedo: canRedo.value,
+  confirmDiscard: confirmDiscard.value,
+  discardLabel: discardLabel.value,
+}))
+
+const editDockBind = computed((): EditDockModel => ({
+  compact: compact.value,
+  editHint: editHint.value,
+  clipLabel: bedit.clip.value?.label ?? null,
+  edit: bedit,
+  wMode: wMode.value,
+  showSource: isContentEdit.value && props.capabilities?.sourcePane !== false,
+  lintOk: lint.value.ok,
+  themeTitle: themeTitle.value,
+  themeIcon: themeIcon(themeMode.value),
+  hasStrum: hasStrum.value,
+}))
+
+const moreSheetBind = computed((): MoreSheetModel => ({
+  themeTitle: themeTitle.value,
+  themeIcon: themeIcon(themeMode.value),
+  themeLabel: themeLabel(themeMode.value),
+  hasKey: hasKey.value,
+  nashvilleOn: nashvilleOn.value,
+  nashvilleHint: nashvilleHint.value,
+  hideComments: hideComments.value,
+  metBpm: met.bpm.value,
+  metRunning: met.running.value,
+  hasStrum: hasStrum.value,
+  strumOn: strumOn.value,
+  ensaioBatida: rehearsalFocus.value === 'batida',
+  showMine: showMine.value,
+  showOriginal: ov.showOriginal.value,
+  mineCount: ov.mineCount.value,
+  showQueue: modes.value.includes('persisted') && ov.pendingCount.value > 0,
+  pendingCount: ov.pendingCount.value,
+}))
+
 // ------------------------------------------------------------------ edit (E0)
 
 /**
@@ -3216,23 +3340,7 @@ defineExpose({
     </div>
     <TitanChordproEditHead
       v-if="isEdit"
-      :phone="phone"
-      :compact="compact"
-      :content-edit="isContentEdit"
-      :page-max="pageMax"
-      :chrome-pad="chromePad"
-      :edit-badge="editBadge"
-      :w-mode="wMode"
-      :title="meta.title || 'Sem título'"
-      :subtitle="meta.subtitle || ''"
-      :meta-gap-label="metaGapLabel"
-      :meta-summary="metaSummary"
-      :meta-gaps="metaGaps.length"
-      :dirty="dirty"
-      :can-undo="canUndo"
-      :can-redo="canRedo"
-      :confirm-discard="confirmDiscard"
-      :discard-label="discardLabel"
+      v-bind="editHeadBind"
       @bind-head="bindHead"
       @open-meta="openMeta"
       @undo="undo"
@@ -3244,37 +3352,7 @@ defineExpose({
 
     <TitanChordproWideDock
       v-if="!isEdit && !phone && isPopulated"
-      :hidden="chromeHidden"
-      :show-mine="showMine"
-      :mine-label="ov.mineLabel.value"
-      :show-original="ov.showOriginal.value"
-      :hint-fit="hintFit"
-      :scrolling="scrolling"
-      :mul="mul"
-      :eta-label="etaLabel"
-      :progress="progress"
-      :setlist-on="setlist.on.value"
-      :no-prev="setlist.noPrev.value"
-      :no-next="setlist.noNext.value"
-      :pos-label="setlist.posLabel.value"
-      :scroll-title="scrollTitle"
-      :scroll-off="scrollOff"
-      :roll-live="rollLive"
-      :fit-on="fitOn"
-      :letra="activeLens === 'letra'"
-      :has-key="hasKey"
-      :nashville-on="nashvilleOn"
-      :hide-comments="hideComments"
-      :met-running="met.running.value"
-      :met-bpm="met.bpm.value"
-      :has-strum="hasStrum"
-      :strum-on="strumOn"
-      :ensaio-batida="rehearsalFocus === 'batida'"
-      :theme-title="themeTitle"
-      :theme-icon="themeIcon(themeMode)"
-      :theme-label="themeLabel(themeMode)"
-      :can-edit="canEditNow"
-      :dirty="dirty"
+      v-bind="wideDockBind"
       @original="toggleOriginal"
       @open-my="ov.myPanel.value = true"
       @dismiss-hint="dismissHint(true)"
@@ -3311,33 +3389,7 @@ defineExpose({
 
     <TitanChordproPhoneDock
       v-if="!isEdit && phone && isPopulated"
-      :hidden="chromeHidden || moreOpen"
-      :hint-fit="hintFit"
-      :letra="activeLens === 'letra'"
-      :dock-ctrl-h="dockCtrlH"
-      :setlist-on="setlist.on.value"
-      :no-prev="setlist.noPrev.value"
-      :no-next="setlist.noNext.value"
-      :pos-label="setlist.posLabel.value"
-      :next-chip-short="setlist.nextChipShort.value"
-      :scrolling="scrolling"
-      :mul="mul"
-      :eta-label="etaLabel"
-      :progress="progress"
-      :width="width"
-      :dock-play-name="dockPlayName"
-      :scroll-title="scrollTitle"
-      :scroll-off="scrollOff"
-      :roll-live="rollLive"
-      :dock-play-labeled="dockPlayLabeled"
-      :dock-play-label="dockPlayLabel"
-      :dock-type-w="dockTypeW"
-      :bp="bp"
-      :can-edit="canEditNow"
-      :dirty="dirty"
-      :dock-icon-size="dockIconSize"
-      :fit-on="fitOn"
-      :queue-count="queueCount"
+      v-bind="phoneDockBind"
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
@@ -3383,16 +3435,7 @@ defineExpose({
 
     <TitanChordproEditDock
       v-if="isEdit && !srcOpen"
-      :compact="compact"
-      :edit-hint="editHint"
-      :clip-label="bedit.clip.value?.label ?? null"
-      :edit="bedit"
-      :w-mode="wMode"
-      :show-source="isContentEdit && capabilities.sourcePane !== false"
-      :lint-ok="lint.ok"
-      :theme-title="themeTitle"
-      :theme-icon="themeIcon(themeMode)"
-      :has-strum="hasStrum"
+      v-bind="editDockBind"
       @seen-hint="markEditSeen()"
       @drop-clip="bedit.clip.value = null"
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
@@ -3660,23 +3703,7 @@ defineExpose({
 
     <TitanChordproMoreSheet
       v-if="moreOpen && compact"
-      :theme-title="themeTitle"
-      :theme-icon="themeIcon(themeMode)"
-      :theme-label="themeLabel(themeMode)"
-      :has-key="hasKey"
-      :nashville-on="nashvilleOn"
-      :nashville-hint="nashvilleHint"
-      :hide-comments="hideComments"
-      :met-bpm="met.bpm.value"
-      :met-running="met.running.value"
-      :has-strum="hasStrum"
-      :strum-on="strumOn"
-      :ensaio-batida="rehearsalFocus === 'batida'"
-      :show-mine="showMine"
-      :show-original="ov.showOriginal.value"
-      :mine-count="ov.mineCount.value"
-      :show-queue="modes.includes('persisted') && ov.pendingCount.value > 0"
-      :pending-count="ov.pendingCount.value"
+      v-bind="moreSheetBind"
       @close="moreOpen = false"
       @theme="requestTheme"
       @toggle-nashville="toggleNashville"

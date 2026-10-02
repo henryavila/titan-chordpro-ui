@@ -8,42 +8,9 @@ import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproFitHint from '../ui/TitanChordproFitHint.vue'
 import TitanChordproSpeedHud from '../ui/TitanChordproSpeedHud.vue'
 import TitanChordproSetlistNav from '../ui/TitanChordproSetlistNav.vue'
-import type { TitanChordproIconName } from '../icon/paths'
+import type { WideDockModel } from './dock-model'
 
-defineProps<{
-  hidden: boolean
-  showMine: boolean
-  mineLabel: string
-  showOriginal: boolean
-  hintFit: boolean
-  scrolling: boolean
-  mul: number
-  etaLabel: string
-  progress: number
-  setlistOn: boolean
-  noPrev: boolean
-  noNext: boolean
-  posLabel: string
-  scrollTitle: string
-  scrollOff: boolean
-  rollLive: boolean
-  fitOn: boolean
-  letra: boolean
-  hasKey: boolean
-  nashvilleOn: boolean
-  hideComments: boolean
-  metRunning: boolean
-  metBpm: number
-  hasStrum: boolean
-  strumOn: boolean
-  /** Ensaio Batida chrome profile active. */
-  ensaioBatida: boolean
-  themeTitle: string
-  themeIcon: TitanChordproIconName
-  themeLabel: string
-  canEdit: boolean
-  dirty: boolean
-}>()
+defineProps<WideDockModel>()
 
 const emit = defineEmits<{
   original: [on: boolean]

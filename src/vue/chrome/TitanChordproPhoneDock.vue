@@ -7,35 +7,9 @@ import TitanChordproFitHint from '../ui/TitanChordproFitHint.vue'
 import TitanChordproSpeedHud from '../ui/TitanChordproSpeedHud.vue'
 import TitanChordproSetlistNav from '../ui/TitanChordproSetlistNav.vue'
 
-defineProps<{
-  hidden: boolean
-  hintFit: boolean
-  letra: boolean
-  dockCtrlH: string
-  setlistOn: boolean
-  noPrev: boolean
-  noNext: boolean
-  posLabel: string
-  nextChipShort: string
-  scrolling: boolean
-  mul: number
-  etaLabel: string
-  progress: number
-  width: number
-  dockPlayName: string
-  scrollTitle: string
-  scrollOff: boolean
-  rollLive: boolean
-  dockPlayLabeled: boolean
-  dockPlayLabel: string
-  dockTypeW: string
-  bp: string
-  canEdit: boolean
-  dirty: boolean
-  dockIconSize: string
-  fitOn: boolean
-  queueCount?: number
-}>()
+import type { PhoneDockModel } from './dock-model'
+
+defineProps<PhoneDockModel>()
 
 const emit = defineEmits<{
   dismissHint: []

@@ -5,23 +5,9 @@ import SelectionBar from '../edit/SelectionBar.vue'
 import TitanChordproBarButton from '../ui/TitanChordproBarButton.vue'
 import TitanChordproTypePair from '../ui/TitanChordproTypePair.vue'
 import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
-import type { TitanChordproIconName } from '../icon/paths'
-import type { WriteMode } from '../public'
-import type { BlockEditApi } from '../use/useBlockEdit'
+import type { EditDockModel } from './dock-model'
 
-const props = defineProps<{
-  compact: boolean
-  editHint: boolean
-  clipLabel: string | null
-  edit: BlockEditApi
-  wMode: WriteMode | null
-  showSource: boolean
-  lintOk: boolean
-  themeTitle: string
-  themeIcon: TitanChordproIconName
-  /** Batida create/edit is available in local and persisted edit. */
-  hasStrum: boolean
-}>()
+const props = defineProps<EditDockModel>()
 
 const emit = defineEmits<{
   seenHint: []

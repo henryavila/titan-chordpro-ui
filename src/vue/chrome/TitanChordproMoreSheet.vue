@@ -1,26 +1,8 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
-import type { TitanChordproIconName } from '../icon/paths'
+import type { MoreSheetModel } from './dock-model'
 
-defineProps<{
-  themeTitle: string
-  themeIcon: TitanChordproIconName
-  themeLabel: string
-  hasKey: boolean
-  nashvilleOn: boolean
-  nashvilleHint: string
-  hideComments: boolean
-  metBpm: number
-  metRunning: boolean
-  hasStrum: boolean
-  strumOn: boolean
-  ensaioBatida: boolean
-  showMine: boolean
-  showOriginal: boolean
-  mineCount: number
-  showQueue: boolean
-  pendingCount: number
-}>()
+defineProps<MoreSheetModel>()
 
 const emit = defineEmits<{
   close: []

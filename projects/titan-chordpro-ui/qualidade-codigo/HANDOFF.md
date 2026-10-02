@@ -32,17 +32,18 @@ Peças em `src/vue/ui/`:
 
 - `TitanChordproRollButton`, `TypePair`, `BarButton`, `IconButton`
 - `FitHint`, `SpeedHud`, `SetlistNav`, `SwitchRow`, `DialogShell`
+- `Chip`, `Stepper` (`lg`/`md`/`sm`), `ActionButton`, `ListRow`, `ChartIdentityFields`
 
-Ligados em PhoneDock, WideDock, EditDock, MoreSheet, ViewHead, ToneSheet, ExportSheet, MyVersionPanel, UpdateDialog.
+Ligados em PhoneDock, WideDock, EditDock, MoreSheet, ViewHead, ToneSheet, ExportSheet, MyVersionPanel, UpdateDialog, MetaDialog, NewChartDialog, SetlistSheet, SuggestionQueue.
 
-Também: `audioRefBind` no `TitanChordpro.vue`; fila no telefone só no Mais; Graus no Mais; ícone de comentários `eye`/`eyeOff`; CSS base de `bar-btn` / `roll`.
+Também: `audioRefBind` e os binds `viewHeadBind`, `wideDockBind`, `phoneDockBind`, `editHeadBind`, `editDockBind`, `moreSheetBind` no `TitanChordpro.vue`; fila no telefone só no Mais; Graus no Mais; ícone de comentários `eye`/`eyeOff`; CSS base de `bar-btn` / `roll`.
 
 Vue: **629 testes** (`pnpm exec vitest run tests/vue`).
 
 ## Falta (ondas)
 
-1. Chip, Stepper, ChartIdentityFields (Meta/Nova), ActionButton, ListRow
-2. Bind objects dos docks (como `viewHeadBind`)
+1. ~~Chip, Stepper, ChartIdentityFields (Meta/Nova), ActionButton, ListRow~~ feito
+2. ~~Bind objects dos docks (como `viewHeadBind`)~~ feito — tipos em `src/vue/chrome/dock-model.ts`
 3. `useExport`, `useChromeLayout`; depois `useAutoScroll` / `useEditSession` por último
 4. Partir `useOverlay` / `useBlockEdit`
 5. Core: fatiar `import-chordpro.ts`; walker `{sot}`/`x_titan_start_of_score`; **não** unificar `beatsPerBar` 6/8 nem wrap PDF/CSS/slides
