@@ -131,6 +131,9 @@ describe('SPEC §4 public API is importable from the package name', () => {
     expect(mod.TitanChordpro).toBeTypeOf('object')
     expect(mod.default).toBe(mod.TitanChordpro)
     expect(TitanChordpro).toBe(mod.TitanChordpro)
+    expect(mod.fillAudioCache).toBeTypeOf('function')
+    expect(mod.matchAudio).toBeTypeOf('function')
+    expect(mod.putAudio).toBeTypeOf('function')
     expect(mod).not.toHaveProperty('ChordproViewer')
   })
 

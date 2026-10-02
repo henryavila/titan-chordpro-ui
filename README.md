@@ -73,7 +73,7 @@ pnpm install
 pnpm test
 pnpm dev          # índice das demos; escolhe outra porta se :5173 estiver ocupada
 pnpm build
-pnpm build:pages  # demo estático → dist-demo/ (Cloudflare Workers)
+pnpm build:pages  # demo PWA estático → dist-demo/ (Cloudflare e GitHub Pages)
 ```
 
 ### Servidor para teste local ou remoto

@@ -107,6 +107,25 @@ export function useSetlist(opts: SetlistOpts) {
     return s.source ?? null
   })
 
+  function sourceAt(i: number): string | null {
+    const s = list.value[i]
+    if (!s) return null
+    const held = cache.value[s.id]
+    if (typeof held === 'string') return held
+    return s.source ?? null
+  }
+
+  /** Current chart plus both neighbours, when their ChordPro is already here. */
+  const neighborSources = computed(() => {
+    if (!on.value) return [] as string[]
+    const out: string[] = []
+    for (const j of [si.value - 1, si.value, si.value + 1]) {
+      const text = sourceAt(j)
+      if (typeof text === 'string' && text.trim()) out.push(text)
+    }
+    return out
+  })
+
   const failing = computed(() => {
     const s = current.value
     return on.value && !!s && !!failed.value[s.id] && currentSource.value === null
@@ -258,7 +277,7 @@ export function useSetlist(opts: SetlistOpts) {
   }
 
   return {
-    list, on, si, current, currentSource, failing,
+    list, on, si, current, currentSource, neighborSources, failing,
     listOpen, query, endOffer,
     items, noHit, showSearch,
     posLabel, noPrev, noNext, nextTitle, prevTitle, nextChip, nextChipShort, headLabel, seenLabel,

@@ -2,6 +2,14 @@ import type { Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
 import type { EditMode, ModesProp } from '@henryavila/titan-chordpro-ui/vue'
 import { resolveEditMode } from '@henryavila/titan-chordpro-ui/vue'
 
+/** Prefix a root-absolute demo path with Vite `base` (GitHub Pages is not `/`). */
+export function publicHref(href: string, base = import.meta.env.BASE_URL || '/'): string {
+  if (!href.startsWith('/')) return href
+  if (base === '/' || base === '') return href
+  const prefix = base.endsWith('/') ? base.slice(0, -1) : base
+  return `${prefix}${href}`
+}
+
 export type Surface = 'standalone' | 'site'
 export type ListaMode = 'off' | 'juntas' | 'demanda'
 export type DemoGroupId = 'incorporar' | 'editar' | 'criar' | 'acento' | 'host'
@@ -341,7 +349,7 @@ export function hubRedirect(search: string): string | null {
   p.delete('ficha')
   if (ensaio === 'off' || ensaio === 'juntas') p.delete('ensaio')
   const q = p.toString()
-  return q ? `${page}?${q}` : page
+  return publicHref(q ? `${page}?${q}` : page)
 }
 
 export type LabQuery = {
@@ -441,5 +449,5 @@ export function palcoHref(lista: boolean, search: string): string {
   const p = new URLSearchParams(search)
   p.delete('ficha')
   const q = p.toString()
-  return q ? `${page}?${q}` : page
+  return publicHref(q ? `${page}?${q}` : page)
 }

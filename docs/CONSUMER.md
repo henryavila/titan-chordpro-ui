@@ -328,6 +328,20 @@ do dock do Titan é zero e Rolar/Mais caem na zona morta do indicador de
 início. Header do host usa `env(safe-area-inset-top)`. `apple-mobile-web-app-capable`
 e `display: standalone` no manifest são do host; o pacote não instala PWA.
 
+**Offline.** O Titan lê, transpõe, rola e toca o metrônomo sem rede, desde que
+o ChordPro já esteja no `source` (ou no cache da lista). Fontes Sora e Space
+Mono vêm no CSS do pacote. O áudio de referência entra no Cache Storage ao
+montar a cifra e nas duas vizinhas da lista, quando o ChordPro delas já chegou.
+O host pré-carrega o repertório com `fillAudioCache` / `matchAudio` /
+`putAudio` de `@henryavila/titan-chordpro-ui/vue`.
+
+Reabrir a página sem internet é do **host**: service worker + precache da
+casca (HTML/JS/CSS/fontes) + cifras em `songs[].source` ou `loadSong` que lê
+IndexedDB primeiro + `persistAsset` local para GPX/imagem/áudio. O pacote não
+registra service worker. Modelo: o demo deste repositório (PWA no GitHub
+Pages). Cifra Club, duração do YouTube e o POST de sugestão pedem rede e
+usam o erro que o Titan já mostra.
+
 **Tela ligada.** Enquanto o `<TitanChordpro>` está montado, o pacote pede
 `navigator.wakeLock` (`screen`) para o aparelho não apagar no ensaio. Sem
 botão, sem PWA, sem prop do host. Precisa de HTTPS e da página visível; ao
@@ -963,6 +977,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
 - [ ] Ancestral com altura (`100dvh` standalone, ou bloco `100dvh` no fluxo)
 - [ ] Rota palco / PWA: `<meta name="viewport" … viewport-fit=cover>`
+- [ ] PWA offline: service worker no host; cifras em `songs[].source` ou `loadSong` local; `persistAsset` no aparelho; `fillAudioCache` para o repertório. Modelo: demo deste repo
 - [ ] Header do host usa `env(safe-area-inset-top)`; **não** duplicar inset inferior no frame
 - [ ] Não sobrescrever `.titan-chordpro-swipe-rail` nem `.titan-chordpro-scroll { touch-action }`
 - [ ] Não sobrescrever `.titan-chordpro-root` / `.titan-chordpro-scroll`

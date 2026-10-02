@@ -3,28 +3,9 @@ import { bootShellHtml } from './boot-shell'
 
 /**
  * Static flash markup for the demo pages. Markers in each HTML file expand
- * here, before any module runs, to the same font tags and boot shell the
- * pages used to repeat.
+ * here, before any module runs, to the boot shell the pages used to repeat.
+ * Faces (Sora / Space Mono) ship in `boot-shell.css` via the Vue `@font-face`.
  */
-const FONT_HREF =
-  'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap'
-
-const FONT_LINES = [
-  '<link rel="preconnect" href="https://fonts.googleapis.com" />',
-  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />',
-  '<link',
-  `  href="${FONT_HREF}"`,
-  '  rel="stylesheet"',
-  '  media="print"',
-  `  onload="this.media='all'"`,
-  '/>',
-  '<noscript>',
-  '  <link',
-  `    href="${FONT_HREF}"`,
-  '    rel="stylesheet"',
-  '  />',
-  '</noscript>',
-]
 
 function indentLines(lines: string[], indent: string): string {
   return lines.map((line) => indent + line).join('\n')
@@ -53,17 +34,9 @@ function bootLines(theme: string, title: string, message: string): string[] {
   return bootShellHtml(theme, title, message).split('\n')
 }
 
-/** Replace demo font and boot markers. Pages without markers are unchanged. */
+/** Replace demo boot markers. Pages without markers are unchanged. */
 export function expandDemoHtml(html: string): string {
-  const withFonts = html.replace(
-    /^([ \t]*)<!--\s*titan-demo-fonts\b(.*?)-->[ \t]*$/gm,
-    (_line, indent: string, raw: string) => {
-      const media = requiredAttr(quotedAttrs(raw), 'media', 'titan-demo-fonts')
-      if (media !== 'print') throw new Error('titan-demo-fonts media must be "print"')
-      return indentLines(FONT_LINES, indent)
-    },
-  )
-  return withFonts.replace(
+  return html.replace(
     /^([ \t]*)<!--\s*titan-demo-boot\b(.*?)-->[ \t]*$/gm,
     (_line, indent: string, raw: string) => {
       if (!hasToken(raw, 'data-boot-shell')) {

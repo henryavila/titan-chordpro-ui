@@ -266,6 +266,7 @@ export {
   audioKindsOf,
   audioTracksOf,
   audioUrlOf,
+  rehearsalAudioUrls,
   defaultAudioKind,
   displaySongTitle,
   formatAudioClock,

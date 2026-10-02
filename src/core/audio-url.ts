@@ -92,6 +92,12 @@ export function audioTracksOf(source: string): AudioTracks {
   }
 }
 
+/** Playable rehearsal URLs in the chart, sung then playback. Empty when none. */
+export function rehearsalAudioUrls(source: string): string[] {
+  const t = audioTracksOf(source)
+  return [t.sung, t.playback].filter((url): url is string => !!url)
+}
+
 export function audioUrlOf(source: string, kind?: AudioKind): string | null {
   const t = audioTracksOf(source)
   if (kind) return t[kind]

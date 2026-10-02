@@ -128,6 +128,17 @@ describe('changing song puts down where this one was left', () => {
 })
 
 describe('a song that has to be fetched', () => {
+  it('exposes the ChordPro of the current song and both neighbours', async () => {
+    const s = setlistOf(songs(4, false), (id) => `cho-${id}`)
+    s.prefetch()
+    await flushPromises()
+    expect(s.neighborSources.value).toEqual(['cho-s0', 'cho-s1'])
+    s.go(1, spot())
+    s.prefetch()
+    await flushPromises()
+    expect(s.neighborSources.value).toEqual(['cho-s0', 'cho-s1', 'cho-s2'])
+  })
+
   it('asks for the current one and both neighbours, never twice', async () => {
     const asked: string[] = []
     const s = setlistOf(songs(4, false), (id) => {

@@ -12,6 +12,7 @@ import {
   hostTheme,
   labQuery,
   palcoHref,
+  publicHref,
   writeEditMode,
   writeModes,
 } from '../../demo/host/recipe'
@@ -63,7 +64,8 @@ describe('the four HTML mounts', () => {
       expect(html, name).toContain('data-boot-shell')
       expect(html, name).toContain('boot-shell.css')
       expect(html, name).toMatch(/Preparando/)
-      expect(html, name).toContain('media="print"')
+      expect(html, name).not.toContain('fonts.googleapis.com')
+      expect(html, name).not.toContain('titan-demo-fonts')
     }
   })
 })
@@ -292,6 +294,16 @@ describe('hostTheme / palcoHref', () => {
     expect(palcoHref(false, '?song=a&tema=claro')).toBe('/standalone.html?song=a&tema=claro')
     expect(palcoHref(true, '?ensaio=demanda')).toBe('/standalone-lista.html?ensaio=demanda')
   })
+
+  it('prefixes GitHub Pages base on root-absolute demo paths', () => {
+    expect(publicHref('/standalone.html')).toBe('/standalone.html')
+    expect(publicHref('/standalone.html', '/titan-chordpro-ui/')).toBe(
+      '/titan-chordpro-ui/standalone.html',
+    )
+    expect(publicHref('/standalone.html?audio=1', '/titan-chordpro-ui/')).toBe(
+      '/titan-chordpro-ui/standalone.html?audio=1',
+    )
+  })
 })
 
 describe('Hub', () => {
@@ -305,7 +317,8 @@ describe('Hub', () => {
     expect(w.text()).not.toMatch(/\bPalco\b/)
     expect(w.text()).not.toMatch(/\bFicha\b/)
     expect(w.text()).not.toMatch(/\bEnsaio\b/)
-    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/Sem persistência/i)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/PWA/i)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/sem rede/i)
     for (const demo of DEMOS) {
       expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('TitanChordpro')
     }

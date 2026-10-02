@@ -1,6 +1,19 @@
-# Demo público (Cloudflare Workers)
+# Demo público (PWA + Cloudflare Workers)
 
-Demo real do `<TitanChordpro>`: hub + standalone + shell + lista.
+Demo real do `<TitanChordpro>`: hub + standalone + shell + lista. É um **PWA**:
+depois da primeira visita com internet, as páginas, as cifras do corpus, as
+fontes, o metrônomo e o áudio empacotado abrem sem rede (ícone na tela
+inicial, `display: standalone`). Cifra Club e duração do YouTube continuam
+precisando do proxy (Cloudflare). No GitHub Pages esses dois caminhos não
+existem; a UI mostra o erro de sempre.
+
+**PWA / GitHub Pages:** `pnpm build:pages` com `VITE_BASE=/titan-chordpro-ui/`
+gera `dist-demo/` com `sw.js` e `manifest.webmanifest`. O workflow
+`.github/workflows/pages.yml` publica em
+`https://henryavila.github.io/titan-chordpro-ui/`. Ligue Pages → Source →
+GitHub Actions na primeira vez.
+
+**Persistência de lab:** o overlay pessoal, a fila de sugestões e a cifra
 
 **Persistência de lab:** o overlay pessoal, a fila de sugestões e a cifra
 oficial usam `localStorage` do navegador (mesmo `songId`); os arquivos

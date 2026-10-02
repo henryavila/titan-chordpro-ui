@@ -30,7 +30,13 @@ export type { AccentId, AccentProp, ChartStore, ThemeId } from '@henryavila/tita
 declare const TitanChordpro: DefineComponent<TitanChordproProps>
 export { TitanChordpro }
 export default TitanChordpro
+
+export function fillAudioCache(url: string): Promise<void>
+export function matchAudio(url: string): Promise<Blob | null>
+export function putAudio(url: string, blob: Blob): Promise<void>
 `,
 )
 
 copyFileSync(join(root, 'node_modules/@coderline/alphatab/dist/font/Bravura-OFL.txt'), join(root, 'dist/vue/Bravura-OFL.txt'))
+copyFileSync(join(root, 'src/vue/fonts/OFL-Sora.txt'), join(root, 'dist/vue/OFL-Sora.txt'))
+copyFileSync(join(root, 'src/vue/fonts/OFL-Space-Mono.txt'), join(root, 'dist/vue/OFL-Space-Mono.txt'))

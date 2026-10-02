@@ -37,6 +37,7 @@ import {
   resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
+  rehearsalAudioUrls,
   defaultAudioKind,
   displaySongTitle,
   type AudioKind,
@@ -113,6 +114,7 @@ import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
+import { fillAudioCache } from './use/audio-cache'
 import { useAutoScroll } from './use/useAutoScroll'
 import { useChromeLayout } from './use/useChromeLayout'
 import { useEditSession } from './use/useEditSession'
@@ -773,6 +775,17 @@ const hostSource = computed(() =>
   setlist.on.value ? (setlist.currentSource.value ?? '') : (props.source ?? ''),
 )
 hostSourceOf = () => hostSource.value
+
+watch(
+  () => (setlist.on.value ? setlist.neighborSources.value : [hostSource.value]),
+  (sources) => {
+    for (const src of sources) {
+      if (!src) continue
+      for (const url of rehearsalAudioUrls(src)) void fillAudioCache(url)
+    }
+  },
+  { immediate: true },
+)
 
 /** A song of the list still on its way: empty, but not "no chart loaded". */
 const songLoading = computed(
