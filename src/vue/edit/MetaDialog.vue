@@ -30,14 +30,19 @@ import {
  * and Começar de novo (content edit only; explicit confirm → Nova cifra).
  */
 
-const props = defineProps<{
-  compact: boolean
-  source: string
-  /** Começar de novo / Nova cifra — only in “Para todos” (content) edit. */
-  allowRestart?: boolean
-  fetchChart?: (url: string) => Promise<string>
-  fetchYoutubeDuration?: (videoId: string) => Promise<string>
-}>()
+const props = withDefaults(
+  defineProps<{
+    compact: boolean
+    source: string
+    /** Começar de novo / Nova cifra — only in “Para todos” (content) edit. */
+    allowRestart?: boolean
+    fetchChart?: (url: string) => Promise<string>
+    fetchYoutubeDuration?: (videoId: string) => Promise<string>
+    /** When false, Completar com Cifra Club is marked and fetch is refused. */
+    online?: boolean
+  }>(),
+  { online: true },
+)
 const emit = defineEmits<{ close: []; apply: [source: string]; restart: [] }>()
 
 const meta = ref<ChartMeta>({ ...readMeta(props.source) })
@@ -73,6 +78,7 @@ function onTabKey(e: KeyboardEvent) {
 }
 
 const canFetch = computed(() => !!props.fetchChart)
+const netOk = computed(() => props.online !== false)
 const missing = computed(() => missingOf(meta.value))
 const durationMissing = computed(() => missing.value.includes('duration'))
 const durationNote = computed(() => {
@@ -173,6 +179,11 @@ async function runEnrich() {
     enrichPhase.value = 'error'
     return
   }
+  if (!netOk.value) {
+    enrichErr.value = 'Sem internet. Use Arquivo ou Texto.'
+    enrichPhase.value = 'error'
+    return
+  }
   if (!props.fetchChart) {
     enrichErr.value = 'Buscar no Cifra Club não está disponível neste site'
     enrichPhase.value = 'error'
@@ -206,6 +217,11 @@ function onEnrichPaste(e: ClipboardEvent) {
   e.preventDefault()
   enrichUrl.value = t
   enrichErr.value = ''
+  if (!netOk.value) {
+    enrichErr.value = 'Sem internet. Use Arquivo ou Texto.'
+    enrichPhase.value = 'error'
+    return
+  }
   if (props.fetchChart) void runEnrich()
 }
 
@@ -352,7 +368,8 @@ onMounted(() => {
         <div style="display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra Club</span>
           <span style="font-size:13px;font-weight:700;letter-spacing:-0.02em;">Completar com Cifra Club</span>
-          <span v-if="canFetch" style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Traz batida, YouTube e o que faltar — sem substituir a cifra.</span>
+          <span v-if="canFetch && netOk" style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Traz batida, YouTube e o que faltar — sem substituir a cifra.</span>
+          <span v-else-if="canFetch" data-offline-hint style="font-size:12px;font-weight:700;color:var(--muted);">Sem internet</span>
         </div>
 
         <template v-if="!canFetch">

@@ -3,6 +3,7 @@ import {
   formatTitanStrum,
   isScoreReference,
   isTuneOp,
+  OFFLINE_SUGGEST_TOAST,
   opCtxNote,
   opLabel,
   proposedScoreSources,
@@ -249,6 +250,8 @@ export type SuggestHost = {
     | ((src: string) => Promise<{ bytes: Uint8Array; contentType?: string; filename?: string }>)
     | undefined
   persist: () => ((s: Suggestion) => Promise<void>) | undefined
+  /** When persist needs the network and this is false, do not POST. */
+  online?: () => boolean
   all: () => Suggestion[]
   write: (list: Suggestion[]) => void
   closePanel: () => void
@@ -268,6 +271,10 @@ export async function sendSuggestion(host: SuggestHost): Promise<void> {
     return
   }
   host.setNameNeeded(false)
+  if (host.persist() && host.online?.() === false) {
+    host.toast(OFFLINE_SUGGEST_TOAST)
+    return
+  }
   if (!host.confirming()) {
     host.armConfirm()
     return

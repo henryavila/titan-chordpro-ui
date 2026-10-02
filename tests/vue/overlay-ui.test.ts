@@ -563,6 +563,25 @@ describe('host persistSuggestion ack', () => {
     local.unmount()
   })
 
+  it('marks Sugerir as offline and does not POST', async () => {
+    const persist = vi.fn(() => Promise.resolve())
+    const local = mountViewer({ persistSuggestion: persist, online: false })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await identify(local)
+    expect(local.get('[data-offline-hint]').text()).toMatch(/sem internet/i)
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    expect(persist).not.toHaveBeenCalled()
+    expect(local.get('[data-suggest]').text()).not.toMatch(/Confirmar/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/sem internet/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/minha versão/i)
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
+    local.unmount()
+  })
+
   it('treats a void persistSuggestion as a failed ack, not enviada', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => {})
     const persist = vi.fn(() => undefined)

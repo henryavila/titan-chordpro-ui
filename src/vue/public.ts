@@ -223,6 +223,11 @@ export type TitanChordproProps = {
    */
   strumPresets?: StrumPreset[]
   /**
+   * Host view of connectivity. When omitted, Titan uses `navigator.onLine`.
+   * `false` marks Sugerir / Cifra Club and explains on tap; reading still works.
+   */
+  online?: boolean
+  /**
    * Fetches the page behind a link, for "new chart · import". The browser
    * cannot reach another site from inside TitanChordpro, so this is the host's
    * backend. Without it the Link tab says so rather than pretending.

@@ -79,6 +79,7 @@ export type OverlayOpts = {
    * reject or a void return → keep the overlay, toast retry, nothing queued.
    */
   persistSuggestion?: Ref<((s: Suggestion) => Promise<void>) | undefined>
+  online?: Ref<boolean>
   loadScoreAsset?: (src: string) => Promise<{ bytes: Uint8Array; contentType?: string; filename?: string }>
   uploadScore?: Ref<((file: File) => Promise<{ ref: string }>) | undefined>
   onSuggestionAccepted?: (p: {
@@ -354,6 +355,7 @@ export function useOverlay(opts: OverlayOpts) {
       store: opts.store,
       loadScoreAsset: () => opts.loadScoreAsset,
       persist: () => opts.persistSuggestion?.value,
+      online: () => opts.online?.value !== false,
       all: allSug,
       write: writeSug,
       closePanel: () => {

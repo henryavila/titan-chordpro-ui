@@ -25,6 +25,12 @@ export type {
 
 export type { ChartStore } from './storage'
 export {
+  OFFLINE_CIFRACLUB_HINT,
+  OFFLINE_LABEL,
+  OFFLINE_SUGGEST_TOAST,
+  resolveOnline,
+} from './online'
+export {
   STORE_KEYS,
   browserStore,
   memoryStore,

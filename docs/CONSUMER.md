@@ -339,8 +339,11 @@ Reabrir a página sem internet é do **host**: service worker + precache da
 casca (HTML/JS/CSS/fontes) + cifras em `songs[].source` ou `loadSong` que lê
 IndexedDB primeiro + `persistAsset` local para GPX/imagem/áudio. O pacote não
 registra service worker. Modelo: o demo deste repositório (PWA no GitHub
-Pages). Cifra Club, duração do YouTube e o POST de sugestão pedem rede e
-usam o erro que o Titan já mostra.
+Pages). Cifra Club, duração do YouTube e o POST de sugestão pedem rede. Sem
+internet o Titan marca esses itens (selo **Sem internet**) e, no toque,
+explica: a sugestão fica na Minha versão; no Cifra Club, Arquivo ou Texto.
+A leitura, o transpor, o Rolar e o exportar continuam. Passe `online` se o
+host souber a conexão melhor que `navigator.onLine`.
 
 **Tela ligada.** Enquanto o `<TitanChordpro>` está montado, o pacote pede
 `navigator.wakeLock` (`screen`) para o aparelho não apagar no ensaio. Sem

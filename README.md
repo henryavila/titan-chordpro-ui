@@ -182,6 +182,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `prefetchAll` | `false` | `true` busca **todas** as cifras da lista (`loadSong` / `source`) e guarda o áudio de cada uma. Default: só a da tela e as duas vizinhas. Para ensaio curto, não hinário |
+| `online` | `navigator.onLine` | `false` marca Sugerir e Cifra Club com Sem internet e explica no toque. A leitura continua |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
 | `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_titan_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
