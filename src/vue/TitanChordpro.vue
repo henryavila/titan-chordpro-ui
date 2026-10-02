@@ -8,16 +8,10 @@ import {
   isScoreReference,
   isInlineScore,
   buildTimeline,
-  buildPdfFilename,
-  buildPpsxFilename,
-  buildSljaFilename,
-  EXPORT_MIME,
   clockOf,
   createSourceSession,
   editTypeScale,
   etaSec,
-  exportCho,
-  exportChoFile,
   formatEta,
   hasSongDuration,
   isParseFatal,
@@ -60,9 +54,6 @@ import {
   readUserPreferences,
   updateUserPreferences,
   notationBlockIds,
-  readNotationPreferences,
-  writeNotationPreferences,
-  type NotationPreferences,
   type StrumPattern,
   type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
@@ -79,7 +70,6 @@ import type {
 import ChartBody from './chart/ChartBody.vue'
 import DiagramModal from './overlay/DiagramModal.vue'
 import type { DiagramInstrumentChoice } from './overlay/DiagramModal.vue'
-import { downloadExportedFile, runExportJob } from './export/run-export'
 import ExportSheet from './sheets/ExportSheet.vue'
 import SetlistSheet from './sheets/SetlistSheet.vue'
 import MetronomeSheet from './sheets/MetronomeSheet.vue'
@@ -134,6 +124,9 @@ import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
+import { useChromeLayout } from './use/useChromeLayout'
+import { useExport } from './use/useExport'
+import { useNotationPrefs } from './use/useNotationPrefs'
 import { mediaSessionArtwork, useMediaSession } from './use/useMediaSession'
 import defaultArt from './assets/audio-ref-default.jpg'
 import type { TitanChordproProps, EditMode, RehearsalFocus, WriteMode } from './public'
@@ -285,10 +278,6 @@ const scrollRoom = ref(0)
 const mul = ref(1)
 const progress = ref(0)
 const etaLabel = ref('—')
-const sheet = ref(false)
-const pdf = ref<'idle' | 'busy' | 'error'>('idle')
-const slides = ref<'idle' | 'busy' | 'error'>('idle')
-const ppsx = ref<'idle' | 'busy' | 'error'>('idle')
 const toast = ref<string | null>(null)
 const toastOut = ref(false)
 const fs = ref(false)
@@ -445,69 +434,26 @@ const fatal = computed(() => {
 const isLoading = computed(() => props.loading)
 const isEmpty = computed(() => !isLoading.value && !liveSource.value.trim())
 const isPopulated = computed(() => !isLoading.value && !isEmpty.value && !fatal.value)
-const phone = computed(() => width.value < 640)
-const compact = computed(() => phone.value)
-const bp = computed(() => {
-  const W = width.value
-  return W < 400 ? 'xs' : W < 640 ? 'sm' : W < 900 ? 'md' : W < 1280 ? 'lg' : 'xl'
-})
-const pageMax = computed(() =>
-  fs.value
-    ? ({ xs: '100%', sm: '100%', md: '100%', lg: '1040px', xl: '1180px' } as const)[bp.value]
-    : ({ xs: '100%', sm: '100%', md: '760px', lg: '880px', xl: '980px' } as const)[bp.value],
-)
-const padX = computed(() =>
-  fs.value
-    ? ({ xs: '8px', sm: '10px', md: '14px', lg: '18px', xl: '24px' } as const)[bp.value]
-    : ({ xs: '14px', sm: '16px', md: '22px', lg: '28px', xl: '40px' } as const)[bp.value],
-)
-/** Floating chrome inset above the chart (head + edit). Slightly tighter than
- * the old band so a compact head still reads as a card, not a strip. */
-const chromePad = computed(() =>
-  fs.value
-    ? ({ xs: '4px 6px 0', sm: '5px 8px 0', md: '6px 12px 0', lg: '7px 14px 0', xl: '8px 18px 0' } as const)[bp.value]
-    : ({ xs: '8px 10px 0', sm: '10px 12px 0', md: '12px 16px 0', lg: '14px 20px 0', xl: '16px 26px 0' } as const)[
-        bp.value
-      ],
-)
-const chromeTop = computed(
-  () =>
-    (fs.value
-      ? ({ xs: 4, sm: 5, md: 6, lg: 7, xl: 8 } as const)
-      : ({ xs: 8, sm: 10, md: 12, lg: 14, xl: 16 } as const))[bp.value],
-)
-const padBottom = computed(() => {
-  const base = fs.value
-    ? ({ xs: 104, sm: 106, md: 104, lg: 106, xl: 110 } as const)[bp.value]
-    : ({ xs: 124, sm: 128, md: 128, lg: 132, xl: 140 } as const)[bp.value]
-  // The dock grows when auto-scroll starts: the last line must not hide under it.
-  const reserve = base + (phone.value ? (scrolling.value ? 54 : 10) : 0)
-  // The phone dock can be taller than the fixed reserve (notably in a setlist).
-  // Keep the last row's controls above it, including a folded score's handle.
-  return `${phone.value ? Math.max(reserve, visibleDockBottom.value + 56) : reserve}px`
-})
 /**
- * Zen only fades the chrome. The page pad stays put on phone and desktop —
- * reclaiming the band used to shove the line under the eye, which a chart
- * may never do. Idle auto-hide follows the same rule (opacity only).
+ * Zen only fades the chrome. The page pad stays put — reclaiming the band
+ * used to shove the line under the eye. Idle auto-hide follows the same rule.
  */
-/**
- * Right edge of the reading column. Chrome that belongs to the chart hangs
- * here rather than off the window: on a phone the two are the same place, but
- * at 1600px the column is centred and the corner of the glass is 300px of
- * empty background away from anything the musician is looking at.
- */
-/** Flush-left overlay on a full-width frame (2px, not 12 — 20px cells at 12px sat on the lyric). */
-const countLeft = computed(() =>
-  pageMax.value === '100%' ? '2px' : `max(12px, calc((100% - ${pageMax.value}) / 2 - 28px))`,
-)
-/**
- * Below the padded title strip (chromeTop + head), not `headH` alone — that
- * ignored the chrome pad and parked "entrada" against the title.
- */
-const countTop = computed(
-  () => `${chromeTop.value + Math.max(40, headH.value || 56) + 8}px`,
-)
+const {
+  phone,
+  compact,
+  bp,
+  pageMax,
+  padX,
+  chromePad,
+  chromeTop,
+  padBottom,
+  countLeft,
+  countTop,
+  dockCtrlH,
+  dockIconSize,
+  dockTypeW,
+  dockPlayLabeled,
+} = useChromeLayout({ width, fs, scrolling, visibleDockBottom, headH })
 /**
  * Hard gate: no `{duration:}`, no auto-scroll. A BPM and unmarked chords are
  * not a duration. A chart that fits the frame also has nowhere to go. The
@@ -516,23 +462,6 @@ const countTop = computed(
 const hasDuration = computed(() => hasSongDuration(parsed.value.meta.duration))
 const canScroll = computed(() => hasDuration.value && scrollRoom.value > 1)
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
-/**
- * Three tiers, not two. At 320px — the narrowest phone still in use — six
- * controls at 44px plus the type pair overflow the frame by 34px, and what
- * falls off the end is the button furthest right, unreachable rather than
- * merely tight. 40px is under the 44px a thumb wants, and it is the smaller
- * concession.
- */
-const dockCtrlH = computed(() => (width.value < 360 ? '40px' : bp.value === 'xs' ? '44px' : '48px'))
-const dockIconSize = computed(() => dockCtrlH.value)
-const dockTypeW = computed(() => (width.value < 360 ? '34px' : bp.value === 'xs' ? '38px' : '42px'))
-/**
- * The word stays on from 360px up — Tela cheia left the dock, so 390px has
- * room again. Below that the row cannot hold it; leftover is shared across
- * the fileira (`space-between`), not parked in a flex hole after a play
- * triangle that then reads as "tocar a música".
- */
-const dockPlayLabeled = computed(() => width.value >= 360)
 const meta = computed(() => parsed.value.meta)
 
 /** Batida from `{x_titan_strum:}` / `{x_titan_strum_set:}` — toggle is the reader's choice. */
@@ -865,6 +794,41 @@ const originalKey = computed(() => meta.value.key || '')
 const shownKey = computed(() =>
   originalKey.value ? transposeToken(originalKey.value, offset.value, flats.value) : '',
 )
+const {
+  sheet,
+  pdf,
+  slides,
+  ppsx,
+  bundleBusy,
+  bundleError,
+  pdfExportError,
+  exportHasNotation,
+  exportAlerts,
+  doExportCho,
+  doExportBundle,
+  doExportPdf,
+  doExportSlides,
+  doExportPpsx,
+} = useExport({
+  source: () => (ov.exportOrig.value ? ov.official.value : liveSource.value),
+  semitones: () => offset.value,
+  capo: () => capo.value,
+  title: () => meta.value.title,
+  key: () => shownKey.value || null,
+  personal: () => !ov.exportOrig.value && ov.hasOverlay.value,
+  accent: () => props.accent,
+  pdfShouldFail: () => props.pdfShouldFail,
+  slidesShouldFail: () => props.slidesShouldFail,
+  ppsxShouldFail: () => props.ppsxShouldFail,
+  resolveScore: () => props.resolveScore,
+  resolveImage: () => props.resolveImage,
+  loadBundleAsset: () => props.loadBundleAsset,
+  defaultAudioArt: () => props.defaultAudioArt,
+  coverImage: () => props.coverImage,
+  slidesImage: () => props.slidesImage,
+  tabRhythm: () => tabRhythmPreference.value.value,
+  toast: (msg) => toastMsg(msg),
+})
 const playingKey = computed(() =>
   originalKey.value ? transposeToken(originalKey.value, viewSemis.value, flats.value) : '',
 )
@@ -1305,20 +1269,10 @@ const notationSongId = computed(() => setlist.on.value
   ? (setlist.current.value?.id ?? '')
   : (props.songId || parse(normalizeSource(hostSource.value)).meta.title || 'song'))
 const notationIds = computed(() => notationBlockIds(blocks.value))
-const notationChoices = ref<NotationPreferences>({})
+const { choices: notationChoices, save: saveNotationChoice } = useNotationPrefs(store, notationSongId)
 const collapsedNotation = computed(() => new Set(
   notationIds.value.filter((id): id is string => !!id && notationChoices.value[id]?.collapsed === true),
 ))
-function saveNotationChoice(id: string, patch: { view?: 'tab' | 'score'; collapsed?: boolean }) {
-  const current = notationChoices.value[id] ?? {}
-  const next = { ...current, ...patch }
-  const all = { ...notationChoices.value }
-  if (next.view === undefined && next.collapsed !== true) delete all[id]
-  else all[id] = next
-  notationChoices.value = all
-  writeNotationPreferences(store, notationSongId.value, all)
-}
-watch(notationSongId, songId => { notationChoices.value = readNotationPreferences(store, songId) }, { immediate: true })
 let notationReflow = false
 let notationReflowId = 0
 
@@ -2378,228 +2332,6 @@ function applyMeta(next: string) {
   touch()
 }
 
-// ------------------------------------------------------------------- exports
-
-/** What leaves the app: the reader's version, or the official one. */
-function exportSource(): string {
-  return ov.exportOrig.value ? ov.official.value : liveSource.value
-}
-
-function exportedView() {
-  return transpose(parse(exportSource()), offset.value)
-}
-
-function doExportCho() {
-  const mark =
-    !ov.exportOrig.value && ov.hasOverlay.value
-      ? '# versão pessoal — não é a cifra oficial da equipe\n'
-      : ''
-  downloadExportedFile(
-    exportChoFile(exportSource(), {
-      semitones: offset.value,
-      capo: capo.value,
-      title: meta.value.title ?? 'cifra',
-      key: shownKey.value || null,
-      preamble: mark,
-    }),
-  )
-  sheet.value = false
-  toastMsg('Arquivo .cho baixado')
-}
-
-const bundleBusy = ref(false)
-const bundleError = ref('')
-async function doExportBundle() {
-  if (bundleBusy.value) return
-  bundleBusy.value = true
-  bundleError.value = ''
-  const source = exportCho(exportSource(), { semitones: offset.value, capo: capo.value })
-  const personal = !ov.exportOrig.value && ov.hasOverlay.value
-  const title = meta.value.title || 'cifra'
-  const key = shownKey.value || null
-  const resolveScore = props.resolveScore
-  const resolveImage = props.resolveImage
-  const loadBundleAsset = props.loadBundleAsset
-  const hostArt = props.defaultAudioArt
-  const cover = props.coverImage
-  const background = props.slidesImage
-  try {
-    const { exportChartBundle } = await import('@henryavila/titan-chordpro-ui/bundle')
-    const extras: import('@henryavila/titan-chordpro-ui/bundle').BundleExtra[] = []
-    const tracks = audioTracksOf(source)
-    if ((tracks.sung || tracks.playback) && !audioArtOf(source)) {
-      const art = hostArt
-      extras.push({ role: 'audio-cover', reference: art?.url ?? defaultArt,
-        width: art?.width ?? AUDIO_ART_DEFAULT_PX, height: art?.height ?? AUDIO_ART_DEFAULT_PX })
-    }
-    const { DEFAULT_COVER_JPEG, DEFAULT_SLIDES_JPEG } = await import('@henryavila/titan-chordpro-ui/slides')
-    extras.push({ role: 'slide-cover', data: { bytes: await imageBytes(cover) ?? DEFAULT_COVER_JPEG } })
-    extras.push({ role: 'slide-background', data: { bytes: await imageBytes(background) ?? DEFAULT_SLIDES_JPEG } })
-    const file = await exportChartBundle(source, {
-      personal, title, key, extras, onlineReferences: 'provenance',
-      loadAsset: async (ref, kind) => {
-        if (loadBundleAsset && ref !== defaultArt) return loadBundleAsset(ref, kind)
-        const resolved = ref === defaultArt ? ref : kind === 'score' ? resolveScore?.(ref) ?? ref : kind === 'image' ? resolveImage(ref) : ref
-        const url = new URL(resolved, document.baseURI)
-        if (!['http:', 'https:', 'blob:', 'data:'].includes(url.protocol)) throw new Error('Endereço inválido')
-        const abort = new AbortController()
-        const timer = setTimeout(() => abort.abort(), 60000)
-        try {
-          const response = await fetch(url.href, { signal: abort.signal })
-          if (!response.ok) throw new Error('Arquivo indisponível')
-          return { bytes: new Uint8Array(await response.arrayBuffer()), contentType: response.headers.get('content-type') ?? undefined }
-        } finally { clearTimeout(timer) }
-      },
-    })
-    downloadExportedFile(file)
-    sheet.value = false
-    toastMsg('Cifra completa baixada')
-  } catch (error) {
-    bundleError.value = error instanceof Error ? error.message : 'Não foi possível gerar a cifra completa. Tente novamente.'
-  } finally { bundleBusy.value = false }
-}
-
-const pdfExportError = ref('')
-const exportHasNotation = computed(() => layoutChartFull(parse(exportSource())).blocks.some(b => b.kind === 'score' && isScoreReference(b.text)))
-async function doExportPdf(notation: 'tab' | 'score' | 'none' = 'score') {
-  const title = meta.value.title ?? 'cifra'
-  await runExportJob({
-    state: pdf,
-    errorText: pdfExportError,
-    shouldFail: props.pdfShouldFail,
-    produce: async () => {
-      const { renderPdf } = await import('@henryavila/titan-chordpro-ui/pdf')
-      const bytes = await renderPdf(exportedView(), {
-        notation,
-        renderNotation: async (text, mode) => {
-          const { renderPdfNotation } = await import('./chart/pdf-notation')
-          return renderPdfNotation(text, mode, props.resolveScore, tabRhythmPreference.value.value)
-        },
-        personal: !ov.exportOrig.value && ov.hasOverlay.value,
-        accent: props.accent,
-      })
-      return {
-        bytes,
-        filename: buildPdfFilename(title, shownKey.value || null),
-        mime: EXPORT_MIME.pdf,
-        title,
-      }
-    },
-    onSuccess: () => {
-      sheet.value = false
-      toastMsg('PDF gerado')
-    },
-  })
-}
-
-async function imageBytes(
-  input: Blob | ArrayBuffer | Uint8Array | undefined,
-): Promise<Uint8Array | undefined> {
-  if (!input) return undefined
-  if (input instanceof Uint8Array) return input
-  if (input instanceof ArrayBuffer) return new Uint8Array(input)
-  return new Uint8Array(await input.arrayBuffer())
-}
-
-async function slideImageOpts() {
-  return {
-    title: meta.value.title ?? 'cifra',
-    coverImage: await imageBytes(props.coverImage),
-    slidesImage: await imageBytes(props.slidesImage),
-  }
-}
-
-async function doExportSlides() {
-  await runExportJob({
-    state: slides,
-    shouldFail: props.slidesShouldFail,
-    produce: async () => {
-      const { renderSlja } = await import('@henryavila/titan-chordpro-ui/slides')
-      const opts = await slideImageOpts()
-      return {
-        bytes: await renderSlja(exportedView(), opts),
-        filename: buildSljaFilename(opts.title),
-        mime: EXPORT_MIME.slja,
-        title: opts.title,
-      }
-    },
-    onSuccess: () => {
-      sheet.value = false
-      toastMsg('Slides gerados')
-    },
-    onError: () => {
-      sheet.value = false
-    },
-  })
-}
-
-async function doExportPpsx() {
-  await runExportJob({
-    state: ppsx,
-    shouldFail: props.ppsxShouldFail,
-    produce: async () => {
-      const { renderPpsx } = await import('@henryavila/titan-chordpro-ui/slides')
-      const opts = await slideImageOpts()
-      return {
-        bytes: await renderPpsx(exportedView(), opts),
-        filename: buildPpsxFilename(opts.title),
-        mime: EXPORT_MIME.ppsx,
-        title: opts.title,
-      }
-    },
-    onSuccess: () => {
-      sheet.value = false
-      toastMsg('Apresentação gerada')
-    },
-    onError: () => {
-      sheet.value = false
-    },
-  })
-}
-
-const exportAlerts = computed(() => {
-  const rows: Array<{ id: string; text: string; retry: () => void; dismiss: () => void }> = []
-  if (slides.value === 'error') {
-    rows.push({
-      id: 'slides',
-      text: 'A exportação em slides falhou.',
-      retry: () => {
-        slides.value = 'idle'
-        void doExportSlides()
-      },
-      dismiss: () => {
-        slides.value = 'idle'
-      },
-    })
-  }
-  if (ppsx.value === 'error') {
-    rows.push({
-      id: 'ppsx',
-      text: 'A exportação em PowerPoint falhou.',
-      retry: () => {
-        ppsx.value = 'idle'
-        void doExportPpsx()
-      },
-      dismiss: () => {
-        ppsx.value = 'idle'
-      },
-    })
-  }
-  if (pdf.value === 'error') {
-    rows.push({
-      id: 'pdf',
-      text: 'A exportação em PDF falhou.',
-      retry: () => {
-        pdf.value = 'idle'
-        void doExportPdf()
-      },
-      dismiss: () => {
-        pdf.value = 'idle'
-      },
-    })
-  }
-  return rows
-})
 
 // ------------------------------------------------------------------ listeners
 

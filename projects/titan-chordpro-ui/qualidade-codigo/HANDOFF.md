@@ -36,7 +36,7 @@ Peças em `src/vue/ui/`:
 
 Ligados em PhoneDock, WideDock, EditDock, MoreSheet, ViewHead, ToneSheet, ExportSheet, MyVersionPanel, UpdateDialog, MetaDialog, NewChartDialog, SetlistSheet, SuggestionQueue.
 
-Também: `audioRefBind` e os binds `viewHeadBind`, `wideDockBind`, `phoneDockBind`, `editHeadBind`, `editDockBind`, `moreSheetBind` no `TitanChordpro.vue`; fila no telefone só no Mais; Graus no Mais; ícone de comentários `eye`/`eyeOff`; CSS base de `bar-btn` / `roll`.
+Também: `audioRefBind` e os binds `viewHeadBind`, `wideDockBind`, `phoneDockBind`, `editHeadBind`, `editDockBind`, `moreSheetBind`; `useExport`, `useChromeLayout`, `useNotationPrefs`. Fila no telefone só no Mais; Graus no Mais; ícone de comentários `eye`/`eyeOff`; CSS base de `bar-btn` / `roll`.
 
 Vue: **629 testes** (`pnpm exec vitest run tests/vue`).
 
@@ -44,7 +44,7 @@ Vue: **629 testes** (`pnpm exec vitest run tests/vue`).
 
 1. ~~Chip, Stepper, ChartIdentityFields (Meta/Nova), ActionButton, ListRow~~ feito
 2. ~~Bind objects dos docks (como `viewHeadBind`)~~ feito — tipos em `src/vue/chrome/dock-model.ts`
-3. `useExport`, `useChromeLayout`; depois `useAutoScroll` / `useEditSession` por último
+3. ~~`useExport`, `useChromeLayout`, `useNotationPrefs`~~ feito. Falta `useAutoScroll` / `useEditSession` (por último)
 4. Partir `useOverlay` / `useBlockEdit`
 5. Core: fatiar `import-chordpro.ts`; walker `{sot}`/`x_titan_start_of_score`; **não** unificar `beatsPerBar` 6/8 nem wrap PDF/CSS/slides
 6. Demo HTML / `CifraDemo` bind; zip interno
