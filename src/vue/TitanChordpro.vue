@@ -175,6 +175,7 @@ const props = withDefaults(
     songId: '',
     songs: undefined,
     loadSong: undefined,
+    prefetchAll: false,
     fetchChart: undefined,
     fetchYoutubeDuration: undefined,
     readPdf: undefined,
@@ -754,6 +755,7 @@ const guard = useSurfaceGuard({
 const setlist = useSetlist({
   songs: computed(() => props.songs),
   loadSong: computed(() => props.loadSong),
+  prefetchAll: computed(() => props.prefetchAll === true),
 })
 setlistBind = setlist
 dismissEndNow = () => setlist.dismissEnd()
@@ -777,7 +779,7 @@ const hostSource = computed(() =>
 hostSourceOf = () => hostSource.value
 
 watch(
-  () => (setlist.on.value ? setlist.neighborSources.value : [hostSource.value]),
+  () => (setlist.on.value ? setlist.cacheSources.value : [hostSource.value]),
   (sources) => {
     for (const src of sources) {
       if (!src) continue

@@ -379,8 +379,18 @@ async function buscarCifra(id: string): Promise<string> {
 ```
 
 Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
-`loadSong`. A atual e as duas vizinhas são buscadas na frente. Uma que não
-chega vira painel *Não carregou*.
+`loadSong`. A atual e as duas vizinhas são buscadas na frente. Com
+`prefetch-all`, o Titan pede **todas** as cifras da lista e guarda o áudio
+de cada uma no Cache Storage — para um ensaio curto (umas poucas músicas),
+não um hinário. Uma que não chega vira painel *Não carregou*.
+
+```vue
+<TitanChordpro
+  :songs="repertorio"
+  :load-song="buscarCifra"
+  prefetch-all
+/>
+```
 
 `{key:}` no `.cho` é o tom original. `{transpose:N}` hidrata o −/+ ao abrir
 (não soma com o overlay). `{capo:}` no arquivo é dica de arranjo — o capotraste
@@ -977,7 +987,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
 - [ ] Ancestral com altura (`100dvh` standalone, ou bloco `100dvh` no fluxo)
 - [ ] Rota palco / PWA: `<meta name="viewport" … viewport-fit=cover>`
-- [ ] PWA offline: service worker no host; cifras em `songs[].source` ou `loadSong` local; `persistAsset` no aparelho; `fillAudioCache` para o repertório. Modelo: demo deste repo
+- [ ] PWA offline: service worker no host; cifras em `songs[].source` ou `loadSong` local; `persistAsset` no aparelho; `fillAudioCache` para o repertório. Ensaio curto: `prefetch-all`. Modelo: demo deste repo
 - [ ] Header do host usa `env(safe-area-inset-top)`; **não** duplicar inset inferior no frame
 - [ ] Não sobrescrever `.titan-chordpro-swipe-rail` nem `.titan-chordpro-scroll { touch-action }`
 - [ ] Não sobrescrever `.titan-chordpro-root` / `.titan-chordpro-scroll`

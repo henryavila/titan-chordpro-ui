@@ -19,10 +19,19 @@ function songs(n: number, withSource = true): SetlistSong[] {
   }))
 }
 
-function setlistOf(list: SetlistSong[] | undefined, load?: (id: string) => Promise<string> | string) {
+function setlistOf(
+  list: SetlistSong[] | undefined,
+  load?: (id: string) => Promise<string> | string,
+  prefetchAll = false,
+) {
   const songsRef = ref(list)
   const loadRef = ref(load ? (id: string) => load(id) : undefined)
-  return useSetlist({ songs: computed(() => songsRef.value), loadSong: computed(() => loadRef.value) })
+  const prefetchAllRef = ref(prefetchAll)
+  return useSetlist({
+    songs: computed(() => songsRef.value),
+    loadSong: computed(() => loadRef.value),
+    prefetchAll: computed(() => prefetchAllRef.value),
+  })
 }
 
 const spot = (over: Partial<SongSpot> = {}): SongSpot => ({ offset: 0, capo: 0, mul: 1, top: 0, u: 0, ...over })
@@ -137,6 +146,22 @@ describe('a song that has to be fetched', () => {
     s.prefetch()
     await flushPromises()
     expect(s.neighborSources.value).toEqual(['cho-s0', 'cho-s1', 'cho-s2'])
+  })
+
+  it('prefetchAll asks loadSong for every song and exposes all sources', async () => {
+    const asked: string[] = []
+    const s = setlistOf(
+      songs(4, false),
+      (id) => {
+        asked.push(id)
+        return `cho-${id}`
+      },
+      true,
+    )
+    s.prefetch()
+    await flushPromises()
+    expect(asked.sort()).toEqual(['s0', 's1', 's2', 's3'])
+    expect([...s.cacheSources.value].sort()).toEqual(['cho-s0', 'cho-s1', 'cho-s2', 'cho-s3'])
   })
 
   it('asks for the current one and both neighbours, never twice', async () => {

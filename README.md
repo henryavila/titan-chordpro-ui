@@ -181,6 +181,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `songId` | título da cifra | Identidade da música, chave da versão pessoal |
 | `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
+| `prefetchAll` | `false` | `true` busca **todas** as cifras da lista (`loadSong` / `source`) e guarda o áudio de cada uma. Default: só a da tela e as duas vizinhas. Para ensaio curto, não hinário |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
 | `defaultAudioArt` | arte 512 do pacote | Capa quando a cifra não tem `{x_titan_audio_art:}`. `{ url, width, height }` — quadrado **1024 × 1024**. A arte da cifra vence |
@@ -245,7 +246,9 @@ continua sendo a cifra na tela — o comportamento de hoje, intacto.
 
 Quem já tem o ChordPro manda em `source` na própria entrada; o resto é pedido por
 `loadSong`, guardado, e a atual **mais as duas vizinhas** são buscadas na frente —
-trocar de música num ensaio não pode esperar rede. Uma que não chega vira painel
+trocar de música num ensaio não pode esperar rede. Com `prefetch-all`, o Titan pede
+**a lista inteira** e cacheia o áudio de cada cifra (ensaio curto; um hinário de
+cento e tantas músicas deixa o default). Uma que não chega vira painel
 *Não carregou*, com *Tentar de novo*; as outras seguem disponíveis.
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**

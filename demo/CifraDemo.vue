@@ -175,8 +175,8 @@ const listaMode = computed(() => {
 })
 const editMode = writeEditMode(lab)
 const actorKey = editMode === 'local' ? 'demo-musico' : undefined
-/** Only the lab `?ensaio=demanda` path asks for charts after open. */
-const lazyLista = computed(() => listaMode.value === 'demanda')
+/** `demanda` and `cache` ask for charts after open; juntas ships `source`. */
+const lazyLista = computed(() => listaMode.value === 'demanda' || listaMode.value === 'cache')
 const songs = computed(() => {
   const list = songsFor(fixtures.value, listaMode.value)
   if (!list || !lab.audio) return list
@@ -212,7 +212,7 @@ const boot = ref(needsCorpus || !!lab.cc)
  */
 const loadSong = (songId: string) =>
   new Promise<string>((resolve, reject) => {
-    const ms = 2200 + Math.floor(Math.random() * 1400)
+    const ms = listaMode.value === 'cache' ? 400 : 2200 + Math.floor(Math.random() * 1400)
     setTimeout(() => {
       if (songId === FAIL_ID) reject(new Error('rede'))
       else {
@@ -250,6 +250,7 @@ const chartBind = computed(() => ({
   version: listaMode.value === 'off' ? version.value : undefined,
   songs: songs.value,
   loadSong: lazyLista.value ? loadSong : undefined,
+  prefetchAll: listaMode.value === 'cache',
   fetchChart,
   fetchYoutubeDuration,
   readPdf,

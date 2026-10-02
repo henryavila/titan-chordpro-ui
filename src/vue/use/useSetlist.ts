@@ -40,6 +40,8 @@ export type SongSpot = {
 export type SetlistOpts = {
   songs: Ref<SetlistSong[] | undefined>
   loadSong: Ref<LoadSong | undefined>
+  /** Fetch and keep every chart, not only the one on screen and its neighbours. */
+  prefetchAll?: Ref<boolean | undefined>
 }
 
 /**
@@ -126,6 +128,21 @@ export function useSetlist(opts: SetlistOpts) {
     return out
   })
 
+  const allSources = computed(() => {
+    if (!on.value) return [] as string[]
+    const out: string[] = []
+    for (let j = 0; j < list.value.length; j++) {
+      const text = sourceAt(j)
+      if (typeof text === 'string' && text.trim()) out.push(text)
+    }
+    return out
+  })
+
+  /** Charts whose rehearsal audio should be filled into Cache Storage. */
+  const cacheSources = computed(() =>
+    opts.prefetchAll?.value ? allSources.value : neighborSources.value,
+  )
+
   const failing = computed(() => {
     const s = current.value
     return on.value && !!s && !!failed.value[s.id] && currentSource.value === null
@@ -169,9 +186,13 @@ export function useSetlist(opts: SetlistOpts) {
       .catch(() => fail(id))
   }
 
-  /** The one on screen and its neighbours: changing song cannot wait on a network. */
+  /** The one on screen and its neighbours — or the whole list when `prefetchAll`. */
   function prefetch() {
     if (!on.value) return
+    if (opts.prefetchAll?.value) {
+      for (let i = 0; i < list.value.length; i++) ensure(i)
+      return
+    }
     ensure(si.value)
     ensure(si.value + 1)
     ensure(si.value - 1)
@@ -277,7 +298,7 @@ export function useSetlist(opts: SetlistOpts) {
   }
 
   return {
-    list, on, si, current, currentSource, neighborSources, failing,
+    list, on, si, current, currentSource, neighborSources, allSources, cacheSources, failing,
     listOpen, query, endOffer,
     items, noHit, showSearch,
     posLabel, noPrev, noNext, nextTitle, prevTitle, nextChip, nextChipShort, headLabel, seenLabel,

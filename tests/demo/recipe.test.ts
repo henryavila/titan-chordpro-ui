@@ -16,7 +16,7 @@ import {
   writeEditMode,
   writeModes,
 } from '../../demo/host/recipe'
-import { defaultSongId, songsFor } from '../../demo/host/charts'
+import { CACHE_LIST_IDS, defaultSongId, songsFor } from '../../demo/host/charts'
 import Hub from '../../demo/Hub.vue'
 import CifraDemo from '../../demo/CifraDemo.vue'
 
@@ -79,6 +79,7 @@ describe('the catalog', () => {
       'standalone',
       'media-session',
       'standalone-apresentacao',
+      'standalone-cache',
       'shell',
       'shell-apresentacao',
     ])
@@ -106,6 +107,7 @@ describe('the catalog', () => {
     expect(extra).toContain('/standalone-lista.html?lens=letra')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
     expect(extra).toContain('/standalone-lista.html?audio=1')
+    expect(hrefs).toContain('/standalone-lista.html?ensaio=cache&audio=1')
     expect(extra).toContain('/standalone.html?editMode=none&lens=letra')
     expect(extra).toContain('/media.html')
     expect(extra).toContain('/media.html?capa=0')
@@ -211,6 +213,7 @@ describe('labQuery', () => {
       capa: true,
       cc: null,
     })
+    expect(labQuery('?ensaio=cache')).toMatchObject({ carga: 'cache' })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
     expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos', capa: true })
     expect(labQuery('?audio=1&capa=0')).toMatchObject({ audio: 'ambos', capa: false })
@@ -279,6 +282,18 @@ describe('songsFor', () => {
     expect(list?.some((s) => s.id === 'falha-de-rede' && s.title === 'Cifra que não chega')).toBe(
       true,
     )
+  })
+
+  it('cache list is a short ajax set without sources', () => {
+    const corpus = {
+      ...fixtures,
+      '100-nasce-em-mim': '{title: Nasce}\n',
+      '018-te-agradeco': '{title: Agradeço}\n',
+    }
+    const list = songsFor(corpus, 'cache')
+    expect(list?.map((s) => s.id)).toEqual([...CACHE_LIST_IDS])
+    expect(list?.every((s) => !s.source)).toBe(true)
+    expect(list?.some((s) => s.id === 'falha-de-rede')).toBe(false)
   })
 })
 
@@ -413,6 +428,7 @@ describe('CifraDemo', () => {
   it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
     const juntas = await mountReady({ surface: 'standalone', lista: true })
     expect(juntas.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBeUndefined()
+    expect(juntas.getComponent({ name: 'TitanChordpro' }).props('prefetchAll')).toBe(false)
 
     const prev = window.location.search
     window.history.replaceState({}, '', '?ensaio=demanda')
@@ -421,11 +437,29 @@ describe('CifraDemo', () => {
       expect(typeof demanda.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBe(
         'function',
       )
+      expect(demanda.getComponent({ name: 'TitanChordpro' }).props('prefetchAll')).toBe(false)
       demanda.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
     }
     juntas.unmount()
+  })
+
+  it('cache list asks for three charts and turns prefetchAll on', async () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?ensaio=cache&audio=1')
+    try {
+      const w = await mountReady({ surface: 'standalone', lista: true })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
+      expect(viewer.props('prefetchAll')).toBe(true)
+      expect(typeof viewer.props('loadSong')).toBe('function')
+      const songs = viewer.props('songs') as { id: string; source?: string }[]
+      expect(songs.map((s) => s.id)).toEqual([...CACHE_LIST_IDS])
+      expect(songs.every((s) => !s.source)).toBe(true)
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
   })
 
   it('wraps the viewer in host chrome only inside another site', () => {

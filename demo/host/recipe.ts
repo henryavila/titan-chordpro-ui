@@ -11,7 +11,7 @@ export function publicHref(href: string, base = import.meta.env.BASE_URL || '/')
 }
 
 export type Surface = 'standalone' | 'site'
-export type ListaMode = 'off' | 'juntas' | 'demanda'
+export type ListaMode = 'off' | 'juntas' | 'demanda' | 'cache'
 export type DemoGroupId = 'incorporar' | 'editar' | 'criar' | 'acento' | 'host'
 
 export type DemoPage = {
@@ -138,6 +138,19 @@ export const DEMOS: readonly DemoEntry[] = [
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
       { href: '/standalone-lista.html?audio=1', label: 'Áudio na lista' },
     ],
+  },
+  {
+    id: 'standalone-cache',
+    href: '/standalone-lista.html?ensaio=cache&audio=1',
+    group: 'incorporar',
+    kicker: 'Standalone',
+    title: 'Lista em cache',
+    blurb: 'Três músicas pedidas via loadSong. O Titan guarda cifras e áudios da lista inteira, para o ensaio continuar se a rede cair.',
+    call: `<TitanChordpro
+  :songs="repertorio"
+  :load-song="buscarCifra"
+  prefetch-all
+/>`,
   },
   {
     id: 'shell',
@@ -356,7 +369,7 @@ export type LabQuery = {
   song: string | null
   tema: 'claro' | 'escuro' | null
   quebrar: boolean
-  carga: 'juntas' | 'demanda'
+  carga: 'juntas' | 'demanda' | 'cache'
   /** Empty song + persisted mode: Importar / Começar em branco. */
   criar: boolean
   /** Preferred query: editMode=local|persisted|none */
@@ -405,7 +418,8 @@ export function labQuery(search: string): LabQuery {
     song: p.get('song'),
     tema: tema === 'claro' || tema === 'escuro' ? tema : null,
     quebrar: p.get('quebrar') === '1',
-    carga: p.get('ensaio') === 'demanda' ? 'demanda' : 'juntas',
+    carga:
+      p.get('ensaio') === 'demanda' ? 'demanda' : p.get('ensaio') === 'cache' ? 'cache' : 'juntas',
     criar: p.get('criar') === '1',
     editMode: parseEditMode(p.get('editMode') ?? p.get('edit-mode')),
     modes: parseModes(p.get('modes')),
