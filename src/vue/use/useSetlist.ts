@@ -9,6 +9,8 @@ export type SetlistSong = {
   key?: string
   /** `{tempo:}` when the host already knows it, even without the ChordPro. */
   tempo?: string | number
+  /** `{time:}` when the host already knows it, even without the ChordPro. */
+  time?: string
   /** The ChordPro itself, when the host already has it. */
   source?: string
 }
@@ -24,6 +26,18 @@ function bpmLabelOf(song: SetlistSong, cached?: string): string {
   const host = sheetBpm(song.tempo)
   if (host) return String(host)
   return bpmFromCho(song.source ?? cached)
+}
+
+/** `{time:4/4}` from a chart body — enough to label the list without a parse. */
+function timeFromCho(source: string | undefined): string {
+  const m = String(source ?? '').match(/\{\s*time\s*:\s*([^}]+)\}/i)
+  return String(m?.[1] ?? '').trim()
+}
+
+function timeLabelOf(song: SetlistSong, cached?: string): string {
+  const host = String(song.time ?? '').trim()
+  if (host) return host
+  return timeFromCho(song.source ?? cached)
 }
 
 export type LoadSong = (id: string, song: SetlistSong) => Promise<string> | string
@@ -90,6 +104,7 @@ export function useSetlist(opts: SetlistOpts) {
         subtitle: item.subtitle ? String(item.subtitle) : '',
         key: item.key ? String(item.key) : '',
         tempo: item.tempo,
+        time: item.time ? String(item.time).trim() : undefined,
         source: typeof item.source === 'string' && item.source.trim() ? item.source : undefined,
       })
     }
@@ -257,6 +272,7 @@ export function useSetlist(opts: SetlistOpts) {
         keyLabel: s.key ?? '',
         hasKey: !!s.key,
         bpmLabel: bpmLabelOf(s, cache.value[s.id]),
+        timeLabel: timeLabelOf(s, cache.value[s.id]),
         current: i === si.value,
         failed: !!failed.value[s.id] && !s.source && typeof cache.value[s.id] !== 'string',
         busy: !!busy.value[s.id],

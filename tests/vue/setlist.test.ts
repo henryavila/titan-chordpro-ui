@@ -102,6 +102,38 @@ describe('the list shows the tempo without a new column', () => {
   })
 })
 
+describe('the list shows the compass on the same chip as the ficha', () => {
+  it('reads {time:} off the chart the host already has', () => {
+    const s = setlistOf(songs(2))
+    expect(s.items.value[0]?.timeLabel).toBe('4/4')
+    expect(s.items.value[1]?.timeLabel).toBe('3/4')
+  })
+
+  it('uses the host time when the ChordPro is not on hand yet', () => {
+    const s = setlistOf([
+      { id: 'a', title: 'Uma', time: '6/8' },
+      { id: 'b', title: 'Outra', time: '2/4' },
+    ])
+    expect(s.items.value.map((x) => x.timeLabel)).toEqual(['6/8', '2/4'])
+  })
+
+  it('prefers the host time over a mark in the source', () => {
+    const s = setlistOf([
+      { id: 'a', title: 'Uma', time: '6/8', source: '{time:4/4}\n[C]oi' },
+      { id: 'b', title: 'Outra', source: CHART },
+    ])
+    expect(s.items.value[0]?.timeLabel).toBe('6/8')
+  })
+
+  it('says nothing when there is no {time:} — does not invent 4/4', () => {
+    const s = setlistOf([
+      { id: 'a', title: 'Uma', source: '{title: Uma}\n[C]oi' },
+      { id: 'b', title: 'Outra' },
+    ])
+    expect(s.items.value.every((x) => x.timeLabel === '')).toBe(true)
+  })
+})
+
 describe('changing song puts down where this one was left', () => {
   it('gives back tone, capo, speed and place when the reader returns', () => {
     const s = setlistOf(songs(3))
@@ -301,6 +333,16 @@ describe('the viewer in a rehearsal', () => {
     const bpm = w.get('[data-setlist-item] [data-setlist-bpm]')
     expect(bpm.text()).toBe('60')
     expect(bpm.attributes('title')).toBe('60 BPM')
+  })
+
+  it('prints the compass on the shared time chip, next to the BPM', async () => {
+    const w = viewer({ source: '', songs: songs(2) })
+    await flushPromises()
+    await w.get('[data-setlist-open]').trigger('click')
+    const time = w.get('[data-setlist-item] [data-setlist-time]')
+    expect(time.text()).toBe('4/4')
+    expect(time.classes()).toEqual(expect.arrayContaining(['titan-chordpro-chip', 'is-time', 'is-on']))
+    expect(time.element.tagName).toBe('DIV')
   })
 
   it('opens the list and changes song from it', async () => {

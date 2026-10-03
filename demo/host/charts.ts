@@ -75,6 +75,7 @@ function songEntry(
     title: meta.title || id,
     subtitle: meta.subtitle ?? '',
     key: meta.key ?? '',
+    time: meta.time || undefined,
     ...(withSource ? { source: fixtures[id] ?? '' } : {}),
   }
 }

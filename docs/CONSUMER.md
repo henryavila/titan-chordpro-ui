@@ -372,6 +372,8 @@ type Song = {
   title: string
   subtitle?: string
   key?: string
+  tempo?: string | number // {tempo:} na lista, mesmo sem o ChordPro
+  time?: string           // {time:} — 4/4, 6/8… — some se vazio
   source?: string // se já veio, toca offline
 }
 
@@ -385,7 +387,10 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 `loadSong`. A atual e as duas vizinhas são buscadas na frente. Com
 `prefetch-all`, o Titan pede **todas** as cifras da lista e guarda o áudio
 de cada uma no Cache Storage — para um ensaio curto (umas poucas músicas),
-não um hinário. Uma que não chega vira painel *Não carregou*.
+não um hinário. Uma que não chega vira painel *Não carregou*. `time` e
+`tempo` rotulam a lista mesmo sem o arquivo; se faltarem, o Titan lê
+`{time:}` e `{tempo:}` do ChordPro em cache. Sem `{time:}`, o chip de
+compasso não aparece.
 
 ```vue
 <TitanChordpro
