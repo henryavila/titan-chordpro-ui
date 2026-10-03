@@ -12,6 +12,7 @@ const item = (over: Partial<SetlistItem> = {}): SetlistItem => ({
   keyLabel: 'G',
   hasKey: true,
   bpmLabel: '80',
+  timeLabel: '4/4',
   current: false,
   failed: false,
   busy: false,

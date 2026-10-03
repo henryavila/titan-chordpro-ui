@@ -846,7 +846,7 @@ ovBind = ov
 const phoneSub = computed(
   () =>
     meta.value.subtitle ||
-    [meta.value.tempo ? `${meta.value.tempo} BPM` : '', meta.value.time || '', meta.value.duration || '']
+    [meta.value.tempo ? `${meta.value.tempo} BPM` : '', meta.value.duration || '']
       .filter(Boolean)
       .join(' · '),
 )

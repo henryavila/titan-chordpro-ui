@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproChip from '../ui/TitanChordproChip.vue'
 import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 import type { ViewHeadModel } from './view-head'
@@ -54,6 +55,16 @@ const emit = defineEmits<{
       </span>
     </div>
 
+    <TitanChordproChip
+      v-if="metaTime"
+      data-head-time
+      class="titan-chordpro-head-chip"
+      size="time"
+      static
+      :on="true"
+      :title="`Compasso ${metaTime}`"
+    >{{ metaTime }}</TitanChordproChip>
+
     <template v-if="variant === 'phone'">
       <button
         v-if="hasKey"
@@ -81,9 +92,8 @@ const emit = defineEmits<{
     </template>
 
     <template v-else>
-      <div v-if="metaTempo || metaTime || metaDuration" class="titan-chordpro-head-meta">
+      <div v-if="metaTempo || metaDuration" class="titan-chordpro-head-meta">
         <span v-if="metaTempo">{{ metaTempo }} BPM</span>
-        <span v-if="metaTime">{{ metaTime }}</span>
         <span v-if="metaDuration">{{ metaDuration }}</span>
       </div>
       <div v-if="hasKey" :ref="(el) => emit('bind-capo', el)" style="position:relative;flex:none;">
