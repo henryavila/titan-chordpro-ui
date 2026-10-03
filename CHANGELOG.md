@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Lista em cache pelo endereço antigo:** `/?ensaio=cache` abre as três músicas com o cache ligado. No GitHub Pages, Hinário Exemplo e Demos Titan no shell do site voltam ao hub do PWA.
+- **Fontes no guia:** Sora e Space Mono vêm no CSS do pacote. O host só troca os tokens se quiser outras famílias.
 - **Nova cifra e a tecla Esc:** Esc fecha a cifra nova antes dos outros painéis, na leitura e na edição.
 - **Véu dos painéis:** o fundo atrás de Tom, Mais, lista e os outros painéis usa um só véu.
 - **Rolar no telefone:** os controles da barra de baixo ficam com 44px. A palavra Rolar ou Parar some só quando a tela tem 320px.

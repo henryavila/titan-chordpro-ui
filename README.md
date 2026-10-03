@@ -674,10 +674,11 @@ aceita atualizando a prop. Retornar ao modo livre retoma a preferência anterior
 }
 ```
 
-Use uma classe no componente; carregue as fontes no host. Para herdar só a
-fonte dos controles, `font-family: inherit` na mesma classe é uma alternativa
-ao token explícito. Source/TAB mantêm monospace. Defaults: Sora para
-letra/controles e Space Mono para acordes, com fallback de sistema.
+Use uma classe no componente. As faces padrão (Sora e Space Mono) vêm no CSS
+do pacote. Para herdar só a fonte dos controles, `font-family: inherit` na
+mesma classe é uma alternativa ao token explícito. Source/TAB mantêm
+monospace. Defaults: Sora para letra/controles e Space Mono para acordes,
+com fallback de sistema.
 
 [Guia do consumer: composições, tema, fontes](docs/CONSUMER.md).
 [Testes de navegador](tests/browser/) (o [relatório de regressão de 2026-09](docs/SDA-VIEWER-VALIDATION.md) é histórico):

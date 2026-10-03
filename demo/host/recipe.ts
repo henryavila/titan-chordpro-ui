@@ -351,7 +351,7 @@ export function hubRedirect(search: string): string | null {
     ? false
     : ensaio === 'off'
       ? false
-      : ensaio === 'juntas' || ensaio === 'demanda' || (ficha && !ensaio)
+      : ensaio === 'juntas' || ensaio === 'demanda' || ensaio === 'cache' || (ficha && !ensaio)
   const page = ficha
     ? lista
       ? '/site-lista.html'

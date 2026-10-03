@@ -20,6 +20,11 @@ describe('demo PWA wiring', () => {
     )
     const boot = readFileSync(join(root, 'demo/boot-html.ts'), 'utf8')
     expect(boot).not.toContain('fonts.googleapis.com')
+    const consumer = readFileSync(join(root, 'docs/CONSUMER.md'), 'utf8')
+    const readme = readFileSync(join(root, 'README.md'), 'utf8')
+    expect(consumer).not.toContain('O pacote não baixa fontes')
+    expect(readme).not.toContain('carregue as fontes no host')
+    expect(consumer).toContain('vêm no CSS do pacote')
   })
 
   it('leaves a boot page without Google Fonts after expanding markers', () => {

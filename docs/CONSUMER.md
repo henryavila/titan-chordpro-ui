@@ -653,7 +653,7 @@ Lista: `/standalone-lista.html?lens=letra`.
 }
 ```
 
-O pacote não baixa fontes. O host carrega as faces. Defaults: Sora + Space Mono.
+Sora e Space Mono vêm no CSS do pacote (`vue/style.css`). Remapeie os tokens só se o host quiser outras famílias.
 
 ---
 

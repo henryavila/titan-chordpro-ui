@@ -166,6 +166,8 @@ describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
     ['?ficha=1&ensaio=demanda', '/site-lista.html?ensaio=demanda'],
     ['?ensaio=juntas', '/standalone-lista.html'],
     ['?ensaio=demanda', '/standalone-lista.html?ensaio=demanda'],
+    ['?ensaio=cache', '/standalone-lista.html?ensaio=cache'],
+    ['?ficha=1&ensaio=cache', '/site-lista.html?ensaio=cache'],
     ['?song=001-tudo-que-ha-de-bom-em-mim', '/standalone.html?song=001-tudo-que-ha-de-bom-em-mim'],
     ['?quebrar=1', '/standalone.html?quebrar=1'],
     ['?tema=claro', '/standalone.html?tema=claro'],
@@ -318,6 +320,7 @@ describe('hostTheme / palcoHref', () => {
     expect(publicHref('/standalone.html?audio=1', '/titan-chordpro-ui/')).toBe(
       '/titan-chordpro-ui/standalone.html?audio=1',
     )
+    expect(publicHref('/', '/titan-chordpro-ui/')).toBe('/titan-chordpro-ui/')
   })
 })
 
@@ -460,6 +463,19 @@ describe('CifraDemo', () => {
     } finally {
       window.history.replaceState({}, '', prev || '/')
     }
+  })
+
+  it('keeps site chrome hub links inside the Vite base', () => {
+    const src = readFileSync(join(root, 'demo/host/HostSite.vue'), 'utf8')
+    expect(src).toContain("publicHref('/')")
+    expect(src).not.toMatch(/href="\/"/)
+    const site = mount(CifraDemo, {
+      props: { surface: 'site', lista: false },
+      global: { stubs: stub },
+    })
+    expect(site.get('.host-brand').attributes('href')).toBe(publicHref('/'))
+    expect(site.get('.host-links a').attributes('href')).toBe(publicHref('/'))
+    site.unmount()
   })
 
   it('wraps the viewer in host chrome only inside another site', () => {
