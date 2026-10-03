@@ -1,3 +1,5 @@
+@import '../src/vue/fonts.css';
+
 /* Instant boot chrome — keep in sync with BootShell.vue. No JS. */
 .titan-chordpro-boot {
   box-sizing: border-box;

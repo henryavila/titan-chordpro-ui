@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Lista em cache pelo endereço antigo:** `/?ensaio=cache` abre as três músicas com o cache ligado. No GitHub Pages, Hinário Exemplo e Demos Titan no shell do site voltam ao hub do PWA.
+- **Fontes no guia:** Sora e Space Mono vêm no CSS do pacote. O host só troca os tokens se quiser outras famílias.
 - **Nova cifra e a tecla Esc:** Esc fecha a cifra nova antes dos outros painéis, na leitura e na edição.
 - **Véu dos painéis:** o fundo atrás de Tom, Mais, lista e os outros painéis usa um só véu.
 - **Rolar no telefone:** os controles da barra de baixo ficam com 44px. A palavra Rolar ou Parar some só quando a tela tem 320px.
@@ -19,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sugestões no telefone:** o atalho fica no botão Mais (número no canto). O cartão flutuante “Sugestões” continua no computador.
 
 ### Added
+- **Sem internet nos itens que pedem rede:** Sugerir alteração e Cifra Club ganham o selo Sem internet quando o aparelho está offline. O toque explica: a sugestão fica na Minha versão; no Cifra Club, use Arquivo ou Texto. Ler, transpor, Rolar e exportar continuam. O app pode passar `online` se souber melhor que o navegador.
+- **Cache da lista inteira:** em um ensaio curto, passe `prefetch-all` para o Titan buscar todas as cifras (`loadSong` ou `source`) e guardar o áudio de cada uma, não só a da tela e as duas vizinhas. A lista grande do demo continua no modo vizinho. No hub, **Lista em cache** abre três músicas pedidas uma a uma, com o cache ligado.
+- **Demo PWA, sem internet:** abra o demo uma vez com rede. Depois, no ícone da tela inicial, a cifra, a lista, o metrônomo e o áudio já visitado abrem sem internet. As letras Sora e Space Mono vêm no próprio aplicativo. Importar do Cifra Club e a duração do YouTube pedem rede. O app que embute o Titan instala o PWA no site dele; o pacote não registra service worker. Modelo: o demo deste repositório, também no GitHub Pages.
 - **Compasso na faixa e na lista:** o 4/4, 6/8 ou outro `{time:}` da cifra aparece no mesmo chip da ficha, ao lado do Tom na faixa do título e ao lado do andamento na lista do ensaio. Sem `{time:}` no arquivo, o chip não entra.
 - **Baixar o arquivo do solo:** em um trecho Guitar Pro/MusicXML, toque nos três pontos ao lado do nome e em **Baixar** para receber o arquivo original no aparelho. O download usa o nome do trecho na cifra, com a extensão do arquivo (por exemplo, `Solo de entrada.gp`).
 - **Opções do trecho num só lugar:** TAB, Partitura, ritmo, notas, zoom e o download ficam no menu dos três pontos, na linha do nome. Um toque no nome ou na seta continua abrindo ou recolhendo o trecho na hora. No celular o menu sobe como o de Mais da cifra; no computador a lista fica presa nos três pontos. TAB e Partitura usam o mesmo interruptor de Cifra e Letra, e cada escolha mostra o estado à direita, como as outras opções.

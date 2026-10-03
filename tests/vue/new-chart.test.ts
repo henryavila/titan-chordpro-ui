@@ -217,6 +217,18 @@ describe('bringing a chart in', () => {
     expect(w.text()).toMatch(/vieram preenchidos|Convertido do Cifra Club/i)
   })
 
+  it('marks Cifra Club and explains when the device is offline', async () => {
+    const fetchChart = vi.fn(() => Promise.resolve(PLAIN))
+    const w = dialog({ fetchChart, online: false })
+    expect(w.get('[data-offline-hint]').text()).toMatch(/sem internet/i)
+    await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/a/b/')
+    await w.get('[data-nova-url-go]').trigger('click')
+    await flushPromises()
+    expect(fetchChart).not.toHaveBeenCalled()
+    expect(w.text()).toContain('Sem internet')
+    expect(w.text()).toContain('Use Arquivo ou Texto')
+  })
+
   it('reports a fetch that failed rather than opening an empty editor', async () => {
     const w = dialog({ fetchChart: () => Promise.reject(new Error('rede')) })
     await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/a/b/')

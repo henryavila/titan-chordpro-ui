@@ -37,6 +37,7 @@ import {
   resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
+  rehearsalAudioUrls,
   defaultAudioKind,
   displaySongTitle,
   type AudioKind,
@@ -113,6 +114,8 @@ import { SWIPE_EDGE_PX, SWIPE_FADE_MS, swipeRailPx } from './use/song-swipe'
 import { useSurfaceGuard } from './use/useSurfaceGuard'
 import { useWakeLock } from './use/useWakeLock'
 import { useAudioRef } from './use/useAudioRef'
+import { fillAudioCache } from './use/audio-cache'
+import { useOnline } from './use/useOnline'
 import { useAutoScroll } from './use/useAutoScroll'
 import { useChromeLayout } from './use/useChromeLayout'
 import { useEditSession } from './use/useEditSession'
@@ -173,6 +176,8 @@ const props = withDefaults(
     songId: '',
     songs: undefined,
     loadSong: undefined,
+    prefetchAll: false,
+    online: undefined,
     fetchChart: undefined,
     fetchYoutubeDuration: undefined,
     readPdf: undefined,
@@ -752,6 +757,7 @@ const guard = useSurfaceGuard({
 const setlist = useSetlist({
   songs: computed(() => props.songs),
   loadSong: computed(() => props.loadSong),
+  prefetchAll: computed(() => props.prefetchAll === true),
 })
 setlistBind = setlist
 dismissEndNow = () => setlist.dismissEnd()
@@ -774,6 +780,17 @@ const hostSource = computed(() =>
 )
 hostSourceOf = () => hostSource.value
 
+watch(
+  () => (setlist.on.value ? setlist.cacheSources.value : [hostSource.value]),
+  (sources) => {
+    for (const src of sources) {
+      if (!src) continue
+      for (const url of rehearsalAudioUrls(src)) void fillAudioCache(url)
+    }
+  },
+  { immediate: true },
+)
+
 /** A song of the list still on its way: empty, but not "no chart loaded". */
 const songLoading = computed(
   () => setlist.on.value && setlist.currentSource.value === null && !setlist.failing.value,
@@ -784,6 +801,8 @@ const songLoading = computed(
  * nothing is selected, which is not the same as a song that lacks a chart.
  */
 const listEmpty = computed(() => Array.isArray(props.songs) && props.songs.length === 0)
+const isOnline = useOnline(computed(() => props.online))
+const suggestNeedsNet = computed(() => !!props.persistSuggestion && !isOnline.value)
 
 /** The offer sits above the dock, and the dock grows while the chart scrolls. */
 const offerBottom = computed(() =>
@@ -827,6 +846,7 @@ const ov = useOverlay({
     emit('save-content', text)
   },
   persistSuggestion: computed(() => props.persistSuggestion),
+  online: isOnline,
   loadScoreAsset: async (src) => {
     if (props.loadBundleAsset) return props.loadBundleAsset(src, 'score')
     const url = new URL(props.resolveScore?.(src) ?? src, document.baseURI)
@@ -2975,6 +2995,7 @@ defineExpose({
       :fetch-chart="props.fetchChart"
       :fetch-youtube-duration="props.fetchYoutubeDuration"
       :read-pdf="props.readPdf"
+      :online="isOnline"
       @close="novaOpen = false"
       @commit="commitNewChart"
     />
@@ -2986,6 +3007,7 @@ defineExpose({
       :allow-restart="isContentEdit"
       :fetch-chart="props.fetchChart"
       :fetch-youtube-duration="props.fetchYoutubeDuration"
+      :online="isOnline"
       @close="metaOpen = false"
       @apply="applyMeta"
       @restart="restartFromMeta"
@@ -3050,6 +3072,7 @@ defineExpose({
       :fix-tune-label="fixTuneLabel"
       :can-suggest="ov.canSuggest.value"
       :suggest-label="ov.suggestLabel.value"
+      :offline="suggestNeedsNet"
       :suggesting="ov.sending.value"
       :actor-name="ov.actorName.value"
       :name-error="ov.nameNeeded.value"

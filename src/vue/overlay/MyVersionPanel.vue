@@ -11,6 +11,8 @@ const props = defineProps<{
   fixTuneLabel: string
   canSuggest: boolean
   suggestLabel: string
+  /** persistSuggestion needs the network and the device is offline. */
+  offline?: boolean
   suggesting?: boolean
   actorName: string
   nameError?: boolean
@@ -125,9 +127,13 @@ function statusLabel(s: Suggestion): string {
         type="button"
         :disabled="suggesting"
         :aria-busy="suggesting ? 'true' : 'false'"
-        style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1px solid var(--chord-edge);border-radius:12px;background:var(--chord-soft);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+        :style="{ opacity: offline ? '0.78' : '1' }"
+        style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--chord-edge);border-radius:12px;background:var(--chord-soft);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
         @click="emit('suggest')"
-      >{{ suggestLabel }}</button>
+      >
+        <span>{{ suggestLabel }}</span>
+        <span v-if="offline" data-offline-hint style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em;">Sem internet</span>
+      </button>
 
       <div
         v-if="sentSuggestions?.length"

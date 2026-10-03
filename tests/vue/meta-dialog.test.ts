@@ -221,6 +221,23 @@ describe('edit chrome · dedicated metadata door', () => {
 })
 
 describe('MetaDialog · Completar com Cifra Club', () => {
+  it('marks Completar com Cifra Club when offline and does not fetch', async () => {
+    const fetchChart = vi.fn(async () => TU_ES)
+    const w = mount(MetaDialog, {
+      props: { compact: false, source: SDA, fetchChart, online: false },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    expect(w.get('[data-offline-hint]').text()).toMatch(/sem internet/i)
+    await w.get('[data-meta-enrich-url]').setValue(
+      'https://www.cifraclub.com.br/florianopolis-house-of-prayer/tu-es-aguas-purificadoras/',
+    )
+    await w.get('[data-meta-enrich-fetch]').trigger('click')
+    await flushPromises()
+    expect(fetchChart).not.toHaveBeenCalled()
+    expect(w.get('[data-meta-enrich-error]').text()).toMatch(/sem internet/i)
+  })
+
   it('says fetch is unavailable without fetchChart', () => {
     const w = dialog(SDA)
     expect(w.text()).toContain('Completar com Cifra Club')

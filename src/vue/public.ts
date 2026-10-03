@@ -173,6 +173,12 @@ export type TitanChordproProps = {
    * rehearsal never waits on the network.
    */
   loadSong?: LoadSong
+  /**
+   * Fetch every chart in `songs` (via `source` or `loadSong`) and fill their
+   * rehearsal audio into Cache Storage. Default is the song on screen plus
+   * both neighbours. For a short rehearsal, not a hymnal.
+   */
+  prefetchAll?: boolean
   /** Version of the official chart: a bump asks the reader what to keep. */
   version?: string
   /** Scores the host can serve, offered when a `{image:}` block is inserted. */
@@ -216,6 +222,11 @@ export type TitanChordproProps = {
    * Requires `capabilities.batidaPresets: true`.
    */
   strumPresets?: StrumPreset[]
+  /**
+   * Host view of connectivity. When omitted, Titan uses `navigator.onLine`.
+   * `false` marks Sugerir / Cifra Club and explains on tap; reading still works.
+   */
+  online?: boolean
   /**
    * Fetches the page behind a link, for "new chart · import". The browser
    * cannot reach another site from inside TitanChordpro, so this is the host's

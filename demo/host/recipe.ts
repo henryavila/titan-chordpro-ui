@@ -2,8 +2,16 @@ import type { Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
 import type { EditMode, ModesProp } from '@henryavila/titan-chordpro-ui/vue'
 import { resolveEditMode } from '@henryavila/titan-chordpro-ui/vue'
 
+/** Prefix a root-absolute demo path with Vite `base` (GitHub Pages is not `/`). */
+export function publicHref(href: string, base = import.meta.env.BASE_URL || '/'): string {
+  if (!href.startsWith('/')) return href
+  if (base === '/' || base === '') return href
+  const prefix = base.endsWith('/') ? base.slice(0, -1) : base
+  return `${prefix}${href}`
+}
+
 export type Surface = 'standalone' | 'site'
-export type ListaMode = 'off' | 'juntas' | 'demanda'
+export type ListaMode = 'off' | 'juntas' | 'demanda' | 'cache'
 export type DemoGroupId = 'incorporar' | 'editar' | 'criar' | 'acento' | 'host'
 
 export type DemoPage = {
@@ -130,6 +138,19 @@ export const DEMOS: readonly DemoEntry[] = [
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
       { href: '/standalone-lista.html?audio=1', label: 'Áudio na lista' },
     ],
+  },
+  {
+    id: 'standalone-cache',
+    href: '/standalone-lista.html?ensaio=cache&audio=1',
+    group: 'incorporar',
+    kicker: 'Standalone',
+    title: 'Lista em cache',
+    blurb: 'Três músicas pedidas via loadSong. O Titan guarda cifras e áudios da lista inteira, para o ensaio continuar se a rede cair.',
+    call: `<TitanChordpro
+  :songs="repertorio"
+  :load-song="buscarCifra"
+  prefetch-all
+/>`,
   },
   {
     id: 'shell',
@@ -330,7 +351,7 @@ export function hubRedirect(search: string): string | null {
     ? false
     : ensaio === 'off'
       ? false
-      : ensaio === 'juntas' || ensaio === 'demanda' || (ficha && !ensaio)
+      : ensaio === 'juntas' || ensaio === 'demanda' || ensaio === 'cache' || (ficha && !ensaio)
   const page = ficha
     ? lista
       ? '/site-lista.html'
@@ -341,14 +362,14 @@ export function hubRedirect(search: string): string | null {
   p.delete('ficha')
   if (ensaio === 'off' || ensaio === 'juntas') p.delete('ensaio')
   const q = p.toString()
-  return q ? `${page}?${q}` : page
+  return publicHref(q ? `${page}?${q}` : page)
 }
 
 export type LabQuery = {
   song: string | null
   tema: 'claro' | 'escuro' | null
   quebrar: boolean
-  carga: 'juntas' | 'demanda'
+  carga: 'juntas' | 'demanda' | 'cache'
   /** Empty song + persisted mode: Importar / Começar em branco. */
   criar: boolean
   /** Preferred query: editMode=local|persisted|none */
@@ -397,7 +418,8 @@ export function labQuery(search: string): LabQuery {
     song: p.get('song'),
     tema: tema === 'claro' || tema === 'escuro' ? tema : null,
     quebrar: p.get('quebrar') === '1',
-    carga: p.get('ensaio') === 'demanda' ? 'demanda' : 'juntas',
+    carga:
+      p.get('ensaio') === 'demanda' ? 'demanda' : p.get('ensaio') === 'cache' ? 'cache' : 'juntas',
     criar: p.get('criar') === '1',
     editMode: parseEditMode(p.get('editMode') ?? p.get('edit-mode')),
     modes: parseModes(p.get('modes')),
@@ -441,5 +463,5 @@ export function palcoHref(lista: boolean, search: string): string {
   const p = new URLSearchParams(search)
   p.delete('ficha')
   const q = p.toString()
-  return q ? `${page}?${q}` : page
+  return publicHref(q ? `${page}?${q}` : page)
 }

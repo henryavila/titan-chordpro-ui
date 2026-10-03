@@ -12,10 +12,11 @@ import {
   hostTheme,
   labQuery,
   palcoHref,
+  publicHref,
   writeEditMode,
   writeModes,
 } from '../../demo/host/recipe'
-import { defaultSongId, songsFor } from '../../demo/host/charts'
+import { CACHE_LIST_IDS, defaultSongId, songsFor } from '../../demo/host/charts'
 import Hub from '../../demo/Hub.vue'
 import CifraDemo from '../../demo/CifraDemo.vue'
 
@@ -63,7 +64,8 @@ describe('the four HTML mounts', () => {
       expect(html, name).toContain('data-boot-shell')
       expect(html, name).toContain('boot-shell.css')
       expect(html, name).toMatch(/Preparando/)
-      expect(html, name).toContain('media="print"')
+      expect(html, name).not.toContain('fonts.googleapis.com')
+      expect(html, name).not.toContain('titan-demo-fonts')
     }
   })
 })
@@ -77,6 +79,7 @@ describe('the catalog', () => {
       'standalone',
       'media-session',
       'standalone-apresentacao',
+      'standalone-cache',
       'shell',
       'shell-apresentacao',
     ])
@@ -104,6 +107,7 @@ describe('the catalog', () => {
     expect(extra).toContain('/standalone-lista.html?lens=letra')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
     expect(extra).toContain('/standalone-lista.html?audio=1')
+    expect(hrefs).toContain('/standalone-lista.html?ensaio=cache&audio=1')
     expect(extra).toContain('/standalone.html?editMode=none&lens=letra')
     expect(extra).toContain('/media.html')
     expect(extra).toContain('/media.html?capa=0')
@@ -162,6 +166,8 @@ describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
     ['?ficha=1&ensaio=demanda', '/site-lista.html?ensaio=demanda'],
     ['?ensaio=juntas', '/standalone-lista.html'],
     ['?ensaio=demanda', '/standalone-lista.html?ensaio=demanda'],
+    ['?ensaio=cache', '/standalone-lista.html?ensaio=cache'],
+    ['?ficha=1&ensaio=cache', '/site-lista.html?ensaio=cache'],
     ['?song=001-tudo-que-ha-de-bom-em-mim', '/standalone.html?song=001-tudo-que-ha-de-bom-em-mim'],
     ['?quebrar=1', '/standalone.html?quebrar=1'],
     ['?tema=claro', '/standalone.html?tema=claro'],
@@ -209,6 +215,7 @@ describe('labQuery', () => {
       capa: true,
       cc: null,
     })
+    expect(labQuery('?ensaio=cache')).toMatchObject({ carga: 'cache' })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
     expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos', capa: true })
     expect(labQuery('?audio=1&capa=0')).toMatchObject({ audio: 'ambos', capa: false })
@@ -278,6 +285,18 @@ describe('songsFor', () => {
       true,
     )
   })
+
+  it('cache list is a short ajax set without sources', () => {
+    const corpus = {
+      ...fixtures,
+      '100-nasce-em-mim': '{title: Nasce}\n',
+      '018-te-agradeco': '{title: Agradeço}\n',
+    }
+    const list = songsFor(corpus, 'cache')
+    expect(list?.map((s) => s.id)).toEqual([...CACHE_LIST_IDS])
+    expect(list?.every((s) => !s.source)).toBe(true)
+    expect(list?.some((s) => s.id === 'falha-de-rede')).toBe(false)
+  })
 })
 
 describe('hostTheme / palcoHref', () => {
@@ -292,6 +311,17 @@ describe('hostTheme / palcoHref', () => {
     expect(palcoHref(false, '?song=a&tema=claro')).toBe('/standalone.html?song=a&tema=claro')
     expect(palcoHref(true, '?ensaio=demanda')).toBe('/standalone-lista.html?ensaio=demanda')
   })
+
+  it('prefixes GitHub Pages base on root-absolute demo paths', () => {
+    expect(publicHref('/standalone.html')).toBe('/standalone.html')
+    expect(publicHref('/standalone.html', '/titan-chordpro-ui/')).toBe(
+      '/titan-chordpro-ui/standalone.html',
+    )
+    expect(publicHref('/standalone.html?audio=1', '/titan-chordpro-ui/')).toBe(
+      '/titan-chordpro-ui/standalone.html?audio=1',
+    )
+    expect(publicHref('/', '/titan-chordpro-ui/')).toBe('/titan-chordpro-ui/')
+  })
 })
 
 describe('Hub', () => {
@@ -305,7 +335,8 @@ describe('Hub', () => {
     expect(w.text()).not.toMatch(/\bPalco\b/)
     expect(w.text()).not.toMatch(/\bFicha\b/)
     expect(w.text()).not.toMatch(/\bEnsaio\b/)
-    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/Sem persistência/i)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/PWA/i)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/sem rede/i)
     for (const demo of DEMOS) {
       expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('TitanChordpro')
     }
@@ -400,6 +431,7 @@ describe('CifraDemo', () => {
   it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
     const juntas = await mountReady({ surface: 'standalone', lista: true })
     expect(juntas.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBeUndefined()
+    expect(juntas.getComponent({ name: 'TitanChordpro' }).props('prefetchAll')).toBe(false)
 
     const prev = window.location.search
     window.history.replaceState({}, '', '?ensaio=demanda')
@@ -408,11 +440,42 @@ describe('CifraDemo', () => {
       expect(typeof demanda.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBe(
         'function',
       )
+      expect(demanda.getComponent({ name: 'TitanChordpro' }).props('prefetchAll')).toBe(false)
       demanda.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
     }
     juntas.unmount()
+  })
+
+  it('cache list asks for three charts and turns prefetchAll on', async () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?ensaio=cache&audio=1')
+    try {
+      const w = await mountReady({ surface: 'standalone', lista: true })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
+      expect(viewer.props('prefetchAll')).toBe(true)
+      expect(typeof viewer.props('loadSong')).toBe('function')
+      const songs = viewer.props('songs') as { id: string; source?: string }[]
+      expect(songs.map((s) => s.id)).toEqual([...CACHE_LIST_IDS])
+      expect(songs.every((s) => !s.source)).toBe(true)
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+  })
+
+  it('keeps site chrome hub links inside the Vite base', () => {
+    const src = readFileSync(join(root, 'demo/host/HostSite.vue'), 'utf8')
+    expect(src).toContain("publicHref('/')")
+    expect(src).not.toMatch(/href="\/"/)
+    const site = mount(CifraDemo, {
+      props: { surface: 'site', lista: false },
+      global: { stubs: stub },
+    })
+    expect(site.get('.host-brand').attributes('href')).toBe(publicHref('/'))
+    expect(site.get('.host-links a').attributes('href')).toBe(publicHref('/'))
+    site.unmount()
   })
 
   it('wraps the viewer in host chrome only inside another site', () => {

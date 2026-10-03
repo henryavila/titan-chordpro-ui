@@ -13,6 +13,13 @@ const assetUrls = import.meta.glob('../../fixtures/assets/*.png', {
 
 export const FAIL_ID = 'falha-de-rede'
 
+/** Short rehearsal for `prefetchAll` — not the 148-chart corpus. */
+export const CACHE_LIST_IDS = [
+  '100-nasce-em-mim',
+  '001-tudo-que-ha-de-bom-em-mim',
+  '018-te-agradeco',
+] as const
+
 /** First chart in the production corpus — what a cold demo opens on. */
 export const DEFAULT_SONG_ID = '001-tudo-que-ha-de-bom-em-mim'
 
@@ -57,23 +64,34 @@ export function mergeCatalog(
   return { ...fixtures, ...extra }
 }
 
+function songEntry(
+  fixtures: Record<string, string>,
+  id: string,
+  withSource: boolean,
+): DemoSong {
+  const meta = readMeta(fixtures[id] ?? '')
+  return {
+    id,
+    title: meta.title || id,
+    subtitle: meta.subtitle ?? '',
+    key: meta.key ?? '',
+    time: meta.time || undefined,
+    ...(withSource ? { source: fixtures[id] ?? '' } : {}),
+  }
+}
+
 export function songsFor(
   fixtures: Record<string, string>,
   mode: ListaMode,
 ): DemoSong[] | undefined {
   if (mode === 'off') return undefined
+  if (mode === 'cache') {
+    return CACHE_LIST_IDS.filter((id) => id in fixtures).map((id) =>
+      songEntry(fixtures, id, false),
+    )
+  }
   const ids = Object.keys(fixtures).filter((k) => k !== 'vazio')
-  const list: DemoSong[] = ids.map((k) => {
-    const meta = readMeta(fixtures[k] ?? '')
-    return {
-      id: k,
-      title: meta.title || k,
-      subtitle: meta.subtitle ?? '',
-      key: meta.key ?? '',
-      time: meta.time || undefined,
-      ...(mode === 'juntas' ? { source: fixtures[k] ?? '' } : {}),
-    }
-  })
+  const list: DemoSong[] = ids.map((k) => songEntry(fixtures, k, mode === 'juntas'))
   if (mode === 'demanda') {
     list.splice(2, 0, { id: FAIL_ID, title: 'Cifra que não chega', subtitle: '', key: 'A' })
   }

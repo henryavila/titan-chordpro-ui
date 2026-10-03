@@ -6,7 +6,7 @@ import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproChartIdentityFields from '../ui/TitanChordproChartIdentityFields.vue'
 import {
   convert, detect, durationFromYoutubeHtml, hostOk, missingOf, MISSING_LABEL,
-  normalizeDurationMmSs, readMeta, rewriteToKey, titleFromUrl, writeMeta,
+  normalizeDurationMmSs, OFFLINE_CIFRACLUB_HINT, OFFLINE_LABEL, readMeta, rewriteToKey, titleFromUrl, writeMeta,
   type ChartMeta, type KeyRewriteOffer, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
 import type { TitanChordproIconName } from '../icon/paths'
@@ -31,6 +31,8 @@ const props = withDefaults(
      * Used after Cifra Club import when `{x_titan_youtube:}` is present.
      */
     fetchYoutubeDuration?: (videoId: string) => Promise<string>
+    /** When false, Cifra Club is marked and fetch is refused. */
+    online?: boolean
     /** Reads a PDF that has text. Without it, PDFs are refused up front. */
     readPdf?: (file: File) => Promise<string>
     /**
@@ -41,7 +43,7 @@ const props = withDefaults(
     initialSource?: string
     initialNote?: string
   }>(),
-  { start: 'import', initialSource: '', initialNote: '' },
+  { start: 'import', initialSource: '', initialNote: '', online: true },
 )
 const emit = defineEmits<{ close: []; commit: [source: string] }>()
 
@@ -100,8 +102,14 @@ const missingList = computed(() => {
   const w = softMissing.value.map((k) => MISSING_LABEL[k] ?? k)
   return w.length > 1 ? `${w.slice(0, -1).join(', ')} e ${w[w.length - 1]}` : (w[0] ?? '')
 })
-const others = computed(() => ORIGINS.filter((o) => o.id !== tab.value))
+const others = computed(() => origins.value.filter((o) => o.id !== tab.value))
 const canFetch = computed(() => !!props.fetchChart)
+const netOk = computed(() => props.online !== false)
+const origins = computed(() =>
+  ORIGINS.map((o) =>
+    o.id === 'url' && !netOk.value ? { ...o, hint: OFFLINE_LABEL } : o,
+  ),
+)
 const urlGuess = computed(() => {
   const u = url.value.trim()
   if (!hostOk(u)) return null
@@ -123,7 +131,9 @@ const headline = computed(() => {
 })
 const lede = computed(() => {
   if (tab.value === 'url')
-    return 'Cole o link da página. O Titan monta a cifra e pede o que o site não traz.'
+    return netOk.value
+      ? 'Cole o link da página. O Titan monta a cifra e pede o que o site não traz.'
+      : 'Sem internet. Use Arquivo ou Texto.'
   if (tab.value === 'file') return 'ChordPro, OnSong ou acordes sobre a letra. Arraste ou toque para escolher.'
   return 'Cole ChordPro, OnSong ou a cifra com acordes sobre a letra.'
 })
@@ -191,6 +201,7 @@ async function runUrl() {
       'Só o Cifra Club',
       'Cole um endereço de cifraclub.com.br. Arquivo ou Texto aceitam cifra de outro lugar.',
     )
+  if (!netOk.value) return fail(OFFLINE_LABEL, OFFLINE_CIFRACLUB_HINT)
   if (!props.fetchChart)
     return fail('Buscar no Cifra Club não está disponível', 'A página precisa ser buscada pelo servidor do site. Use Arquivo ou Texto.')
   busy.value = true
@@ -228,6 +239,10 @@ function onUrlPaste(e: ClipboardEvent) {
   e.preventDefault()
   url.value = t
   err.value = ''
+  if (!netOk.value) {
+    fail(OFFLINE_LABEL, OFFLINE_CIFRACLUB_HINT)
+    return
+  }
   if (props.fetchChart) void runUrl()
 }
 
@@ -380,6 +395,11 @@ onMounted(() => {
             {{ urlGuess.title }}<span v-if="urlGuess.subtitle" style="font-weight:500;color:var(--muted);"> · {{ urlGuess.subtitle }}</span>
           </span>
           <span v-else style="font-size:11.5px;line-height:1.45;color:var(--muted);">Só Cifra Club — cole o endereço da página da cifra.</span>
+          <span
+            v-if="canFetch && !netOk"
+            data-offline-hint
+            style="font-size:12px;font-weight:700;color:var(--muted);"
+          >Sem internet</span>
           <div
             v-if="!canFetch"
             role="status"

@@ -328,6 +328,23 @@ do dock do Titan é zero e Rolar/Mais caem na zona morta do indicador de
 início. Header do host usa `env(safe-area-inset-top)`. `apple-mobile-web-app-capable`
 e `display: standalone` no manifest são do host; o pacote não instala PWA.
 
+**Offline.** O Titan lê, transpõe, rola e toca o metrônomo sem rede, desde que
+o ChordPro já esteja no `source` (ou no cache da lista). Fontes Sora e Space
+Mono vêm no CSS do pacote. O áudio de referência entra no Cache Storage ao
+montar a cifra e nas duas vizinhas da lista, quando o ChordPro delas já chegou.
+O host pré-carrega o repertório com `fillAudioCache` / `matchAudio` /
+`putAudio` de `@henryavila/titan-chordpro-ui/vue`.
+
+Reabrir a página sem internet é do **host**: service worker + precache da
+casca (HTML/JS/CSS/fontes) + cifras em `songs[].source` ou `loadSong` que lê
+IndexedDB primeiro + `persistAsset` local para GPX/imagem/áudio. O pacote não
+registra service worker. Modelo: o demo deste repositório (PWA no GitHub
+Pages). Cifra Club, duração do YouTube e o POST de sugestão pedem rede. Sem
+internet o Titan marca esses itens (selo **Sem internet**) e, no toque,
+explica: a sugestão fica na Minha versão; no Cifra Club, Arquivo ou Texto.
+A leitura, o transpor, o Rolar e o exportar continuam. Passe `online` se o
+host souber a conexão melhor que `navigator.onLine`.
+
 **Tela ligada.** Enquanto o `<TitanChordpro>` está montado, o pacote pede
 `navigator.wakeLock` (`screen`) para o aparelho não apagar no ensaio. Sem
 botão, sem PWA, sem prop do host. Precisa de HTTPS e da página visível; ao
@@ -367,10 +384,21 @@ async function buscarCifra(id: string): Promise<string> {
 ```
 
 Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
-`loadSong`. A atual e as duas vizinhas são buscadas na frente. Uma que não
-chega vira painel *Não carregou*. `time` e `tempo` rotulam a lista mesmo
-sem o arquivo; se faltarem, o Titan lê `{time:}` e `{tempo:}` do ChordPro
-em cache. Sem `{time:}`, o chip de compasso não aparece.
+`loadSong`. A atual e as duas vizinhas são buscadas na frente. Com
+`prefetch-all`, o Titan pede **todas** as cifras da lista e guarda o áudio
+de cada uma no Cache Storage — para um ensaio curto (umas poucas músicas),
+não um hinário. Uma que não chega vira painel *Não carregou*. `time` e
+`tempo` rotulam a lista mesmo sem o arquivo; se faltarem, o Titan lê
+`{time:}` e `{tempo:}` do ChordPro em cache. Sem `{time:}`, o chip de
+compasso não aparece.
+
+```vue
+<TitanChordpro
+  :songs="repertorio"
+  :load-song="buscarCifra"
+  prefetch-all
+/>
+```
 
 `{key:}` no `.cho` é o tom original. `{transpose:N}` hidrata o −/+ ao abrir
 (não soma com o overlay). `{capo:}` no arquivo é dica de arranjo — o capotraste
@@ -630,7 +658,7 @@ Lista: `/standalone-lista.html?lens=letra`.
 }
 ```
 
-O pacote não baixa fontes. O host carrega as faces. Defaults: Sora + Space Mono.
+Sora e Space Mono vêm no CSS do pacote (`vue/style.css`). Remapeie os tokens só se o host quiser outras famílias.
 
 ---
 
@@ -967,6 +995,7 @@ real, copie o array que a API mandou (`time_signature` renomeado para
 - [ ] `ClientOnly` (Nuxt) / montar só no cliente
 - [ ] Ancestral com altura (`100dvh` standalone, ou bloco `100dvh` no fluxo)
 - [ ] Rota palco / PWA: `<meta name="viewport" … viewport-fit=cover>`
+- [ ] PWA offline: service worker no host; cifras em `songs[].source` ou `loadSong` local; `persistAsset` no aparelho; `fillAudioCache` para o repertório. Ensaio curto: `prefetch-all`. Modelo: demo deste repo
 - [ ] Header do host usa `env(safe-area-inset-top)`; **não** duplicar inset inferior no frame
 - [ ] Não sobrescrever `.titan-chordpro-swipe-rail` nem `.titan-chordpro-scroll { touch-action }`
 - [ ] Não sobrescrever `.titan-chordpro-root` / `.titan-chordpro-scroll`

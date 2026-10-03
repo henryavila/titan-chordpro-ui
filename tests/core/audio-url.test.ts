@@ -7,6 +7,7 @@ import {
   audioKindsOf,
   audioTracksOf,
   audioUrlOf,
+  rehearsalAudioUrls,
   defaultAudioKind,
   displaySongTitle,
   formatAudioClock,
@@ -74,6 +75,11 @@ describe('setAudioUrl / audioUrlOf', () => {
       playback: 'https://cdn.sda/pb.m4a?h=2',
     })
     expect(audioKindsOf(audioTracksOf(both))).toEqual(['sung', 'playback'])
+    expect(rehearsalAudioUrls(both)).toEqual([
+      'https://cdn.sda/voz.m4a?h=1',
+      'https://cdn.sda/pb.m4a?h=2',
+    ])
+    expect(rehearsalAudioUrls(cho)).toEqual([])
     const onlyPb = setAudioUrl(both, null, 'sung')
     expect(audioTracksOf(onlyPb)).toEqual({
       sung: null,

@@ -17,3 +17,4 @@ export type {
   WriteMode,
 } from './public'
 export { resolveEditMode } from './public'
+export { fillAudioCache, matchAudio, putAudio } from './use/audio-cache'

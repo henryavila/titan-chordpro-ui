@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { publicHref } from './recipe'
+
 defineProps<{
   title: string
   subtitle: string
@@ -15,9 +17,9 @@ defineProps<{
   -->
   <div class="host" data-host-site>
     <header class="host-nav">
-      <a class="host-brand" href="/">Hinário Exemplo</a>
+      <a class="host-brand" :href="publicHref('/')">Hinário Exemplo</a>
       <nav class="host-links">
-        <a href="/">Demos Titan</a>
+        <a :href="publicHref('/')">Demos Titan</a>
         <span>Repertório</span>
         <span>Escalas</span>
       </nav>
