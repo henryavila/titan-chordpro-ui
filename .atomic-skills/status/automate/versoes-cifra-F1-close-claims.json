@@ -1,0 +1,53 @@
+{
+  "planSlug": "versoes-cifra",
+  "phaseId": "F1",
+  "finishedAt": "2026-09-25T21:16:00Z",
+  "tasks": [
+    {
+      "taskId": "T-001",
+      "status": "claimed-pass",
+      "commitShas": [
+        "9626ef6be36c6ea8b84abc9d666a1f1242c595d2",
+        "2920f3cbcba6a5edd001edb7aadaf300a8464287",
+        "48d2d9c845b56289cb4e8b29e6f61dde4364305d",
+        "2ba17201f2d9e09b8ed2235363530d7324e3dc13"
+      ],
+      "paths": [
+        "src/core/storage.ts",
+        "src/vue/use/useOverlay.ts",
+        "tests/core/overlay.test.ts",
+        "tests/vue/storage-seam.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/core/overlay.test.ts tests/vue/storage-seam.test.ts",
+      "exitCode": 0,
+      "transcript": "Test Files  2 passed (2)\n      Tests  40 passed (40)\n   Start at  18:16:16\n   Duration  1.88s"
+    },
+    {
+      "taskId": "T-002",
+      "status": "claimed-pass",
+      "commitShas": [
+        "18392db9da20d06f1787ebe8f307c9a497341250",
+        "909e54ed4a372001ce4ab8a6fa678c0cbea31542",
+        "2e08d4faba0d24a5236321ab1637d88ccbb4a9b5",
+        "d39ca7875855eacda580a9751e61eccd9e93f233",
+        "49846f8d5173faa9fc2f7d8ab54fcb6d4d02fb14",
+        "db715237d9db073c30b1f97f29d8f474966c3945",
+        "8182e1895e25e77dbb7d78a3a5f95da0bb266790",
+        "aed88b5344ee17237b4664ebfce32e571f1c5d1d",
+        "12a05903f7119c3ede82be69e6921adab453aeb9"
+      ],
+      "paths": [
+        "src/core/overlay.ts",
+        "src/core/source-session.ts",
+        "src/vue/public.ts",
+        "src/vue/use/useOverlay.ts",
+        "src/vue/ChordproViewer.vue",
+        "tests/vue/overlay-ui.test.ts",
+        "tests/core/overlay.test.ts"
+      ],
+      "verifierCommand": "pnpm exec vitest run tests/vue/overlay-ui.test.ts",
+      "exitCode": 0,
+      "transcript": "Test Files  3 passed (3)\n      Tests  92 passed (92)\n   Start at  18:16:18\n   Duration  4.44s"
+    }
+  ]
+}

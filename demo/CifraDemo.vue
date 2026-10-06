@@ -26,6 +26,7 @@ import {
   mergeCatalog,
   seedFixtures,
   songsFor,
+  versionPair,
 } from './host/charts'
 import { loadScoreImage, loadScoreImages, persistScoreImage } from './host/image-store'
 import {
@@ -179,8 +180,9 @@ const actorKey = editMode === 'local' ? 'demo-musico' : undefined
 const lazyLista = computed(() => listaMode.value === 'demanda' || listaMode.value === 'cache')
 const songs = computed(() => {
   const list = songsFor(fixtures.value, listaMode.value)
-  if (!list || !lab.audio) return list
-  return list.map((s, i) => ({
+  const scoped = list && lab.par ? versionPair(list) : list
+  if (!scoped || !lab.audio) return scoped
+  return scoped.map((s, i) => ({
     ...s,
     source: s.source ? withAudio(s.source, i) : s.source,
   }))

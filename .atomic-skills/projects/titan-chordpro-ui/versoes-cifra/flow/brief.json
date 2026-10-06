@@ -1,0 +1,45 @@
+{
+  "actor": "Músico",
+  "scenario": "Trocar cifras nomeadas da mesma música no mesmo arquivo, sem sair do item da setlist; gravar o arquivo inteiro.",
+  "decisions": [
+    {
+      "id": "arquivoNomeado",
+      "question": "O arquivo tem cifras nomeadas?",
+      "outcomes": ["Só a implícita", "Tem nomeadas"]
+    },
+    {
+      "id": "trocaCifra",
+      "question": "Troca de cifra nesta música?",
+      "outcomes": ["Troca cifra", "Fica nesta cifra"]
+    },
+    {
+      "id": "trocaMusica",
+      "question": "Troca de música na setlist?",
+      "outcomes": ["Troca música", "Fica nesta música"]
+    },
+    {
+      "id": "ensaioOuEdit",
+      "question": "Ensaio ou edit?",
+      "outcomes": ["Ensaio", "Edit"]
+    },
+    {
+      "id": "levaArquivoOuCifra",
+      "question": "Leva o arquivo ou só esta cifra?",
+      "outcomes": ["Arquivo inteiro", "Só esta cifra"]
+    }
+  ],
+  "stateChanges": [
+    {
+      "id": "envelope",
+      "states": ["sem_bloco", "com_blocos"]
+    },
+    {
+      "id": "cifraAtiva",
+      "states": ["implicita_default", "nomeada"]
+    },
+    {
+      "id": "overlay",
+      "states": ["legado_song", "por_cifra"]
+    }
+  ]
+}

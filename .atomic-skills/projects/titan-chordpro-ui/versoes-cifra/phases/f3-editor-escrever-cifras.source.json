@@ -1,0 +1,83 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F3",
+  "slug": "versoes-cifra-f3-editor-escrever-cifras",
+  "title": "Editor: escrever cifras",
+  "goal": "Edit session works on the chart document; save-content and update:source emit the full file; add/rename/delete/default exist; deleting the last named chart writes a one-chart file with no envelope; UI writer is gated on F0-G1.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Session edits the chart document",
+      "scopeBoundary": [
+        "Do not add collab; do not open the whole-file source pane as the default edit target; do not change OnSong convert-on-edit."
+      ],
+      "acceptance": [
+        "in edit mode the working source of the session is the active chart document; committing a lyric change calls replaceChart and emits the full file on update:source; sibling chart body is unchanged in that emit"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-editor.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/source-session.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/chart-editor.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Add rename delete default",
+      "scopeBoundary": [
+        "Do not invent a second song title; do not allow deleting the last remaining chart (collapse to implicit default instead); do not write into fixtures/sda."
+      ],
+      "acceptance": [
+        "addChart duplicates the active chart document with a new chartId and label; renameChart changes x_chart_label only (chartId and overlay key stay); deleteChart of one of two remaining writes a one-chart file with no start_of_x_chart; setDefaultChart writes x_chart_default"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-editor.test.ts tests/core/charts-envelope.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/charts.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/chart-editor.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/charts-envelope.test.ts"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F3-G1",
+      "description": "Editor chart tests green. FAILS when save-content of an edited oferta drops the completa block, or when add-chart writes envelope before listCharts exists.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/chart-editor.test.ts tests/core/charts-envelope.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}

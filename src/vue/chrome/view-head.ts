@@ -8,6 +8,10 @@ export type ViewHeadModel = {
   nextChip: string
   title: string
   subtitle: string
+  /** Named cifras in this file. Empty when N≤1 — no chip. */
+  charts: { id: string; label: string }[]
+  chartId: string
+  chartLabel: string
   phoneSub: string
   hasKey: boolean
   hasReset: boolean

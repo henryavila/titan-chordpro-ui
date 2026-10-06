@@ -35,6 +35,7 @@ export {
   browserStore,
   memoryStore,
   overlayKey,
+  songLegacyKey,
   readJson as readStoredJson,
   writeJson as writeStoredJson,
 } from './storage'
@@ -49,6 +50,19 @@ export {
 export type { UserPreferences, NotationChoice, NotationPreferences } from './preferences'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
+export type { ParseOpts } from './parse'
+export {
+  ChartEnvelopeError,
+  addChart,
+  commitChartDocument,
+  deleteChart,
+  hasChartEnvelope,
+  listCharts,
+  renameChart,
+  replaceChart,
+  setDefaultChart,
+} from './charts'
+export type { ChartInfo } from './charts'
 export { parseDefineDirective, serializeDefine, writeDefines } from './define'
 export type { ChordDefine, DefineDirective, DefineInstrument, DefineResult } from './define'
 export { parseChordToken } from './parse-chord'
@@ -127,6 +141,7 @@ export {
   applyOps,
   checkUpdate,
   diffOps,
+  reviewProjection,
   hasRun,
   hashText,
   isTuneOp,
@@ -144,6 +159,7 @@ export {
 } from './overlay'
 export type {
   ApplyResult,
+  ReviewProjection,
   Hunk,
   Overlay,
   OverlayOp,
@@ -242,6 +258,8 @@ export {
   fromOnSong,
   fromPlain,
   hostOk,
+  inferWrittenKey,
+  storedTransposeSemis,
   isChord,
   isChordLine,
   looksLikeCifraClubHtml,
@@ -302,6 +320,7 @@ export type {
   KeyRewriteOffer,
   MetaKey,
   RewriteToKeyResult,
+  WriteMetaOpts,
 } from './import-chordpro'
 export {
   formatTitanStrumSet,

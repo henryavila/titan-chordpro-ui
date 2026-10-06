@@ -1,3 +1,11 @@
+import {
+  hasChartEnvelope,
+  splitCho,
+  writeChartScopedMeta,
+  writeMetaOneHeader,
+  notationMask,
+  writeSongScopedMeta,
+} from '../charts'
 import { DIR } from '../define'
 import { parseTitanStrum } from '../strum'
 import { metaFromStrumSet, parseTitanStrumSet, type StrumPatternSet } from '../strum-multi'
@@ -40,9 +48,10 @@ export function canonicalMetaKey(k: string): MetaKey | null {
 
 export function readMeta(source: string): ChartMeta {
   const meta: ChartMeta = {}
-  String(source ?? '')
-    .split('\n')
-    .forEach((l) => {
+  const lines = String(source ?? '').split('\n')
+  const inside = notationMask(lines)
+  lines.forEach((l, i) => {
+      if (inside[i]) return
       const d = l.match(DIR)
       if (!d) return
       const k = (d[1] ?? '').toLowerCase()
@@ -90,12 +99,18 @@ export function readStrumPatterns(source: string): StrumPatternSet {
  * `{x_titan_strum_set:}` only when N>1; clears both when empty.
  */
 export function writeStrumPatterns(source: string, set: StrumPatternSet): string {
-  const cur: ChartMeta = { ...readMeta(source) }
-  delete cur.x_titan_strum
-  delete cur.x_titan_strum_set
   const fields = metaFromStrumSet(set)
-  if (fields.x_titan_strum) cur.x_titan_strum = fields.x_titan_strum
-  if (fields.x_titan_strum_set) cur.x_titan_strum_set = fields.x_titan_strum_set
+  const patch: ChartMeta = {}
+  if (fields.x_titan_strum) patch.x_titan_strum = fields.x_titan_strum
+  else patch.x_titan_strum = ''
+  if (fields.x_titan_strum_set) patch.x_titan_strum_set = fields.x_titan_strum_set
+  else patch.x_titan_strum_set = ''
+  if (hasChartEnvelope(source)) return writeChartScopedMeta(source, patch)
+  const cur: ChartMeta = { ...readMeta(source) }
+  if (patch.x_titan_strum) cur.x_titan_strum = patch.x_titan_strum
+  else delete cur.x_titan_strum
+  if (patch.x_titan_strum_set) cur.x_titan_strum_set = patch.x_titan_strum_set
+  else delete cur.x_titan_strum_set
   return writeMeta(source, cur)
 }
 
@@ -111,14 +126,61 @@ function keepsBodyLine(l: string): boolean {
  * Rewrites the header: the known keys leave the body and come back on top, in
  * the canonical order. No two `{key:}` lines competing.
  */
-export function writeMeta(source: string, meta: ChartMeta): string {
-  const body = String(source ?? '')
-    .split('\n')
-    .filter(keepsBodyLine)
-  const head = META_KEYS.filter((k) => (meta[k] ?? '').trim()).map(
-    (k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}',
-  )
-  return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
+export type WriteMetaOpts = {
+  target?: 'song' | 'chart'
+  chartId?: string
+}
+
+const SONG_PATCH_KEYS = [
+  'title',
+  'subtitle',
+  'artist',
+  'x_titan_source',
+  'x_titan_youtube',
+  'x_chart_default',
+] as const
+
+function canonicalPatch(meta: ChartMeta): ChartMeta {
+  const out: ChartMeta = {}
+  for (const [key, value] of Object.entries(meta)) {
+    if (value === undefined) continue
+    const canon = canonicalMetaKey(key)
+    if (!canon || out[canon] !== undefined) continue
+    out[canon] = value
+  }
+  return out
+}
+
+/**
+ * Rewrites meta. One chart: the canonical header.
+ * Several charts: song keys and sound keys stay on their chart. A sibling is not rewritten.
+ */
+function withChartDefault(patch: ChartMeta, meta: ChartMeta): ChartMeta {
+  if (!Object.prototype.hasOwnProperty.call(meta, 'x_chart_default')) return patch
+  const next: ChartMeta = { ...patch }
+  // Song opener. `readMeta` does not treat this as a header field.
+  Object.assign(next, {
+    x_chart_default: String((meta as { x_chart_default?: string }).x_chart_default ?? ''),
+  })
+  return next
+}
+
+export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
+  const patch = withChartDefault(canonicalPatch(meta), meta)
+  if (opts?.target === 'chart') return writeChartScopedMeta(source, patch, opts.chartId)
+  if (opts?.target === 'song') return writeSongScopedMeta(source, patch)
+  if (hasChartEnvelope(source)) {
+    const song: ChartMeta = {}
+    const sound: ChartMeta = {}
+    for (const [key, value] of Object.entries(patch)) {
+      if ((SONG_PATCH_KEYS as readonly string[]).includes(key)) song[key as MetaKey] = value
+      else sound[key as MetaKey] = value
+    }
+    const withSong = Object.keys(song).length ? writeSongScopedMeta(source, song) : source
+    if (!Object.keys(sound).length) return withSong
+    return writeChartScopedMeta(withSong, sound, splitCho(source).defaultId)
+  }
+  return writeMetaOneHeader(source, patch)
 }
 
 export const MISSING_LABEL: Record<string, string> = {

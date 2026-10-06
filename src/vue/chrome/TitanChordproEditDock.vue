@@ -14,6 +14,7 @@ const emit = defineEmits<{
   dropClip: []
   editScore: []
   source: []
+  sourceCode: []
   smallerType: []
   biggerType: []
   theme: []
@@ -90,6 +91,15 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
       >
         Fonte
         <span v-if="!lintOk" title="Diretiva sem par nesta cifra" style="width:6px;height:6px;border-radius:50%;background:var(--danger);" />
+      </TitanChordproBarButton>
+      <TitanChordproBarButton
+        v-if="showSource"
+        data-source-code
+        icon="braces"
+        title="Código de todas as versões"
+        @click="emit('sourceCode')"
+      >
+        Código
       </TitanChordproBarButton>
       <TitanChordproTypePair density="bar" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
       <TitanChordproIconButton data-theme-btn :icon="themeIcon" :title="themeTitle" @click="emit('theme')" />

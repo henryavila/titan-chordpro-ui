@@ -2,7 +2,16 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { TitanChordpro } from '../../src/vue/index'
 import { ELE_VIVE_IMG, JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { STORE_KEYS, memoryStore, normalizeSource, notationKey, overlayKey } from '../../src/core/index'
+import {
+  STORE_KEYS,
+  diffOps,
+  memoryStore,
+  normalizeSource,
+  notationKey,
+  overlayKey,
+  parse,
+  songLegacyKey,
+} from '../../src/core/index'
 import type { ChartStore } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -184,5 +193,192 @@ it('keeps the overlay and free theme preference while the host controls appearan
   expect(w.get('[data-titan-chordpro-root]').attributes('data-theme')).toBe('dark')
   expect(w.html()).toContain('(meu)')
   expect(store.get(key)).toBe(overlay)
+  w.unmount()
+})
+
+const TWO_CHARTS = [
+  '{start_of_x_chart:completa}',
+  '{title:Uma}',
+  '{x_chart_label:Completa}',
+  '{key:G}',
+  '{duration:04:26}',
+  '[G]corpo da completa',
+  '{end_of_x_chart}',
+  '',
+  '{start_of_x_chart:oferta}',
+  '{title:Uma}',
+  '{x_chart_label:Oferta}',
+  '{x_chart_default:oferta}',
+  '{key:C}',
+  '{duration:02:00}',
+  '[C]corpo da oferta',
+  '{end_of_x_chart}',
+].join('\n')
+
+it('loads a legacy overlay for the default chart and writes the default slot', async () => {
+  const store = hostStore()
+  const official = src()
+  const mine = official.replace(UNIQUE, `${UNIQUE} (meu)`)
+  const ops = diffOps(official, mine, { transpose: 0, capo: 0 })
+  const legacy = `${STORE_KEYS.overlayPrefix}jesus-1`
+  store.set(legacy, JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+
+  const w = mountViewer(store)
+  await flushPromises()
+  expect(w.html()).toContain('(meu)')
+  expect(store.get(overlayKey('jesus-1'))).toBeTruthy()
+  expect(store.get(legacy)).toBeTruthy()
+
+  await w.get('[data-transpose-up]').trigger('click')
+  await w.get('[data-transpose-up]').trigger('click')
+  await flushPromises()
+  await w.get('[data-open-my]').trigger('click')
+  await flushPromises()
+  await w.get('[data-fix-tune]').trigger('click')
+  await flushPromises()
+
+  const saved = JSON.parse(store.get(overlayKey('jesus-1')) ?? 'null')
+  expect(saved.ops.some((o: { type: string }) => o.type === 'tune')).toBe(true)
+  expect(saved.ops.find((o: { type: string }) => o.type === 'tune')).toMatchObject({ transpose: 2 })
+  expect(saved.ops.some((o: { type: string }) => o.type === 'replace')).toBe(true)
+  expect(store.get(overlayKey('jesus-1'))).toBe(store.get(legacy))
+  w.unmount()
+})
+
+it('stores the personal version on the active chart, not the implicit default slot', async () => {
+  const store = hostStore()
+  const legacy = `${STORE_KEYS.overlayPrefix}uma`
+  store.set(
+    legacy,
+    JSON.stringify({
+      baseVersion: 'v1',
+      at: 1,
+      ops: diffOps(TWO_CHARTS, TWO_CHARTS.replace('[G]corpo da completa', '[G]corpo da completa (legado)'), {
+        transpose: 0,
+        capo: 0,
+      }),
+    }),
+  )
+  const w = mountViewer(store, { source: TWO_CHARTS, songId: 'uma' })
+  await flushPromises()
+  expect(w.html()).not.toContain('(legado)')
+
+  const doc = parse(TWO_CHARTS, { chartId: 'oferta' }).source
+  const li = doc.split('\n').findIndex((l) => l.includes('corpo da oferta'))
+  await w.get('[data-edit]').trigger('click')
+  await flushPromises()
+  await w.get(`[data-row="${li}"]`).trigger('click')
+  await flushPromises()
+  const input = w.get('input[aria-label="Letra desta linha"]')
+  await input.setValue('corpo da oferta (meu)')
+  await input.trigger('blur')
+  await flushPromises()
+
+  expect(store.get(overlayKey('uma', 'oferta'))).toBeTruthy()
+  expect(store.get(overlayKey('uma', 'default'))).toBeNull()
+  expect(store.get(legacy)).toBeTruthy()
+  w.unmount()
+})
+
+/** An envelope whose only block id is the string `default` — not a plain file. */
+const DEFAULT_BLOCK = [
+  '{start_of_x_chart:default}',
+  '{title:Bloco}',
+  '{key:G}',
+  '[G]linha do bloco',
+  '{end_of_x_chart}',
+].join('\n')
+
+it('keeps a legacy overlay off an envelope and reviews a chart-less suggestion on the default block', async () => {
+  const store = hostStore()
+  const songId = 'bloco'
+  const legacy = `${STORE_KEYS.overlayPrefix}${songId}`
+  const body = parse(DEFAULT_BLOCK, { chartId: 'default' }).source
+  const ops = diffOps(body, body.replace('[G]linha do bloco', '[G]linha do bloco (legado)'), {
+    transpose: 0,
+    capo: 0,
+  })
+  const legacyPayload = JSON.stringify({ baseVersion: 'v1', ops, at: 1 })
+  store.set(legacy, legacyPayload)
+  store.set(
+    STORE_KEYS.suggestions,
+    JSON.stringify([
+      {
+        id: 's-legado',
+        songId,
+        title: 'Bloco',
+        at: 1,
+        baseVersion: 'v1',
+        status: 'pending',
+        actorName: 'Ana',
+        ops,
+        resolvedOps: [],
+      },
+    ]),
+  )
+
+  const w = mountViewer(store, { source: DEFAULT_BLOCK, songId, editMode: 'persisted' })
+  await flushPromises()
+  expect(w.html()).not.toContain('(legado)')
+  expect(store.get(legacy)).toBe(legacyPayload)
+  expect(store.get(overlayKey(songId, 'default'))).toBeNull()
+
+  await w.get('[data-queue-chip]').trigger('click')
+  await flushPromises()
+  await w.get('[data-q-song]').trigger('click')
+  await flushPromises()
+  await w.get('[data-q-sug]').trigger('click')
+  await flushPromises()
+  expect(w.get('[data-q-batch]').text()).toMatch(/1 encaixam/)
+  expect(w.get('[data-q-chart]').text()).toContain('linha do bloco (legado)')
+  expect(w.get('[data-cpv-scroll]').text()).not.toContain('(legado)')
+
+  await w.get('[data-q-accept]').trigger('click')
+  await flushPromises()
+  const list = JSON.parse(store.get(STORE_KEYS.suggestions) ?? '[]')
+  expect(list[0].ops).toHaveLength(0)
+  expect(list[0].resolvedOps).toHaveLength(ops.length)
+  const saved = String(w.emitted('save-content')?.at(-1)?.[0] ?? '')
+  expect(saved).toContain('linha do bloco (legado)')
+  expect(saved).toContain('{start_of_x_chart:default}')
+  expect(store.get(legacy)).toBe(legacyPayload)
+  expect(store.get(overlayKey(songId, 'default'))).toBeNull()
+  w.unmount()
+})
+
+it('the legacy key of song id a:default is not overlayKey(a)', async () => {
+  expect(songLegacyKey('a:default')).not.toBe(overlayKey('a'))
+  expect(songLegacyKey('a:default')).not.toBe('cpv:my:a:default')
+  expect(songLegacyKey('jesus-1')).toBe(`${STORE_KEYS.overlayPrefix}jesus-1`)
+
+  const store = hostStore()
+  const official = src()
+  const mine = official.replace(UNIQUE, `${UNIQUE} (meu)`)
+  const ops = diffOps(official, mine, { transpose: 0, capo: 0 })
+  store.set(overlayKey('a'), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
+  const w = mountViewer(store, { songId: 'a:default' })
+  await flushPromises()
+  expect(w.html()).not.toContain('(meu)')
+  expect(store.get(overlayKey('a'))).toBeTruthy()
+  expect(store.get(songLegacyKey('a:default'))).toBeNull()
+  w.unmount()
+})
+
+it('keeps the legacy overlay when the new key write throws', async () => {
+  const legacy = `${STORE_KEYS.overlayPrefix}uma`
+  const kept = 'legacy-keep'
+  const map = new Map<string, string>([[legacy, kept]])
+  const store: ChartStore = {
+    get: (k) => map.get(k) ?? null,
+    set: () => {
+      throw new Error('denied')
+    },
+    remove: (k) => {
+      map.delete(k)
+    },
+  }
+  const w = mountViewer(store, { songId: 'uma' })
+  await personalise(w)
+  expect(store.get(legacy)).toBe(kept)
   w.unmount()
 })

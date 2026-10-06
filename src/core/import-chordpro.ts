@@ -25,10 +25,13 @@ export {
   chartBody,
   type MetaKey,
   type ChartMeta,
+  type WriteMetaOpts,
 } from './import/meta'
 export {
   detectKeyRewrite,
+  inferWrittenKey,
   rewriteToKey,
+  storedTransposeSemis,
   type KeyRewriteOffer,
   type RewriteToKeyResult,
 } from './import/key-rewrite'

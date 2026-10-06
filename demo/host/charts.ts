@@ -1,5 +1,5 @@
 import defaultCho from '../../fixtures/sda/001-tudo-que-ha-de-bom-em-mim.cho?raw'
-import { readMeta } from '@henryavila/titan-chordpro-ui'
+import { listCharts, readMeta } from '@henryavila/titan-chordpro-ui'
 import type { TitanChordproProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
 import type { ListaMode } from './recipe'
 
@@ -69,15 +69,30 @@ function songEntry(
   id: string,
   withSource: boolean,
 ): DemoSong {
-  const meta = readMeta(fixtures[id] ?? '')
+  const source = fixtures[id] ?? ''
+  const meta = readMeta(source)
+  const charts = listCharts(source)
+  const chartId =
+    charts.length > 1 ? charts.find((c) => c.isDefault)?.id ?? charts[0]?.id : undefined
   return {
     id,
     title: meta.title || id,
     subtitle: meta.subtitle ?? '',
     key: meta.key ?? '',
     time: meta.time || undefined,
-    ...(withSource ? { source: fixtures[id] ?? '' } : {}),
+    ...(chartId ? { chartId } : {}),
+    ...(withSource ? { source } : {}),
   }
+}
+
+/** Demo pair: one song with versions, then one without. */
+export const VERSION_PAIR = ['006-poder-do-amor-original', '001-tudo-que-ha-de-bom-em-mim'] as const
+
+export function versionPair(list: DemoSong[]): DemoSong[] {
+  return VERSION_PAIR.flatMap((id) => {
+    const song = list.find((item) => item.id === id)
+    return song ? [song] : []
+  })
 }
 
 export function songsFor(

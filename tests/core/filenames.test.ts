@@ -17,6 +17,11 @@ describe('buildChoFilename', () => {
   it('slugifies title', () => {
     expect(buildChoFilename('Hallelujah', 'C')).toBe('hallelujah-c.cho')
   })
+
+  it('includes the cifra name when the file has more than one', () => {
+    expect(buildChoFilename('Uma', 'C', 'oferta')).toBe('uma-oferta-c.cho')
+    expect(buildChoFilename('Uma', 'C', 'default')).toBe('uma-c.cho')
+  })
 })
 
 describe('buildPdfFilename', () => {
@@ -37,12 +42,23 @@ describe('buildPdfFilename', () => {
       'cifra-jesus-tu-es-a-minha-vida-tom-a.pdf',
     )
   })
+
+  it('includes chartId when a named cifra is passed', () => {
+    expect(buildPdfFilename('Uma', 'C', 'oferta')).toBe('cifra-uma-oferta-tom-c.pdf')
+  })
+
+  it('omits implicit default from the filename', () => {
+    expect(buildPdfFilename('Uma', 'C', 'default')).toBe('cifra-uma-tom-c.pdf')
+    expect(buildPdfFilename('Uma', 'C')).toBe('cifra-uma-tom-c.pdf')
+  })
 })
 
 describe('buildSljaFilename', () => {
   it('slugs the title without a key — slides are not a transposed chart', () => {
     expect(buildSljaFilename('Fala Comigo')).toBe('slides-fala-comigo.slja')
     expect(buildSljaFilename('Lindo És')).toBe('slides-lindo-es.slja')
+    expect(buildSljaFilename('Uma', 'oferta')).toBe('slides-uma-oferta.slja')
+    expect(buildSljaFilename('Uma', 'default')).toBe('slides-uma.slja')
   })
 })
 

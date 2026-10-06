@@ -91,6 +91,11 @@ referencia um arquivo externo; `{x_titan_start_of_score: …}` e
 Essas três diretivas são conteúdo do documento, não campos de `ChartMeta`.
 Novas extensões próprias devem sempre usar `x_titan_`, sem abreviações alternativas.
 
+Versões da mesma música usam o envelope `{start_of_x_chart:id}` /
+`{end_of_x_chart}`, com `{x_chart_label:}`, `{x_chart_default:id}` e, quando
+o arquivo volta a uma cifra só e o id que sobrou não é `default`,
+`{x_chart_id:}`. Essas diretivas não são metadados Titan de áudio ou fonte.
+
 **Migração completa, sem retrocompatibilidade:** os nomes anteriores `x_source`,
 `x_youtube`, `x_audio_*`, `x_strum`, `x_strum_set` e os aliases `x_origem`,
 `x_audio`, `x_audio_cantado` não são interpretados nem convertidos automaticamente.

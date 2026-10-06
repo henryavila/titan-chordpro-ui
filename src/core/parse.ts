@@ -6,6 +6,7 @@ import {
   transposeDefines,
   type ChordDefine,
 } from './define'
+import { chartDocument, notationMask } from './charts'
 import { notationEdge } from './notation-region'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
@@ -70,6 +71,7 @@ function parseRaw(src: string): {
   const lines: RawLine[] = []
   const defines: ChordDefine[] = []
   const raws = src.split('\n')
+  const inside = notationMask(raws)
   let chorus = false
   let socLi: number | null = null
   const eocOf: Record<number, number> = {}
@@ -94,11 +96,19 @@ function parseRaw(src: string): {
       continue
     }
     if (tab !== null) {
-      if (d && notationEdge((d[1] ?? '').toLowerCase()) === 'tab-close') {
+      const tabKey = d ? (d[1] ?? '').toLowerCase() : ''
+      const chartFence = tabKey === 'start_of_x_chart' || tabKey === 'end_of_x_chart'
+      if (chartFence && !inside[li]) {
+        lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: li - 1 })
+        tab = null
+      } else if (d && notationEdge(tabKey) === 'tab-close') {
         lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: li })
         tab = null
-      } else tab.push(raw)
-      continue
+        continue
+      } else {
+        tab.push(raw)
+        continue
+      }
     }
 
     // Marks are ChordPro comments: invisible while reading, and they travel
@@ -167,6 +177,7 @@ function parseRaw(src: string): {
         lines.push({ kind: 'comment', text: (inner?.[1] ?? v).trim(), li0: li, li1: li })
         continue
       }
+      if (inside[li]) continue
       if (k === 'title' || k === 't') meta.title = v
       else if (k === 'subtitle' || k === 'st') meta.subtitle = v
       else if (k === 'artist' || k === 'composer') meta.artist = v
@@ -177,7 +188,8 @@ function parseRaw(src: string): {
       else if (k === 'capo') meta.capo = Number(v) || 0
       else if (k === 'transpose') {
         const n = Number(v)
-        if (Number.isFinite(n) && n !== 0) meta.transpose = n
+        if (v === '' || n === 0) meta.transpose = 0
+        else if (Number.isFinite(n)) meta.transpose = n
       }
       continue
     }
@@ -319,9 +331,15 @@ export function normalizeSource(source: string): string {
   return looksLikeOnSong(text) ? normalizeOnSong(text) : text
 }
 
-export function parse(source: string): TitanChordproDocument {
+export type ParseOpts = {
+  /** Named chart inside an N>1 envelope. Absent → file default / implicit `default`. */
+  chartId?: string
+}
+
+export function parse(source: string, opts?: ParseOpts): TitanChordproDocument {
   const text = normalizeEol(source ?? '')
-  const normalized = looksLikeOnSong(text) ? normalizeOnSong(text) : text
+  const sliced = chartDocument(text, opts?.chartId)
+  const normalized = looksLikeOnSong(sliced) ? normalizeOnSong(sliced) : sliced
   const { meta, lines, eocOf, defines } = parseRaw(normalized)
   return {
     meta,

@@ -89,25 +89,39 @@ export function suggestButtonLabel(sending: boolean, confirming: boolean): strin
   return sending ? 'Enviando…' : confirming ? 'Confirmar — enviar' : 'Sugerir alteração ao responsável'
 }
 
-export function songQueueRows(open: Suggestion[]): QueueRow[] {
-  const by = new Map<string, { title: string; pedidos: number; ajustes: number }>()
+function queueGroupKey(s: Suggestion, chart: string | null): string {
+  const id = String(s.chartId ?? '').trim()
+  return chart ? `${s.songId}\u001f${id || 'default'}` : s.songId
+}
+
+export function songQueueRows(
+  open: Suggestion[],
+  labelOf?: (s: Suggestion) => string | null,
+): QueueRow[] {
+  const by = new Map<string, { title: string; chart: string | null; pedidos: number; ajustes: number }>()
   for (const s of open) {
-    const e = by.get(s.songId) ?? { title: s.title, pedidos: 0, ajustes: 0 }
+    const chart = labelOf?.(s) ?? null
+    const key = queueGroupKey(s, chart)
+    const e = by.get(key) ?? { title: s.title, chart, pedidos: 0, ajustes: 0 }
     e.pedidos += 1
     e.ajustes += s.ops.length
-    by.set(s.songId, e)
+    by.set(key, e)
   }
   return [...by.entries()].map(([key, e]) => ({
     key,
-    label: e.title,
+    label: e.chart ? `${e.title} · ${e.chart}` : e.title,
     hint: `${e.pedidos} ${e.pedidos === 1 ? 'pedido' : 'pedidos'} · ${e.ajustes} ${e.ajustes === 1 ? 'ajuste' : 'ajustes'}`,
   }))
 }
 
-export function requestQueueRows(open: Suggestion[], songId: string | null): QueueRow[] {
+export function requestQueueRows(
+  open: Suggestion[],
+  songId: string | null,
+  labelOf?: (s: Suggestion) => string | null,
+): QueueRow[] {
   if (!songId) return []
   return open
-    .filter((s) => s.songId === songId)
+    .filter((s) => queueGroupKey(s, labelOf?.(s) ?? null) === songId)
     .map((s) => {
       const when = new Date(s.at).toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -242,6 +256,8 @@ export type SuggestHost = {
   armConfirm: () => void
   disarmConfirm: () => void
   songId: () => string
+  /** Chart the open overlay was diffed against. Omitted on a file with no slot. */
+  chartId?: () => string | undefined
   title: () => string
   version: () => string
   actorKey: () => string | undefined
@@ -284,6 +300,7 @@ export async function sendSuggestion(host: SuggestHost): Promise<void> {
   const created: Suggestion = {
     id: `s${Date.now()}`,
     songId: host.songId(),
+    ...(host.chartId?.() ? { chartId: host.chartId() } : {}),
     title: host.title() || host.songId(),
     at: Date.now(),
     baseVersion: host.version(),
@@ -405,6 +422,16 @@ export type ReviewHost = {
   all: () => Suggestion[]
   write: (list: Suggestion[]) => void
   official: () => string
+  /**
+   * The chart document this suggestion may change. Absent → the whole official
+   * file, which is the one-chart case main already reviewed.
+   */
+  chartOf?: (
+    s: Suggestion,
+  ) => { id: string; text: string } | { blocked: string }
+  /** Splice one chart document back into the official file. */
+  splice?: (file: string, chartId: string, doc: string) => string
+  dirty?: (chartId: string) => boolean
   toast: (msg: string) => void
   upload: () => ScoreUpload | undefined
   setOfficial: (text: string, reconcile?: boolean) => void
@@ -435,6 +462,24 @@ function patchSug(host: ReviewHost, sugId: string, next: Suggestion): Suggestion
  * Accepting writes the official text and bumps the version: anyone holding an
  * overlay meets the update dialog on their next read. Ops are archived, not deleted.
  */
+function reviewBase(
+  host: ReviewHost,
+  s: Suggestion,
+): { id: string | null; text: string } | { blocked: string } {
+  if (!host.chartOf) return { id: null, text: host.official() }
+  const hit = host.chartOf(s)
+  if ('blocked' in hit) return hit
+  if (host.dirty?.(hit.id)) {
+    return { blocked: 'Salve ou descarte o rascunho desta versão antes de aceitar' }
+  }
+  return { id: hit.id, text: hit.text }
+}
+
+function publishedFile(host: ReviewHost, id: string | null, doc: string): string {
+  if (!id || !host.splice) return doc
+  return host.splice(host.official(), id, doc)
+}
+
 export async function acceptQueuedOp(host: ReviewHost, opId: string): Promise<void> {
   if (host.busy()) return
   const sugId = host.sugId()
@@ -442,7 +487,12 @@ export async function acceptQueuedOp(host: ReviewHost, opId: string): Promise<vo
   const s = host.all().find((x) => x.id === sugId)
   const op = s?.ops.find((o) => o.id === opId)
   if (!s || !op) return
-  if (applyOps(host.official(), [op]).failed.length) {
+  const base = reviewBase(host, s)
+  if ('blocked' in base) {
+    host.toast(base.blocked)
+    return
+  }
+  if (applyOps(base.text, [op]).failed.length) {
     host.toast('Este ajuste não encaixa mais na cifra atual')
     return
   }
@@ -455,7 +505,7 @@ export async function acceptQueuedOp(host: ReviewHost, opId: string): Promise<vo
     host.setBusy(false)
     return
   }
-  const r = applyOps(host.official(), [acceptedOp])
+  const r = applyOps(base.text, [acceptedOp])
   if (r.failed.length) {
     host.toast('Este ajuste não encaixa mais na cifra atual')
     host.setBusy(false)
@@ -467,15 +517,16 @@ export async function acceptQueuedOp(host: ReviewHost, opId: string): Promise<vo
     'accepted',
   )
   const patched = patchSug(host, sugId, next)
+  const full = publishedFile(host, base.id, r.text)
   host.toast('Aceito — já vale para todos')
-  if (!isTuneOp(op)) host.setOfficial(r.text, true)
+  if (!isTuneOp(op)) host.setOfficial(full, true)
   try {
     host.onAccepted?.({
       id: sugId,
       songId: s.songId,
       opIds: [opId],
       status: patched.status ?? 'accepted',
-      officialText: isTuneOp(op) ? host.official() : r.text,
+      officialText: isTuneOp(op) ? host.official() : full,
     })
   } catch {
     /* host failure */
@@ -509,12 +560,17 @@ export async function acceptQueuedBatch(host: ReviewHost): Promise<void> {
   if (!sugId) return
   const s = host.all().find((x) => x.id === sugId)
   if (!s?.ops.length) return
-  const applies = s.ops.filter((op) => !applyOps(host.official(), [op]).failed.length)
+  const base = reviewBase(host, s)
+  if ('blocked' in base) {
+    host.toast(base.blocked)
+    return
+  }
+  const applies = s.ops.filter((op) => !applyOps(base.text, [op]).failed.length)
   if (!applies.length) {
     host.toast('Nenhum ajuste encaixa na cifra atual')
     return
   }
-  const preflight = applyOps(host.official(), applies)
+  const preflight = applyOps(base.text, applies)
   const ready = applies.filter((op) => !preflight.failed.some((failed) => failed.id === op.id))
   host.setBusy(true)
   let promoted: OverlayOp[]
@@ -525,7 +581,7 @@ export async function acceptQueuedBatch(host: ReviewHost): Promise<void> {
     host.setBusy(false)
     return
   }
-  const r = applyOps(host.official(), promoted)
+  const r = applyOps(base.text, promoted)
   const okIds = new Set(
     promoted.filter((op) => !r.failed.some((f) => f.id === op.id)).map((o) => o.id),
   )
@@ -534,7 +590,12 @@ export async function acceptQueuedBatch(host: ReviewHost): Promise<void> {
     if (okIds.has(op.id)) next = archiveOp(next, op.id, 'accepted')
   }
   const patched = patchSug(host, sugId, next)
-  host.setOfficial(r.text, true)
+  const wroteText = [...okIds].some((id) => {
+    const op = promoted.find((item) => item.id === id)
+    return op != null && !isTuneOp(op)
+  })
+  const full = publishedFile(host, base.id, r.text)
+  if (wroteText) host.setOfficial(full, true)
   host.toast(`Aceitos ${okIds.size} ajuste${okIds.size === 1 ? '' : 's'}`)
   try {
     host.onAccepted?.({
@@ -542,7 +603,7 @@ export async function acceptQueuedBatch(host: ReviewHost): Promise<void> {
       songId: s.songId,
       opIds: [...okIds],
       status: patched.status ?? 'accepted',
-      officialText: r.text,
+      officialText: wroteText ? full : host.official(),
     })
   } catch {
     /* host failure */

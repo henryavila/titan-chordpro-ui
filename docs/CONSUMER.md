@@ -47,6 +47,17 @@ valores para as novas chaves **antes** de atualizar o pacote; os nomes antigos
 não são lidos automaticamente. Os modos `view` / `edit`, as diretivas
 `x_titan_*` e as marcas de tempo `x///` permanecem iguais.
 
+Uma música continua sendo **uma string**. Várias versões da mesma cifra
+moram nela, entre `{start_of_x_chart:id}` e `{end_of_x_chart}`. O nome
+visível é `{x_chart_label:}`. `{x_chart_default:id}` é a versão que abre
+quando o programa não manda `songs[].chartId`. O músico troca no chip e o
+componente emite `update:chartId`; isso não reescreve o programa até o host
+gravar. `save-content` devolve o arquivo inteiro. O overlay pessoal é
+`titan-chordpro:my:{songId}` na cifra única e
+`titan-chordpro:my:{songId}:{chartId}` quando a versão tem id próprio.
+**Minha versão** é esse overlay, não um bloco do arquivo. Sugestão leva o
+`chartId` da versão em que o diff foi feito; aceitar altera só esse bloco.
+
 ---
 
 Demo neste repo (`pnpm dev`): índice em `/`. O mesmo `<TitanChordpro>`;

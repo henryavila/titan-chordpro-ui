@@ -1,3 +1,4 @@
+import { chartDocument } from './charts'
 import { buildChoFilename } from './filenames'
 import { parse } from './parse'
 import { EXPORT_MIME, textExportedFile, type ExportedFile } from './exported-file'
@@ -9,15 +10,14 @@ export type ExportChoOptions = {
   title?: string
   /** Prepended to the downloaded text (personal-version mark). */
   preamble?: string
+  scope?: 'file' | 'chart'
+  chartId?: string
 }
 
-export function exportCho(
-  source: string,
-  opts?: ExportChoOptions,
-): string {
+export function exportCho(source: string, opts?: ExportChoOptions): string {
   const n = opts?.semitones ?? 0
   const capo = opts?.capo ?? 0
-  let out = source
+  let out = opts?.scope === 'chart' ? chartDocument(source, opts.chartId) : source
   out = out.replace(/\{\s*transpose\s*:[^}]*\}[ \t]*\n?/gi, '')
   if (n) {
     const keyLine = out.match(/^\s*\{\s*key\s*:[^}]*\}[ \t]*\n?/im)
@@ -41,7 +41,7 @@ export function exportChoFile(source: string, opts: ExportChoOptions = {}): Expo
   const view = parse(source)
   const title = (opts.title ?? view.meta.title ?? 'cifra').trim() || 'cifra'
   const key = opts.key !== undefined ? opts.key : view.displayKey ?? null
-  return textExportedFile(text, buildChoFilename(title, key), title, EXPORT_MIME.cho)
+  return textExportedFile(text, buildChoFilename(title, key, opts.chartId), title, EXPORT_MIME.cho)
 }
 
 /**

@@ -1,0 +1,87 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F1",
+  "slug": "versoes-cifra-f1-overlay-e-sugestao-por-cifra",
+  "title": "Overlay e sugestão por cifra",
+  "goal": "overlay key is cpv:my:{songId}:{chartId}; legacy cpv:my:{songId} reads as chart default; Suggestion carries chartId; TextOp.at is against the chart document; accept splices via replaceChart and save-content emits the whole file.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "overlayKey and legacy migrate",
+      "scopeBoundary": [
+        "Do not build the title chip; do not add chart CRUD in the editor; do not change setlist id uniquify."
+      ],
+      "acceptance": [
+        "overlayKey(\"jesus-1\", \"oferta\") is cpv:my:jesus-1:oferta; overlayKey(\"jesus-1\") and overlayKey(\"jesus-1\", \"default\") share the default slot; a stored cpv:my:jesus-1 value loads for chart default and the next write uses cpv:my:jesus-1:default; TuneOp still stores on that overlay"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/overlay.test.ts tests/vue/storage-seam.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/storage.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/use/useOverlay.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/core/overlay.test.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/storage-seam.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "Suggestion.chartId and accept splice",
+      "scopeBoundary": [
+        "Do not POST to a host; do not change persistSuggestion ack contract; do not emit save-content of only the visible chart."
+      ],
+      "acceptance": [
+        "created Suggestion includes chartId of the active chart; diffOps runs on the chart document from parse; acceptOp calls replaceChart then save-content with the full file string containing siblings; queue grouping key is songId plus chartId so the reviewer label is title plus chart label"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/overlay-ui.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/core/overlay.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/use/useOverlay.ts"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/public.ts"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/overlay-ui.test.ts"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F1-G1",
+      "description": "Overlay/suggestion chart-id tests green. FAILS when ops at-line from oferta apply into completa or legacy overlay key is dropped without mapping to default.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/core/overlay.test.ts tests/vue/overlay-ui.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}

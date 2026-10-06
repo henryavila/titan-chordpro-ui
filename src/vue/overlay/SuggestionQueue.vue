@@ -25,6 +25,14 @@ defineProps<{
   batchConflicts?: number
   busy?: boolean
   resolveScore?: (src: string) => string
+  review?: {
+    missing: boolean
+    foreign: boolean
+    dirty: boolean
+    versionLabel: string | null
+    tuneLabel: string | null
+    lines: { text: string; struck: boolean; op?: boolean }[]
+  } | null
 }>()
 
 function barBeatsOf(p: StrumPattern): number {
@@ -63,6 +71,14 @@ const emit = defineEmits<{
         <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Sugestões dos músicos</span>
         <span style="font-size:15.5px;font-weight:700;color:var(--text);">{{ title }}</span>
         <span
+          v-if="level === 3 && review?.versionLabel"
+          data-q-version
+        >{{ review.versionLabel }}</span>
+        <span
+          v-if="level === 3 && review?.tuneLabel"
+          data-q-tune
+        >{{ review.tuneLabel }}</span>
+        <span
           v-if="level === 3 && actorName"
           data-q-reviewer-actor
           style="font-size:12px;font-weight:600;color:var(--muted);"
@@ -100,6 +116,18 @@ const emit = defineEmits<{
         <span v-if="!s.actor" class="titan-chordpro-list-row-hint">{{ s.hint }}</span>
       </TitanChordproListRow>
 
+      <div v-if="level === 3" data-q-chart>
+        <p v-if="review?.dirty" data-q-draft>O rascunho desta versão não entra nesta revisão.</p>
+        <p v-if="review?.missing" data-q-missing>Esta versão não existe mais</p>
+        <p v-if="review?.foreign" data-q-foreign>Abra essa música para aceitar o pedido</p>
+        <p
+          v-for="(line, i) in review?.lines ?? []"
+          :key="i"
+          :data-review-struck="line.struck ? '' : undefined"
+          :data-review-op="line.op ? '' : undefined"
+        >{{ line.text }}</p>
+      </div>
+
       <div
         v-if="level === 3 && ops.length"
         class="titan-chordpro-q-batch"
@@ -115,7 +143,8 @@ const emit = defineEmits<{
             accept-label="Aceitar lote"
             :busy="busy"
             :refuse-attrs="{ 'data-q-refuse-batch': '' }"
-            :accept-attrs="{ 'data-q-accept-batch': '' }"
+            :accept-attrs="review?.missing ? {} : { 'data-q-accept-batch': '' }"
+            :accept-disabled="!!review?.dirty"
             @refuse="emit('refuseBatch')"
             @accept="emit('acceptBatch')"
           />
@@ -168,9 +197,9 @@ const emit = defineEmits<{
         </span>
         <TitanChordproChoicePair
           :busy="busy"
-          :accept-disabled="!op.fits"
+          :accept-disabled="!op.fits || !!review?.dirty"
           :refuse-attrs="{ 'data-q-refuse': '' }"
-          :accept-attrs="{ 'data-q-accept': '' }"
+          :accept-attrs="review?.missing ? {} : { 'data-q-accept': '' }"
           @refuse="emit('refuse', op.id)"
           @accept="emit('accept', op.id)"
         />

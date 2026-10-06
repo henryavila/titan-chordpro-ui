@@ -1,3 +1,4 @@
+import { hasChartEnvelope, listCharts, replaceChart } from './charts'
 import { parse } from './parse'
 import { readMeta, writeMeta, type ChartMeta, type MetaKey } from './import-chordpro'
 import { lintSource } from './lint'
@@ -27,13 +28,32 @@ export type SourceSession = {
   canUndo: () => boolean
   canRedo: () => boolean
   dirty: () => boolean
+  /**
+   * Working text of this chart differs from the last commit. A sibling
+   * rascunho does not make another chart dirty.
+   */
+  chartDirty: (chartId: string) => boolean
   commit: () => void
   discard: () => void
   lint: () => ReturnType<typeof lintSource>
   reset: (next: string) => void
+  /**
+   * The official file moved. Dirty charts keep their draft. Clean charts take
+   * the new official text. `getSource` stays the draft; the commit is official.
+   */
+  rebase: (nextOfficial: string) => void
+  /**
+   * Put one chart document into the working file and the last commit, without
+   * dropping undo or a draft that still lives on a sibling.
+   */
+  spliceChart: (chartId: string, doc: string) => void
 }
 
-export function createSourceSession(opts: { source: string }): SourceSession {
+export function createSourceSession(opts: {
+  source: string
+  /** Named chart inside an N>1 file. Absent → parse uses the file default. */
+  chartId?: () => string | undefined
+}): SourceSession {
   let source = opts.source
   let committed = opts.source
   const undoStack: string[] = []
@@ -49,7 +69,10 @@ export function createSourceSession(opts: { source: string }): SourceSession {
 
   return {
     getSource: () => source,
-    getView: () => parse(source),
+    getView: () => {
+      const id = String(opts.chartId?.() ?? '').trim()
+      return parse(source, id ? { chartId: id } : undefined)
+    },
     replace: (next) => push(next),
     edit: (next) => {
       source = next
@@ -62,11 +85,17 @@ export function createSourceSession(opts: { source: string }): SourceSession {
       redoStack.length = 0
     },
     setMeta: (patch) => {
-      const next: ChartMeta = { ...readMeta(source) }
+      const only: ChartMeta = {}
       for (const [k, v] of Object.entries(patch)) {
         if (v === undefined) continue
-        next[k as MetaKey] = String(v)
+        only[k as MetaKey] = String(v)
       }
+      // N>1: a tempo save must not rewrite title, artist, `{t:}`, or `{composer:}`.
+      if (hasChartEnvelope(source)) {
+        push(writeMeta(source, only))
+        return
+      }
+      const next: ChartMeta = { ...readMeta(source), ...only }
       push(writeMeta(source, next))
     },
     undo: () => {
@@ -84,6 +113,15 @@ export function createSourceSession(opts: { source: string }): SourceSession {
     canUndo: () => undoStack.length > 0,
     canRedo: () => redoStack.length > 0,
     dirty: () => source !== committed,
+    chartDirty: (chartId) => {
+      const id = String(chartId ?? '').trim()
+      if (!id) return source !== committed
+      try {
+        return parse(source, { chartId: id }).source !== parse(committed, { chartId: id }).source
+      } catch {
+        return source !== committed
+      }
+    },
     commit: () => {
       committed = source
     },
@@ -97,6 +135,32 @@ export function createSourceSession(opts: { source: string }): SourceSession {
       committed = next
       undoStack.length = 0
       redoStack.length = 0
+    },
+    rebase: (nextOfficial: string) => {
+      const prev = source
+      const prevCommitted = committed
+      let next = nextOfficial
+      try {
+        if (hasChartEnvelope(prev) && hasChartEnvelope(nextOfficial)) {
+          const ids = new Set(listCharts(nextOfficial).map((c) => c.id))
+          for (const chart of listCharts(prev)) {
+            if (!ids.has(chart.id)) continue
+            const was = parse(prev, { chartId: chart.id }).source
+            const before = parse(prevCommitted, { chartId: chart.id }).source
+            if (was !== before) next = replaceChart(next, chart.id, was)
+          }
+        } else if (prev !== prevCommitted) {
+          next = prev
+        }
+      } catch {
+        if (prev !== prevCommitted) next = prev
+      }
+      source = next
+      committed = nextOfficial
+    },
+    spliceChart: (chartId, doc) => {
+      source = replaceChart(source, chartId, doc)
+      committed = replaceChart(committed, chartId, doc)
     },
     lint: () => lintSource(source),
   }

@@ -108,6 +108,9 @@ export type EditHeadModel = {
   canRedo: boolean
   confirmDiscard: boolean
   discardLabel: string
+  charts: { id: string; label: string; isDefault: boolean }[]
+  chartId: string
+  chartLabel: string
 }
 
 /** Props of the phone overflow sheet. */

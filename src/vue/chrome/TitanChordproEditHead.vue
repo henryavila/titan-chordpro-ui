@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import type { EditHeadModel } from './dock-model'
 
-defineProps<EditHeadModel>()
+const props = defineProps<EditHeadModel>()
 
 const emit = defineEmits<{
   bindHead: [el: unknown]
@@ -12,7 +13,46 @@ const emit = defineEmits<{
   discard: []
   save: []
   read: []
+  'select-chart': [id: string]
+  'chart-add': [value: { id: string; label: string }]
+  'chart-rename': [label: string]
+  'chart-delete': []
+  'chart-default': []
 }>()
+
+const chartOpen = ref(false)
+const addOpen = ref(false)
+const renameOpen = ref(false)
+const confirmDelete = ref(false)
+const addLabel = ref('')
+const renameLabel = ref('')
+const named = () => props.charts.length > 1
+const chipLabel = () => (props.chartLabel && props.chartLabel !== 'default' ? props.chartLabel : 'Versão')
+
+function versionSlug(label: string): string {
+  const base = label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48)
+  let id = base && /^[a-z0-9_]/.test(base) ? base : 'versao'
+  const taken = new Set(props.charts.map((c) => c.id))
+  if (!taken.has(id)) return id
+  let n = 2
+  while (taken.has(`${id}_${n}`) && n < 40) n += 1
+  return `${id}_${n}`.slice(0, 64)
+}
+
+function goAdd() {
+  const label = addLabel.value.trim()
+  if (!label) return
+  emit('chart-add', { id: versionSlug(label), label })
+  addLabel.value = ''
+  addOpen.value = false
+  chartOpen.value = false
+}
 </script>
 
 <template>
@@ -42,6 +82,32 @@ const emit = defineEmits<{
           <span v-if="subtitle" class="titan-chordpro-head-sub">{{ subtitle }}</span>
           <span v-else-if="wMode === 'local' && !compact" class="titan-chordpro-head-sub">ajuste local · ainda não vai para todos</span>
         </span>
+      </div>
+
+      <div v-if="named() || contentEdit" class="titan-chordpro-version-chip">
+        <button type="button" data-chart-switch data-chart-edit-label class="titan-chordpro-head-chip" aria-label="Versão" @click="chartOpen = !chartOpen">
+          <span class="titan-chordpro-chart-switch-label">{{ chipLabel() }}</span>
+        </button>
+        <div v-if="chartOpen" class="titan-chordpro-chart-menu titan-chordpro-version-menu" role="dialog" aria-label="Versão">
+          <button v-for="c in charts" :key="c.id" type="button" :data-chart-option="c.id" class="titan-chordpro-version-row" @click="chartOpen = false; emit('select-chart', c.id)">
+            <span>{{ c.label === 'default' ? 'Padrão' : c.label }}</span>
+            <span v-if="c.isDefault" class="titan-chordpro-version-mark">padrão</span>
+          </button>
+          <template v-if="contentEdit">
+            <button v-if="named()" type="button" data-chart-rename class="titan-chordpro-version-action" @click="renameOpen = !renameOpen">Renomear</button>
+            <button type="button" data-chart-add class="titan-chordpro-version-action" @click="addOpen = !addOpen">Nova versão</button>
+            <button v-if="named()" type="button" data-chart-delete class="titan-chordpro-version-action" @click="confirmDelete ? emit('chart-delete') : (confirmDelete = true)">{{ confirmDelete ? `Apagar ${chipLabel()}` : 'Apagar' }}</button>
+            <button v-if="named() && !charts.some((c) => c.id === chartId && c.isDefault)" type="button" data-chart-default class="titan-chordpro-version-action" @click="chartOpen = false; emit('chart-default')">Tornar padrão</button>
+            <form v-if="addOpen" class="titan-chordpro-version-form" @submit.prevent="goAdd">
+              <input data-chart-label v-model="addLabel" aria-label="Nome da versão" />
+              <button data-chart-add-go type="submit">Criar</button>
+            </form>
+            <form v-if="renameOpen" class="titan-chordpro-version-form" @submit.prevent="emit('chart-rename', renameLabel); renameOpen = false; chartOpen = false">
+              <input data-chart-rename-input v-model="renameLabel" aria-label="Novo rótulo" />
+              <button data-chart-rename-go type="submit">Renomear</button>
+            </form>
+          </template>
+        </div>
       </div>
 
       <div class="titan-chordpro-head-edit-acts">

@@ -1,0 +1,15 @@
+{
+  "taskId": "F1-tune",
+  "status": "claimed-pass",
+  "commitShas": [
+    "aed88b5344ee17237b4664ebfce32e571f1c5d1d",
+    "12a05903f7119c3ede82be69e6921adab453aeb9"
+  ],
+  "paths": [
+    "src/vue/use/useOverlay.ts",
+    "tests/vue/overlay-ui.test.ts"
+  ],
+  "verifierCommand": "pnpm exec vitest run tests/vue/overlay-ui.test.ts",
+  "exitCode": 0,
+  "transcript": "RUN  v4.1.11 /Users/henry/.grok/worktrees/code-titan-chordpro-ui/multiverson/.worktrees/versoes-cifra-F1-tune\n\nstderr | tests/vue/overlay-ui.test.ts > choosing where a save lands > modes=\"both\" is deprecated and opens as local (no ModePick)\n[titan-chordpro-ui] modes=\"both\" is deprecated; use editMode=\"local\" or editMode=\"persisted\". Treating as local.\n\n ✓ tests/vue/overlay-ui.test.ts (52 tests) 3333ms\n\n Test Files  1 passed (1)\n      Tests  52 passed (52)\n   Start at  18:00:46\n   Duration  4.24s (transform 629ms, setup 11ms, import 715ms, tests 3.33s, environment 126ms)"
+}

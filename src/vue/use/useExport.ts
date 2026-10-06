@@ -30,6 +30,8 @@ export type UseExportOpts = {
   /** Raw `{title:}` — callers apply `??` or `||` the way each export already did. */
   title: () => string | undefined
   key: () => string | null
+  /** Set when the download is one version of a multi-chart file. */
+  chartId?: () => string | undefined
   personal: () => boolean
   accent: () => AccentProp | undefined
   pdfShouldFail: () => boolean | undefined
@@ -74,6 +76,7 @@ export function useExport(opts: UseExportOpts) {
 
   function doExportCho() {
     const mark = opts.personal() ? '# versão pessoal — não é a cifra oficial da equipe\n' : ''
+    const chartId = opts.chartId?.()
     downloadExportedFile(
       exportChoFile(opts.source(), {
         semitones: opts.semitones(),
@@ -81,6 +84,8 @@ export function useExport(opts: UseExportOpts) {
         title: opts.title() ?? 'cifra',
         key: opts.key(),
         preamble: mark,
+        chartId,
+        scope: chartId ? 'chart' : 'file',
       }),
     )
     sheet.value = false

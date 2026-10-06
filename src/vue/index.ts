@@ -1,6 +1,6 @@
 import TitanChordpro from './TitanChordpro.vue'
 
-export { TitanChordpro }
+export { TitanChordpro, TitanChordpro as ChordproViewer }
 export default TitanChordpro
 export type {
   TitanChordproEmits,

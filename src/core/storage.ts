@@ -36,13 +36,38 @@ export const STORE_KEYS = {
   suggestions: 'titan-chordpro:sug',
   /** Last display name typed when sending a suggestion. */
   actorName: 'titan-chordpro:actor-name',
-  /** Prefix of the reader's personal version: `titan-chordpro:my:{songId}`. */
+  /** Prefix of the reader's personal version: `titan-chordpro:my:{songId}:{chartId}`. */
   overlayPrefix: 'titan-chordpro:my:',
 } as const
 
+/**
+ * Chart slot on the overlay key. An omitted id and `default` are one slot —
+ * the implicit chart of a file with no envelope.
+ */
+function overlayChartId(chartId?: string): string {
+  return String(chartId ?? '').trim()
+}
+
+/**
+ * A colon would make this component look like the key separator.
+ * A percent would look like an encoded colon. Ids with neither stay literal —
+ * encoding them would move an existing slot.
+ */
+function overlayPart(id: string): string {
+  return id.includes(':') || id.includes('%') ? encodeURIComponent(id) : id
+}
+
 /** The key a given chart's personal version is stored under. */
-export function overlayKey(songId: string): string {
-  return `${STORE_KEYS.overlayPrefix}${songId}`
+export function overlayKey(songId: string, chartId?: string): string {
+  const song = overlayPart(songId)
+  const chart = overlayChartId(chartId)
+  const base = `${STORE_KEYS.overlayPrefix}${song}`
+  return chart ? `${base}:${overlayPart(chart)}` : base
+}
+
+/** `titan-chordpro:my:{songId}` before chart slots, with the same song encoding as `overlayKey`. */
+export function songLegacyKey(songId: string): string {
+  return `${STORE_KEYS.overlayPrefix}${overlayPart(songId)}`
 }
 
 /**

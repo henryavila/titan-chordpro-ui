@@ -1,3 +1,4 @@
+import { hasChartEnvelope } from './charts'
 import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 
 export const AUDIO_KINDS = ['sung', 'playback'] as const
@@ -69,17 +70,16 @@ export function setAudioUrl(
   url: string | null,
   kind: AudioKind = 'sung',
 ): string {
-  const cur: ChartMeta = { ...readMeta(source) }
   const key = kindKey(kind)
-  if (url == null || !String(url).trim()) {
-    delete cur[key]
-    return writeMeta(source, cur)
-  }
-  const ok = playableAudioUrl(url)
-  if (!ok) {
+  const clearing = url == null || !String(url).trim()
+  const ok = clearing ? '' : playableAudioUrl(url)
+  if (!clearing && !ok) {
     throw new Error('x_titan_audio_sung / x_titan_audio_playback must be an http(s) audio file URL (not YouTube)')
   }
-  cur[key] = ok
+  if (hasChartEnvelope(source)) return writeMeta(source, { [key]: ok })
+  const cur: ChartMeta = { ...readMeta(source) }
+  if (ok) cur[key] = ok
+  else delete cur[key]
   return writeMeta(source, cur)
 }
 

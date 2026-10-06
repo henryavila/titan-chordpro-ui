@@ -17,6 +17,7 @@ const props = defineProps<{
   actorName: string
   nameError?: boolean
   sentSuggestions?: Suggestion[]
+  versionLabels?: Record<string, string>
   revertAllLabel: string
   revertAllDanger: boolean
 }>()
@@ -147,7 +148,7 @@ function statusLabel(s: Suggestion): string {
           data-my-sug
           style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid var(--line-soft);border-radius:12px;background:var(--surface);"
         >
-          <span style="font-size:12px;font-weight:600;color:var(--text);">{{ new Date(s.at).toLocaleDateString('pt-BR') }} · {{ s.ops.length + (s.resolvedOps?.length ?? 0) }} ajuste(s)</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);">{{ new Date(s.at).toLocaleDateString('pt-BR') }} · {{ s.ops.length + (s.resolvedOps?.length ?? 0) }} ajuste(s)<template v-if="versionLabels?.[s.id]"> · <span data-my-sug-chart>{{ versionLabels[s.id] }}</span></template></span>
           <span data-my-sug-status style="font-size:11px;font-weight:700;color:var(--chord);text-transform:uppercase;">{{ statusLabel(s) }}</span>
         </div>
       </div>

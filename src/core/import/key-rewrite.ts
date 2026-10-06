@@ -8,6 +8,8 @@ import {
   transposeToken,
   usesFlats,
 } from '../transpose'
+import { chartDocument, hasChartEnvelope, replaceChart, splitCho } from '../charts'
+import { parse } from '../parse'
 import { readMeta, writeMeta, type ChartMeta } from './meta'
 
 export type KeyRewriteOffer = {
@@ -145,6 +147,12 @@ export type RewriteToKeyResult = {
  */
 export function rewriteToKey(source: string, targetKey: string): RewriteToKeyResult | null {
   const src = String(source ?? '')
+  if (hasChartEnvelope(src)) {
+    const rewritten = rewriteToKey(chartDocument(src), targetKey)
+    if (!rewritten) return null
+    const out = replaceChart(src, splitCho(src).defaultId, rewritten.source)
+    return { ...rewritten, source: out, changed: out !== src }
+  }
   const to = targetKey.trim()
   if (!/^[A-G](?:#|b)?m?$/.test(to)) return null
   const meta = readMeta(src)
@@ -172,4 +180,59 @@ export function rewriteToKey(source: string, targetKey: string): RewriteToKeyRes
     transpose: playing,
     changed: out !== src,
   }
+}
+
+/** Most frequent chord root outside tab and score. */
+export function inferWrittenKey(source: string): string | null {
+  const counts = new Map<string, number>()
+  let tab = false
+  let score = false
+  for (const raw of String(source ?? '').split('\n')) {
+    const d = raw.match(/^\s*\{\s*([a-zA-Z_]+)/)
+    const k = (d?.[1] ?? '').toLowerCase()
+    const edge = notationEdge(k)
+    if (edge === 'tab-open' || k === 'sot' || k === 'start_of_tab') {
+      tab = true
+      continue
+    }
+    if (edge === 'tab-close' || k === 'eot' || k === 'end_of_tab') {
+      tab = false
+      continue
+    }
+    if (edge === 'score-open' || k === 'sos' || k === 'start_of_score') {
+      score = true
+      continue
+    }
+    if (edge === 'score-close' || k === 'eos' || k === 'end_of_score') {
+      score = false
+      continue
+    }
+    if (tab || score || d) continue
+    for (const m of raw.matchAll(/\[([A-G](?:#|b)?)(m)?/g)) {
+      const tok = (m[1] ?? '') + (m[2] ?? '')
+      if (!tok) continue
+      counts.set(tok, (counts.get(tok) ?? 0) + 1)
+    }
+  }
+  let best: string | null = null
+  let n = 0
+  for (const [tok, c] of counts) {
+    if (c > n) {
+      best = tok
+      n = c
+    }
+  }
+  return best
+}
+
+/** `{transpose}` counts when the open chart's written chords match `{key}`. */
+export function storedTransposeSemis(source: string): number {
+  const view = parse(source)
+  const stored = view.meta.transpose ?? 0
+  if (!stored) return 0
+  const written = inferWrittenKey(view.source)
+  const a = keyIndex(keyRootOf(written || ''))
+  const b = keyIndex(keyRootOf(view.meta.key || ''))
+  if (a == null || b == null || a !== b) return 0
+  return stored
 }

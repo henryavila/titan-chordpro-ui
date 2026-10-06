@@ -161,6 +161,11 @@ export type TitanChordproProps = {
   /** Identity of the chart, so a personal version follows the right song. */
   songId?: string
   /**
+   * Named cifra inside `source` when the file has more than one.
+   * Absent → the file default. The musician can change it; emit `update:chartId`.
+   */
+  chartId?: string
+  /**
    * The rehearsal list. Two or more turn the mode on: the reader gets the
    * list, prev/next and a place kept per song. With one, or none, nothing of
    * it appears and `source` remains the chart on screen.
@@ -269,6 +274,7 @@ export type TitanChordproEmits = {
   /** Request only in host mode: the host accepts by updating its theme prop. */
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
+  'update:chartId': [value: string]
   'update:lens': [value: Lens]
   'update:hideComments': [value: boolean]
   'update:rehearsalFocus': [value: RehearsalFocus]

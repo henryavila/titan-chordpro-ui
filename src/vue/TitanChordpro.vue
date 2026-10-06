@@ -18,7 +18,15 @@ import {
   beatsPerBar,
   emptyPattern,
   gridFromDensity,
+  ChartEnvelopeError,
+  addChart,
+  deleteChart,
+  listCharts,
   parse,
+  renameChart,
+  overlaid,
+  replaceChart,
+  setDefaultChart,
   transpose,
   isCompleteStrumPattern,
   repairStrumPattern,
@@ -73,6 +81,7 @@ import BatidaSheet from './sheets/BatidaSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
 import StrumStrip from './StrumStrip.vue'
 import SourcePane from './edit/SourcePane.vue'
+import SourceCodeScreen from './edit/SourceCodeScreen.vue'
 import ChordDialog from './edit/ChordDialog.vue'
 import ImagePicker from './edit/ImagePicker.vue'
 import ScoreEditor from './edit/ScoreEditor.vue'
@@ -204,6 +213,7 @@ const props = withDefaults(
 // `TitanChordproEmits` alone can omit new keys from the runtime emits list).
 const emit = defineEmits<{
   'update:source': [value: string]
+  'update:chartId': [value: string]
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
   'update:lens': [value: Lens]
@@ -383,7 +393,10 @@ const lens = ref<Lens>(props.lens ?? 'none')
 const capoMap = ref(true)
 const hideComments = ref(props.hideComments)
 const srcOpen = ref(false)
+const codeOpen = ref(false)
 const metaOpen = ref(false)
+const musicianChartId = ref<string | null>(String(props.chartId ?? '').trim() || null)
+let applyChartTone = (_tune: { transpose?: number; capo?: number; dual?: boolean } | null) => {}
 
 const {
   session,
@@ -414,6 +427,7 @@ const {
   clearDiscardTimer,
 } = useEditSession({
   initialSource: props.source ?? '',
+  chartId: () => musicianChartId.value,
   propMode: () => props.mode,
   editSeen: () => editSeen.value,
   markEditSeen: () => markEditSeen(),
@@ -460,12 +474,14 @@ const {
   beditReset: () => resetBlocks(),
   clearScoreEditors: () => clearScoreEditors(),
   hostSource: () => hostSourceOf(),
+  songId: () => (setlist.on.value ? setlist.current.value?.id ?? '' : String(props.songId ?? '')),
   setlist: () => {
     if (!setlistBind) throw new Error('edit session: setlist not ready')
     return setlistBind
   },
   initialCapo: () => props.initialCapo,
   initialDual: () => props.initialDual,
+  applyChartTone: (tune) => applyChartTone(tune),
   scroller,
   mul,
   parkPlayhead,
@@ -505,13 +521,29 @@ const effTheme = computed<'light' | 'dark'>(() =>
       : 'light',
 )
 const liveSource = computed(() => working.value)
-const audioTracks = computed(() =>
-  isEdit.value
-    ? { sung: null, playback: null }
-    : audioTracksOf(liveSource.value),
-)
-const audioKinds = computed(() => audioKindsOf(audioTracks.value))
 const audioKind = ref<AudioKind>('sung')
+const fileCharts = computed(() => {
+  try {
+    return listCharts(normalizeSource(liveSource.value || hostSource.value))
+  } catch {
+    return []
+  }
+})
+const screenChartId = computed(() => {
+  const requested = String(musicianChartId.value ?? '').trim()
+  const charts = fileCharts.value
+  if (requested && charts.some((c) => c.id === requested)) return requested
+  return charts.find((c) => c.isDefault)?.id || charts[0]?.id || 'default'
+})
+const audioTracks = computed(() => {
+  if (isEdit.value) return { sung: null, playback: null }
+  try {
+    return audioTracksOf(parse(liveSource.value, { chartId: screenChartId.value }).source)
+  } catch {
+    return { sung: null, playback: null }
+  }
+})
+const audioKinds = computed(() => audioKindsOf(audioTracks.value))
 watch(
   audioTracks,
   (t) => {
@@ -522,7 +554,154 @@ watch(
   { immediate: true },
 )
 const audioUrl = computed(() => audioTracks.value[audioKind.value])
-const parsed = computed(() => parse(liveSource.value))
+const CHART_ENVELOPE_PT: Record<string, string> = {
+  'chart file has text outside chart blocks': 'Há texto fora dos blocos de cifra.',
+  'x_chart_default names a different chart': 'A cifra padrão aponta para outra cifra.',
+  'more than one chart marks itself default': 'Mais de uma cifra está marcada como padrão.',
+}
+const identityLost = ref(false)
+let sourceForRead = () => liveSource.value
+const parsedState = computed(() => {
+  try {
+    return {
+      view: parse(sourceForRead(), { chartId: screenChartId.value }),
+      envelopeError: '',
+    }
+  } catch (err) {
+    if (err instanceof ChartEnvelopeError) {
+      return {
+        view: parse(''),
+        envelopeError: CHART_ENVELOPE_PT[err.message] ?? 'Este arquivo de cifras não pode ser aberto.',
+      }
+    }
+    throw err
+  }
+})
+const parsed = computed(() => parsedState.value.view)
+type ChartReaderSpot = { offset: number; capo: number; capoMap: boolean; mul: number; top: number }
+const chartReader: Record<string, ChartReaderSpot> = {}
+
+function readerKey(chartId: string): string {
+  const song = setlist.on.value ? setlist.current.value?.id ?? '' : String(props.songId ?? '')
+  return `${song}\0${chartId}`
+}
+
+function rememberReader(chartId: string) {
+  if (!chartId) return
+  chartReader[readerKey(chartId)] = {
+    offset: offset.value,
+    capo: capo.value,
+    capoMap: capoMap.value,
+    mul: mul.value,
+    top: scroller.value?.scrollTop ?? 0,
+  }
+}
+
+function recallReader(chartId: string): boolean {
+  const spot = chartReader[readerKey(chartId)]
+  if (!spot) {
+    if (scroller.value) scroller.value.scrollTop = 0
+    return false
+  }
+  offset.value = spot.offset
+  capo.value = spot.capo
+  capoMap.value = spot.capoMap
+  mul.value = spot.mul
+  requestAnimationFrame(() => {
+    if (scroller.value) scroller.value.scrollTop = spot.top
+  })
+  return true
+}
+
+watch(screenChartId, (id, prev) => {
+  if (prev && prev !== id) {
+    rememberReader(prev)
+    stopScroll()
+  }
+  if (!prev || id === prev || musicianChartId.value) return
+  const charts = fileCharts.value
+  if (!charts.some((c) => c.id === prev)) return
+  const opened = charts.find((c) => c.isDefault)?.id || charts[0]?.id
+  // The chart that was open stopped being the one that opens with the song.
+  if (id === opened && !charts.find((c) => c.id === prev)?.isDefault) musicianChartId.value = id
+})
+watch(
+  () => props.songId,
+  (next, prev) => {
+    if (prev && !String(next ?? '').trim()) {
+      identityLost.value = true
+      if (isEdit.value) exitEdit()
+    } else if (next) identityLost.value = false
+  },
+)
+
+const chartPick: Record<string, { programmed: string; chosen: string }> = {}
+
+function programmedChart(): { song: string; chart: string } {
+  if (setlist.on.value) {
+    const song = setlist.current.value
+    return { song: song?.id ?? '', chart: String(song?.chartId ?? '').trim() }
+  }
+  return { song: String(props.songId ?? ''), chart: String(props.chartId ?? '').trim() }
+}
+
+function followProgram() {
+  const { song, chart } = programmedChart()
+  const mem = song ? chartPick[song] : undefined
+  if (!mem || mem.programmed !== chart) {
+    if (song) chartPick[song] = { programmed: chart, chosen: chart }
+    musicianChartId.value = chart || null
+    return
+  }
+  musicianChartId.value = mem.chosen || null
+}
+
+function selectChart(id: string) {
+  musicianChartId.value = id
+  const { song, chart } = programmedChart()
+  if (song) chartPick[song] = { programmed: chart, chosen: id }
+  emit('update:chartId', id)
+}
+function onChartAdd(opts: { id: string; label: string }) {
+  const fromId = screenChartId.value || 'default'
+  const next = addChart(session.getSource(), fromId, opts)
+  if (next === session.getSource()) return
+  session.replace(next)
+  musicianChartId.value = opts.id
+  touch()
+  const from = fileCharts.value.find((c) => c.id === fromId)?.label || fromId
+  toastMsg(`Versão ${opts.label} criada a partir de ${from}`)
+}
+function onChartRename(label: string) {
+  const id = screenChartId.value
+  if (!id || !label.trim()) return
+  const next = renameChart(session.getSource(), id, label.trim())
+  if (next === session.getSource()) return
+  session.replace(next)
+  touch()
+}
+function onChartDelete() {
+  const id = screenChartId.value
+  if (!id) return
+  const next = deleteChart(session.getSource(), id)
+  if (next === session.getSource()) return
+  session.replace(next)
+  musicianChartId.value = null
+  touch()
+}
+function onChartDefault() {
+  const id = screenChartId.value
+  if (!id) return
+  const next = setDefaultChart(session.getSource(), id)
+  if (next === session.getSource()) return
+  session.replace(next)
+  touch()
+  const label = fileCharts.value.find((c) => c.id === id)?.label || id
+  toastMsg(`${label} agora é a versão padrão`)
+}
+function onChartDraft(next: string) {
+  onDraft(replaceChart(session.getSource(), screenChartId.value, next))
+}
 parsedNow = () => parsed.value
 const audioArt = computed(() => {
   if (isEdit.value) return null
@@ -543,7 +722,9 @@ const audioArtwork = computed(() => {
   })
 })
 const fatal = computed(() => {
+  if (identityLost.value) return 'A identidade da música mudou.'
   if (props.forceParseError) return 'Erro de leitura simulado, para revisar este estado.'
+  if (parsedState.value.envelopeError) return parsedState.value.envelopeError
   return isParseFatal(liveSource.value, parsed.value)
 })
 const isLoading = computed(() => props.loading)
@@ -581,6 +762,18 @@ const canScroll = computed(() => {
 canScrollNow = () => canScroll.value
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
 const meta = computed(() => parsed.value.meta)
+applyChartTone = (tune) => {
+  if (tune) {
+    offset.value = tune.transpose || 0
+    capo.value = tune.capo || 0
+    capoMap.value = !!tune.dual
+    return
+  }
+  const fileT = Number(meta.value.transpose)
+  offset.value = Number.isFinite(fileT) ? fileT : 0
+  if (typeof props.initialCapo !== 'number') capo.value = 0
+  capoMap.value = typeof props.initialDual === 'boolean' ? props.initialDual : true
+}
 
 /** Batida from `{x_titan_strum:}` / `{x_titan_strum_set:}` — toggle is the reader's choice. */
 const strumSet = computed(() => readStrumPatterns(liveSource.value))
@@ -791,6 +984,14 @@ const setlist = useSetlist({
   prefetchAll: computed(() => props.prefetchAll === true),
 })
 setlistBind = setlist
+watch(
+  () => {
+    const { song, chart } = programmedChart()
+    return `${song}\0${chart}`
+  },
+  () => followProgram(),
+  { immediate: true },
+)
 dismissEndNow = () => setlist.dismissEnd()
 offerNextNow = () => setlist.offerNext()
 const audioIdentity = computed(
@@ -856,6 +1057,8 @@ const ov = useOverlay({
   // Line indices are what an adjustment anchors on: the overlay lives in the
   // same normalised text the parser numbers.
   hostSource: computed(() => normalizeSource(hostSource.value)),
+  chartId: screenChartId,
+  chartDirty: (id) => session.chartDirty(id),
   title: computed(() => meta.value.title ?? ''),
   suggestions: computed(() => props.suggestions !== false),
   actorKey: computed(() => props.actorKey),
@@ -863,6 +1066,10 @@ const ov = useOverlay({
   suggestionQueue: computed(() => props.suggestionQueue),
   store,
   toast: (m) => toastMsg(m),
+  onOpenTune: (tune) => {
+    if (recallReader(screenChartId.value)) return
+    applyChartTone(tune)
+  },
   // While an edit is in flight the draft is the truth; anything else that
   // moves the base has to reach the screen at once.
   onBaseChange: () => {
@@ -893,6 +1100,19 @@ const ov = useOverlay({
   onSuggestionQueue: (q) => emit('update:suggestionQueue', q),
 })
 ovBind = ov
+sourceForRead = () => {
+  if (isEdit.value || ov.showOriginal.value) return liveSource.value
+  if (!session.dirty()) return liveSource.value
+  const id = screenChartId.value
+  if (!id || session.chartDirty(id)) return liveSource.value
+  try {
+    const chart = parse(liveSource.value, { chartId: id }).source
+    const painted = overlaid(chart, ov.overlay.value).text
+    return painted === chart ? liveSource.value : replaceChart(liveSource.value, id, painted)
+  } catch {
+    return liveSource.value
+  }
+}
 
 const phoneSub = computed(
   () =>
@@ -953,6 +1173,7 @@ const {
   capo: () => capo.value,
   title: () => meta.value.title,
   key: () => shownKey.value || null,
+  chartId: () => (fileCharts.value.length > 1 ? screenChartId.value : undefined),
   personal: () => !ov.exportOrig.value && ov.hasOverlay.value,
   accent: () => props.accent,
   pdfShouldFail: () => props.pdfShouldFail,
@@ -1033,7 +1254,7 @@ const capoPairs = computed(() => layout.value.capoPairs)
  * so it survives a reload, an undo and a re-parse.
  */
 const bedit = useBlockEdit({
-  source: liveSource,
+  source: computed(() => parsed.value.source),
   blocks,
   editing: isEdit,
   wMode,
@@ -1042,7 +1263,7 @@ const bedit = useBlockEdit({
   root,
   scroller,
   write: (next, message) => {
-    session.replace(next)
+    session.replace(replaceChart(session.getSource(), screenChartId.value, next))
     touch()
     if (message) toastMsg(message)
   },
@@ -1136,9 +1357,12 @@ const capoHint = computed(() => {
 /** Distinct new shapes for the capo hint chips (one row, scroll sideways). */
 const capoShapes = computed(() => capoPairs.value.map((p) => p.shape))
 /** The capo button says whether both chords are on screen. */
-const capoBtnLabel = computed(() =>
-  capo.value === 0 ? 'Capo' : twin.value ? `Dual · capo ${capo.value}` : `Capo ${capo.value}`,
-)
+const capoBtnLabel = computed(() => {
+  if (capo.value > 0) return twin.value ? `Dual · capo ${capo.value}` : `Capo ${capo.value}`
+  // Several versions: the chip names this version's capo. It is not turned on.
+  if (fileCharts.value.length > 1 && fileCapo.value > 0) return `Capo ${fileCapo.value}`
+  return 'Capo'
+})
 /**
  * Nothing else teaches the three touch rules: tapping a line edits the lyric,
  * holding a chord drags it to a syllable, the grip selects and reorders. Shown
@@ -1181,9 +1405,10 @@ const exportKeyNote = computed(() =>
 )
 
 /** Identity of the song for the per-song tempo memory. */
-const songKey = computed(() =>
-  [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo',
-)
+const songKey = computed(() => {
+  const base = [meta.value.title || '', meta.value.artist || ''].join('|').trim() || 'sem-titulo'
+  return fileCharts.value.length > 1 ? `${base}|${screenChartId.value}` : base
+})
 const diagramOpen = ref(false)
 const diagramInstrument = ref<DiagramInstrumentChoice>('guitar')
 const diagramTarget = ref<{ shapeName: string; concert: string; capoFret: number } | null>(null)
@@ -1234,6 +1459,7 @@ const met = useMetronome({
   liveRate: mul,
 })
 metBind = met
+watch(songKey, () => met.loadBpm())
 followNow = () => met.follow.value
 metRunningNow = () => met.running.value
 stopMetNow = () => met.stop()
@@ -1844,6 +2070,9 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   nextChip: setlist.nextChip.value,
   title: meta.value.title || 'Sem título',
   subtitle: meta.value.subtitle || '',
+  charts: fileCharts.value.length > 1 ? fileCharts.value : [],
+  chartId: screenChartId.value,
+  chartLabel: fileCharts.value.find((c) => c.id === screenChartId.value)?.label || '',
   phoneSub: phoneSub.value,
   hasKey: hasKey.value && !scoreReading.value,
   hasReset: hasReset.value,
@@ -1953,6 +2182,9 @@ const editHeadBind = computed((): EditHeadModel => ({
   canRedo: canRedo.value,
   confirmDiscard: confirmDiscard.value,
   discardLabel: discardLabel.value,
+  charts: fileCharts.value,
+  chartId: screenChartId.value,
+  chartLabel: fileCharts.value.find((c) => c.id === screenChartId.value)?.label || '',
 }))
 
 const editDockBind = computed((): EditDockModel => ({
@@ -2715,7 +2947,7 @@ defineExpose({
     <div class="titan-chordpro-glow" />
 
     <div class="titan-chordpro-stage">
-    <div v-if="isPopulated" ref="scroller" class="titan-chordpro-scroll" data-titan-chordpro-scroll @click="onSurfaceTap">
+    <div v-if="isPopulated" ref="scroller" class="titan-chordpro-scroll cpv-chart" data-titan-chordpro-scroll data-cpv-scroll @click="onSurfaceTap">
       <div :ref="bindPage" class="titan-chordpro-page" :style="{ maxWidth: columnMax, padding: pagePad, '--titan-chordpro-notation-outset': notationOutset }">
         <div :style="{ padding: pageBodyPad }">
         <TitanChordproCapoLegend v-if="legend && !scoreReading" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
@@ -2812,7 +3044,7 @@ defineExpose({
       :prev-title="setlist.prevTitle.value"
     />
     </div>
-    <div class="titan-chordpro-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
+    <div class="titan-chordpro-progress cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
     <!-- Identity card — fades with zen. A plain name takes the same band while chrome is gone. -->
     <div
@@ -2835,6 +3067,7 @@ defineExpose({
         @toggle-map="toggleMap"
         @capo-zero="setCapo(0)"
         @bind-capo="bindCapoBox"
+        @select-chart="selectChart"
       />
     </div>
     <div
@@ -2859,6 +3092,11 @@ defineExpose({
       @discard="discard"
       @save="save"
       @read="exitEdit"
+      @select-chart="selectChart"
+      @chart-add="onChartAdd"
+      @chart-rename="onChartRename"
+      @chart-delete="onChartDelete"
+      @chart-default="onChartDefault"
     />
 
     <TitanChordproWideDock
@@ -2953,6 +3191,7 @@ defineExpose({
       @drop-clip="bedit.clip.value = null"
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
       @source="srcOpen = true"
+      @source-code="codeOpen = true"
       @smaller-type="bias = Math.max(-3, bias - 1)"
       @bigger-type="bias = Math.min(5, bias + 1)"
       @theme="requestTheme"
@@ -3056,6 +3295,7 @@ defineExpose({
       :compact="compact"
       :has-overlay="ov.hasOverlay.value"
       :export-orig="ov.exportOrig.value"
+      :chart-label="fileCharts.length > 1 ? (fileCharts.find((c) => c.id === screenChartId)?.label || '') : ''"
       @close="sheet = false"
       @cho="doExportCho"
       @pdf="doExportPdf"
@@ -3245,6 +3485,7 @@ defineExpose({
       :actor-name="ov.actorName.value"
       :name-error="ov.nameNeeded.value"
       :sent-suggestions="ov.mySuggestions.value"
+      :version-labels="ov.myVersionLabels.value"
       :revert-all-label="ov.revertAllLabel.value"
       :revert-all-danger="ov.revertAllLabel.value !== 'Voltar ao original'"
       @close="ov.closeMy"
@@ -3278,6 +3519,7 @@ defineExpose({
       :official-strum="ov.qOfficialStrum.value"
       :batch-applies="ov.qBatchPreview.value?.count ?? 0"
       :batch-conflicts="ov.qBatchPreview.value?.conflicts ?? 0"
+      :review="ov.qReview.value"
       :busy="ov.reviewBusy.value"
       :resolve-score="resolveScore"
       @back="ov.qBack"
@@ -3290,17 +3532,24 @@ defineExpose({
       @refuse-batch="ov.refuseBatch"
     />
 
+    <SourceCodeScreen
+      v-if="codeOpen"
+      :source="liveSource"
+      note="O arquivo inteiro, com todas as versões."
+      @close="codeOpen = false"
+    />
+
     <SourcePane
       v-if="isContentEdit && srcOpen && capabilities.sourcePane !== false"
-      :source="liveSource"
+      :source="parsed.source"
       :lint="lint"
       :sel="srcSel"
-      @input="onDraft"
+      @input="onChartDraft"
       @checkpoint="session.checkpoint"
       @close="srcOpen = false"
     />
 
-    <div class="titan-chordpro-live" role="status" aria-live="polite">{{ toast }}</div>
+    <div class="titan-chordpro-live cpv-toast" role="status" aria-live="polite">{{ toast }}</div>
     <div class="titan-chordpro-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : ppsx === 'error' ? 'A exportação em PowerPoint falhou.' : '') }}</div>
   </div>
 </template>

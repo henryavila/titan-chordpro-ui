@@ -98,6 +98,7 @@ export const DEMOS: readonly DemoEntry[] = [
   edit-mode="local"
 />`,
     extra: [
+      { href: '/standalone.html?song=006-poder-do-amor-original', label: 'Poder do Amor · Original e Hinário' },
       { href: '/standalone.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
@@ -134,6 +135,7 @@ export const DEMOS: readonly DemoEntry[] = [
     blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Com áudio, a Central de Mídia também troca de cifra.',
     call: `<TitanChordpro :songs="songs" edit-mode="local" />`,
     extra: [
+      { href: '/standalone-lista.html?par=1', label: 'Poder do Amor (versões) e uma sem versão' },
       { href: '/standalone-lista.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
       { href: '/standalone-lista.html?audio=1', label: 'Áudio na lista' },
@@ -390,6 +392,8 @@ export type LabQuery = {
   capa: boolean
   /** Captured Cifra Club page slug under tests/helpers/cifraclub-pages/. */
   cc: string | null
+  /** Two-song rehearsal: one envelope, one plain file. */
+  par: boolean
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -430,6 +434,7 @@ export function labQuery(search: string): LabQuery {
     audio: parseDemoAudio(p.get('audio')),
     capa: p.get('capa') !== '0',
     cc: p.get('cc'),
+    par: p.get('par') === '1',
   }
 }
 
