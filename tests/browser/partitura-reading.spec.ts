@@ -1,0 +1,21 @@
+import { expect, test } from '@playwright/test'
+
+test('partitura reading drops the chord chart and keeps the staff in musical time', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/?chart=song-score')
+  await expect(page.getByText('Linha da cifra com acordes')).toBeVisible()
+  const partitura = page.getByRole('button', { name: 'Partitura da música' })
+  await expect(partitura).toBeVisible()
+  await partitura.click()
+  await expect(page.locator('[data-titan-chordpro-reading]')).toHaveAttribute('data-titan-chordpro-reading', 'partitura')
+  await expect(page.getByText('Linha da cifra com acordes')).toHaveCount(0)
+  await expect(page.locator('[data-transpose-down]')).toHaveCount(0)
+  await expect(page.locator('[data-fit]')).toHaveCount(0)
+  const system = page.locator('[data-score-system]').first()
+  await expect(system).toBeVisible()
+  await expect.poll(async () => Number(await system.getAttribute('data-score-seconds'))).toBeGreaterThan(0)
+  await expect(page.getByRole('button', { name: 'Diminuir a partitura' })).toBeVisible()
+  await page.getByRole('button', { name: 'Cifra', exact: true }).click()
+  await expect(page.getByText('Linha da cifra com acordes')).toBeVisible()
+  await expect(page.locator('[data-score-system]')).toHaveCount(0)
+})

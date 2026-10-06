@@ -22,6 +22,9 @@ export type WideDockModel = {
   rollLive: boolean
   fitOn: boolean
   letra: boolean
+  partitura: boolean
+  partituraOn: boolean
+  scoreReading: boolean
   hasKey: boolean
   nashvilleOn: boolean
   hideComments: boolean
@@ -43,6 +46,9 @@ export type PhoneDockModel = {
   hidden: boolean
   hintFit: boolean
   letra: boolean
+  partitura: boolean
+  partituraOn: boolean
+  scoreReading: boolean
   dockCtrlH: string
   setlistOn: boolean
   noPrev: boolean
@@ -118,6 +124,8 @@ export type MoreSheetModel = {
   hasStrum: boolean
   strumOn: boolean
   ensaioBatida: boolean
+  /** Partitura reading hides chord-chart controls. */
+  scoreReading: boolean
   showMine: boolean
   showOriginal: boolean
   mineCount: number

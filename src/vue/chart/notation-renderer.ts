@@ -8,7 +8,7 @@ import { excerptTrack, hasTab, isolateExcerpt } from './notation-loader'
 
 export type NotationPalette = { ink: string; secondary: string; line: string; accent: string }
 export type NoteName = { x: number; text: string; row: number }
-export type NotationSystem = { content: string | HTMLCanvasElement; width: number; height: number; first: number; last: number; noteNames: NoteName[] }
+export type NotationSystem = { content: string | HTMLCanvasElement; width: number; height: number; first: number; last: number; noteNames: NoteName[]; seconds?: number }
 export const PAPER_PALETTE: NotationPalette = { ink: '#13161d', secondary: '#434957', line: '#737b88', accent: '#17713c' }
 let font: Promise<void> | undefined
 function loadFont(): Promise<void> {

@@ -352,5 +352,7 @@ export type {
 export { applyStrumPreset, draftStrumPreset, listStrumPresets } from './strum-presets'
 export type { SaveStrumPresetPayload, StrumPreset } from './strum-presets'
 
-export { isInlineScore, isScoreReference, readScoreReference, writeScoreReference, scoreAutoScale, isTabRhythm } from './score-reference'
+export { isInlineScore, isScoreReference, readScoreReference, writeScoreReference, scoreAutoScale, isTabRhythm, songScoreBlock } from './score-reference'
 export type { ScoreReference, TabRhythm } from './score-reference'
+export { SCORE_TICKS_PER_QUARTER, scoreClock } from './score-clock'
+export type { ScoreBarClock, ScoreMoment, ScoreTempoChange } from './score-clock'

@@ -28,6 +28,12 @@ export type MetronomeOpts = {
   scrollable: Ref<boolean>
   /** The panel covers the chart, so it steps aside on start. */
   onPanelClose: () => void
+  /** Quarter-or-beat tempo of the staff under the playhead. Null keeps the chart tempo. */
+  liveBpm?: Ref<number | null>
+  /** Click beats in the bar under the playhead. */
+  liveBeats?: Ref<number | null>
+  /** Scroll speed. Applied only while `liveBpm` is set, so the click stays with the page. */
+  liveRate?: Ref<number>
 }
 
 /**
@@ -100,8 +106,8 @@ export function useMetronome(opts: MetronomeOpts) {
   let live = false
 
   const chartBpm = computed(() => sheetBpm(opts.tempo.value))
-  const bpm = computed(() => userBpm.value || chartBpm.value || 100)
-  const bar = computed(() => beatsPerBar(opts.time.value))
+  const bpm = computed(() => opts.liveBpm?.value || userBpm.value || chartBpm.value || 100)
+  const bar = computed(() => opts.liveBeats?.value || beatsPerBar(opts.time.value))
 
   function readStore(): Record<string, number> {
     return readJson<Record<string, number>>(opts.store, STORE_KEYS.bpm, {})
@@ -157,7 +163,8 @@ export function useMetronome(opts: MetronomeOpts) {
       return
     }
     const now = performance.now()
-    const spb = 60000 / bpm.value
+    const rate = opts.liveBpm?.value ? Math.min(3, Math.max(0.3, opts.liveRate?.value ?? 1)) : 1
+    const spb = 60000 / bpm.value / rate
     if (now >= nextAt) {
       // The chart joins on a downbeat, in the same tick as the accent that
       // announces it — not a beat early, at the end of the last count-in beat.

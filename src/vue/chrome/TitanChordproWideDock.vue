@@ -27,6 +27,7 @@ const emit = defineEmits<{
   toggleFit: []
   cifra: []
   letra: []
+  partitura: []
   toggleNashville: []
   toggleComments: []
   toggleMet: []
@@ -111,8 +112,9 @@ const emit = defineEmits<{
         @click="emit('toggleScroll')"
       />
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-      <TitanChordproTypePair density="bar" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
+      <TitanChordproTypePair density="bar" :score="scoreReading" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
       <TitanChordproBarButton
+        v-if="!scoreReading"
         data-fit
         icon="scan"
         label="Ajuste"
@@ -122,8 +124,9 @@ const emit = defineEmits<{
         @click="emit('toggleFit')"
       />
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
-      <ReadingSwitch variant="bar" :letra="letra" @cifra="emit('cifra')" @letra="emit('letra')" />
+      <ReadingSwitch variant="bar" :letra="letra" :partitura="partitura" :partitura-on="partituraOn" @cifra="emit('cifra')" @letra="emit('letra')" @partitura="emit('partitura')" />
       <TitanChordproBarButton
+        v-if="!scoreReading"
         data-lens="nashville"
         icon="glasses"
         label="Graus"
@@ -134,6 +137,7 @@ const emit = defineEmits<{
         @click="emit('toggleNashville')"
       />
       <TitanChordproBarButton
+        v-if="!scoreReading"
         data-comments-toggle
         :icon="hideComments ? 'eyeOff' : 'eye'"
         label="Comentários"
