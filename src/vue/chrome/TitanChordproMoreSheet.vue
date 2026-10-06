@@ -31,6 +31,7 @@ const emit = defineEmits<{
   >
       <button data-theme-btn class="titan-chordpro-surface-btn titan-chordpro-more-item" :title="themeTitle" @click="emit('theme')"><TitanChordproIcon :name="themeIcon" :size="18" /><span class="titan-chordpro-more-copy">Tema</span><span>{{ themeLabel }}</span></button>
       <button
+        v-if="!scoreReading"
         class="titan-chordpro-surface-btn titan-chordpro-more-item"
         :class="{ 'is-chord': nashvilleOn }"
         data-lens="nashville"
@@ -40,6 +41,7 @@ const emit = defineEmits<{
         @click="emit('toggleNashville')"
       ><TitanChordproIcon name="glasses" :size="18" /><span class="titan-chordpro-more-copy">Graus</span><span>{{ nashvilleHint }}</span></button>
       <button
+        v-if="!scoreReading"
         class="titan-chordpro-surface-btn titan-chordpro-more-item"
         :class="{ 'is-sel': hideComments }"
         data-comments-toggle

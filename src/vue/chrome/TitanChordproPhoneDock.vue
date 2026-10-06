@@ -15,6 +15,7 @@ const emit = defineEmits<{
   dismissHint: []
   cifra: []
   letra: []
+  partitura: []
   prev: []
   openList: []
   next: []
@@ -40,7 +41,7 @@ const emit = defineEmits<{
     <div class="titan-chordpro-hit titan-chordpro-veil" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;">
       <div data-phone-lead class="titan-chordpro-phone-lead">
         <slot />
-        <ReadingSwitch v-show="!hidden" variant="dock" :letra="letra" :height="dockCtrlH" @cifra="emit('cifra')" @letra="emit('letra')" />
+        <ReadingSwitch v-show="!hidden" variant="dock" :letra="letra" :partitura="partitura" :partitura-on="partituraOn" :height="dockCtrlH" @cifra="emit('cifra')" @letra="emit('letra')" @partitura="emit('partitura')" />
       </div>
       <div class="titan-chordpro-chrome" :class="{ 'is-hidden': hidden }">
       <TitanChordproSetlistNav
@@ -74,7 +75,7 @@ const emit = defineEmits<{
           :title="scrollTitle"
           @click="emit('toggleScroll')"
         />
-        <TitanChordproTypePair density="phone" :xs="bp === 'xs'" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
+        <TitanChordproTypePair density="phone" :xs="bp === 'xs'" :score="scoreReading" @smaller="emit('smallerType')" @bigger="emit('biggerType')" />
         <TitanChordproIconButton
           v-if="canEdit"
           data-edit
@@ -86,6 +87,7 @@ const emit = defineEmits<{
           @click="emit('edit')"
         />
         <TitanChordproIconButton
+          v-if="!scoreReading"
           data-fit
           density="phone"
           icon="scan"

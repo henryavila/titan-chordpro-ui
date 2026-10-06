@@ -345,3 +345,95 @@ for (const width of [375, 1280]) {
     await page.screenshot({ path: info.outputPath(`compact-controls-${width}.png`) })
   })
 }
+
+for (const width of [375, 1280]) {
+  test(`TAB and Partitura stay one equal switch at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/?chart=song-score')
+    const trigger = page.getByRole('button', { name: 'Opções de Pauta da música' })
+    await expect(trigger).toBeVisible()
+    const triggerHit = await trigger.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return top === el || (!!top && el.contains(top))
+    })
+    expect(triggerHit, 'the options button is covered').toBe(true)
+    await trigger.click()
+    const presentation = page.getByRole('group', { name: 'Apresentação' })
+    const geometry = await presentation.evaluate((group) => {
+      const buttons = [...group.querySelectorAll(':scope > button')].map((el) => {
+        const r = el.getBoundingClientRect()
+        const cs = getComputedStyle(el)
+        return {
+          text: (el.textContent ?? '').trim(),
+          y: Math.round(r.y),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          pressed: el.getAttribute('aria-pressed') === 'true',
+          bg: cs.backgroundColor,
+        }
+      })
+      const gr = group.getBoundingClientRect()
+      return { buttons, groupH: Math.round(gr.height), groupW: Math.round(gr.width) }
+    })
+    expect(geometry.buttons.map((b) => b.text)).toEqual(['TAB', 'Partitura'])
+    expect(geometry.groupH).toBe(40)
+    const [tab, partitura] = geometry.buttons
+    expect(tab!.y).toBe(partitura!.y)
+    expect(tab!.h).toBe(partitura!.h)
+    expect(tab!.h).toBeGreaterThanOrEqual(32)
+    expect(Math.abs(tab!.w - partitura!.w)).toBeLessThanOrEqual(2)
+    expect(tab!.w + partitura!.w).toBeGreaterThan(geometry.groupW - 16)
+    const pressed = geometry.buttons.find((b) => b.pressed)
+    expect(pressed?.bg, JSON.stringify(geometry)).not.toBe('rgba(0, 0, 0, 0)')
+    const cardBg = await page.locator('.titan-chordpro-score-more-card').evaluate((el) => getComputedStyle(el).backgroundColor)
+    const parts = cardBg.match(/[\d.]+/g)?.map(Number) ?? []
+    const alpha = parts.length === 4 ? parts[3]! : 1
+    expect(alpha, `menu must hide the chart behind TAB/Partitura, got ${cardBg}`).toBe(1)
+    const tabHit = await page.getByRole('group', { name: 'Apresentação' }).getByRole('button', { name: 'TAB', exact: true }).evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return top === el
+    })
+    expect(tabHit, 'TAB is not the hit target inside the menu').toBe(true)
+    await page.mouse.move(0, 0)
+    const action = await page.getByRole('button', { name: 'Ler só a partitura' }).evaluate((el) => {
+      const s = getComputedStyle(el)
+      const r = el.getBoundingClientRect()
+      return {
+        outside: !el.closest('.titan-chordpro-root'),
+        pad: s.paddingLeft,
+        minH: s.minHeight,
+        h: Math.round(r.height),
+        radius: s.borderTopLeftRadius,
+        border: s.borderTopWidth,
+        bg: s.backgroundColor,
+        color: s.color,
+      }
+    })
+    expect(action, 'action row fell back to the native white button').toEqual({
+      outside: true,
+      pad: '14px',
+      minH: '44px',
+      h: 44,
+      radius: '13px',
+      border: '1px',
+      bg: 'rgba(19, 22, 29, 0.035)',
+      color: 'rgb(19, 22, 29)',
+    })
+  })
+}
+
+test('stacked score actions keep a gap instead of one white block', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?chart=song-score')
+  await page.getByRole('button', { name: 'Editar esta cifra' }).click()
+  await page.getByRole('button', { name: 'Opções de Pauta da música' }).click()
+  const gap = await page.locator('.titan-chordpro-score-sheet button.titan-chordpro-surface-btn').evaluateAll((els) => {
+    const rows = els.map((el) => el.getBoundingClientRect())
+    const download = rows.at(-2)!
+    const adjust = rows.at(-1)!
+    return Math.round(adjust.top - download.bottom)
+  })
+  expect(gap).toBe(6)
+})

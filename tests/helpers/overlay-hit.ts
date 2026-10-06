@@ -25,6 +25,7 @@ export const LIVE_CONTROL_SELECTORS = [
   '[data-fs]',
   '[data-audio-open]',
   '[data-reading-switch]',
+  '[data-read-song]',
 ] as const
 
 export type OverlaySample = { where: string; x: number; y: number }

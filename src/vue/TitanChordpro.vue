@@ -46,6 +46,10 @@ import {
   readUserPreferences,
   updateUserPreferences,
   notationBlockIds,
+  songScoreBlock,
+  formatDurationFromSec,
+  readScoreReference,
+  writeScoreReference,
   type StrumPattern,
   type StrumPatternSet,
 } from '@henryavila/titan-chordpro-ui'
@@ -56,8 +60,10 @@ import type {
   SaveStrumPresetPayload,
   StrumPreset,
   ThemeId,
+  ScoreMoment,
 } from '@henryavila/titan-chordpro-ui'
 import ChartBody from './chart/ChartBody.vue'
+import type { ScoreTiming } from './chart/score-timing'
 import DiagramModal from './overlay/DiagramModal.vue'
 import type { DiagramInstrumentChoice } from './overlay/DiagramModal.vue'
 import ExportSheet from './sheets/ExportSheet.vue'
@@ -269,6 +275,17 @@ const sysDark = ref(
 )
 const bias = ref(0)
 const fit = ref<boolean | null>(null)
+/** Partitura reading. The flag is early so chrome measure can see it. */
+const partituraOn = ref(false)
+const scoreReadingFlag = ref(false)
+const scoreZoom = ref(0)
+const scoreClockReady = ref(false)
+const loadedBars = ref<number | null>(null)
+const scoreSeconds = ref<number[]>([])
+const scoreMoments = ref<ScoreMoment[]>([])
+const knownScoreBars = ref<Record<string, number>>({})
+const scoreLiveBpm = ref<number | null>(null)
+const scoreLiveBeats = ref<number | null>(null)
 /**
  * Clock and edit-session inputs that do not exist yet. Assigned before mount,
  * read only when a gesture or the host actually runs. One binding each —
@@ -346,6 +363,7 @@ const {
   offerNext: () => offerNextNow(),
   canScroll: () => canScrollNow(),
   startLinked: () => startLinkedNow(),
+  scoreMeasure: () => scoreReadingFlag.value,
 })
 
 const toast = ref<string | null>(null)
@@ -556,7 +574,10 @@ const {
  * button stays live while the scroll runs — that is the only way to stop it.
  */
 const hasDuration = computed(() => hasSongDuration(parsed.value.meta.duration))
-const canScroll = computed(() => hasDuration.value && scrollRoom.value > 1)
+const canScroll = computed(() => {
+  if (scoreReadingFlag.value) return scoreClockReady.value && scrollRoom.value > 1
+  return hasDuration.value && scrollRoom.value > 1
+})
 canScrollNow = () => canScroll.value
 const scrollOff = computed(() => !canScroll.value && !scrolling.value)
 const meta = computed(() => parsed.value.meta)
@@ -711,10 +732,20 @@ watch(strumVisible, async (on) => {
 const pageGap = computed(() => (fs.value ? 6 : compact.value ? 10 : 14))
 const strumSpacer = computed(() => (strumVisible.value ? Math.max(72, strumH.value + 10) : 0))
 const notationOutset = computed(() => {
+  if (scoreReadingFlag.value) return '0px'
   const pageWidth = pageMax.value === '100%' ? width.value : Math.min(width.value, parseFloat(pageMax.value))
   const contentWidth = pageWidth - 2 * parseFloat(padX.value)
   return `${Math.max(0, (Math.min(width.value, 1280) - 32 - contentWidth) / 2)}px`
 })
+const columnMax = computed(() => {
+  if (!scoreReadingFlag.value) return pageMax.value
+  if (bp.value === 'xl') return '1280px'
+  if (bp.value === 'lg') return '1180px'
+  return '100%'
+})
+const readingCountLeft = computed(() =>
+  columnMax.value === '100%' ? '2px' : `max(12px, calc((100% - ${columnMax.value}) / 2 - 28px))`,
+)
 const pagePad = computed(() => {
   // Head is overlay-only. Top pad keeps the lyric under the card (and under
   // the batida dock when it is open). Zen drops a plain name into that band —
@@ -969,14 +1000,29 @@ const layout = computed(() =>
     editing: isEdit.value,
   }),
 )
+const partituraAvailable = computed(() => !isEdit.value && !!songScoreBlock(layout.value.blocks, loadedBars.value ?? undefined))
+const scoreReading = computed(() => partituraOn.value && partituraAvailable.value)
 const blocks = computed(() => {
   const all = layout.value.blocks
   // Hiding rehearsal comments is a reading lens, not an edit: the text stays
   // in the file, and the editor always sees it.
-  if (isEdit.value || !hideComments.value) return all
-  return all.filter((b) => b.kind !== 'comment' && b.kind !== 'note')
+  const visible = isEdit.value || !hideComments.value ? all : all.filter((b) => b.kind !== 'comment' && b.kind !== 'note')
+  if (!scoreReading.value) return visible
+  const song = songScoreBlock(visible, loadedBars.value ?? undefined)
+  return song ? [song] : visible
 })
 blocksNow = () => blocks.value
+watch(scoreReading, (on) => {
+  scoreReadingFlag.value = on
+  if (scrolling.value) stopScroll()
+  clearTimeline()
+  void nextTick(() => syncScrollRoom())
+}, { immediate: true })
+watch(partituraAvailable, (ok) => {
+  if (ok || !partituraOn.value || loadedBars.value == null) return
+  partituraOn.value = false
+  toastMsg('Esta partitura não cobre a música toda')
+})
 const twin = computed(() => layout.value.twin)
 const legend = computed(() => layout.value.legend)
 const capoPairs = computed(() => layout.value.capoPairs)
@@ -1183,6 +1229,9 @@ const met = useMetronome({
   onFollowStart: () => startScroll(),
   onFollowStop: () => stopScroll(),
   onPanelClose: () => (metOpen.value = false),
+  liveBpm: scoreLiveBpm,
+  liveBeats: scoreLiveBeats,
+  liveRate: mul,
 })
 metBind = met
 followNow = () => met.follow.value
@@ -1200,8 +1249,9 @@ startLinkedNow = () => {
 }
 const scrollTitle = computed(() => {
   if (scrollOff.value) {
-    if (!hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
-    return 'A cifra inteira cabe na tela — não há o que rolar'
+    if (scoreReading.value && !scoreClockReady.value) return 'Abrindo a partitura — a rolagem espera o tempo da música'
+    if (!scoreReading.value && !hasDuration.value) return 'Sem duração na cifra — a rolagem precisa de {duration:}'
+    return scoreReading.value ? 'A partitura cabe na tela — não há o que rolar' : 'A cifra inteira cabe na tela — não há o que rolar'
   }
   if (
     met.follow.value &&
@@ -1334,6 +1384,7 @@ function persistPrefs() {
     metFollow: met.follow.value === false ? false : undefined,
     metCountIn: met.countInOn.value === false ? false : undefined,
     lens: lens.value === 'none' ? undefined : lens.value,
+    partitura: partituraOn.value || undefined,
     hideComments: hideComments.value || undefined,
     diagramInstrument: diagramInstrument.value === 'guitar' ? undefined : diagramInstrument.value,
   })
@@ -1498,16 +1549,76 @@ function setLens(value: Lens) {
 }
 
 function showCifra() {
+  partituraOn.value = false
   setLens(chordLens.value)
 }
 
 function showLetra() {
+  partituraOn.value = false
   setLens('letra')
 }
 
+function showPartitura() {
+  if (!partituraAvailable.value) return
+  partituraOn.value = true
+}
+
 function toggleReading() {
-  if (lens.value === 'letra') showCifra()
+  if (scoreReading.value) showCifra()
+  else if (lens.value === 'letra') showCifra()
   else showLetra()
+}
+
+const SCORE_ZOOMS = [0, 1.1, 1.3, 1.5, 2] as const
+function stepScoreZoom(dir: -1 | 1) {
+  const at = SCORE_ZOOMS.indexOf(scoreZoom.value as (typeof SCORE_ZOOMS)[number])
+  const i = at < 0 ? 0 : at
+  scoreZoom.value = SCORE_ZOOMS[Math.max(0, Math.min(SCORE_ZOOMS.length - 1, i + dir))]!
+}
+function smallerReading() {
+  if (scoreReading.value) stepScoreZoom(-1)
+  else bias.value = Math.max(-3, bias.value - 1)
+}
+function biggerReading() {
+  if (scoreReading.value) stepScoreZoom(1)
+  else bias.value = Math.min(5, bias.value + 1)
+}
+
+function onScoreTiming(payload: ScoreTiming) {
+  knownScoreBars.value = { ...knownScoreBars.value, [payload.text]: payload.barCount }
+  const candidate = songScoreBlock(layout.value.blocks)
+  const candidateText = candidate && 'text' in candidate && typeof candidate.text === 'string' ? candidate.text : ''
+  if (!candidate || candidateText !== payload.text) return
+  loadedBars.value = payload.barCount
+  const song = songScoreBlock(layout.value.blocks, payload.barCount)
+  const songText = song && 'text' in song && typeof song.text === 'string' ? song.text : ''
+  if (!song || songText !== payload.text) {
+    scoreClockReady.value = false
+    scoreSeconds.value = []
+    scoreMoments.value = []
+    return
+  }
+  scoreSeconds.value = payload.seconds
+  scoreMoments.value = payload.moments
+  scoreClockReady.value = payload.seconds.some((sec) => sec > 0)
+  void nextTick(() => {
+    clearTimeline()
+    syncScrollRoom()
+    if (scrolling.value) reseatScroll()
+  })
+}
+
+function scoreMomentNow(): ScoreMoment | null {
+  const list = scoreMoments.value
+  if (!scoreReading.value || !list.length) return null
+  const total = scoreSeconds.value.reduce((sum, sec) => sum + sec, 0)
+  const t = total > 0 ? progress.value * total : 0
+  let current = list[0]!
+  for (const moment of list) {
+    if (moment.at <= t + 1e-4) current = moment
+    else break
+  }
+  return current
 }
 
 function toggleNashville() {
@@ -1726,7 +1837,7 @@ const audioRefBind = computed(() => ({
 
 const viewHeadBind = computed((): ViewHeadModel => ({
   variant: (phone.value ? 'phone' : 'wide') as 'phone' | 'wide',
-  pageMax: pageMax.value,
+  pageMax: columnMax.value,
   hitClass: headHitClass.value,
   setlistOn: setlist.on.value,
   posLabel: setlist.posLabel.value,
@@ -1734,7 +1845,7 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   title: meta.value.title || 'Sem título',
   subtitle: meta.value.subtitle || '',
   phoneSub: phoneSub.value,
-  hasKey: hasKey.value,
+  hasKey: hasKey.value && !scoreReading.value,
   hasReset: hasReset.value,
   toneLabel: toneLabel.value,
   playingKey: originalKey.value,
@@ -1745,9 +1856,11 @@ const viewHeadBind = computed((): ViewHeadModel => ({
   capoHint: capoHint.value,
   capoShapes: capoShapes.value,
   mapOn: mapOn.value,
-  metaTempo: meta.value.tempo,
-  metaTime: meta.value.time,
-  metaDuration: meta.value.duration,
+  metaTempo: scoreReading.value ? (scoreLiveBpm.value ?? undefined) : meta.value.tempo,
+  metaTime: scoreReading.value ? (scoreMoments.value[0]?.meter ?? meta.value.time) : meta.value.time,
+  metaDuration: scoreReading.value
+    ? (scoreSeconds.value.length ? formatDurationFromSec(scoreSeconds.value.reduce((sum, sec) => sum + sec, 0)) : undefined)
+    : meta.value.duration,
   canWinScreen: canWinScreen.value,
   fs: fs.value,
   fsTitle: fsTitle.value,
@@ -1758,7 +1871,7 @@ const wideDockBind = computed((): WideDockModel => ({
   showMine: showMine.value,
   mineLabel: ov.mineLabel.value,
   showOriginal: ov.showOriginal.value,
-  hintFit: hintFit.value,
+  hintFit: hintFit.value && !scoreReading.value,
   scrolling: scrolling.value,
   mul: mul.value,
   etaLabel: etaLabel.value,
@@ -1772,6 +1885,9 @@ const wideDockBind = computed((): WideDockModel => ({
   rollLive: rollLive.value,
   fitOn: fitOn.value,
   letra: activeLens.value === 'letra',
+  partitura: partituraAvailable.value,
+  partituraOn: scoreReading.value,
+  scoreReading: scoreReading.value,
   hasKey: hasKey.value,
   nashvilleOn: nashvilleOn.value,
   hideComments: hideComments.value,
@@ -1789,8 +1905,11 @@ const wideDockBind = computed((): WideDockModel => ({
 
 const phoneDockBind = computed((): PhoneDockModel => ({
   hidden: chromeHidden.value || moreOpen.value,
-  hintFit: hintFit.value,
+  hintFit: hintFit.value && !scoreReading.value,
   letra: activeLens.value === 'letra',
+  partitura: partituraAvailable.value,
+  partituraOn: scoreReading.value,
+  scoreReading: scoreReading.value,
   dockCtrlH: dockCtrlH.value,
   setlistOn: setlist.on.value,
   noPrev: setlist.noPrev.value,
@@ -1862,6 +1981,7 @@ const moreSheetBind = computed((): MoreSheetModel => ({
   hasStrum: hasStrum.value,
   strumOn: strumOn.value,
   ensaioBatida: rehearsalFocus.value === 'batida',
+  scoreReading: scoreReading.value,
   showMine: showMine.value,
   showOriginal: ov.showOriginal.value,
   mineCount: ov.mineCount.value,
@@ -1951,12 +2071,40 @@ clearScoreEditors = () => {
   externalEd.value = null
 }
 watch(() => props.source, () => { externalEd.value = null })
-function saveExternalScore(text: string) {
+function saveExternalScore(text: string, asSong = false) {
   const edit = externalEd.value
   if (!edit) return
   if (edit.li0 === undefined) bedit.insertScore(text)
   else bedit.replaceSpan(edit.li0, edit.li1!, text, 'Solo atualizado')
   externalEd.value = null
+  if (!asSong) return
+  partituraOn.value = true
+  exitEdit()
+}
+
+function readSongScore(bi: number) {
+  if (scoreReading.value) {
+    showCifra()
+    return
+  }
+  const block = blocks.value[bi]
+  if (!block || block.kind !== 'score' || !isScoreReference(block.text)) return
+  let ref: ReturnType<typeof readScoreReference> = null
+  try { ref = readScoreReference(block.text) } catch { toastMsg('Não deu para ler esta partitura'); return }
+  if (!ref) return
+  const bars = knownScoreBars.value[block.text]
+  const covers = ref.start === 1 && (ref.end === undefined || bars === undefined || ref.end >= bars)
+  if (!covers && bars) {
+    const text = writeScoreReference({ ...ref, start: 1, end: bars })
+    if (isEdit.value) bedit.replaceSpan(block.li0, block.li1, text, 'Partitura da música')
+    else {
+      const lines = liveSource.value.split('\n')
+      lines.splice(block.li0, Math.max(1, block.li1 - block.li0 + 1), text)
+      session.replace(lines.join('\n'))
+    }
+  }
+  partituraOn.value = true
+  if (isEdit.value) exitEdit()
 }
 
 const scoreLabel = computed(() =>
@@ -2359,10 +2507,21 @@ function syncHeadH() {
   if (h && Math.abs(h - headH.value) > 1) headH.value = h
 }
 
-watch(hostSource, syncHostSource)
-watch([theme, bias, fit, lens, hideComments, met.sound, strumSound.enabled, met.pulseHead, met.follow, met.countInOn], persistPrefs)
+watch(hostSource, () => {
+  loadedBars.value = null
+  scoreSeconds.value = []
+  scoreMoments.value = []
+  scoreClockReady.value = false
+  syncHostSource()
+})
+watch([theme, bias, fit, lens, partituraOn, hideComments, met.sound, strumSound.enabled, met.pulseHead, met.follow, met.countInOn], persistPrefs)
 watch(lens, (v) => {
   if (v !== 'letra') chordLens.value = v
+})
+watch([progress, scoreMoments, scoreReading], () => {
+  const moment = scoreMomentNow()
+  scoreLiveBpm.value = moment ? Math.round(moment.bpm) : null
+  scoreLiveBeats.value = moment ? moment.beats : null
 })
 watch(
   () => props.lens,
@@ -2436,6 +2595,7 @@ onMounted(() => {
     // to restore the last Cifra | Letra choice on this device.
     if (props.lens !== undefined) lens.value = props.lens
     else if (p.lens === 'nashville' || p.lens === 'letra') lens.value = p.lens
+    if (props.lens === undefined && p.partitura === true) partituraOn.value = true
     if (props.hideComments) hideComments.value = true
     else if (p.hideComments === true) hideComments.value = true
     if (p.diagramInstrument === 'ukulele' || p.diagramInstrument === 'piano' || p.diagramInstrument === 'guitar') {
@@ -2542,6 +2702,7 @@ defineExpose({
     data-titan-chordpro-root
     :data-theme="effTheme"
     :data-titan-chordpro-lens="activeLens"
+    :data-titan-chordpro-reading="scoreReading ? 'partitura' : activeLens === 'letra' ? 'letra' : 'cifra'"
     :class="[rootHitClass, { 'is-setlist': setlist.on.value, 'is-swipe-debug': swipeDebug }]"
     :style="{
       '--titan-chordpro-met-hit': metHitMs,
@@ -2555,9 +2716,9 @@ defineExpose({
 
     <div class="titan-chordpro-stage">
     <div v-if="isPopulated" ref="scroller" class="titan-chordpro-scroll" data-titan-chordpro-scroll @click="onSurfaceTap">
-      <div :ref="bindPage" class="titan-chordpro-page" :style="{ maxWidth: pageMax, padding: pagePad, '--titan-chordpro-notation-outset': notationOutset }">
+      <div :ref="bindPage" class="titan-chordpro-page" :style="{ maxWidth: columnMax, padding: pagePad, '--titan-chordpro-notation-outset': notationOutset }">
         <div :style="{ padding: pageBodyPad }">
-        <TitanChordproCapoLegend v-if="legend" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
+        <TitanChordproCapoLegend v-if="legend && !scoreReading" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
         <ChartBody
           v-bind="chartScale"
           :blocks="blocks"
@@ -2577,9 +2738,14 @@ defineExpose({
           :pill-h="editScale.pillH"
           :chord-edit-px="editScale.chordEditPx"
           :insert-items="isEdit ? insertItems : []"
+          :song-score="scoreReading"
+          :score-zoom="scoreZoom"
+          @update:score-zoom="scoreZoom = $event"
+          @score-timing="onScoreTiming"
+          @read-song-score="readSongScore"
           @revert-line="ov.revertLine"
           @edit-score="openScore"
-          :diagrams="props.capabilities?.diagrams !== false && activeLens !== 'letra' && !isEdit"
+          :diagrams="props.capabilities?.diagrams !== false && activeLens !== 'letra' && !isEdit && !scoreReading"
           @diagram="openDiagram"
         />
         </div>
@@ -2707,11 +2873,12 @@ defineExpose({
       @open-list="setlist.open()"
       @next="goNext"
       @toggle-scroll="toggleScroll"
-      @smaller-type="bias = Math.max(-3, bias - 1)"
-      @bigger-type="bias = Math.min(5, bias + 1)"
+      @smaller-type="smallerReading"
+      @bigger-type="biggerReading"
       @toggle-fit="toggleFit"
       @cifra="showCifra"
       @letra="showLetra"
+      @partitura="showPartitura"
       @toggle-nashville="toggleNashville"
       @toggle-comments="setHideComments(!hideComments)"
       @toggle-met="toggleMetPanel"
@@ -2738,14 +2905,15 @@ defineExpose({
       @dismiss-hint="dismissHint(true)"
       @cifra="showCifra"
       @letra="showLetra"
+      @partitura="showPartitura"
       @prev="goPrev"
       @open-list="setlist.open()"
       @next="goNext"
       @slower="mul = adjustScrollMultiplier(mul, 'down')"
       @faster="mul = adjustScrollMultiplier(mul, 'up')"
       @toggle-scroll="toggleScroll"
-      @smaller-type="bias = Math.max(-3, bias - 1)"
-      @bigger-type="bias = Math.min(5, bias + 1)"
+      @smaller-type="smallerReading"
+      @bigger-type="biggerReading"
       @edit="enterEdit"
       @toggle-fit="toggleFit"
       @more="moreOpen = true"
@@ -2822,8 +2990,8 @@ defineExpose({
     />
 
     <ImportScoreDialog v-if="isEdit && externalEd" :text="externalEd.text" :theme="effTheme"
-      :resolve-score="resolveScore" :upload-score="uploadScore"
-      @save="saveExternalScore" @close="externalEd = null" />
+      :resolve-score="resolveScore" :upload-score="props.uploadScore"
+      @save="saveExternalScore" @save-song="text => saveExternalScore(text, true)" @close="externalEd = null" />
     <div v-if="isEdit && scoreEd" class="titan-chordpro-score-modal" role="dialog" aria-modal="true" aria-label="Editor de partitura">
       <ScoreEditor
         :title="meta.title || 'Partitura'"
@@ -2922,7 +3090,7 @@ defineExpose({
       type="button"
       class="titan-chordpro-met-count"
       :title="metPulseTitle"
-      :style="{ top: countTop, left: countLeft }"
+      :style="{ top: countTop, left: readingCountLeft }"
       @click="met.toggle()"
     >
       <span v-if="met.countIn.value" data-met-countin class="titan-chordpro-met-entrada">entrada</span>
