@@ -20,6 +20,7 @@ import {
   mergeCatalog,
   seedFixtures,
   songsFor,
+  versionPair,
 } from './host/charts'
 import BootShell from './BootShell.vue'
 import HostSite from './host/HostSite.vue'
@@ -93,8 +94,9 @@ const actorKey = editMode === 'local' ? 'demo-musico' : undefined
 const lazyLista = computed(() => listaMode.value === 'demanda')
 const songs = computed(() => {
   const list = songsFor(fixtures.value, listaMode.value)
-  if (!list || !lab.audio) return list
-  return list.map((s) => ({
+  const scoped = list && lab.par ? versionPair(list) : list
+  if (!scoped || !lab.audio) return scoped
+  return scoped.map((s) => ({
     ...s,
     source: s.source ? withAudio(s.source) : s.source,
   }))

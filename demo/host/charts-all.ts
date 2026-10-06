@@ -2,6 +2,8 @@
  * Eager corpus chunk — dynamically imported when the demo needs every chart
  * (setlist, or a `?song=` that is not the seed). Keep this off the first paint.
  */
+import { applyVariants } from './chart-variants'
+
 const bundledRaw = import.meta.glob('../../fixtures/sda/*.{cho,chordpro,onsong}', {
   eager: true,
   query: '?raw',
@@ -14,10 +16,10 @@ function idFromPath(path: string): string {
 }
 
 export function allFixtures(): Record<string, string> {
-  return {
+  return applyVariants({
     ...Object.fromEntries(
       Object.entries(bundledRaw).map(([path, src]) => [idFromPath(path), src]),
     ),
     vazio: '',
-  }
+  })
 }

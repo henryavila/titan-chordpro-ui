@@ -11,6 +11,12 @@ export type SetlistSong = {
   tempo?: string | number
   /** The ChordPro itself, when the host already has it. */
   source?: string
+  /**
+   * Cifra this song opens on. The file may hold several named charts;
+   * absent uses the file default. The musician can switch; that choice
+   * stays for this rehearsal until the program sends a different id.
+   */
+  chartId?: string
 }
 
 /** `{tempo:72}` from a chart body — enough to label the list without a parse. */
@@ -82,6 +88,7 @@ export function useSetlist(opts: SetlistOpts) {
       let id = String(item.id != null && item.id !== '' ? item.id : item.title || `s${out.length}`)
       while (used.has(id)) id = `${id}~${out.length}`
       used.add(id)
+      const chartId = String(item.chartId ?? '').trim()
       out.push({
         id,
         title: String(item.title || item.id || 'Sem título'),
@@ -89,6 +96,7 @@ export function useSetlist(opts: SetlistOpts) {
         key: item.key ? String(item.key) : '',
         tempo: item.tempo,
         source: typeof item.source === 'string' && item.source.trim() ? item.source : undefined,
+        ...(chartId ? { chartId } : {}),
       })
     }
     return out

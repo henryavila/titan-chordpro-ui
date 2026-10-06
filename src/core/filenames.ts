@@ -12,10 +12,16 @@ function keyPart(key: string | null): string {
   return key.toLowerCase().replace(/[^a-z0-9#b]/g, '')
 }
 
-export function buildChoFilename(title: string, key: string | null): string {
+function chartPart(chartId?: string): string {
+  if (!chartId || chartId === 'default') return ''
+  const slug = slugify(chartId)
+  return slug ? `-${slug}` : ''
+}
+
+export function buildChoFilename(title: string, key: string | null, chartId?: string): string {
   const slug = slugify(title)
   const suffix = key ? `-${keyPart(key)}` : ''
-  return `${slug}${suffix}.cho`
+  return `${slug}${chartPart(chartId)}${suffix}.cho`
 }
 
 export function buildPdfFilename(title: string, key: string | null, chartId?: string): string {
@@ -25,7 +31,7 @@ export function buildPdfFilename(title: string, key: string | null, chartId?: st
   return `cifra-${slug}${chart}${suffix}.pdf`
 }
 
-export function buildSljaFilename(title: string): string {
+export function buildSljaFilename(title: string, chartId?: string): string {
   const slug = slugify(title) || 'cifra'
-  return `slides-${slug}.slja`
+  return `slides-${slug}${chartPart(chartId)}.slja`
 }

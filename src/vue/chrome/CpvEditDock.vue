@@ -29,6 +29,7 @@ const emit = defineEmits<{
   editScore: []
   insert: []
   source: []
+  sourceCode: []
   smallerType: []
   biggerType: []
   theme: []
@@ -114,6 +115,13 @@ const showBatidaTools = computed(() => props.wMode === 'local' || props.wMode ==
 
       <span style="width:1px;height:22px;background:var(--line-soft);margin:0 3px;" />
 
+      <button
+        data-source-code
+        type="button"
+        title="Código fonte da música, em tela cheia"
+        style="height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        @click="emit('sourceCode')"
+      ><CpvIcon name="braces" :size="16" />Código fonte</button>
       <button
         v-if="showSource"
         data-source

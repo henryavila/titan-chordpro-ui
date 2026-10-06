@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Variações no demo:** Verdadeira alegria (Padrão e Muralhas), Poder do Amor (Original e Hinário) e Jesus, Tu És a minha vida (sobe o tom / não sobe) abrem num só item. O chip **Cifra** troca o arranjo.
+- **Código fonte:** no editor, Código fonte ocupa a tela com o arquivo da música e um botão Copiar.
+- **Abrir primeiro:** no editor, o botão marca qual cifra abre com a música. Se ela já abre, o botão fica marcado e avisa. Não troca a cifra que está na tela.
+- **Versão:** no editor, o bloco da cifra se chama Versão (Adicionar versão). Na leitura, o chip mostra só o nome da versão; se o nome for longo, ele desce e o título da música fica inteiro.
+- **Menu Versão:** no editor, um chip abre a lista. Tocar troca a versão. A marca **padrão** mostra qual abre com a música; **Tornar padrão** só aparece quando a aberta ainda não é essa. Renomear, nova versão e apagar ficam nesse menu.
+- **Nova versão:** copia a versão que está aberta. Ao criar, o aviso diz o nome novo e de qual ela veio. A tela passa para a cópia. Numa cifra sem versões, a atual fica como **Padrão** e o chip só aparece na leitura depois que existe outra.
+- **Cifra do programa:** no ensaio, cada música abre na cifra que o site marcou (`chartId` na entrada). O chip **Cifra**, ao lado do título, troca o arranjo sem sair da música. A troca vale enquanto o ensaio durar; se o programa mandar outra cifra, ela passa a ser a que abre. No editor, o mesmo menu fica na barra de edição.
+- **Baixar a cifra aberta:** ChordPro, PDF e slides gravam a cifra que está na tela. Se a música tem mais de uma, o nome do arquivo inclui esse arranjo. Salvar para o site continua levando o arquivo inteiro.
 - **Áudio de referência no ensaio:** `setRehearsalAudio(cho, { sung, playback, art: { url, width, height } })`. Cantado e/ou playback (qualquer combinação, inclusive nenhuma). Chip no dock abre o card (capa, título, artista, play, seek, ±10 s); X fecha sem parar. Não sincroniza letra nem `{duration:}`. Capa: o host manda o arquivo já no tamanho (256–512 px) + `width`/`height`; sem capa, arte genérica 512×512. Arquivo direto ou GET de stream; YouTube recusado. Cache keyed pela URL. `{x_audio:}` / `{x_audio_cantado:}` legado lê como sung.
 
 ### Changed

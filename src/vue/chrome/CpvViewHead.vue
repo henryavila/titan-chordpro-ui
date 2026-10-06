@@ -61,28 +61,25 @@ function pickChart(id: string) {
       </span>
     </div>
 
-    <div v-if="charts.length > 1" style="position:relative;flex:none;">
+    <div v-if="charts.length > 1" class="cpv-version-chip">
       <button
         type="button"
         data-chart-switch
         class="cpv-head-chip"
-        aria-label="Cifra"
-        title="Cifra"
+        aria-label="Versão"
+        title="Versão"
         :aria-expanded="chartOpen"
         aria-haspopup="listbox"
-        style="flex:none;display:flex;align-items:center;gap:5px;height:28px;padding:0 8px;border:1px solid var(--chord-edge);border-radius:9px;color:var(--chord);cursor:pointer;font-family:inherit;"
         @click="chartOpen = !chartOpen"
       >
-        <span style="font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra</span>
-        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;line-height:1;">{{ chartLabel }}</span>
+        <span class="cpv-chart-switch-label">{{ chartLabel }}</span>
         <CpvIcon name="chevronDown" :size="10" />
       </button>
       <div
         v-if="chartOpen"
-        class="cpv-veil-2"
+        class="cpv-veil-2 cpv-chart-menu"
         role="listbox"
-        aria-label="Cifra"
-        style="position:absolute;top:calc(100% + 8px);left:0;z-index:22;min-width:max(100%, 140px);padding:6px;border-radius:12px;display:flex;flex-direction:column;gap:2px;animation:cpv-rise .18s ease-out;"
+        aria-label="Versão"
       >
         <button
           v-for="c in charts"
@@ -95,7 +92,7 @@ function pickChart(id: string) {
             background: c.id === chartId ? 'var(--chord-fill)' : 'transparent',
             color: 'var(--chord)',
           }"
-          style="display:block;width:100%;text-align:left;height:30px;padding:0 10px;border:0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;"
+          style="display:block;width:100%;text-align:left;min-height:34px;height:auto;padding:6px 10px;border:0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:normal;"
           @click="pickChart(c.id)"
         >{{ c.label }}</button>
       </div>

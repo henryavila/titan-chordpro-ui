@@ -7,11 +7,13 @@ withDefaults(
     slidesBusy?: boolean
     /** Phone width: the dialog becomes a bottom sheet. */
     compact?: boolean
+    /** Open cifra, when the file has more than one. Empty hides the label. */
+    chartLabel?: string
     /** The reader has a personal version: the file has to say which one it is. */
     hasOverlay?: boolean
     exportOrig?: boolean
   }>(),
-  { compact: false, hasOverlay: false, exportOrig: false, slidesBusy: false },
+  { compact: false, hasOverlay: false, exportOrig: false, slidesBusy: false, chartLabel: '' },
 )
 const emit = defineEmits<{
   close: []
@@ -64,7 +66,7 @@ const emit = defineEmits<{
         @click="emit('cho')"
       >
         <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.cho</span>
-        ChordPro
+        ChordPro<span v-if="chartLabel"> · {{ chartLabel }}</span>
       </button>
       <button
         data-export="pdf"
@@ -73,7 +75,7 @@ const emit = defineEmits<{
         @click="emit('pdf')"
       >
         <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">PDF</span>
-        Documento
+        Documento<span v-if="chartLabel"> · {{ chartLabel }}</span>
         <span style="flex:1;" />
         <span v-if="pdfBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
           <span class="cpv-spin" style="width:14px;height:14px;" />gerando…
@@ -86,7 +88,7 @@ const emit = defineEmits<{
         @click="emit('slides')"
       >
         <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">.slja</span>
-        Slide Louvor JA
+        Slide Louvor JA<span v-if="chartLabel"> · {{ chartLabel }}</span>
         <span style="flex:1;" />
         <span v-if="slidesBusy" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--muted);">
           <span class="cpv-spin" style="width:14px;height:14px;" />gerando…

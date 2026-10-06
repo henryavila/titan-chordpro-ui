@@ -150,6 +150,7 @@ export type ChordproViewerProps = {
   /**
    * Named cifra inside `source` when the file has more than one.
    * Absent → the file default. The musician can change it; emit `update:chartId`.
+   * In a rehearsal, each `songs[]` entry carries its own `chartId` instead.
    */
   chartId?: string
   /**
@@ -157,6 +158,7 @@ export type ChordproViewerProps = {
    * list, prev/next and a place kept per song. With one, or none, nothing of
    * it appears and `source` remains the chart on screen.
    * A song that ships its `source` plays offline; the rest are asked for.
+   * `chartId` on an entry is the cifra the program opens; the musician can switch.
    */
   songs?: SetlistSong[]
   /**

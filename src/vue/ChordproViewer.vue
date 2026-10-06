@@ -81,6 +81,7 @@ import MetronomeSheet from './sheets/MetronomeSheet.vue'
 import BatidaSheet from './sheets/BatidaSheet.vue'
 import ToneSheet from './sheets/ToneSheet.vue'
 import StrumStrip from './StrumStrip.vue'
+import SourceCodeScreen from './edit/SourceCodeScreen.vue'
 import SourcePane from './edit/SourcePane.vue'
 import ChordDialog from './edit/ChordDialog.vue'
 import ImagePicker from './edit/ImagePicker.vue'
@@ -282,6 +283,8 @@ const lens = ref<Lens>(props.lens)
 const capoMap = ref(true)
 const hideComments = ref(props.hideComments)
 const srcOpen = ref(false)
+/** Full-screen ChordPro of the whole file, with copy. */
+const srcCode = ref(false)
 /**
  * Chart the edit session opened on. A half-typed `{x_chart_default}` must not
  * move the source pane onto the sibling.
@@ -289,6 +292,11 @@ const srcOpen = ref(false)
 const pinnedChartId = ref<string | null>(null)
 /** Musician/host pick. Null follows the file default until someone chooses. */
 const musicianChartId = ref<string | null>(String(props.chartId ?? '').trim() || null)
+/**
+ * Cifra the musician picked for a song in this rehearsal.
+ * `programmed` is the id the program sent; a later program id drops the pick.
+ */
+const chartPick: Record<string, { programmed: string; chosen: string }> = {}
 type LiveChartSpot = {
   offset: number
   capo: number
@@ -301,18 +309,6 @@ const chartSpots: Record<string, LiveChartSpot> = {}
 function liveChartKey(song: string, chart: string) {
   return `${song}\t${chart}`
 }
-watch(
-  () => props.chartId,
-  (id) => {
-    const next = String(id ?? '').trim() || null
-    if (next === musicianChartId.value) return
-    rememberOpenChart()
-    stopScroll()
-    met.stop()
-    musicianChartId.value = next
-    applyChartSpot()
-  },
-)
 const localMode = ref<'view' | 'edit' | null>(null)
 /** Where the current edit lands: this phone, or everyone's chart. */
 const wMode = ref<WriteMode | null>(null)
@@ -590,11 +586,15 @@ function applyChartSpot() {
 function selectChart(id: string) {
   const next = String(id ?? '').trim()
   if (!next || !fileCharts.value.some((c) => c.id === next)) return
-  if (musicianChartId.value === next) return
+  if (screenChartId.value === next) return
   rememberOpenChart()
   stopScroll()
   met.stop()
+  if (setlist.on.value && setlist.current.value) {
+    chartPick[setlist.current.value.id] = { programmed: programmedChartId(), chosen: next }
+  }
   musicianChartId.value = next
+  if (isEdit.value) pinnedChartId.value = next
   emit('update:chartId', next)
   applyChartSpot()
 }
@@ -921,6 +921,10 @@ const setlist = useSetlist({
   songs: computed(() => props.songs),
   loadSong: computed(() => props.loadSong),
 })
+// The program's cifra is on screen before mount. A list does not borrow the viewer prop.
+if (setlist.on.value) {
+  musicianChartId.value = String(setlist.current.value?.chartId ?? '').trim() || null
+}
 
 /**
  * What the viewer is reading. In a rehearsal the list decides; otherwise the
@@ -2325,13 +2329,17 @@ function applyMeta(next: string) {
 }
 
 function onChartAdd(opts: { id: string; label: string }) {
-  const from = screenChartId.value ?? 'default'
-  const next = addChart(session.getSource(), from, opts)
+  const fromId = screenChartId.value ?? 'default'
+  const fromName = fileCharts.value.find((c) => c.id === fromId)?.label
+  const alone = fileCharts.value.length < 2
+  const from = alone ? 'Padrão' : fromName && fromName !== 'default' ? fromName : 'versão atual'
+  const next = addChart(session.getSource(), fromId, opts)
   if (next === session.getSource()) return
   session.replace(next)
   musicianChartId.value = opts.id
   pinnedChartId.value = opts.id
   touch()
+  toastMsg(`Versão ${opts.label} criada a partir de ${from}`)
 }
 
 function onChartRename(label: string) {
@@ -2358,10 +2366,19 @@ function onChartDelete() {
 function onChartDefault() {
   const id = screenChartId.value
   if (!id) return
+  const label = fileCharts.value.find((c) => c.id === id)?.label || id
+  if (fileCharts.value.find((c) => c.id === id)?.isDefault) {
+    toastMsg(`${label} já é a versão padrão`)
+    return
+  }
   const next = setDefaultChart(session.getSource(), id)
-  if (next === session.getSource()) return
+  if (next === session.getSource()) {
+    toastMsg(`${label} já é a versão padrão`)
+    return
+  }
   session.replace(next)
   touch()
+  toastMsg(`${label} agora é a versão padrão`)
 }
 
 // ------------------------------------------------------------------- exports
@@ -2393,16 +2410,16 @@ function pdfChartId(): string | undefined {
 }
 
 function doExportCho() {
-  const text = exportCho(exportSource(), { semitones: offset.value, capo: capo.value })
+  const text = exportCho(exportSource(), exportChartOpts())
   // A personal version leaves marked: it must not circulate as the team's chart.
   const mark =
     !ov.exportOrig.value && ov.hasOverlay.value
       ? '# versão pessoal — não é a cifra oficial da equipe\n'
       : ''
-  const name = buildChoFilename(meta.value.title ?? 'cifra', shownKey.value || null)
+  const name = buildChoFilename(meta.value.title ?? 'cifra', shownKey.value || null, pdfChartId())
   download(name, new Blob([mark + text], { type: 'text/plain;charset=utf-8' }))
   sheet.value = false
-  toastMsg('Arquivo .cho baixado')
+  toastMsg(fileCharts.value.length > 1 ? 'Cifra .cho baixada' : 'Arquivo .cho baixado')
 }
 
 async function doExportPdf() {
@@ -2454,7 +2471,7 @@ async function doExportSlides() {
       slidesImage: await imageBytes(props.slidesImage),
     })
     download(
-      buildSljaFilename(meta.value.title ?? 'cifra'),
+      buildSljaFilename(meta.value.title ?? 'cifra', pdfChartId()),
       new Blob([bytes as BlobPart], { type: 'application/zip' }),
     )
     slides.value = 'idle'
@@ -2518,6 +2535,7 @@ function onKey(e: KeyboardEvent) {
       else if (bedit.clip.value) bedit.clip.value = null
       else if (bedit.sel.value !== null) bedit.clearSel()
       else if (metaOpen.value) metaOpen.value = false
+      else if (srcCode.value) srcCode.value = false
       else if (srcOpen.value) srcOpen.value = false
     }
     return
@@ -2632,6 +2650,31 @@ function explicitNow(): boolean {
   return setlist.on.value || !!props.songId
 }
 
+/** Cifra the program asked for. Outside a list, the viewer prop. */
+function programmedChartId(): string {
+  if (setlist.on.value) return String(setlist.current.value?.chartId ?? '').trim()
+  return String(props.chartId ?? '').trim()
+}
+
+/**
+ * Chart to open. A pick made in this rehearsal wins until the program
+ * sends a different id. A list does not borrow the viewer prop from another song.
+ */
+function chartIdForOpenSong(): string | null {
+  const programmed = programmedChartId()
+  if (setlist.on.value && setlist.current.value) {
+    const mem = chartPick[setlist.current.value.id]
+    if (mem && mem.programmed === programmed && mem.chosen) return mem.chosen
+  }
+  return programmed || null
+}
+
+function hostChartSig(): string {
+  if (!setlist.on.value) return `solo\0${String(props.chartId ?? '').trim()}`
+  const song = setlist.current.value
+  return `${song?.id ?? ''}\0${String(song?.chartId ?? '').trim()}`
+}
+
 function syncHostSource() {
   const raw = hostSource.value
   const song = songId.value
@@ -2675,7 +2718,7 @@ function syncHostSource() {
     confirmDiscard.value = false
     wMode.value = null
     pinnedChartId.value = null
-    musicianChartId.value = String(props.chartId ?? '').trim() || null
+    musicianChartId.value = chartIdForOpenSong()
     preloadTune()
     stopScroll()
     mul.value = 1
@@ -2775,6 +2818,7 @@ const swipeBlocked = computed(
     ov.myPanel.value ||
     ov.queueOpen.value ||
     srcOpen.value ||
+    srcCode.value ||
     confirmDiscard.value ||
     swipeBusy.value,
 )
@@ -2851,6 +2895,24 @@ function syncHeadH() {
 
 watch(hostSource, syncHostSource)
 watch(songId, syncHostSource)
+watch(
+  () => hostChartSig(),
+  (sig, prev) => {
+    if (prev == null || sig === prev) return
+    const id = sig.slice(0, sig.indexOf('\0'))
+    const prevId = prev.slice(0, prev.indexOf('\0'))
+    // Song changes reload through syncHostSource, which keeps the rehearsal pick.
+    if (id !== prevId) return
+    if (setlist.on.value && setlist.current.value) delete chartPick[setlist.current.value.id]
+    const next = chartIdForOpenSong()
+    if ((next ?? '') === (musicianChartId.value ?? '')) return
+    rememberOpenChart()
+    stopScroll()
+    met.stop()
+    musicianChartId.value = next
+    applyChartSpot()
+  },
+)
 watch([theme, bias, fit, lens, hideComments, met.sound, strumSound.enabled, met.pulseHead, met.follow, met.countInOn], persistPrefs)
 watch(lens, (v) => {
   if (v !== 'letra') chordLens.value = v
@@ -3188,6 +3250,7 @@ defineExpose({
       @discard="discard"
       @save="save"
       @read="exitEdit"
+      @select-chart="selectChart"
       @chart-add="onChartAdd"
       @chart-rename="onChartRename"
       @chart-delete="onChartDelete"
@@ -3369,6 +3432,7 @@ defineExpose({
       @edit-score="bedit.sel.value !== null && openScore(bedit.sel.value)"
       @insert="bedit.toggleInsertMenu()"
       @source="srcOpen = true"
+      @source-code="srcOpen = false; srcCode = true"
       @smaller-type="bias = Math.max(-3, bias - 1)"
       @bigger-type="bias = Math.min(5, bias + 1)"
       @theme="requestTheme"
@@ -3461,6 +3525,7 @@ defineExpose({
     <ExportSheet
       v-if="sheet"
       :export-key-note="exportKeyNote"
+      :chart-label="fileCharts.length > 1 ? (fileCharts.find((c) => c.id === screenChartId)?.label ?? '') : ''"
       :pdf-busy="pdf === 'busy'"
       :slides-busy="slides === 'busy'"
       :compact="compact"
@@ -3711,6 +3776,15 @@ defineExpose({
       @refuse="ov.refuseOp"
       @accept-batch="ov.acceptBatch"
       @refuse-batch="ov.refuseBatch"
+    />
+
+    <SourceCodeScreen
+      v-if="isEdit && srcCode"
+      :source="liveSource"
+      :note="fileCharts.length > 1 ? 'Arquivo inteiro, com todas as versões.' : ''"
+      @close="srcCode = false"
+      @copied="toastMsg('Código copiado')"
+      @failed="toastMsg('Não foi possível copiar')"
     />
 
     <SourcePane

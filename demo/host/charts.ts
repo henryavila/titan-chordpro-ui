@@ -1,5 +1,5 @@
 import defaultCho from '../../fixtures/sda/001-tudo-que-ha-de-bom-em-mim.cho?raw'
-import { readMeta } from '@henryavila/titan-chordpro-ui'
+import { listCharts, readMeta } from '@henryavila/titan-chordpro-ui'
 import type { ChordproViewerProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
 import type { ListaMode } from './recipe'
 
@@ -57,20 +57,54 @@ export function mergeCatalog(
   return { ...fixtures, ...extra }
 }
 
+function listedCharts(source: string) {
+  if (!/\{\s*start_of_x_chart\s*:/i.test(source)) return []
+  try {
+    return listCharts(source)
+  } catch {
+    return []
+  }
+}
+
+function hasCharts(source: string | undefined): boolean {
+  return listedCharts(source ?? '').length > 1
+}
+
+function defaultChartId(source: string): string | undefined {
+  const charts = listedCharts(source)
+  if (charts.length < 2) return undefined
+  return charts.find((chart) => chart.isDefault)?.id ?? charts[0]?.id
+}
+
+/** Demo pair: one song with versions, then one without. */
+export const VERSION_PAIR = ['006-poder-do-amor-original', '001-tudo-que-ha-de-bom-em-mim'] as const
+
+export function versionPair(list: DemoSong[]): DemoSong[] {
+  return VERSION_PAIR.flatMap((id) => {
+    const song = list.find((item) => item.id === id)
+    return song ? [song] : []
+  })
+}
+
 export function songsFor(
   fixtures: Record<string, string>,
   mode: ListaMode,
 ): DemoSong[] | undefined {
   if (mode === 'off') return undefined
-  const ids = Object.keys(fixtures).filter((k) => k !== 'vazio')
+  const ids = Object.keys(fixtures)
+    .filter((k) => k !== 'vazio')
+    .sort((a, b) => Number(hasCharts(fixtures[b])) - Number(hasCharts(fixtures[a])) || a.localeCompare(b))
   const list: DemoSong[] = ids.map((k) => {
-    const meta = readMeta(fixtures[k] ?? '')
+    const source = fixtures[k] ?? ''
+    const meta = readMeta(source)
+    const chartId = defaultChartId(source)
     return {
       id: k,
       title: meta.title || k,
       subtitle: meta.subtitle ?? '',
       key: meta.key ?? '',
-      ...(mode === 'juntas' ? { source: fixtures[k] ?? '' } : {}),
+      ...(chartId ? { chartId } : {}),
+      ...(mode === 'juntas' ? { source } : {}),
     }
   })
   if (mode === 'demanda') {

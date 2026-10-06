@@ -81,7 +81,7 @@ Demo público (hub completo, sem persistência, proxy de import por link):
 
 | Core | Vue package | Host |
 |---|---|---|
-| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` | cifra toolbar, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja`), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, multi-cifra, sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
+| parse, transpose, controller, HTML themes, PDF, filenames, scroll math + **timeline musical** + letra para slides + `{x_audio_sung:}` / `{x_audio_playback:}` / `{x_audio_art:}` + cifras nomeadas no arquivo | cifra toolbar, chip **Cifra**, RAF auto-scroll, theme light/dark/auto, export UX (CHO / PDF / `.slja` da cifra aberta), view↔edit E0, zen, setlist + swipe, wake lock, player de **referência** | shell, qual **música** (o `.cho`), sanitize, i18n, player **sincronizado**, **resolver de `{image:}`**, override opcional das imagens de capa/fundo do `.slja` |
 
 Visual SoT: `design-source/` (Titan Chordpro UI v2 · Chordpro Viewer v2). Demo: `pnpm dev`.
 
@@ -210,7 +210,9 @@ trocar de música num ensaio não pode esperar rede. Uma que não chega vira pai
 *Não carregou*, com *Tentar de novo*; as outras seguem disponíveis.
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**
-daquela cifra. **Cifra | Letra** (e Nashville / comentários) são do ensaio —
+daquela cifra. Num arquivo com várias cifras, `chartId` na entrada do programa
+é a que abre; o chip **Cifra** troca o arranjo sem mudar de música.
+**Cifra | Letra** (e Nashville / comentários) são do ensaio —
 prop `lens` / `hideComments` — **não** resetam ao mudar de música. No celular, um deslize
 **na borda** da cifra (trilho 64px no celular, 128px no tablet; esquerda depois dos 24px do voltar do Safari)
 mostra um fade + chevron (próxima/anterior) e só troca de música se o gesto cruzar o

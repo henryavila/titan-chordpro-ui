@@ -59,7 +59,8 @@ export default defineNuxtConfig({
 `source` é o **arquivo** da música (uma string). Pode trazer **cifras nomeadas**
 (`{start_of_x_chart:}`). O host escolhe a música; o pacote escolhe a cifra
 (`chartId`, chip no título). `update:source` / `save-content` devolvem o
-arquivo inteiro. Sugestão leva `chartId`. **Minha versão** é overlay, não o
+arquivo inteiro. ChordPro, PDF e slides baixados são a cifra aberta.
+Sugestão leva `chartId`. **Minha versão** é overlay, não o
 arranjo.
 
 ---
@@ -275,6 +276,7 @@ type Song = {
   subtitle?: string
   key?: string
   source?: string // se já veio, toca offline
+  chartId?: string // cifra que o programa abre; o músico troca no chip
 }
 
 async function buscarCifra(id: string): Promise<string> {
@@ -288,7 +290,9 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 chega vira painel *Não carregou*.
 
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
-música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
+música. Se o arquivo traz várias cifras, `chartId` na entrada é a que abre.
+O chip **Cifra**, ao lado do título, troca o arranjo sem sair da música; essa
+escolha vale até o programa mandar outro `chartId`. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
 **não** resetam ao mudar de cifra. No celular, deslize **na borda** da cifra pinta
 um fade + chevron e só confirma ao soltar depois do limiar — o centro só rola, não
 troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`

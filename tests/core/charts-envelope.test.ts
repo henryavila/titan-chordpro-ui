@@ -2172,6 +2172,7 @@ describe('add rename delete default chart', () => {
     const one = '{title:Uma}\n{key:C}\n[C]letra\n'
     const out = addChart(one, 'default', { id: 'oferta', label: 'Oferta' })
     expect(listCharts(out).map((c) => c.id)).toEqual(['default', 'oferta'])
+    expect(listCharts(out).find((c) => c.id === 'default')).toMatchObject({ label: 'Padrão', isDefault: true })
     expect(parse(out, { chartId: 'oferta' }).source).toContain('[C]letra')
     expect(out).toMatch(/start_of_x_chart:default/)
     expect(out).toMatch(/start_of_x_chart:oferta/)

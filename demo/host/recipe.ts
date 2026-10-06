@@ -90,6 +90,8 @@ export const DEMOS: readonly DemoEntry[] = [
   edit-mode="local"
 />`,
     extra: [
+      { href: '/standalone.html?song=009-verdadeira-alegria', label: 'Verdadeira alegria · Padrão e Muralhas' },
+      { href: '/standalone.html?song=006-poder-do-amor-original', label: 'Poder do Amor · Original e Hinário' },
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
       { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
@@ -105,6 +107,7 @@ export const DEMOS: readonly DemoEntry[] = [
     blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Cada item já traz o ChordPro.',
     call: `<ChordproViewer :songs="songs" edit-mode="local" />`,
     extra: [
+      { href: '/standalone-lista.html?par=1', label: 'Poder do Amor (versões) e uma sem versão' },
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
     ],
   },
@@ -335,6 +338,8 @@ export type LabQuery = {
   audio: false | 'cantado' | 'playback' | 'ambos'
   /** When false (`capa=0`), skip cover so the packaged generic art shows. */
   capa: boolean
+  /** Two-song rehearsal: Poder do Amor with versions, then one song without. */
+  par: boolean
 }
 
 function parseEditMode(raw: string | null): EditMode | null {
@@ -373,6 +378,7 @@ export function labQuery(search: string): LabQuery {
     zonas: p.get('zonas') === '1',
     audio: parseDemoAudio(p.get('audio')),
     capa: p.get('capa') !== '0',
+    par: p.get('par') === '1',
   }
 }
 

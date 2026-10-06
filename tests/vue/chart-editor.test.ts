@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChordproViewer } from '../../src/vue'
 
 /** Same N>1 file as `TWO_CHART_SOURCE` in tests/core/charts-envelope.test.ts. */
@@ -130,13 +130,15 @@ describe('add rename delete default in edit', () => {
     const w = await mountViewer()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-chart-add]').text()).toMatch(/Adicionar cifra/)
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-add]').text()).toMatch(/Nova versão/)
     await w.get('[data-chart-add]').trigger('click')
     await flushPromises()
-    await w.get('[data-chart-id]').setValue('louvor')
     await w.get('[data-chart-label]').setValue('Louvor')
     await w.get('[data-chart-add-go]').trigger('click')
     await flushPromises()
+    expect(w.text()).toMatch(/Versão Louvor criada a partir de Oferta/)
     await w.get('[data-save]').trigger('click')
     await flushPromises()
     const saved = String(
@@ -151,6 +153,8 @@ describe('add rename delete default in edit', () => {
   it('renames the label without changing chartId', async () => {
     const w = await mountViewer()
     await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-switch]').trigger('click')
     await flushPromises()
     await w.get('[data-chart-rename]').trigger('click')
     await flushPromises()
@@ -172,8 +176,15 @@ describe('add rename delete default in edit', () => {
     const w = await mountViewer({ chartId: 'completa' })
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-default]').text()).toMatch(/Tornar padrão/)
     await w.get('[data-chart-default]').trigger('click')
     await flushPromises()
+    expect(w.text()).toMatch(/agora é a versão padrão/)
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-option="completa"]').text()).toMatch(/padrão/)
     await w.get('[data-save]').trigger('click')
     await flushPromises()
     const saved = String(
@@ -186,6 +197,11 @@ describe('add rename delete default in edit', () => {
     const w = await mountViewer()
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-delete]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-delete]').text()).toMatch(/Apagar Oferta/)
     await w.get('[data-chart-delete]').trigger('click')
     await flushPromises()
     await w.get('[data-save]').trigger('click')
@@ -196,6 +212,42 @@ describe('add rename delete default in edit', () => {
     expect(saved).not.toMatch(/start_of_x_chart/)
     expect(saved).toContain('corpo da completa')
     expect(saved).not.toContain('corpo da oferta')
+  })
+
+  it('switches the open cifra without leaving edit', async () => {
+    const w = await mountViewer()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-edit-label]').text()).toMatch(/Oferta/)
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-option="completa"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-edit-label]').text()).toMatch(/Completa/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.emitted('update:chartId')?.flat()).toContain('completa')
+  })
+
+  it('opens the whole file full screen and copies it', async () => {
+    const writeText = vi.fn(async () => undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    const w = await mountViewer()
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-source-code]').trigger('click')
+    await flushPromises()
+    const code = (w.get('[data-source-screen] textarea').element as HTMLTextAreaElement).value
+    expect(code).toContain('{start_of_x_chart:completa}')
+    expect(code).toContain('{start_of_x_chart:oferta}')
+    expect(code).toContain('corpo da completa')
+    expect(code).toContain('corpo da oferta')
+    expect(w.get('[data-source-screen]').text()).toMatch(/todas as versões/)
+    await w.get('[data-copy-source]').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('corpo da completa'))
+    expect(writeText.mock.calls[0]?.[0]).toContain('corpo da oferta')
+    expect(w.get('[data-copy-source]').text()).toMatch(/Copiado/)
   })
 
   it('does not show chart management in view mode', async () => {

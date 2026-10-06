@@ -82,10 +82,9 @@ describe('title chip and chartId prop', () => {
     const w = await mountViewer()
     const chip = w.get('[data-chart-switch]')
     expect(chip.exists()).toBe(true)
-    expect(chip.text()).toMatch(/Cifra/i)
+    expect(chip.text()).not.toMatch(/Cifra/i)
     expect(chip.text()).toMatch(/Oferta/)
     expect(chip.text()).not.toMatch(/Completa/)
-    expect(chip.text()).not.toMatch(/versão/i)
     expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
     expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da completa')
   })
@@ -394,5 +393,165 @@ describe('timeline and audio follow the chart', () => {
     await pickChart(w, 'completa')
     expect(w.find('[data-audio-ref]').exists()).toBe(false)
     vi.unstubAllGlobals()
+  })
+})
+
+const CULT_SOURCE = `{start_of_x_chart:ensaio}
+{title:Duas}
+{artist:Alguém}
+{x_chart_label:Ensaio}
+{key:G}
+{duration:03:00}
+[G]corpo do ensaio
+{end_of_x_chart}
+
+{start_of_x_chart:culto}
+{title:Duas}
+{artist:Alguém}
+{x_chart_label:Culto}
+{x_chart_default:culto}
+{key:D}
+{duration:04:00}
+[D]corpo do culto
+{end_of_x_chart}
+`
+
+const THREE_CHART_SOURCE = `{start_of_x_chart:completa}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Completa}
+{key:G}
+{duration:04:26}
+[G]corpo da completa
+{end_of_x_chart}
+
+{start_of_x_chart:oferta}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Oferta}
+{x_chart_default:oferta}
+{key:C}
+{duration:02:00}
+[C]corpo da oferta
+{end_of_x_chart}
+
+{start_of_x_chart:louvor}
+{title:Uma}
+{artist:Alguém}
+{x_chart_label:Louvor}
+{key:A}
+{duration:01:30}
+[A]corpo do louvor
+{end_of_x_chart}
+`
+
+describe('download is the open cifra', () => {
+  it('saves the visible chart, not the sibling', async () => {
+    const blobs: Blob[] = []
+    const names: string[] = []
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((obj) => {
+      blobs.push(obj as Blob)
+      return 'blob:cifra'
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      names.push(this.download)
+    })
+    const w = await mountViewer()
+    await w.get('[aria-label="Exportar"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-export="cho"]').text()).toMatch(/Oferta/)
+    await w.get('[data-export="cho"]').trigger('click')
+    await flushPromises()
+    expect(names.at(-1)).toBe('uma-oferta-c.cho')
+    const text = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result ?? ''))
+      reader.onerror = () => reject(reader.error)
+      reader.readAsText(blobs.at(-1) as Blob)
+    })
+    expect(text).toContain('corpo da oferta')
+    expect(text).not.toContain('corpo da completa')
+    expect(text).not.toMatch(/start_of_x_chart/)
+    vi.restoreAllMocks()
+  })
+})
+
+describe('program opens the cifra it named', () => {
+  it('opens that cifra, not the file default or the viewer prop', async () => {
+    const w = await mountViewer({
+      source: '',
+      chartId: 'oferta',
+      songs: [
+        { id: 'uma', title: 'Uma', source: TWO_CHART_SOURCE, chartId: 'completa' },
+        { id: 'duas', title: 'Duas', source: CULT_SOURCE },
+      ],
+    })
+    expect(w.get('[data-chart-switch]').text()).toMatch(/Completa/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+  })
+
+  it('keeps the musician pick across songs and does not borrow chartId', async () => {
+    const w = await mountViewer({
+      source: '',
+      chartId: 'ensaio',
+      songs: [
+        { id: 'uma', title: 'Uma', source: TWO_CHART_SOURCE, chartId: 'completa' },
+        { id: 'duas', title: 'Duas', source: CULT_SOURCE },
+      ],
+    })
+    await pickChart(w, 'oferta')
+    expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
+
+    await w.get('[data-song-next]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-chart-switch]').text()).toMatch(/Culto/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo do culto')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo do ensaio')
+
+    await w.get('[data-song-prev]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
+    expect(w.get('[data-chart-switch]').text()).toMatch(/Oferta/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+  })
+
+  it('keeps the pick when the program repeats the same cifra', async () => {
+    const songs = [
+      { id: 'uma', title: 'Uma', source: THREE_CHART_SOURCE, chartId: 'completa' },
+      { id: 'duas', title: 'Duas', source: CULT_SOURCE, chartId: 'culto' },
+    ]
+    const w = await mountViewer({ source: '', songs })
+    await pickChart(w, 'oferta')
+    await w.setProps({
+      songs: [
+        { id: 'uma', title: 'Uma', source: THREE_CHART_SOURCE, chartId: 'completa' },
+        { id: 'duas', title: 'Duas', source: CULT_SOURCE, chartId: 'culto' },
+      ],
+    })
+    await flushPromises()
+    expect(w.get('[data-chart-switch]').text()).toMatch(/Oferta/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+  })
+
+  it('opens the new cifra when the program changes it', async () => {
+    const w = await mountViewer({
+      source: '',
+      songs: [
+        { id: 'uma', title: 'Uma', source: THREE_CHART_SOURCE, chartId: 'completa' },
+        { id: 'duas', title: 'Duas', source: CULT_SOURCE, chartId: 'culto' },
+      ],
+    })
+    await pickChart(w, 'oferta')
+    await w.setProps({
+      songs: [
+        { id: 'uma', title: 'Uma', source: THREE_CHART_SOURCE, chartId: 'louvor' },
+        { id: 'duas', title: 'Duas', source: CULT_SOURCE, chartId: 'culto' },
+      ],
+    })
+    await flushPromises()
+    expect(w.get('[data-chart-switch]').text()).toMatch(/Louvor/)
+    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo do louvor')
+    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
   })
 })

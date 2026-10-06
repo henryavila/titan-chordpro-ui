@@ -1429,8 +1429,9 @@ export function addChart(file: string, fromId: string, opts: { id: string; label
   const copy = withChartLabel(stripDefaultMarkers(from.inner), label)
   const block = renderChartBlock(id, copy)
   if (!split.hasEnvelope) {
-    const original = renderChartBlock(from.id, from.inner)
-    return `${original}\n\n${block}\n`
+    let inner = withChartLabel(from.inner, 'Padrão')
+    if (!/\{\s*x_chart_default\s*:/i.test(inner)) inner = `{x_chart_default:${from.id}}\n${inner}`
+    return `${renderChartBlock(from.id, inner)}\n\n${block}\n`
   }
   const trimmed = src.replace(/\n+$/g, '')
   return `${trimmed}\n\n${block}\n`
