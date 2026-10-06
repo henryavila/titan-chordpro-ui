@@ -157,10 +157,12 @@ function canonicalPatch(meta: ChartMeta): ChartMeta {
  */
 function withChartDefault(patch: ChartMeta, meta: ChartMeta): ChartMeta {
   if (!Object.prototype.hasOwnProperty.call(meta, 'x_chart_default')) return patch
-  return {
-    ...patch,
-    x_chart_default: String((meta as ChartMeta & { x_chart_default?: string }).x_chart_default ?? ''),
-  }
+  const next: ChartMeta = { ...patch }
+  // Song opener. `readMeta` does not treat this as a header field.
+  Object.assign(next, {
+    x_chart_default: String((meta as { x_chart_default?: string }).x_chart_default ?? ''),
+  })
+  return next
 }
 
 export function writeMeta(source: string, meta: ChartMeta, opts?: WriteMetaOpts): string {
