@@ -2,6 +2,8 @@
 defineProps<{
   density: 'phone' | 'bar'
   xs?: boolean
+  /** Steps the staff zoom instead of the lyric type size. */
+  score?: boolean
 }>()
 
 defineEmits<{
@@ -18,15 +20,15 @@ defineEmits<{
     <button
       type="button"
       class="titan-chordpro-ghost titan-chordpro-type-minus"
-      aria-label="Diminuir tipografia"
-      title="Diminuir tipografia"
+      :aria-label="score ? 'Diminuir a partitura' : 'Diminuir tipografia'"
+      :title="score ? 'Diminuir a partitura' : 'Diminuir tipografia'"
       @click="$emit('smaller')"
     >A−</button>
     <button
       type="button"
       class="titan-chordpro-ghost titan-chordpro-type-plus"
-      aria-label="Aumentar tipografia"
-      title="Aumentar tipografia"
+      :aria-label="score ? 'Aumentar a partitura' : 'Aumentar tipografia'"
+      :title="score ? 'Aumentar a partitura' : 'Aumentar tipografia'"
       @click="$emit('bigger')"
     >A+</button>
   </span>

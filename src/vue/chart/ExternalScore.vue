@@ -10,6 +10,7 @@ import { useNoteNames } from '../use/useNoteNames'
 import ScoreZoom from './ScoreZoom.vue'
 import ScoreOptionsMenu from './ScoreOptionsMenu.vue'
 import { downloadScoreFile } from './download-score'
+import { systemSeconds, timingFromScore, type ScoreTiming } from './score-timing'
 import type { NoteNameFormat } from '../public'
 
 const props = defineProps<{
@@ -23,14 +24,24 @@ const props = defineProps<{
   theme?: 'light' | 'dark'
   noteNameFormat?: NoteNameFormat
   resolveScore?: (src: string) => string
+  /** Whole-song staff. The page is the partitura; TAB stays in the chart. */
+  lockScore?: boolean
+  /** Controlled zoom. Omit it and the card keeps its own. 0 is automatic. */
+  zoom?: number
 }>()
-const emit = defineEmits<{ editScore: []; viewChange: [view: 'tab' | 'score'] }>()
+const emit = defineEmits<{
+  editScore: []
+  viewChange: [view: 'tab' | 'score']
+  'update:zoom': [value: number]
+  timing: [payload: ScoreTiming]
+}>()
 const host = ref<HTMLElement | null>(null)
 const preference = useTabRhythm()
 const noteNames = useNoteNames()
 const localView = ref<'tab' | 'score'>('tab')
 const view = computed<'tab' | 'score'>({
   get: () => {
+    if (props.lockScore) return 'score'
     const requested = props.preview || props.canEdit ? localView.value : props.preferredView ?? localView.value
     return requested === 'tab' && !tabAvailable.value ? 'score' : requested
   },
@@ -49,7 +60,14 @@ const fileType = ref('')
 const label = computed(() => {
   try { return readScoreReference(props.text)?.name ?? 'Solo' } catch { return 'Solo' }
 })
-const zoom = ref(0) // 0 = automatic
+const localZoom = ref(0) // 0 = automatic
+const zoom = computed({
+  get: () => (props.zoom === undefined ? localZoom.value : props.zoom),
+  set: (next: number) => {
+    localZoom.value = next
+    emit('update:zoom', next)
+  },
+})
 const scale = ref(1.1)
 const resolvedUrl = computed(() => {
   try {
@@ -61,8 +79,13 @@ const zoomLabel = computed(() => `${Math.round(scoreAutoScale(host.value?.client
 const noteLaneHeight = (system: NotationSystem) => `${(system.noteNames.reduce((max, name) => Math.max(max, name.row), 0) + 1) * 20}px`
 let score: model.Score | null = null
 let reference: ScoreReference | null = null
+let barSeconds: number[] = []
+let published: ScoreTiming | null = null
 const systems = ref<NotationSystem[]>([])
 let drawing = 0
+function publishTiming() {
+  if (published) emit('timing', published)
+}
 let observer: ResizeObserver | null = null
 let abort: AbortController | null = null
 let generation = 0
@@ -84,13 +107,17 @@ async function redraw() {
         line: value('--muted', '#737b88'), accent: value('--chord', '#17713c') },
     })
     if (disposed || ticket !== drawing || song !== generation) return
-    systems.value = rendered
+    systems.value = reference
+      ? rendered.map((system) => ({ ...system, seconds: systemSeconds(barSeconds, reference!.start, system.first, system.last) }))
+      : rendered
     error.value = ''
     loading.value = false
+    publishTiming()
   } catch (e) {
     if (disposed || ticket !== drawing || song !== generation) return
     error.value = e instanceof Error ? e.message : 'Não foi possível desenhar este solo.'
     loading.value = false
+    publishTiming()
   }
 }
 
@@ -99,6 +126,8 @@ async function load() {
   abort?.abort()
   score = null
   reference = null
+  barSeconds = []
+  published = null
   systems.value = []
   error.value = ''
   downloadError.value = ''
@@ -122,6 +151,9 @@ async function load() {
     const loaded = await loadNotation(buffer)
     if (disposed || ticket !== generation || !host.value) return
     score = loaded
+    const timing = timingFromScore(loaded, props.text, reference.start, reference.end)
+    barSeconds = timing.seconds
+    published = timing
     const track = excerptTrack(score, reference.track, reference.start, reference.end)
     tabAvailable.value = hasTab(track)
     scale.value = zoom.value || scoreAutoScale(host.value.clientWidth)
@@ -218,13 +250,15 @@ defineExpose({
         <ScoreZoom v-model="zoom" :automatic-label="zoomLabel" />
       </div>
     </figcaption>
-    <p v-if="loading && !error" role="status">Abrindo solo…</p>
+    <p v-if="loading && !error" role="status">{{ lockScore ? 'Abrindo partitura…' : 'Abrindo solo…' }}</p>
     <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">Tentar novamente</button></p>
     <p v-if="downloadError" role="alert">{{ downloadError }}</p>
-    <p v-else-if="!loading && !tabAvailable">Este arquivo não traz posições nas cordas para exibir TAB.</p>
+    <p v-else-if="!loading && !tabAvailable && !lockScore">Este arquivo não traz posições nas cordas para exibir TAB.</p>
     <div class="titan-chordpro-notation-paper"><div ref="host" class="titan-chordpro-notation-systems">
       <div v-for="(system, i) in systems" :key="i" class="titan-chordpro-notation-system"
-        :data-first-bar="system.first" :data-last-bar="system.last" :style="{ width: `${system.width}px` }">
+        :data-first-bar="system.first" :data-last-bar="system.last"
+        :data-score-system="lockScore ? '' : undefined"
+        :data-score-seconds="lockScore && system.seconds ? system.seconds : undefined" :style="{ width: `${system.width}px` }">
         <div v-if="noteNames.value.value && !preview && system.noteNames.length" class="titan-chordpro-note-names"
           :style="{ width: `${system.width}px`, height: noteLaneHeight(system) }" :aria-label="view === 'tab' ? 'Notas da TAB' : 'Notas da partitura'">
           <span v-for="(name, n) in system.noteNames" :key="n" class="titan-chordpro-note-name" :style="{ left: `${name.x}px`, top: `${name.row * 20}px` }">{{ name.text }}</span>

@@ -195,6 +195,26 @@ test('single chart (no setlist): dock is not under a leftover rail', async ({ pa
   assertNoThieves(findings, 'single chart')
 })
 
+test('Só partitura stays clickable when the setlist rail crosses the score header', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 })
+  await page.goto('/?chart=song-score&lista=1')
+  const button = page.locator('[data-read-song]').first()
+  await button.waitFor()
+  await page.locator('.titan-chordpro-notation-paper svg').first().waitFor()
+  const findings = await probeLiveControls(page)
+  const hits = findings.filter((f) => f.sel === '[data-read-song]')
+  expect(hits.length, 'Só partitura was not on screen').toBeGreaterThan(0)
+  const missed = hits.filter((f) => f.thief || f.pointerEvents === 'none' || !f.top.includes('titan-chordpro-song-read'))
+  expect(missed, `Só partitura hit: ${JSON.stringify(missed, null, 2)}`).toEqual([])
+  await button.click()
+  await expect(page.locator('[data-titan-chordpro-reading]')).toHaveAttribute('data-titan-chordpro-reading', 'partitura')
+  const back = page.locator('[data-leave-song]')
+  await expect(back).toBeVisible()
+  await back.click()
+  await expect(page.locator('[data-titan-chordpro-reading]')).toHaveAttribute('data-titan-chordpro-reading', 'cifra')
+  await expect(page.getByText('Linha da cifra com acordes')).toBeVisible()
+})
+
 test('after closing Mais, Rolar is still the hit at its own rectangle', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?lista=1')

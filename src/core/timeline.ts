@@ -260,6 +260,11 @@ export type TimelineBlock = {
   h: number
   music: BlockMusic
   kind: string
+  /**
+   * Exact seconds for this slice, from a notation file.
+   * When set, the chart's bar formula is not used.
+   */
+  seconds?: number
 }
 
 export type TimelineOpts = {
@@ -416,7 +421,8 @@ export function buildTimeline(blocks: TimelineBlock[], opts: TimelineOpts): Time
   for (const b of blocks) {
     let fx = 0
     let es = 0
-    if (b.kind === 'score') fx = Math.max(2, b.music.bars || 2) * secBar
+    if (b.seconds != null && b.seconds > 0) fx = b.seconds
+    else if (b.kind === 'score') fx = Math.max(2, b.music.bars || 2) * secBar
     else if (b.kind === 'tab') fx = Math.max(2, b.music.bars) * secBar
     else {
       // Intro, interlude, ending: the bars written there are the scroll time.

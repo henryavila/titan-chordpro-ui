@@ -45,6 +45,11 @@ export type UseAutoScrollOpts = {
    * Sound policy stays with the caller. This clock only rolls.
    */
   startLinked: () => void
+  /**
+   * Partitura reading. The clock is the drawn systems' own seconds,
+   * not `{duration:}` or the chord chart.
+   */
+  scoreMeasure?: () => boolean
 }
 
 /** Where the reader was, taken before anything is allowed to move. */
@@ -118,14 +123,24 @@ export function useAutoScroll(opts: UseAutoScrollOpts) {
     const carrier = page.value?.style.transform ?? ''
     if (carrier && page.value) page.value.style.transform = ''
     const base = el.getBoundingClientRect().top - el.scrollTop
-    const nodes = el.querySelectorAll('[data-block]')
-    const list = opts.blocks()
     const out: TimelineBlock[] = []
-    for (let i = 0; i < nodes.length; i++) {
-      const b = list[i]
-      if (!b) continue
-      const r = (nodes[i] as HTMLElement).getBoundingClientRect()
-      out.push({ top: r.top - base, h: Math.max(1, r.height), music: b.music, kind: b.kind })
+    if (opts.scoreMeasure?.()) {
+      const quiet = { beats: 0, tail: 0, bars: 0, chords: 0, rows: 0 }
+      for (const node of el.querySelectorAll<HTMLElement>('[data-score-system]')) {
+        const seconds = Number(node.dataset.scoreSeconds)
+        if (!(seconds > 0)) continue
+        const r = node.getBoundingClientRect()
+        out.push({ top: r.top - base, h: Math.max(1, r.height), music: quiet, kind: 'score', seconds })
+      }
+    } else {
+      const nodes = el.querySelectorAll('[data-block]')
+      const list = opts.blocks()
+      for (let i = 0; i < nodes.length; i++) {
+        const b = list[i]
+        if (!b) continue
+        const r = (nodes[i] as HTMLElement).getBoundingClientRect()
+        out.push({ top: r.top - base, h: Math.max(1, r.height), music: b.music, kind: b.kind })
+      }
     }
     if (carrier && page.value) page.value.style.transform = carrier
     return out
@@ -138,11 +153,12 @@ export function useAutoScroll(opts: UseAutoScrollOpts) {
       return null
     }
     const clock = clockOf(opts.parsed())
+    const scoring = opts.scoreMeasure?.() === true
     timeline = buildTimeline(measureBlocks(), {
       bpm: clock.bpm,
       beatsPerBar: clock.beatsPerBar,
       marksPerBeat: clock.marksPerBeat,
-      durationSec: clock.durationSec,
+      durationSec: scoring ? null : clock.durationSec,
       barPx: opts.barPx(),
       doc: el.scrollHeight,
       viewport: el.clientHeight,
@@ -285,7 +301,10 @@ export function useAutoScroll(opts: UseAutoScrollOpts) {
   function startScroll() {
     const el = scroller.value
     if (!el) return
-    if (!hasSongDuration(opts.parsed().meta.duration)) return
+    const scoring = opts.scoreMeasure?.() === true
+    if (scoring) {
+      if (!measureBlocks().some((block) => (block.seconds ?? 0) > 0)) return
+    } else if (!hasSongDuration(opts.parsed().meta.duration)) return
     // Hitting Rolar again is continuing the song, not confirming the end.
     opts.dismissEnd()
     scrolling.value = true
@@ -316,7 +335,7 @@ export function useAutoScroll(opts: UseAutoScrollOpts) {
     }
     el.addEventListener('scroll', userScroll, { passive: true })
 
-    const dur = clockOf(opts.parsed()).durationSec
+    const dur = scoring ? null : clockOf(opts.parsed()).durationSec
     const step = (now: number) => {
       if (!scrolling.value) return
       if (swipePeekHold) {

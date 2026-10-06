@@ -4,6 +4,7 @@ import { AUDIO_ART_MEDIA_PX, setAudioArt, setAudioUrl } from '../../src/core'
 import type { Lens } from '../../src/vue'
 import { TitanChordpro } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
+import gpUrl from '../../fixtures/notation/notes.gp?url'
 import refAudio from '../../demo/ref-audio.wav?url'
 import refPlayback from '../../demo/ref-audio-playback.wav?url'
 import refArt from '../../demo/ref-audio-art.jpg?url'
@@ -28,6 +29,9 @@ const PLAYED =
 function pickSource(): string {
   const name = q.get('chart')
   if (name === 'played') return PLAYED
+  if (name === 'song-score') {
+    return `{title: Música com pauta}\n{duration: 03:00}\n{tempo: 120}\n{time: 4/4}\n{key: C}\n\n{c:Verso}\n[C]Linha da cifra com acordes\n\n{x_titan_score: src=${JSON.stringify(gpUrl)} track=1 start=1 name="Pauta da música"}\n`
+  }
   if (name && name !== '084') {
     const hit = Object.entries(catalog).find(([k]) => k.endsWith(`/${name}`) || k.endsWith(`/${name}.cho`))
     if (hit) return String(hit[1])
@@ -87,10 +91,14 @@ const songs = computed(() => {
       }))
   }
   if (lista === '1') {
-    return [
+    const program = [
       { id: 'o-rei', title: '082 - O Rei vem vindo', source: stampAudio(oRei, 0) },
       { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: stampAudio(jesus, 1) },
     ]
+    if (q.get('chart') === 'song-score') {
+      program.unshift({ id: 'song-score', title: 'Música com pauta', source: pickSource() })
+    }
+    return program
   }
   return undefined
 })

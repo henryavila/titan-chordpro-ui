@@ -31,6 +31,7 @@ const emit = defineEmits<{
   zoom: [value: number]
   adjust: []
   remove: []
+  readSong: []
 }>()
 
 const open = ref(false)
@@ -123,6 +124,10 @@ async function onDownload(event: Event) {
   })
   close()
 }
+function onReadSong() {
+  emit('readSong')
+  close()
+}
 function onAdjust() {
   emit('adjust')
   close()
@@ -202,6 +207,17 @@ onUnmounted(() => {
             <button type="button" :disabled="!tabAvailable" :aria-pressed="view === 'tab'" :class="{ 'is-on': view === 'tab' }" @click="pickView('tab')">TAB</button>
             <button type="button" :aria-pressed="view === 'score'" :class="{ 'is-on': view === 'score' }" @click="pickView('score')">Partitura</button>
           </div>
+          <button
+            type="button"
+            class="titan-chordpro-surface-btn titan-chordpro-more-item"
+            data-read-song
+            aria-label="Ler só a partitura"
+            @click="onReadSong"
+          >
+            <TitanChordproIcon name="music2" :size="18" />
+            <span class="titan-chordpro-more-copy">Ler só a partitura</span>
+            <span>oculta a cifra</span>
+          </button>
           <template v-if="showRhythm">
             <div class="titan-chordpro-insert-where">Ritmo da TAB</div>
             <div class="titan-chordpro-score-more-pick" role="group" aria-label="Ritmo da TAB">

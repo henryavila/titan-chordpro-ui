@@ -17,7 +17,7 @@ const props = defineProps<{
   resolveScore?: (src: string) => string
   uploadScore?: (file: File) => Promise<{ ref: string }>
 }>()
-const emit = defineEmits<{ save: [text: string]; close: [] }>()
+const emit = defineEmits<{ save: [text: string]; saveSong: [text: string]; close: [] }>()
 const dialog = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const src = ref('')
@@ -111,8 +111,12 @@ function dropFile(event: DragEvent) {
   dragDepth.value = 0
   chooseFiles(Array.from(event.dataTransfer?.files ?? []))
 }
-async function save() {
+async function save(asSong = false) {
   if (!score.value || busy.value) return
+  if (asSong && total.value) {
+    start.value = 1
+    end.value = total.value
+  }
   error.value = ''
   busy.value = true
   const ticket = generation
@@ -123,7 +127,9 @@ async function save() {
     const reference = file.value ? (await props.uploadScore?.(file.value))?.ref : src.value.trim()
     if (!reference?.trim()) throw new Error('Não foi possível guardar o arquivo do solo.')
     if (ticket !== generation) return
-    emit('save', writeScoreReference({ src: reference.trim(), track: track.value, start: start.value, end: end.value, rhythm: rhythm.value, name: name.value.trim() }))
+    const text = writeScoreReference({ src: reference.trim(), track: track.value, start: start.value, end: end.value, rhythm: rhythm.value, name: name.value.trim() })
+    if (asSong) emit('saveSong', text)
+    else emit('save', text)
   } catch (e) { if (ticket === generation) error.value = e instanceof Error ? e.message : 'Não foi possível guardar o solo.' }
   finally { if (ticket === generation) busy.value = false }
 }
@@ -151,7 +157,7 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
 <template>
   <div class="titan-chordpro-modal titan-chordpro-import-score-modal" @keydown.stop="keydown" @dragover.prevent @drop.prevent>
     <div class="titan-chordpro-scrim" />
-    <form ref="dialog" class="titan-chordpro-veil-2 titan-chordpro-modal-card titan-chordpro-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save">
+    <form ref="dialog" class="titan-chordpro-veil-2 titan-chordpro-modal-card titan-chordpro-import-score" role="dialog" aria-modal="true" aria-label="Solo de Guitar Pro ou MusicXML" @submit.prevent="save()">
       <header class="titan-chordpro-import-score-head">
         <div><span class="titan-chordpro-modal-kicker">Guitar Pro · MusicXML</span><h2>{{ text ? 'Ajustar trecho' : 'Importar solo' }}</h2><p>Escolha o que entra na cifra e confira a prévia.</p></div>
         <TitanChordproIconButton icon="x" density="import" class="titan-chordpro-import-score-close" aria-label="Fechar importação" :disabled="busy" @click="emit('close')" />
@@ -196,6 +202,7 @@ onUnmounted(() => { generation++; controller?.abort(); clear(); previousFocus?.f
       <footer class="titan-chordpro-import-score-actions">
         <span v-if="preview">{{ end - start + 1 }} {{ end === start ? 'compasso selecionado' : 'compassos selecionados' }}</span>
         <button type="button" class="titan-chordpro-modal-btn" :disabled="busy" @click="emit('close')">Cancelar</button>
+        <button type="button" class="titan-chordpro-modal-btn" :disabled="busy || !preview" @click="save(true)">Ler só a partitura</button>
         <button type="submit" class="titan-chordpro-modal-btn titan-chordpro-modal-btn--primary" :disabled="busy || !preview">Salvar trecho na cifra</button>
       </footer>
     </form>

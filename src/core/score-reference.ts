@@ -51,6 +51,35 @@ export function readScoreReference(text: string): ScoreReference | null {
   return { ...(name === undefined ? {} : { name }), ...(rhythm === undefined ? {} : { rhythm: rhythm as TabRhythm }), src: src.trim(), track, start, ...(end === undefined ? {} : { end }) }
 }
 
+/**
+ * The external score the Partitura reading can stand on.
+ * It starts at bar 1. An omitted end is the whole file. An explicit end
+ * covers the file only once `barCount` is known and the end reaches it.
+ * Before that, the longest explicit end is the candidate.
+ */
+export function songScoreBlock<T extends { kind: string }>(
+  blocks: readonly T[],
+  barCount?: number,
+): T | null {
+  const open: T[] = []
+  const closed: { block: T; end: number }[] = []
+  for (const block of blocks) {
+    const text = 'text' in block && typeof block.text === 'string' ? block.text : ''
+    if (block.kind !== 'score' || !isScoreReference(text)) continue
+    let ref: ScoreReference | null = null
+    try { ref = readScoreReference(text) } catch { continue }
+    if (!ref || ref.start !== 1) continue
+    if (ref.end === undefined) open.push(block)
+    else closed.push({ block, end: ref.end })
+  }
+  if (open[0]) return open[0]
+  if (barCount === undefined) {
+    closed.sort((a, b) => b.end - a.end)
+    return closed[0]?.block ?? null
+  }
+  return closed.find((item) => item.end >= barCount)?.block ?? null
+}
+
 export function writeScoreReference(ref: ScoreReference): string {
   const text = `{x_titan_score: src=${JSON.stringify(ref.src)} track=${ref.track} start=${ref.start}${ref.end === undefined ? '' : ` end=${ref.end}`}${ref.rhythm === undefined ? '' : ` rhythm=${ref.rhythm}`}${ref.name === undefined ? '' : ` name=${JSON.stringify(ref.name)}`}}`
   readScoreReference(text)

@@ -4107,9 +4107,34 @@ div.titan-chordpro-head-id {
 .titan-chordpro-external-score .titan-chordpro-figure-kind { font-size: 12px; white-space: normal; letter-spacing: normal; text-transform: none; }
 
 /* A notation card retains its title when folded; its control never floats. */
+.titan-chordpro-song-score .titan-chordpro-external-score { padding: 0; }
+.titan-chordpro-song-score .titan-chordpro-notation-paper { border-radius: 0; }
+.titan-chordpro-song-read {
+  position: relative;
+  z-index: 13;
+  flex: none;
+  height: 32px;
+  margin: 0 4px;
+  padding: 0 10px;
+  border: 1px solid var(--chord-edge);
+  border-radius: 9px;
+  background: var(--chord-fill);
+  color: var(--chord);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.titan-chordpro-song-read:hover { background: var(--chord-soft); }
 .titan-chordpro-notation-row { margin-inline: calc(-1 * var(--titan-chordpro-notation-outset, 0px)); margin-bottom: 16px; }
 .titan-chordpro-notation-card { border: 1px solid var(--line-soft); background: var(--veil); overflow: visible; }
 .titan-chordpro-notation-fold { display: flex; align-items: stretch; padding: 0; }
+.titan-chordpro-notation-fold > .titan-chordpro-notation-title {
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+  padding: 8px 8px 8px 12px;
+}
 .titan-chordpro-notation-title { min-width: 0; overflow-wrap: anywhere; color: var(--chord); font-size: 14px; font-weight: 650; }
 .titan-chordpro-notation-fold-toggle { position: relative; z-index: 12; display: flex; align-items: center; justify-content: flex-start; gap: 8px; flex: 1; min-width: 0; min-height: 52px; padding: 8px 8px 8px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer; touch-action: manipulation; }
 .titan-chordpro-notation-fold-toggle:hover { background: var(--hover); color: var(--text); }
@@ -4136,10 +4161,37 @@ div.titan-chordpro-head-id {
   font-family: var(--titan-chordpro-font-controls, Sora, system-ui, sans-serif);
   gap: 6px;
 }
+/* The sheet is teleported. A glassy card lets the staff and Só partitura
+   show through the TAB/Partitura switch. The menu stays solid. */
+.titan-chordpro-score-sheet .titan-chordpro-score-more-card {
+  background: var(--canvas);
+}
 .titan-chordpro-score-more-card button {
   appearance: none;
   -webkit-appearance: none;
+  margin: 0;
   font-family: inherit;
+  color: var(--text);
+  background: transparent;
+}
+/* Teleported to body, so the root button recipe does not reach these rows.
+   Same height, inset and surface as the other menus — not the native white button. */
+.titan-chordpro-score-sheet button.titan-chordpro-surface-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 13px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.titan-chordpro-score-sheet button.titan-chordpro-surface-btn:hover {
+  background: var(--surface-hover);
+}
+.titan-chordpro-score-sheet button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 .titan-chordpro-score-sheet.is-sheet .titan-chordpro-score-more-card { width: 100%; gap: 6px; }
 .titan-chordpro-score-more-popover {

@@ -10,6 +10,7 @@ import ExternalScore from './ExternalScore.vue'
 import ScoreOptionsMenu from './ScoreOptionsMenu.vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import { isInlineScore, isScoreReference, readScoreReference } from '@henryavila/titan-chordpro-ui'
+import type { ScoreTiming } from './score-timing'
 import { readingWords, type ReadingWord } from './readingWords'
 import type { NoteNameFormat } from '../public'
 
@@ -47,6 +48,10 @@ const props = withDefaults(
     diagrams?: boolean
     /** What a + between blocks can insert. Empty outside edit. */
     insertItems?: Array<{ icon: TitanChordproIconName; label: string; go: () => void }>
+    /** The page is this staff. No excerpt card, and the view stays on the partitura. */
+    songScore?: boolean
+    /** Zoom of that staff. 0 is automatic. */
+    scoreZoom?: number
   }>(),
   {
     resolveImage: (src: string) => src,
@@ -59,6 +64,7 @@ const props = withDefaults(
     chordEditPx: '13px',
     diagrams: true,
     insertItems: () => [],
+    songScore: false,
   },
 )
 
@@ -83,6 +89,9 @@ const emit = defineEmits<{
   toggleNotation: [bi: number]
   scoreViewChange: [bi: number, view: 'tab' | 'score']
   diagram: [payload: { shapeName: string; concert: string; capoFret: number }]
+  scoreTiming: [payload: ScoreTiming]
+  'update:scoreZoom': [value: number]
+  readSongScore: [bi: number]
 }>()
 
 const notationId = useId()
@@ -97,6 +106,9 @@ function notationTitle(block: ChartBlock): string {
 }
 function isExternalScore(block: ChartBlock): boolean {
   return block.kind === 'score' && isScoreReference(block.text)
+}
+function isSongStaff(block: ChartBlock): boolean {
+  return props.songScore && isExternalScore(block)
 }
 function scoreText(block: ChartBlock): string {
   return block.kind === 'score' ? block.text : ''
@@ -334,7 +346,7 @@ watch(
         :edit="edit"
         :items="insertItems"
       />
-      <div :data-block="i" class="titan-chordpro-blockrow" :class="{ 'titan-chordpro-notation-row': !edit && canFold(block) }" :data-notation-collapsed="canFold(block) ? isFolded(i) : undefined">
+      <div :data-block="i" class="titan-chordpro-blockrow" :class="{ 'titan-chordpro-notation-row': !edit && canFold(block) && !isSongStaff(block), 'titan-chordpro-song-score': isSongStaff(block) }" :data-notation-collapsed="canFold(block) && !isSongStaff(block) ? isFolded(i) : undefined">
         <!-- Where a dragged block would land, drawn on the block it lands before. -->
         <span v-if="edit && edit.dropAt.value === i" class="titan-chordpro-drop-line" />
         <span
@@ -353,13 +365,22 @@ watch(
 
         <div
           class="titan-chordpro-blockbody"
-          :class="{ 'titan-chordpro-notation-card': !edit && canFold(block) }"
+          :class="{ 'titan-chordpro-notation-card': !edit && canFold(block) && !isSongStaff(block) }"
           :style="{
             outline: edit && edit.inSel(i) ? '2px solid var(--chord-edge)' : 'none',
             opacity: edit && edit.inDrag(i) ? '0.45' : '1',
           }"
         >
-          <div v-if="!edit && canFold(block)" class="titan-chordpro-notation-fold" :class="{ 'has-more': isExternalScore(block) }" @click.stop="emit('toggleNotation', i)">
+          <div v-if="!edit && isSongStaff(block)" class="titan-chordpro-notation-fold">
+            <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
+            <button
+              type="button"
+              class="titan-chordpro-song-read is-on"
+              data-leave-song
+              @click.stop="emit('readSongScore', i)"
+            >Cifra</button>
+          </div>
+          <div v-else-if="!edit && canFold(block)" class="titan-chordpro-notation-fold" :class="{ 'has-more': isExternalScore(block) }" @click.stop="emit('toggleNotation', i)">
             <button type="button" class="titan-chordpro-notation-fold-toggle" :data-toggle-notation="i" :aria-expanded="!isFolded(i)" :aria-controls="`${notationId}-${block.li0}`"
               :aria-label="`${isFolded(i) ? 'Mostrar' : 'Ocultar'} ${notationTitle(block)}`"
               :title="isFolded(i) ? 'Mostrar conteúdo' : 'Ocultar conteúdo'"
@@ -367,6 +388,13 @@ watch(
               <TitanChordproIcon name="chevronDown" :size="18" />
               <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
             </button>
+            <button
+              v-if="isExternalScore(block)"
+              type="button"
+              class="titan-chordpro-song-read"
+              data-read-song
+              @click.stop="emit('readSongScore', i)"
+            >Só partitura</button>
             <ScoreOptionsMenu
               v-if="isExternalScore(block) && !isFolded(i)"
               :label="notationTitle(block)"
@@ -384,11 +412,18 @@ watch(
               @view="view => { const host = scoreHosts[i]; if (host) host.view = view }"
               @rhythm="value => scoreHosts[i]?.setRhythm(value)"
               @notes="value => scoreHosts[i]?.setNoteNames(value)"
-              @zoom="value => { const host = scoreHosts[i]; if (host) host.zoom = value }"
-            />
+          @zoom="value => { const host = scoreHosts[i]; if (host) host.zoom = value }"
+          @read-song="emit('readSongScore', i)"
+        />
           </div>
           <div v-else-if="edit && isExternalScore(block)" class="titan-chordpro-score-heading titan-chordpro-score-edit-head">
             <span class="titan-chordpro-notation-title">{{ notationTitle(block) }}</span>
+            <button
+              type="button"
+              class="titan-chordpro-song-read"
+              data-read-song
+              @click.stop="emit('readSongScore', i)"
+            >Só partitura</button>
             <ScoreOptionsMenu
               :label="notationTitle(block)"
               :view="scoreHosts[i]?.view ?? 'tab'"
@@ -410,6 +445,7 @@ watch(
               @zoom="value => { const host = scoreHosts[i]; if (host) host.zoom = value }"
               @adjust="() => emit('editScore', i)"
               @remove="() => edit?.deleteBlock(i)"
+              @read-song="emit('readSongScore', i)"
             />
           </div>
           <div v-if="edit?.canDelete.value && block.kind === 'score' && !isExternalScore(block)" class="titan-chordpro-figure-cap">
@@ -527,13 +563,17 @@ watch(
           </div>
 
           <ExternalScore
-            v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`"
+            v-show="isSongStaff(block) || !isFolded(i)" :id="`${notationId}-${block.li0}`"
             v-else-if="block.kind === 'score' && isScoreReference(block.text)"
             :text="block.text" hide-title :block-gap="edit ? blockGap : '0'" :can-edit="!!edit" :resolve-score="resolveScore" :theme="theme" :note-name-format="noteNameFormat"
             :ref="el => bindScore(i, el)"
-            :preferred-view="preferredView(i)"
+            :preferred-view="isSongStaff(block) ? 'score' : preferredView(i)"
+            :lock-score="isSongStaff(block)"
+            :zoom="isSongStaff(block) ? scoreZoom : undefined"
             @view-change="view => emit('scoreViewChange', i, view)"
             @edit-score="emit('editScore', i)"
+            @timing="emit('scoreTiming', $event)"
+            @update:zoom="value => emit('update:scoreZoom', value)"
           />
           <div v-else-if="block.kind === 'score' && !isInlineScore(block.text)"
             v-show="!isFolded(i)" :id="`${notationId}-${block.li0}`" class="titan-chordpro-figure" data-invalid-score

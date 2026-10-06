@@ -1117,7 +1117,16 @@ arquivo. Alterar ou cancelar o trecho não modifica os bytes originais.
 Limites desta entrega: a transposição da cifra não transpõe o arquivo externo;
 o HTML estático identifica o trecho, sem desenhar a pauta externa.
 A seleção de compassos não fornece sincronização de áudio nem tempo exato para
-a auto-rolagem. Na lente Só letra, o trecho é ocultado como as outras partituras.
+a auto-rolagem da cifra. Na lente Só letra, o trecho é ocultado como as outras partituras.
+
+Quando o arquivo começa no compasso 1 e vai até o fim, o interruptor de leitura
+ganha **Partitura**. Essa leitura tira a cifra em texto da página e mostra a
+pauta na largura disponível. O Rolar anda no tempo dos compassos do arquivo
+(andamento e fórmula de compasso), não nas marcas `x///` nem na duração da
+cifra. O clique acompanha o andamento do compasso que está passando, na mesma
+velocidade da rolagem. A− e A+ mudam o zoom da pauta. Transposição, capo,
+graus, comentários e ajuste ao espaço ficam na leitura Cifra, porque não
+alteram o arquivo. Um solo que não cobre o arquivo inteiro não abre esse modo.
 
 Referência do motor: https://alphatab.net/docs/introduction
 
