@@ -181,6 +181,15 @@ export const ICONS = {
     { tag: 'line', attrs: { x1: '10', x2: '10', y1: '11', y2: '17' } },
     { tag: 'line', attrs: { x1: '14', x2: '14', y1: '11', y2: '17' } },
   ],
+  eye: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+      },
+    },
+    { tag: 'circle', attrs: { cx: '12', cy: '12', r: '3' } },
+  ],
   eyeOff: [
     {
       tag: 'path',
@@ -255,6 +264,33 @@ export const ICONS = {
     { tag: 'path', attrs: { d: 'M3 12h.01' } },
     { tag: 'path', attrs: { d: 'M3 18h.01' } },
   ],
+  /** Lucide headphones — rehearsal reference, not a play triangle. */
+  headphones: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3',
+      },
+    },
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M8.3 12c1.05-3.3 2.1-3.3 3.15 0s2.1 3.3 3.15 0 2.1-3.3 3.15 0',
+        fill: 'none',
+        'stroke-width': '2.6',
+        'data-audio-wave': '1',
+      },
+    },
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M8.6 12c.9-2.2 1.8-2.2 2.7 0s1.8 2.2 2.7 0 1.8-2.2 2.7 0',
+        fill: 'none',
+        'stroke-width': '1.6',
+        'data-audio-wave': '2',
+      },
+    },
+  ],
   /** Music notation start-repeat |: — two dots and the thick bar. */
   repeatBar: [
     { tag: 'rect', attrs: { x: '7', y: '4', width: '1.4', height: '16', rx: '0.4', fill: 'currentColor', stroke: 'none' } },
@@ -264,7 +300,7 @@ export const ICONS = {
   ],
 } as const satisfies Record<string, IconNode[]>
 
-export type CpvIconName = keyof typeof ICONS
+export type TitanChordproIconName = keyof typeof ICONS
 
 /** Names the JSON selection locked. Type stays A−/A+. Chorus is `repeatBar`. */
 export const PICKED_ICONS = [
@@ -299,6 +335,7 @@ export const PICKED_ICONS = [
   'chevronDown',
   'copy',
   'trash2',
+  'eye',
   'eyeOff',
   'rotateCcw',
   'x',
@@ -308,4 +345,4 @@ export const PICKED_ICONS = [
   'check',
   'play',
   'pause',
-] as const satisfies readonly CpvIconName[]
+] as const satisfies readonly TitanChordproIconName[]

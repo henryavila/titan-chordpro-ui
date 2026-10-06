@@ -1,7 +1,16 @@
-import { chartDocument, notationBlockCloser } from './charts'
+import {
+  asChordDefine,
+  DIR,
+  isDefineKey,
+  parseDefineDirective,
+  transposeDefines,
+  type ChordDefine,
+} from './define'
+import { chartDocument, notationMask } from './charts'
+import { notationEdge } from './notation-region'
 import { looksLikeOnSong, normalizeOnSong } from './onsong'
 import { semitoneDelta, transposeTextChords, transposeToken, usesFlats } from './transpose'
-import type { ChordProLine, ChordProSection, ChordProView, SectionKind } from './types'
+import type { TitanChordproLine, TitanChordproSection, TitanChordproDocument, SectionKind } from './types'
 
 type RawLine = { li0: number; li1: number } & (
   | {
@@ -26,7 +35,6 @@ type RawLine = { li0: number; li1: number } & (
   | { kind: 'empty' }
 )
 
-const DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/
 /** `#~ …` — hidden by the editor, still in the file. */
 const HIDDEN = /^#~ ?(.*)$/
 /** `#^+2` — section transpose already applied to the chords below. */
@@ -52,27 +60,25 @@ function splitLyricLine(raw: string): Array<{ chord?: string; lyric: string }> {
   return words
 }
 
-/** First chart fence at or after `from`. An unclosed tab or score does not cover it. */
-function nextUncoveredChartFence(raws: readonly string[], from: number): number {
-  for (let j = from; j < raws.length; j++) {
-    const name = ((raws[j] ?? '').match(DIR)?.[1] ?? '').toLowerCase()
-    if (name === 'start_of_x_chart' || name === 'end_of_x_chart') return j
-  }
-  return -1
-}
-
 function parseRaw(src: string): {
-  meta: ChordProView['meta']
+  meta: TitanChordproDocument['meta']
   lines: RawLine[]
   /** `{soc}` line → the `{eoc}` line that closes it. */
   eocOf: Record<number, number>
+  defines: ChordDefine[]
 } {
-  const meta: ChordProView['meta'] = {}
+  const meta: TitanChordproDocument['meta'] = {}
   const lines: RawLine[] = []
+  const defines: ChordDefine[] = []
   const raws = src.split('\n')
+  const inside = notationMask(raws)
   let chorus = false
   let socLi: number | null = null
   const eocOf: Record<number, number> = {}
+  let tab: string[] | null = null
+  let tabStart = 0
+  let score: string[] | null = null
+  let scoreStart = 0
   let pendShift = 0
   let pendCapo: number | null = null
   let pendCapoMap = true
@@ -81,39 +87,28 @@ function parseRaw(src: string): {
     const raw = raws[li] ?? ''
     const d = raw.match(DIR)
 
-    // Same closer as readMeta. `{eot}` inside a finished score is not the tab closer.
-    if (d && /^(sos|start_of_score|sot|start_of_tab)$/i.test(d[1] ?? '')) {
-      const isTab = /^(sot|start_of_tab)$/i.test(d[1] ?? '')
-      let close = notationBlockCloser(raws, li, isTab ? 'tab' : 'score', 0)
-      // No `{eot}`/`{eos}`: a stray chart fence still ends the block. It is not tab text.
-      if (!close) {
-        const fence = nextUncoveredChartFence(raws, li + 1)
-        if (fence >= 0) close = { at: fence, boundary: true }
+    if (score !== null) {
+      score.push(raw)
+      if (d && notationEdge((d[1] ?? '').toLowerCase()) === 'score-close') {
+        lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: li })
+        score = null
       }
-      const boundary = close?.boundary === true
-      const cut = close ? close.at : -1
-      if (isTab) {
-        const bodyEnd = close ? cut : raws.length
-        lines.push({
-          kind: 'tab',
-          text: raws.slice(li + 1, bodyEnd).join('\n'),
-          li0: li,
-          // A chart fence ends the block. It is not a line of the tab.
-          li1: !close ? raws.length - 1 : boundary ? Math.max(li, cut - 1) : cut,
-        })
-      } else {
-        const bodyEnd = !close ? raws.length : boundary ? cut : cut + 1
-        lines.push({
-          kind: 'score',
-          text: raws.slice(li, bodyEnd).join('\n'),
-          li0: li,
-          li1: !close ? raws.length - 1 : boundary ? Math.max(li, cut - 1) : cut,
-        })
-      }
-      if (!close) li = raws.length
-      else if (boundary) li = cut - 1
-      else li = cut
       continue
+    }
+    if (tab !== null) {
+      const tabKey = d ? (d[1] ?? '').toLowerCase() : ''
+      const chartFence = tabKey === 'start_of_x_chart' || tabKey === 'end_of_x_chart'
+      if (chartFence && !inside[li]) {
+        lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: li - 1 })
+        tab = null
+      } else if (d && notationEdge(tabKey) === 'tab-close') {
+        lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: li })
+        tab = null
+        continue
+      } else {
+        tab.push(raw)
+        continue
+      }
     }
 
     // Marks are ChordPro comments: invisible while reading, and they travel
@@ -142,6 +137,20 @@ function parseRaw(src: string): {
     if (d) {
       const k = (d[1] ?? '').toLowerCase()
       const v = (d[2] ?? '').trim()
+      if (k === 'x_titan_score') {
+        lines.push({ kind: 'score', text: raw, li0: li, li1: li })
+        continue
+      }
+      if (notationEdge(k) === 'score-open') {
+        score = [raw]
+        scoreStart = li
+        continue
+      }
+      if (notationEdge(k) === 'tab-open') {
+        tab = []
+        tabStart = li
+        continue
+      }
       if (k === 'soc' || k === 'start_of_chorus') {
         chorus = true
         socLi = li
@@ -154,6 +163,11 @@ function parseRaw(src: string): {
         socLi = null
         continue
       }
+      if (isDefineKey(k)) {
+        const def = asChordDefine(parseDefineDirective(raw))
+        if (def) defines.push(def)
+        continue
+      }
       if (k === 'image' || k === 'img') {
         lines.push({ kind: 'image', src: v, li0: li, li1: li })
         continue
@@ -163,6 +177,7 @@ function parseRaw(src: string): {
         lines.push({ kind: 'comment', text: (inner?.[1] ?? v).trim(), li0: li, li1: li })
         continue
       }
+      if (inside[li]) continue
       if (k === 'title' || k === 't') meta.title = v
       else if (k === 'subtitle' || k === 'st') meta.subtitle = v
       else if (k === 'artist' || k === 'composer') meta.artist = v
@@ -172,9 +187,8 @@ function parseRaw(src: string): {
       else if (k === 'duration') meta.duration = v
       else if (k === 'capo') meta.capo = Number(v) || 0
       else if (k === 'transpose') {
-        // A later `{transpose:0}` or empty `{transpose:}` clears the earlier offset.
         const n = Number(v)
-        if (n === 0) meta.transpose = 0
+        if (v === '' || n === 0) meta.transpose = 0
         else if (Number.isFinite(n)) meta.transpose = n
       }
       continue
@@ -202,18 +216,22 @@ function parseRaw(src: string): {
     pendCapoMap = true
   }
 
-  return { meta, lines, eocOf }
+  // Directive left open at EOF: the block still belongs to the reading surface.
+  if (tab !== null) lines.push({ kind: 'tab', text: tab.join('\n'), li0: tabStart, li1: raws.length - 1 })
+  if (score !== null)
+    lines.push({ kind: 'score', text: score.join('\n'), li0: scoreStart, li1: raws.length - 1 })
+  return { meta, lines, eocOf, defines }
 }
 
-function toSections(raw: RawLine[]): ChordProSection[] {
-  const sections: ChordProSection[] = []
-  let current: ChordProSection | null = null
+function toSections(raw: RawLine[]): TitanChordproSection[] {
+  const sections: TitanChordproSection[] = []
+  let current: TitanChordproSection | null = null
 
   const flush = () => {
     if (current) sections.push(current)
     current = null
   }
-  const solo = (kind: SectionKind, line: ChordProLine, label?: string) => {
+  const solo = (kind: SectionKind, line: TitanChordproLine, label?: string) => {
     flush()
     sections.push({ kind, label, lines: [line] })
   }
@@ -247,7 +265,7 @@ function toSections(raw: RawLine[]): ChordProSection[] {
     }
     const kind: SectionKind = line.inChorus ? 'chorus' : 'verse'
     if (current && current.kind !== kind) flush()
-    const cur: ChordProSection = current ?? { kind, lines: [] }
+    const cur: TitanChordproSection = current ?? { kind, lines: [] }
     current = cur
     cur.lines.push({
       type: 'lyrics',
@@ -263,14 +281,14 @@ function toSections(raw: RawLine[]): ChordProSection[] {
   return sections
 }
 
-function applyShape(view: ChordProView, semis: number): ChordProView {
+function applyShape(view: TitanChordproDocument, semis: number): TitanChordproDocument {
   if (!semis) {
     return { ...view, transposeSemitones: 0, displayKey: view.meta.key ?? null }
   }
   const flats = usesFlats(view.meta.key)
   const sections = view.sections.map((sec) => ({
     ...sec,
-    lines: sec.lines.map((line): ChordProLine => {
+    lines: sec.lines.map((line): TitanChordproLine => {
       if (line.type === 'lyrics') {
         return {
           ...line,
@@ -287,7 +305,10 @@ function applyShape(view: ChordProView, semis: number): ChordProView {
     }),
   }))
   const displayKey = view.meta.key ? transposeToken(view.meta.key, semis, flats) : null
-  return { ...view, sections, transposeSemitones: semis, displayKey }
+  const defines = transposeDefines(view.defines, semis, flats).filter(
+    (d): d is ChordDefine => d !== null,
+  )
+  return { ...view, sections, transposeSemitones: semis, displayKey, defines }
 }
 
 /**
@@ -315,11 +336,11 @@ export type ParseOpts = {
   chartId?: string
 }
 
-export function parse(source: string, opts?: ParseOpts): ChordProView {
+export function parse(source: string, opts?: ParseOpts): TitanChordproDocument {
   const text = normalizeEol(source ?? '')
   const sliced = chartDocument(text, opts?.chartId)
   const normalized = looksLikeOnSong(sliced) ? normalizeOnSong(sliced) : sliced
-  const { meta, lines, eocOf } = parseRaw(normalized)
+  const { meta, lines, eocOf, defines } = parseRaw(normalized)
   return {
     meta,
     displayKey: meta.key ?? null,
@@ -327,14 +348,15 @@ export function parse(source: string, opts?: ParseOpts): ChordProView {
     source: normalized,
     sections: toSections(lines),
     eocOf,
+    defines,
   }
 }
 
-export function transpose(view: ChordProView, semitones: number): ChordProView {
+export function transpose(view: TitanChordproDocument, semitones: number): TitanChordproDocument {
   return applyShape(parse(view.source), semitones)
 }
 
-export function setKey(view: ChordProView, targetKey: string): ChordProView {
+export function setKey(view: TitanChordproDocument, targetKey: string): TitanChordproDocument {
   const from = view.meta.key
   if (!from) throw new Error('setKey requires a source key')
   return transpose(view, semitoneDelta(from, targetKey))

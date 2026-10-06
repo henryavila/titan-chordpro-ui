@@ -35,6 +35,28 @@ describe('planSlides — the chart already wrote the phrasing', () => {
     ])
   })
 
+  it('splits a packed chart line on a mid-line capital even when it fits the width', () => {
+    const slides = planSlides([
+      { text: 'És o meu refúgio Minha fortaleza', sectionIndex: 0 },
+      { text: 'Meu socorro eterno És o meu abrigo', sectionIndex: 0 },
+    ])
+    expect(slides.map((s) => [...s.lines])).toEqual([
+      ['És o meu refúgio', 'Minha fortaleza'],
+      ['Meu socorro eterno', 'És o meu abrigo'],
+    ])
+  })
+
+  it('does not pack two long independent rows onto one slide', () => {
+    const slides = planSlides([
+      { text: 'Cristo é a Rocha da minha salvação', sectionIndex: 0 },
+      { text: 'Com ele não há mais condenação', sectionIndex: 0 },
+    ])
+    expect(slides.map((s) => [...s.lines])).toEqual([
+      ['Cristo é a Rocha da minha salvação'],
+      ['Com ele não há mais condenação'],
+    ])
+  })
+
   it('does not mix a wrapped source row with the next row', () => {
     const slides = planSlides([
       {

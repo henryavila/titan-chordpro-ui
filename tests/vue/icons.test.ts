@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
-import CpvIcon from '../../src/vue/icon/CpvIcon.vue'
-import { ICONS, PICKED_ICONS, type CpvIconName } from '../../src/vue/icon/paths'
+import { TitanChordpro } from '../../src/vue/index'
+import TitanChordproIcon from '../../src/vue/icon/TitanChordproIcon.vue'
+import { ICONS, PICKED_ICONS, type TitanChordproIconName } from '../../src/vue/icon/paths'
 import { themeIcon } from '../../src/vue/use/useTheme'
 import SetlistSheet, { type SetlistItem } from '../../src/vue/sheets/SetlistSheet.vue'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
@@ -22,7 +22,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -34,7 +34,7 @@ afterEach(() => {
 })
 
 async function viewerAt(width: number, props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: loadFixture(JESUS_1),
       theme: 'dark',
@@ -61,11 +61,11 @@ describe('icon set', () => {
   })
 
   it('draws currentColor so a green button is not a black triangle', () => {
-    const w = mount(CpvIcon, { props: { name: 'pencil' } })
+    const w = mount(TitanChordproIcon, { props: { name: 'pencil' } })
     const svg = w.get('svg')
     expect(svg.attributes('data-icon')).toBe('pencil')
     expect(svg.attributes('stroke')).toBe('currentColor')
-    expect(svg.classes()).toContain('cpv-ico')
+    expect(svg.classes()).toContain('titan-chordpro-ico')
     w.unmount()
   })
 
@@ -80,7 +80,7 @@ describe('chrome uses the locked set', () => {
   it('Rolar is chevrons-down, not a media play triangle', async () => {
     const w = await viewerAt(1024)
     expect(w.find('[data-scroll] [data-icon=chevronsDown]').exists()).toBe(true)
-    expect(w.find('[data-scroll] .cpv-icon-play').exists()).toBe(false)
+    expect(w.find('[data-scroll] .titan-chordpro-icon-play').exists()).toBe(false)
   })
 
   it('keeps A− / A+ as type, not a pictogram', async () => {
@@ -121,8 +121,8 @@ describe('chrome uses the locked set', () => {
     await w.get('[aria-label="Mais controles"]').trigger('click')
     await flushPromises()
     const dlg = w.get('[role="dialog"][aria-label="Mais controles"]')
-    const icons = dlg.findAll('.cpv-ico').map((n) => n.attributes('data-icon'))
-    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'eyeOff', 'metronome', 'download']))
+    const icons = dlg.findAll('.titan-chordpro-ico').map((n) => n.attributes('data-icon'))
+    expect(icons).toEqual(expect.arrayContaining(['moon', 'glasses', 'eye', 'metronome', 'download']))
     expect(icons).not.toContain('scan')
     expect(dlg.find('[data-theme-btn] [data-icon=moon]').exists()).toBe(true)
     expect(dlg.find('[data-icon=x]').exists()).toBe(true)
@@ -158,6 +158,7 @@ describe('setlist seen mark', () => {
     keyLabel: 'G',
     hasKey: true,
     bpmLabel: '80',
+    timeLabel: '4/4',
     current: false,
     failed: false,
     busy: false,
@@ -211,11 +212,11 @@ describe('insert menu', () => {
     }
     await w.get('[data-insert]').trigger('click')
     await flushPromises()
-    const menu = w.get('.cpv-insert-menu')
-    const chorus = menu.findAll('.cpv-insert-item').find((b) => b.text().includes('Refrão'))
+    const menu = w.get('.titan-chordpro-insert-menu')
+    const chorus = menu.findAll('.titan-chordpro-insert-item').find((b) => b.text().includes('Refrão'))
     expect(chorus?.find('[data-icon=repeatBar]').exists()).toBe(true)
     expect(chorus?.text()).not.toContain('❯')
-    const names = menu.findAll('[data-icon]').map((n) => n.attributes('data-icon') as CpvIconName)
+    const names = menu.findAll('[data-icon]').map((n) => n.attributes('data-icon') as TitanChordproIconName)
     expect(names).toEqual(expect.arrayContaining(['music2', 'msgQuote', 'alignLeft', 'repeatBar']))
     expect(names).not.toContain('repeat')
   })

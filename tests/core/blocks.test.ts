@@ -36,13 +36,13 @@ describe('reading-surface blocks', () => {
     expect(images[0]?.kind === 'image' && images[0].src).toBe('assets/ele-vive-intro.png')
   })
 
-  it('keeps a {sos} score block whole, with its key and tempo', () => {
+  it('keeps a {x_titan_start_of_score} score block whole, with its key and tempo', () => {
     const score = layoutChart(parse(loadFixture(ELE_VIVE_IMG))).find((b) => b.kind === 'score')
     expect(score?.kind).toBe('score')
     if (score?.kind !== 'score') return
     expect(score.scoreKey).toBe('G')
     expect(score.scoreTempo).toBe('72')
-    expect(score.text).toContain('{eos}')
+    expect(score.text).toContain('{x_titan_end_of_score}')
   })
 
   it('takes #~ lines out of the reading surface instead of singing them', () => {

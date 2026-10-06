@@ -78,7 +78,7 @@ phases:
             kind: shell
             command: "! rg -n \"from ['\\\"]vue['\\\"]\" src/core"
             expectExitCode: 0
-    summary: "Scaffold do pacote + modo view/edit com source pane, meta e bridge dirty."
+    summary: Scaffold do pacote + modo view/edit com source pane, meta e bridge dirty.
     status: active
     businessIntent:
       value: UI ChordPro view+edit com Source-SoT e bridge SDA (sda-v2 primeiro).
@@ -109,7 +109,7 @@ phases:
             command: pnpm exec vitest run tests/core/source-map.test.ts
               tests/vue/e1-inplace.test.ts
             expectExitCode: 0
-    summary: "Patches in-place de acorde/letra no source via mapa de offsets."
+    summary: Patches in-place de acorde/letra no source via mapa de offsets.
     status: pending
   - id: F2
     slug: editor-f2-e2-wysiwyg-structural-commands
@@ -130,7 +130,7 @@ phases:
             command: pnpm exec vitest run tests/core/edit-commands.test.ts
               tests/vue/e2-structural.test.ts
             expectExitCode: 0
-    summary: "Command bus estrutural (seções/diretivas) com chrome WYSIWYG gated."
+    summary: Command bus estrutural (seções/diretivas) com chrome WYSIWYG gated.
     status: pending
   - id: F3
     slug: editor-f3-e3-tablatura-editavel
@@ -151,7 +151,7 @@ phases:
             command: pnpm exec vitest run tests/core/tab-block.test.ts
               tests/vue/e3-tab.test.ts
             expectExitCode: 0
-    summary: "Edição de blocos de tablatura com round-trip na fixture 013."
+    summary: Edição de blocos de tablatura com round-trip na fixture 013.
     status: pending
   - id: F4
     slug: editor-f4-e4-imagens-partitura-media-bridge
@@ -172,9 +172,11 @@ phases:
             command: test -f fixtures/with-image.cho && pnpm exec vitest run
               tests/core/image-ref.test.ts tests/vue/e4-image.test.ts
             expectExitCode: 0
-    summary: "Diretiva de imagem + bridge de mídia do host (upload/resolve)."
+    summary: Diretiva de imagem + bridge de mídia do host (upload/resolve).
     status: pending
 references: []
+planActive: true
+planTitle: Editor ChordPro — `titan-chordpro-ui`
 ---
 
 # Editor ChordPro — `titan-chordpro-ui`

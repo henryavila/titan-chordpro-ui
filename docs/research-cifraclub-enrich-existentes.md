@@ -21,11 +21,11 @@ Cifras **já no catálogo** têm corpo curado (`x///`, partitura, tabs). O que f
 | `tempo` / `time` / `duration` | ~138–145 | Já preenchidos na maioria |
 | `key` / `title` | ~106–116 | Bom, mas não 100% |
 | `capo` | 3 | Raro |
-| `x_source` | **0** | Nenhuma amarra ao CC (`{x_origem:}` legado ainda lê) |
-| `x_youtube` | **0** | Sem clipe |
-| `x_strum` | **0** | Sem batida importada |
+| `x_titan_source` | **0** | Nenhuma amarra ao CC |
+| `x_titan_youtube` | **0** | Sem clipe |
+| `x_titan_strum` | **0** | Sem batida importada |
 
-Ganho real: `x_youtube`, `x_strum`, `x_source` (+ fill-empty em buracos). Corpo local **nunca** tocado.
+Ganho real: `x_titan_youtube`, `x_titan_strum`, `x_titan_source` (+ fill-empty em buracos). Corpo local **nunca** tocado.
 
 ---
 
@@ -40,10 +40,10 @@ Usar `fromCifraClubHtml` **apenas** pelos campos de meta / strum / youtube. **Ig
 | `strummings[0].bpm` | `tempo` | fill-empty |
 | `timeSignature` | `time` | fill-empty |
 | `config.capo` | `capo` | **não aplicar** no v1 (aviso só) |
-| `metadata.youtubeID` | `x_youtube` | **ask sempre** se houver candidato CC (ver §6) |
-| `strummings[]` | `x_strum` | **prefer-cc** (sobrescreve local; hoje local não existe) |
+| `metadata.youtubeID` | `x_titan_youtube` | **ask sempre** se houver candidato CC (ver §6) |
+| `strummings[]` | `x_titan_strum` | **prefer-cc** (sobrescreve local; hoje local não existe) |
 | watch YT | `duration` | fill-empty após youtube escolhido |
-| URL usada | `x_source` | sempre setar (`{x_origem:}` legado ainda lê) |
+| URL usada | `x_titan_source` | sempre setar |
 
 API CC v3 → 401. Busca por nome → não no v1. Discovery = colar URL.
 
@@ -84,17 +84,17 @@ Enrich **não** grava `{capo:}` automaticamente. Se CC reportar capo > 0: aviso 
 
 ## 6. YouTube — ask sempre + página de validação
 
-Quando o CC trouxer `youtubeID` (e/ou quando já existir `x_youtube` local e o remoto diferir — na prática SDA está vazio, mas a regra é **ask sempre** antes de gravar):
+Quando o CC trouxer `youtubeID` (e/ou quando já existir `x_titan_youtube` local e o remoto diferir — na prática SDA está vazio, mas a regra é **ask sempre** antes de gravar):
 
 Mostrar:
 
 1. **Nome da música** (title local e/ou title do CC)
 2. **Os dois links** (quando existirem):
-   - local: `https://www.youtube.com/watch?v={x_youtube}` (se houver)
+   - local: `https://www.youtube.com/watch?v={x_titan_youtube}` (se houver)
    - CC: `https://www.youtube.com/watch?v={youtubeId}`
 3. **Página web de comparação** com os dois embeds lado a lado (ou um só se o outro não existir), para dar play e validar qual clipe é o certo — sem abrir abas às cegas.
 
-Aceitar → grava o `x_youtube` escolhido; depois tenta `duration` via `fetchYoutubeDuration` (fill-empty).
+Aceitar → grava o `x_titan_youtube` escolhido; depois tenta `duration` via `fetchYoutubeDuration` (fill-empty).
 
 Se só existir o do CC e o local estiver vazio: ainda assim **ask** (mostrar nome + link + player), não gravar silencioso.
 
@@ -115,7 +115,7 @@ Fluxo para cifra já cadastrada:
 1. Abrir **Metadados** na cifra atual  
 2. **Completar com Cifra Club** → colar URL  
 3. Host `fetchChart` → core extrai **só meta** (sem `convert`)  
-4. Preview do que vai entrar (`x_strum`, buracos fill-empty, `x_source`)  
+4. Preview do que vai entrar (`x_titan_strum`, buracos fill-empty, `x_titan_source`)
 5. YouTube: **ask** com nome + links + página/embed dos dois vídeos → usuário escolhe  
 6. Confirmar → `writeMeta` no source atual (corpo intacto)
 
@@ -127,8 +127,8 @@ O consumer **não** precisa montar essa confirmação: só injeta `fetchChart` /
 
 Ordem obrigatória:
 
-1. **Fixtures** — HTML CC em `tests/helpers/cifraclub-*.html` + `.cho` SDA sem `x_*`
-2. Assert: corpo idêntico; `x_strum` / `x_source` aplicados; fluxo YT ask não grava sem escolha
+1. **Fixtures** — HTML CC em `tests/helpers/cifraclub-*.html` + `.cho` SDA sem `x_titan_*`
+2. Assert: corpo idêntico; `x_titan_strum` / `x_titan_source` aplicados; fluxo YT ask não grava sem escolha
 3. Demo / página de comparação YT exercitada com fixtures (ou IDs conhecidos)
 4. **Só então** rodar enrich em produção / catálogo real
 
@@ -142,8 +142,8 @@ Nada de batch em prod sem essa validação verde.
 |---|------|---------|
 | — | Cifra / import | **Não** usar cifra do CC; **não** usar `convert`/import |
 | — | Merge | Só metadados no source local |
-| 1 | `x_youtube` | **Ask sempre**; nome da música + links; página web com os dois vídeos para play/validar |
-| 2 | `x_strum` | **Sobrescreve** o local (hoje não existe `{x_strum:}` nas fixtures) |
+| 1 | `x_titan_youtube` | **Ask sempre**; nome da música + links; página web com os dois vídeos para play/validar |
+| 2 | `x_titan_strum` | **Sobrescreve** o local (hoje não existe `{x_titan_strum:}` nas fixtures) |
 | 3 | Versões | Só a **versão única** atual (canônica) |
 | 4 | Rollout | Validar nas **fixtures** antes de produção |
 | — | Discovery | Colar URL |
@@ -186,8 +186,8 @@ Página de validação YT: artefato de demo/host (HTML estático ou rota Vite) a
 
 - [x] Corpo da fixture SDA idêntico antes/depois do enrich
 - [x] Não passa por `convert` / não escreve acordes do CC
-- [x] `x_strum` do CC sobrescreve; `x_source` gravado
-- [x] `x_youtube` só após escolha explícita; página com nome + links + embeds
+- [x] `x_titan_strum` do CC sobrescreve; `x_titan_source` gravado
+- [x] `x_titan_youtube` só após escolha explícita; página com nome + links + embeds
 - [x] Capo CC não altera source
 - [x] Suite de fixtures verde **antes** de qualquer corrida em produção
 

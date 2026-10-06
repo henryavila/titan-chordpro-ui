@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 
 const props = defineProps<{
   source: string
@@ -57,11 +57,11 @@ async function copy() {
         class="cpv-source-screen-copy"
         @click="copy"
       >
-        <CpvIcon name="copy" :size="14" />
+        <TitanChordproIcon name="copy" :size="14" />
         {{ copied ? 'Copiado' : 'Copiar' }}
       </button>
       <button type="button" class="cpv-ghost" aria-label="Fechar código fonte" @click="emit('close')">
-        <CpvIcon name="x" :size="16" />
+        <TitanChordproIcon name="x" :size="16" />
       </button>
       <span v-if="note" class="cpv-source-screen-note">{{ note }}</span>
     </div>

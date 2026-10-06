@@ -1,7 +1,8 @@
+import { EXPORT_MIME, type ExportedFile } from '../core/exported-file'
 import { buildSljaFilename } from '../core/filenames'
 import { lyricsForSlides } from '../core/lyrics-for-slides'
 import { parse } from '../core/parse'
-import type { ChordProView } from '../core/types'
+import type { TitanChordproDocument } from '../core/types'
 import { encodeCp1252 } from './cp1252'
 import { DEFAULT_COVER_JPEG, DEFAULT_SLIDES_JPEG } from './default-image'
 import { planSlides, type SlideLayoutConfig, type SlidePlan } from './layout'
@@ -66,11 +67,7 @@ export function renderLja(
   return encodeCp1252(text)
 }
 
-export type SljaFile = {
-  bytes: Uint8Array
-  filename: string
-  title: string
-}
+export type SljaFile = ExportedFile
 
 /**
  * Host entry for a “download slides” button that never mounts the viewer.
@@ -80,14 +77,21 @@ export async function exportSlja(source: string, opts: SljaOptions = {}): Promis
   const view = parse(source)
   const title = (opts.title ?? view.meta.title ?? 'Sem título').trim() || 'Sem título'
   const bytes = await renderSlja(view, { ...opts, title })
-  return { bytes, filename: buildSljaFilename(title), title }
+  return { bytes, filename: buildSljaFilename(title), mime: EXPORT_MIME.slja, title }
 }
 
-export async function renderSlja(view: ChordProView, opts: SljaOptions = {}): Promise<Uint8Array> {
+export function planExport(
+  view: TitanChordproDocument,
+  opts: SljaOptions = {},
+): { title: string; slides: SlidePlan[] } {
   const rows = lyricsForSlides(view)
   if (!rows.length) throw new NoSlideLyricsError()
-  const slides = planSlides(rows, opts)
   const title = (opts.title ?? view.meta.title ?? 'Sem título').trim() || 'Sem título'
+  return { title, slides: planSlides(rows, opts) }
+}
+
+export async function renderSlja(view: TitanChordproDocument, opts: SljaOptions = {}): Promise<Uint8Array> {
+  const { title, slides } = planExport(view, opts)
   const lja = renderLja(slides, {
     title,
     titleAux: opts.titleAux,

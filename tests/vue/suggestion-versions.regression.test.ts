@@ -60,7 +60,7 @@ function lyricOp(doc: string, from: string, to: string) {
 }
 
 function seed(list: unknown[]) {
-  localStorage.setItem('cpv:sug', JSON.stringify(list))
+  localStorage.setItem('titan-chordpro:sug', JSON.stringify(list))
 }
 
 function sug(partial: Record<string, unknown>) {
@@ -125,7 +125,7 @@ describe('suggestion versions regression', () => {
     await flushPromises()
     expect(local.find('[data-my-sug-chart]').exists()).toBe(false)
 
-    const created = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]').at(-1)
+    const created = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]').at(-1)
     expect(created.chartId).toBe('default')
     expect(JSON.stringify(created.ops)).not.toContain('start_of_x_chart')
 
@@ -163,7 +163,7 @@ describe('suggestion versions regression', () => {
     await flushPromises()
     expect(w.get('[data-my-sug-chart]').text()).toBe('Completa')
 
-    const created = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0]
+    const created = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')[0]
     const doc = parse(TWO, { chartId: 'completa' }).source
     const op = created.ops.find((item: { before?: string[] }) =>
       item.before?.some((line) => line.includes('corpo da completa')),

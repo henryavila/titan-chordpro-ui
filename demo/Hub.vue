@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GROUPS, demosOf } from './host/recipe'
+import { GROUPS, demosOf, publicHref } from './host/recipe'
 </script>
 
 <template>
@@ -8,12 +8,12 @@ import { GROUPS, demosOf } from './host/recipe'
       <p class="mark">titan-chordpro-ui</p>
       <h1>Demos</h1>
       <p class="lead">
-        O mesmo <code>&lt;ChordproViewer&gt;</code>. Standalone ou no shell do
+        O mesmo <code>&lt;TitanChordpro&gt;</code>. Standalone ou no shell do
         consumer. Uma cifra ou uma apresentação ao vivo.
       </p>
       <p class="ephemeral" data-demo-ephemeral>
-        Sem persistência: recarregou = estado limpo. Import por arquivo, texto,
-        PDF ou link (Cifra Club via proxy deste host).
+        PWA: abra uma vez com internet. Depois, no ícone da tela inicial, a cifra
+        abre sem rede. Importar do Cifra Club precisa de internet.
       </p>
     </header>
 
@@ -45,9 +45,9 @@ import { GROUPS, demosOf } from './host/recipe'
           <h3>{{ demo.title }}</h3>
           <p class="why">{{ demo.blurb }}</p>
           <pre class="call" data-call>{{ demo.call }}</pre>
-          <a class="go" :href="demo.href">Abrir</a>
+          <a class="go" :href="publicHref(demo.href)">Abrir</a>
           <nav v-if="demo.extra?.length" class="more">
-            <a v-for="link in demo.extra" :key="link.href" :href="link.href">{{ link.label }}</a>
+            <a v-for="link in demo.extra" :key="link.href" :href="publicHref(link.href)">{{ link.label }}</a>
           </nav>
         </article>
       </div>

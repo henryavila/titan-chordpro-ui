@@ -2,7 +2,7 @@
 import { nextTick, ref, watch } from 'vue'
 import type { Suggestion } from '@henryavila/titan-chordpro-ui'
 import type { OpCard } from '../use/useOverlay'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -11,6 +11,8 @@ const props = defineProps<{
   fixTuneLabel: string
   canSuggest: boolean
   suggestLabel: string
+  /** persistSuggestion needs the network and the device is offline. */
+  offline?: boolean
   suggesting?: boolean
   actorName: string
   nameError?: boolean
@@ -48,31 +50,26 @@ function statusLabel(s: Suggestion): string {
 <template>
   <!-- Every adjustment on its own, revertable on its own: a personal version
        that cannot be undone piece by piece is a fork, not a personalisation. -->
-  <div class="cpv-sheet" :class="{ 'is-compact': compact }" style="z-index:37;">
-    <div class="cpv-scrim" style="backdrop-filter:blur(5px);" @click="emit('close')" />
-    <div
-      class="cpv-dialog cpv-veil-2"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Minha versão"
-      data-my-panel
-      style="max-width:470px;max-height:min(600px,86%);overflow-y:auto;padding:15px;gap:9px;"
-    >
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ mineLabel }}</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;border-radius:8px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
-      </div>
+  <TitanChordproDialogShell
+    :compact="compact"
+    label="Minha versão"
+    :kicker="mineLabel"
+    :z="37"
+    panel-class="is-my"
+    data-my-panel
+    @close="emit('close')"
+  >
 
       <div
         v-for="op in ops"
         :key="op.id"
         data-my-op
-        style="display:flex;align-items:flex-start;gap:10px;padding:10px 11px;border:1px solid var(--line-soft);border-radius:13px;background:var(--surface);"
+        class="titan-chordpro-list-card is-op"
       >
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:12.5px;font-weight:600;color:var(--text);">{{ op.label }}</span>
-          <span v-if="op.from" class="cpv-op-line" style="color:var(--muted);">{{ op.from }}</span>
-          <span v-if="op.to" class="cpv-op-line" style="color:var(--chord);">{{ op.to }}</span>
+          <span v-if="op.from" class="titan-chordpro-op-line" style="color:var(--muted);">{{ op.from }}</span>
+          <span v-if="op.to" class="titan-chordpro-op-line" style="color:var(--chord);">{{ op.to }}</span>
           <span v-if="op.note" style="font-size:10.5px;color:var(--muted);">{{ op.note }}</span>
         </span>
         <button
@@ -112,14 +109,14 @@ function statusLabel(s: Suggestion): string {
           autocomplete="name"
           placeholder="Como o responsável deve te ver"
           :aria-invalid="nameError ? 'true' : 'false'"
-          :aria-describedby="nameError ? 'cpv-suggest-name-err' : undefined"
+          :aria-describedby="nameError ? 'titan-chordpro-suggest-name-err' : undefined"
           :style="{ borderColor: nameError ? 'var(--danger)' : 'var(--line)' }"
           style="width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--text);font-family:inherit;font-size:13px;"
           @input="emit('update:actorName', ($event.target as HTMLInputElement).value)"
         />
         <span
           v-if="nameError"
-          id="cpv-suggest-name-err"
+          id="titan-chordpro-suggest-name-err"
           data-suggest-name-error
           role="alert"
           style="font-size:12px;font-weight:600;color:var(--danger);line-height:1.35;"
@@ -131,9 +128,13 @@ function statusLabel(s: Suggestion): string {
         type="button"
         :disabled="suggesting"
         :aria-busy="suggesting ? 'true' : 'false'"
-        style="display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:1px solid var(--chord-edge);border-radius:12px;background:var(--chord-soft);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
+        :style="{ opacity: offline ? '0.78' : '1' }"
+        style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--chord-edge);border-radius:12px;background:var(--chord-soft);color:var(--chord);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;"
         @click="emit('suggest')"
-      >{{ suggestLabel }}</button>
+      >
+        <span>{{ suggestLabel }}</span>
+        <span v-if="offline" data-offline-hint style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em;">Sem internet</span>
+      </button>
 
       <div
         v-if="sentSuggestions?.length"
@@ -155,12 +156,11 @@ function statusLabel(s: Suggestion): string {
       <button
         data-revert-all
         type="button"
-        class="cpv-surface-btn"
+        class="titan-chordpro-surface-btn"
         :disabled="suggesting"
         :style="{ color: revertAllDanger ? 'var(--danger)' : 'var(--text)' }"
         style="display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;border:0;border-radius:12px;font-size:12.5px;"
         @click="emit('revertAll')"
       >{{ revertAllLabel }}</button>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

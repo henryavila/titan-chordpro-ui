@@ -12,10 +12,11 @@ import {
   hostTheme,
   labQuery,
   palcoHref,
+  publicHref,
   writeEditMode,
   writeModes,
 } from '../../demo/host/recipe'
-import { defaultSongId, songsFor } from '../../demo/host/charts'
+import { CACHE_LIST_IDS, defaultSongId, songsFor } from '../../demo/host/charts'
 import Hub from '../../demo/Hub.vue'
 import CifraDemo from '../../demo/CifraDemo.vue'
 
@@ -55,6 +56,7 @@ describe('the four HTML mounts', () => {
       'standalone-lista.html',
       'site.html',
       'site-lista.html',
+      'media.html',
       'index.html',
     ]
     for (const name of pages) {
@@ -62,7 +64,8 @@ describe('the four HTML mounts', () => {
       expect(html, name).toContain('data-boot-shell')
       expect(html, name).toContain('boot-shell.css')
       expect(html, name).toMatch(/Preparando/)
-      expect(html, name).toContain('media="print"')
+      expect(html, name).not.toContain('fonts.googleapis.com')
+      expect(html, name).not.toContain('titan-demo-fonts')
     }
   })
 })
@@ -74,7 +77,9 @@ describe('the catalog', () => {
     expect(DEMOS.map((d) => d.id).length).toBe(new Set(DEMOS.map((d) => d.id)).size)
     expect(demosOf('incorporar').map((d) => d.id)).toEqual([
       'standalone',
+      'media-session',
       'standalone-apresentacao',
+      'standalone-cache',
       'shell',
       'shell-apresentacao',
     ])
@@ -97,13 +102,21 @@ describe('the catalog', () => {
     expect(hrefs).toContain('/standalone.html?accent=verde')
     expect(hrefs).toContain('/standalone.html?accent=teal')
     expect(hrefs.some((h) => h.includes('accent=') && h.includes('4F46E5'))).toBe(true)
+    expect(extra).toContain('/standalone.html?lens=letra')
     expect(extra).toContain('/standalone.html?song=013-ele-vive-em-mim')
+    expect(extra).toContain('/standalone-lista.html?lens=letra')
     expect(extra).toContain('/standalone-lista.html?ensaio=demanda')
+    expect(extra).toContain('/standalone-lista.html?audio=1')
+    expect(hrefs).toContain('/standalone-lista.html?ensaio=cache&audio=1')
+    expect(extra).toContain('/standalone.html?editMode=none&lens=letra')
+    expect(extra).toContain('/media.html')
+    expect(extra).toContain('/media.html?capa=0')
+    expect(hrefs).toContain('/media.html')
   })
 
-  it('ships a compact ChordproViewer call on every catalog entry', () => {
+  it('ships a compact TitanChordpro call on every catalog entry', () => {
     for (const demo of DEMOS) {
-      expect(demo.call, demo.id).toMatch(/<ChordproViewer/)
+      expect(demo.call, demo.id).toMatch(/<TitanChordpro/)
       expect(demo.call, demo.id).toMatch(/\/>/)
     }
     expect(DEMOS.find((d) => d.id === 'standalone-apresentacao')?.call).toMatch(/:songs="songs"/)
@@ -114,14 +127,24 @@ describe('the catalog', () => {
     expect(DEMOS.find((d) => d.id === 'accent-hex')?.call).toMatch(/accent="#4F46E5"/)
   })
 
-  it('only links the four mounts, with query flags', () => {
-    const pages = new Set(PAGES.map((p) => p.href))
+  it('only links the four mounts plus the Media Session host, with query flags', () => {
+    const pages = new Set([...PAGES.map((p) => p.href), '/media.html'])
     for (const demo of DEMOS) {
       expect(pages.has(demo.href.split('?')[0] ?? ''), demo.href).toBe(true)
       for (const link of demo.extra ?? []) {
         expect(pages.has(link.href.split('?')[0] ?? ''), link.href).toBe(true)
       }
     }
+  })
+
+  it('ships the Media Session host as a complete consumer example', () => {
+    const demo = DEMOS.find((d) => d.id === 'media-session')
+    expect(demo?.href).toBe('/media.html')
+    expect(demo?.call).toMatch(/setRehearsalAudio/)
+    expect(demo?.call).toMatch(/width: 1024/)
+    expect(demo?.call).toMatch(/edit-mode="none"/)
+    expect(demo?.call).toMatch(/default-audio-art/)
+    expect(existsSync(join(root, 'demo/media.html'))).toBe(true)
   })
 
   it('keeps each group non-empty', () => {
@@ -143,6 +166,8 @@ describe('hubRedirect keeps old ?ficha= / ?ensaio= bookmarks', () => {
     ['?ficha=1&ensaio=demanda', '/site-lista.html?ensaio=demanda'],
     ['?ensaio=juntas', '/standalone-lista.html'],
     ['?ensaio=demanda', '/standalone-lista.html?ensaio=demanda'],
+    ['?ensaio=cache', '/standalone-lista.html?ensaio=cache'],
+    ['?ficha=1&ensaio=cache', '/site-lista.html?ensaio=cache'],
     ['?song=001-tudo-que-ha-de-bom-em-mim', '/standalone.html?song=001-tudo-que-ha-de-bom-em-mim'],
     ['?quebrar=1', '/standalone.html?quebrar=1'],
     ['?tema=claro', '/standalone.html?tema=claro'],
@@ -172,6 +197,7 @@ describe('labQuery', () => {
       zonas: false,
       audio: false,
       capa: true,
+      cc: null,
       par: false,
     })
     expect(labQuery('?song=a&tema=escuro&quebrar=1&ensaio=demanda')).toEqual({
@@ -188,9 +214,11 @@ describe('labQuery', () => {
       zonas: false,
       audio: false,
       capa: true,
+      cc: null,
       par: false,
     })
     expect(labQuery('?par=1')).toMatchObject({ par: true })
+    expect(labQuery('?ensaio=cache')).toMatchObject({ carga: 'cache' })
     expect(labQuery('?zonas=1')).toMatchObject({ zonas: true })
     expect(labQuery('?audio=1')).toMatchObject({ audio: 'ambos', capa: true })
     expect(labQuery('?audio=1&capa=0')).toMatchObject({ audio: 'ambos', capa: false })
@@ -260,6 +288,18 @@ describe('songsFor', () => {
       true,
     )
   })
+
+  it('cache list is a short ajax set without sources', () => {
+    const corpus = {
+      ...fixtures,
+      '100-nasce-em-mim': '{title: Nasce}\n',
+      '018-te-agradeco': '{title: Agradeço}\n',
+    }
+    const list = songsFor(corpus, 'cache')
+    expect(list?.map((s) => s.id)).toEqual([...CACHE_LIST_IDS])
+    expect(list?.every((s) => !s.source)).toBe(true)
+    expect(list?.some((s) => s.id === 'falha-de-rede')).toBe(false)
+  })
 })
 
 describe('hostTheme / palcoHref', () => {
@@ -274,6 +314,17 @@ describe('hostTheme / palcoHref', () => {
     expect(palcoHref(false, '?song=a&tema=claro')).toBe('/standalone.html?song=a&tema=claro')
     expect(palcoHref(true, '?ensaio=demanda')).toBe('/standalone-lista.html?ensaio=demanda')
   })
+
+  it('prefixes GitHub Pages base on root-absolute demo paths', () => {
+    expect(publicHref('/standalone.html')).toBe('/standalone.html')
+    expect(publicHref('/standalone.html', '/titan-chordpro-ui/')).toBe(
+      '/titan-chordpro-ui/standalone.html',
+    )
+    expect(publicHref('/standalone.html?audio=1', '/titan-chordpro-ui/')).toBe(
+      '/titan-chordpro-ui/standalone.html?audio=1',
+    )
+    expect(publicHref('/', '/titan-chordpro-ui/')).toBe('/titan-chordpro-ui/')
+  })
 })
 
 describe('Hub', () => {
@@ -287,9 +338,10 @@ describe('Hub', () => {
     expect(w.text()).not.toMatch(/\bPalco\b/)
     expect(w.text()).not.toMatch(/\bFicha\b/)
     expect(w.text()).not.toMatch(/\bEnsaio\b/)
-    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/Sem persistência/i)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/PWA/i)
+    expect(w.get('[data-demo-ephemeral]').text()).toMatch(/sem rede/i)
     for (const demo of DEMOS) {
-      expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('ChordproViewer')
+      expect(w.get(`[data-demo="${demo.id}"] [data-call]`).text()).toContain('TitanChordpro')
     }
     expect(w.get('[data-demo="standalone"] .more').text()).toMatch(/Partitura/)
     expect(w.get('[data-demo="standalone-apresentacao"] .more').text()).toMatch(/demanda/i)
@@ -316,7 +368,7 @@ describe('Hub', () => {
 })
 
 describe('CifraDemo', () => {
-  const stub = { ChordproViewer: true }
+  const stub = { TitanChordpro: true }
 
   async function mountReady(
     props: { surface: 'standalone' | 'site'; lista: boolean },
@@ -324,7 +376,7 @@ describe('CifraDemo', () => {
     const w = mount(CifraDemo, { props, global: { stubs: stub } })
     if (w.find('[data-boot-shell]').exists()) {
       await flushPromises()
-      await vi.waitUntil(() => w.findComponent({ name: 'ChordproViewer' }).exists(), {
+      await vi.waitUntil(() => w.findComponent({ name: 'TitanChordpro' }).exists(), {
         timeout: 5000,
       })
     }
@@ -336,7 +388,7 @@ describe('CifraDemo', () => {
       props: { surface: 'standalone', lista: false },
       global: { stubs: stub },
     })
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('songs')).toBeUndefined()
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('songs')).toBeUndefined()
   })
 
   it('uses default device storage so overlay/suggestions survive navigation', () => {
@@ -345,34 +397,88 @@ describe('CifraDemo', () => {
       global: { stubs: stub },
     })
     // Omitted `storage` → package default (localStorage) for local→persisted lab.
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('storage')).toBeUndefined()
-    expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('local')
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('storage')).toBeUndefined()
+    expect(w.getComponent({ name: 'TitanChordpro' }).props('editMode')).toBe('local')
     w.unmount()
   })
 
   it('passes a rehearsal list when the recipe has one', async () => {
     const w = await mountReady({ surface: 'standalone', lista: true })
-    const songs = w.getComponent({ name: 'ChordproViewer' }).props('songs') as { id: string }[]
+    const songs = w.getComponent({ name: 'TitanChordpro' }).props('songs') as { id: string }[]
     expect(songs.length).toBeGreaterThanOrEqual(2)
     w.unmount()
   })
 
+  it('stamps rehearsal audio onto each setlist chart', async () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?audio=1')
+    try {
+      const w = await mountReady({ surface: 'standalone', lista: true })
+      const songs = w.getComponent({ name: 'TitanChordpro' }).props('songs') as {
+        source?: string
+      }[]
+      expect(songs.length).toBeGreaterThanOrEqual(2)
+      expect(songs[0]?.source).toContain('{x_titan_audio_sung:')
+      expect(songs[1]?.source).toContain('{x_titan_audio_sung:')
+      const sungOf = (cho: string | undefined) =>
+        String(cho ?? '').match(/\{x_titan_audio_sung:\s*([^}]+)\}/)?.[1]?.trim() ?? ''
+      expect(sungOf(songs[0]?.source)).toBeTruthy()
+      expect(sungOf(songs[1]?.source)).toBeTruthy()
+      expect(sungOf(songs[0]?.source)).not.toBe(sungOf(songs[1]?.source))
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+  })
+
   it('wires loadSong only for the demanda lab, not the juntas recipe', async () => {
     const juntas = await mountReady({ surface: 'standalone', lista: true })
-    expect(juntas.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBeUndefined()
+    expect(juntas.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBeUndefined()
+    expect(juntas.getComponent({ name: 'TitanChordpro' }).props('prefetchAll')).toBe(false)
 
     const prev = window.location.search
     window.history.replaceState({}, '', '?ensaio=demanda')
     try {
       const demanda = await mountReady({ surface: 'standalone', lista: true })
-      expect(typeof demanda.getComponent({ name: 'ChordproViewer' }).props('loadSong')).toBe(
+      expect(typeof demanda.getComponent({ name: 'TitanChordpro' }).props('loadSong')).toBe(
         'function',
       )
+      expect(demanda.getComponent({ name: 'TitanChordpro' }).props('prefetchAll')).toBe(false)
       demanda.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
     }
     juntas.unmount()
+  })
+
+  it('cache list asks for three charts and turns prefetchAll on', async () => {
+    const prev = window.location.search
+    window.history.replaceState({}, '', '?ensaio=cache&audio=1')
+    try {
+      const w = await mountReady({ surface: 'standalone', lista: true })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
+      expect(viewer.props('prefetchAll')).toBe(true)
+      expect(typeof viewer.props('loadSong')).toBe('function')
+      const songs = viewer.props('songs') as { id: string; source?: string }[]
+      expect(songs.map((s) => s.id)).toEqual([...CACHE_LIST_IDS])
+      expect(songs.every((s) => !s.source)).toBe(true)
+      w.unmount()
+    } finally {
+      window.history.replaceState({}, '', prev || '/')
+    }
+  })
+
+  it('keeps site chrome hub links inside the Vite base', () => {
+    const src = readFileSync(join(root, 'demo/host/HostSite.vue'), 'utf8')
+    expect(src).toContain("publicHref('/')")
+    expect(src).not.toMatch(/href="\/"/)
+    const site = mount(CifraDemo, {
+      props: { surface: 'site', lista: false },
+      global: { stubs: stub },
+    })
+    expect(site.get('.host-brand').attributes('href')).toBe(publicHref('/'))
+    expect(site.get('.host-links a').attributes('href')).toBe(publicHref('/'))
+    site.unmount()
   })
 
   it('wraps the viewer in host chrome only inside another site', () => {
@@ -396,7 +502,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: true },
         global: { stubs: stub },
       })
-      const viewer = w.getComponent({ name: 'ChordproViewer' })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
       expect(viewer.props('source')).toBe('')
       expect(viewer.props('editMode')).toBe('persisted')
       expect(viewer.props('songs')).toBeUndefined()
@@ -417,7 +523,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      expect(w.getComponent({ name: 'ChordproViewer' }).props('accent')).toBe('teal')
+      expect(w.getComponent({ name: 'TitanChordpro' }).props('accent')).toBe('teal')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
@@ -432,7 +538,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      expect(w.getComponent({ name: 'ChordproViewer' }).props('editMode')).toBe('persisted')
+      expect(w.getComponent({ name: 'TitanChordpro' }).props('editMode')).toBe('persisted')
       w.unmount()
     } finally {
       window.history.replaceState({}, '', prev || '/')
@@ -447,7 +553,7 @@ describe('CifraDemo', () => {
         props: { surface: 'standalone', lista: false },
         global: { stubs: stub },
       })
-      const viewer = w.getComponent({ name: 'ChordproViewer' })
+      const viewer = w.getComponent({ name: 'TitanChordpro' })
       expect(String(viewer.props('source'))).toMatch(/\{/)
       expect(viewer.props('editMode')).toBe('local')
       expect(viewer.props('actorKey')).toBe('demo-musico')

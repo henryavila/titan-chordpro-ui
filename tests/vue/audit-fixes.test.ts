@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { createSourceSession, normalizeSource } from '../../src/core/index'
 
@@ -17,7 +17,7 @@ vi.mock('@henryavila/titan-chordpro-ui/pdf', () => ({
 }))
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: { source: src(), theme: 'dark', autoHide: false, songId: 'jesus-1', ...props },
     attachTo: document.body,
   })
@@ -118,7 +118,7 @@ describe('B2 · meta door in both edits, overlay key stays put', () => {
     await w.get('[data-read]').trigger('click')
     await flushPromises()
 
-    const keys = Object.keys(localStorage).filter((k) => k.startsWith('cpv:my:'))
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith('titan-chordpro:my:'))
     expect(keys).toHaveLength(1)
     expect(w.html()).toContain('(meu)')
     w.unmount()
@@ -234,7 +234,7 @@ describe('B3 · a scanned score follows the theme', () => {
 
   it('regrades when the reader switches theme under it', async () => {
     const restore = stubPaper()
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: IMG, theme: 'dark', autoHide: false, songId: 'img' },
       attachTo: document.body,
     })
@@ -261,7 +261,7 @@ describe('B3 · a scanned score follows the theme', () => {
 
   it('leaves the sheet alone when the host turned inversion off', async () => {
     const restore = stubPaper()
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: {
         source: IMG,
         theme: 'dark',
@@ -291,7 +291,7 @@ describe('B3 · a scanned score follows the theme', () => {
  */
 describe('B4 · the score editor owns the keyboard', () => {
   const SCORE =
-    '{title: Com solo}\n\n[G]Uma linha cantada\n\n{sos: time=4/4 key=G tempo=90 tuning=EADGBE}\n| g4:q a4:q b4:q d5:q |\n{eos}\n'
+    '{title: Com solo}\n\n[G]Uma linha cantada\n\n{x_titan_start_of_score: time=4/4 key=G tempo=90 tuning=EADGBE}\n| g4:q a4:q b4:q d5:q |\n{x_titan_end_of_score}\n'
 
   async function openScoreEditor(w: ReturnType<typeof mountViewer>) {
     await w.get('[data-edit]').trigger('click')
@@ -307,7 +307,7 @@ describe('B4 · the score editor owns the keyboard', () => {
   }
 
   it('does not let Ctrl+Z reach the chart behind the modal', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: SCORE, theme: 'dark', autoHide: false, songId: 'solo', modes: 'content' },
       attachTo: document.body,
     })
@@ -316,9 +316,9 @@ describe('B4 · the score editor owns the keyboard', () => {
     expect(w.html()).toContain('MARCA')
 
     // Open the score editor from the block's own "Editar".
-    await w.get('[data-score] .cpv-figure-btn--go').trigger('click')
+    await w.get('[data-score] .titan-chordpro-figure-btn--go').trigger('click')
     await flushPromises()
-    expect(w.find('.cpv-score-modal').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-score-modal').exists()).toBe(true)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
     await flushPromises()
@@ -441,7 +441,7 @@ describe('M3 · the host may choose the accent', () => {
   it('paints the chart in the chosen accent', async () => {
     const w = mountViewer({ accent: 'teal' })
     await flushPromises()
-    const root = w.get('.cpv-root').element as HTMLElement
+    const root = w.get('.titan-chordpro-root').element as HTMLElement
     expect(root.style.getPropertyValue('--chord')).toBe('#6FD8E4')
     expect(root.style.getPropertyValue('--focus')).toBe('#6FD8E4')
     w.unmount()
@@ -450,7 +450,7 @@ describe('M3 · the host may choose the accent', () => {
   it('keeps the design tokens character for character at strength 1', async () => {
     const w = mountViewer({ accent: 'verde', theme: 'light' })
     await flushPromises()
-    const root = w.get('.cpv-root').element as HTMLElement
+    const root = w.get('.titan-chordpro-root').element as HTMLElement
     expect(root.style.getPropertyValue('--chord')).toBe('#17713C')
     expect(root.style.getPropertyValue('--chord-soft')).toBe('rgba(23,113,60,0.10)')
     expect(root.style.getPropertyValue('--chord-edge')).toBe('rgba(23,113,60,0.30)')
@@ -460,7 +460,7 @@ describe('M3 · the host may choose the accent', () => {
   it('accepts a host hex and still derives the fills', async () => {
     const w = mountViewer({ accent: '#4F46E5', theme: 'light' })
     await flushPromises()
-    const root = w.get('.cpv-root').element as HTMLElement
+    const root = w.get('.titan-chordpro-root').element as HTMLElement
     const chord = root.style.getPropertyValue('--chord')
     expect(chord).toMatch(/^#[0-9A-F]{6}$/)
     expect(chord).not.toBe('#17713C')
@@ -482,7 +482,7 @@ describe('M3 · the host may choose the accent', () => {
   it('scales the derivatives without moving the hue', async () => {
     const w = mountViewer({ accent: 'verde', theme: 'light', accentStrength: 1.5 })
     await flushPromises()
-    const root = w.get('.cpv-root').element as HTMLElement
+    const root = w.get('.titan-chordpro-root').element as HTMLElement
     expect(root.style.getPropertyValue('--chord')).toBe('#17713C')
     expect(root.style.getPropertyValue('--chord-soft')).toBe('rgba(23,113,60,0.15)')
     w.unmount()

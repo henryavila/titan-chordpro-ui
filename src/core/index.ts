@@ -7,9 +7,9 @@ export type {
   ChartBlockBody,
   ChartRow,
   ChartSeg,
-  ChordProLine,
-  ChordProSection,
-  ChordProView,
+  TitanChordproLine,
+  TitanChordproSection,
+  TitanChordproDocument,
   Lens,
   LineSpan,
   ParseIssue,
@@ -18,12 +18,18 @@ export type {
   TabStave,
   TabToken,
   ThemeId,
-  ViewerAction,
-  ViewerController,
-  ViewerState,
+  TitanChordproAction,
+  TitanChordproController,
+  TitanChordproState,
 } from './types'
 
 export type { ChartStore } from './storage'
+export {
+  OFFLINE_CIFRACLUB_HINT,
+  OFFLINE_LABEL,
+  OFFLINE_SUGGEST_TOAST,
+  resolveOnline,
+} from './online'
 export {
   STORE_KEYS,
   browserStore,
@@ -33,6 +39,15 @@ export {
   readJson as readStoredJson,
   writeJson as writeStoredJson,
 } from './storage'
+export {
+  readUserPreferences,
+  updateUserPreferences,
+  notationKey,
+  notationBlockIds,
+  readNotationPreferences,
+  writeNotationPreferences,
+} from './preferences'
+export type { UserPreferences, NotationChoice, NotationPreferences } from './preferences'
 
 export { parse, normalizeSource, setKey, transpose } from './parse'
 export type { ParseOpts } from './parse'
@@ -48,14 +63,34 @@ export {
   setDefaultChart,
 } from './charts'
 export type { ChartInfo } from './charts'
+export { parseDefineDirective, serializeDefine, writeDefines } from './define'
+export type { ChordDefine, DefineDirective, DefineInstrument, DefineResult } from './define'
+export { parseChordToken } from './parse-chord'
+export type { ChordParseClass, ChordTokenMiss, ChordTokenParse, ChordTokenResult } from './parse-chord'
+export { resolveDiagram } from './resolve-diagram'
+export type {
+  DiagramHit,
+  DiagramInstrument,
+  DiagramMiss,
+  DiagramResolve,
+  DiagramVoicing,
+  PianoInversion,
+  PianoTone,
+  ResolveDiagramOpts,
+} from './resolve-diagram'
+export { drawDiagram } from './diagram-draw'
+export type { DiagramDraw, DrawDiagramOpts, FretDot, FretDraw, PianoDraw } from './diagram-draw'
 export { renderHtml, isParseFatal } from './render-html'
 export { listThemes, resolveTheme, assertTheme, themeCssVars, accentVars, listAccents, THEME_VARS, cssVarsString } from './themes'
 export type { AccentId, AccentProp } from './themes'
-export { buildChoFilename, buildPdfFilename, buildSljaFilename } from './filenames'
+export { buildChoFilename, buildPdfFilename, buildSljaFilename, buildPpsxFilename, buildScoreFilename } from './filenames'
 export { lyricsForSlides, lyricsText, exportLyrics } from './lyrics-for-slides'
 export type { SlideSourceLine, ChartLyrics } from './lyrics-for-slides'
-export { exportCho, patchMeta } from './export-cho'
-export { calcScrollSpeed, adjustScrollSpeed, viewerMulStep } from './scroll'
+export { exportCho, exportChoFile, patchMeta } from './export-cho'
+export type { ExportChoOptions } from './export-cho'
+export { EXPORT_MIME, textExportedFile } from './exported-file'
+export type { ExportedFile, ExportKind } from './exported-file'
+export { calcScrollSpeed, adjustScrollSpeed, adjustScrollMultiplier } from './scroll'
 export {
   ANCHOR_RAMP,
   ANCHOR_RATIO,
@@ -85,7 +120,7 @@ export {
   songDurationSec,
 } from './timeline'
 export type { Timeline, TimelineBlock, TimelineOpts, TimelineSeg } from './timeline'
-export { createViewerController } from './controller'
+export { createTitanChordproController } from './controller'
 export { createSourceSession } from './source-session'
 export type { SourceSession, SourceChangeReason } from './source-session'
 export {
@@ -115,6 +150,9 @@ export {
   opLabel,
   overlaid,
   strumReviewFromOp,
+  scoreReviewFromOp,
+  scoreReviewsFromOp,
+  proposedScoreSources,
   diffStrumPattern,
   slotsLookSame,
   tuneText,
@@ -128,6 +166,7 @@ export type {
   ReadingCtx,
   ResolvedOp,
   StrumReview,
+  ScoreAttachment,
   StrumSlotMark,
   Suggestion,
   SuggestionStatus,
@@ -152,6 +191,7 @@ export {
   lastChordName,
   markCtx,
   moveBlock,
+  anchorWords,
   moveChord,
   pasteHarmony,
   playedColumns,
@@ -169,6 +209,9 @@ export {
   writeMarks,
 } from './block-edit'
 export type {
+  AnchorCell,
+  AnchorChar,
+  AnchorWord,
   BlockSpan,
   BlockWrite,
   ChordRef,
@@ -238,12 +281,16 @@ export {
 } from './import-chordpro'
 export {
   AUDIO_ART_DEFAULT_PX,
+  AUDIO_ART_MEDIA_PX,
+  AUDIO_KIND_LABEL,
   AUDIO_KINDS,
   audioArtOf,
   audioArtistOf,
+  resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
   audioUrlOf,
+  rehearsalAudioUrls,
   defaultAudioKind,
   displaySongTitle,
   formatAudioClock,
@@ -276,9 +323,9 @@ export type {
   WriteMetaOpts,
 } from './import-chordpro'
 export {
-  formatXStrumSet,
+  formatTitanStrumSet,
   metaFromStrumSet,
-  parseXStrumSet,
+  parseTitanStrumSet,
 } from './strum-multi'
 export type { StrumPatternSet } from './strum-multi'
 export {
@@ -290,7 +337,7 @@ export {
   emptySlot,
   encodeStrumPat,
   findAnchorIndex,
-  formatXStrum,
+  formatTitanStrum,
   gridFromDensity,
   hasStrumAnchor,
   inferSixEightPulse,
@@ -300,7 +347,7 @@ export {
   listSlotChoices,
   meterFromTimeSignature,
   oppositeDir,
-  parseXStrum,
+  parseTitanStrum,
   patternFromCc,
   repairStrumPattern,
   requiredDir,
@@ -323,3 +370,6 @@ export type {
 } from './strum'
 export { applyStrumPreset, draftStrumPreset, listStrumPresets } from './strum-presets'
 export type { SaveStrumPresetPayload, StrumPreset } from './strum-presets'
+
+export { isInlineScore, isScoreReference, readScoreReference, writeScoreReference, scoreAutoScale, isTabRhythm } from './score-reference'
+export type { ScoreReference, TabRhythm } from './score-reference'

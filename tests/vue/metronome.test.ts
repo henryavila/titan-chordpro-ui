@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref, type Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore, STORE_KEYS } from '../../src/core'
 import { useMetronome, type MetronomeOpts } from '../../src/vue/use/useMetronome'
 import { JESUS_1, loadFixture, withDuration, withoutDuration } from '../helpers/load-fixture'
@@ -402,7 +404,7 @@ afterEach(() => {
 
 async function viewerAt(px: number) {
   vi.useRealTimers()
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: CHART, autoHide: false, storage: memoryStore() },
     attachTo: document.body,
   })
@@ -452,13 +454,13 @@ describe('the beat readout hangs off the chart, not the window', () => {
  * real control, which is the whole point of these cases.
  */
 async function viewerWithRoom(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: ROLLING, autoHide: false, storage: memoryStore(), ...props },
     attachTo: document.body,
   })
   mounted.push(w)
   await flushPromises()
-  const el = w.get('[data-cpv-scroll]').element as HTMLElement
+  const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
   Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
   Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
   observers.forEach((cb) => cb([{ contentRect: { width: 900, height: 800 } }]))
@@ -475,7 +477,7 @@ describe('Rolar is gated on {duration:}', () => {
     await btn.trigger('click')
     await flushPromises()
     expect(btn.text()).toMatch(/Rolar/)
-    expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+    expect(w.get('.titan-chordpro-progress').classes()).not.toContain('is-live')
     expect(w.find('[data-met-countin]').exists()).toBe(false)
   })
 
@@ -493,14 +495,14 @@ describe('Rolar starts the metronome with the chart', () => {
 
     expect(w.find('[data-met-count]').exists(), 'Rolar did not start the metronome').toBe(true)
     expect(w.find('[data-met-pulse]').exists()).toBe(false)
-    expect(w.get('[data-cpv-root]').classes().join(' ')).not.toMatch(/cpv-head-hit/)
-    const chord = w.get('.cpv-chord')
+    expect(w.get('[data-titan-chordpro-root]').classes().join(' ')).not.toMatch(/titan-chordpro-head-hit/)
+    const chord = w.get('.titan-chordpro-chord')
     expect(getComputedStyle(chord.element).transform).not.toMatch(/translate/i)
     expect(w.find('[data-met-countin]').exists(), 'Rolar skipped the count-in').toBe(true)
     expect(w.get('[data-scroll]').text()).toMatch(/Parar/)
-    expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+    expect(w.get('.titan-chordpro-progress').classes()).not.toContain('is-live')
     expect(
-      w.get('[data-scroll]').element.closest('.cpv-chrome')!.classList.contains('is-hidden'),
+      w.get('[data-scroll]').element.closest('.titan-chordpro-chrome')!.classList.contains('is-hidden'),
       'autoHide is off, so the dock should still be up',
     ).toBe(false)
 
@@ -514,9 +516,9 @@ describe('Rolar starts the metronome with the chart', () => {
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
 
-    const dock = w.get('[data-scroll]').element.closest('.cpv-chrome') as HTMLElement
+    const dock = w.get('[data-scroll]').element.closest('.titan-chordpro-chrome') as HTMLElement
     expect(dock.classList.contains('is-hidden'), 'the dock waited for idle').toBe(true)
-    const toast = w.get('.cpv-toast')
+    const toast = w.get('.titan-chordpro-toast')
     expect(toast.text()).toMatch(/mostrar/)
     const bottom = toast.attributes('style') ?? ''
     expect(bottom, 'toast still sits above the (now gone) bar').not.toMatch(/124px|78px/)
@@ -533,11 +535,11 @@ describe('Rolar starts the metronome with the chart', () => {
     await flushPromises()
     expect(w.find('[data-met-count]').exists()).toBe(false)
     expect(w.get('[data-scroll]').text()).toMatch(/Rolar/)
-    expect(w.get('.cpv-progress').classes()).not.toContain('is-live')
+    expect(w.get('.titan-chordpro-progress').classes()).not.toContain('is-live')
   })
 
   it('leaves the metronome alone when the chart fits the frame', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: CHART, autoHide: false, storage: memoryStore() },
       attachTo: document.body,
     })
@@ -560,7 +562,7 @@ describe('Rolar starts the metronome with the chart', () => {
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
     expect(w.find('[data-met-count]').exists()).toBe(false)
-    expect(w.get('.cpv-progress').classes()).toContain('is-live')
+    expect(w.get('.titan-chordpro-progress').classes()).toContain('is-live')
   })
 
   it('keeps a click the musician turned on, so the next song has sound', async () => {
@@ -578,13 +580,13 @@ describe('Rolar starts the metronome with the chart', () => {
     const w = await viewerWithRoom({ storage })
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
-    expect(w.find('.cpv-head-hit-1, .cpv-head-hit-n').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-head-hit-1, .titan-chordpro-head-hit-n').exists()).toBe(false)
 
     await w.get('[data-met-btn]').trigger('click')
     await flushPromises()
     await w.get('[data-met-head]').trigger('click')
     await flushPromises()
-    expect(w.find('.cpv-head-hit-1, .cpv-head-hit-n').exists()).toBe(true)
+    expect(w.find('.titan-chordpro-head-hit-1, .titan-chordpro-head-hit-n').exists()).toBe(true)
     expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ metPulseHead: true })
   })
 
@@ -599,8 +601,8 @@ describe('Rolar starts the metronome with the chart', () => {
     await nextTick()
     await flushPromises()
 
-    const head = w.get('.cpv-head-hit-1').element as HTMLElement
-    const pill = w.get('.cpv-keypill').element as HTMLElement
+    const head = w.get('.titan-chordpro-head-hit-1').element as HTMLElement
+    const pill = w.get('.titan-chordpro-keypill').element as HTMLElement
     const key = w.get('[data-display-key]').element as HTMLElement
     const tom = [...pill.querySelectorAll('span')].find((el) => el.textContent === 'Tom') as HTMLElement
     expect(tom).toBeTruthy()
@@ -624,8 +626,8 @@ describe('Rolar starts the metronome with the chart', () => {
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
     const count = w.get('[data-met-count]').element
-    expect(count.closest('.cpv-chrome')).toBeNull()
-    const box = w.get('[data-met-count] .cpv-met-beat')
+    expect(count.closest('.titan-chordpro-chrome')).toBeNull()
+    const box = w.get('[data-met-count] .titan-chordpro-met-beat')
     expect(getComputedStyle(box.element).width).toBe('20px')
     expect(getComputedStyle(box.element).height).toBe('20px')
   })
@@ -643,7 +645,7 @@ describe('count-in label sits below the title strip', () => {
     await flushPromises()
 
     const label = w.get('[data-met-countin]').element
-    const firstBeat = w.get('.cpv-met-beat').element
+    const firstBeat = w.get('.titan-chordpro-met-beat').element
     expect(label.compareDocumentPosition(firstBeat) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     const style = getComputedStyle(label)
@@ -709,7 +711,7 @@ describe('count-in label sits below the title strip', () => {
  */
 describe('beat count overlays the chart margin — no reserved gutter', () => {
   function pagePadding(w: ReturnType<typeof mount>): string {
-    return (w.get('.cpv-page').attributes('style') ?? '').match(/padding:\s*([^;]+)/)?.[1]?.trim() ?? ''
+    return (w.get('.titan-chordpro-page').attributes('style') ?? '').match(/padding:\s*([^;]+)/)?.[1]?.trim() ?? ''
   }
 
   it('does not force 44px left padding on a phone while the click runs', async () => {
@@ -729,7 +731,7 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
 
   it('keeps the same page padding when the click starts and stops on a phone', async () => {
     vi.useRealTimers()
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: CHART, autoHide: false, storage: memoryStore() },
       attachTo: document.body,
     })
@@ -760,7 +762,7 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
 
   it('keeps the count outside chrome so zen cannot take it (phone)', async () => {
     const w = await viewerAt(390)
-    expect(w.get('[data-met-count]').element.closest('.cpv-chrome')).toBeNull()
+    expect(w.get('[data-met-count]').element.closest('.titan-chordpro-chrome')).toBeNull()
   })
 
   it('parks the beat column at 2px on xs phone — overlay, not a wider page', async () => {
@@ -777,8 +779,8 @@ describe('beat count overlays the chart margin — no reserved gutter', () => {
  */
 /**
  * The 1–2–3–4 column is numbers. A box on every cell fought the lyric
- * underneath; only the pulse fills. Beat 1 wears the theme colour; 2–3–4
- * pulse as a white chip (`--beat-rest`).
+ * underneath; only the pulse fills. Beat 1 is ink (--downbeat); 2–3–4
+ * wear the theme (--chord).
  */
 describe('beat numbers are bare; only the pulse fills', () => {
   function transparent(bg: string) {
@@ -787,7 +789,7 @@ describe('beat numbers are bare; only the pulse fills', () => {
 
   it('does not fade idle beats with opacity', async () => {
     const w = await viewerAt(390)
-    const idle = w.findAll('.cpv-met-beat').filter((b) => !b.classes().includes('is-now'))
+    const idle = w.findAll('.titan-chordpro-met-beat').filter((b) => !b.classes().includes('is-now'))
     expect(idle.length).toBeGreaterThan(0)
     const style = getComputedStyle(idle[0]!.element)
     expect(Number.parseFloat(style.opacity)).toBeGreaterThan(0.9)
@@ -795,7 +797,7 @@ describe('beat numbers are bare; only the pulse fills', () => {
 
   it('leaves idle beats as numbers — no fill, no edge', async () => {
     const w = await viewerAt(390)
-    const idle = w.findAll('.cpv-met-beat').filter((b) => !b.classes().includes('is-now'))
+    const idle = w.findAll('.titan-chordpro-met-beat').filter((b) => !b.classes().includes('is-now'))
     const style = getComputedStyle(idle[0]!.element)
     expect(transparent(style.backgroundColor), `idle still boxed (${style.backgroundColor})`).toBe(true)
     expect(parseFloat(style.borderTopWidth) === 0 || style.borderTopStyle === 'none').toBe(true)
@@ -803,14 +805,14 @@ describe('beat numbers are bare; only the pulse fills', () => {
 
   it('marks exactly one beat as the pulse', async () => {
     const w = await viewerAt(390)
-    const now = w.findAll('.cpv-met-beat').filter((b) => b.classes().includes('is-now'))
+    const now = w.findAll('.titan-chordpro-met-beat').filter((b) => b.classes().includes('is-now'))
     expect(now).toHaveLength(1)
     expect(getComputedStyle(now[0]!.element).fontWeight).toMatch(/700|bold/)
   })
 
-  it('keeps is-one on beat 1 so only the downbeat can wear the theme', async () => {
+  it('keeps is-one on beat 1 so the downbeat can wear ink', async () => {
     const w = await viewerAt(390)
-    const cells = w.findAll('.cpv-met-beat')
+    const cells = w.findAll('.titan-chordpro-met-beat')
     expect(cells.length).toBeGreaterThan(1)
     expect(cells[0]!.classes()).toContain('is-one')
     for (const cell of cells.slice(1)) {
@@ -832,6 +834,20 @@ describe('count-in label is a badge', () => {
     expect(parseFloat(style.borderRadius)).toBeGreaterThan(0)
     expect(style.borderTopStyle, 'naked text has no edge').toBe('solid')
     expect(parseFloat(style.borderTopWidth)).toBeGreaterThan(0)
+  })
+})
+
+describe('metronome sheet beat dots match the column', () => {
+  const src = readFileSync(join(process.cwd(), 'src/vue/sheets/MetronomeSheet.vue'), 'utf8')
+
+  it('paints beat 1 with downbeat, 2–4 with chord', () => {
+    expect(src).toMatch(/liveFill = accent \? 'var\(--downbeat\)' : 'var\(--chord\)'/)
+    expect(src).toMatch(/liveInk = accent \? 'var\(--downbeat\)' : 'var\(--chord\)'/)
+    expect(src).not.toMatch(/liveFill = accent \? 'var\(--chord\)' : 'var\(--beat-rest\)'/)
+  })
+
+  it('tells the musician the title strip marks tempo and contratempo', () => {
+    expect(src).toMatch(/Acende no tempo e apaga no contratempo/)
   })
 })
 

@@ -6,7 +6,8 @@ import {
   type StrumPattern,
   type StrumSlot,
 } from '@henryavila/titan-chordpro-ui'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 
 const props = defineProps<{
   compact: boolean
@@ -115,13 +116,13 @@ const titleHint = computed(() => {
 
 <template>
   <div
-    class="cpv-sheet batida-picker-root"
+    class="titan-chordpro-sheet batida-picker-root"
     :class="{ 'is-compact': compact }"
     style="z-index:29;"
   >
-    <div class="cpv-scrim" data-batida-pick-scrim @click="emit('close')" />
+    <div class="titan-chordpro-scrim" data-batida-pick-scrim @click="emit('close')" />
     <div
-      class="cpv-veil-2 batida-picker"
+      class="titan-chordpro-veil-2 batida-picker"
       :class="{ 'is-compact': compact }"
       role="dialog"
       aria-label="Escolher batida"
@@ -141,9 +142,7 @@ const titleHint = computed(() => {
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">{{ beatLabel }} · {{ titleHint }}</span>
           <span style="font-size:14px;font-weight:700;color:var(--text);">Escolher batida</span>
         </span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:34px;height:34px;color:var(--muted);" @click="emit('close')">
-          <CpvIcon name="x" :size="16" />
-        </button>
+        <TitanChordproIconButton icon="x" density="bar" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
       <!-- Dual direction: column Baixo | column Cima (never mix in one row). -->
@@ -264,7 +263,7 @@ const titleHint = computed(() => {
   gap: 14px;
   padding: 18px;
   border-radius: 18px;
-  animation: cpv-rise 0.2s ease-out;
+  animation: titan-chordpro-rise 0.2s ease-out;
   box-shadow: var(--shadow);
 }
 .batida-picker.is-compact {

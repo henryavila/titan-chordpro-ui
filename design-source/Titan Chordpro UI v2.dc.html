@@ -1559,7 +1559,7 @@ class Component extends DCLogic {
     this.onScoreResize = () => { this._sigs = {}; this.drawScores(); this.checkSurface(); };
     window.addEventListener("resize", this.onScoreResize);
     try {
-      const p = JSON.parse(localStorage.getItem("cpv:prefs") || "{}");
+      const p = JSON.parse(localStorage.getItem("titan-chordpro:prefs") || "{}");
       const st = {};
       if (p.theme) st.theme = p.theme;
       if (typeof p.bias === "number") st.bias = p.bias;
@@ -1567,8 +1567,8 @@ class Component extends DCLogic {
       if (typeof p.metSound === "boolean") st.metSound = p.metSound;
       if (typeof p.metFollow === "boolean") st.metFollow = p.metFollow;
       if (Object.keys(st).length) this.setState(st);
-      this.fitSeen = localStorage.getItem("cpv:fitSeen") === "1";
-      this.editSeen = localStorage.getItem("cpv:editSeen") === "1";
+      this.fitSeen = localStorage.getItem("titan-chordpro:fitSeen") === "1";
+      this.editSeen = localStorage.getItem("titan-chordpro:editSeen") === "1";
     } catch (e) { this.fitSeen = true; this.editSeen = true; }
 
     import(new URL("./fixtures.js", location.href).href)
@@ -1762,8 +1762,8 @@ class Component extends DCLogic {
       if (this.state.fit !== null && this.state.fit !== undefined) p.fit = this.state.fit;
       if (this.state.metSound === false) p.metSound = false;
       if (this.state.metFollow === false) p.metFollow = false;
-      if (Object.keys(p).length) localStorage.setItem("cpv:prefs", JSON.stringify(p));
-      else localStorage.removeItem("cpv:prefs");
+      if (Object.keys(p).length) localStorage.setItem("titan-chordpro:prefs", JSON.stringify(p));
+      else localStorage.removeItem("titan-chordpro:prefs");
     } catch (e) {}
   }
   dismissHint = (explicit) => {
@@ -1772,7 +1772,7 @@ class Component extends DCLogic {
     // Nunca queima o flag sem a pessoa ter visto a dica.
     if (explicit || this.hintVisible) {
       this.fitSeen = true;
-      try { localStorage.setItem("cpv:fitSeen", "1"); } catch (e) {}
+      try { localStorage.setItem("titan-chordpro:fitSeen", "1"); } catch (e) {}
     }
     if (!this.state.hintOff) this.setState({ hintOff: true });
   };
@@ -1913,10 +1913,10 @@ class Component extends DCLogic {
         continue;
       }
       const d = raw.match(/^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/);
-      // {sos}…{eos}: partitura/tab com ritmo, escrita pelo editor. O bloco viaja
+      // {x_titan_start_of_score}…{x_titan_end_of_score}: partitura/tab com ritmo, escrita pelo editor. O bloco viaja
       // inteiro no source e é desenhado na leitura, não é imagem.
       if (score !== null) {
-        score.push(raw);
+        x_titan_score.push(raw);
         if (d && /^(eos|end_of_score)$/i.test(d[1])) { lines.push({ isScore: true, text: score.join("\n"), li0: scoreStart, li1: li }); score = null; }
         continue;
       }
@@ -1927,7 +1927,7 @@ class Component extends DCLogic {
       }
       if (d) {
         const k = d[1].toLowerCase(), v = (d[2] || "").trim();
-        if (k === "sos" || k === "start_of_score") { score = [raw]; scoreStart = li; continue; }
+        if (k === "sos" || k === "start_of_score") { x_titan_score = [raw]; scoreStart = li; continue; }
         if (k === "sot" || k === "start_of_tab") { tab = []; tabStart = li; continue; }
         if (k === "soc" || k === "start_of_chorus") { chorus = true; socLi = li; continue; }
         if (k === "eoc" || k === "end_of_chorus") { if (socLi !== null) eocOf[socLi] = li; chorus = false; socLi = null; continue; }
@@ -2739,7 +2739,7 @@ class Component extends DCLogic {
     return s ? s.id : (this.props.songId || this.props.fixture || "song");
   }
   get officialVersion() { return this.state.officialV || this.props.version || "v1"; }
-  ovKey() { return "cpv:my:" + this.songId; }
+  ovKey() { return "titan-chordpro:my:" + this.songId; }
 
   hash(s) {
     let h = 0; const t = String(s);
@@ -3023,9 +3023,9 @@ class Component extends DCLogic {
   };
 
   // ---- sugerir alteração ----
-  allSug() { try { return JSON.parse(localStorage.getItem("cpv:sug") || "[]"); } catch (e) { return []; } }
+  allSug() { try { return JSON.parse(localStorage.getItem("titan-chordpro:sug") || "[]"); } catch (e) { return []; } }
   writeSug(list) {
-    try { localStorage.setItem("cpv:sug", JSON.stringify(list)); } catch (e) {}
+    try { localStorage.setItem("titan-chordpro:sug", JSON.stringify(list)); } catch (e) {}
     this.setState({ sugTick: (this.state.sugTick || 0) + 1 });
   }
   suggest = () => {
@@ -3121,7 +3121,7 @@ class Component extends DCLogic {
     if (!this._impReq) this._impReq = import(new URL("./importar.js", location.href).href).then(m => { this.IMP = m; return m; });
     return this._impReq;
   }
-  emptyMeta() { return { title: "", subtitle: "", key: "", tempo: "", time: "", x_source: "" }; }
+  emptyMeta() { return { title: "", subtitle: "", key: "", tempo: "", time: "", x_titan_source: "" }; }
   setNovaState(patch) { this.setState(s => ({ nova: Object.assign({}, s.nova || {}, patch) })); }
   novaFail(err, hint) { this.setNovaState({ err, errHint: hint || "", busy: false }); }
   missText(miss) {
@@ -3169,7 +3169,7 @@ class Component extends DCLogic {
         const demo = db["ele-vive"] || db[Object.keys(db)[0]] || "";
         const r = m.convert(m.toPlain(demo));
         const guess = m.titleFromUrl(url);
-        const meta = Object.assign(this.emptyMeta(), m.readMeta(r.source), { x_source: url });
+        const meta = Object.assign(this.emptyMeta(), m.readMeta(r.source), { x_titan_source: url });
         if (!meta.title) meta.title = guess.title;
         if (!meta.subtitle) meta.subtitle = guess.subtitle;
         this.setState({ novaSrc: r.source, novaMeta: meta,
@@ -3215,7 +3215,7 @@ class Component extends DCLogic {
   setTitle = e => this.setNovaMeta("title", e.target.value);
   setArtist = e => this.setNovaMeta("subtitle", e.target.value);
   setTempo = e => this.setNovaMeta("tempo", e.target.value.replace(/[^\d]/g, "").slice(0, 3));
-  setUrl = e => this.setNovaMeta("x_source", e.target.value);
+  setUrl = e => this.setNovaMeta("x_titan_source", e.target.value);
   bpmStep = d => {
     const cur = parseInt((this.state.novaMeta || {}).tempo, 10);
     const n = Math.max(30, Math.min(260, (isNaN(cur) ? 90 : cur) + d));
@@ -3320,7 +3320,7 @@ class Component extends DCLogic {
       mTitle: nm.title || "", setTitle: this.setTitle,
       mArtist: nm.subtitle || "", setArtist: this.setArtist,
       mTempo: nm.tempo || "", setTempo: this.setTempo,
-      mUrl: nm.x_source || "", setUrl: this.setUrl,
+      mUrl: nm.x_titan_source || "", setUrl: this.setUrl,
       novaBpmUp: this.bpmUp, novaBpmDown: this.bpmDown, tapTempo: this.tapTempo,
       tapLabel: taps > 1 ? "batendo… " + taps : "bater no ritmo",
       keyChips: SHARP.map(r => Object.assign({ label: r, pick: () => this.pickKey(r) }, chip(keyRoot === r))),
@@ -3415,7 +3415,7 @@ class Component extends DCLogic {
   };
   markEditSeen() {
     this.editSeen = true;
-    try { localStorage.setItem("cpv:editSeen", "1"); } catch (e) {}
+    try { localStorage.setItem("titan-chordpro:editSeen", "1"); } catch (e) {}
     if (!this.state.editHintOff) this.setState({ editHintOff: true });
   }
   dismissEditHint = () => this.markEditSeen();
@@ -4175,8 +4175,8 @@ class Component extends DCLogic {
   };
 
   // ---- Partitura / TAB: um caminho só ----
-  // O editor de partitura é o único jeito de criar e alterar tanto {sos} quanto
-  // a TAB de texto legada — esta abre importada, e sai gravada como {sos}.
+  // O editor de partitura é o único jeito de criar e alterar tanto {x_titan_start_of_score} quanto
+  // a TAB de texto legada — esta abre importada, e sai gravada como {x_titan_start_of_score}.
   ensureP() {
     if (!this._pReq) this._pReq = import("./partitura.js").then(P => { this.P = P; this.drawScores(); return P; });
     return this._pReq;
@@ -4220,12 +4220,12 @@ class Component extends DCLogic {
   newScore = () => {
     const arr = this.srcArr();
     const at = this.insertAt();
-    arr.splice(at, 0, "{sos: time=4/4 key=D tempo=92 tuning=EADGBE}", "{eos}", "");
+    arr.splice(at, 0, "{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}", "{x_titan_end_of_score}", "");
     this.write(arr, "Partitura nova");
     // fonte não-vazia: o editor abre em branco em vez de carregar a demo.
     this.setState({ insertMenu: false, picker: false,
       scoreEd: { li0: at, li1: at + 1, open: false, kind: "score", fresh: true,
-        text: "{sos: time=4/4 key=D tempo=92 tuning=EADGBE}\n{eos}" } });
+        text: "{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}\n{x_titan_end_of_score}" } });
   };
   cancelScore = () => {
     const d = this.state.scoreEd;
@@ -4334,16 +4334,16 @@ class Component extends DCLogic {
   }
   loadBpm() {
     try {
-      const all = JSON.parse(localStorage.getItem("cpv:bpm") || "{}");
+      const all = JSON.parse(localStorage.getItem("titan-chordpro:bpm") || "{}");
       const v = Number(all[this.songKey()]);
       return v >= 30 && v <= 300 ? Math.round(v) : null;
     } catch (e) { return null; }
   }
   saveBpm(v) {
     try {
-      const all = JSON.parse(localStorage.getItem("cpv:bpm") || "{}");
+      const all = JSON.parse(localStorage.getItem("titan-chordpro:bpm") || "{}");
       if (v) all[this.songKey()] = v; else delete all[this.songKey()];
-      localStorage.setItem("cpv:bpm", JSON.stringify(all));
+      localStorage.setItem("titan-chordpro:bpm", JSON.stringify(all));
     } catch (e) {}
   }
   sheetBpm() {

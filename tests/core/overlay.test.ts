@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { overlayKey, parseXStrum, writeStrumPatterns } from '../../src/core'
+import { parseTitanStrum, readMeta, rewriteToKey, writeStrumPatterns } from '../../src/core'
 import {
   absorbInto,
   absorbedOp,
@@ -7,16 +7,15 @@ import {
   checkUpdate,
   diffOps,
   diffStrumPattern,
-  hashText,
   lcsHunks,
   opCtxNote,
   opLabel,
   overlaid,
-  reviewProjection,
   strumReviewFromOp,
   tuneText,
 } from '../../src/core/overlay'
 import type { Overlay, TuneOp } from '../../src/core/overlay'
+import { loadFixture } from '../helpers/load-fixture'
 
 const CTX = { transpose: 0, capo: 0 }
 const official = ['{title: T}', '{key: G}', '', '[G]linha um', '[C]linha dois', '[D]linha três'].join(
@@ -51,6 +50,34 @@ describe('diffOps', () => {
     expect(diffOps(official, added, CTX)[0]?.type).toBe('insert')
     const removed = official.split('\n').filter((l) => l !== '[C]linha dois').join('\n')
     expect(diffOps(official, removed, CTX)[0]?.type).toBe('delete')
+  })
+
+  it('keeps two distant one-chord edits as two ops', () => {
+    const src = [
+      '{title: T}',
+      '{key: G}',
+      '',
+      '[G]um',
+      '[C]dois',
+      '[D]três',
+      '[G]quatro',
+      '[C]cinco',
+      '[D]seis',
+    ].join('\n')
+    const mine = src.replace('[G]um', '[A]um').replace('[D]seis', '[E]seis')
+    expect(diffOps(src, mine, CTX)).toHaveLength(2)
+  })
+
+  it('collapses a full key rewrite into one suggestion op', () => {
+    const src = loadFixture('sda/082-o-rei-vem-vindo.cho')
+    const done = rewriteToKey(src, 'Ab')!
+    const ops = diffOps(src, done.source, CTX)
+    expect(ops).toHaveLength(1)
+    expect(ops[0]?.type).toBe('replace')
+    expect(applyOps(src, ops).text).toBe(done.source)
+    expect(applyOps(src, ops).failed).toHaveLength(0)
+    expect(opLabel(ops[0]!)).toBe('Cifra reescrita no tom Ab')
+    expect(readMeta(ops[0]!.after.join('\n')).transpose).toBe('-1')
   })
 })
 
@@ -126,16 +153,6 @@ describe('absorbing and updating', () => {
   it('says nothing when the version has not moved', () => {
     expect(checkUpdate(overlay, official, 'v1')).toBeNull()
   })
-
-  it('compares overlay.baseVersion to the chart document hash', () => {
-    const rev = hashText(official)
-    const hashed: Overlay = { ...overlay, baseVersion: rev }
-    expect(checkUpdate(hashed, official, rev)).toBeNull()
-    expect(absorbInto(hashed, official, rev).absorbed).toBe(0)
-    const next = `${official}\n`
-    expect(checkUpdate(hashed, next, hashText(next))?.items).toHaveLength(1)
-    expect(absorbInto(hashed, mine, hashText(mine)).absorbed).toBe(1)
-  })
 })
 
 describe('overlaid', () => {
@@ -177,16 +194,16 @@ describe('labels', () => {
 })
 
 const STRUM_CHART = ['{title:T}', '{key:G}', '{c:V}', '[G]oi'].join('\n')
-const STRUM = parseXStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU')!
+const STRUM = parseTitanStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=DuDu DuDU')!
 
 describe('merge mask includes batida', () => {
-  it('diffs a new {x_strum:} as an insert the admin can apply', () => {
+  it('diffs a new {x_titan_strum:} as an insert the admin can apply', () => {
     const mine = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
     const ops = diffOps(STRUM_CHART, mine, CTX)
-    expect(ops.some((op) => op.after.some((l) => l.includes('{x_strum:')))).toBe(true)
+    expect(ops.some((op) => op.after.some((l) => l.includes('{x_titan_strum:')))).toBe(true)
     const r = applyOps(STRUM_CHART, ops)
     expect(r.failed).toHaveLength(0)
-    expect(r.text).toContain('{x_strum:')
+    expect(r.text).toContain('{x_titan_strum:')
     expect(r.text).toContain('[G]oi')
     expect(opLabel(ops[0]!)).toBe('Batida nova')
   })
@@ -197,13 +214,13 @@ describe('merge mask includes batida', () => {
     const shifted = STRUM_CHART.replace('{key:G}', '{key:G}\n{tempo:90}')
     const r = applyOps(shifted, ops)
     expect(r.failed).toHaveLength(0)
-    expect(r.text).toContain('{x_strum:')
+    expect(r.text).toContain('{x_titan_strum:')
     expect(r.text).toContain('{tempo:90}')
   })
 
-  it('labels replace and delete of {x_strum:} as batida, not an empty trecho', () => {
+  it('labels replace and delete of {x_titan_strum:} as batida, not an empty trecho', () => {
     const withStrum = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
-    const other = parseXStrum('bpm=100; meter=4/4; grid=8; label=Outro; pat=Dudu Dudu')!
+    const other = parseTitanStrum('bpm=100; meter=4/4; grid=8; label=Outro; pat=Dudu Dudu')!
     const changed = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [other] })
     const replaceOp = diffOps(withStrum, changed, CTX)[0]!
     expect(opLabel(replaceOp)).toBe('Batida alterada')
@@ -232,7 +249,7 @@ describe('merge mask includes batida', () => {
 
   it('marks changed slots on the proposed pattern for the visualizer', () => {
     const withStrum = writeStrumPatterns(STRUM_CHART, { activeIndex: 0, patterns: [STRUM] })
-    const other = parseXStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=Dudu Dudu')!
+    const other = parseTitanStrum('bpm=90; meter=4/4; grid=8; label=Padrão; pat=Dudu Dudu')!
     const changed = writeStrumPatterns(withStrum, { activeIndex: 0, patterns: [other] })
     const review = strumReviewFromOp(diffOps(withStrum, changed, CTX)[0]!)
     const d = diffStrumPattern(review?.previous[0], review?.proposed[0])
@@ -252,65 +269,5 @@ describe('merge mask includes batida', () => {
     const del = strumReviewFromOp(diffOps(mine, cleared, CTX)[0]!)
     const gone = diffStrumPattern(del?.previous[0], del?.proposed[0])
     expect(gone?.marks.every((m) => m === 'removed')).toBe(true)
-  })
-})
-
-describe('overlayKey', () => {
-  it('names the chart slot and shares default for an omitted id', () => {
-    expect(overlayKey('jesus-1', 'oferta')).toBe('cpv:my:jesus-1:oferta')
-    expect(overlayKey('jesus-1')).toBe('cpv:my:jesus-1:default')
-    expect(overlayKey('jesus-1', 'default')).toBe(overlayKey('jesus-1'))
-    expect(overlayKey('jesus-1', '')).toBe(overlayKey('jesus-1'))
-  })
-
-  it('encodes a colon in an id and leaves ids without a colon literal', () => {
-    expect(overlayKey('jesus-1', 'oferta')).toBe('cpv:my:jesus-1:oferta')
-    expect(overlayKey('song')).toBe('cpv:my:song:default')
-    expect(overlayKey('song:default')).not.toBe('cpv:my:song:default')
-    expect(overlayKey('song:default')).toBe(`cpv:my:${encodeURIComponent('song:default')}:default`)
-    expect(overlayKey('jesus-1', 'of:erta')).toBe(`cpv:my:jesus-1:${encodeURIComponent('of:erta')}`)
-    expect(overlayKey('song id')).toBe('cpv:my:song id:default')
-  })
-
-  it('encodes a percent so an encoded colon is not another id', () => {
-    expect(overlayKey('a:b')).not.toBe(overlayKey('a%3Ab'))
-  })
-})
-
-describe('reviewProjection', () => {
-  it('marks the line that stays and keeps a deleted line struck', () => {
-    const next = official.replace('[C]linha dois', '[C]linha dois (ok)')
-    const replaced = diffOps(official, next, CTX)
-    const painted = reviewProjection(official, replaced)
-    expect(painted.text).toContain('[C]linha dois (ok)')
-    expect(painted.text).not.toContain('[C]linha dois\n')
-    const stay = painted.text.split('\n').findIndex((line) => line.includes('linha dois (ok)'))
-    expect(painted.mine.get(stay)).toBe(replaced[0]?.id)
-
-    const removed = {
-      id: 'op-del',
-      type: 'delete' as const,
-      at: official.split('\n').findIndex((line) => line.includes('linha três')),
-      anchor: '',
-      anchorHash: '0',
-      before: ['[D]linha três'],
-      after: [],
-      ctx: CTX,
-    }
-    const gone = reviewProjection(official, [removed])
-    expect(gone.text).toContain('[D]linha três')
-    const at = gone.text.split('\n').findIndex((line) => line.includes('linha três'))
-    expect(gone.struck.get(at)).toBe(removed.id)
-    expect(gone.opLine[removed.id]).toBe(at)
-  })
-
-  it('leaves an op that no longer matches out of the paint', () => {
-    const ops = diffOps(official, official.replace('[G]linha um', '[G]linha um (ok)'), CTX)
-    const drifted = official.replace('[G]linha um', '[G]outra')
-    const painted = reviewProjection(drifted, ops)
-    expect(painted.failed).toHaveLength(1)
-    expect(painted.mine.size).toBe(0)
-    expect(painted.text).toContain('[G]outra')
-    expect(painted.text).not.toContain('linha um (ok)')
   })
 })

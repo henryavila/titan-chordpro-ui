@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
+  AUDIO_ART_MEDIA_PX,
+  convert,
+  hashText,
   readMeta,
   setRehearsalAudio,
   writeMeta,
   type SaveStrumPresetPayload,
   type StrumPreset,
+  type Suggestion,
 } from '@henryavila/titan-chordpro-ui'
 import refAudioUrl from './ref-nasce-cantado.m4a?url'
 import refPlaybackUrl from './ref-nasce-playback.m4a?url'
+import altAudioUrl from './ref-audio.wav?url'
+import altPlaybackUrl from './ref-audio-playback.wav?url'
 import refArtUrl from './ref-audio-art.jpg?url'
-import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
+import { TitanChordpro } from '@henryavila/titan-chordpro-ui/vue'
 import { catalogToFixtures, fetchPreviewCatalog } from './preview-catalog'
 import {
   FAIL_ID,
@@ -22,6 +28,11 @@ import {
   songsFor,
   versionPair,
 } from './host/charts'
+import { loadScoreImage, loadScoreImages, persistScoreImage } from './host/image-store'
+import {
+  DEMO_SUGGESTIONS_KEY, demoOfficialKey, persistDemoSuggestion,
+  readDemoOfficial, readDemoSuggestions, writeDemoOfficial, writeDemoSuggestions,
+} from './host/suggestion-store'
 import BootShell from './BootShell.vue'
 import HostSite from './host/HostSite.vue'
 import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './host/recipe'
@@ -29,12 +40,80 @@ import { hostTheme, labQuery, palcoHref, writeEditMode, type Surface } from './h
 const props = defineProps<{ surface: Surface; lista: boolean }>()
 
 const fixtures = ref(seedFixtures())
-const { images, resolveImage } = bundledImages()
+const { resolveImage: resolveBundled } = bundledImages()
+/** Object URLs for images this browser already stored. The chart only keeps the name. */
+const uploadedUrls = ref(new Map<string, string>())
+function resolveImage(src: string) {
+  return uploadedUrls.value.get(src) ?? resolveBundled(src)
+}
+function imageExt(file: File): string {
+  const fromName = file.name.match(/\.(png|jpe?g|webp|gif)$/i)?.[0]?.toLowerCase()
+  if (fromName === '.jpeg') return '.jpg'
+  if (fromName) return fromName
+  if (file.type === 'image/png') return '.png'
+  if (file.type === 'image/webp') return '.webp'
+  if (file.type === 'image/gif') return '.gif'
+  return '.jpg'
+}
+async function uploadImage(file: File): Promise<{ ref: string }> {
+  const refName = `uploads/${Date.now().toString(36)}${imageExt(file)}`
+  await persistScoreImage(refName, file)
+  const url = URL.createObjectURL(file)
+  const next = new Map(uploadedUrls.value)
+  next.set(refName, url)
+  uploadedUrls.value = next
+  return { ref: refName }
+}
+/** The same demo blob store also retains original notation files across reloads. */
+async function uploadScore(file: File): Promise<{ ref: string }> {
+  const ext = file.name.match(/\.(gp[345]?|gpx|xml|musicxml|mxl)$/i)?.[0]?.toLowerCase()
+  if (!ext) throw new Error('Escolha um arquivo Guitar Pro ou MusicXML.')
+  // randomUUID can be absent on HTTP/LAN previews. The reference is an
+  // opaque filename; getRandomValues also works without a secure context.
+  const id = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('')
+  const refName = `solos/${id}${ext}`
+  await persistScoreImage(refName, file)
+  const next = new Map(uploadedUrls.value)
+  next.set(refName, URL.createObjectURL(file))
+  uploadedUrls.value = next
+  return { ref: refName }
+}
 const lab = labQuery(typeof location === 'undefined' ? '' : location.search)
-/**
- * Device storage (default ChartStore): overlay + suggestion queue survive
- * navigation so you can suggest on `editMode=local` and review on `persisted`.
- */
+/** Demo host: the personal overlay stays in ChartStore; the queue is host-owned. */
+const suggestionQueue = ref<Suggestion[]>(readDemoSuggestions())
+function updateSuggestionQueue(queue: Suggestion[]) {
+  writeDemoSuggestions(queue)
+  suggestionQueue.value = queue
+}
+function saveOfficial(text: string) {
+  source.value = text
+  officialSource.value = text
+  writeDemoOfficial(id.value, text)
+}
+async function loadDemoAsset(reference: string, kind: 'score' | 'image' | 'audio') {
+  const stored = kind === 'audio' ? null : await loadScoreImage(reference)
+  if (stored) return { ...stored, filename: reference.split('/').at(-1) }
+  const resolved = kind === 'audio' ? reference : resolveImage(reference)
+  const url = new URL(resolved, document.baseURI)
+  if (!['http:', 'https:', 'blob:'].includes(url.protocol)) throw new Error('Anexo inválido')
+  const response = await fetch(url.href)
+  if (!response.ok) throw new Error('Não foi possível abrir o anexo')
+  return {
+    bytes: new Uint8Array(await response.arrayBuffer()),
+    contentType: response.headers.get('content-type') || undefined,
+    filename: reference.split(/[/?#]/).filter(Boolean).at(-1),
+  }
+}
+function onDemoStorage(event: StorageEvent) {
+  if (event.key === DEMO_SUGGESTIONS_KEY) suggestionQueue.value = readDemoSuggestions()
+  if (event.key === demoOfficialKey(id.value)) {
+    const next = readDemoOfficial(id.value) ?? fixtures.value[id.value] ?? ''
+    source.value = next
+    officialSource.value = next
+  }
+}
 
 /**
  * Host-owned batida presets (demo stand-in for SDA storage).
@@ -58,16 +137,19 @@ const id = ref(
       ? lab.song
       : defaultSongId(fixtures.value),
 )
-function withAudio(cho: string) {
+function withAudio(cho: string, slot = 0) {
   if (!lab.audio || !cho.trim()) return cho
+  const alt = slot % 2 === 1
   let next = setRehearsalAudio(cho, {
     ...(lab.audio === 'cantado' || lab.audio === 'ambos'
-      ? { sung: refAudioUrl }
+      ? { sung: alt ? altAudioUrl : refAudioUrl }
       : {}),
     ...(lab.audio === 'playback' || lab.audio === 'ambos'
-      ? { playback: refPlaybackUrl }
+      ? { playback: alt ? altPlaybackUrl : refPlaybackUrl }
       : {}),
-    ...(lab.capa ? { art: { url: refArtUrl, width: 512, height: 512 } } : {}),
+    ...(lab.capa
+      ? { art: { url: refArtUrl, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX } }
+      : {}),
   })
   const m = readMeta(next)
   if (!m.artist && !m.subtitle) {
@@ -76,11 +158,15 @@ function withAudio(cho: string) {
   return next
 }
 
-const source = ref(lab.criar ? '' : withAudio(fixtures.value[id.value] ?? ''))
+const initialOfficial = lab.criar ? '' : withAudio(readDemoOfficial(id.value) ?? fixtures.value[id.value] ?? '')
+const source = ref(initialOfficial)
+const officialSource = ref(initialOfficial)
+const version = computed(() => `demo-${hashText(officialSource.value)}`)
 
 function pick(next: string) {
   id.value = next
-  source.value = withAudio(fixtures.value[next] ?? '')
+  source.value = withAudio(readDemoOfficial(next) ?? fixtures.value[next] ?? '')
+  officialSource.value = source.value
 }
 
 const listaMode = computed(() => {
@@ -90,15 +176,15 @@ const listaMode = computed(() => {
 })
 const editMode = writeEditMode(lab)
 const actorKey = editMode === 'local' ? 'demo-musico' : undefined
-/** Only the lab `?ensaio=demanda` path asks for charts after open. */
-const lazyLista = computed(() => listaMode.value === 'demanda')
+/** `demanda` and `cache` ask for charts after open; juntas ships `source`. */
+const lazyLista = computed(() => listaMode.value === 'demanda' || listaMode.value === 'cache')
 const songs = computed(() => {
   const list = songsFor(fixtures.value, listaMode.value)
   const scoped = list && lab.par ? versionPair(list) : list
   if (!scoped || !lab.audio) return scoped
-  return scoped.map((s) => ({
+  return scoped.map((s, i) => ({
     ...s,
-    source: s.source ? withAudio(s.source) : s.source,
+    source: s.source ? withAudio(s.source, i) : s.source,
   }))
 })
 const theme = computed(() => hostTheme(props.surface, lab.tema))
@@ -107,8 +193,20 @@ const liveHref = computed(() =>
 )
 const meta = computed(() => readMeta(source.value))
 
-const needsCorpus = !lab.criar && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
-const boot = ref(needsCorpus)
+const ccPages = import.meta.glob('../tests/helpers/cifraclub-pages/*.html', {
+  query: '?raw',
+  import: 'default',
+}) as Record<string, () => Promise<string>>
+
+async function capturedCifra(slug: string): Promise<string | null> {
+  const hit = Object.entries(ccPages).find(([path]) => path.endsWith(`/${slug}.html`))
+  if (!hit) return null
+  return convert(await hit[1]()).source
+}
+
+const needsCorpus =
+  !lab.criar && !lab.cc && (props.lista || !!(lab.song && !(lab.song in fixtures.value)))
+const boot = ref(needsCorpus || !!lab.cc)
 
 /**
  * Pretends an external API: a few seconds of wait so the skeleton and the
@@ -116,10 +214,14 @@ const boot = ref(needsCorpus)
  */
 const loadSong = (songId: string) =>
   new Promise<string>((resolve, reject) => {
-    const ms = 2200 + Math.floor(Math.random() * 1400)
+    const ms = listaMode.value === 'cache' ? 400 : 2200 + Math.floor(Math.random() * 1400)
     setTimeout(() => {
       if (songId === FAIL_ID) reject(new Error('rede'))
-      else resolve(withAudio(fixtures.value[songId] ?? ''))
+      else {
+        const list = songsFor(fixtures.value, listaMode.value) ?? []
+        const slot = Math.max(0, list.findIndex((s) => s.id === songId))
+        resolve(withAudio(fixtures.value[songId] ?? '', slot))
+      }
     }, ms)
   })
 
@@ -140,8 +242,60 @@ const readPdf = async (file: File) => {
   return pdfText(file)
 }
 
+const chartBind = computed(() => ({
+  source: source.value,
+  theme: theme.value,
+  accent: lab.accent || 'verde',
+  lens: lab.lens ?? undefined,
+  hideComments: lab.hideComments,
+  songId: id.value,
+  version: listaMode.value === 'off' ? version.value : undefined,
+  songs: songs.value,
+  loadSong: lazyLista.value ? loadSong : undefined,
+  prefetchAll: listaMode.value === 'cache',
+  fetchChart,
+  fetchYoutubeDuration,
+  readPdf,
+  editMode,
+  actorKey,
+  resolveImage,
+  uploadImage,
+  uploadScore,
+  resolveScore: resolveImage,
+  loadBundleAsset: loadDemoAsset,
+  persistSuggestion: persistDemoSuggestion,
+  suggestionQueue: suggestionQueue.value,
+  capabilities: { batidaPresets: true, debugSwipe: lab.zonas },
+  strumPresets: strumPresets.value,
+}))
+
+const chartOn = {
+  'update:source': (value: string) => {
+    source.value = value
+  },
+  'save-content': saveOfficial,
+  'update:suggestionQueue': updateSuggestionQueue,
+  'save-strum-preset': onSaveStrumPreset,
+}
+
 onMounted(async () => {
+  window.addEventListener('storage', onDemoStorage)
   try {
+    const stored = await loadScoreImages().catch(() => [])
+    const next = new Map(uploadedUrls.value)
+    for (const row of stored) {
+      if (!next.has(row.ref)) next.set(row.ref, URL.createObjectURL(row.blob))
+    }
+    uploadedUrls.value = next
+    if (lab.cc) {
+      const src = await capturedCifra(lab.cc)
+      if (src) {
+        id.value = lab.cc
+        source.value = src
+        officialSource.value = src
+        return
+      }
+    }
     if (needsCorpus) {
       fixtures.value = mergeCatalog(fixtures.value, await loadAllFixtures())
       if (!lab.criar) {
@@ -153,6 +307,7 @@ onMounted(async () => {
   } finally {
     boot.value = false
   }
+  if (lab.cc) return
   const catalog = await fetchPreviewCatalog()
   if (!catalog) return
   fixtures.value = mergeCatalog(fixtures.value, catalogToFixtures(catalog))
@@ -162,6 +317,7 @@ onMounted(async () => {
   }
   if (lab.song && lab.song in fixtures.value) pick(lab.song)
 })
+onUnmounted(() => window.removeEventListener('storage', onDemoStorage))
 </script>
 
 <template>
@@ -175,29 +331,7 @@ onMounted(async () => {
     :lista="lista"
     :live-href="liveHref"
   >
-    <ChordproViewer
-      :source="source"
-      :theme="theme"
-      theme-control="host"
-      :accent="lab.accent || 'verde'"
-      :lens="lab.lens || 'none'"
-      :hide-comments="lab.hideComments"
-      :song-id="id"
-      :songs="songs"
-      :load-song="lazyLista ? loadSong : undefined"
-      :fetch-chart="fetchChart"
-      :fetch-youtube-duration="fetchYoutubeDuration"
-      :read-pdf="readPdf"
-      :edit-mode="editMode"
-      :actor-key="actorKey"
-      :resolve-image="resolveImage"
-      :images="images"
-      :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
-      :strum-presets="strumPresets"
-      @update:source="source = $event"
-      @save-content="source = $event"
-      @save-strum-preset="onSaveStrumPreset"
-    />
+    <TitanChordpro v-bind="chartBind" theme-control="host" v-on="chartOn" />
   </HostSite>
 
   <div
@@ -207,27 +341,6 @@ onMounted(async () => {
     :data-carga="listaMode"
     :style="lab.quebrar ? 'height:auto;' : 'height:100%;'"
   >
-    <ChordproViewer
-      :source="source"
-      :theme="theme"
-      :accent="lab.accent || 'verde'"
-      :lens="lab.lens || 'none'"
-      :hide-comments="lab.hideComments"
-      :song-id="id"
-      :songs="songs"
-      :load-song="lazyLista ? loadSong : undefined"
-      :fetch-chart="fetchChart"
-      :fetch-youtube-duration="fetchYoutubeDuration"
-      :read-pdf="readPdf"
-      :edit-mode="editMode"
-      :actor-key="actorKey"
-      :resolve-image="resolveImage"
-      :images="images"
-      :capabilities="{ batidaPresets: true, debugSwipe: lab.zonas }"
-      :strum-presets="strumPresets"
-      @update:source="source = $event"
-      @save-content="source = $event"
-      @save-strum-preset="onSaveStrumPreset"
-    />
+    <TitanChordpro v-bind="chartBind" v-on="chartOn" />
   </div>
 </template>

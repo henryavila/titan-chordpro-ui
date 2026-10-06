@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /**
@@ -25,7 +27,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -37,7 +39,7 @@ afterEach(() => {
 })
 
 async function viewerAt(width: number) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false, songId: 'jesus-1' },
     attachTo: document.body,
   })
@@ -63,5 +65,81 @@ describe('dock Rolar label', () => {
     const w = await viewerAt(320)
     expect(w.get('[data-scroll]').text().trim()).toBe('')
     expect(w.get('[data-scroll]').attributes('aria-label')).toBe('Rolar')
+  })
+
+  it('keeps Rolar clickable inside the chrome that lets taps through to the chart', async () => {
+    const w = await viewerAt(390)
+    const btn = w.get('[data-scroll]').element as HTMLElement
+    expect(getComputedStyle(btn).pointerEvents).not.toBe('none')
+  })
+})
+
+describe('dock Rolar fill', () => {
+  it('idle Rolar keeps the chord fill over the transparent button reset', () => {
+    const css = readFileSync(join(process.cwd(), 'src/vue/titan-chordpro.css'), 'utf8')
+    const idle = css.match(/\.titan-chordpro-root button\.titan-chordpro-roll\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(idle).toMatch(/background:\s*var\(--chord\)/)
+    expect(idle).toMatch(/color:\s*var\(--chord-ink\)/)
+    const live = css.match(/\.titan-chordpro-root button\.titan-chordpro-roll\.is-live\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(live).toMatch(/background:\s*var\(--pill\)/)
+    expect(live).toMatch(/color:\s*var\(--pill-ink\)/)
+    for (const name of ['titan-chordpro-list-row', 'titan-chordpro-quiet-btn', 'titan-chordpro-fit-hint-x', 'titan-chordpro-surface-btn']) {
+      expect(css, name).toMatch(new RegExp(`\\.titan-chordpro-root button\\.${name}\\s*\\{`))
+    }
+  })
+
+  it.each([
+    [390, 'phone'],
+    [768, 'tablet'],
+    [1280, 'desktop'],
+  ] as const)('idle Rolar uses the roll recipe at %ipx (%s)', async (width, _device) => {
+    const w = await viewerAt(width)
+    const btn = w.get('[data-scroll]')
+    expect(btn.classes()).toContain('titan-chordpro-roll')
+    expect(btn.classes()).not.toContain('is-live')
+  })
+
+  it('Parar on the wide bar uses the live roll recipe, so rolling is not idle green', async () => {
+    const { default: TitanChordproWideDock } = await import('../../src/vue/chrome/TitanChordproWideDock.vue')
+    const w = mount(TitanChordproWideDock, {
+      props: {
+        hidden: false,
+        showMine: false,
+        mineLabel: '',
+        showOriginal: false,
+        hintFit: false,
+        scrolling: true,
+        mul: 1,
+        etaLabel: '0:00',
+        progress: 0,
+        setlistOn: false,
+        noPrev: true,
+        noNext: true,
+        posLabel: '',
+        scrollTitle: 'Parar',
+        scrollOff: false,
+        rollLive: true,
+        fitOn: false,
+        letra: false,
+        hasKey: true,
+        nashvilleOn: false,
+        hideComments: false,
+        metRunning: false,
+        metBpm: 80,
+        hasStrum: false,
+        strumOn: false,
+        ensaioBatida: false,
+        themeTitle: '',
+        themeIcon: 'square',
+        themeLabel: '',
+        canEdit: false,
+        dirty: false,
+      },
+      attachTo: document.body,
+    })
+    mounted.push(w)
+    const btn = w.get('[data-scroll]')
+    expect(btn.classes()).toContain('titan-chordpro-roll')
+    expect(btn.classes()).toContain('is-live')
   })
 })

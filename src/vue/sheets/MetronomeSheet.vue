@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CpvIcon from '../icon/CpvIcon.vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
+import TitanChordproSeg from '../ui/TitanChordproSeg.vue'
 import {
   softClickFromPrefs,
   sourceFromPrefs,
@@ -29,7 +31,7 @@ const props = defineProps<{
   /** Taps registered in the current tempo measurement. */
   tapCount: number
   time: string | undefined
-  /** Chart has a `{x_strum:}` pattern — guitar one-shots can follow the strip. */
+  /** Chart has a `{x_titan_strum:}` pattern — guitar one-shots can follow the strip. */
   hasStrum?: boolean
   /** Opt-in acoustic strum sound synced to the batida grid. */
   strumSound?: boolean
@@ -67,14 +69,14 @@ const beats = computed(() =>
   Array.from({ length: props.bar }, (_, i) => {
     const live = props.running && props.beat === i
     const accent = i === 0
-    // Only beat 1 wears the theme colour; 2–3–4 pulse as a white chip.
-    const liveFill = accent ? 'var(--chord)' : 'var(--beat-rest)'
-    const liveInk = accent ? 'var(--chord)' : 'var(--beat-rest-ink)'
+    // Beat 1 is ink; 2–3–4 wear the theme.
+    const liveFill = accent ? 'var(--downbeat)' : 'var(--chord)'
+    const liveInk = accent ? 'var(--downbeat)' : 'var(--chord)'
     return {
       n: String(i + 1),
       size: accent ? '13px' : '9px',
       bg: live ? liveFill : 'transparent',
-      edge: live ? liveFill : accent ? 'var(--chord-edge)' : 'var(--line)',
+      edge: live ? liveFill : accent ? 'var(--downbeat)' : 'var(--line)',
       scale: live ? (accent ? 'scale(1.5)' : 'scale(1.35)') : 'scale(1)',
       num: live ? liveInk : 'var(--muted)',
       weight: accent ? '700' : '500',
@@ -148,33 +150,30 @@ const geom = computed(() =>
 
 <template>
   <!-- No scrim: the click runs while the chart is being read. -->
-  <div style="position:absolute;inset:0;z-index:26;pointer-events:none;">
-    <div
-      class="cpv-veil-2"
-      role="dialog"
-      aria-label="Metrônomo"
-      :style="geom"
-      style="pointer-events:auto;position:absolute;overflow-y:auto;display:flex;flex-direction:column;gap:13px;animation:cpv-rise .2s ease-out;"
-    >
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">Metrônomo</span>
-        <button class="cpv-ghost" aria-label="Fechar" style="width:26px;height:26px;color:var(--muted);" @click="emit('close')"><CpvIcon name="x" :size="14" /></button>
-      </div>
+  <TitanChordproDialogShell
+    variant="anchor"
+    :compact="compact"
+    :z="26"
+    label="Metrônomo"
+    kicker="Metrônomo"
+    :panel-style="geom"
+    @close="emit('close')"
+  >
 
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <button class="cpv-met-step" aria-label="−5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', -5)">−5</button>
-        <button class="cpv-met-step" aria-label="−1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', -1)">−</button>
+        <button class="titan-chordpro-met-step" aria-label="−5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', -5)">−5</button>
+        <button class="titan-chordpro-met-step" aria-label="−1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', -1)">−</button>
         <span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">
           <span data-bpm style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;">{{ bpm }}</span>
           <span style="font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:700;">BPM</span>
         </span>
-        <button class="cpv-met-step" aria-label="+1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', 1)">+</button>
-        <button class="cpv-met-step" aria-label="+5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', 5)">+5</button>
+        <button class="titan-chordpro-met-step" aria-label="+1 BPM" style="font-size:16px;line-height:1;" @click="emit('bpm', 1)">+</button>
+        <button class="titan-chordpro-met-step" aria-label="+5 BPM" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);" @click="emit('bpm', 5)">+5</button>
       </div>
 
       <button
         data-met-tap
-        class="cpv-met-tap"
+        class="titan-chordpro-met-tap"
         :style="{ height: compact ? '44px' : '38px', borderColor: tapCount > 1 ? 'var(--chord-edge)' : 'var(--line)', color: tapCount > 1 ? 'var(--chord)' : 'var(--text)' }"
         @click="emit('tap')"
       >
@@ -203,7 +202,7 @@ const geom = computed(() =>
           style="flex:1;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:12px;border:0;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;"
           @click="emit('toggle')"
         >
-          <CpvIcon :name="running ? 'square' : 'play'" :size="14" />{{ runLabel }}
+          <TitanChordproIcon :name="running ? 'square' : 'play'" :size="14" />{{ runLabel }}
         </button>
         <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:74px;">
           <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--text);">{{ time || `${bar}/4` }}</span>
@@ -212,31 +211,22 @@ const geom = computed(() =>
       </div>
 
       <div data-met-sound style="display:flex;flex-direction:column;gap:8px;">
-        <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Fonte do ensaio</span>
-        <div style="display:flex;gap:6px;">
-          <button
-            v-for="opt in (hasStrum
-              ? ([['mute', 'Mudo'], ['click', 'Click'], ['batida', 'Batida']] as const)
-              : ([['mute', 'Mudo'], ['click', 'Click']] as const))"
-            :key="opt[0]"
-            type="button"
-            :data-met-source="opt[0]"
-            :aria-pressed="source === opt[0] ? 'true' : 'false'"
-            :style="{
-              flex: 1,
-              height: compact ? '40px' : '36px',
-              borderRadius: '11px',
-              border: `1px solid ${source === opt[0] ? 'var(--chord-edge)' : 'var(--line)'}`,
-              background: source === opt[0] ? 'var(--chord-fill)' : 'transparent',
-              color: source === opt[0] ? 'var(--chord)' : 'var(--text)',
-              fontFamily: 'inherit',
-              fontSize: '12.5px',
-              fontWeight: 700,
-              cursor: 'pointer',
-            }"
-            @click="pickSource(opt[0])"
-          >{{ opt[1] }}</button>
-        </div>
+        <span class="titan-chordpro-modal-kicker">Fonte do ensaio</span>
+        <TitanChordproSeg
+          label="Fonte do ensaio"
+          :value="source"
+          :options="hasStrum
+            ? [
+                { value: 'mute', label: 'Mudo', attrs: { 'data-met-source': 'mute' } },
+                { value: 'click', label: 'Click', attrs: { 'data-met-source': 'click' } },
+                { value: 'batida', label: 'Batida', attrs: { 'data-met-source': 'batida' } },
+              ]
+            : [
+                { value: 'mute', label: 'Mudo', attrs: { 'data-met-source': 'mute' } },
+                { value: 'click', label: 'Click', attrs: { 'data-met-source': 'click' } },
+              ]"
+          @pick="pickSource($event as 'mute' | 'click' | 'batida')"
+        />
         <p style="margin:0;font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">
           <template v-if="source === 'mute'">Só pulso visual — sem bip nem guitarra.</template>
           <template v-else-if="source === 'click'">Bip agudo no 1, mais grave nas outras batidas.</template>
@@ -244,14 +234,14 @@ const geom = computed(() =>
         </p>
         <button
           v-if="hasStrum && source === 'batida'"
-          class="cpv-met-switch"
+          class="titan-chordpro-met-switch"
           data-met-soft-click
           type="button"
+          role="switch"
+          :aria-checked="softClick ? 'true' : 'false'"
           @click="toggleSoftClick"
         >
-          <span :style="{ background: softClick ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-            <span :style="{ left: softClick ? '14px' : '2px', background: softClick ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-          </span>
+          <span class="titan-chordpro-switch" :class="{ 'is-on': softClick }"><span class="titan-chordpro-switch-thumb" /></span>
           <span style="display:flex;flex-direction:column;gap:3px;">
             <span style="font-size:13px;font-weight:600;">Click suave de reforço</span>
             <span style="font-size:11.5px;line-height:1.45;color:var(--muted);">Mantém o bip por baixo da batida.</span>
@@ -259,30 +249,24 @@ const geom = computed(() =>
         </button>
       </div>
 
-      <button class="cpv-met-switch" data-met-follow @click="emit('toggleFollow')">
-        <span :style="{ background: follow ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-          <span :style="{ left: follow ? '14px' : '2px', background: follow ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-        </span>
+      <button class="titan-chordpro-met-switch" data-met-follow role="switch" :aria-checked="follow ? 'true' : 'false'" @click="emit('toggleFollow')">
+        <span class="titan-chordpro-switch" :class="{ 'is-on': follow }"><span class="titan-chordpro-switch-thumb" /></span>
         <span style="display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:13px;font-weight:600;">{{ follow ? 'Rolagem vinculada' : 'Rolagem independente' }}</span>
           <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">{{ follow ? 'Iniciar aqui começa a auto-rolagem; parar qualquer um dos dois para os dois.' : 'O click roda sozinho, sem mexer na rolagem.' }}</span>
         </span>
       </button>
 
-      <button class="cpv-met-switch" data-met-head @click="emit('togglePulseHead')">
-        <span :style="{ background: pulseHead ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-          <span :style="{ left: pulseHead ? '14px' : '2px', background: pulseHead ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-        </span>
+      <button class="titan-chordpro-met-switch" data-met-head role="switch" :aria-checked="pulseHead ? 'true' : 'false'" @click="emit('togglePulseHead')">
+        <span class="titan-chordpro-switch" :class="{ 'is-on': pulseHead }"><span class="titan-chordpro-switch-thumb" /></span>
         <span style="display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:13px;font-weight:600;">{{ pulseHead ? 'Faixa do título' : 'Faixa quieta' }}</span>
-          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">No 1 a faixa vira tinta e o título inverte. Nos outros, a cor do tema. Rolar não liga isto.</span>
+          <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Acende no tempo e apaga no contratempo. No 1 inverte; nos outros, a cor do tema. Rolar não liga isto.</span>
         </span>
       </button>
 
-      <button class="cpv-met-switch" data-met-countin-switch @click="emit('toggleCountIn')">
-        <span :style="{ background: countInOn ? 'var(--chord)' : 'var(--line)' }" style="flex:none;width:30px;height:18px;border-radius:9px;position:relative;">
-          <span :style="{ left: countInOn ? '14px' : '2px', background: countInOn ? 'var(--chord-ink)' : 'var(--muted)' }" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;transition:left .16s ease;" />
-        </span>
+      <button class="titan-chordpro-met-switch" data-met-countin-switch role="switch" :aria-checked="countInOn ? 'true' : 'false'" @click="emit('toggleCountIn')">
+        <span class="titan-chordpro-switch" :class="{ 'is-on': countInOn }"><span class="titan-chordpro-switch-thumb" /></span>
         <span style="display:flex;flex-direction:column;gap:3px;">
           <span style="font-size:13px;font-weight:600;">{{ countInOn ? 'Contagem de entrada' : 'Sai direto' }}</span>
           <span style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">{{ countInNote }}</span>
@@ -298,6 +282,5 @@ const geom = computed(() =>
       >
         Voltar ao andamento da cifra ({{ chartBpm ? `${chartBpm} BPM` : '—' }})
       </button>
-    </div>
-  </div>
+  </TitanChordproDialogShell>
 </template>

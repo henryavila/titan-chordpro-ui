@@ -9,10 +9,10 @@ import { expect, test } from '@playwright/test'
  */
 test('setlist + capo keeps a readable title on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/?lista=1')
+  await page.goto('/?lista=1&capo=1')
   await page.locator('[data-chart-title]').waitFor()
   await expect(page.locator('[data-setlist-open]').first()).toContainText('1/2')
-  await expect(page.locator('[data-cpv-head] [data-icon=listMusic]')).toHaveCount(0)
+  await expect(page.locator('[data-titan-chordpro-head] [data-icon=listMusic]')).toHaveCount(0)
   await expect(page.locator('[data-tone]')).toContainText(/capo/i)
   await page.locator('[data-tone]').click()
   await page.getByRole('button', { name: 'Capo acima', exact: true }).click()
@@ -26,13 +26,13 @@ test('setlist + capo keeps a readable title on a phone', async ({ page }) => {
 
 test('wrapped phone head pins tom left and tela cheia right', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/?lista=1')
-  const head = page.locator('[data-cpv-head]')
+  await page.goto('/?lista=1&capo=1')
+  const head = page.locator('[data-titan-chordpro-head]')
   await head.waitFor()
   await expect(page.locator('[data-fs]')).toBeVisible()
 
   const place = await page.evaluate(() => {
-    const el = document.querySelector('[data-cpv-head]') as HTMLElement
+    const el = document.querySelector('[data-titan-chordpro-head]') as HTMLElement
     const tone = el.querySelector('[data-tone]') as HTMLElement
     const fs = el.querySelector('[data-fs]') as HTMLElement
     const title = el.querySelector('[data-chart-title]') as HTMLElement
@@ -72,22 +72,22 @@ test('edit head is a floating card and keeps Metadados with the actions', async 
   await page.locator('[data-edit]').click()
   const content = page.locator('[data-mode-content], button:has-text("Para todos")').first()
   if (await content.count()) await content.click()
-  const head = page.locator('[data-cpv-head]')
+  const head = page.locator('[data-titan-chordpro-head]')
   await expect(head).toBeVisible()
   await expect(page.locator('[data-edit-badge]')).toBeVisible()
   await expect(page.locator('[data-meta-open]')).toBeVisible()
 
   const place = await page.evaluate(() => {
-    const el = document.querySelector('[data-cpv-head]') as HTMLElement
-    const root = document.querySelector('[data-cpv-root]') as HTMLElement
-    const acts = el.querySelector('.cpv-head-edit-acts') as HTMLElement
+    const el = document.querySelector('[data-titan-chordpro-head]') as HTMLElement
+    const root = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
+    const acts = el.querySelector('.titan-chordpro-head-edit-acts') as HTMLElement
     const meta = el.querySelector('[data-meta-open]') as HTMLElement
     const title = el.querySelector('[data-chart-title]') as HTMLElement
     const hr = el.getBoundingClientRect()
     const rr = root.getBoundingClientRect()
     const ar = acts.getBoundingClientRect()
     const mr = meta.getBoundingClientRect()
-    const sub = el.querySelector('.cpv-head-sub')
+    const sub = el.querySelector('.titan-chordpro-head-sub')
     return {
       radius: parseFloat(getComputedStyle(el).borderRadius),
       barH: Math.round(hr.height),
@@ -115,14 +115,14 @@ test('edit head is a floating card and keeps Metadados with the actions', async 
 
 test('wide floating head may grow past the reading column when capo is on', async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 900 })
-  await page.goto('/?lista=1')
-  const head = page.locator('[data-cpv-head]')
+  await page.goto('/?lista=1&capo=1')
+  const head = page.locator('[data-titan-chordpro-head]')
   await head.waitFor()
   await expect(page.locator('[data-chart-title]')).toContainText('O Rei vem vindo')
-  await expect(page.locator('[data-cpv-head] [data-icon=listMusic]')).toHaveCount(0)
+  await expect(page.locator('[data-titan-chordpro-head] [data-icon=listMusic]')).toHaveCount(0)
   const place = await page.evaluate(() => {
-    const headEl = document.querySelector('[data-cpv-head]') as HTMLElement
-    const root = document.querySelector('[data-cpv-root]') as HTMLElement
+    const headEl = document.querySelector('[data-titan-chordpro-head]') as HTMLElement
+    const root = document.querySelector('[data-titan-chordpro-root]') as HTMLElement
     const fs = headEl.querySelector('[data-fs]') as HTMLElement | null
     const hr = headEl.getBoundingClientRect()
     const rr = root.getBoundingClientRect()
@@ -148,25 +148,25 @@ test('wide floating head may grow past the reading column when capo is on', asyn
 test('zen pins a plain song name — not a second card', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.locator('[data-cpv-head]').waitFor()
-  await expect(page.locator('[data-cpv-zen-title]')).toHaveCount(0)
+  await page.locator('[data-titan-chordpro-head]').waitFor()
+  await expect(page.locator('[data-titan-chordpro-zen-title]')).toHaveCount(0)
   await expect(page.locator('[data-chart-title]')).toContainText(/Escuta/i)
-  const chart = page.locator('.cpv-page')
+  const chart = page.locator('.titan-chordpro-page')
   await chart.dispatchEvent('pointerdown')
   await chart.dispatchEvent('click')
-  await expect(page.locator('.cpv-toast')).toHaveText('Toque na tela para mostrar os controles')
+  await expect(page.locator('.titan-chordpro-toast')).toHaveText('Toque na tela para mostrar os controles')
   await expect.poll(async () =>
-    page.locator('[data-cpv-head]').evaluate((el) => getComputedStyle(el.closest('.cpv-chrome')!).opacity),
+    page.locator('[data-titan-chordpro-head]').evaluate((el) => getComputedStyle(el.closest('.titan-chordpro-chrome')!).opacity),
   ).toBe('0')
-  const zen = page.locator('[data-cpv-zen-title]')
+  const zen = page.locator('[data-titan-chordpro-zen-title]')
   await expect(zen).toContainText(/Escuta/i)
   expect(await zen.evaluate((el) => getComputedStyle(el).position)).toMatch(/absolute|fixed/)
-  expect(await zen.locator('.cpv-veil, button').count()).toBe(0)
+  expect(await zen.locator('.titan-chordpro-veil, button').count()).toBe(0)
   expect(await page.locator('[data-scroll]').evaluate((el) =>
-    el.closest('.cpv-chrome')!.classList.contains('is-hidden'))).toBe(true)
+    el.closest('.titan-chordpro-chrome')!.classList.contains('is-hidden'))).toBe(true)
   await page.screenshot({ path: test.info().outputPath('zen-title.png'), clip: { x: 0, y: 0, width: 390, height: 180 } })
   const y0 = (await zen.boundingBox())!.y
-  await page.locator('[data-cpv-scroll]').evaluate((el) => {
+  await page.locator('[data-titan-chordpro-scroll]').evaluate((el) => {
     (el as HTMLElement).scrollTop = 220
   })
   const y1 = (await zen.boundingBox())!.y

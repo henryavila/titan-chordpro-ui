@@ -3,8 +3,8 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import * as core from '@henryavila/titan-chordpro-ui'
-import { ChordproViewer } from '@henryavila/titan-chordpro-ui/vue'
-import type { ChordproViewerProps, EditMode, ImageChoice, ModesProp } from '../../src/vue/public'
+import { TitanChordpro } from '@henryavila/titan-chordpro-ui/vue'
+import type { TitanChordproProps, EditMode, ImageChoice, ModesProp } from '../../src/vue/public'
 import { resolveEditMode } from '../../src/vue/public'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -48,6 +48,10 @@ describe('package.json is what a published consumer resolves', () => {
       types: './dist/vue/index.d.ts',
       import: './dist/vue/index.js',
     })
+    expect(pkg.exports['./bundle']).toMatchObject({
+      types: './dist/bundle/index.d.ts',
+      import: './dist/bundle/index.js',
+    })
     expect(pkg.exports['./vue/style.css']).toBe('./dist/vue/style.css')
 
     const typesPaths = [
@@ -55,6 +59,7 @@ describe('package.json is what a published consumer resolves', () => {
       (pkg.exports['.'] as { types: string }).types,
       (pkg.exports['./pdf'] as { types: string }).types,
       (pkg.exports['./slides'] as { types: string }).types,
+      (pkg.exports['./bundle'] as { types: string }).types,
       (pkg.exports['./vue'] as { types: string }).types,
     ]
     for (const p of typesPaths) {
@@ -84,13 +89,18 @@ describe('SPEC §4 public API is importable from the package name', () => {
       'buildChoFilename',
       'buildPdfFilename',
       'buildSljaFilename',
+      'buildPpsxFilename',
+      'buildScoreFilename',
       'lyricsForSlides',
       'lyricsText',
       'exportLyrics',
       'exportCho',
+      'exportChoFile',
+      'EXPORT_MIME',
       'calcScrollSpeed',
       'adjustScrollSpeed',
-      'createViewerController',
+      'adjustScrollMultiplier',
+      'createTitanChordproController',
       'STORE_KEYS',
       'overlayKey',
       'memoryStore',
@@ -102,20 +112,33 @@ describe('SPEC §4 public API is importable from the package name', () => {
     for (const name of names) {
       expect(core, name).toHaveProperty(name)
       expect((core as Record<string, unknown>)[name], name).toBeTypeOf(
-        name === 'STORE_KEYS' ? 'object' : 'function',
+        name === 'STORE_KEYS' || name === 'EXPORT_MIME' ? 'object' : 'function',
       )
     }
+    expect(core).not.toHaveProperty('createViewerController')
+    expect(core).not.toHaveProperty('viewerMulStep')
+    expect(core).not.toHaveProperty('buildPptxFilename')
   })
 
-  it('vue entry exports ChordproViewer as named and default', async () => {
+  it('bundle entry exports export and import of the offline ZIP', async () => {
+    const mod = await import('@henryavila/titan-chordpro-ui/bundle')
+    expect(mod.exportChartBundle).toBeTypeOf('function')
+    expect(mod.importChartBundle).toBeTypeOf('function')
+  })
+
+  it('vue entry exports TitanChordpro as named and default', async () => {
     const mod = await import('@henryavila/titan-chordpro-ui/vue')
-    expect(mod.ChordproViewer).toBeTypeOf('object')
-    expect(mod.default).toBe(mod.ChordproViewer)
-    expect(ChordproViewer).toBe(mod.ChordproViewer)
+    expect(mod.TitanChordpro).toBeTypeOf('object')
+    expect(mod.default).toBe(mod.TitanChordpro)
+    expect(TitanChordpro).toBe(mod.TitanChordpro)
+    expect(mod.fillAudioCache).toBeTypeOf('function')
+    expect(mod.matchAudio).toBeTypeOf('function')
+    expect(mod.putAudio).toBeTypeOf('function')
+    expect(mod).not.toHaveProperty('ChordproViewer')
   })
 
   it('vue prop types are the host contract', () => {
-    const props: ChordproViewerProps = { source: '', editMode: 'local' }
+    const props: TitanChordproProps = { source: '', editMode: 'local' }
     const images: ImageChoice[] = [{ file: 'a.png' }]
     const both: ModesProp = 'both'
     const persisted: EditMode = 'persisted'
@@ -152,8 +175,9 @@ describe('built dist (consumer tarball shape)', () => {
     expect(existsSync(join(root, 'dist/vue/index.js'))).toBe(true)
     expect(existsSync(join(root, 'dist/vue/style.css'))).toBe(true)
     const dts = readFileSync(join(root, 'dist/vue/index.d.ts'), 'utf8')
-    expect(dts).toMatch(/ChordproViewer/)
-    expect(dts).toMatch(/ChordproViewerProps/)
+    expect(dts).toMatch(/TitanChordpro/)
+    expect(dts).toMatch(/TitanChordproProps/)
+    expect(dts).not.toMatch(/ChordproViewer/)
     expect(dts).toMatch(/from ['"]vue['"]/)
   })
 
@@ -175,13 +199,18 @@ describe('built dist (consumer tarball shape)', () => {
     expect(hashed).toEqual([])
   })
 
-  it.skipIf(!built)('core, pdf and slides type files exist', () => {
+  it.skipIf(!built)('core, pdf, slides and bundle type files exist', () => {
     expect(existsSync(join(root, 'dist/core/index.d.ts'))).toBe(true)
     expect(existsSync(join(root, 'dist/pdf/index.d.ts'))).toBe(true)
     expect(existsSync(join(root, 'dist/slides/index.d.ts'))).toBe(true)
+    expect(existsSync(join(root, 'dist/bundle/index.d.ts'))).toBe(true)
+    const bundleDts = readFileSync(join(root, 'dist/bundle/index.d.ts'), 'utf8')
+    expect(bundleDts).toMatch(/exportChartBundle/)
+    expect(bundleDts).toMatch(/importChartBundle/)
     const coreDts = readFileSync(join(root, 'dist/core/index.d.ts'), 'utf8')
     expect(coreDts).toMatch(/export \{/)
-    expect(coreDts).toMatch(/type ChordProView/)
+    expect(coreDts).toMatch(/type TitanChordproDocument/)
+    expect(coreDts).not.toMatch(/type ChordProView\b|createViewerController/)
     expect(coreDts).toMatch(/type SectionKind/)
     expect(coreDts).toMatch(/THEME_VARS/)
   })
@@ -192,8 +221,16 @@ describe('built dist (consumer tarball shape)', () => {
     expect(coreMod.listThemes()).toEqual(expect.arrayContaining(['light', 'dark', 'print']))
     const pdfMod = await import(pathToFileURL(join(root, 'dist/pdf/index.js')).href)
     expect(pdfMod.renderPdf).toBeTypeOf('function')
+    expect(pdfMod.exportPdf).toBeTypeOf('function')
     const slidesMod = await import(pathToFileURL(join(root, 'dist/slides/index.js')).href)
     expect(slidesMod.renderSlja).toBeTypeOf('function')
     expect(slidesMod.exportSlja).toBeTypeOf('function')
+    expect(slidesMod.renderPpsx).toBeTypeOf('function')
+    expect(slidesMod.exportPpsx).toBeTypeOf('function')
+    expect(slidesMod).not.toHaveProperty('renderPptx')
+    expect(slidesMod).not.toHaveProperty('exportPptx')
+    const bundleMod = await import(pathToFileURL(join(root, 'dist/bundle/index.js')).href)
+    expect(bundleMod.exportChartBundle).toBeTypeOf('function')
+    expect(bundleMod.importChartBundle).toBeTypeOf('function')
   })
 })

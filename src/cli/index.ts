@@ -1,5 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, extname } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { extname } from 'node:path'
 import {
   applyCifraClubEnrich,
   hostOk,
@@ -10,13 +10,14 @@ import {
   resolveTheme,
   transpose,
 } from '../core/index'
-import { buildChoFilename, buildPdfFilename, buildSljaFilename } from '../core/filenames'
+import { buildChoFilename, buildPdfFilename, buildPpsxFilename, buildSljaFilename } from '../core/filenames'
 import { semitoneDelta } from '../core/transpose'
+import { writeOut } from './write-out'
 
 function usage(): never {
-  console.error(`titan-chordpro-ui <html|pdf|slides|parse|enrich-cc> …
+  console.error(`titan-chordpro-ui <html|pdf|slides|ppsx|parse|enrich-cc> …
 
-  html|pdf|slides|parse <file> [--theme …] [--key A] [--accent …] [-o out]
+  html|pdf|slides|ppsx|parse <file> [--theme …] [--key A] [--accent …] [-o out]
   enrich-cc --url <cifraclub-url> --in <file|-> [--out <file|->] [--youtube remote|skip]
     Fetch Cifra Club HTML, apply meta-only enrich (body untouched).`)
   process.exit(1)
@@ -63,7 +64,7 @@ async function enrichCc(argv: string[]): Promise<void> {
   }
 
   const proposal = proposeCifraClubEnrich(source, html, { url })
-  const localYt = String(readMeta(source).x_youtube ?? '').trim()
+  const localYt = String(readMeta(source).x_titan_youtube ?? '').trim()
   let youtubeId: string | null = null
   if (ytMode === 'remote' && proposal.youtube?.remoteId) {
     if (localYt && localYt !== proposal.youtube.remoteId) {
@@ -86,11 +87,7 @@ async function enrichCc(argv: string[]): Promise<void> {
   }
   console.error(JSON.stringify(report))
   if (outPath === '-') process.stdout.write(next)
-  else {
-    const dir = dirname(outPath)
-    if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
-    writeFileSync(outPath, next)
-  }
+  else writeOut(outPath, next)
 }
 
 function readStdin(): Promise<string> {
@@ -111,7 +108,7 @@ async function main() {
   }
 
   const file = argv[1]
-  if (!cmd || !file || !['html', 'pdf', 'slides', 'parse'].includes(cmd)) usage()
+  if (!cmd || !file || !['html', 'pdf', 'slides', 'ppsx', 'parse'].includes(cmd)) usage()
 
   let source: string
   try {
@@ -143,39 +140,31 @@ async function main() {
   try {
     if (cmd === 'parse') {
       const json = JSON.stringify(view, null, 2)
-      if (out) {
-        const dir = dirname(out)
-        if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
-        writeFileSync(out, json)
-      } else process.stdout.write(json)
+      if (out) writeOut(out, json)
+      else process.stdout.write(json)
       return
     }
     if (cmd === 'html') {
       resolveTheme(theme === 'default' ? 'light' : theme)
       const html = `<!doctype html><meta charset="utf-8"><title>${view.meta.title ?? 'cifra'}</title>${renderHtml(view, { theme })}`
-      const dest = out ?? buildChoFilename(view.meta.title ?? 'cifra', view.displayKey).replace(/\.cho$/, '.html')
-      const dir = dirname(dest)
-      if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
-      writeFileSync(dest, html)
+      writeOut(out ?? buildChoFilename(view.meta.title ?? 'cifra', view.displayKey).replace(/\.cho$/, '.html'), html)
       return
     }
     if (cmd === 'pdf') {
       const { renderPdf } = await import('../pdf/index')
       const accent = arg(argv, '--accent')
       const bytes = await renderPdf(view, accent ? { accent } : {})
-      const dest = out ?? buildPdfFilename(view.meta.title ?? 'cifra', view.displayKey)
-      const dir = dirname(dest)
-      if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
-      writeFileSync(dest, bytes)
+      writeOut(out ?? buildPdfFilename(view.meta.title ?? 'cifra', view.displayKey), bytes)
       return
     }
     if (cmd === 'slides') {
       const { renderSlja } = await import('../slides/index')
-      const bytes = await renderSlja(view)
-      const dest = out ?? buildSljaFilename(view.meta.title ?? 'cifra')
-      const dir = dirname(dest)
-      if (dir && dir !== '.') mkdirSync(dir, { recursive: true })
-      writeFileSync(dest, bytes)
+      writeOut(out ?? buildSljaFilename(view.meta.title ?? 'cifra'), await renderSlja(view))
+      return
+    }
+    if (cmd === 'ppsx') {
+      const { renderPpsx } = await import('../slides/index')
+      writeOut(out ?? buildPpsxFilename(view.meta.title ?? 'cifra'), await renderPpsx(view))
       return
     }
   } catch (err) {

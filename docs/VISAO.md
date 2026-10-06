@@ -2,7 +2,7 @@
 
 > **Fonte de verdade de produto:** entrevista viewer (2026-08-28) + **refocus naming/editor** (2026-08-28/29), ratificados.  
 > **Naming:** [`docs/NAMING.md`](./NAMING.md). **Design do editor:** [`projects/titan-chordpro-ui/editor/design.md`](../projects/titan-chordpro-ui/editor/design.md).  
-> **`SPEC.md`:** contrato de engenharia / inventário técnico — alinhar §2/§9 ao editor em follow-up; não redefine o produto sozinho.
+> **`SPEC.md`:** contrato de engenharia / inventário técnico — §9 ainda cobre o aceite de base do core + Vue; os gates E0–E4 do editor vêm do design aprovado.
 
 ---
 
@@ -11,10 +11,10 @@
 | Campo | Decisão |
 |---|---|
 | **Problema** | Músicos precisam de uma **UI ChordPro profissional**: **ler** (transpor, rolar, exportar, tema) **e editar** (corrigir pós-gen/import e criar do zero). Reuso em SDA / futuro `titan-chordpro` é **canal**, não o problema. |
-| **In-scope** | Camada **autossuficiente** de **1 música**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; **cifras nomeadas** no mesmo arquivo; standalone demo ou **embutida**. Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
-| **Out-of-scope** | Collab realtime; catálogo do host / qual **música** (string) está na tela; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`); diagramas de braço (ainda later). |
+| **In-scope** | Camada **autossuficiente** de **1 cifra**: ChordPro (engine também aceita OnSong) → superfície **view + edit**; standalone demo ou **embutida** (`sda-v2` primeiro). Editor: in-place, meta, source+preview, WYSIWYG, TAB, imagens — mapa completo com **gates de entrega** (ver design do editor). |
+| **Out-of-scope** | Collab realtime; multicifra; shell de app / login / nav; player áudio sync; shell do app `titan-chordpro`; geração áudio→ChordPro (`titan-chordpro-gen`). |
 | **Done-when (esta fase)** | Visão + naming + design do editor alinhados; implementação segue SPEC + gates E0–E4. |
-| **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<ChordproViewer>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
+| **Stakes (caros de reverter)** | (1) Binding Vue-first: um `<TitanChordpro>`, duas composições (ficha na página **ou** rota `100dvh`); **iframe cancelado**. (2) Contrato ViewModel / HTML de **leitura**. (3) **Source ChordPro como SoT de edição** + contrato host (`source` out, mode, dirty, media). |
 | **Fontes** | Esta visão; `docs/NAMING.md`; design do editor; `fixtures/`; researches OnSong / auto-ajuste; `SPEC.md` como catálogo técnico. |
 
 ---
@@ -26,7 +26,7 @@
 - Entrada: arquivo/texto **ChordPro** (`.cho` / `.chordpro` / …) **ou OnSong** (normalização na **engine**; a UI não escolhe formato). Em edição, OnSong = **convert-on-edit** → sessão/export ChordPro canônico.
 - Saída: superfície visual profissional + PDF + export de texto + **source editado** de volta ao host.
 - Modos de superfície: **`view`** (leitura limpa) e **`edit`** (visual-first; source pane sob demanda).
-- Hosts: **`sda-v2`** (primeiro) embute a UI; depois app **`titan-chordpro`** (shell próprio — fora deste repo). O consumer fornece shell, **qual música** (1 string), player/login — **não** reimplementa a experiência da cifra. **Cifras nomeadas** dentro do arquivo são da UI.
+- Hosts: **`sda-v2`** (primeiro) embute a UI; depois app **`titan-chordpro`** (shell próprio — fora deste repo). O consumer fornece shell, multicifra, player/login — **não** reimplementa a experiência da cifra.
 
 ```
 ChordPro (1 string)
@@ -36,9 +36,9 @@ ChordPro (1 string)
 
 ---
 
-## 3. Fronteira: viewer vs consumer
+## 3. Fronteira: TitanChordpro vs consumer
 
-| Responsabilidade | Viewer (nós) | Consumer (SDA / outros) |
+| Responsabilidade | TitanChordpro (nós) | Consumer (SDA / outros) |
 |---|---|---|
 | Parse / modelo interno da cifra | ✅ | |
 | Render visual da cifra | ✅ | |
@@ -48,13 +48,12 @@ ChordPro (1 string)
 | Export CHO / PDF | ✅ | Trigger de download pode ser do host se embutido |
 | Temas claro / escuro (+ auto) | ✅ | Pode remapear tokens se precisar |
 | Seletor de tema | ✅ | |
-| Qual **música** (qual string / `.cho`) | ❌ | ✅ passa 1 `source` |
-| **Cifras nomeadas** no arquivo (`chartId`, seletor) | ✅ | prop opcional `chartId` |
+| Multi-cifra (qual versão ativa) | ❌ | ✅ passa 1 string |
 | Shell, login, navegação | ❌ | ✅ |
 | Player áudio sincronizado | ❌ | ✅ |
-| Áudio de referência (cantado / playback, sem sync) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
+| Áudio de referência (cantado / playback, sem sync; Central de Mídia; no set, anterior/próxima no aparelho) | ✅ | fornece URLs + capa (`setRehearsalAudio`) |
 | Edição (source SoT; gates E0–E4) | ✅ | recebe `source` atualizado / dirty / media |
-| Fret diagrams | ❌ (later) | — |
+| Diagramas de acorde (violão, ukulele, piano) | ✅ modal no acorde; instrumento na prefs | pode desligar (`capabilities.diagrams: false`) |
 
 **Leitura da entrevista:** “sem toolbar/shell de **app**” ≠ “sem controles da cifra”. Controles do **músico na cifra** (tom, rolagem, fonte, tema, export) são **nossos**. Chrome do **produto** (menu, lista de músicas, auth) é do consumer.
 
@@ -67,10 +66,15 @@ ChordPro (1 string)
 1. **Leitura** elegante (acorde acima da letra, comentários de ensaio preservados, espaçamento).
 2. **Transposição** (semitons; reset ao original).
 3. **Tamanho de fonte** / bias (passos ou continuum — ver research auto-ajuste).
-4. **Export** `.cho` e PDF (nomes estáveis; PDF com tom exibido).
+4. **Export** `.cho`, PDF (nomes estáveis; PDF com tom exibido), slides Louvor JA (`.slja`), PowerPoint (`.ppsx`, abre em apresentação, mesmas imagens de capa e fundo, letra em caixa alta) e **Cifra completa (.zip)** com anexos locais para transporte offline. O consumer importa o mesmo ZIP no código (`importChartBundle` + persistência dos anexos; sem tela no Titan) e religa GPX/áudio/imagem — contrato em `docs/BUNDLE.md`.
 5. **Auto-rolagem** com ajuste de velocidade (ensaio de pé).
 6. **Temas:** claro e escuro, com opção de **troca automática**.
-7. **Modo ajuste ao espaço** opt-in (reflow + leve auto-size; sem colunas) — **só em view**; em edit o layout fica estável.
+7. **Modo ajuste ao espaço** ligado ao abrir (reflow + leve auto-size; sem colunas) — **só em view**; o músico desliga. Em edit o layout fica estável.
+8. **Diagramas de acorde** — toque no acorde abre violão, ukulele ou piano (mesmo cartão, tela cheia no ensaio). Instrumento é preferência do aparelho. Violão/ukulele: forma da mão + capo no desenho. Piano: teclas concert, inversões e baixo escrito. `{define}` no arquivo é override. Sem forma: “Sem forma neste instrumento”. Só letra não abre. Editor de grelha (F4) ainda não.
+9. **Cifra ou letra** — o músico troca no interruptor. O host pode abrir já na letra (link de cantor) ou já na cifra.
+10. **Metrônomo** — click, tap tempo, contagem de entrada, vinculado à rolagem. A coluna à esquerda marca o tempo do compasso (1 no contraste do tema, os demais na cor do acorde). Com a faixa do título, o pulso marca tempo e contratempo: acende na cabeça, apaga no meio.
+
+11. **Solos de arquivos musicais** — trechos de Guitar Pro/MusicXML dentro da cifra, com seleção de faixa e compassos, alternância TAB/Partitura, três apresentações de TAB, zoom, notas e download do arquivo original no menu dos três pontos da linha do nome; um toque no nome abre ou recolhe o trecho. O leitor pode ligar **Notas**: rótulos musicais acima da TAB ou da partitura, com escolha pessoal persistida no navegador. O consumer escolhe cifras (`C`, `D`…) por padrão ou solfejo (`Dó`, `Ré`…). Trechos têm nome (padrão Solo), card amplo e controle no canto para ocultar o conteúdo mantendo o título. A escolha TAB/Partitura e o estado aberto/recolhido persistem por música e por trecho como preferências do leitor, sem modificar a cifra, as sugestões ou o PDF. Arquivo original preservado pelo host; sem conversão para imagem. Detalhes e limites em `CONSUMER.md`, “Solos em Guitar Pro / MusicXML”. Padrão de desenho: [`NOTACAO-VISUAL.md`](NOTACAO-VISUAL.md) — mínima com haste única de 50% da semínima na base, inalterada ao estender.
 
 ### 4.2 Edição (edit) — mapa + gates
 
@@ -135,7 +139,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 | Peça | Papel |
 |---|---|
 | **titan-chordpro-gen** | Gera ChordPro a partir de áudio — **fora**. Pode consumir a UI para preview. |
-| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Importa `<ChordproViewer>` na ficha e/ou numa rota `100dvh`. Sem iframe. |
+| **sda-v2 (Nuxt)** | **Primeiro host:** shell, multi-cifra, sanitize, i18n, player. Importa `<TitanChordpro>` na ficha e/ou numa rota `100dvh`. Sem iframe. |
 | **titan-chordpro** (futuro) | App standalone Titan (shell + extras) — **repo separado**; consome a mesma UI. |
 | **Este repo → `titan-chordpro-ui`** | UI 1-cifra view+edit como componente Vue. |
 
@@ -148,7 +152,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
    ~~Host: iframe vs página.~~ **Locked 2026-09-10:** componente Vue na ficha **e/ou** rota `100dvh`; iframe cancelado (`docs/CONSUMER.md`).
 3. PDF: jsPDF vs print-CSS (SPEC sugeria jsPDF por parity SDA).
 4. ~~Nome npm / escopo do pacote no rename~~ — **locked:** `@henryavila/titan-chordpro-ui` + exports `./vue` `./pdf` (`docs/REBRAND-HANDOFF.md`).
-5. Alinhar `SPEC.md` §2/§9 e `design-handoff/` ao editor (aceite por gate E0–E4) — §2 ainda marca editor como Future (stale vs VISAO/NAMING).
+5. Alinhar `SPEC.md` §9 e o handoff de design aos gates do editor E0–E4. A fronteira do editor em §2 já foi alinhada à visão; a tabela §9 ainda cobre o aceite de base do core + Vue.
 
 ---
 
@@ -156,7 +160,7 @@ Mesmo não sendo SoT de produto, o SPEC ainda lista comportamentos testáveis ú
 
 - **Design do editor:** aprovado via brainstorm → `projects/titan-chordpro-ui/editor/design.md`.
 - **Próximo:** `project new plan editor` (ou equivalente) a partir do design Approved; scaffold core+Vue; gates E0→…  
-- Non-goals permanentes: catálogo / qual **música** o host escolhe; shell Titan neste repo; áudio sync; collab. Cifras nomeadas **dentro** do arquivo são in-scope da UI.
+- Non-goals permanentes: multicifra, shell Titan neste repo, áudio sync, collab.
 
 **Não entrar com:** implementação SDA; inventar fixtures; tratar SPEC §3 como lei de UI.
 

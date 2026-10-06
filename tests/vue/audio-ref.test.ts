@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
-import { setAudioUrl } from '../../src/core/index'
-import { ChordproViewer } from '../../src/vue/index'
-import CpvAudioRef from '../../src/vue/chrome/CpvAudioRef.vue'
+import { defineComponent, nextTick, ref, type Ref } from 'vue'
+import { setAudioUrl, setRehearsalAudio } from '../../src/core/index'
+import { TitanChordpro } from '../../src/vue/index'
+import TitanChordproAudioRef from '../../src/vue/chrome/TitanChordproAudioRef.vue'
 import { AUDIO_SKIP_SEC, useAudioRef, type AudioRefOpts } from '../../src/vue/use/useAudioRef'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -22,7 +22,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -45,11 +45,13 @@ afterEach(() => {
   mounted.splice(0).forEach((w) => w.unmount())
   globalThis.ResizeObserver = realRO
   localStorage.clear()
+  Reflect.deleteProperty(navigator, 'mediaSession')
+  vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
 async function viewerAt(width: number, props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: loadFixture(JESUS_1),
       theme: 'dark',
@@ -66,7 +68,7 @@ async function viewerAt(width: number, props: Record<string, unknown> = {}) {
   return w
 }
 
-function hookOf(url: ReturnType<typeof ref<string | null>>, opts: AudioRefOpts) {
+function hookOf(url: Ref<string | null>, opts: AudioRefOpts) {
   let api!: ReturnType<typeof useAudioRef>
   const Host = defineComponent({
     setup() {
@@ -155,6 +157,30 @@ describe('useAudioRef', () => {
     expect(el.src).toBe('https://cdn.sda/a.m4a?h=2')
     expect(audio.playing.value).toBe(true)
     expect(audio.current.value).toBe(0)
+  })
+
+  it('restarts from 0 when the song changes even if the file URL is the same', async () => {
+    const url = ref<string | null>('https://cdn.sda/same.m4a?h=1')
+    const identity = ref('s0')
+    const el = fakeAudio()
+    const audio = hookOf(url, {
+      identity,
+      createAudio: () => el as unknown as HTMLAudioElement,
+      cacheMatch: async () => null,
+      cacheFill: async () => {},
+    })
+    await flushPromises()
+    await audio.play()
+    audio.skip(1)
+    expect(el.currentTime).toBe(AUDIO_SKIP_SEC)
+    expect(audio.current.value).toBe(AUDIO_SKIP_SEC)
+
+    identity.value = 's1'
+    await flushPromises()
+    expect(el.currentTime).toBe(0)
+    expect(audio.current.value).toBe(0)
+    expect(el.src).toBe('https://cdn.sda/same.m4a?h=1')
+    expect(audio.playing.value).toBe(true)
   })
 
   it('prefers a cached blob over the network URL', async () => {
@@ -247,7 +273,7 @@ describe('useAudioRef', () => {
   })
 })
 
-describe('CpvAudioRef', () => {
+describe('TitanChordproAudioRef', () => {
   const base = {
     playing: false,
     current: 12,
@@ -261,24 +287,49 @@ describe('CpvAudioRef', () => {
   }
 
   it('starts closed: a Referência chip, not the full card', () => {
-    const w = mount(CpvAudioRef, { props: base })
+    const w = mount(TitanChordproAudioRef, { props: base })
     expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
     expect(w.get('[data-audio-open]').text()).toContain('Cantado')
     expect(w.get('[data-audio-open]').text()).toContain('Nasce em Mim')
     expect(w.find('[data-audio-title]').exists()).toBe(false)
     expect(w.find('[data-audio-seek]').exists()).toBe(false)
     expect(w.find('[data-audio-close]').exists()).toBe(false)
-    expect(w.get('[data-audio-ref]').classes()).toContain('cpv-audio-ref')
+    expect(w.get('[data-audio-ref]').classes()).toContain('titan-chordpro-audio-ref')
+    w.unmount()
+  })
+
+  it('inline closed chip is headphones, not play or album art', async () => {
+    const w = mount(TitanChordproAudioRef, { props: { ...base, inline: true } })
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-inline')
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
+    expect(w.find('[data-audio-play]').exists()).toBe(false)
+    expect(w.find('[data-icon=chevronUp]').exists()).toBe(false)
+    expect(w.find('[data-icon=headphones]').exists()).toBe(true)
+    expect(w.find('[data-audio-art]').exists()).toBe(false)
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.find('[data-audio-art]').exists()).toBe(true)
+    expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
+    w.unmount()
+  })
+
+  it('inline headphones pulse while the reference plays', () => {
+    const w = mount(TitanChordproAudioRef, { props: { ...base, inline: true, playing: true } })
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-playing')
+    expect(w.find('[data-icon=headphones]').exists()).toBe(true)
+    expect(w.findAll('[data-audio-wave]').length).toBe(2)
+    const idle = mount(TitanChordproAudioRef, { props: { ...base, inline: true, playing: false } })
+    expect(idle.get('[data-audio-ref]').classes()).not.toContain('is-playing')
+    idle.unmount()
     w.unmount()
   })
 
   it('opens the now-playing card and closes it without stopping', async () => {
-    const w = mount(CpvAudioRef, { props: { ...base, playing: true } })
+    const w = mount(TitanChordproAudioRef, { props: { ...base, playing: true } })
     await w.get('[data-audio-open]').trigger('click')
     expect(w.get('[data-audio-ref]').classes()).not.toContain('is-closed')
     expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
     expect(w.get('[data-audio-artist]').text()).toBe('Adoradores')
-    expect(w.get('[data-audio-close]').exists()).toBe(true)
+    expect(w.find('[data-audio-close]').exists()).toBe(true)
     expect(w.find('[data-icon=pause]').exists()).toBe(true)
     await w.get('[data-audio-close]').trigger('click')
     expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
@@ -288,14 +339,14 @@ describe('CpvAudioRef', () => {
   })
 
   it('shows what is playing even when only one track exists', async () => {
-    const one = mount(CpvAudioRef, { props: base })
+    const one = mount(TitanChordproAudioRef, { props: base })
     await one.get('[data-audio-open]').trigger('click')
     expect(one.get('[data-audio-kind=sung]').text()).toBe('Cantado')
     expect(one.get('[data-audio-kind=sung]').classes()).toContain('is-solo')
     expect(one.find('[data-audio-kind=playback]').exists()).toBe(false)
     one.unmount()
 
-    const pb = mount(CpvAudioRef, {
+    const pb = mount(TitanChordproAudioRef, {
       props: { ...base, kind: 'playback', kinds: ['playback'] },
     })
     await pb.get('[data-audio-open]').trigger('click')
@@ -305,7 +356,7 @@ describe('CpvAudioRef', () => {
   })
 
   it('switches sung and playback as quiet labels, not tabs', async () => {
-    const w = mount(CpvAudioRef, {
+    const w = mount(TitanChordproAudioRef, {
       props: { ...base, kinds: ['sung', 'playback'] },
     })
     await w.get('[data-audio-open]').trigger('click')
@@ -321,9 +372,9 @@ describe('CpvAudioRef', () => {
   })
 
   it('is a music transport, not the Rolar chevron', async () => {
-    const w = mount(CpvAudioRef, { props: base })
+    const w = mount(TitanChordproAudioRef, { props: base })
     await w.get('[data-audio-open]').trigger('click')
-    expect(w.get('[data-audio-ref]').classes()).toContain('cpv-hit')
+    expect(w.get('[data-audio-ref]').classes()).toContain('titan-chordpro-hit')
     expect(w.get('[data-audio-title]').text()).toBe('Nasce em Mim')
     expect(w.get('[data-audio-artist]').text()).toBe('Adoradores')
     expect(w.get('[data-audio-art] img').attributes('src')).toBe('https://cdn.sda/a.jpg?h=1')
@@ -341,7 +392,7 @@ describe('CpvAudioRef', () => {
   })
 
   it('shows pause while playing and an error copy on failure', async () => {
-    const live = mount(CpvAudioRef, {
+    const live = mount(TitanChordproAudioRef, {
       props: { ...base, playing: true, current: 0, duration: 10, title: 'Nasce' },
     })
     expect(live.find('[data-icon=pause]').exists()).toBe(true)
@@ -350,7 +401,7 @@ describe('CpvAudioRef', () => {
     expect(live.find('[data-icon=pause]').exists()).toBe(true)
     live.unmount()
 
-    const fail = mount(CpvAudioRef, {
+    const fail = mount(TitanChordproAudioRef, {
       props: { ...base, current: 0, duration: 0, error: true, title: 'Nasce' },
     })
     await fail.get('[data-audio-open]').trigger('click')
@@ -359,7 +410,7 @@ describe('CpvAudioRef', () => {
   })
 
   it('shows default cover art when the host did not provide one', async () => {
-    const w = mount(CpvAudioRef, {
+    const w = mount(TitanChordproAudioRef, {
       props: { ...base, current: 0, duration: 0, art: null },
     })
     expect(w.find('[data-audio-art] img').exists()).toBe(true)
@@ -371,7 +422,101 @@ describe('CpvAudioRef', () => {
   })
 })
 
+function installMediaSession() {
+  const handlers = new Map<string, MediaSessionActionHandler | null>()
+  const api = {
+    metadata: null as {
+      title?: string
+      artist?: string
+      album?: string
+      artwork?: { src: string; sizes: string; type?: string }[]
+    } | null,
+    playbackState: 'none' as MediaSessionPlaybackState,
+    setActionHandler: vi.fn((action: string, handler: MediaSessionActionHandler | null) => {
+      handlers.set(action, handler)
+    }),
+    setPositionState: vi.fn(),
+    handlers,
+  }
+  Object.defineProperty(navigator, 'mediaSession', {
+    configurable: true,
+    value: api,
+  })
+  vi.stubGlobal(
+    'MediaMetadata',
+    class {
+      constructor(init: object) {
+        Object.assign(this, init)
+      }
+    },
+  )
+  return api
+}
+
 describe('viewer referência chrome', () => {
+  it('publishes the song name and 1024 cover on the media session', async () => {
+    const session = installMediaSession()
+    const source = setRehearsalAudio(loadFixture(JESUS_1), {
+      sung: 'https://cdn.sda/jesus.m4a?h=1',
+      art: { url: 'https://cdn.sda/jesus.jpg?h=9', width: 1024, height: 1024 },
+    })
+    const w = await viewerAt(390, { source })
+    expect(session.metadata).toMatchObject({
+      title: 'Jesus, Tu És a minha vida',
+      artist: 'Adoradores 1',
+      album: 'Cantado',
+      artwork: [
+        {
+          src: 'https://cdn.sda/jesus.jpg?h=9',
+          sizes: '1024x1024',
+          type: 'image/jpeg',
+        },
+      ],
+    })
+    expect(session.playbackState).toBe('paused')
+    w.unmount()
+    expect(session.metadata).toBeNull()
+  })
+
+  it('uses the packaged cover on the media session when the chart has no art', async () => {
+    const session = installMediaSession()
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(390, { source })
+    expect(session.metadata?.artwork?.[0]?.sizes).toBe('512x512')
+    expect(session.metadata?.artwork?.[0]?.src).toBeTruthy()
+    w.unmount()
+  })
+
+  it('uses the consumer default cover when the chart has no art', async () => {
+    const session = installMediaSession()
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(390, {
+      source,
+      defaultAudioArt: { url: 'https://cdn.sda/marca.jpg', width: 1024, height: 1024 },
+    })
+    expect(session.metadata?.artwork).toEqual([
+      { src: 'https://cdn.sda/marca.jpg', sizes: '1024x1024', type: 'image/jpeg' },
+    ])
+    await w.get('[data-audio-open]').trigger('click')
+    expect(w.get('[data-audio-art] img').attributes('src')).toBe('https://cdn.sda/marca.jpg')
+    expect(w.find('[data-audio-art] img').attributes('data-audio-art-default')).toBeUndefined()
+    w.unmount()
+  })
+
+  it('keeps the chart cover over the consumer default', async () => {
+    const session = installMediaSession()
+    const source = setRehearsalAudio(loadFixture(JESUS_1), {
+      sung: 'https://cdn.sda/jesus.m4a?h=1',
+      art: { url: 'https://cdn.sda/album.jpg', width: 1024, height: 1024 },
+    })
+    const w = await viewerAt(390, {
+      source,
+      defaultAudioArt: { url: 'https://cdn.sda/marca.jpg', width: 1024, height: 1024 },
+    })
+    expect(session.metadata?.artwork?.[0]?.src).toBe('https://cdn.sda/album.jpg')
+    w.unmount()
+  })
+
   it('hides the player when the chart has no sung or playback track', async () => {
     const w = await viewerAt(390)
     expect(w.find('[data-audio-ref]').exists()).toBe(false)
@@ -396,7 +541,8 @@ describe('viewer referência chrome', () => {
   it('shows playback-only and a switcher when both tracks exist', async () => {
     const onlyPb = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/pb.m4a?h=1', 'playback')
     const pb = await viewerAt(390, { source: onlyPb })
-    expect(pb.get('[data-audio-open]').text()).toContain('Playback')
+    expect(pb.find('[data-audio-open]').exists()).toBe(true)
+    expect(pb.get('[data-audio-open]').text()).not.toContain('Playback')
     await pb.get('[data-audio-open]').trigger('click')
     expect(pb.get('[data-audio-kind=playback]').text()).toBe('Playback')
     expect(pb.find('button[data-audio-kind]').exists()).toBe(false)
@@ -418,5 +564,122 @@ describe('viewer referência chrome', () => {
     await flushPromises()
     await nextTick()
     expect(w.find('[data-audio-ref]').exists()).toBe(false)
+  })
+
+  it('on a phone, the closed player shares the Cifra/Letra row', async () => {
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(390, { source })
+    expect(w.find('[data-phone-lead]').exists()).toBe(true)
+    expect(w.find('[data-reading-switch]').exists()).toBe(true)
+    expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-closed')
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-inline')
+    expect(w.find('[data-audio-art]').exists()).toBe(false)
+    expect(w.find('[data-audio-play]').exists()).toBe(false)
+    expect(w.find('[data-icon=headphones]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('on a wide screen the chip stays above the dock, with title', async () => {
+    const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+    const w = await viewerAt(1024, { source })
+    expect(w.find('[data-phone-lead]').exists()).toBe(false)
+    expect(w.get('[data-audio-open]').text()).toContain('Cantado')
+    expect(w.get('[data-audio-ref]').classes()).not.toContain('is-inline')
+    w.unmount()
+  })
+})
+
+function installLiveAudio() {
+  class LiveAudio {
+    src = ''
+    currentTime = 0
+    duration = 90
+    paused = true
+    preload = 'metadata'
+    private listeners = new Map<string, Set<() => void>>()
+    play = async () => {
+      this.paused = false
+      this.listeners.get('play')?.forEach((fn) => fn())
+    }
+    pause = () => {
+      this.paused = true
+      this.listeners.get('pause')?.forEach((fn) => fn())
+    }
+    load = () => {}
+    removeAttribute() {}
+    addEventListener(type: string, fn: () => void) {
+      const set = this.listeners.get(type) ?? new Set<() => void>()
+      set.add(fn)
+      this.listeners.set(type, set)
+    }
+    removeEventListener(type: string, fn: () => void) {
+      this.listeners.get(type)?.delete(fn)
+    }
+  }
+  vi.stubGlobal('Audio', LiveAudio)
+}
+
+function chromeGone(w: Awaited<ReturnType<typeof viewerAt>>) {
+  return w.findAll('.titan-chordpro-chrome').map((c) => c.classes().includes('is-hidden'))
+}
+
+async function phoneWithAudio(props: Record<string, unknown> = {}) {
+  installLiveAudio()
+  const source = setAudioUrl(loadFixture(JESUS_1), 'https://cdn.sda/jesus.m4a?h=1', 'sung')
+  const w = await viewerAt(390, { source, ...props })
+  const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
+  Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
+  Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
+  observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
+  await flushPromises()
+  return w
+}
+
+describe('chrome while the reference plays', () => {
+  it('a tap on the chart hides the chrome without stopping the audio', async () => {
+    const w = await phoneWithAudio({ autoHide: false })
+    await w.get('[data-audio-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-audio-play]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-icon=pause]').exists()).toBe(true)
+    expect(chromeGone(w).some(Boolean)).toBe(false)
+
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
+    await flushPromises()
+    expect(chromeGone(w).every(Boolean), 'playing pinned the chrome').toBe(true)
+    expect(w.find('[data-audio-title]').exists()).toBe(false)
+    expect(w.find('[data-icon=headphones]').exists()).toBe(true)
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-playing')
+
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
+    await flushPromises()
+    expect(chromeGone(w).some(Boolean)).toBe(false)
+    expect(w.get('[data-audio-ref]').classes()).toContain('is-playing')
+    w.unmount()
+  })
+
+  it('Rolar still tucks the dock while the reference plays', async () => {
+    const w = await phoneWithAudio({ autoHide: true })
+    await w.get('[data-audio-open]').trigger('click')
+    await flushPromises()
+    await w.get('[data-audio-play]').trigger('click')
+    await flushPromises()
+    await w.get('[data-scroll]').trigger('click')
+    await flushPromises()
+    const dock = w.get('[data-scroll]').element.closest('.titan-chordpro-chrome') as HTMLElement
+    expect(dock.classList.contains('is-hidden'), 'playing blocked auto-hide').toBe(true)
+    expect(w.find('[data-icon=headphones]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('a tap still hides chrome when the player is only paused', async () => {
+    const w = await phoneWithAudio({ autoHide: false })
+    expect(w.find('[data-audio-ref]').exists()).toBe(true)
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
+    await flushPromises()
+    expect(chromeGone(w).every(Boolean)).toBe(true)
+    w.unmount()
   })
 })

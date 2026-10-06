@@ -2,8 +2,16 @@ import type { Lens, ThemeId } from '@henryavila/titan-chordpro-ui'
 import type { EditMode, ModesProp } from '@henryavila/titan-chordpro-ui/vue'
 import { resolveEditMode } from '@henryavila/titan-chordpro-ui/vue'
 
+/** Prefix a root-absolute demo path with Vite `base` (GitHub Pages is not `/`). */
+export function publicHref(href: string, base = import.meta.env.BASE_URL || '/'): string {
+  if (!href.startsWith('/')) return href
+  if (base === '/' || base === '') return href
+  const prefix = base.endsWith('/') ? base.slice(0, -1) : base
+  return `${prefix}${href}`
+}
+
 export type Surface = 'standalone' | 'site'
-export type ListaMode = 'off' | 'juntas' | 'demanda'
+export type ListaMode = 'off' | 'juntas' | 'demanda' | 'cache'
 export type DemoGroupId = 'incorporar' | 'editar' | 'criar' | 'acento' | 'host'
 
 export type DemoPage = {
@@ -22,7 +30,7 @@ export type DemoEntry = {
   kicker: string
   title: string
   blurb: string
-  /** Compact `<ChordproViewer>` call for this composition. */
+  /** Compact `<TitanChordpro>` call for this composition. */
   call: string
   /** Named or hex swatch, when this demo is about the host primary. */
   swatch?: string
@@ -84,19 +92,39 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Standalone',
     title: 'Uma cifra',
     blurb: 'A cifra é a página. Rota 100dvh, sem shell. Default = editMode local.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="local"
 />`,
     extra: [
-      { href: '/standalone.html?song=009-verdadeira-alegria', label: 'Verdadeira alegria · Padrão e Muralhas' },
       { href: '/standalone.html?song=006-poder-do-amor-original', label: 'Poder do Amor · Original e Hinário' },
+      { href: '/standalone.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone.html?song=013-ele-vive-em-mim', label: 'Partitura e TAB' },
       { href: '/standalone.html?audio=1', label: 'Cantado e playback' },
       { href: '/standalone.html?audio=1&capa=0', label: 'Arte genérica' },
       { href: '/standalone.html?song=100-nasce-em-mim&audio=1', label: 'Nasce em Mim (65 BPM, 2:41)' },
+      { href: '/media.html', label: 'Central de Mídia (1024)' },
+      { href: '/media.html?capa=0', label: 'Capa padrão do consumer' },
     ],
+  },
+  {
+    id: 'media-session',
+    href: '/media.html',
+    group: 'incorporar',
+    kicker: 'Consumer',
+    title: 'Central de Mídia',
+    blurb: 'Host completo: cifra em leitura, cantado e playback, capa quadrada 1024 px. O título da página é o do consumer; a tela de bloqueio mostra a música.',
+    call: `cho = setRehearsalAudio(cho, {
+  sung, playback,
+  art: { url, width: 1024, height: 1024 },
+})
+<TitanChordpro
+  :source="cho"
+  :default-audio-art="{ url, width: 1024, height: 1024 }"
+  song-id="nasce-em-mim"
+  edit-mode="none"
+/>`,
   },
   {
     id: 'standalone-apresentacao',
@@ -104,12 +132,27 @@ export const DEMOS: readonly DemoEntry[] = [
     group: 'incorporar',
     kicker: 'Standalone',
     title: 'Apresentação',
-    blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Cada item já traz o ChordPro.',
-    call: `<ChordproViewer :songs="songs" edit-mode="local" />`,
+    blurb: 'Lista ao vivo: anterior, próxima, lugar por música. Com áudio, a Central de Mídia também troca de cifra.',
+    call: `<TitanChordpro :songs="songs" edit-mode="local" />`,
     extra: [
       { href: '/standalone-lista.html?par=1', label: 'Poder do Amor (versões) e uma sem versão' },
+      { href: '/standalone-lista.html?lens=letra', label: 'Letra (cantor)' },
       { href: '/standalone-lista.html?ensaio=demanda', label: 'Fontes sob demanda' },
+      { href: '/standalone-lista.html?audio=1', label: 'Áudio na lista' },
     ],
+  },
+  {
+    id: 'standalone-cache',
+    href: '/standalone-lista.html?ensaio=cache&audio=1',
+    group: 'incorporar',
+    kicker: 'Standalone',
+    title: 'Lista em cache',
+    blurb: 'Três músicas pedidas via loadSong. O Titan guarda cifras e áudios da lista inteira, para o ensaio continuar se a rede cair.',
+    call: `<TitanChordpro
+  :songs="repertorio"
+  :load-song="buscarCifra"
+  prefetch-all
+/>`,
   },
   {
     id: 'shell',
@@ -118,7 +161,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'No shell',
     title: 'Uma cifra',
     blurb: 'O Vue no meio da página do consumer: conteúdo acima e abaixo. Não é iframe.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="local"
@@ -133,7 +176,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'No shell',
     title: 'Apresentação',
     blurb: 'A mesma lista ao vivo, no shell do site. Trocar de música é do Titan.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :songs="songs"
   edit-mode="local"
   theme="light"
@@ -147,12 +190,15 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Frontend',
     title: 'Só para mim + sugerir',
     blurb:
-      'Overlay no aparelho. Edite uma linha, abra Minha versão → Sugerir. Depois abra “Para todos” (mesmo song) e revise.',
-    call: `<ChordproViewer
+      'Overlay no aparelho. Edite letra ou importe Guitar Pro/MusicXML, abra Minha versão → Sugerir. O arquivo acompanha o pedido. Depois abra “Para todos” na mesma música.',
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="local"
   actor-key="demo-musico"
+  :upload-score="uploadScore"
+  :load-bundle-asset="loadDemoAsset"
+  :persist-suggestion="persistDemoSuggestion"
 />`,
   },
   {
@@ -162,11 +208,13 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Backend / admin',
     title: 'Para todos + fila',
     blurb:
-      'Salvar grava o oficial (`save-content`). Menu · Sugestões dos músicos: preview, Aceitar lote / item.',
-    call: `<ChordproViewer
+      'Salvar grava o oficial. Em Sugestões dos músicos, veja o solo antes/depois e aceite o arquivo para todos; outra aba do mesmo navegador acompanha a fila.',
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="persisted"
+  :suggestion-queue="suggestionQueue"
+  :upload-score="uploadScore"
 />`,
   },
   {
@@ -176,11 +224,14 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Leitura',
     title: 'Sem edição',
     blurb: 'Só leitura — sem botão Editar.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   edit-mode="none"
 />`,
+    extra: [
+      { href: '/standalone.html?editMode=none&lens=letra', label: 'Letra (cantor)' },
+    ],
   },
   {
     id: 'criar',
@@ -189,7 +240,7 @@ export const DEMOS: readonly DemoEntry[] = [
     kicker: 'Standalone',
     title: 'Cifra nova',
     blurb: 'Importar (link, arquivo, texto, PDF) ou começar em branco.',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   source=""
   song-id="vazio"
   edit-mode="persisted"
@@ -206,7 +257,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Verde',
     blurb: 'O par medido contra os dois temas. Default se o host não passa nada.',
     swatch: '#84DFA6',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="verde"
@@ -220,7 +271,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Teal',
     blurb: 'Segundo nome medido. Soft e borda saem do mesmo matiz.',
     swatch: '#2DD4BF',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="teal"
@@ -234,7 +285,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Hex do host',
     blurb: 'Qualquer `#hex` / `rgb()`. O Titan deriva soft, edge e glow.',
     swatch: '#4F46E5',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="#4F46E5"
@@ -248,7 +299,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Teal no claro',
     blurb: 'Mesma primária no papel do host. O teal escurece no tema light.',
     swatch: '#0E6E7D',
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
   accent="teal"
@@ -264,7 +315,7 @@ export const DEMOS: readonly DemoEntry[] = [
     title: 'Frame sem altura',
     blurb: 'O ancestral não tem height. A guarda avisa, o dock cai abaixo da dobra.',
     warn: true,
-    call: `<ChordproViewer
+    call: `<TitanChordpro
   :source="cho"
   :song-id="id"
 />`,
@@ -288,6 +339,7 @@ const INTENT = new Set([
   'accent',
   'lens',
   'comentarios',
+  'cc',
 ])
 
 /** Old `/` + query bookmarks land on the matching named page. */
@@ -301,7 +353,7 @@ export function hubRedirect(search: string): string | null {
     ? false
     : ensaio === 'off'
       ? false
-      : ensaio === 'juntas' || ensaio === 'demanda' || (ficha && !ensaio)
+      : ensaio === 'juntas' || ensaio === 'demanda' || ensaio === 'cache' || (ficha && !ensaio)
   const page = ficha
     ? lista
       ? '/site-lista.html'
@@ -312,14 +364,14 @@ export function hubRedirect(search: string): string | null {
   p.delete('ficha')
   if (ensaio === 'off' || ensaio === 'juntas') p.delete('ensaio')
   const q = p.toString()
-  return q ? `${page}?${q}` : page
+  return publicHref(q ? `${page}?${q}` : page)
 }
 
 export type LabQuery = {
   song: string | null
   tema: 'claro' | 'escuro' | null
   quebrar: boolean
-  carga: 'juntas' | 'demanda'
+  carga: 'juntas' | 'demanda' | 'cache'
   /** Empty song + persisted mode: Importar / Começar em branco. */
   criar: boolean
   /** Preferred query: editMode=local|persisted|none */
@@ -338,7 +390,9 @@ export type LabQuery = {
   audio: false | 'cantado' | 'playback' | 'ambos'
   /** When false (`capa=0`), skip cover so the packaged generic art shows. */
   capa: boolean
-  /** Two-song rehearsal: Poder do Amor with versions, then one song without. */
+  /** Captured Cifra Club page slug under tests/helpers/cifraclub-pages/. */
+  cc: string | null
+  /** Two-song rehearsal: one envelope, one plain file. */
   par: boolean
 }
 
@@ -368,7 +422,8 @@ export function labQuery(search: string): LabQuery {
     song: p.get('song'),
     tema: tema === 'claro' || tema === 'escuro' ? tema : null,
     quebrar: p.get('quebrar') === '1',
-    carga: p.get('ensaio') === 'demanda' ? 'demanda' : 'juntas',
+    carga:
+      p.get('ensaio') === 'demanda' ? 'demanda' : p.get('ensaio') === 'cache' ? 'cache' : 'juntas',
     criar: p.get('criar') === '1',
     editMode: parseEditMode(p.get('editMode') ?? p.get('edit-mode')),
     modes: parseModes(p.get('modes')),
@@ -378,6 +433,7 @@ export function labQuery(search: string): LabQuery {
     zonas: p.get('zonas') === '1',
     audio: parseDemoAudio(p.get('audio')),
     capa: p.get('capa') !== '0',
+    cc: p.get('cc'),
     par: p.get('par') === '1',
   }
 }
@@ -412,5 +468,5 @@ export function palcoHref(lista: boolean, search: string): string {
   const p = new URLSearchParams(search)
   p.delete('ficha')
   const q = p.toString()
-  return q ? `${page}?${q}` : page
+  return publicHref(q ? `${page}?${q}` : page)
 }

@@ -9,11 +9,14 @@ export type SlideLayoutConfig = {
   targetMaxCharsPerLine?: number
   hardMaxCharsPerLine?: number
   maxLinesPerSlide?: number
+  /** Two independent chart rows share a slide only when both are this short. */
+  packMaxCharsPerLine?: number
 }
 
 const TARGET = 28
 const HARD = 34
 const MAX_LINES = 2
+const PACK = 22
 const MIN_PHRASE = 12
 
 const WEAK = new Set([
@@ -48,13 +51,17 @@ const WEAK = new Set([
  *
  * The cifra already wrote the phrasing. We never glue two source rows into
  * one slide line (that is the ASR planner’s job, and we do not need it).
- * A source row only splits when it is too wide for the projector, preferring
- * a mid-line capital that the author already used to pack two phrases.
+ * A mid-line capital the author used to pack two phrases splits once the
+ * row is past the projector target (not only the hard wrap). Otherwise a
+ * 33-character couplet stays one line, the next row joins it, and the
+ * congregation reads four phrases. Independent rows share a slide only
+ * when both are short. Title-case words inside a short phrase stay put.
  */
 export function planSlides(rows: SlideSourceLine[], cfg: SlideLayoutConfig = {}): SlidePlan[] {
   const target = cfg.targetMaxCharsPerLine ?? TARGET
   const hard = cfg.hardMaxCharsPerLine ?? HARD
   const maxLines = cfg.maxLinesPerSlide ?? MAX_LINES
+  const packMax = cfg.packMaxCharsPerLine ?? PACK
   if (maxLines < 1) throw new Error('maxLinesPerSlide must be >= 1')
 
   const sections: SlideSourceLine[][] = []
@@ -66,7 +73,7 @@ export function planSlides(rows: SlideSourceLine[], cfg: SlideLayoutConfig = {})
 
   const slides: SlidePlan[] = []
   for (const section of sections) {
-    slides.push(...packSection(section, target, hard, maxLines))
+    slides.push(...packSection(section, target, hard, maxLines, packMax))
   }
   return collapseRepeated(slides)
 }
@@ -76,6 +83,7 @@ function packSection(
   target: number,
   hard: number,
   maxLines: number,
+  packMax: number,
 ): SlidePlan[] {
   const slides: SlidePlan[] = []
   let i = 0
@@ -94,6 +102,7 @@ function packSection(
     while (group.length < maxLines && j < rows.length) {
       const next = splitSourceLine(rows[j]!.text, target, hard)
       if (next.length !== 1) break
+      if (!canPack(group[group.length - 1]!, next[0]!, packMax)) break
       group.push(next[0]!)
       j += 1
     }
@@ -103,10 +112,14 @@ function packSection(
   return slides
 }
 
+function canPack(a: string, b: string, packMax: number): boolean {
+  return a.length <= packMax && b.length <= packMax
+}
+
 function splitSourceLine(text: string, target: number, hard: number): string[] {
   const trimmed = text.trim()
   if (!trimmed) return []
-  if (trimmed.length <= hard) return [trimmed]
+  if (trimmed.length <= target) return [trimmed]
 
   const breaks = phraseBreaks(trimmed)
   if (breaks.length) {
@@ -129,6 +142,7 @@ function splitSourceLine(text: string, target: number, hard: number): string[] {
       ]
     }
   }
+  if (trimmed.length <= hard) return [trimmed]
   return wrapLine(trimmed, target, hard)
 }
 

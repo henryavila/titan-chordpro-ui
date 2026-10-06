@@ -1,0 +1,67 @@
+import type { Plugin } from 'vite'
+import { bootShellHtml } from './boot-shell'
+
+/**
+ * Static flash markup for the demo pages. Markers in each HTML file expand
+ * here, before any module runs, to the boot shell the pages used to repeat.
+ * Faces (Sora / Space Mono) ship in `boot-shell.css` via the Vue `@font-face`.
+ */
+
+function indentLines(lines: string[], indent: string): string {
+  return lines.map((line) => indent + line).join('\n')
+}
+
+function quotedAttrs(raw: string): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const match of raw.matchAll(/([A-Za-z_:][-A-Za-z0-9_:.]*)="([^"]*)"/g)) {
+    const name = match[1]
+    if (name) out.set(name, match[2] ?? '')
+  }
+  return out
+}
+
+function hasToken(raw: string, token: string): boolean {
+  return new RegExp(`(?:^|\\s)${token}(?=\\s|$)`).test(raw)
+}
+
+function requiredAttr(attrs: Map<string, string>, name: string, marker: string): string {
+  const value = attrs.get(name)
+  if (!value) throw new Error(`${marker} is missing ${name}`)
+  return value
+}
+
+function bootLines(theme: string, title: string, message: string): string[] {
+  return bootShellHtml(theme, title, message).split('\n')
+}
+
+/** Replace demo boot markers. Pages without markers are unchanged. */
+export function expandDemoHtml(html: string): string {
+  return html.replace(
+    /^([ \t]*)<!--\s*titan-demo-boot\b(.*?)-->[ \t]*$/gm,
+    (_line, indent: string, raw: string) => {
+      if (!hasToken(raw, 'data-boot-shell')) {
+        throw new Error('titan-demo-boot is missing data-boot-shell')
+      }
+      const attrs = quotedAttrs(raw)
+      const theme = requiredAttr(attrs, 'theme', 'titan-demo-boot')
+      if (theme !== 'standalone' && theme !== 'site') {
+        throw new Error(`titan-demo-boot theme must be standalone or site, got ${theme}`)
+      }
+      const title = requiredAttr(attrs, 'title', 'titan-demo-boot')
+      const message = requiredAttr(attrs, 'message', 'titan-demo-boot')
+      return indentLines(bootLines(theme, title, message), indent)
+    },
+  )
+}
+
+export function demoBootHtmlPlugin(): Plugin {
+  return {
+    name: 'titan-demo-boot-html',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        return expandDemoHtml(html)
+      },
+    },
+  }
+}

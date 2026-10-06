@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import NewChartDialog from '../../src/vue/edit/NewChartDialog.vue'
 import { memoryStore } from '../../src/core'
 import { loadFixture } from '../helpers/load-fixture'
@@ -23,7 +23,7 @@ function dialog(props: Record<string, unknown> = {}) {
   return w
 }
 function viewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: '', storage: memoryStore(), autoHide: false, ...props },
     attachTo: document.body,
   })
@@ -74,9 +74,9 @@ describe('bringing a chart in', () => {
     await w.get('[data-nova-text]').setValue(loadFixture('sda/082-o-rei-vem-vindo.cho'))
     await w.get('[data-nova-text-go]').trigger('click')
     expect(w.find('[data-nova-key-rewrite]').exists()).toBe(true)
-    expect(w.text()).toMatch(/Tom declarado Ab/)
-    expect(w.text()).toMatch(/escrita em G/)
-    expect(w.text()).toMatch(/capo 1/)
+    expect(w.text()).toMatch(/Declarado/)
+    expect(w.text()).toMatch(/Escrito/)
+    expect(w.text()).toMatch(/sugere capo 1/)
     expect(w.get('[data-nova-go]').attributes('disabled')).toBeDefined()
     await w.get('[data-nova-key-rewrite-go]').trigger('click')
     expect(w.find('[data-nova-key-rewrite]').exists()).toBe(false)
@@ -215,6 +215,18 @@ describe('bringing a chart in', () => {
     expect((w.get('[data-nova-duration]').element as HTMLInputElement).value).toBe('07:57')
     expect(w.find('[data-nova-youtube]').exists()).toBe(true)
     expect(w.text()).toMatch(/vieram preenchidos|Convertido do Cifra Club/i)
+  })
+
+  it('marks Cifra Club and explains when the device is offline', async () => {
+    const fetchChart = vi.fn(() => Promise.resolve(PLAIN))
+    const w = dialog({ fetchChart, online: false })
+    expect(w.get('[data-offline-hint]').text()).toMatch(/sem internet/i)
+    await w.get('[data-nova-url]').setValue('https://www.cifraclub.com.br/a/b/')
+    await w.get('[data-nova-url-go]').trigger('click')
+    await flushPromises()
+    expect(fetchChart).not.toHaveBeenCalled()
+    expect(w.text()).toContain('Sem internet')
+    expect(w.text()).toContain('Use Arquivo ou Texto')
   })
 
   it('reports a fetch that failed rather than opening an empty editor', async () => {

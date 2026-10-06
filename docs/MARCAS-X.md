@@ -111,11 +111,11 @@ O relógio do músico que **toca** continua a ver as marcas (lente desligada). A
 3. Resíduo de produção grudado na marca (`/_`, `/-`, `x...`) some com a marca.
 4. **Não** come sílaba (`cami/nhar`) nem a letra **x** dentro de palavra (`Exaltado`).
 
-Host / cantor: prop `lens="letra"` em `<ChordproViewer>` (ver [`CONSUMER.md`](./CONSUMER.md) §8). A escolha **persiste** entre músicas do ensaio (`songs`); não é estado por cifra.
+Host / cantor: prop `lens="letra"` em `<TitanChordpro>` (ver [`CONSUMER.md`](./CONSUMER.md) §8). A escolha **persiste** entre músicas do ensaio (`songs`); não é estado por cifra.
 
 ## Lint
 
-`lintSource` avisa `trecho sem voz sem x/// (N linha(s))` quando uma linha tem acorde, não tem letra, e `lineBeats` é 0. Tab (`{sot}`) e partitura (`{sos}`) ficam de fora — o `x` da TAB é mudo de corda, não marca de tempo.
+`lintSource` avisa `trecho sem voz sem x/// (N linha(s))` quando uma linha tem acorde, não tem letra, e `lineBeats` é 0. Tab (`{sot}`) e partitura (`{x_titan_start_of_score}`) ficam de fora — o `x` da TAB é mudo de corda, não marca de tempo.
 
 Linha cantada sem cauda **não** é erro.
 

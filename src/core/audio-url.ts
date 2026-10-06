@@ -1,8 +1,13 @@
-import { splitCho } from './charts'
+import { hasChartEnvelope } from './charts'
 import { readMeta, writeMeta, type ChartMeta } from './import-chordpro'
 
 export const AUDIO_KINDS = ['sung', 'playback'] as const
 export type AudioKind = (typeof AUDIO_KINDS)[number]
+
+export const AUDIO_KIND_LABEL: Record<AudioKind, string> = {
+  sung: 'Cantado',
+  playback: 'Playback',
+}
 
 export type AudioTracks = { sung: string | null; playback: string | null }
 
@@ -11,6 +16,9 @@ export type AudioArt = { url: string; width: number; height: number }
 
 /** Pixel size of the packaged fallback cover. */
 export const AUDIO_ART_DEFAULT_PX = 512
+
+/** Square cover the lock screen / Media Session uses. Host should send this size. */
+export const AUDIO_ART_MEDIA_PX = 1024
 
 const ART_DIM_MAX = 4096
 
@@ -23,12 +31,14 @@ export type RehearsalAudioPatch = {
 /**
  * Direct audio the rehearsal player will fetch. YouTube/Spotify/data/file
  * are not playable here — the consumer hosts a file or a streaming GET.
- * A `}` would break the `{x_audio_sung:…}` / `{x_audio_playback:…}` line.
+ * A `}` would break the `{x_titan_audio_sung:…}` / `{x_titan_audio_playback:…}` line.
  */
 export function playableAudioUrl(raw: string | null | undefined): string | null {
   const s = String(raw ?? '').trim()
   if (!s || s.includes('}')) return null
   if (s.startsWith('/') && !s.startsWith('//')) return s
+  // Portable chart bundles use controlled, relative attachment paths.
+  if (/^(?:audios|imagens)\/[a-z0-9][a-z0-9._-]*$/i.test(s) && !s.includes('..')) return s
   let u: URL
   try {
     u = new URL(s)
@@ -50,49 +60,42 @@ function blockedHost(host: string): boolean {
   return false
 }
 
-function kindKey(kind: AudioKind): 'x_audio_sung' | 'x_audio_playback' {
-  return kind === 'playback' ? 'x_audio_playback' : 'x_audio_sung'
+function kindKey(kind: AudioKind): 'x_titan_audio_sung' | 'x_titan_audio_playback' {
+  return kind === 'playback' ? 'x_titan_audio_playback' : 'x_titan_audio_sung'
 }
 
-/**
- * One field on the chart that is open. A spread of `readMeta` would rewrite
- * the title. One-chart files still pass the whole header, as before.
- */
-function writeAudioField(source: string, patch: ChartMeta): string {
-  if (splitCho(source).hasEnvelope) return writeMeta(source, patch)
-  const cur: ChartMeta = { ...readMeta(source), ...patch }
-  return writeMeta(source, cur)
-}
-
-/**
- * Write or clear one rehearsal track. `sung` also drops legacy
- * `{x_audio:}` / `{x_audio_cantado:}` so a chart does not carry two sung URLs.
- * N>1: the URL is written inside the open chart, and only that field.
- */
+/** Write or clear one rehearsal track using the Titan directive namespace. */
 export function setAudioUrl(
   source: string,
   url: string | null,
   kind: AudioKind = 'sung',
 ): string {
   const key = kindKey(kind)
-  if (url == null || !String(url).trim()) {
-    // '' clears; delete would drop the key from a two-arg envelope patch.
-    return writeAudioField(source, { [key]: '' })
+  const clearing = url == null || !String(url).trim()
+  const ok = clearing ? '' : playableAudioUrl(url)
+  if (!clearing && !ok) {
+    throw new Error('x_titan_audio_sung / x_titan_audio_playback must be an http(s) audio file URL (not YouTube)')
   }
-  const ok = playableAudioUrl(url)
-  if (!ok) {
-    throw new Error('x_audio_sung / x_audio_playback must be an http(s) audio file URL (not YouTube)')
-  }
-  return writeAudioField(source, { [key]: ok })
+  if (hasChartEnvelope(source)) return writeMeta(source, { [key]: ok })
+  const cur: ChartMeta = { ...readMeta(source) }
+  if (ok) cur[key] = ok
+  else delete cur[key]
+  return writeMeta(source, cur)
 }
 
-/** Both tracks. Legacy `{x_audio:}` / `{x_audio_cantado:}` already fold into sung via readMeta. */
+/** Both tracks from the Titan metadata. */
 export function audioTracksOf(source: string): AudioTracks {
   const m = readMeta(source)
   return {
-    sung: playableAudioUrl(m.x_audio_sung),
-    playback: playableAudioUrl(m.x_audio_playback),
+    sung: playableAudioUrl(m.x_titan_audio_sung),
+    playback: playableAudioUrl(m.x_titan_audio_playback),
   }
+}
+
+/** Playable rehearsal URLs in the chart, sung then playback. Empty when none. */
+export function rehearsalAudioUrls(source: string): string[] {
+  const t = audioTracksOf(source)
+  return [t.sung, t.playback].filter((url): url is string => !!url)
 }
 
 export function audioUrlOf(source: string, kind?: AudioKind): string | null {
@@ -118,38 +121,64 @@ function artDim(raw: string | undefined): number | null {
 }
 
 /**
- * Cover for the reference player. The consumer serves an already-optimized
- * file and must pass that file’s width/height (square 256–512 is enough).
+ * Cover for the reference player and Media Session. The consumer serves an
+ * already-optimized square file; 1024 px is the size the lock screen uses.
+ * Pass that file’s width/height (not the 3000 px original).
  */
 export function setAudioArt(source: string, art: AudioArt | null): string {
+  const cur: ChartMeta = { ...readMeta(source) }
   if (art == null) {
-    return writeAudioField(source, { x_audio_art: '', x_audio_art_w: '', x_audio_art_h: '' })
+    delete cur.x_titan_audio_art
+    delete cur.x_titan_audio_art_w
+    delete cur.x_titan_audio_art_h
+    return writeMeta(source, cur)
   }
   const ok = playableAudioUrl(art.url)
   if (!ok) {
-    throw new Error('x_audio_art must be an http(s) image URL (not YouTube)')
+    throw new Error('x_titan_audio_art must be an http(s) image URL (not YouTube)')
   }
   const w = artDim(String(art.width))
   const h = artDim(String(art.height))
   if (!w || !h) {
-    throw new Error('x_audio_art requires integer width and height (1–4096)')
+    throw new Error('x_titan_audio_art requires integer width and height (1–4096)')
   }
-  return writeAudioField(source, {
-    x_audio_art: ok,
-    x_audio_art_w: String(w),
-    x_audio_art_h: String(h),
-  })
+  cur.x_titan_audio_art = ok
+  cur.x_titan_audio_art_w = String(w)
+  cur.x_titan_audio_art_h = String(h)
+  return writeMeta(source, cur)
 }
 
 export function audioArtOf(source: string): AudioArt | null {
   const m = readMeta(source)
-  const url = playableAudioUrl(m.x_audio_art)
+  const url = playableAudioUrl(m.x_titan_audio_art)
   if (!url) return null
   return {
     url,
-    width: artDim(m.x_audio_art_w) ?? AUDIO_ART_DEFAULT_PX,
-    height: artDim(m.x_audio_art_h) ?? AUDIO_ART_DEFAULT_PX,
+    width: artDim(m.x_titan_audio_art_w) ?? AUDIO_ART_DEFAULT_PX,
+    height: artDim(m.x_titan_audio_art_h) ?? AUDIO_ART_DEFAULT_PX,
   }
+}
+
+function normalizeArt(art: AudioArt | null | undefined): AudioArt | null {
+  if (!art) return null
+  const url = playableAudioUrl(art.url)
+  if (!url) return null
+  return {
+    url,
+    width: artDim(String(art.width)) ?? AUDIO_ART_MEDIA_PX,
+    height: artDim(String(art.height)) ?? AUDIO_ART_MEDIA_PX,
+  }
+}
+
+/**
+ * Cover for the player and Media Session: chart `{x_titan_audio_art:}` first, then
+ * the consumer default. `null` means the Vue player uses the packaged 512 art.
+ */
+export function resolveRehearsalArt(
+  chart: AudioArt | null | undefined,
+  hostDefault?: AudioArt | null,
+): AudioArt | null {
+  return normalizeArt(chart) ?? normalizeArt(hostDefault)
 }
 
 /**

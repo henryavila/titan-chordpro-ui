@@ -9,7 +9,7 @@
 /** Ignore a touch that starts on the viewport's left edge (Safari back). */
 export const SWIPE_EDGE_PX = 24
 /**
- * Exclusive rail width per viewer breakpoint. Same cuts as ChordproViewer `bp`:
+ * Exclusive rail width per viewer breakpoint. Same cuts as TitanChordpro `bp`:
  * xs <400, sm <640, md <900, lg <1280, xl. Phone (xs/sm) keeps the 64px that
  * worked on the handset; tablet+ (md/lg/xl) keeps the 128px that worked there.
  */
@@ -35,6 +35,28 @@ export function swipeRailPx(width: number): number {
 export const SWIPE_TAP_PX = 10
 /** Veil fade after an immediate song swap. */
 export const SWIPE_FADE_MS = 180
+/** Stamp card height used to park the whole card above the finger. */
+export const SWIPE_STAMP_H = 120
+/** Gap between the finger and the bottom of the stamp. */
+export const SWIPE_HAND_CLEAR_PX = 96
+/** Keep the stamp below the title chrome. */
+export const SWIPE_STAMP_PAD_TOP = 80
+/** Keep the stamp above the dock. */
+export const SWIPE_STAMP_PAD_BOTTOM = 24
+
+/**
+ * CSS `top` for the stamp so the card sits above the hand.
+ * Mid-screen and low touches lift; a high touch clamps under the title.
+ */
+export function swipeStampTop(fingerY: number, height: number): number {
+  const h = Number.isFinite(height) && height > 0 ? height : 844
+  const y = Number.isFinite(fingerY) ? fingerY : h / 2
+  const minTop = SWIPE_STAMP_PAD_TOP
+  const maxTop = Math.max(minTop, h - SWIPE_STAMP_H - SWIPE_STAMP_PAD_BOTTOM)
+  const preferred = y - SWIPE_HAND_CLEAR_PX - SWIPE_STAMP_H
+  if (preferred >= minTop) return Math.min(preferred, maxTop)
+  return minTop
+}
 
 export type SwipeAxis = 'undecided' | 'vertical' | 'horizontal' | 'ignored'
 export type SwipeIntent = 'none' | 'next' | 'prev'
@@ -52,12 +74,15 @@ export type SongSwipeView = {
   armed: boolean
   /** Overlay should paint. */
   peeking: boolean
+  /** CSS top (px) for the stamp, above the finger. */
+  stampTop: number
 }
 
 export type SongSwipeBegin = {
   canPrev: boolean
   canNext: boolean
   width: number
+  height: number
   x: number
   y: number
   pointerKind: SwipePointerKind
@@ -77,6 +102,7 @@ const IDLE: SongSwipeView = {
   intent: 'none',
   armed: false,
   peeking: false,
+  stampTop: SWIPE_STAMP_PAD_TOP,
 }
 
 export function swipeThreshold(width: number): number {
@@ -98,10 +124,48 @@ export function swipeZone(x: number, width: number): SwipeZone {
   return 'center'
 }
 
+/**
+ * Event target is already a control — do not start a rail session.
+ * Includes generic `button` because the dock's Rolar/Mais are buttons.
+ */
+export const SWIPE_CHROME_SEL =
+  "button,input,textarea,select,a,[role='dialog'],[role='button'],.titan-chordpro-chrome,[data-end-offer],.titan-chordpro-scrim,.titan-chordpro-phone-stack,.titan-chordpro-hit,[data-scroll],[data-more]"
+
+/**
+ * Paint stack under an iOS rail hit. Must not include generic `button`:
+ * reading chords are buttons (diagrams) and sit under the rail.
+ */
+export const SWIPE_DOCK_SEL =
+  ".titan-chordpro-phone-stack,.titan-chordpro-chrome,.titan-chordpro-hit,[data-scroll],[data-more],[data-end-offer],.titan-chordpro-scrim,[role='dialog']"
+
+function closestSel(node: EventTarget | null, sel: string): boolean {
+  return !!(node instanceof Element && node.closest(sel))
+}
+
+export function elementsAtPoint(x: number, y: number): Element[] {
+  if (typeof document === 'undefined') return []
+  if (typeof document.elementsFromPoint === 'function') {
+    return document.elementsFromPoint(x, y)
+  }
+  const one = document.elementFromPoint?.(x, y)
+  return one ? [one] : []
+}
+
+export function swipeIgnoresPointer(
+  target: EventTarget | null,
+  clientX: number,
+  clientY: number,
+  hitTest: (x: number, y: number) => Element[] = elementsAtPoint,
+): boolean {
+  if (closestSel(target, SWIPE_CHROME_SEL)) return true
+  return hitTest(clientX, clientY).some((el) => closestSel(el, SWIPE_DOCK_SEL))
+}
+
 export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
   const threshold = swipeThreshold(opts.width)
   const x0 = opts.x
   const y0 = opts.y
+  const height = Number.isFinite(opts.height) && opts.height > 0 ? opts.height : 844
   const zone = swipeZone(opts.x, opts.width)
   const touch = opts.pointerKind === 'touch' || opts.pointerKind === 'pen'
   const railIntent: SwipeIntent =
@@ -113,8 +177,9 @@ export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
   let done = false
 
   function snap(): SongSwipeView {
+    const stampTop = swipeStampTop(y0 + dy, height)
     if (axis === 'ignored' || axis === 'vertical' || axis === 'undecided') {
-      return { ...IDLE, axis, dx, dy }
+      return { ...IDLE, axis, dx, dy, stampTop }
     }
     const along =
       railIntent === 'next' ? -dx : railIntent === 'prev' ? dx : 0
@@ -133,6 +198,7 @@ export function beginSongSwipe(opts: SongSwipeBegin): SongSwipeSession {
       intent: peeking ? intent : 'none',
       armed: allowed && raw >= 1,
       peeking,
+      stampTop,
     }
   }
 

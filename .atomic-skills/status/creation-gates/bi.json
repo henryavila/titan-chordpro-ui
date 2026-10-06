@@ -1,0 +1,7 @@
+{
+  "value": "O músico precisa que o core reconheça o nome brasileiro do acorde (7M, 4, 9, 2, slash) sem inventar forma. Um C7M desenhado como C7 mente no ensaio.",
+  "workflow": "Gerar a tabela-oráculo dos nomes únicos em fixtures/sda; implementar parseChordToken com aliases; testes em tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts; exportar pelo index do core.",
+  "rules": "7M vira maj7; 4 e sus viram sus4; 9 vira add9; 2 vira sus2; 7+ e aspas no nome sao AMBIGUOUS ou UNPARSED; nao chutar voicing; zero import Vue em src/core.",
+  "outOfScope": "Modal de forma, SVG de braço/teclado, dicionario de voicings, parser de {define}, folha de editor, prefs de instrumento.",
+  "doneWhen": "tests/core/chord-oracle.test.ts e tests/core/parse-chord-token.test.ts passam; tests/core/no-vue-in-core.test.ts passa; a tabela cobre os nomes unicos de fixtures/sda."
+}

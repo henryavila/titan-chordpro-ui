@@ -17,7 +17,7 @@ describe('lintSource', () => {
 
   it('catches unclosed tabs, scores and chord brackets', () => {
     expect(lintSource('{sot}\nE|---|').issues).toContain('tab sem fechar (1 {sot} × 0 {eot})')
-    expect(lintSource('{sos}\n| c4:q |').issues).toContain('partitura sem fechar (1 {sos} × 0 {eos})')
+    expect(lintSource('{x_titan_start_of_score}\n| c4:q |').issues).toContain('partitura sem fechar (1 {x_titan_start_of_score} × 0 {x_titan_end_of_score})')
     expect(lintSource('[C a').issues).toContain('colchete de acorde sem par')
   })
 

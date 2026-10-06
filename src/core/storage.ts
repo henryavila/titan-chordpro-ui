@@ -1,9 +1,9 @@
 /**
- * Where the viewer's state is kept between visits.
+ * Where TitanChordpro's state is kept between visits.
  *
  * The component owns every behaviour built on this — the personal overlay, the
  * suggestion queue, the per-song tempo, the reading preferences. It does not
- * own the storage those behaviours land in: a host embedding the viewer may
+ * own the storage those behaviours land in: a host embedding TitanChordpro may
  * want them on the device, on the user's account, or nowhere at all. So the
  * package writes through this seam and the consumer decides the destination.
  *
@@ -22,20 +22,22 @@ export type ChartStore = {
 
 /** Every key the package writes, so a host can route or namespace them. */
 export const STORE_KEYS = {
-  /** Reading preferences: theme, type bias, fit mode, metronome toggles. */
-  prefs: 'cpv:prefs',
+  /** Device/account reading preferences, including TAB rhythm. */
+  prefs: 'titan-chordpro:user-preferences',
+  /** Per-song, per-reference display choices. */
+  notationPrefix: 'titan-chordpro:notation:',
   /** `"1"` once the fit-mode hint has actually been seen. */
-  fitSeen: 'cpv:fitSeen',
+  fitSeen: 'titan-chordpro:fitSeen',
   /** `"1"` once the three touch rules of the editor have been shown. */
-  editSeen: 'cpv:editSeen',
+  editSeen: 'titan-chordpro:editSeen',
   /** Manual tempo per song, so one chart's BPM never leaks into the next. */
-  bpm: 'cpv:bpm',
+  bpm: 'titan-chordpro:bpm',
   /** Suggestions waiting for whoever owns the chart. */
-  suggestions: 'cpv:sug',
+  suggestions: 'titan-chordpro:sug',
   /** Last display name typed when sending a suggestion. */
-  actorName: 'cpv:actor-name',
-  /** Prefix of the reader's personal version: `cpv:my:{songId}:{chartId}`. */
-  overlayPrefix: 'cpv:my:',
+  actorName: 'titan-chordpro:actor-name',
+  /** Prefix of the reader's personal version: `titan-chordpro:my:{songId}:{chartId}`. */
+  overlayPrefix: 'titan-chordpro:my:',
 } as const
 
 /**
@@ -43,8 +45,7 @@ export const STORE_KEYS = {
  * the implicit chart of a file with no envelope.
  */
 function overlayChartId(chartId?: string): string {
-  const id = String(chartId ?? '').trim()
-  return id && id !== 'default' ? id : 'default'
+  return String(chartId ?? '').trim()
 }
 
 /**
@@ -58,10 +59,13 @@ function overlayPart(id: string): string {
 
 /** The key a given chart's personal version is stored under. */
 export function overlayKey(songId: string, chartId?: string): string {
-  return `${STORE_KEYS.overlayPrefix}${overlayPart(songId)}:${overlayPart(overlayChartId(chartId))}`
+  const song = overlayPart(songId)
+  const chart = overlayChartId(chartId)
+  const base = `${STORE_KEYS.overlayPrefix}${song}`
+  return chart ? `${base}:${overlayPart(chart)}` : base
 }
 
-/** `cpv:my:{songId}` before chart slots, with the same song encoding as `overlayKey`. */
+/** `titan-chordpro:my:{songId}` before chart slots, with the same song encoding as `overlayKey`. */
 export function songLegacyKey(songId: string): string {
   return `${STORE_KEYS.overlayPrefix}${overlayPart(songId)}`
 }

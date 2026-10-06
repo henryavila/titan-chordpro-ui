@@ -8,6 +8,7 @@ describe('exportSlja — host download without mounting the viewer', () => {
     expect(file.bytes[0]).toBe(0x50)
     expect(file.bytes[1]).toBe(0x4b)
     expect(file.filename).toBe('slides-102-fala-comigo.slja')
+    expect(file.mime).toBe('application/zip')
     expect(file.title).toMatch(/Fala Comigo/)
   })
 

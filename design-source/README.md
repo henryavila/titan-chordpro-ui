@@ -1,12 +1,14 @@
 # Design source (Claude Design export)
 
 Extracted from `Titan Chodpro UI.zip`. **Visual SoT** for the Vue package.
+The original SDA component cited in older handoff notes had a different name;
+the current package API is defined in [`docs/NAMING.md`](../docs/NAMING.md).
 
 | File | Role |
 |---|---|
 | `Titan Chordpro UI v2.dc.html` | View + edit (phone &lt;640 vs wide ≥640) |
-| `Chordpro Viewer v2.dc.html` | Ratified reading surface (chart, tokens, PDF) |
-| `design_handoff_chordpro_viewer/README.md` | Interaction contract |
+| `TitanChordpro v2.dc.html` | Ratified reading surface (chart, tokens, PDF) |
+| `design_handoff_titan_chordpro/README.md` | Interaction contract |
 | `Titan Chordpro Breakpoints.dc.html` | Three chrome models |
 
 Do not port `support.js` / DC runtime. Recreate in Vue.
@@ -19,9 +21,10 @@ estava aqui foi revista — o que o `.dc.html` faz, o pacote Vue faz.
 | Leitura + chrome E0 (meta, fonte, dirty, view↔edit) | pronto |
 | Modo dual capo (forma acima, cifra real na letra) | pronto |
 | Lente Nashville + comentários de ensaio | pronto |
-| Metrônomo (click, pulso, BPM por música) | pronto |
+| Metrônomo (click, pulso, BPM por música; faixa marca tempo e contratempo) | pronto |
 | Auto-rolagem em tempo musical (`{duration}`, `x///`) | pronto |
 | Overlay “só para mim” + fila de sugestões | pronto |
+| Diagramas de acorde (violão, ukulele, piano) | pronto |
 | Drag in-place de acorde (E1) | pronto |
 | WYSIWYG de bloco: seleção, reordenar, capo/transpose por bloco (E2) | pronto |
 | Editor de partitura VexFlow (`partitura.js`, `Editor Partitura.dc.html`) | pronto |

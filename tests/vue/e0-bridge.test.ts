@@ -1,12 +1,12 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 describe('E0 Vue bridge', () => {
   it('view↔edit, source pane, dirty, transpose reset', async () => {
     const src = loadFixture(JESUS_1)
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src, theme: 'dark', autoHide: false, mode: 'view', modes: 'content' },
       attachTo: document.body,
     })
@@ -14,7 +14,8 @@ describe('E0 Vue bridge', () => {
     await w.get('[data-transpose-up]').trigger('click')
     await w.get('[data-transpose-up]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-display-key]').text()).toBe('A')
+    expect(w.get('[data-display-key]').text()).toBe('G')
+    expect(w.get('[data-tone-shift]').text()).toMatch(/tocando em A/)
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
     expect(w.text()).toMatch(/Para todos/)
@@ -33,7 +34,7 @@ describe('E0 Vue bridge', () => {
 
   it('content edit emits update:source so a host can persist the official chart', async () => {
     const src = loadFixture(JESUS_1)
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src, theme: 'dark', autoHide: false, modes: 'content' },
       attachTo: document.body,
     })
@@ -51,7 +52,7 @@ describe('E0 Vue bridge', () => {
 
   it('local edit does not emit update:source — the official chart stays put', async () => {
     const src = loadFixture(JESUS_1)
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src, theme: 'dark', autoHide: false, modes: 'local', songId: 'jesus-1' },
       attachTo: document.body,
     })

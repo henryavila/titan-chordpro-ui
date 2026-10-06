@@ -18,7 +18,7 @@ const emit = defineEmits<{
       <button
         type="button"
         data-batida-preset-save
-        class="cpv-ghost"
+        class="titan-chordpro-ghost"
         title="Salvar a batida atual como preset no sistema"
         style="height:28px;padding:0 10px;border-radius:999px;border:1px dashed var(--line);color:var(--text);font-size:11.5px;font-weight:600;cursor:pointer;"
         @click="emit('save')"
@@ -29,7 +29,7 @@ const emit = defineEmits<{
         v-for="p in presets"
         :key="p.id"
         type="button"
-        class="cpv-ghost"
+        class="titan-chordpro-ghost"
         :data-batida-preset="p.id"
         :aria-label="`Aplicar preset ${p.label}`"
         style="height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;"

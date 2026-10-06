@@ -12,7 +12,7 @@ const cli = join(root, 'src/cli/index.ts')
 
 describe('CLI', () => {
   it('accepts .cho html/parse smoke on jesus-1', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'cpv-'))
+    const dir = mkdtempSync(join(tmpdir(), 'titan-chordpro-'))
     const cho = join(dir, 'song.cho')
     writeFileSync(cho, loadFixture(JESUS_1))
     const htmlOut = join(dir, 'out.html')
@@ -29,7 +29,7 @@ describe('CLI', () => {
   })
 
   it('accepts .chordpro and .onsong extensions', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'cpv-'))
+    const dir = mkdtempSync(join(tmpdir(), 'titan-chordpro-'))
     const chordpro = join(dir, 'song.chordpro')
     const onsong = join(dir, 'song.onsong')
     writeFileSync(chordpro, loadFixture(JESUS_1))
@@ -41,7 +41,7 @@ describe('CLI', () => {
     const b = join(dir, 'b.json')
     execFileSync('pnpm', ['exec', 'tsx', cli, 'html', chordpro, '-o', a], { cwd: root, stdio: 'pipe' })
     execFileSync('pnpm', ['exec', 'tsx', cli, 'parse', onsong, '-o', b], { cwd: root, stdio: 'pipe' })
-    expect(readFileSync(a, 'utf8')).toContain('cpv')
+    expect(readFileSync(a, 'utf8')).toContain('titan-chordpro')
     const view = JSON.parse(readFileSync(b, 'utf8'))
     expect(view.sections.length).toBeGreaterThan(0)
   })

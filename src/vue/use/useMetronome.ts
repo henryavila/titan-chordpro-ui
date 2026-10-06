@@ -31,6 +31,21 @@ export type MetronomeOpts = {
 }
 
 /**
+ * Attack (tempo) is the first half of the beat; the second half is the rest
+ * (contratempo). Beat 0 is the downbeat ('1'); any other beat is 'n'.
+ */
+export function metronomePulseHit(
+  running: boolean,
+  beat: number,
+  beatClock: number,
+): '' | '1' | 'n' {
+  if (!running) return ''
+  const frac = beatClock - Math.floor(beatClock)
+  if (frac >= 0.5) return ''
+  return beat === 0 ? '1' : 'n'
+}
+
+/**
  * The click is a rehearsal playing along: the tempo comes from the chart's
  * `{tempo:}`, a manual change is kept per song, and the beat clock schedules
  * each pulse from the instant it was due — so it never drifts a frame at a time.
@@ -58,7 +73,8 @@ export function useMetronome(opts: MetronomeOpts) {
    */
   const runSilent = ref(false)
   /**
-   * The title strip paints the beat. Off until the metronome panel turns it
+   * The title strip paints tempo and contratempo (on for the first half of
+   * each beat, off for the rest). Off until the metronome panel turns it
    * on — Rolar only brings the left count and the chord pulse.
    */
   const pulseHead = ref(false)

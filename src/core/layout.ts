@@ -15,8 +15,8 @@ import type {
   ChartBlockBody,
   ChartRow,
   ChartSeg,
-  ChordProLine,
-  ChordProView,
+  TitanChordproLine,
+  TitanChordproDocument,
   Lens,
   LineSpan,
   TabStave,
@@ -43,7 +43,7 @@ type WorkLine = WorkBase &
     | { kind: 'note'; items: string[]; lis: number[] }
   )
 
-function flatten(view: ChordProView): WorkLine[] {
+function flatten(view: TitanChordproDocument): WorkLine[] {
   const out: WorkLine[] = []
   for (const sec of view.sections) {
     for (const line of sec.lines) out.push(fromLine(line, sec.kind === 'chorus'))
@@ -51,7 +51,7 @@ function flatten(view: ChordProView): WorkLine[] {
   return out
 }
 
-function fromLine(line: ChordProLine, inChorus: boolean): WorkLine {
+function fromLine(line: TitanChordproLine, inChorus: boolean): WorkLine {
   const span = { li0: line.li0, li1: line.li1 }
   if (line.type === 'empty') return { kind: 'blank', ...span }
   if (line.type === 'comment') return { kind: 'comment', text: line.text, ...span }
@@ -283,7 +283,11 @@ function musicOf(block: ChartBlockDraft, srcLines: string[]): BlockMusic {
 }
 
 export type LayoutOpts = {
-  /** Global transpose, in semitones (defaults to the view's own). */
+  /**
+   * Semitones applied once to a view still in the written key.
+   * Omitted means 0: `transpose()` already rewrote the chords and stored
+   * the same count on `view.transposeSemitones`.
+   */
   semitones?: number
   /** Capo of the song. */
   capo?: number
@@ -431,7 +435,7 @@ function lyricsOnlyBlocks(blocks: ChartBlock[]): ChartBlock[] {
   return out
 }
 
-export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlock[] {
+export function layoutChart(view: TitanChordproDocument, opts: LayoutOpts = {}): ChartBlock[] {
   return layoutChartFull(view, opts).blocks
 }
 
@@ -441,8 +445,8 @@ export function layoutChart(view: ChordProView, opts: LayoutOpts = {}): ChartBlo
  * chart itself is rewritten to the shapes they fret. The sounding key does
  * not change.
  */
-export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): ChartLayout {
-  const semis = opts.semitones ?? view.transposeSemitones
+export function layoutChartFull(view: TitanChordproDocument, opts: LayoutOpts = {}): ChartLayout {
+  const semis = opts.semitones ?? 0
   const capo = Math.max(0, opts.capo ?? 0)
   const editing = !!opts.editing
   const flats = usesFlats(view.meta.key)
@@ -452,15 +456,21 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
 
   const drafts = groupChorus(groupNotes(flatten(view)), view.eocOf ?? {})
 
-  // A capo chosen for ONE block follows that block's own dual mark (`#capo:n`
-  // vs `#capo:n!`). The song-wide switch only applies when the block has none.
-  const capoReadOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
-    if (editing || nash) return { fret: 0, dual: false }
+  // Song or `#capo:n` fret — the draw source. Edit/Nashville still need this;
+  // they only zero the *display* projection (`capoReadOf`), not the playable fields.
+  const playableCapoOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
     const own = marks.blockCapo != null
     const fret = own ? (marks.blockCapo ?? 0) : capo
     if (fret <= 0) return { fret: 0, dual: false }
     const dual = own ? marks.blockCapoMap !== false : opts.dual !== false
     return { fret, dual }
+  }
+
+  // A capo chosen for ONE block follows that block's own dual mark (`#capo:n`
+  // vs `#capo:n!`). The song-wide switch only applies when the block has none.
+  const capoReadOf = (marks: BlockMarks): { fret: number; dual: boolean } => {
+    if (editing || nash) return { fret: 0, dual: false }
+    return playableCapoOf(marks)
   }
 
   const nashRoot = transposeToken(keyRoot, semis, flats)
@@ -486,13 +496,27 @@ export function layoutChartFull(view: ChordProView, opts: LayoutOpts = {}): Char
     if (draft.kind !== 'stanza' && draft.kind !== 'chorus') return { ...draft, music }
 
     const read = capoReadOf(draft)
+    const playable = playableCapoOf(draft)
     const shapeCapo = read.dual ? read.fret : 0
     if (draft.blockCapo != null && draft.blockCapo > 0) anyBlockCapo = true
     if (shapeCapo > 0) twin = true
     const rows: ChartRow[] = draft.rows.map((row) => {
       const segs = row.segs.map((s): ChartSeg => {
         const d = display(s.chord, read)
-        return { ...s, chord: d.name, shape: d.shape, hasShape: !!d.shape }
+        const concert = s.chord ? (semis ? transposeToken(s.chord, semis, flats) : s.chord) : ''
+        const shapeName =
+          s.chord && playable.fret > 0
+            ? transposeToken(s.chord, semis - playable.fret, flats)
+            : concert
+        return {
+          ...s,
+          chord: d.name,
+          shape: d.shape,
+          hasShape: !!d.shape,
+          concert,
+          shapeName,
+          capoFret: playable.fret,
+        }
       })
       markTight(segs)
       return { ...row, segs }
@@ -604,10 +628,9 @@ export function typeScale(
 }
 
 /**
- * Typography the editing surface needs on top of the reading one. A row in
- * edit mode is syllables you can measure with chord pills floating above them,
- * so the line box has to carry a lane the pills live in — hence a line-height
- * far taller than the lyric itself.
+ * Typography the editing surface needs on top of the reading one.
+ * `pillLane` is the gap above the in-place input. The lyric itself reserves
+ * width per chord, the way reading does, so `editLineH` is no longer the lane.
  */
 export function editTypeScale(bias: number, compact: boolean) {
   const lyric = 18 + bias * 1.7

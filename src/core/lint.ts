@@ -1,3 +1,4 @@
+import { notationEdge } from './notation-region'
 import { isPlayedLine, lineBeats } from './timeline'
 
 export type LintResult = {
@@ -28,19 +29,20 @@ function voicelessWithoutMarks(src: string): number {
   for (const raw of lines) {
     const d = raw.match(/^\s*\{\s*([a-zA-Z_]+)/)
     const k = (d?.[1] ?? '').toLowerCase()
-    if (k === 'sot' || k === 'start_of_tab') {
+    const edge = notationEdge(k)
+    if (edge === 'tab-open') {
       tab = true
       continue
     }
-    if (k === 'eot' || k === 'end_of_tab') {
+    if (edge === 'tab-close') {
       tab = false
       continue
     }
-    if (k === 'sos' || k === 'start_of_score') {
+    if (edge === 'score-open') {
       score = true
       continue
     }
-    if (k === 'eos' || k === 'end_of_score') {
+    if (edge === 'score-close') {
       score = false
       continue
     }
@@ -65,14 +67,22 @@ export function lintSource(source: string): LintResult {
 
   const soc = count(src, /\{\s*(soc|start_of_chorus)\b/gi)
   const eoc = count(src, /\{\s*(eoc|end_of_chorus)\b/gi)
-  const sot = count(src, /\{\s*(sot|start_of_tab)\b/gi)
-  const eot = count(src, /\{\s*(eot|end_of_tab)\b/gi)
-  const sos = count(src, /\{\s*(sos|start_of_score)\b/gi)
-  const eos = count(src, /\{\s*(eos|end_of_score)\b/gi)
+  let sot = 0
+  let eot = 0
+  let sos = 0
+  let eos = 0
+  for (const raw of src.split('\n')) {
+    const d = raw.match(/^\s*\{\s*([a-zA-Z_]+)/)
+    const edge = notationEdge((d?.[1] ?? '').toLowerCase())
+    if (edge === 'tab-open') sot++
+    else if (edge === 'tab-close') eot++
+    else if (edge === 'score-open') sos++
+    else if (edge === 'score-close') eos++
+  }
 
   if (soc !== eoc) issues.push(`refrão sem fechar (${soc} {soc} × ${eoc} {eoc})`)
   if (sot !== eot) issues.push(`tab sem fechar (${sot} {sot} × ${eot} {eot})`)
-  if (sos !== eos) issues.push(`partitura sem fechar (${sos} {sos} × ${eos} {eos})`)
+  if (sos !== eos) issues.push(`partitura sem fechar (${sos} {x_titan_start_of_score} × ${eos} {x_titan_end_of_score})`)
   const brackets = Math.abs(count(src, /\[/g) - count(src, /\]/g))
   if (brackets) issues.push('colchete de acorde sem par')
   const k = (src.match(/\{\s*key\s*:\s*([^}]*)\}/i) || [])[1]

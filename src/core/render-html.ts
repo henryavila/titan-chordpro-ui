@@ -1,6 +1,7 @@
+import { scoreReferenceCaption } from './score-reference'
 import { layoutChart } from './layout'
 import { assertTheme, cssVarsString, resolveTheme } from './themes'
-import type { ChartBlock, ChartRow, ChordProView } from './types'
+import type { ChartBlock, ChartRow, TitanChordproDocument } from './types'
 
 function escapeHtml(s: string): string {
   return s
@@ -14,33 +15,33 @@ function segsHtml(row: ChartRow): string {
   return row.segs
     .map((s) => {
       const chord = s.chord
-        ? `<span class="chord cpv-chord${s.tight ? ' cpv-chord--tight' : ''}">${escapeHtml(s.chord)}</span>`
-        : `<span class="chord cpv-chord cpv-chord--empty"></span>`
-      return `<span class="word cpv-word"><span class="cpv-chord-box">${chord}</span><span class="lyric cpv-lyric">${escapeHtml(s.text)}</span></span>`
+        ? `<span class="titan-chordpro-chord${s.tight ? ' titan-chordpro-chord--tight' : ''}">${escapeHtml(s.chord)}</span>`
+        : `<span class="titan-chordpro-chord titan-chordpro-chord--empty"></span>`
+      return `<span class="titan-chordpro-word"><span class="titan-chordpro-chord-box">${chord}</span><span class="titan-chordpro-lyric">${escapeHtml(s.text)}</span></span>`
     })
     .join('')
 }
 
 function rowHtml(row: ChartRow): string {
-  return `<div class="lyrics-line cpv-row">${segsHtml(row)}</div>`
+  return `<div class="titan-chordpro-row">${segsHtml(row)}</div>`
 }
 
 function blockHtml(block: ChartBlock): string {
   if (block.kind === 'comment') {
-    return `<div class="comment-line cpv-comment"><span class="cpv-comment-dot"></span><span class="cpv-comment-text">${escapeHtml(block.text)}</span></div>`
+    return `<div class="titan-chordpro-comment"><span class="titan-chordpro-comment-dot"></span><span class="titan-chordpro-comment-text">${escapeHtml(block.text)}</span></div>`
   }
   if (block.kind === 'note') {
-    const items = block.items.map((t) => `<div class="cpv-note-item">${escapeHtml(t)}</div>`).join('')
-    return `<div class="cpv-note"><div class="cpv-note-label">Execução</div>${items}</div>`
+    const items = block.items.map((t) => `<div class="titan-chordpro-note-item">${escapeHtml(t)}</div>`).join('')
+    return `<div class="titan-chordpro-note"><div class="titan-chordpro-note-label">Execução</div>${items}</div>`
   }
   if (block.kind === 'tab') {
-    return `<div class="cpv-tab"><pre>${escapeHtml(block.text)}</pre></div>`
+    return `<div class="titan-chordpro-tab"><pre>${escapeHtml(block.text)}</pre></div>`
   }
   if (block.kind === 'score') {
-    return `<div class="cpv-score"><pre>${escapeHtml(block.text)}</pre></div>`
+    return `<div class="titan-chordpro-score"><pre>${escapeHtml(scoreReferenceCaption(block.text))}</pre></div>`
   }
   if (block.kind === 'image') {
-    return `<figure class="cpv-image"><img src="${escapeHtml(block.src)}" alt="Partitura da música" /><figcaption>${escapeHtml(
+    return `<figure class="titan-chordpro-image"><img src="${escapeHtml(block.src)}" alt="Partitura da música" /><figcaption>${escapeHtml(
       block.src.split('/').pop() ?? '',
     )}</figcaption></figure>`
   }
@@ -49,12 +50,12 @@ function blockHtml(block: ChartBlock): string {
   const rows = block.rows.map(rowHtml).join('')
   const cls =
     block.kind === 'chorus'
-      ? 'chorus-section cpv-chorus'
-      : 'cpv-stanza'
+      ? 'titan-chordpro-chorus'
+      : 'titan-chordpro-stanza'
   return `<div class="${cls}">${rows}</div>`
 }
 
-export function renderHtml(view: ChordProView, opts?: { theme?: string }): string {
+export function renderHtml(view: TitanChordproDocument, opts?: { theme?: string }): string {
   const theme = opts?.theme ?? 'default'
   assertTheme(theme)
   const resolved = resolveTheme(theme)
@@ -62,10 +63,10 @@ export function renderHtml(view: ChordProView, opts?: { theme?: string }): strin
   const body = blocks.map(blockHtml).join('\n')
   const alias = theme === 'default' ? 'default' : resolved
   const vars = cssVarsString(resolved)
-  return `<div class="cpv cpv--${alias} chordpro-content song-content" data-cpv-scroll data-theme="${resolved}" style="${vars}">${body}</div>`
+  return `<div class="titan-chordpro titan-chordpro--${alias}" data-titan-chordpro-scroll data-theme="${resolved}" style="${vars}">${body}</div>`
 }
 
-export function isParseFatal(source: string, view: ChordProView): string | null {
+export function isParseFatal(source: string, view: TitanChordproDocument): string | null {
   if (/[\u0000-\u0008\u000E-\u001F\uFFFD]/.test(source)) {
     return 'O conteúdo recebido não parece ser um arquivo ChordPro.'
   }

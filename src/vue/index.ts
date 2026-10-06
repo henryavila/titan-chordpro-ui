@@ -1,18 +1,20 @@
-import ChordproViewer from './ChordproViewer.vue'
+import TitanChordpro from './TitanChordpro.vue'
 
-export { ChordproViewer }
-export default ChordproViewer
+export { TitanChordpro, TitanChordpro as ChordproViewer }
+export default TitanChordpro
 export type {
-  ChordproViewerEmits,
-  ChordproViewerProps,
+  TitanChordproEmits,
+  TitanChordproProps,
   EditMode,
   ImageChoice,
   Lens,
+  NoteNameFormat,
   ModesProp,
   RehearsalFocus,
   SlideImage,
   SuggestionStatus,
-  ViewerCapabilities,
+  TitanChordproCapabilities,
   WriteMode,
 } from './public'
 export { resolveEditMode } from './public'
+export { fillAudioCache, matchAudio, putAudio } from './use/audio-cache'

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { setAudioArt, setAudioUrl } from '../../src/core'
+import { AUDIO_ART_MEDIA_PX, setAudioArt, setAudioUrl } from '../../src/core'
 import type { Lens } from '../../src/vue'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import raw from '../../fixtures/sda/084-escuta-meu-clamor.cho?raw'
 import refAudio from '../../demo/ref-audio.wav?url'
 import refPlayback from '../../demo/ref-audio-playback.wav?url'
@@ -35,25 +35,34 @@ function pickSource(): string {
   /** Scroll is gated on `{duration:}`. The default fixture has none; the harness adds one so layout tests can still roll. */
   return `{duration: 04:26}\n${raw}`
 }
-const source = (() => {
-  const rawCho = pickSource()
+function stampAudio(cho: string, slot = 0): string {
   const mode = q.get('audio')
-  if (!mode) return rawCho
-  let next = rawCho
+  if (!mode) return cho
+  const alt = slot % 2 === 1
+  let next = cho
   if (mode === '1' || mode === 'ambos' || mode === 'cantado' || mode === 'sung') {
-    next = setAudioUrl(next, refAudio, 'sung')
+    next = setAudioUrl(next, alt ? refPlayback : refAudio, 'sung')
   }
   if (mode === '1' || mode === 'ambos' || mode === 'playback') {
-    next = setAudioUrl(next, refPlayback, 'playback')
+    next = setAudioUrl(next, alt ? refAudio : refPlayback, 'playback')
   }
-  return setAudioArt(next, { url: refArt, width: 512, height: 512 })
-})()
+  if (q.get('capa') === '0') return next
+  return setAudioArt(next, { url: refArt, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX })
+}
+const source = stampAudio(pickSource())
 const fitDefault = q.get('fit') !== '0'
 const capoQ = q.get('capo')
 const initialCapo = capoQ != null && capoQ !== '' ? Math.max(0, Math.min(9, Number(capoQ))) : undefined
 const dualQ = q.get('dual')
 const initialDual = dualQ === '0' ? false : dualQ === '1' ? true : undefined
-const editMode = ref<'local' | 'persisted'>('persisted')
+const editQ = q.get('editMode')
+const editMode = ref<'none' | 'local' | 'persisted'>(
+  editQ === 'none' || editQ === 'local' || editQ === 'persisted' ? editQ : 'persisted',
+)
+const defaultAudioArt =
+  q.get('artDefault') === '1'
+    ? { url: refArt, width: AUDIO_ART_MEDIA_PX, height: AUDIO_ART_MEDIA_PX }
+    : undefined
 const fonts = ref('fallback')
 async function loadFonts() {
   await Promise.all([import('@fontsource/figtree/400.css'), import('@fontsource/sora/400.css'), import('@fontsource/space-mono/700.css')])
@@ -71,16 +80,16 @@ const songs = computed(() => {
     // Search only appears above 10 songs — enough real fixtures for the keyboard overlay test.
     return Object.entries(catalog)
       .slice(0, 12)
-      .map(([path, source], i) => ({
+      .map(([path, cho], i) => ({
         id: `s${i}`,
         title: path.split('/').pop()?.replace(/\.cho$/, '') ?? `Música ${i + 1}`,
-        source: String(source),
+        source: stampAudio(String(cho), i),
       }))
   }
   if (lista === '1') {
     return [
-      { id: 'o-rei', title: '082 - O Rei vem vindo', source: oRei },
-      { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: jesus },
+      { id: 'o-rei', title: '082 - O Rei vem vindo', source: stampAudio(oRei, 0) },
+      { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: stampAudio(jesus, 1) },
     ]
   }
   return undefined
@@ -91,6 +100,7 @@ const lensQ = q.get('lens')
 const lens: Lens =
   lensQ === 'letra' || lensQ === 'nashville' || lensQ === 'none' ? lensQ : 'none'
 const hideComments = q.get('comentarios') === '0'
+const zonas = q.get('zonas') === '1'
 </script>
 <template>
   <div
@@ -123,7 +133,7 @@ const hideComments = q.get('comentarios') === '0'
     >
       <button id="load-fonts" @click="loadFonts">Load fonts</button>
       <span id="fonts-state">{{ fonts }}</span>
-      <select id="host-modes" v-model="editMode"><option>persisted</option><option>local</option></select>
+      <select id="host-modes" v-model="editMode"><option>persisted</option><option>local</option><option>none</option></select>
       <select id="host-theme" v-model="theme"><option>light</option><option>dark</option><option>auto</option></select>
       <select id="host-control" v-model="themeControl"><option>host</option><option>preference</option></select>
     </div>
@@ -133,7 +143,7 @@ const hideComments = q.get('comentarios') === '0'
         ? 'height:100dvh;min-height:560px;overflow:hidden;scroll-snap-align:start'
         : 'flex:1;min-height:0;position:relative'"
     >
-      <ChordproViewer
+      <TitanChordpro
         :source="source"
         :songs="songs"
         :theme="theme"
@@ -145,6 +155,8 @@ const hideComments = q.get('comentarios') === '0'
         :fit-default="fitDefault"
         :initial-capo="initialCapo"
         :initial-dual="initialDual"
+        :default-audio-art="defaultAudioArt"
+        :capabilities="{ debugSwipe: zonas }"
         song-id="sda-86"
       />
     </div>

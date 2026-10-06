@@ -125,7 +125,7 @@ Peso das vozes (debate 2026-08-29):
 2. **Allowlist lossy** OnSong→ChordPro e pós-edit (whitespace, ordem de meta, chords-over-lyrics) — lista fechada + testes golden.
 3. **Default capabilities** no embed SDA dia 1 (provável E0+E1; E2–E4 via flag ou Titan) — confirmar com host SDA.
 4. Alinhar `SPEC.md` §2/§9 e `design-handoff/01-screens.md` (anti-padrão editor) ao novo SoT — follow-up doc, não bloqueia este design se VISAO+design estiverem alinhados.
-5. Edit estende `ViewerController` (`dispatch`) ou bridge Vue/host paralelo ao controller de leitura? — fechar no plan/scaffold.
+5. Edit estende `TitanChordproController` (`dispatch`) ou bridge Vue/host paralelo ao controller de leitura? — fechar no plan/scaffold.
 6. Detalhe de dirty clear (a cada `onSourceChange` vs só em save explícito do host) — default deste design: dirty limpa quando prop `source` do host iguala o local após change.
 
 ## Self-review against code-quality gates

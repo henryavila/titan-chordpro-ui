@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /**
@@ -26,7 +26,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -38,7 +38,7 @@ afterEach(() => {
 })
 
 async function viewerAt(width: number, props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: loadFixture(JESUS_1),
       theme: 'dark',
@@ -60,7 +60,7 @@ function editPlace(w: Awaited<ReturnType<typeof viewerAt>>) {
   const scroll = w.get('[data-scroll]').element as HTMLElement
   const row = scroll.parentElement
   return {
-    chip: w.find('.cpv-edit-chip').exists(),
+    chip: w.find('.titan-chordpro-edit-chip').exists(),
     count: w.findAll('[data-edit]').length,
     inRolarRow: row?.contains(edit) ?? false,
     position: getComputedStyle(edit).position,
@@ -85,21 +85,21 @@ describe('Editar lives in the bottom bar at every width', () => {
   it('hides with the chrome on desktop — no leftover floating entry', async () => {
     const w = await viewerAt(1280)
     expect(editPlace(w).inRolarRow).toBe(true)
-    await w.get('[data-cpv-scroll]').trigger('click')
+    await w.get('[data-titan-chordpro-scroll]').trigger('click')
     await flushPromises()
     expect(
-      w.findAll('.cpv-chrome').every((c) => c.classes().includes('is-hidden')),
+      w.findAll('.titan-chordpro-chrome').every((c) => c.classes().includes('is-hidden')),
       'a chrome band stayed up',
     ).toBe(true)
-    expect(w.get('[data-edit]').element.closest('.cpv-chrome.is-hidden')).not.toBeNull()
-    expect(w.find('.cpv-edit-chip').exists()).toBe(false)
+    expect(w.get('[data-edit]').element.closest('.titan-chordpro-chrome.is-hidden')).not.toBeNull()
+    expect(w.find('.titan-chordpro-edit-chip').exists()).toBe(false)
   })
 
   it('canEdit=false still removes every way in, on desktop and on a phone', async () => {
     for (const width of [390, 1280]) {
       const w = await viewerAt(width, { canEdit: false })
       expect(w.find('[data-edit]').exists(), `${width}px leaked an edit control`).toBe(false)
-      expect(w.find('.cpv-edit-chip').exists()).toBe(false)
+      expect(w.find('.titan-chordpro-edit-chip').exists()).toBe(false)
     }
   })
 
@@ -120,7 +120,7 @@ describe('Editar lives in the bottom bar at every width', () => {
     await w.get('[data-read]').trigger('click')
     await flushPromises()
 
-    expect(w.find('.cpv-edit-chip').exists()).toBe(false)
+    expect(w.find('.titan-chordpro-edit-chip').exists()).toBe(false)
     expect(w.get('[data-edit]').text()).toContain('rascunho')
     expect(editPlace(w).inRolarRow).toBe(true)
   })

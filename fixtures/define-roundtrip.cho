@@ -1,0 +1,11 @@
+{title:Define Roundtrip}
+{subtitle:Fixture}
+{key:G}
+{tempo:72}
+{time:4/4}
+{define-guitar: G base-fret 1 frets 3 2 0 0 0 3 fingers 2 1 0 0 0 3}
+
+{c:(INTRODUÇÃO)}
+[G]x/// [C]x/// [G]x/// [D]x///
+
+[G]Uma [C]linha [D]só

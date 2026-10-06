@@ -1,8 +1,17 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
-import { JESUS_1, loadFixture } from '../helpers/load-fixture'
-import { STORE_KEYS, diffOps, memoryStore, normalizeSource, overlayKey, parse, songLegacyKey } from '../../src/core/index'
+import { TitanChordpro } from '../../src/vue/index'
+import { ELE_VIVE_IMG, JESUS_1, loadFixture } from '../helpers/load-fixture'
+import {
+  STORE_KEYS,
+  diffOps,
+  memoryStore,
+  normalizeSource,
+  notationKey,
+  overlayKey,
+  parse,
+  songLegacyKey,
+} from '../../src/core/index'
 import type { ChartStore } from '../../src/core/index'
 
 const src = () => normalizeSource(loadFixture(JESUS_1))
@@ -26,7 +35,7 @@ function hostStore(): ChartStore & { seen: string[] } {
 }
 
 function mountViewer(store: ChartStore, props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: {
       source: src(),
       theme: 'dark',
@@ -133,8 +142,20 @@ describe('storage seam', () => {
     w.unmount()
   })
 
+  it('keeps notation display choices in the host store, separate from suggestions', async () => {
+    const store = hostStore()
+    const w = mountViewer(store, { source: loadFixture(ELE_VIVE_IMG) })
+    await w.get('[data-toggle-notation]').trigger('click')
+    await flushPromises()
+    const saved = JSON.parse(store.get(notationKey('jesus-1')) ?? '{}')
+    expect(Object.values(saved)).toContainEqual({ collapsed: true })
+    expect(localStorage.getItem(notationKey('jesus-1'))).toBeNull()
+    expect(store.get(STORE_KEYS.suggestions)).toBeNull()
+    w.unmount()
+  })
+
   it('falls back to this device when the host passes no store', async () => {
-    const w = mount(ChordproViewer, {
+    const w = mount(TitanChordpro, {
       props: { source: src(), theme: 'dark', autoHide: false, songId: 'jesus-1' },
       attachTo: document.body,
     })
@@ -163,13 +184,13 @@ it('keeps the overlay and free theme preference while the host controls appearan
   const overlay = store.get(key)
   expect(overlay).toBeTruthy()
   await w.setProps({ theme: 'auto' })
-  await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
+  await w.get('[data-titan-chordpro-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
   // `a` toggles the fit away from its default, which is on.
   expect(JSON.parse(store.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: false })
   expect(store.get(key)).toBe(overlay)
   await w.setProps({ theme: 'light', themeControl: 'preference' })
-  expect(w.get('[data-cpv-root]').attributes('data-theme')).toBe('dark')
+  expect(w.get('[data-titan-chordpro-root]').attributes('data-theme')).toBe('dark')
   expect(w.html()).toContain('(meu)')
   expect(store.get(key)).toBe(overlay)
   w.unmount()
@@ -205,7 +226,7 @@ it('loads a legacy overlay for the default chart and writes the default slot', a
   const w = mountViewer(store)
   await flushPromises()
   expect(w.html()).toContain('(meu)')
-  expect(store.get(overlayKey('jesus-1'))).toBeNull()
+  expect(store.get(overlayKey('jesus-1'))).toBeTruthy()
   expect(store.get(legacy)).toBeTruthy()
 
   await w.get('[data-transpose-up]').trigger('click')
@@ -216,12 +237,11 @@ it('loads a legacy overlay for the default chart and writes the default slot', a
   await w.get('[data-fix-tune]').trigger('click')
   await flushPromises()
 
-  const saved = JSON.parse(store.get(overlayKey('jesus-1', 'default')) ?? 'null')
+  const saved = JSON.parse(store.get(overlayKey('jesus-1')) ?? 'null')
   expect(saved.ops.some((o: { type: string }) => o.type === 'tune')).toBe(true)
   expect(saved.ops.find((o: { type: string }) => o.type === 'tune')).toMatchObject({ transpose: 2 })
   expect(saved.ops.some((o: { type: string }) => o.type === 'replace')).toBe(true)
-  expect(store.get(legacy)).toBeNull()
-  expect(store.get(overlayKey('jesus-1'))).toBe(store.get(overlayKey('jesus-1', 'default')))
+  expect(store.get(overlayKey('jesus-1'))).toBe(store.get(legacy))
   w.unmount()
 })
 

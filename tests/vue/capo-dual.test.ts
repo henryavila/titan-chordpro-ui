@@ -1,21 +1,21 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: { source: loadFixture(JESUS_1), theme: 'dark', autoHide: false, ...props },
     attachTo: document.body,
   })
 }
 
 function chordNames(w: ReturnType<typeof mountViewer>): string[] {
-  return w.findAll('.cpv-chord').map((n) => n.text()).filter(Boolean)
+  return w.findAll('.titan-chordpro-chord').map((n) => n.text()).filter(Boolean)
 }
 
 function shapeNames(w: ReturnType<typeof mountViewer>): string[] {
-  return w.findAll('.cpv-shape').map((n) => n.text()).filter(Boolean)
+  return w.findAll('.titan-chordpro-shape').map((n) => n.text()).filter(Boolean)
 }
 
 describe('capo dual vs capo sozinho', () => {
@@ -45,7 +45,7 @@ describe('capo dual vs capo sozinho', () => {
     expect(chips.some((c) => /^(A#|Bb)$/.test(c))).toBe(true)
     expect(chips).toContain('Dm')
     expect(chips.length).toBeGreaterThan(4)
-    expect(w.get('[data-capo-hint]').classes()).toContain('cpv-capo-hint')
+    expect(w.get('[data-capo-hint]').classes()).toContain('titan-chordpro-capo-hint')
     expect(w.text()).not.toMatch(/Você toca|Soa|Formas de F/)
     expect(w.text()).not.toMatch(/soa continua/)
 

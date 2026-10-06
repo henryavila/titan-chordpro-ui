@@ -1,9 +1,9 @@
 import defaultCho from '../../fixtures/sda/001-tudo-que-ha-de-bom-em-mim.cho?raw'
 import { listCharts, readMeta } from '@henryavila/titan-chordpro-ui'
-import type { ChordproViewerProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
+import type { TitanChordproProps, ImageChoice } from '@henryavila/titan-chordpro-ui/vue'
 import type { ListaMode } from './recipe'
 
-type DemoSong = NonNullable<ChordproViewerProps['songs']>[number]
+type DemoSong = NonNullable<TitanChordproProps['songs']>[number]
 
 const assetUrls = import.meta.glob('../../fixtures/assets/*.png', {
   eager: true,
@@ -12,6 +12,13 @@ const assetUrls = import.meta.glob('../../fixtures/assets/*.png', {
 }) as Record<string, string>
 
 export const FAIL_ID = 'falha-de-rede'
+
+/** Short rehearsal for `prefetchAll` — not the 148-chart corpus. */
+export const CACHE_LIST_IDS = [
+  '100-nasce-em-mim',
+  '001-tudo-que-ha-de-bom-em-mim',
+  '018-te-agradeco',
+] as const
 
 /** First chart in the production corpus — what a cold demo opens on. */
 export const DEFAULT_SONG_ID = '001-tudo-que-ha-de-bom-em-mim'
@@ -57,23 +64,25 @@ export function mergeCatalog(
   return { ...fixtures, ...extra }
 }
 
-function listedCharts(source: string) {
-  if (!/\{\s*start_of_x_chart\s*:/i.test(source)) return []
-  try {
-    return listCharts(source)
-  } catch {
-    return []
+function songEntry(
+  fixtures: Record<string, string>,
+  id: string,
+  withSource: boolean,
+): DemoSong {
+  const source = fixtures[id] ?? ''
+  const meta = readMeta(source)
+  const charts = listCharts(source)
+  const chartId =
+    charts.length > 1 ? charts.find((c) => c.isDefault)?.id ?? charts[0]?.id : undefined
+  return {
+    id,
+    title: meta.title || id,
+    subtitle: meta.subtitle ?? '',
+    key: meta.key ?? '',
+    time: meta.time || undefined,
+    ...(chartId ? { chartId } : {}),
+    ...(withSource ? { source } : {}),
   }
-}
-
-function hasCharts(source: string | undefined): boolean {
-  return listedCharts(source ?? '').length > 1
-}
-
-function defaultChartId(source: string): string | undefined {
-  const charts = listedCharts(source)
-  if (charts.length < 2) return undefined
-  return charts.find((chart) => chart.isDefault)?.id ?? charts[0]?.id
 }
 
 /** Demo pair: one song with versions, then one without. */
@@ -91,22 +100,13 @@ export function songsFor(
   mode: ListaMode,
 ): DemoSong[] | undefined {
   if (mode === 'off') return undefined
-  const ids = Object.keys(fixtures)
-    .filter((k) => k !== 'vazio')
-    .sort((a, b) => Number(hasCharts(fixtures[b])) - Number(hasCharts(fixtures[a])) || a.localeCompare(b))
-  const list: DemoSong[] = ids.map((k) => {
-    const source = fixtures[k] ?? ''
-    const meta = readMeta(source)
-    const chartId = defaultChartId(source)
-    return {
-      id: k,
-      title: meta.title || k,
-      subtitle: meta.subtitle ?? '',
-      key: meta.key ?? '',
-      ...(chartId ? { chartId } : {}),
-      ...(mode === 'juntas' ? { source } : {}),
-    }
-  })
+  if (mode === 'cache') {
+    return CACHE_LIST_IDS.filter((id) => id in fixtures).map((id) =>
+      songEntry(fixtures, id, false),
+    )
+  }
+  const ids = Object.keys(fixtures).filter((k) => k !== 'vazio')
+  const list: DemoSong[] = ids.map((k) => songEntry(fixtures, k, mode === 'juntas'))
   if (mode === 'demanda') {
     list.splice(2, 0, { id: FAIL_ID, title: 'Cifra que não chega', subtitle: '', key: 'A' })
   }

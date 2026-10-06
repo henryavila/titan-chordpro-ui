@@ -1,5 +1,6 @@
 import type {
   AccentProp,
+  AudioArt,
   ChartStore,
   Lens,
   SaveStrumPresetPayload,
@@ -29,6 +30,8 @@ export type ModesProp = 'none' | 'local' | 'content' | 'both' | 'persisted'
 
 /** Chrome rehearsal profile — orthogonal to reading `lens`. */
 export type RehearsalFocus = 'off' | 'batida'
+/** How labels above imported notation spell each note. */
+export type NoteNameFormat = 'letter' | 'solfege'
 
 let bothWarned = false
 
@@ -53,7 +56,7 @@ export function resolveEditMode(props: {
   return 'local'
 }
 
-export type ViewerCapabilities = {
+export type TitanChordproCapabilities = {
   sourcePane?: boolean
   /**
    * Host-owned strum presets on the Batida sheet (list + “Salvar como preset”).
@@ -65,15 +68,20 @@ export type ViewerCapabilities = {
    * Off by default. Demo: `?zonas=1`.
    */
   debugSwipe?: boolean
+  /**
+   * Chord-shape modal. On unless the host passes `false`.
+   * The instrument switch lives on that screen, not in Mais.
+   */
+  diagrams?: boolean
 }
 
 /** Cover or lyric-slide background the host wants in the `.slja`. */
 export type SlideImage = Blob | ArrayBuffer | Uint8Array
 
 /**
- * Host-facing props of `<ChordproViewer>`. Test-only knobs stay off this type.
+ * Host-facing props of `<TitanChordpro>`. Test-only knobs stay off this type.
  */
-export type ChordproViewerProps = {
+export type TitanChordproProps = {
   source?: string
   mode?: 'view' | 'edit'
   /** Initial fallback in preference mode; authoritative value in host mode. */
@@ -82,8 +90,11 @@ export type ChordproViewerProps = {
   themeControl?: 'preference' | 'host'
   /**
    * Reading lens: chord names, Nashville degrees, or lyrics only.
-   * `'letra'` is the singer view (no chords / tab / score). Survives song
-   * changes in a setlist; the musician can still switch from the UI.
+   * `'letra'` is the singer view (no chords / tab / score). Pass the prop to
+   * open already on that projection (share URL for a vocalist). `'none'` opens
+   * Cifra. Omit the prop to restore the last Cifra | Letra choice on this
+   * device. Survives song changes in a setlist; the musician can still switch
+   * from the UI.
    */
   lens?: Lens
   /**
@@ -107,6 +118,8 @@ export type ChordproViewerProps = {
   fitDefault?: boolean
   canEdit?: boolean
   autoInvertScores?: boolean
+  /** Labels above Guitar Pro/MusicXML notation: C/D/E by default, or Dó/Ré/Mi. */
+  noteNameFormat?: NoteNameFormat
   /** Maps a `{image:}` reference to a URL the host can serve. */
   resolveImage?: (src: string) => string
   /**
@@ -141,8 +154,8 @@ export type ChordproViewerProps = {
    * resolve → enqueue + toast “Sugestão enviada” and emit `suggestion-created`;
    * reject or a void return → keep Minha versão, toast retry, nothing queued.
    * The POST lives here (`return` the Promise). `suggestion-created` is notify-after-ack.
-   * `chartId` on the suggestion is the chart the ops were diffed against.
-   * Omit for local-only (demo / no backend).
+   * Omit for local-only (demo / no backend). Score suggestions include original
+   * file bytes as base64 in `scoreAttachments`; persist and return that field.
    */
   persistSuggestion?: (suggestion: Suggestion) => Promise<void>
   /** Identity of the chart, so a personal version follows the right song. */
@@ -150,7 +163,6 @@ export type ChordproViewerProps = {
   /**
    * Named cifra inside `source` when the file has more than one.
    * Absent → the file default. The musician can change it; emit `update:chartId`.
-   * In a rehearsal, each `songs[]` entry carries its own `chartId` instead.
    */
   chartId?: string
   /**
@@ -158,19 +170,36 @@ export type ChordproViewerProps = {
    * list, prev/next and a place kept per song. With one, or none, nothing of
    * it appears and `source` remains the chart on screen.
    * A song that ships its `source` plays offline; the rest are asked for.
-   * `chartId` on an entry is the cifra the program opens; the musician can switch.
    */
   songs?: SetlistSong[]
   /**
-   * Asked for a song's ChordPro when the list did not carry it. The viewer
+   * Asked for a song's ChordPro when the list did not carry it. TitanChordpro
    * keeps what comes back, and prefetches the neighbours so changing song in a
    * rehearsal never waits on the network.
    */
   loadSong?: LoadSong
+  /**
+   * Fetch every chart in `songs` (via `source` or `loadSong`) and fill their
+   * rehearsal audio into Cache Storage. Default is the song on screen plus
+   * both neighbours. For a short rehearsal, not a hymnal.
+   */
+  prefetchAll?: boolean
   /** Version of the official chart: a bump asks the reader what to keep. */
   version?: string
   /** Scores the host can serve, offered when a `{image:}` block is inserted. */
   images?: ImageChoice[]
+  /**
+   * Host stores an uploaded score image and returns the `{image:}` reference.
+   * Reject, or an empty `ref`, leaves the chart unchanged. The bytes never
+   * enter the ChordPro source — `resolveImage` is how the chart shows them.
+   */
+  uploadImage?: (file: File) => Promise<{ ref: string }>
+  /** Stores an original Guitar Pro/MusicXML file; also promotes accepted suggestion attachments. */
+  uploadScore?: (file: File) => Promise<{ ref: string }>
+  /** Resolves the external solo reference to a fetchable URL (CORS applies). */
+  resolveScore?: (src: string) => string
+  /** Original attachment bytes for an offline ZIP, including private/authenticated storage. */
+  loadBundleAsset?: (reference: string, kind: 'score' | 'image' | 'audio') => Promise<{ bytes: Uint8Array; contentType?: string; filename?: string }>
   /**
    * Colour of the chords, and of everything derived from them.
    * Named `verde` / `teal`, or any host hex / `rgb()` — light and dark are
@@ -180,18 +209,18 @@ export type ChordproViewerProps = {
   /** 0.5–1.5 over the derived fills, edges and glow. The hue does not move. */
   accentStrength?: number
   /**
-   * Warn — in the console and on screen — when the host embeds the viewer
+   * Warn — in the console and on screen — when the host embeds TitanChordpro
    * without giving its parent a height, so the frame collapses to the
    * `min-height` floor and the control bar falls below the fold.
    * Off only for a host that knowingly composes the frame some other way.
    */
   surfaceGuard?: boolean
   /**
-   * Where what the viewer remembers is kept. Default is this device's
+   * Where TitanChordpro's remembered choices are kept. Default is this device's
    * `localStorage`; a host that keeps them on the account passes its own.
    */
   storage?: ChartStore
-  capabilities?: ViewerCapabilities
+  capabilities?: TitanChordproCapabilities
   /**
    * Host catalog of strum presets for the Batida sheet. The package does not
    * ship or persist these — the consumer owns storage and passes the list.
@@ -199,8 +228,13 @@ export type ChordproViewerProps = {
    */
   strumPresets?: StrumPreset[]
   /**
+   * Host view of connectivity. When omitted, Titan uses `navigator.onLine`.
+   * `false` marks Sugerir / Cifra Club and explains on tap; reading still works.
+   */
+  online?: boolean
+  /**
    * Fetches the page behind a link, for "new chart · import". The browser
-   * cannot reach another site from inside the viewer, so this is the host's
+   * cannot reach another site from inside TitanChordpro, so this is the host's
    * backend. Without it the Link tab says so rather than pretending.
    */
   fetchChart?: (url: string) => Promise<string>
@@ -217,25 +251,30 @@ export type ChordproViewerProps = {
    */
   readPdf?: (file: File) => Promise<string>
   /**
-   * Cover JPEG/PNG for the `.slja` (LouvorJA `imagens\Capa.jpg`).
-   * Omitted → the package default.
+   * Cover when the chart has no `{x_titan_audio_art:}`. Square 1024 px for the
+   * lock screen. Chart art still wins. Omit → packaged 512 art.
+   */
+  defaultAudioArt?: AudioArt | null
+  /**
+   * Cover JPEG/PNG for the `.slja` (LouvorJA `imagens\Capa.jpg`) and the
+   * PowerPoint title slide. Omitted → the package default.
    */
   coverImage?: SlideImage
   /**
-   * Background for every lyric slide (`imagens\slides.jpg`).
-   * Omitted → the package default. The host overrides both independently.
+   * Background for every lyric slide (`imagens\slides.jpg`) in LouvorJA and
+   * PowerPoint. Omitted → the package default. The host overrides both independently.
    */
   slidesImage?: SlideImage
 }
 
 export type { SuggestionStatus }
 
-export type ChordproViewerEmits = {
+export type TitanChordproEmits = {
   'update:source': [value: string]
-  'update:chartId': [value: string]
   /** Request only in host mode: the host accepts by updating its theme prop. */
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
+  'update:chartId': [value: string]
   'update:lens': [value: Lens]
   'update:hideComments': [value: boolean]
   'update:rehearsalFocus': [value: RehearsalFocus]

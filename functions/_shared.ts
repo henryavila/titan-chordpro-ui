@@ -1,4 +1,4 @@
-/** Shared by Pages Functions — keep tiny; do not import the Vue/core package. */
+/** Shared by the demo Worker — keep tiny; do not import the Vue/core package. */
 
 export const UA = 'Mozilla/5.0 (compatible; titan-chordpro-ui)'
 
@@ -20,4 +20,8 @@ export function corsHeaders(origin: string | null): HeadersInit {
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     Vary: 'Origin',
   }
+}
+
+export function workerResponse(body: BodyInit | null, init?: ResponseInit): Response {
+  return new Response(body, init)
 }

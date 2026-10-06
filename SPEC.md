@@ -1,20 +1,20 @@
-# SPEC — `titan-chordpro-ui` v0.1
+# SPEC — `titan-chordpro-ui`
 
 > **Audience:** implementing agent (and human reviewer). This is an **engineering contract**, not a visual mood board.  
 > **Product SoT:** [`docs/VISAO.md`](docs/VISAO.md) (ratified). This SPEC implements that vision.  
-> **Success = tests + CLI + Vue viewer package pass the acceptance table below.** Ambiguity → open a `question` in the PR, do not invent silently.
+> **Success = tests + CLI + Vue package pass the acceptance table below.** Ambiguity → open a `question` in the PR, do not invent silently.
 
 | Field | Value |
 |---|---|
 | Product / repo | **`titan-chordpro-ui`** (view **+** edit, one package) — formerly seed `chordpro-viewer` |
 | Naming lock | [`docs/NAMING.md`](docs/NAMING.md) — **separate repos**; gen ≠ ui; **no Titan app / no monorepo for now** |
-| Packages (npm) | **`@henryavila/titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./vue"` |
+| Packages (npm) | **`@henryavila/titan-chordpro-ui`** with exports `"."` (core), `"./pdf"`, `"./slides"`, `"./bundle"`, `"./vue"` |
 | Repo path | `/Volumes/External/code/titan-chordpro-ui` |
 | Sibling generator | **`titan-chordpro-gen`** — audio → ChordPro — **out of scope** |
 | Sibling consumer | Virtual SDA Nuxt (`sda-v2`) — shell, multi-cifra, sanitize, i18n, player; depends on **ui** only |
-| Editor | Same UI package (later `./edit` / module) — **not** a third repo |
+| Editor | Same Vue package, through `mode="edit"` — **not** a third repo |
 | Stack (ratified) | **Vue-first UI** + **framework-free core** + agnostic controller; React/CE bindings later |
-| Status | Vision + SPEC + naming locked → scaffold → green tests → UI |
+| Status | Core and Vue UI implemented; §9 is the baseline acceptance gate |
 
 ---
 
@@ -22,23 +22,23 @@
 
 Older drafts treated toolbar/RAF as host-only. **VISAO + interview supersede that:**
 
-- This product ships a **complete 1-cifra viewer UI** (transpose, font, auto-scroll, themes light/dark/auto, export CHO/PDF).
+- This product ships the **complete TitanChordpro UI for one chart** (transpose, font, auto-scroll, themes light/dark/auto, export CHO/PDF).
 - **Core** stays framework-free (testable, CLI, future React port).
 - **Vue package** owns cifra chrome + RAF (official binding v0.1).
-- **Host (sda-v2)** owns shell, which **song** ChordPro string is active, login, audio sync, i18n copy, sanitize policy. Named charts (**cifras nomeadas**) inside that string are the UI’s (`listCharts`, `chartId`).
+- **Host (sda-v2)** owns shell, which ChordPro string is active (multi-cifra), login, audio sync, i18n copy, sanitize policy.
 - **Not** a runtime multi-stack `VisualAdapter` in v0.1 — expansion = new binding against core/controller (see `docs/analysis-expansao-futura.md`).
 
 ---
 
 ## 1. Problem
 
-Musicians need a **professional ChordPro viewer/player** (read / transpose / scroll / export / themes). Today that experience is trapped inside SDA Vue + `chordproject-parser` + ad-hoc CSS/PDF.
+Musicians need a **professional ChordPro reading and editing UI**. Today that experience is trapped inside SDA Vue + `chordproject-parser` + ad-hoc CSS/PDF.
 
 Ship:
 
 1. **Core** — parse → ViewModel → HTML themes → PDF + controller (no Vue).  
-   **Input formats (engine):** **ChordPro** and **OnSong** (incl. mixed / chords-over-lyrics). Normalize to the same `ChordProView`. UI does **not** select format. See `docs/research-onsong-format.md`.
-2. **Vue UI** — complete 1-cifra surface (`ChordproViewer` SFC). Host Vue/Nuxt mounts it in-page (sized frame) and/or as a `100dvh` route. **Not** an iframe.
+   **Input formats (engine):** **ChordPro** and **OnSong** (incl. mixed / chords-over-lyrics). Normalize to the same `TitanChordproDocument`. UI does **not** select format. See `docs/research-onsong-format.md`.
+2. **Vue UI** — complete 1-cifra surface (`TitanChordpro` SFC). Host Vue/Nuxt mounts it in-page (sized frame) and/or as a `100dvh` route. **Not** an iframe.
 3. SDA becomes thin host (shell + multi-cifra). Titan can preview via core/CLI or a minimal Vue demo without the full SDA shell.
 
 ---
@@ -48,13 +48,11 @@ Ship:
 | Out | Why |
 |---|---|
 | Audio sync / SyncedPlayer | Belongs to SDA host |
-| Chord fret diagrams | Later |
-| ChordPro **editor** / drag-to-correct | Future / Titan sibling |
+| Realtime collaboration between editors | Outside this single-chart UI |
 | Titan ML / writer profiles | Generator stays in Titan |
 | React / Lit / CE official package | Later binding — not v0.1 |
 | Runtime VisualAdapter / plugin registry | YAGNI — see expansion analysis |
-| Multi-cifra **which song string** | Host state |
-| Named charts in the file (`chartId`) | Vue package (title chip); host may pass `chartId` |
+| Multi-cifra selection UI | Host state |
 | i18n string catalogs | Host owns copy (Vue UI may accept label props) |
 | HTML sanitize policy | Host owns (`DOMPurify` etc.) before `innerHTML` when embedding |
 
@@ -72,12 +70,12 @@ Ship:
 | Filenames + scroll **math** | ✅ | | |
 | Auto-scroll **RAF** / scrollTop | optional `attachScroll` helper on controller | ✅ wires + controls | |
 | Cifra toolbar (tom, fonte, tema, export, scroll) | ❌ | ✅ | |
-| Which **song** string is active | ❌ | ❌ | ✅ |
-| Which named chart (`chartId`) in the file | `listCharts` / `parse(source, { chartId })` | ✅ title chip + `chartId` prop | optional `chartId` |
+| Multi-cifra which string is active | ❌ | ❌ | ✅ |
 | Login, shell, synced audio player, i18n catalogs | ❌ | ❌ | ✅ |
 | Rehearsal reference audio (unsynced) | `setRehearsalAudio` | ✅ player | URLs + cover |
+| Chord diagrams (guitar, ukulele, piano) | dictionary / `{define}` / draw | fullscreen modal; instrument in prefs | `capabilities.diagrams: false` |
 
-**Auto-rolagem:** in product scope. Core: speed math (+ optional attach helper). Vue package: controls + RAF against `[data-cpv-scroll]`.
+**Auto-rolagem:** in product scope. Core: speed math (+ optional attach helper). Vue package: controls + RAF against `[data-titan-chordpro-scroll]`.
 
 ---
 
@@ -85,46 +83,66 @@ Ship:
 
 ```ts
 // @henryavila/titan-chordpro-ui (core — export ".")
-export function parse(source: string, opts?: { chartId?: string }): ChordProView
-export function listCharts(source: string): { id: string; label: string; isDefault: boolean }[]
+export function parse(source: string): TitanChordproDocument
 // parse() accepts ChordPro, OnSong, or mixed text; detection/normalization is internal.
-// N>1 file: parse without chartId uses the file default. `{start_of_x_chart:}` is Titan.
-export function transpose(view: ChordProView, semitones: number): ChordProView
-export function setKey(view: ChordProView, targetKey: string): ChordProView  // or throw if unsupported
-export function renderHtml(view: ChordProView, opts?: { theme?: string }): string
+export function transpose(view: TitanChordproDocument, semitones: number): TitanChordproDocument
+export function setKey(view: TitanChordproDocument, targetKey: string): TitanChordproDocument  // or throw if unsupported
+export function renderHtml(view: TitanChordproDocument, opts?: { theme?: string }): string
 export function listThemes(): string[]
 export function buildChoFilename(title: string, key: string | null): string
 export function buildPdfFilename(title: string, key: string | null): string
 export function buildSljaFilename(title: string): string
-export function lyricsForSlides(view: ChordProView): SlideSourceLine[]
-export function lyricsText(view: ChordProView): string
+export function buildPpsxFilename(title: string): string
+export function buildScoreFilename(name: string | undefined, src: string, contentType?: string): string
+export function lyricsForSlides(view: TitanChordproDocument): SlideSourceLine[]
+export function lyricsText(view: TitanChordproDocument): string
 export function exportLyrics(source: string): ChartLyrics
 // ChartLyrics = { title, artist, lyrics }. Host cadastra letra sem Vue.
 // Lyrics drop chords, x///, comments, tab, images. Empty string if none.
 export function exportCho(source: string, opts?: { key?: string | null }): string
+export function exportChoFile(source: string, opts?: ExportChoOptions): ExportedFile
+export const EXPORT_MIME: { cho: string; html: string; pdf: string; slja: string; ppsx: string; bundle: string }
+// ExportedFile = { bytes, filename, mime, title }. Every file export returns this from exportX(source).
 export function calcScrollSpeed(contentHeight: number, durationSeconds: number | null, bpm: number | null): number
 export function adjustScrollSpeed(current: number, direction: 'up' | 'down'): number
-export function createViewerController(opts: { source: string }): ViewerController
-// ViewerController: getState / subscribe / dispatch / optional attachScroll(el)
+export function adjustScrollMultiplier(mul: number, direction: 'up' | 'down'): number
+export function createTitanChordproController(opts: { source: string }): TitanChordproController
+// TitanChordproController: getState / subscribe / dispatch / optional attachScroll(el)
 
 // @henryavila/titan-chordpro-ui/pdf  (separate entry — do not force jspdf into core bundle)
-export function renderPdf(view: ChordProView, opts: PdfOptions): Promise<Uint8Array>
+export function renderPdf(view: TitanChordproDocument, opts?: PdfOptions): Promise<Uint8Array>
+export function exportPdf(source: string, opts?: ExportPdfOptions): Promise<ExportedFile>
 
 // @henryavila/titan-chordpro-ui/slides  (separate entry — ZIP / CP1252 stay out of core)
-export function renderSlja(view: ChordProView, opts?: SljaOptions): Promise<Uint8Array>
-export function exportSlja(source: string, opts?: SljaOptions): Promise<SljaFile>
-// SljaFile = { bytes, filename, title }. Host download button: no Vue tree.
-// SljaOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
+export function renderSlja(view: TitanChordproDocument, opts?: SljaOptions): Promise<Uint8Array>
+export function exportSlja(source: string, opts?: SljaOptions): Promise<ExportedFile>
+export function renderPpsx(view: TitanChordproDocument, opts?: PpsxOptions): Promise<Uint8Array>
+export function exportPpsx(source: string, opts?: PpsxOptions): Promise<ExportedFile>
+// Host download: exportX(source) → ExportedFile. Already-parsed ViewModel: renderX(view) → bytes.
+// No plugin registry. Writers stay in ./pdf, ./slides, ./bundle.
+// SljaOptions / PpsxOptions: title?, coverImage?, slidesImage? (host JPEG/PNG bytes; package default otherwise)
 // Chart line breaks are the phrasing. Do not reflow like louvorja-slides ASR.
+// PPSX uses the same planner and the same cover/lyric images as the .slja.
+// PPSX paints title and lyrics in uppercase (pt-BR); .slja keeps source casing.
+// Content type is slideshow so the file opens in presentation mode.
+
+// @henryavila/titan-chordpro-ui/bundle  (ZIP stay out of core)
+export function exportChartBundle(source: string, opts?: ChartBundleOptions): Promise<ExportedFile & { chart: string; assetCount: number }>
+export function importChartBundle(bytes: Uint8Array | ArrayBuffer, opts: ChartBundleImportOptions): Promise<ChartBundleImport>
+// persistAsset stores each attachment; returned refs rewrite the ChordPro.
+// ChartBundle = ExportedFile & { chart, assetCount }.
 
 // @henryavila/titan-chordpro-ui/vue
-export { ChordproViewer } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
+export { TitanChordpro } // SFC: complete 1-cifra UI; props: source, optional labels; emits state changes
 ```
 
-### 4.1 ViewModel (`ChordProView`) — frozen shape for v0.1
+### 4.1 Document model (`TitanChordproDocument`)
+
+The complete public TypeScript shape is in `src/core/types.ts`. This summary
+shows the fields that connect parsing, reading, editing and export.
 
 ```ts
-export type ChordProView = {
+export type TitanChordproDocument = {
   meta: {
     title?: string
     subtitle?: string
@@ -132,39 +150,53 @@ export type ChordProView = {
     key?: string          // original key from source when known
     tempo?: number | string
     time?: string
+    duration?: string
+    capo?: number
+    transpose?: number
   }
   displayKey: string | null   // after transpose
   transposeSemitones: number  // 0 = original
-  source: string              // ChordPro text used (post-clean optional)
-  sections: ChordProSection[]
+  source: string              // normalized source; x/// marks remain intact
+  sections: TitanChordproSection[]
+  eocOf: Record<number, number>
+  defines: ChordDefine[]
 }
 
-export type ChordProSection = {
-  kind: 'verse' | 'chorus' | 'bridge' | 'comment' | 'tab' | 'instrumental' | 'generic'
+export type TitanChordproSection = {
+  kind: 'verse' | 'chorus' | 'bridge' | 'comment' | 'tab' | 'instrumental' | 'generic' | 'note' | 'score'
   label?: string
-  lines: ChordProLine[]
+  lines: TitanChordproLine[]
 }
 
-export type ChordProLine =
-  | { type: 'lyrics'; words: Array<{ chord?: string; lyric: string }> }
+export type TitanChordproLine = LineSpan & (
+  | { type: 'lyrics'; words: Array<{ chord?: string; lyric: string }>; soc: number | null }
   | { type: 'empty' }
   | { type: 'comment'; text: string }
+  | { type: 'tab' | 'score'; text: string }
+  | { type: 'image'; src: string }
+  | { type: 'hidden'; texts: string[] }
+)
 ```
 
 **Rules:**
 
 - JSON-serializable (no class instances).
 - Themes consume **only** ViewModel (+ theme name), never raw parser objects.
-- Parser adapter (v0.1: wrap `chordproject-parser`) is **internal**; swappable behind `parse()`.
+- The parser implementation is **internal**; callers use `parse()`.
 
 ### 4.2 HTML contract (theme `default`)
 
-- Root wrapper class: `cpv` plus theme hook `cpv--default`.
-- Document body must expose a scrollable content root: `[data-cpv-scroll]` or `.cpv-scroll`.
-- Chord above lyric: each lyric atom is a word unit with optional chord.
-- Comments from `{c:…}` appear as comment lines (not dropped).
+`renderHtml` emits this static reading HTML. Vue reading uses the same structural class names on the chart body.
+
+- Root wrapper: `div.titan-chordpro.titan-chordpro--{alias}` with `[data-titan-chordpro-scroll]` and `data-theme="{resolved}"`. Theme `default` keeps the hook `titan-chordpro--default` while `data-theme` resolves to `light`. Themes `light`, `dark` and `print` use the resolved name in both the hook and `data-theme`. CSS variables are inline on the root.
+- Document body must expose a scrollable content root: `[data-titan-chordpro-scroll]` or `.titan-chordpro-scroll`.
+- Lyric atom: `span.titan-chordpro-word` containing `span.titan-chordpro-chord-box` > `span.titan-chordpro-chord` plus sibling `span.titan-chordpro-lyric`. Empty chord slot: `titan-chordpro-chord--empty`. Chord tight against the next word: `titan-chordpro-chord--tight`.
+- Row: `div.titan-chordpro-row`. Chorus: `div.titan-chordpro-chorus`. Other sung block: `div.titan-chordpro-stanza`.
+- Comment (`{c:…}`): `div.titan-chordpro-comment` with `titan-chordpro-comment-dot` and `titan-chordpro-comment-text` (not dropped).
+- Note: `div.titan-chordpro-note` with `titan-chordpro-note-label` (“Execução”) and `titan-chordpro-note-item`.
+- Tab: `div.titan-chordpro-tab`. Score: `div.titan-chordpro-score`. Image: `figure.titan-chordpro-image`. Hidden blocks are omitted.
 - Empty ChordPro lines → empty line nodes (spacing preserved).
-- **Compat:** theme `default` MAY also emit legacy SDA class names (`.chordpro-content`, `.song-content`, `.lyrics-line`, `.word`, `.chord`, `.comment-line`, `.chorus-section`, `.empty-line`) so SDA cutover snapshots can compare. Prefer documenting both in `themes/default.md`.
+- Every class token is `titan-chordpro` or `titan-chordpro-*`. Data hooks are `data-titan-chordpro-*`. These tokens are not emitted: `cpv`, `cpv-*`, `chordpro-content`, `song-content`, `chord`, `word`, `lyric`, `lyrics-line`, `comment-line`, `chorus-section`. `data-cpv-*` is not emitted.
 
 ### 4.3 PDF contract
 
@@ -173,7 +205,38 @@ export type ChordProLine =
 - Body: chord/lyric pairs in reading order from ViewModel (**not** a brittle HTML scrape long-term; v0.1 may scrape own HTML if snapshots lock parity with current SDA PDF — document which path in CHANGELOG).
 - Bytes in = transposed view; filename helper uses `displayKey`.
 
+### 4.3a Offline chart bundle
+
+The Vue export offers **Cifra completa (.zip)**. The separate `./bundle` entry
+exports `exportChartBundle(source, options)` returning ZIP bytes, filename and
+attachment count, and `importChartBundle(bytes, { persistAsset, restoreProvenance? })`
+for hosts that ingest that ZIP. There is no import UI.
+
+Export includes the UTF-8 ChordPro, original notation files, images, sung/playback
+audio and supplied artwork, with local relative references. Online service links
+are provenance only when explicitly configured.
+
+Import calls `persistAsset` once per unique file (GP, GPX, MusicXML, images, audio)
+with `{ path, kind, roles, bytes, contentType, filename, width?, height? }`. The
+host returns `{ ref }`; the package rewrites `{x_titan_score:}`, `{image:}`, audio
+and cover directives (including `#~` hidden lines). Audio and player-cover refs
+must pass `playableAudioUrl`. YouTube and `{x_titan_source:}` restore from
+`ORIGEM.txt` unless `restoreProvenance` is false. The result is
+`{ source, chart, personal, assetCount, assets, provenance }`.
+
+Missing attachments, kind mismatch, truncated ZIP (no central directory), HTML/JSON
+in place of media, empty/unsafe host refs, or persist failure must fail the export
+or import — never a partial archive or a half-linked chart.
+See `docs/BUNDLE.md` for the complete inventory, manifest and host contract.
+
 ### 4.4 File extensions
+
+**Titan extensions:** application-specific directives use `x_titan_` exclusively.
+Metadata keys and the three notation directives (`x_titan_score`,
+`x_titan_start_of_score`, `x_titan_end_of_score`) are defined in
+`docs/NAMING.md`. Former names are not interpreted or converted. This breaking
+change requires consumers to migrate stored charts and API usage as documented
+in `docs/CONSUMER.md`; the release notes must state those required adjustments.
 
 **Input (CLI / host):** accept ChordPro text files as **`.cho`** or **`.chordpro`** (case-insensitive). Same `parse()` path — extension does not change semantics.
 
@@ -191,8 +254,15 @@ export type ChordProLine =
 | `buildPdfFilename('Lindo És', 'C#')` | `cifra-lindo-es-tom-c#.pdf` |
 | `buildSljaFilename('Fala Comigo')` | `slides-fala-comigo.slja` |
 | `buildSljaFilename('Lindo És')` | `slides-lindo-es.slja` |
+| `buildPpsxFilename('Fala Comigo')` | `slides-fala-comigo.ppsx` |
+| `buildPpsxFilename('Lindo És')` | `slides-lindo-es.ppsx` |
 
 Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
+
+`buildScoreFilename(name, src)` names a Guitar Pro/MusicXML download after the
+Titan block (`ScoreReference.name`, default `Solo`) and keeps the source
+extension (`.gp`, `.gp5`, `.musicxml`, …). Illegal filename characters are
+stripped; the display name is otherwise preserved.
 
 ### 4.6 Scroll speed (exact — migrate tests)
 
@@ -207,6 +277,7 @@ Slug: NFD, strip accents, non-alnum → `-`, trim dashes.
 | `(0, 30, null)` | `30` |
 
 `adjustScrollSpeed`: ±15% factor, min `5`, 1 decimal place.
+`adjustScrollMultiplier`: ±12% per press, clamp `0.3`–`3`, 3 decimal places. Former export name `viewerMulStep` is not aliased.
 
 ### 4.7 Voiceless time (`x///`)
 
@@ -217,9 +288,18 @@ The chart’s only **exact** duration on a line is the `x///` convention: `x` is
 - Auto-scroll still requires `{duration:}` (hard gate). BPM + unmarked chords do not open it.
 - Compound meters use `beatsPerBar` + `marksPerBeat` (6/8 → 2 pulses, 3 marks per pulse).
 - `lintSource` warns on a voiceless chord line with `lineBeats === 0`.
-- Agents must not delete `x///` from source to clean lyrics. Só letra is a reading lens (`layout.ts`: `stripChordClock` + `stripBeatMarks`); marks glued after a removed chord (`razão.[E]//`, `Amém[G]x`, `/_`) must not leak into the lyric projection. Host may open that lens with prop `lens="letra"` (persists across setlist song changes).
+- Agents must not delete `x///` from source to clean lyrics. Só letra is a reading lens (`layout.ts`: `stripChordClock` + `stripBeatMarks`); marks glued after a removed chord (`razão.[E]//`, `Amém[G]x`, `/_`) must not leak into the lyric projection. Host may open already on that lens with prop `lens="letra"`, or on Cifra with `lens="none"` (persists across setlist song changes). Omit the prop to restore the last device choice.
 
 ---
+
+### 4.8 Notation appearance
+
+The visual contract for imported TAB/score is [`docs/NOTACAO-VISUAL.md`](docs/NOTACAO-VISUAL.md).
+In the base rhythm mode, half notes have one stem at 50% of the quarter-note
+stem height. Extending rhythm preserves the half-note stem and extends the
+quarter-note stem toward the fret number. Do not use LilyPond's double stem.
+SVG and PDF canvas share this geometry; durations in the original file remain
+unchanged. The document separates official sources from Titan product choices.
 
 ## 5. Transpose rules
 
@@ -245,7 +325,7 @@ The chart’s only **exact** duration on a line is the `x///` convention: `x` is
 
 - `listThemes()` returns at least `['light', 'dark', 'print']` (and may include aliases).
 - Unknown theme → **throw** with known list (fail fast).
-- CSS variables documented in theme CSS header (`--cpv-*`: font stack, chord color, bg, fg). Host/SDA may remap vars to tenant tokens.
+- CSS variables documented in theme CSS header (`--titan-chordpro-*`: font stack, chord color, bg, fg). Host/SDA may remap vars to tenant tokens.
 
 **Visual quality bar (measurable, not taste):**
 
@@ -264,7 +344,7 @@ Production corpus (tenant dump): `fixtures/sda/*.cho`. Demo lists **only** that 
 | Id | File | Role |
 |---|---|---|
 | sda | `fixtures/sda/*.cho` | 148 cifras vivas — SoT do demo e do aceite |
-| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{sos}` (fora da lista do demo) |
+| ele-vive-partitura | `fixtures/013-ele-vive-em-mim-partitura.cho` | `{image:}` + `{x_titan_start_of_score}` (fora da lista do demo) |
 | empty | empty string / missing | parse → empty sections, no throw |
 
 Agent **must not** invent chord charts for snapshots.
@@ -280,6 +360,8 @@ titan-chordpro-ui html  song.cho --theme default -o out.html
 titan-chordpro-ui html  song.chordpro --theme default -o out.html
 titan-chordpro-ui html  song.onsong --theme light -o out.html
 titan-chordpro-ui pdf   song.chordpro --key A -o cifra-….pdf
+titan-chordpro-ui slides song.cho -o slides-….slja
+titan-chordpro-ui ppsx  song.cho -o slides-….ppsx
 titan-chordpro-ui parse song.cho -o view.json          # dump ViewModel
 ```
 
@@ -294,14 +376,14 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 
 | # | Criterion | How verified |
 |---|---|---|
-| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.`, `./pdf`, `./slides` and `./vue` | `pnpm build` |
+| A1 | Package builds (`tsc` / `tsup`) dual target ESM+CJS or ESM-only with `exports` for `.`, `./pdf`, `./slides`, `./bundle` and `./vue` | `pnpm build` |
 | A2 | Filename helpers match §4.5 exactly | unit tests ported from SDA |
 | A3 | Scroll helpers match §4.6 exactly | unit tests ported from SDA |
 | A2b | CLI accepts `.cho`, `.chordpro`, and `.onsong` (auto-detect) for `html`/`pdf`/`parse` | integration |
 | A2c | `parse` of OnSong-style source (chords-over-lyrics and/or `Key:` meta) yields ViewModel with ≥1 lyrics line when content present | unit + fixture |
 | A4 | `parse(jesus-1)` yields `meta.key === 'G'` (or display from content) and ≥1 lyrics line with chords | unit |
 | A5 | `transpose(parse(jesus-1), 2)` changes chord roots; `displayKey` reflects +2 when key known | unit |
-| A6 | `renderHtml` snapshot for jesus-1 theme `default` committed | snapshot test |
+| A6 | `renderHtml` snapshot for jesus-1 theme `default` committed; structural classes match §4.2 | snapshot + unit |
 | A7 | Comment directives not stripped (see §6) | unit on HTML string |
 | A8 | `renderPdf(transposed)` returns non-empty `Uint8Array`; PDF header meta uses transposed key | unit/integration |
 | A9 | `buildPdfFilename('Jesus Tu És a Minha Vida', 'A')` → `cifra-jesus-tu-es-a-minha-vida-tom-a.pdf` | unit |
@@ -310,9 +392,11 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 | A12 | CLI `html` and `pdf` smoke on jesus-1 | integration |
 | A13 | README documents core vs Vue vs host boundary (§3) in ≤20 lines | doc review |
 | A14 | No Vue import in **core** (`src/core/**` or package root excluding `vue`) | grep gate |
-| A15 | `createViewerController` subscribe/dispatch transpose updates state + html | unit |
-| A16 | Vue `ChordproViewer` mounts fixture jesus-1; transpose control changes displayed chords | component/e2e smoke |
+| A15 | `createTitanChordproController` subscribe/dispatch transpose updates state + html | unit |
+| A16 | Vue `TitanChordpro` mounts fixture jesus-1; transpose control changes displayed chords | component/e2e smoke |
 | A17 | Vue package exposes light/dark/auto theme control | component smoke |
+| A18 | `importChartBundle` persists each attachment once, rewrites host refs, restores provenance, and rejects incomplete, swapped-kind, unplayable-audio, or JSON-disguised ZIP | `tests/bundle/import.test.ts` |
+| A19 | File exports share `ExportedFile` (`bytes`, `filename`, `mime`, `title`) from `exportX(source)`. `exportChoFile` / `exportPdf` / `exportSlja` / `exportPpsx` / `exportChartBundle` return that shape. PPSX MIME is `EXPORT_MIME.ppsx` (slideshow). Vue menu has `data-export="ppsx"`. No `pptx` aliases. | unit + consumer-exports + vue/browser |
 
 **Not DONE if:** only a demo without tests; PDF ignores transpose; theme hardcoded with no `theme` option; cifra toolbar only exists inside sda-v2 and not in this repo’s Vue package.
 
@@ -326,7 +410,7 @@ An implementing agent may claim **DONE** only when **all** rows pass on CI:
 4. **Transpose** → A5.
 5. **renderHtml + light/dark/print CSS** → A6 A7 A11.
 6. **PDF entry** → A8 A9.
-7. **Controller** — `createViewerController` → A15.
+7. **Controller** — `createTitanChordproController` → A15.
 8. **CLI** → A12.
 9. **Vue package** — complete 1-cifra UI + demo app → A16 A17.
 10. **Docs** — README + VISAO pointer → A13 A14.
@@ -339,8 +423,8 @@ Do not start sda-v2 cutover until A1–A12 + A15–A17 green (or A1–A15 if UI 
 
 1. Depend on local path or published version (`@henryavila/titan-chordpro-ui` + `/vue`).
 2. sda-v2 keeps **shell / multi-cifra / sanitize / i18n / player**.
-3. Replace inline parser + HTML/PDF/toolbar-of-cifra with `<ChordproViewer :source="activeCho" />` (or equivalent).
-4. Map host tokens to `--cpv-*` if needed.
+3. Replace inline parser + HTML/PDF/toolbar-of-cifra with `<TitanChordpro :source="activeCho" />` (or equivalent).
+4. Map host tokens to `--titan-chordpro-*` if needed.
 5. Remove duplicated helpers from `useChordpro.ts` (re-export from core or delete).
 
 Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SPEC + `docs/VISAO.md`.
@@ -352,6 +436,6 @@ Pointer in SDA handoff: `design-handoff/prompts/07b-cifra-viewer.md` → this SP
 1. ~~Package scope name under npm~~ — **locked:** `@henryavila/titan-chordpro-ui` with exports `"."` / `"./pdf"` / `"./vue"` (publish via GitHub Release → OIDC, same pattern as `@henryavila/mdprobe`; see `docs/REBRAND-HANDOFF.md`).
 2. Whether `setKey` is required in v0.1 or only semitone `transpose` (SDA today = semitone offset).
 3. PDF engine long-term (jsPDF vs print-CSS + headless) — **v0.1 = jsPDF** for parity with SDA.
-4. Exact `ViewerController` action union (document in types when implementing).
+4. Exact `TitanChordproController` action union (document in types when implementing).
 
 Default if unanswered: **semitone-only** transpose in v0.1; **jsPDF** in `./pdf`; controller actions mirror VISAO controls (transpose, theme, fontStep, scroll, export).

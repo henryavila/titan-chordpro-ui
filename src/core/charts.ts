@@ -27,8 +27,8 @@ export const SONG_META_KEYS = [
   'title',
   'subtitle',
   'artist',
-  'x_source',
-  'x_youtube',
+  'x_titan_source',
+  'x_titan_youtube',
   'x_chart_default',
 ] as const
 
@@ -40,13 +40,13 @@ export const CHART_SOUND_KEYS = [
   'time',
   'duration',
   'capo',
-  'x_audio_sung',
-  'x_audio_playback',
-  'x_audio_art',
-  'x_audio_art_w',
-  'x_audio_art_h',
-  'x_strum',
-  'x_strum_set',
+  'x_titan_audio_sung',
+  'x_titan_audio_playback',
+  'x_titan_audio_art',
+  'x_titan_audio_art_w',
+  'x_titan_audio_art_h',
+  'x_titan_strum',
+  'x_titan_strum_set',
 ] as const
 
 const DIR = /^\s*\{\s*([a-zA-Z_]+)\s*:?\s*([^}]*)\}\s*$/
@@ -57,12 +57,19 @@ const SONG_ALIAS: Record<string, string> = {
   t: 'title',
   st: 'subtitle',
   composer: 'artist',
-  x_origem: 'x_source',
 }
 
+/** Envelope saves fold a leftover pre-Titan sound line onto the canonical key. Flat `readMeta` does not. */
 const CHART_ALIAS: Record<string, string> = {
-  x_audio: 'x_audio_sung',
-  x_audio_cantado: 'x_audio_sung',
+  x_audio_sung: 'x_titan_audio_sung',
+  x_audio: 'x_titan_audio_sung',
+  x_audio_cantado: 'x_titan_audio_sung',
+  x_audio_playback: 'x_titan_audio_playback',
+  x_audio_art: 'x_titan_audio_art',
+  x_audio_art_w: 'x_titan_audio_art_w',
+  x_audio_art_h: 'x_titan_audio_art_h',
+  x_strum: 'x_titan_strum',
+  x_strum_set: 'x_titan_strum_set',
 }
 
 /** One-header order. Two-arg `writeMeta` on a file with no envelope emits this. */
@@ -76,16 +83,16 @@ export const META_KEYS = [
   'time',
   'duration',
   'capo',
-  'x_source',
-  'x_youtube',
+  'x_titan_source',
+  'x_titan_youtube',
   'x_chart_default',
-  'x_audio_sung',
-  'x_audio_playback',
-  'x_audio_art',
-  'x_audio_art_w',
-  'x_audio_art_h',
-  'x_strum',
-  'x_strum_set',
+  'x_titan_audio_sung',
+  'x_titan_audio_playback',
+  'x_titan_audio_art',
+  'x_titan_audio_art_w',
+  'x_titan_audio_art_h',
+  'x_titan_strum',
+  'x_titan_strum_set',
 ] as const
 export type MetaKey = (typeof META_KEYS)[number]
 export type ChartMeta = Partial<Record<MetaKey, string>>
@@ -95,9 +102,6 @@ const META_ALIAS: Record<string, MetaKey> = {
   t: 'title',
   st: 'subtitle',
   composer: 'artist',
-  x_origem: 'x_source',
-  x_audio: 'x_audio_sung',
-  x_audio_cantado: 'x_audio_sung',
 }
 
 export type MetaPatch = { [key: string]: string | undefined }
@@ -158,7 +162,14 @@ function songIdentityMetaKey(name: string): MetaKey | null {
 }
 
 const NOTATION_AUDIO = new Set([
+  'x_titan_audio_sung',
+  'x_titan_audio_playback',
+  'x_titan_audio_art',
+  'x_titan_audio_art_w',
+  'x_titan_audio_art_h',
   'x_audio_sung',
+  'x_audio',
+  'x_audio_cantado',
   'x_audio_playback',
   'x_audio_art',
   'x_audio_art_w',
@@ -1024,6 +1035,10 @@ function patchIdentityInPlace(inner: string, patch: MetaPatch): string {
   return [...missing, ...out].join('\n')
 }
 
+export function notationMask(lines: readonly string[]): boolean[] {
+  return notationInside(lines as string[])
+}
+
 function notationInside(lines: string[]): boolean[] {
   const mask = new Array<boolean>(lines.length).fill(false)
   const scan = freshNotationScan()
@@ -1257,7 +1272,8 @@ export function writeChartScopedMeta(source: string, patch: MetaPatch, chartId?:
     if (!isImplicitChartId(chartId)) return String(source ?? '')
     return writeFlatScoped(source, patch, CHART_SOUND_KEYS)
   }
-  const id = chartId && split.charts.some((c) => c.id === chartId) ? chartId : null
+  const wanted = chartId === undefined || chartId === '' ? split.defaultId : chartId
+  const id = split.charts.some((c) => c.id === wanted) ? wanted : null
   if (!id) return String(source ?? '')
   const chart = split.charts.find((c) => c.id === id)
   if (!chart) return String(source ?? '')

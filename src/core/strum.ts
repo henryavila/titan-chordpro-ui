@@ -121,7 +121,7 @@ export function decodeStrumPat(pat: string): StrumSlot[] {
   return slots
 }
 
-export function formatXStrum(p: StrumPattern): string {
+export function formatTitanStrum(p: StrumPattern): string {
   const bits = [
     p.bpm != null ? `bpm=${p.bpm}` : '',
     p.meter ? `meter=${p.meter}` : '',
@@ -132,7 +132,7 @@ export function formatXStrum(p: StrumPattern): string {
   return bits.join('; ')
 }
 
-export function parseXStrum(raw: string): StrumPattern | null {
+export function parseTitanStrum(raw: string): StrumPattern | null {
   const s = String(raw ?? '').trim()
   if (!s) return null
   const get = (k: string) => {

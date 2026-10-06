@@ -9,6 +9,8 @@ export type SetlistSong = {
   key?: string
   /** `{tempo:}` when the host already knows it, even without the ChordPro. */
   tempo?: string | number
+  /** `{time:}` when the host already knows it, even without the ChordPro. */
+  time?: string
   /** The ChordPro itself, when the host already has it. */
   source?: string
   /**
@@ -32,6 +34,18 @@ function bpmLabelOf(song: SetlistSong, cached?: string): string {
   return bpmFromCho(song.source ?? cached)
 }
 
+/** `{time:4/4}` from a chart body — enough to label the list without a parse. */
+function timeFromCho(source: string | undefined): string {
+  const m = String(source ?? '').match(/\{\s*time\s*:\s*([^}]+)\}/i)
+  return String(m?.[1] ?? '').trim()
+}
+
+function timeLabelOf(song: SetlistSong, cached?: string): string {
+  const host = String(song.time ?? '').trim()
+  if (host) return host
+  return timeFromCho(song.source ?? cached)
+}
+
 export type LoadSong = (id: string, song: SetlistSong) => Promise<string> | string
 
 /** Where a musician left a song: tone, capo, speed and place on the page. */
@@ -46,6 +60,8 @@ export type SongSpot = {
 export type SetlistOpts = {
   songs: Ref<SetlistSong[] | undefined>
   loadSong: Ref<LoadSong | undefined>
+  /** Fetch and keep every chart, not only the one on screen and its neighbours. */
+  prefetchAll?: Ref<boolean | undefined>
 }
 
 /**
@@ -95,6 +111,7 @@ export function useSetlist(opts: SetlistOpts) {
         subtitle: item.subtitle ? String(item.subtitle) : '',
         key: item.key ? String(item.key) : '',
         tempo: item.tempo,
+        time: item.time ? String(item.time).trim() : undefined,
         source: typeof item.source === 'string' && item.source.trim() ? item.source : undefined,
         ...(chartId ? { chartId } : {}),
       })
@@ -114,6 +131,40 @@ export function useSetlist(opts: SetlistOpts) {
     if (typeof held === 'string') return held
     return s.source ?? null
   })
+
+  function sourceAt(i: number): string | null {
+    const s = list.value[i]
+    if (!s) return null
+    const held = cache.value[s.id]
+    if (typeof held === 'string') return held
+    return s.source ?? null
+  }
+
+  /** Current chart plus both neighbours, when their ChordPro is already here. */
+  const neighborSources = computed(() => {
+    if (!on.value) return [] as string[]
+    const out: string[] = []
+    for (const j of [si.value - 1, si.value, si.value + 1]) {
+      const text = sourceAt(j)
+      if (typeof text === 'string' && text.trim()) out.push(text)
+    }
+    return out
+  })
+
+  const allSources = computed(() => {
+    if (!on.value) return [] as string[]
+    const out: string[] = []
+    for (let j = 0; j < list.value.length; j++) {
+      const text = sourceAt(j)
+      if (typeof text === 'string' && text.trim()) out.push(text)
+    }
+    return out
+  })
+
+  /** Charts whose rehearsal audio should be filled into Cache Storage. */
+  const cacheSources = computed(() =>
+    opts.prefetchAll?.value ? allSources.value : neighborSources.value,
+  )
 
   const failing = computed(() => {
     const s = current.value
@@ -158,9 +209,13 @@ export function useSetlist(opts: SetlistOpts) {
       .catch(() => fail(id))
   }
 
-  /** The one on screen and its neighbours: changing song cannot wait on a network. */
+  /** The one on screen and its neighbours — or the whole list when `prefetchAll`. */
   function prefetch() {
     if (!on.value) return
+    if (opts.prefetchAll?.value) {
+      for (let i = 0; i < list.value.length; i++) ensure(i)
+      return
+    }
     ensure(si.value)
     ensure(si.value + 1)
     ensure(si.value - 1)
@@ -225,6 +280,7 @@ export function useSetlist(opts: SetlistOpts) {
         keyLabel: s.key ?? '',
         hasKey: !!s.key,
         bpmLabel: bpmLabelOf(s, cache.value[s.id]),
+        timeLabel: timeLabelOf(s, cache.value[s.id]),
         current: i === si.value,
         failed: !!failed.value[s.id] && !s.source && typeof cache.value[s.id] !== 'string',
         busy: !!busy.value[s.id],
@@ -266,7 +322,7 @@ export function useSetlist(opts: SetlistOpts) {
   }
 
   return {
-    list, on, si, current, currentSource, failing,
+    list, on, si, current, currentSource, neighborSources, allSources, cacheSources, failing,
     listOpen, query, endOffer,
     items, noHit, showSearch,
     posLabel, noPrev, noNext, nextTitle, prevTitle, nextChip, nextChipShort, headLabel, seenLabel,

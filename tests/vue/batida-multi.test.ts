@@ -2,14 +2,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   emptyPattern,
-  formatXStrum,
+  formatTitanStrum,
   memoryStore,
-  parseXStrum,
+  parseTitanStrum,
   readMeta,
   readStrumPatterns,
   writeStrumPatterns,
 } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import BatidaSheet from '../../src/vue/sheets/BatidaSheet.vue'
 
 const observers: ((entries: unknown[]) => void)[] = []
@@ -27,7 +27,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -57,7 +57,7 @@ const MULTI = writeStrumPatterns(
 )
 
 async function viewerAt(source: string, width = 900) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source, storage: memoryStore(), autoHide: false, modes: 'content' },
     attachTo: document.body,
   })
@@ -144,7 +144,7 @@ describe('BatidaSheet multi pattern management', () => {
     expect(w.emitted('remove-pattern')).toBeTruthy()
   })
 
-  it('save persists full set via writeStrumPatterns (active drives x_strum)', async () => {
+  it('save persists full set via writeStrumPatterns (active drives x_titan_strum)', async () => {
     const w = await viewerAt(MULTI)
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
@@ -162,13 +162,13 @@ describe('BatidaSheet multi pattern management', () => {
     const set = readStrumPatterns(src)
     expect(set.patterns).toHaveLength(2)
     expect(set.patterns[set.activeIndex]?.label).toBe('Refrão A')
-    expect(readMeta(src).x_strum).toContain('Refrão A')
-    expect(readMeta(src).x_strum_set).toBeTruthy()
-    expect(formatXStrum(set.patterns[set.activeIndex]!)).toBe(readMeta(src).x_strum)
+    expect(readMeta(src).x_titan_strum).toContain('Refrão A')
+    expect(readMeta(src).x_titan_strum_set).toBeTruthy()
+    expect(formatTitanStrum(set.patterns[set.activeIndex]!)).toBe(readMeta(src).x_titan_strum)
   })
 
   it('does not save while a sibling pattern is still empty', async () => {
-    const done = parseXStrum('bpm=90; meter=4/4; grid=8; label=Parte 1; pat=DuDu DuDU')!
+    const done = parseTitanStrum('bpm=90; meter=4/4; grid=8; label=Parte 1; pat=DuDu DuDU')!
     const blank = emptyPattern({ bpm: 90, meter: '4/4', grid: 8, label: 'Parte 2' })
     expect(done).not.toBeNull()
     const w = mountSheet([done!, blank], 0)

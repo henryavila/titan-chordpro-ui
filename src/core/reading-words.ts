@@ -7,6 +7,11 @@ export type ReadingCell = {
   shape: string
   hasShape: boolean
   hasChord: boolean
+  /** Sounding name. The modal uses this, not the Nashville label. */
+  concert: string
+  /** Hand shape. Guitar and ukulele look this up. */
+  shapeName: string
+  capoFret: number
 }
 
 /**
@@ -26,6 +31,9 @@ function cell(text: string, src: ChartSeg | null): ReadingCell {
     shape: src && src.shape ? src.shape : '',
     hasShape: !!(src && src.shape),
     hasChord: !!src,
+    concert: src?.concert || (src ? src.chord : ''),
+    shapeName: src?.shapeName || src?.concert || (src ? src.chord : ''),
+    capoFret: src?.capoFret ?? 0,
   }
 }
 

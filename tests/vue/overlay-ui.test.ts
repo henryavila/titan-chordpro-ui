@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue/index'
+import { TitanChordpro } from '../../src/vue/index'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 import { diffOps, normalizeSource, overlayKey, parse } from '../../src/core/index'
 
@@ -13,7 +13,7 @@ const UNIQUE = 'Je[G]sus, Tu És a minha [G]vida.'
 const PLAIN = 'Jesus, Tu És a minha vida.'
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  return mount(ChordproViewer, {
+  return mount(TitanChordpro, {
     props: { source: src(), theme: 'dark', autoHide: false, songId: 'jesus-1', ...props },
     attachTo: document.body,
   })
@@ -176,11 +176,11 @@ describe('a version of my own', () => {
     await flushPromises()
     await personalise(w)
 
-    const stored = JSON.parse(localStorage.getItem(overlayKey('jesus-1')) ?? 'null')
+    const stored = JSON.parse(localStorage.getItem('titan-chordpro:my:jesus-1') ?? 'null')
     expect(stored.ops).toHaveLength(1)
     expect(stored.ops[0].type).toBe('replace')
     expect(w.text()).toContain('Minha versão · 1 ajuste')
-    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('(meu)')
     // One op, one line: the mark sits exactly on what the reader changed.
     expect(w.findAll('[data-mine-dot]')).toHaveLength(1)
     w.unmount()
@@ -193,13 +193,13 @@ describe('a version of my own', () => {
 
     await w.get('[data-read-orig]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('(meu)')
     expect(w.findAll('[data-mine-dot]')).toHaveLength(0)
-    expect(localStorage.getItem(overlayKey('jesus-1'))).not.toBeNull()
+    expect(localStorage.getItem('titan-chordpro:my:jesus-1')).not.toBeNull()
 
     await w.get('[data-read-mine]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-cpv-scroll]').text()).toContain('(meu)')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('(meu)')
     w.unmount()
   })
 
@@ -210,8 +210,8 @@ describe('a version of my own', () => {
 
     await w.get('[data-mine-dot]').trigger('click')
     await flushPromises()
-    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    expect(localStorage.getItem('titan-chordpro:my:jesus-1')).toBeNull()
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('(meu)')
     expect(w.find('[data-mine-switch]').exists()).toBe(false)
     w.unmount()
   })
@@ -231,7 +231,7 @@ describe('a version of my own', () => {
     expect(w.get('[data-revert-all]').text()).toBe('Confirmar — descartar tudo')
     await w.get('[data-revert-all]').trigger('click')
     await flushPromises()
-    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
+    expect(localStorage.getItem('titan-chordpro:my:jesus-1')).toBeNull()
     w.unmount()
   })
 
@@ -247,14 +247,15 @@ describe('a version of my own', () => {
     await flushPromises()
     await w.get('[data-fix-tune]').trigger('click')
     await flushPromises()
-    const ops = JSON.parse(localStorage.getItem(overlayKey('jesus-1')) ?? 'null').ops
+    const ops = JSON.parse(localStorage.getItem('titan-chordpro:my:jesus-1') ?? 'null').ops
     expect(ops.find((o: { type: string }) => o.type === 'tune')).toMatchObject({ transpose: 2 })
 
     // Reopening the chart adopts the pinned key.
     w.unmount()
     const again = mountViewer()
     await flushPromises()
-    expect(again.get('[data-display-key]').text()).toBe('A')
+    expect(again.get('[data-display-key]').text()).toBe('G')
+    expect(again.get('[data-tone-shift]').text()).toMatch(/tocando em A/)
     again.unmount()
   })
 })
@@ -275,8 +276,8 @@ describe('the official chart moved', () => {
     await next.get('[data-upd-keep]').trigger('click')
     await flushPromises()
     expect(next.find('[data-upd-dlg]').exists()).toBe(false)
-    expect(next.get('[data-cpv-scroll]').text()).toContain('(meu)')
-    expect(JSON.parse(localStorage.getItem(overlayKey('jesus-1')) ?? 'null').baseVersion).toBe('v2')
+    expect(next.get('[data-titan-chordpro-scroll]').text()).toContain('(meu)')
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:my:jesus-1') ?? 'null').baseVersion).toBe('v2')
     next.unmount()
   })
 
@@ -290,8 +291,8 @@ describe('the official chart moved', () => {
     await flushPromises()
     await next.get('[data-upd-adopt]').trigger('click')
     await flushPromises()
-    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
-    expect(next.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    expect(localStorage.getItem('titan-chordpro:my:jesus-1')).toBeNull()
+    expect(next.get('[data-titan-chordpro-scroll]').text()).not.toContain('(meu)')
     next.unmount()
   })
 
@@ -306,7 +307,7 @@ describe('the official chart moved', () => {
     const next = mountViewer({ source: adopted, version: 'v2' })
     await flushPromises()
     expect(next.find('[data-upd-dlg]').exists()).toBe(false)
-    expect(localStorage.getItem(overlayKey('jesus-1'))).toBeNull()
+    expect(localStorage.getItem('titan-chordpro:my:jesus-1')).toBeNull()
     expect(next.find('[data-mine-switch]').exists()).toBe(false)
     next.unmount()
   })
@@ -382,12 +383,12 @@ describe('suggesting to whoever owns the chart', () => {
     await flushPromises()
     await local.get('[data-suggest]').trigger('click')
     await flushPromises()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(0)
     expect(local.emitted('suggestion-created')).toBeUndefined()
     expect(local.get('[data-suggest]').text()).not.toMatch(/Confirmar/i)
     expect(local.get('[data-suggest-name]').attributes('aria-invalid')).toBe('true')
     expect(local.get('[data-suggest-name-error]').text()).toMatch(/obrigatório/i)
-    expect(local.get('.cpv-toast').text()).toMatch(/obrigatório|nome/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/obrigatório|nome/i)
     local.unmount()
   })
 
@@ -415,7 +416,7 @@ describe('suggesting to whoever owns the chart', () => {
     await identify(local)
     await local.get('[data-suggest]').trigger('click')
     await flushPromises()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(0)
     expect(local.emitted('suggestion-created')).toBeUndefined()
     expect(local.get('[data-suggest]').text()).toMatch(/Confirmar/i)
     local.unmount()
@@ -428,7 +429,7 @@ describe('suggesting to whoever owns the chart', () => {
     await local.get('[data-open-my]').trigger('click')
     await flushPromises()
     await confirmSuggest(local)
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(1)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(1)
     expect(local.emitted('suggestion-created')).toHaveLength(1)
     local.unmount()
 
@@ -450,7 +451,7 @@ describe('suggesting to whoever owns the chart', () => {
 
     await admin.get('[data-q-accept]').trigger('click')
     await flushPromises()
-    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    const list = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')
     expect(list).toHaveLength(1)
     expect(list[0].status).toBe('accepted')
     expect(list[0].ops).toHaveLength(0)
@@ -479,7 +480,7 @@ describe('suggesting to whoever owns the chart', () => {
     await flushPromises()
     await admin.get('[data-q-refuse]').trigger('click')
     await flushPromises()
-    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    const list = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')
     expect(list).toHaveLength(1)
     expect(list[0].status).toBe('refused')
     expect(admin.emitted('save-content')).toBeUndefined()
@@ -512,8 +513,7 @@ describe('suggesting to whoever owns the chart', () => {
       await flushPromises()
       observers.forEach((cb) => cb([{ contentRect: { width: 390, height: 800 } }]))
       await flushPromises()
-      expect(admin.get('[data-queue-chip]').classes()).not.toContain('is-hidden')
-      expect(admin.get('[data-queue-count]').text()).toBe('1')
+      expect(admin.find('[data-queue-chip]').exists()).toBe(false)
       expect(admin.get('[data-more-queue-badge]').text()).toBe('1')
       admin.unmount()
     } finally {
@@ -551,9 +551,9 @@ describe('host persistSuggestion ack', () => {
     expect(persist).toHaveBeenCalledTimes(1)
     expect(local.get('[data-suggest]').text()).toMatch(/Enviando/i)
     expect(local.get('[data-suggest]').attributes('aria-busy')).toBe('true')
-    expect(local.get('.cpv-toast').text()).not.toMatch(/enviada/i)
+    expect(local.get('.titan-chordpro-toast').text()).not.toMatch(/enviada/i)
     expect(local.emitted('suggestion-created')).toBeUndefined()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(0)
     expect(local.find('[data-my-sugs]').exists()).toBe(false)
     expect(local.get('[data-revert]').attributes('disabled')).toBeDefined()
     expect(local.get('[data-revert-all]').attributes('disabled')).toBeDefined()
@@ -563,8 +563,8 @@ describe('host persistSuggestion ack', () => {
     expect(local.findAll('[data-my-op]')).toHaveLength(1)
     resolve()
     await flushPromises()
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(1)
-    expect(local.get('.cpv-toast').text()).toMatch(/enviada/i)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(1)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/enviada/i)
     expect(local.emitted('suggestion-created')).toHaveLength(1)
     expect(local.find('[data-suggest]').exists()).toBe(false)
     local.unmount()
@@ -631,13 +631,32 @@ describe('host persistSuggestion ack', () => {
     await confirmSuggest(local)
     await flushPromises()
     expect(persist).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(0)
     expect(local.emitted('update:suggestionQueue')).toBeUndefined()
     expect(local.emitted('suggestion-created')).toBeUndefined()
-    expect(local.get('.cpv-toast').text()).toMatch(/não foi possível enviar|tente de novo/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/não foi possível enviar|tente de novo/i)
     expect(local.find('[data-suggest]').exists()).toBe(true)
     expect(local.findAll('[data-my-op]')).toHaveLength(1)
     expect(local.get('[data-suggest]').text()).not.toMatch(/Enviando/i)
+    local.unmount()
+  })
+
+  it('marks Sugerir as offline and does not POST', async () => {
+    const persist = vi.fn(() => Promise.resolve())
+    const local = mountViewer({ persistSuggestion: persist, online: false })
+    await flushPromises()
+    await personalise(local)
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    await identify(local)
+    expect(local.get('[data-offline-hint]').text()).toMatch(/sem internet/i)
+    await local.get('[data-suggest]').trigger('click')
+    await flushPromises()
+    expect(persist).not.toHaveBeenCalled()
+    expect(local.get('[data-suggest]').text()).not.toMatch(/Confirmar/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/sem internet/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/minha versão/i)
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
     local.unmount()
   })
 
@@ -652,13 +671,38 @@ describe('host persistSuggestion ack', () => {
     await confirmSuggest(local)
     await flushPromises()
     expect(persist).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')).toHaveLength(0)
+    expect(JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')).toHaveLength(0)
     expect(local.emitted('suggestion-created')).toBeUndefined()
-    expect(local.get('.cpv-toast').text()).toMatch(/não foi possível enviar|tente de novo/i)
+    expect(local.get('.titan-chordpro-toast').text()).toMatch(/não foi possível enviar|tente de novo/i)
     expect(local.find('[data-suggest]').exists()).toBe(true)
     expect(local.findAll('[data-my-op]')).toHaveLength(1)
     expect(String(err.mock.calls.at(0))).toMatch(/Promise|return/i)
     err.mockRestore()
+    local.unmount()
+  })
+
+  it('sends a full key rewrite as one suggestion op, not one per line', async () => {
+    const local = mountViewer({
+      source: loadFixture('sda/082-o-rei-vem-vindo.cho'),
+      songId: '082',
+    })
+    await flushPromises()
+    await local.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await local.get('[data-meta-open]').trigger('click')
+    await flushPromises()
+    await local.get('[data-meta-rewrite-go]').trigger('click')
+    await flushPromises()
+    await local.get('[data-read]').trigger('click')
+    await flushPromises()
+    await local.get('[data-open-my]').trigger('click')
+    await flushPromises()
+    expect(local.findAll('[data-my-op]')).toHaveLength(1)
+    expect(local.get('[data-my-op]').text()).toMatch(/Cifra reescrita no tom Ab/)
+    await confirmSuggest(local)
+    const sug = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]') as Array<{ ops: unknown[] }>
+    expect(sug).toHaveLength(1)
+    expect(sug[0]?.ops).toHaveLength(1)
     local.unmount()
   })
 })
@@ -714,7 +758,7 @@ describe('suggestion per chart', () => {
     await flushPromises()
     await confirmSuggest(local)
 
-    const created = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')[0]
+    const created = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')[0]
     const chart = parse(TWO_CHARTS, { chartId: 'oferta' }).source
     const titleAt = chart.split('\n').findIndex((l) => l === '{title:Uma}')
     expect(created.chartId).toBe('oferta')
@@ -725,7 +769,7 @@ describe('suggestion per chart', () => {
     expect(local.emitted('suggestion-created')?.[0]?.[0]).toMatchObject({ chartId: 'oferta' })
     local.unmount()
 
-    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    const list = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')
     list.push({
       id: 's-completa',
       songId: 'uma',
@@ -754,7 +798,7 @@ describe('suggestion per chart', () => {
       id: 's-oferta-2',
       at: 2,
     })
-    localStorage.setItem('cpv:sug', JSON.stringify(list))
+    localStorage.setItem('titan-chordpro:sug', JSON.stringify(list))
 
     const admin = mountViewer({ source: TWO_CHARTS, songId: 'uma', editMode: 'persisted' })
     await flushPromises()
@@ -788,7 +832,7 @@ describe('suggestion per chart', () => {
 
   it('puts an accepted sibling chart into the working file', async () => {
     localStorage.setItem(
-      'cpv:sug',
+      'titan-chordpro:sug',
       JSON.stringify([
         {
           id: 's-completa',
@@ -845,7 +889,7 @@ describe('suggestion per chart', () => {
 
   it('keeps an unsaved oferta rascunho when accepting a sibling chart', async () => {
     localStorage.setItem(
-      'cpv:sug',
+      'titan-chordpro:sug',
       JSON.stringify([
         {
           id: 's-completa',
@@ -932,7 +976,7 @@ describe('suggestion per chart', () => {
       capo: 0,
     })
     localStorage.setItem(
-      'cpv:sug',
+      'titan-chordpro:sug',
       JSON.stringify([
         {
           id: 's-oferta',
@@ -988,7 +1032,7 @@ describe('suggestion per chart', () => {
       capo: 0,
     })
     localStorage.setItem(
-      'cpv:sug',
+      'titan-chordpro:sug',
       JSON.stringify([
         {
           id: 's-ghost',
@@ -1021,7 +1065,7 @@ describe('suggestion per chart', () => {
 
     await admin.get('[data-q-refuse]').trigger('click')
     await flushPromises()
-    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    const list = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')
     expect(list[0].ops).toHaveLength(0)
     expect(list[0].resolvedOps).toHaveLength(1)
     expect(admin.emitted('save-content')).toBeUndefined()
@@ -1034,7 +1078,7 @@ describe('suggestion per chart', () => {
     const changed = official.replace(UNIQUE, `${UNIQUE} (outro)`)
     const ops = diffOps(official, changed, { transpose: 0, capo: 0 })
     localStorage.setItem(
-      'cpv:sug',
+      'titan-chordpro:sug',
       JSON.stringify([
         {
           id: 's-outra',
@@ -1067,7 +1111,7 @@ describe('suggestion per chart', () => {
     await admin.get('[data-q-accept-batch]').trigger('click')
     await flushPromises()
 
-    const list = JSON.parse(localStorage.getItem('cpv:sug') ?? '[]')
+    const list = JSON.parse(localStorage.getItem('titan-chordpro:sug') ?? '[]')
     expect(list[0].songId).toBe('outra')
     expect(list[0].status).toBe('pending')
     expect(list[0].ops).toHaveLength(ops.length)
@@ -1437,7 +1481,7 @@ describe('switching the song on screen', () => {
     const ops = diffOps(songB, dropped, { transpose: 0, capo: 0 })
     expect(ops.some((op) => op.type === 'delete')).toBe(true)
     expect(songA).not.toContain('linha exclusiva da segunda')
-    expect(overlayKey(songBId)).toBe(overlayKey(songBId, 'default'))
+    expect(overlayKey(songBId)).toBe('titan-chordpro:my:beta')
     localStorage.setItem(overlayKey(songBId), JSON.stringify({ baseVersion: 'v1', ops, at: 1 }))
 
     const w = mountViewer({

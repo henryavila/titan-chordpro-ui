@@ -337,10 +337,10 @@ E ser [Am]    comple [Dsus]-  to [D]   é estar [Am] bem per [Dsus]- to  [D]
 
 
 {c:(INTERLÚDIO)}
-{sos: time=4/4 key=G tempo=72 tuning=EADGBE}
+{x_titan_start_of_score: time=4/4 key=G tempo=72 tuning=EADGBE}
 | d4:8 e4:8 g4:q a4:8~s b4:8 |
 | g4:h d4:q e4:q |
-{eos}
+{x_titan_end_of_score}
 
 [G]x///               [G/B]x///                [C]x///              [Dsus]x/ [D]//
 
@@ -443,10 +443,10 @@ Deus a [A/C#]minha [Bsus]fren[B]- te es[E]tá
 [E]x//           [F#m7]x//        [D9]x//        [D9]x//   [E]x
 
 {c:(SOLO DO INTERLÚDIO)}
-{sos: time=4/4 key=D tempo=92 tuning=EADGBE}
+{x_titan_start_of_score: time=4/4 key=D tempo=92 tuning=EADGBE}
 | d4:8 e4:8 g4:q a4:8~s b4:8 |
 | g4:h d4:q e4:q |
-{eos}
+{x_titan_end_of_score}
 
 {c:(FINAL)}
 {image: assets/tua-vontade-fim.png}`,

@@ -1,0 +1,472 @@
+{
+  "schemaVersion": "1.0",
+  "planSlug": "diagramas-cifra",
+  "title": "Forma do acorde na cifra",
+  "description": "O músico pede a forma do acorde sem lista na cifra. Lookup no token tocável; draw da mão com capo nas cordas e concert no piano; override só neste arquivo.",
+  "actor": "Músico",
+  "scenario": "Ver como se toca o acorde da cifra sem poluir a leitura; no edit, gravar override só naquele arquivo.",
+  "audience": "both",
+  "actors": [
+    {
+      "id": "M",
+      "label": "Músico",
+      "kind": "actor"
+    },
+    {
+      "id": "V",
+      "label": "Visualizador",
+      "kind": "participant"
+    },
+    {
+      "id": "C",
+      "label": "Core",
+      "kind": "participant"
+    }
+  ],
+  "graph": {
+    "entry": "S1",
+    "nodes": {
+      "S1": {
+        "type": "activity",
+        "title": "Ler a cifra",
+        "label": "Ler a cifra",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Abre a cifra",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Mostra letra e acordes, sem lista de formas no corpo",
+            "async": true
+          }
+        ],
+        "next": "leituraPermiteForma"
+      },
+      "leituraPermiteForma": {
+        "type": "xor",
+        "title": "Leitura permite forma",
+        "label": "Esta leitura mostra forma?",
+        "who": "Visualizador",
+        "question": "Esta leitura mostra forma?",
+        "branches": [
+          {
+            "id": "leituraPermiteForma.nao",
+            "when": "sem_forma_nesta_leitura",
+            "label": "Sem forma nesta leitura",
+            "next": "end_leitura"
+          },
+          {
+            "id": "leituraPermiteForma.sim",
+            "when": "mostra_forma",
+            "label": "Mostra forma",
+            "next": "S2"
+          }
+        ]
+      },
+      "end_leitura": {
+        "type": "end",
+        "title": "Fim · sem forma nesta leitura",
+        "label": "Fim · sem forma nesta leitura"
+      },
+      "S2": {
+        "type": "activity",
+        "title": "Pedir forma do acorde",
+        "label": "Pedir forma do acorde",
+        "who": "Músico",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Toca o acorde (alvo botão, sem roubar zen nem trilho de troca)",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "V",
+            "text": "Pausa rolagem e metrônomo se estavam ligados",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Abre a superfície grande de forma; seletor de instrumento fica nela",
+            "async": true
+          }
+        ],
+        "next": "S3"
+      },
+      "S3": {
+        "type": "activity",
+        "title": "Resolver o token tocável",
+        "label": "Resolver o token tocável",
+        "who": "Core",
+        "messages": [
+          {
+            "from": "V",
+            "to": "C",
+            "text": "Pede resolve com token tocável (shapeName nas cordas, concert no piano) e instrumento da preferência",
+            "async": false
+          },
+          {
+            "from": "C",
+            "to": "C",
+            "text": "Parse BR; depois override deste .cho; depois dicionário do pacote; capoFret não entra no match",
+            "async": false
+          },
+          {
+            "from": "C",
+            "to": "V",
+            "text": "Devolve hit, miss ou nome sem parse (7+, aspas)",
+            "async": true
+          }
+        ],
+        "next": "resolveHit"
+      },
+      "resolveHit": {
+        "type": "xor",
+        "title": "Tem forma neste instrumento",
+        "label": "Tem forma neste instrumento?",
+        "who": "Core",
+        "question": "Tem forma neste instrumento?",
+        "branches": [
+          {
+            "id": "resolveHit.hit",
+            "when": "tem_forma",
+            "label": "Tem forma",
+            "next": "S4"
+          },
+          {
+            "id": "resolveHit.miss",
+            "when": "sem_forma_neste_instrumento",
+            "label": "Sem forma neste instrumento",
+            "next": "S5"
+          }
+        ]
+      },
+      "S4": {
+        "type": "activity",
+        "title": "Desenhar a forma da mão",
+        "label": "Desenhar a forma da mão",
+        "who": "Visualizador",
+        "messages": [
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Violão/ukulele: shape da mão + barra Capo n; piano: teclas concert, sem capo",
+            "async": true
+          },
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Mostra o nome que se toca (Am), não o grau Nashville",
+            "async": true
+          }
+        ],
+        "next": "trocaInstrumento"
+      },
+      "S5": {
+        "type": "activity",
+        "title": "Informar miss honesto",
+        "label": "Informar miss honesto",
+        "who": "Visualizador",
+        "messages": [
+          {
+            "from": "V",
+            "to": "M",
+            "text": "Diz Sem forma neste instrumento e deixa trocar o instrumento; no ensaio não oferece criar",
+            "async": true
+          }
+        ],
+        "next": "trocaInstrumento"
+      },
+      "trocaInstrumento": {
+        "type": "xor",
+        "title": "Troca o instrumento",
+        "label": "Troca o instrumento da forma?",
+        "who": "Músico",
+        "question": "Troca o instrumento da forma?",
+        "branches": [
+          {
+            "id": "trocaInstrumento.sim",
+            "when": "troca_instrumento",
+            "label": "Troca instrumento",
+            "next": "S3"
+          },
+          {
+            "id": "trocaInstrumento.nao",
+            "when": "mantem_instrumento",
+            "label": "Mantém instrumento",
+            "next": "ensaioOuEdit"
+          }
+        ]
+      },
+      "ensaioOuEdit": {
+        "type": "xor",
+        "title": "Ensaio ou edit",
+        "label": "Ensaio ou edit?",
+        "who": "Músico",
+        "question": "Ensaio ou edit?",
+        "branches": [
+          {
+            "id": "ensaioOuEdit.ensaio",
+            "when": "ensaio",
+            "label": "Ensaio",
+            "next": "S6"
+          },
+          {
+            "id": "ensaioOuEdit.edit",
+            "when": "edit",
+            "label": "Edit",
+            "next": "gravaOverride"
+          }
+        ]
+      },
+      "S6": {
+        "type": "activity",
+        "title": "Fechar e retomar o relógio",
+        "label": "Fechar e retomar o relógio",
+        "who": "Visualizador",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Fecha a superfície de forma (Fechar, Escape ou scrim no desktop)",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "V",
+            "text": "Retoma só rolagem e metrônomo que estavam ligados",
+            "async": false
+          }
+        ],
+        "next": "end_ensaio"
+      },
+      "end_ensaio": {
+        "type": "end",
+        "title": "Fim · cifra de novo",
+        "label": "Fim · cifra de novo"
+      },
+      "gravaOverride": {
+        "type": "xor",
+        "title": "Grava override neste arquivo",
+        "label": "Grava override neste arquivo?",
+        "who": "Músico",
+        "question": "Grava override neste arquivo?",
+        "branches": [
+          {
+            "id": "gravaOverride.sim",
+            "when": "grava_neste_arquivo",
+            "label": "Grava neste arquivo",
+            "next": "S7"
+          },
+          {
+            "id": "gravaOverride.nao",
+            "when": "fecha_sem_gravar",
+            "label": "Fecha sem gravar",
+            "next": "S6"
+          }
+        ]
+      },
+      "S7": {
+        "type": "activity",
+        "title": "Gravar define neste arquivo",
+        "label": "Gravar define neste arquivo",
+        "who": "Core",
+        "messages": [
+          {
+            "from": "M",
+            "to": "V",
+            "text": "Edita a grelha da mão (ou teclas concert no piano) e confirma",
+            "async": false
+          },
+          {
+            "from": "V",
+            "to": "C",
+            "text": "Pede gravar {define-guitar}/{define-ukulele} no shapeName ou {define} keys no concert",
+            "async": false
+          },
+          {
+            "from": "C",
+            "to": "C",
+            "text": "Escreve o define neste .cho; o dicionário do pacote não muda; a letra do acorde permanece",
+            "async": false
+          }
+        ],
+        "next": "end_edit"
+      },
+      "end_edit": {
+        "type": "end",
+        "title": "Fim · override neste arquivo",
+        "label": "Fim · override neste arquivo"
+      }
+    }
+  },
+  "machines": [
+    {
+      "id": "forma",
+      "label": "Superfície de forma",
+      "entry": "fechada",
+      "nodes": {
+        "fechada": {
+          "label": "Fechada"
+        },
+        "aberta": {
+          "label": "Aberta com forma"
+        },
+        "miss": {
+          "label": "Aberta sem forma"
+        }
+      },
+      "transitions": [
+        {
+          "id": "T_sem_leitura",
+          "from": "fechada",
+          "to": "fechada",
+          "when": "sem_forma_nesta_leitura",
+          "label": "Lens letra ou diagrams off · não abre",
+          "via": "leituraPermiteForma.nao",
+          "effects": []
+        },
+        {
+          "id": "T_abre_hit",
+          "from": "fechada",
+          "to": "aberta",
+          "when": "tem_forma",
+          "label": "Resolve hit · desenha a forma",
+          "via": "resolveHit.hit",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Pausa relógio se estava ligado e desenha a forma",
+              "target": "M"
+            }
+          ]
+        },
+        {
+          "id": "T_abre_miss",
+          "from": "fechada",
+          "to": "miss",
+          "when": "sem_forma_neste_instrumento",
+          "label": "Resolve miss · miss honesto",
+          "via": "resolveHit.miss",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Informa miss e deixa trocar instrumento",
+              "target": "M"
+            }
+          ]
+        },
+        {
+          "id": "T_miss_para_hit",
+          "from": "miss",
+          "to": "aberta",
+          "when": "tem_forma",
+          "label": "Troca instrumento e acha forma",
+          "via": "resolveHit.hit",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "Persiste diagramInstrument na preferência",
+              "target": "instrumento"
+            }
+          ]
+        },
+        {
+          "id": "T_hit_para_miss",
+          "from": "aberta",
+          "to": "miss",
+          "when": "sem_forma_neste_instrumento",
+          "label": "Troca instrumento e perde a forma",
+          "via": "resolveHit.miss",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "Persiste diagramInstrument na preferência",
+              "target": "instrumento"
+            }
+          ]
+        },
+        {
+          "id": "T_fecha_ensaio_hit",
+          "from": "aberta",
+          "to": "fechada",
+          "when": "ensaio",
+          "label": "Fecha no ensaio · retoma o relógio",
+          "via": "ensaioOuEdit.ensaio",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Retoma só o que estava ligado",
+              "target": "M"
+            }
+          ]
+        },
+        {
+          "id": "T_fecha_ensaio_miss",
+          "from": "miss",
+          "to": "fechada",
+          "when": "ensaio",
+          "label": "Fecha miss no ensaio",
+          "via": "ensaioOuEdit.ensaio",
+          "effects": [
+            {
+              "kind": "notify",
+              "label": "Retoma só o que estava ligado",
+              "target": "M"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "override",
+      "label": "Override neste arquivo",
+      "entry": "ausente",
+      "nodes": {
+        "ausente": {
+          "label": "Sem override neste arquivo"
+        },
+        "gravado_neste_arquivo": {
+          "label": "Define gravado neste .cho",
+          "terminal": true
+        }
+      },
+      "transitions": [
+        {
+          "id": "T_grava",
+          "from": "ausente",
+          "to": "gravado_neste_arquivo",
+          "when": "grava_neste_arquivo",
+          "label": "Edit grava {define} neste arquivo",
+          "via": "gravaOverride.sim",
+          "effects": [
+            {
+              "kind": "write",
+              "label": "Escreve define no .cho; BD do pacote intacto",
+              "target": "arquivo"
+            }
+          ]
+        },
+        {
+          "id": "T_nao_grava",
+          "from": "ausente",
+          "to": "ausente",
+          "when": "fecha_sem_gravar",
+          "label": "Edit fecha sem gravar",
+          "via": "gravaOverride.nao",
+          "effects": []
+        }
+      ]
+    }
+  ],
+  "ratifiedAt": "2026-09-19T22:24:20.169Z",
+  "ratifiedGraphSha": "0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8",
+  "ratifiedBy": "operator"
+}

@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUDIO_ART_MEDIA_PX,
   audioArtOf,
   audioArtistOf,
+  resolveRehearsalArt,
   audioKindsOf,
   audioTracksOf,
   audioUrlOf,
+  rehearsalAudioUrls,
   defaultAudioKind,
   displaySongTitle,
   formatAudioClock,
-  parse,
   playableAudioUrl,
   setAudioArt,
   setAudioUrl,
@@ -51,14 +53,14 @@ describe('playableAudioUrl', () => {
 })
 
 describe('setAudioUrl / audioUrlOf', () => {
-  const cho = '{title:Nasce}\n{key:A}\n{x_youtube:abcdefghijk}\n[A]x///\n'
+  const cho = '{title:Nasce}\n{key:A}\n{x_titan_youtube:abcdefghijk}\n[A]x///\n'
 
-  it('writes {x_audio_sung:} without wiping the rest of the header', () => {
+  it('writes {x_titan_audio_sung:} without wiping the rest of the header', () => {
     const next = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
-    expect(next).toContain('{x_audio_sung:https://cdn.sda/nasce.m4a?h=a1}')
+    expect(next).toContain('{x_titan_audio_sung:https://cdn.sda/nasce.m4a?h=a1}')
     expect(next).not.toContain('{x_audio:')
     expect(next).toContain('{title:Nasce}')
-    expect(next).toContain('{x_youtube:abcdefghijk}')
+    expect(next).toContain('{x_titan_youtube:abcdefghijk}')
     expect(next).toContain('[A]x///')
     expect(audioUrlOf(next)).toBe('https://cdn.sda/nasce.m4a?h=a1')
     expect(audioUrlOf(next, 'sung')).toBe('https://cdn.sda/nasce.m4a?h=a1')
@@ -73,6 +75,11 @@ describe('setAudioUrl / audioUrlOf', () => {
       playback: 'https://cdn.sda/pb.m4a?h=2',
     })
     expect(audioKindsOf(audioTracksOf(both))).toEqual(['sung', 'playback'])
+    expect(rehearsalAudioUrls(both)).toEqual([
+      'https://cdn.sda/voz.m4a?h=1',
+      'https://cdn.sda/pb.m4a?h=2',
+    ])
+    expect(rehearsalAudioUrls(cho)).toEqual([])
     const onlyPb = setAudioUrl(both, null, 'sung')
     expect(audioTracksOf(onlyPb)).toEqual({
       sung: null,
@@ -86,27 +93,17 @@ describe('setAudioUrl / audioUrlOf', () => {
     expect(audioUrlOf(none)).toBeNull()
   })
 
-  it('reads legacy {x_audio:} and {x_audio_cantado:} as sung until rewritten', () => {
-    const legacy = '{title:Nasce}\n{x_audio:https://cdn.sda/old.m4a?h=1}\n[A]x\n'
-    expect(audioTracksOf(legacy).sung).toBe('https://cdn.sda/old.m4a?h=1')
-    const pt = '{title:Nasce}\n{x_audio_cantado:https://cdn.sda/pt.m4a?h=1}\n[A]x\n'
-    expect(audioTracksOf(pt).sung).toBe('https://cdn.sda/pt.m4a?h=1')
-    const next = setAudioUrl(legacy, 'https://cdn.sda/new.m4a?h=2', 'sung')
-    expect(next).toContain('{x_audio_sung:https://cdn.sda/new.m4a?h=2}')
-    expect(next).not.toMatch(/\{x_audio:/)
-  })
-
   it('replaces the URL in place when the hash changes', () => {
     const a = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
     const b = setAudioUrl(a, 'https://cdn.sda/nasce.m4a?h=b2')
-    expect(b.match(/\{x_audio_sung:/g)).toHaveLength(1)
+    expect(b.match(/\{x_titan_audio_sung:/g)).toHaveLength(1)
     expect(audioUrlOf(b, 'sung')).toBe('https://cdn.sda/nasce.m4a?h=b2')
   })
 
   it('removes the directive when the URL is cleared', () => {
     const a = setAudioUrl(cho, 'https://cdn.sda/nasce.m4a?h=a1')
     const b = setAudioUrl(a, null)
-    expect(b).not.toContain('x_audio_sung')
+    expect(b).not.toContain('x_titan_audio_sung')
     expect(audioUrlOf(b)).toBeNull()
   })
 
@@ -119,23 +116,37 @@ describe('setAudioUrl / audioUrlOf', () => {
     const sneaky = writeMeta(cho, {
       title: 'Nasce',
       key: 'A',
-      x_youtube: 'abcdefghijk',
-      x_audio_sung: 'https://youtube.com/watch?v=nope',
+      x_titan_youtube: 'abcdefghijk',
+      x_titan_audio_sung: 'https://youtube.com/watch?v=nope',
     })
-    expect(sneaky).toContain('{x_audio_sung:')
+    expect(sneaky).toContain('{x_titan_audio_sung:')
     expect(audioUrlOf(sneaky, 'sung')).toBeNull()
   })
 })
 
 describe('setAudioArt / identity', () => {
-  const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_audio:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
+  const cho = '{title:001 - Nasce em Mim}\n{key:A}\n{x_titan_audio_sung:https://cdn.sda/a.m4a?h=1}\n[A]x///\n'
+
+  it('recommends 1024 px so Media Session has a lock-screen cover', () => {
+    expect(AUDIO_ART_MEDIA_PX).toBe(1024)
+    const next = setAudioArt(cho, {
+      url: 'https://cdn.sda/a.jpg?h=9',
+      width: AUDIO_ART_MEDIA_PX,
+      height: AUDIO_ART_MEDIA_PX,
+    })
+    expect(audioArtOf(next)).toEqual({
+      url: 'https://cdn.sda/a.jpg?h=9',
+      width: 1024,
+      height: 1024,
+    })
+  })
 
   it('writes cover URL plus pixel size for the host-optimized file', () => {
     const next = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 512, height: 512 })
-    expect(next).toContain('{x_audio_art:https://cdn.sda/a.jpg?h=9}')
-    expect(next).toContain('{x_audio_art_w:512}')
-    expect(next).toContain('{x_audio_art_h:512}')
-    expect(next).toContain('{x_audio_sung:https://cdn.sda/a.m4a?h=1}')
+    expect(next).toContain('{x_titan_audio_art:https://cdn.sda/a.jpg?h=9}')
+    expect(next).toContain('{x_titan_audio_art_w:512}')
+    expect(next).toContain('{x_titan_audio_art_h:512}')
+    expect(next).toContain('{x_titan_audio_sung:https://cdn.sda/a.m4a?h=1}')
     expect(audioArtOf(next)).toEqual({
       url: 'https://cdn.sda/a.jpg?h=9',
       width: 512,
@@ -152,7 +163,7 @@ describe('setAudioArt / identity', () => {
   it('clears the cover', () => {
     const withArt = setAudioArt(cho, { url: 'https://cdn.sda/a.jpg?h=9', width: 256, height: 256 })
     const next = setAudioArt(withArt, null)
-    expect(next).not.toContain('x_audio_art')
+    expect(next).not.toContain('x_titan_audio_art')
     expect(audioArtOf(next)).toBeNull()
   })
 
@@ -184,301 +195,29 @@ describe('setAudioArt / identity', () => {
   })
 })
 
-function chartBlock(source: string, id: string): string {
-  const start = source.indexOf(`{start_of_x_chart:${id}}`)
-  const end = source.indexOf('{end_of_x_chart}', start)
-  return source.slice(start, end === -1 ? source.length : end)
-}
+describe('resolveRehearsalArt', () => {
+  const chart = { url: 'https://cdn.sda/album.jpg', width: 1024, height: 1024 }
+  const brand = { url: 'https://cdn.sda/marca.jpg', width: 1024, height: 1024 }
 
-const ENVELOPE_AUDIO = `{start_of_x_chart:completa}
-{key:G}
-{x_audio_sung:https://cdn.example/g.m4a}
-{x_audio_playback:https://cdn.example/gp.m4a}
-{x_audio_art:https://cdn.example/g.jpg}
-{x_audio_art_w:128}
-{x_audio_art_h:128}
-[G]linha completa
-{title:Completa}
-{end_of_x_chart}
-
-{start_of_x_chart:oferta}
-{key:C}
-{x_audio_sung:https://cdn.example/c.m4a}
-{x_audio_playback:https://cdn.example/cp.m4a}
-{x_audio_art:https://cdn.example/c.jpg}
-{x_audio_art_w:256}
-{x_audio_art_h:256}
-[C]linha oferta
-{title:Oferta}
-{x_chart_default:oferta}
-{end_of_x_chart}
-`
-
-describe('envelope audio clear', () => {
-  it('setAudioUrl(null) clears the default chart and leaves the sibling', () => {
-    const next = setAudioUrl(ENVELOPE_AUDIO, null)
-    const oferta = chartBlock(next, 'oferta')
-    expect(oferta).not.toContain('x_audio_sung')
-    expect(oferta).toContain('{x_audio_playback:https://cdn.example/cp.m4a}')
-    expect(oferta).toContain('{x_audio_art:https://cdn.example/c.jpg}')
-    expect(oferta).toContain('[C]linha oferta')
-    expect(chartBlock(next, 'completa')).toBe(chartBlock(ENVELOPE_AUDIO, 'completa'))
-    expect(next).toContain('{x_chart_default:oferta}')
-    expect(audioTracksOf(next).sung).toBeNull()
-    expect(audioTracksOf(next).playback).toBe('https://cdn.example/cp.m4a')
+  it('uses the chart cover when both exist', () => {
+    expect(resolveRehearsalArt(chart, brand)).toEqual(chart)
   })
 
-  it('setAudioUrl(null) keeps the blank under the label', () => {
-    const src = [
-      '',
-      '{start_of_x_chart:completa}',
-      '{x_chart_label:Completa}',
-      '{x_audio_sung:https://cdn.example/g.m4a}',
-      '',
-      '[G]linha completa',
-      '{end_of_x_chart}',
-      '',
-      '{start_of_x_chart:oferta}',
-      '{x_chart_label:Oferta}',
-      '{x_audio_sung:https://cdn.example/c.m4a}',
-      '',
-      '[C]linha oferta',
-      '{x_chart_default:oferta}',
-      '{end_of_x_chart}',
-      '',
-    ].join('\n')
-    const next = setAudioUrl(src, null)
-    const oferta = chartBlock(next, 'oferta')
-    expect(oferta).toContain('{x_chart_label:Oferta}\n\n[C]linha oferta')
-    expect(oferta).not.toContain('cdn.example/c.m4a')
-    expect(oferta).not.toContain('x_audio_sung')
-    expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
-    expect(audioTracksOf(next).sung).toBeNull()
+  it('uses the consumer default when the chart has no cover', () => {
+    expect(resolveRehearsalArt(null, brand)).toEqual(brand)
   })
 
-  it('setAudioUrl(null) does not move a blank between sound keys onto the lyric', () => {
-    const src = [
-      '',
-      '{start_of_x_chart:completa}',
-      '{x_chart_label:Completa}',
-      '{key:G}',
-      '',
-      '{x_audio_sung:https://cdn.example/g.m4a}',
-      '[G]linha completa',
-      '{end_of_x_chart}',
-      '',
-      '{start_of_x_chart:oferta}',
-      '{x_chart_label:Oferta}',
-      '{key:C}',
-      '',
-      '{x_audio_sung:https://cdn.example/c.m4a}',
-      '[C]linha oferta',
-      '{x_chart_default:oferta}',
-      '{end_of_x_chart}',
-      '',
-    ].join('\n')
-    const next = setAudioUrl(src, null)
-    const oferta = chartBlock(next, 'oferta')
-    expect(oferta).toContain('{key:C}\n[C]linha oferta')
-    expect(oferta).not.toContain('x_audio_sung')
-    expect(oferta).not.toContain('cdn.example/c.m4a')
-    expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
-    expect(audioTracksOf(next).sung).toBeNull()
+  it('fills missing size with 1024 for the consumer default', () => {
+    expect(resolveRehearsalArt(null, { url: '/marca.jpg', width: 0, height: 0 })).toEqual({
+      url: '/marca.jpg',
+      width: 1024,
+      height: 1024,
+    })
   })
 
-  it('setRehearsalAudio nulls clear sung, playback and art on the default chart only', () => {
-    const next = setRehearsalAudio(ENVELOPE_AUDIO, { sung: null, playback: null, art: null })
-    const oferta = chartBlock(next, 'oferta')
-    expect(oferta).not.toContain('x_audio')
-    expect(oferta).toContain('[C]linha oferta')
-    expect(oferta).toContain('{key:C}')
-    expect(chartBlock(next, 'completa')).toBe(chartBlock(ENVELOPE_AUDIO, 'completa'))
-    expect(audioTracksOf(next)).toEqual({ sung: null, playback: null })
-    expect(audioArtOf(next)).toBeNull()
-    expect(next).toContain('{start_of_x_chart:completa}')
-    expect(next).toContain('{start_of_x_chart:oferta}')
-    expect(next).toContain('linha completa')
-  })
-
-  it('setAudioUrl(null) does not keep a blank between sound keys under a non-lyric directive', () => {
-    for (const lead of ['{c: Intro}', '{comment: Intro}', '{define: C}', '{start_of_verse}']) {
-      const src = [
-        '{start_of_x_chart:oferta}',
-        lead,
-        '{key:C}',
-        '',
-        '{x_audio_sung:https://cdn.example/c.m4a}',
-        '[C]linha',
-        '{x_chart_default:oferta}',
-        '{end_of_x_chart}',
-      ].join('\n')
-      const next = setAudioUrl(src, null)
-      const oferta = chartBlock(next, 'oferta')
-      expect(oferta).toContain(lead)
-      expect(oferta).toContain('{key:C}')
-      expect(oferta).toContain('[C]linha')
-      expect(oferta).not.toMatch(/\n\n\[C\]linha/)
-      expect(oferta).not.toContain('x_audio_sung')
-      expect(oferta).not.toContain('cdn.example/c.m4a')
-    }
-  })
-
-  it('drops a long leading blank run beside a long sound directive', () => {
-    const sung = '{x_audio_sung:https://cdn.example/' + 'a'.repeat(4000) + '.m4a}'
-    const src = [
-      '{start_of_x_chart:oferta}',
-      sung,
-      ...Array.from({ length: 2000 }, () => ''),
-      '{tempo:80}',
-      '[C]linha',
-      '{x_chart_default:oferta}',
-      '{end_of_x_chart}',
-    ].join('\n')
-    const next = setAudioUrl(src, null)
-    const oferta = chartBlock(next, 'oferta')
-    expect(oferta).toContain('{tempo:80}\n[C]linha')
-    expect(oferta).not.toMatch(/\n\n\[C\]linha/)
-    expect(oferta).not.toContain('x_audio_sung')
-  })
-
-  it('setAudioUrl(null) does not treat an image inside tab or score as the lyric body', () => {
-    for (const [open, close] of [
-      ['{sot}', '{eot}'],
-      ['{start_of_tab}', '{end_of_tab}'],
-      ['{sos}', '{eos}'],
-      ['{start_of_score}', '{end_of_score}'],
-    ]) {
-      for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
-        const src = [
-          '{start_of_x_chart:oferta}',
-          open,
-          image,
-          close,
-          '{key:G}',
-          '',
-          '{tempo:72}',
-          '[G]linha',
-          '{x_audio_sung:https://cdn.example/c.m4a}',
-          '{x_chart_default:oferta}',
-          '{end_of_x_chart}',
-        ].join('\n')
-        const next = setAudioUrl(src, null)
-        const oferta = chartBlock(next, 'oferta')
-        expect(oferta).toContain(image)
-        expect(oferta).toContain('[G]linha')
-        expect(oferta).not.toMatch(/\n\n\[G\]linha/)
-        expect(oferta).not.toContain('x_audio_sung')
-        expect(oferta).not.toContain('cdn.example/c.m4a')
-      }
-    }
-
-    const flat = [
-      '{sot}',
-      '{image:https://cdn.example/capa.png}',
-      '{eot}',
-      '{key:G}',
-      '',
-      '{tempo:72}',
-      '[G]linha',
-      '{x_audio_sung:https://cdn.example/c.m4a}',
-    ].join('\n')
-    const cleared = setAudioUrl(flat, null)
-    expect(cleared).toContain('{image:https://cdn.example/capa.png}')
-    expect(cleared).toContain('[G]linha')
-    expect(cleared).not.toMatch(/\n\n\[G\]linha/)
-    expect(cleared).not.toContain('x_audio_sung')
-  })
-
-  it('setAudioUrl(null) keeps a blank after an image that starts the body', () => {
-    for (const image of ['{image:https://cdn.example/capa.png}', '{img:https://cdn.example/capa.png}']) {
-      const src = [
-        '{start_of_x_chart:completa}',
-        '{key:D}',
-        '[D]outro',
-        '{end_of_x_chart}',
-        '{start_of_x_chart:oferta}',
-        image,
-        '{key:G}',
-        '',
-        '{tempo:72}',
-        '[G]linha',
-        '{x_audio_sung:https://cdn.example/c.m4a}',
-        '{x_chart_default:oferta}',
-        '{end_of_x_chart}',
-      ].join('\n')
-      const next = setAudioUrl(src, null)
-      const oferta = chartBlock(next, 'oferta')
-      expect(oferta).toContain(`${image}\n\n[G]linha`)
-      expect(oferta).toContain('{tempo:72}')
-      expect(oferta).not.toContain('x_audio_sung')
-      expect(oferta).not.toContain('cdn.example/c.m4a')
-      expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
-    }
-  })
-
-  it('setAudioUrl(null) keeps the artist parse shows', () => {
-    const later = '{artist:Local}\n{composer:Bach}\n[C]song\n'
-    expect(parse(later).meta.artist).toBe('Bach')
-    const clearedLater = setAudioUrl(later, null)
-    expect(parse(clearedLater).meta.artist).toBe('Bach')
-    expect(clearedLater).toContain('{composer:Bach}')
-
-    const earlier = '{composer:Bach}\n{artist:Local}\n[C]song\n'
-    expect(parse(earlier).meta.artist).toBe('Local')
-    expect(parse(setAudioUrl(earlier, null)).meta.artist).toBe('Local')
-
-    const env = [
-      '{start_of_x_chart:completa}',
-      '{key:G}',
-      '[G]outro',
-      '{end_of_x_chart}',
-      '{start_of_x_chart:oferta}',
-      '{artist:Local}',
-      '{composer:Bach}',
-      '[C]song',
-      '{x_chart_default:oferta}',
-      '{end_of_x_chart}',
-    ].join('\n')
-    expect(parse(env).meta.artist).toBe('Bach')
-    const clearedEnv = setAudioUrl(env, null)
-    expect(parse(clearedEnv).meta.artist).toBe('Bach')
-    expect(clearedEnv).toContain('{composer:Bach}')
-    expect(chartBlock(clearedEnv, 'completa')).toBe(chartBlock(env, 'completa'))
-  })
-
-  it('setAudioUrl(null) keeps a blank that follows a lyric', () => {
-    const src = [
-      '{start_of_x_chart:oferta}',
-      '{x_chart_label:Oferta}',
-      '[C]corpo',
-      '{tempo:80}',
-      '',
-      '{x_audio_sung:https://cdn.example/c.m4a}',
-      '[C]corpo',
-      '{x_chart_default:oferta}',
-      '{end_of_x_chart}',
-    ].join('\n')
-    const next = setAudioUrl(src, null)
-    const oferta = chartBlock(next, 'oferta')
-    expect(oferta).toContain('[C]corpo\n\n[C]corpo')
-    expect(oferta).not.toMatch(/\[C\]corpo\n\[C\]corpo/)
-    expect(oferta).not.toContain('x_audio_sung')
-    expect(oferta).not.toContain('cdn.example/c.m4a')
-    expect(oferta).toContain('{tempo:80}')
-  })
-
-  it('rewrites a chart with a long trailing blank run and keeps the lyric', () => {
-    const lyric = '[C]corpo longo'
-    const src = [
-      '{start_of_x_chart:oferta}',
-      '{key:C}',
-      lyric,
-      ...Array.from({ length: 8000 }, () => ''),
-      '{x_chart_default:oferta}',
-      '{end_of_x_chart}',
-    ].join('\n')
-    const next = setAudioUrl(src, null)
-    expect(chartBlock(next, 'oferta')).toContain(lyric)
+  it('returns null when neither cover is playable', () => {
+    expect(resolveRehearsalArt(null, null)).toBeNull()
+    expect(resolveRehearsalArt(null, { url: 'javascript:x', width: 1024, height: 1024 })).toBeNull()
   })
 })
 

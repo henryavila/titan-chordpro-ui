@@ -22,7 +22,7 @@ import {
   listCharts,
   lintSource,
   parse,
-  parseXStrum,
+  parseTitanStrum,
   renameChart,
   replaceChart,
   setDefaultChart,
@@ -360,18 +360,18 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
 {title:Uma}
 {x_chart_default:completa}
 {key:G}
-{x_audio_sung:https://cdn.example/g.m4a}
+{x_titan_audio_sung:https://cdn.example/g.m4a}
 [G]completa
 {end_of_x_chart}
 
 {start_of_x_chart:oferta}
 {key:C}
-{x_audio_sung:https://cdn.example/c.m4a}
+{x_titan_audio_sung:https://cdn.example/c.m4a}
 [C]oferta
 {end_of_x_chart}
 `
     expect(readMeta(source).key).toBe('G')
-    expect(readMeta(source).x_audio_sung).toBe('https://cdn.example/g.m4a')
+    expect(readMeta(source).x_titan_audio_sung).toBe('https://cdn.example/g.m4a')
     expect(readMeta(source)).toEqual(readMeta(chartDocument(source)))
     expect(readMeta(TWO_CHART_SOURCE)).toEqual(readMeta(chartDocument(TWO_CHART_SOURCE)))
     expect(readMeta(TWO_CHART_SOURCE)).toMatchObject({
@@ -389,9 +389,9 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
     expect(completa).toContain('{key:G}')
     expect(completa).not.toContain('{key:C}')
     expect(completa).toContain('{duration:01:11}')
-    expect(completa).toContain('{x_audio_sung:https://cdn.example/g.m4a}')
+    expect(completa).toContain('{x_titan_audio_sung:https://cdn.example/g.m4a}')
     expect(oferta).toContain('{key:C}')
-    expect(oferta).toContain('{x_audio_sung:https://cdn.example/c.m4a}')
+    expect(oferta).toContain('{x_titan_audio_sung:https://cdn.example/c.m4a}')
     expect(oferta).not.toContain('{key:G}')
     expect(oferta).not.toContain('{duration:')
     const header = out.slice(0, out.indexOf('{start_of_x_chart'))
@@ -404,27 +404,27 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
     const src = `{start_of_x_chart:completa}
 {x_chart_default:completa}
 {x_audio:old}
-{x_audio_sung:current}
+{x_titan_audio_sung:current}
 {key:C}
 {key:D}
 [G]z
 {end_of_x_chart}
 {start_of_x_chart:oferta}
 {key:C}
-{x_audio_sung:other}
+{x_titan_audio_sung:other}
 [C]o
 {end_of_x_chart}
 `
     const out = writeMeta(src, { duration: '01:30' })
     const completa = chartBlock(out, 'completa')
     const oferta = chartBlock(out, 'oferta')
-    expect(completa).toContain('{x_audio_sung:current}')
+    expect(completa).toContain('{x_titan_audio_sung:current}')
     expect(completa).not.toContain('old')
     expect(completa).toContain('{key:D}')
     expect(completa).not.toContain('{key:C}')
     expect(completa).toContain('{duration:01:30}')
     expect(oferta).toContain('{key:C}')
-    expect(oferta).toContain('{x_audio_sung:other}')
+    expect(oferta).toContain('{x_titan_audio_sung:other}')
     expect(oferta).not.toContain('{duration:')
     const header = out.slice(0, out.indexOf('{start_of_x_chart'))
     expect(header).not.toContain('{duration:')
@@ -434,7 +434,7 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
   it('spreading readMeta while moving x_chart_default does not copy sound onto the new chart', () => {
     const file = `{start_of_x_chart:completa}
 {key:G}
-{x_audio_sung:https://cdn.example/g.m4a}
+{x_titan_audio_sung:https://cdn.example/g.m4a}
 {x_strum:bpm=40;meter=4/4;grid=4;label=Sib;pat=DUDU}
 [G]completa
 {end_of_x_chart}
@@ -442,7 +442,7 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
 {title:Uma}
 {x_chart_default:oferta}
 {key:C}
-{x_audio_sung:https://cdn.example/c.m4a}
+{x_titan_audio_sung:https://cdn.example/c.m4a}
 {x_strum:bpm=60;meter=4/4;grid=4;label=A;pat=DUDU}
 [C]oferta
 {end_of_x_chart}
@@ -452,21 +452,21 @@ describe('rewriteToKey and untargeted writeMeta on the default chart', () => {
     const completa = chartBlock(out, 'completa')
     const oferta = chartBlock(out, 'oferta')
     expect(completa).toContain('{key:G}')
-    expect(completa).toContain('{x_audio_sung:https://cdn.example/g.m4a}')
+    expect(completa).toContain('{x_titan_audio_sung:https://cdn.example/g.m4a}')
     expect(completa).toContain('label=Sib')
     expect(completa).not.toContain('{key:C}')
     expect(completa).not.toContain('cdn.example/c.m4a')
     expect(completa).not.toContain('label=A')
     expect(oferta).toContain('{key:C}')
-    expect(oferta).toContain('{x_audio_sung:https://cdn.example/c.m4a}')
+    expect(oferta).toContain('{x_titan_audio_sung:https://cdn.example/c.m4a}')
     expect(oferta).toContain('label=A')
 
     const pointer = writeMeta(file, { x_chart_default: 'completa' })
     expect(listCharts(pointer).find((c) => c.isDefault)?.id).toBe('completa')
     expect(chartBlock(pointer, 'completa')).toContain('{key:G}')
-    expect(chartBlock(pointer, 'completa')).toContain('{x_audio_sung:https://cdn.example/g.m4a}')
+    expect(chartBlock(pointer, 'completa')).toContain('{x_titan_audio_sung:https://cdn.example/g.m4a}')
     expect(chartBlock(pointer, 'oferta')).toContain('{key:C}')
-    expect(chartBlock(pointer, 'oferta')).toContain('{x_audio_sung:https://cdn.example/c.m4a}')
+    expect(chartBlock(pointer, 'oferta')).toContain('{x_titan_audio_sung:https://cdn.example/c.m4a}')
 
     const sparseKey = writeMeta(file, { key: 'D' })
     expect(listCharts(sparseKey).find((c) => c.isDefault)?.id).toBe('oferta')
@@ -954,7 +954,7 @@ describe('chart document edits and x_chart_default', () => {
 })
 
 function mustStrum(raw: string) {
-  const parsed = parseXStrum(raw)
+  const parsed = parseTitanStrum(raw)
   if (!parsed) throw new Error(`bad strum ${raw}`)
   return parsed
 }
@@ -1084,7 +1084,7 @@ describe('notation inside a chart stays notation', () => {
 describe('a notation row is not the lyric body', () => {
   it('does not leave a blank before the lyric when a tab staff sits above sound keys', () => {
     const src = ['{sot}', 'e|-----0-----|', '{eot}', '{key:G}', '', '{tempo:72}', '[G]linha'].join('\n')
-    const cleared = writeMeta(src, { ...readMeta(src), x_audio_sung: '' })
+    const cleared = writeMeta(src, { ...readMeta(src), x_titan_audio_sung: '' })
     expect(cleared).toContain('e|-----0-----|')
     expect(cleared).toContain('[G]linha')
     expect(cleared).not.toMatch(/\n\n\[G\]linha/)
@@ -1094,7 +1094,7 @@ describe('a notation row is not the lyric body', () => {
 
   it('does not leave a blank before the lyric when a score row sits above sound keys', () => {
     const src = ['{sos}', 'C4 D4 E4', '{eos}', '{key:G}', '', '{tempo:72}', '[G]linha'].join('\n')
-    const cleared = writeMeta(src, { ...readMeta(src), x_audio_sung: '' })
+    const cleared = writeMeta(src, { ...readMeta(src), x_titan_audio_sung: '' })
     expect(cleared).toContain('C4 D4 E4')
     expect(cleared).toContain('[G]linha')
     expect(cleared).not.toMatch(/\n\n\[G\]linha/)
@@ -1118,7 +1118,7 @@ describe('a notation row is not the lyric body', () => {
         '',
         '{tempo:72}',
         '[G]linha',
-        '{x_audio_sung:https://cdn.example/c.m4a}',
+        '{x_titan_audio_sung:https://cdn.example/c.m4a}',
         '{title:Oferta}',
         '{x_chart_default:oferta}',
         '{end_of_x_chart}',
@@ -1128,7 +1128,7 @@ describe('a notation row is not the lyric body', () => {
       expect(oferta).toContain(row)
       expect(oferta).toContain('[G]linha')
       expect(oferta).not.toMatch(/\n\n\[G\]linha/)
-      expect(oferta).not.toContain('x_audio_sung')
+      expect(oferta).not.toContain('x_titan_audio_sung')
       expect(oferta).toContain('{title:Oferta}')
       expect(chartBlock(next, 'completa')).toBe(chartBlock(src, 'completa'))
       expect(chartBlock(next, 'completa')).toContain('{title:Completa}')
@@ -1305,7 +1305,7 @@ describe('an open tab does not hide the next chart', () => {
     expect(completa?.inner).toContain('e|-----0-----|')
     expect(completa?.inner).not.toContain('Oferta')
     expect(oferta?.inner).toContain('{title:Oferta}')
-    expect(oferta?.inner).toContain('{x_audio_sung:https://cdn.example/a.m4a}')
+    expect(oferta?.inner).toContain('{x_titan_audio_sung:https://cdn.example/a.m4a}')
     expect(oferta?.inner).toContain('[C]oferta')
   })
 })
@@ -1419,7 +1419,7 @@ describe('a tempo or strum save does not rewrite aliases', () => {
   })
 
   it('writeStrumPatterns sends only the strum fields', () => {
-    const pat = parseXStrum('bpm=90;meter=4/4;grid=4;label=Nova;pat=DUDU')
+    const pat = parseTitanStrum('bpm=90;meter=4/4;grid=4;label=Nova;pat=DUDU')
     if (!pat) throw new Error('strum')
     const out = writeStrumPatterns(ALIAS_ENVELOPE, { activeIndex: 0, patterns: [pat] })
     keepsAliases(out)
@@ -1436,31 +1436,31 @@ describe('notation inside tab or score is not the chart header', () => {
         open,
         '{t:Hidden}',
         '{composer:Hidden}',
-        '{x_audio_sung:https://cdn.example/hidden.m4a}',
+        '{x_titan_audio_sung:https://cdn.example/hidden.m4a}',
         '{x_audio:https://cdn.example/alias.m4a}',
         '{x_chart_default:oferta}',
         close,
         '{title:Real}',
         '{artist:Shown}',
-        '{x_audio_sung:https://cdn.example/real.m4a}',
+        '{x_titan_audio_sung:https://cdn.example/real.m4a}',
       ].join('\n')
       const meta = readMeta(src)
       expect(meta.title).toBe('Real')
       expect(meta.artist).toBe('Shown')
-      expect(meta.x_audio_sung).toBe('https://cdn.example/real.m4a')
+      expect(meta.x_titan_audio_sung).toBe('https://cdn.example/real.m4a')
       expect(meta.x_chart_default).toBeUndefined()
       expect(src.slice(src.indexOf(open), src.indexOf(close))).toContain('{t:Hidden}')
     }
   })
 
-  it('setAudioUrl of a new URL or a clear wins over x_audio_sung inside tab', () => {
-    const flat = ['{sot}', '{x_audio_sung:https://cdn.example/old.m4a}', '{eot}', '{title:Uma}', '[G]linha'].join('\n')
+  it('setAudioUrl of a new URL or a clear wins over x_titan_audio_sung inside tab', () => {
+    const flat = ['{sot}', '{x_titan_audio_sung:https://cdn.example/old.m4a}', '{eot}', '{title:Uma}', '[G]linha'].join('\n')
     const next = setAudioUrl(flat, 'https://cdn.example/new.m4a')
-    expect(readMeta(next).x_audio_sung).toBe('https://cdn.example/new.m4a')
+    expect(readMeta(next).x_titan_audio_sung).toBe('https://cdn.example/new.m4a')
     expect(audioUrlOf(next)).toBe('https://cdn.example/new.m4a')
     expect(next.slice(next.indexOf('{sot}'), next.indexOf('{eot}'))).toContain('old.m4a')
     const cleared = setAudioUrl(flat, null)
-    expect(readMeta(cleared).x_audio_sung).toBeUndefined()
+    expect(readMeta(cleared).x_titan_audio_sung).toBeUndefined()
     expect(audioUrlOf(cleared)).toBeNull()
     expect(cleared.slice(cleared.indexOf('{sot}'), cleared.indexOf('{eot}'))).toContain('old.m4a')
 
@@ -1471,7 +1471,7 @@ describe('notation inside tab or score is not the chart header', () => {
       '{end_of_x_chart}',
       '{start_of_x_chart:oferta}',
       '{sot}',
-      '{x_audio_sung:https://cdn.example/old.m4a}',
+      '{x_titan_audio_sung:https://cdn.example/old.m4a}',
       '{eot}',
       '{title:Oferta}',
       '{x_chart_default:oferta}',
@@ -1479,11 +1479,11 @@ describe('notation inside tab or score is not the chart header', () => {
       '{end_of_x_chart}',
     ].join('\n')
     const saved = setAudioUrl(env, 'https://cdn.example/new.m4a')
-    expect(readMeta(saved).x_audio_sung).toBe('https://cdn.example/new.m4a')
+    expect(readMeta(saved).x_titan_audio_sung).toBe('https://cdn.example/new.m4a')
     expect(betweenMarkers(chartBlock(saved, 'oferta'), '{sot}', '{eot}')).toContain('old.m4a')
     expect(chartBlock(saved, 'completa')).toBe(chartBlock(env, 'completa'))
     const gone = setAudioUrl(env, null)
-    expect(readMeta(gone).x_audio_sung).toBeUndefined()
+    expect(readMeta(gone).x_titan_audio_sung).toBeUndefined()
     expect(audioUrlOf(gone)).toBeNull()
     expect(betweenMarkers(chartBlock(gone, 'oferta'), '{sot}', '{eot}')).toContain('old.m4a')
     expect(chartBlock(gone, 'completa')).toBe(chartBlock(env, 'completa'))
@@ -1654,7 +1654,7 @@ describe('open fences stay an envelope', () => {
     expect(splitCho(tempo).charts.find((c) => c.id === 'oferta')?.inner).toContain('{duration:4:26}')
     expect(splitCho(tempo).charts.find((c) => c.id === 'completa')?.inner).toContain('{tempo:80}')
 
-    const pat = parseXStrum('bpm=90;meter=4/4;grid=4;label=Nova;pat=DUDU')
+    const pat = parseTitanStrum('bpm=90;meter=4/4;grid=4;label=Nova;pat=DUDU')
     if (!pat) throw new Error('strum')
     const strum = writeStrumPatterns(open, { activeIndex: 0, patterns: [pat] })
     expect(strum.slice(0, strum.indexOf('{start_of_x_chart')).trim()).toBe('')
@@ -1877,7 +1877,7 @@ describe('meta after an embedded closer stays notation', () => {
         '{start_of_x_chart:a}',
         '{title:Real}',
         '{artist:Shown}',
-        '{x_audio_sung:https://cdn.example/real.m4a}',
+        '{x_titan_audio_sung:https://cdn.example/real.m4a}',
         open,
         '{start_of_x_chart:nota}',
         innerOpen,
@@ -1885,7 +1885,7 @@ describe('meta after an embedded closer stays notation', () => {
         innerClose,
         '{title:NOTATION}',
         '{artist:HIDDEN}',
-        '{x_audio_sung:https://cdn.example/hidden.m4a}',
+        '{x_titan_audio_sung:https://cdn.example/hidden.m4a}',
         '{x_chart_default:b}',
         close,
         '{end_of_x_chart}',
@@ -1900,7 +1900,7 @@ describe('meta after an embedded closer stays notation', () => {
       const meta = readMeta(file)
       expect(meta.title).toBe('Real')
       expect(meta.artist).toBe('Shown')
-      expect(meta.x_audio_sung).toBe('https://cdn.example/real.m4a')
+      expect(meta.x_titan_audio_sung).toBe('https://cdn.example/real.m4a')
       expect(meta.x_chart_default).toBeUndefined()
       expect(splitCho(file).charts.find((c) => c.id === 'a')?.inner).toContain('{title:NOTATION}')
     }

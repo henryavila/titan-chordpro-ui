@@ -35,3 +35,39 @@ export function buildSljaFilename(title: string, chartId?: string): string {
   const slug = slugify(title) || 'cifra'
   return `slides-${slug}${chartPart(chartId)}.slja`
 }
+
+export function buildPpsxFilename(title: string): string {
+  const slug = slugify(title) || 'cifra'
+  return `slides-${slug}.ppsx`
+}
+
+const SCORE_EXT = /^(gp[345]?|gpx|xml|musicxml|mxl)$/i
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
+
+function scoreExtension(src: string, contentType?: string): string {
+  const path = src.split(/[?#]/)[0] ?? ''
+  const fromPath = path.match(/\.([a-z0-9]+)$/i)?.[1]
+  if (fromPath && SCORE_EXT.test(fromPath)) return fromPath.toLowerCase()
+  const mime = (contentType ?? '').split(';')[0]?.trim().toLowerCase() ?? ''
+  if (mime === 'application/vnd.recordare.musicxml+xml') return 'musicxml'
+  if (mime === 'application/vnd.recordare.musicxml') return 'mxl'
+  if (mime === 'application/xml' || mime === 'text/xml') return 'xml'
+  return 'gp'
+}
+
+/** File stem for a Guitar Pro/MusicXML download: the Titan block name, filesystem-safe. */
+export function scoreFilenameStem(name: string | undefined): string {
+  let stem = (name ?? '')
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+  if (stem.length > 120) stem = stem.slice(0, 120).trim().replace(/[. ]+$/g, '')
+  if (!stem || WINDOWS_RESERVED.test(stem)) return stem ? `_${stem}` : 'Solo'
+  return stem
+}
+
+/** Original notation file named after the Titan block, with the source extension. */
+export function buildScoreFilename(name: string | undefined, src: string, contentType?: string): string {
+  return `${scoreFilenameStem(name)}.${scoreExtension(src, contentType)}`
+}

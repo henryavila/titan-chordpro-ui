@@ -38,7 +38,21 @@ Commit everything that belongs in the tag (`chore: release X.Y.Z`), then:
 pnpm release:ship                  # annotated tag, push, gh release create
 ```
 
-`--ship` requires a clean tree and notes under `## [X.Y.Z]`. It does **not** `npm publish`.
+`--ship` requires a clean tree and notes under `## [X.Y.Z]`. It does **not** `npm publish`. The GitHub Release body is that changelog section, copied as-is.
+
+## Notes a person can read
+
+Write `## [Unreleased]` (and therefore the release) in Portuguese, for someone using the app. Not for the author of the diff.
+
+Each entry says where it is, what you do, and what you see. One more sentence can say what does not happen.
+
+Do not ship a line that only makes sense if you already know the screen. This failed: "o recolhido é o fone… Recolher o chrome… Tocar não segura mais o chrome." Say "na linha de Cifra e Letra aparece um fone; toque abre o player; esconder a barra não para a música."
+
+Words that do not carry the sentence: `chrome`, `recolhido`, `card` without saying it is the player, `stdShapeKey`, CSS class names. A host-facing name may follow the plain sentence, in parentheses, and only when the host needs it.
+
+Before `--ship`, read the section aloud. If a line needs the source code, rewrite it.
+
+A wording fix after publish is `gh release edit <tag> --notes-file …` plus the same text in `CHANGELOG.md`. That does **not** create a version and does **not** stage npm again. Do not run `--ship` to rephrase.
 
 ## After GitHub Release
 

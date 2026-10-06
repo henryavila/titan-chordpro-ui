@@ -27,6 +27,8 @@ tasksDone: 0
 tasksTotal: 3
 gatesMet: 0
 gatesTotal: 2
+weightDone: 0
+weightTotal: 9
 exitGates:
   - id: F0-G1
     description: E0 vitest files green (mode, meta, source round-trip, dirty,
@@ -37,6 +39,7 @@ exitGates:
       command: pnpm exec vitest run tests/core/e0-source-session.test.ts
         tests/vue/e0-bridge.test.ts
       expectExitCode: 0
+    verifierLabel: "shell: pnpm exec vitest run tests/core/e0-source-session.test.ts t…"
   - id: F0-G2
     description: No Vue imports in src/core.
     status: pending
@@ -44,6 +47,7 @@ exitGates:
       kind: shell
       command: "! rg -n \"from ['\\\"]vue['\\\"]\" src/core"
       expectExitCode: 0
+    verifierLabel: "shell: ! rg -n \"from ['\\\"]vue['\\\"]\" src/core"
 stack:
   - id: 1
     title: Scaffold + E0 (view↔edit, source pane, meta)
@@ -52,7 +56,7 @@ stack:
 tasks:
   - id: T-001
     title: Align product SoT docs for editor E0
-    summary: "Alinhar VISAO/SPEC/handoff/AGENTS ao editor E0."
+    summary: Alinhar VISAO/SPEC/handoff/AGENTS ao editor E0.
     weight: 1
     status: pending
     lastUpdated: 2026-08-29T11:08:20.266Z
@@ -79,7 +83,7 @@ tasks:
         path: AGENTS.md
   - id: T-002
     title: Scaffold core + Vue package entries
-    summary: "Criar scaffold core+Vue com testes e isolamento sem Vue no core."
+    summary: Criar scaffold core+Vue com testes e isolamento sem Vue no core.
     weight: 3
     status: pending
     lastUpdated: 2026-08-29T11:08:20.266Z
@@ -114,7 +118,8 @@ tasks:
         path: README.md
   - id: T-003
     title: E0 source pane + meta + host bridge
-    summary: "Implementar source-session, meta, SourcePane e bridge dirty/transpose-reset."
+    summary: Implementar source-session, meta, SourcePane e bridge
+      dirty/transpose-reset.
     weight: 5
     status: pending
     lastUpdated: 2026-08-29T11:08:20.266Z
@@ -147,6 +152,9 @@ tasks:
         path: tests/vue/e0-bridge.test.ts
 parked: []
 emerged: []
+planTitle: Editor ChordPro — `titan-chordpro-ui`
+planActive: true
+current: true
 ---
 
 # Narrative / notes

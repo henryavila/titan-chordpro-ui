@@ -1,17 +1,17 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore, STORE_KEYS } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 const mounted: ReturnType<typeof mount>[] = []
 afterEach(() => { mounted.splice(0).forEach(w => w.unmount()); vi.restoreAllMocks() })
 function viewer(props = {}) {
-  const w = mount(ChordproViewer, { props: { source: loadFixture(JESUS_1), autoHide: false, storage: memoryStore(), ...props }, attachTo: document.body })
+  const w = mount(TitanChordpro, { props: { source: loadFixture(JESUS_1), autoHide: false, storage: memoryStore(), ...props }, attachTo: document.body })
   mounted.push(w)
   return w
 }
-const appearance = (w: ReturnType<typeof viewer>) => w.get('[data-cpv-root]').attributes('data-theme')
+const appearance = (w: ReturnType<typeof viewer>) => w.get('[data-titan-chordpro-root]').attributes('data-theme')
 
 for (const dark of [true, false]) {
   describe(`system ${dark ? 'dark' : 'light'}`, () => {
@@ -46,7 +46,8 @@ for (const dark of [true, false]) {
       expect(appearance(w)).toBe('dark')
       await w.setProps({ theme: 'light', themeControl: 'preference' })
       expect(appearance(w)).toBe('dark')
-      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', futurePreference: 'keep' })
+      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', bias: 1 })
+      expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).not.toHaveProperty('futurePreference')
     })
     it('host without prefs returns to current prop fallback and does not persist requests', async () => {
       system()
@@ -60,18 +61,19 @@ for (const dark of [true, false]) {
   })
 }
 
-it('host keyboard request follows the same policy and preserves other preference keys', async () => {
+it('host keyboard request follows the same policy and keeps validated preferences', async () => {
   const storage = memoryStore()
   storage.set(STORE_KEYS.prefs, JSON.stringify({ theme: 'stage', futurePreference: 42 }))
   const w = viewer({ theme: 'light', themeControl: 'host', storage })
-  await w.get('[data-cpv-root]').trigger('keydown', { key: 't' })
+  await w.get('[data-titan-chordpro-root]').trigger('keydown', { key: 't' })
   expect(w.emitted('update:theme')).toEqual([['dark']])
   expect(appearance(w)).toBe('light')
-  await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
+  await w.get('[data-titan-chordpro-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
   // The fit is on out of the box, so the musician's first press turns it off —
-  // what matters here is that the write kept `futurePreference` company.
-  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', futurePreference: 42, fit: false })
+  // Unknown fields from an old schema are discarded when a choice is written.
+  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'stage', fit: false })
+  expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).not.toHaveProperty('futurePreference')
 })
 
 
@@ -80,7 +82,7 @@ it('repairs malformed preferences when the musician makes a new choice', async (
   storage.set(STORE_KEYS.prefs, '{')
   const w = viewer({ theme: 'light', storage })
   await w.get('[data-theme-btn]').trigger('click')
-  await w.get('[data-cpv-root]').trigger('keydown', { key: 'a' })
+  await w.get('[data-titan-chordpro-root]').trigger('keydown', { key: 'a' })
   await flushPromises()
   expect(JSON.parse(storage.get(STORE_KEYS.prefs)!)).toMatchObject({ theme: 'dark', fit: false })
 })

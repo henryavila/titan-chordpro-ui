@@ -185,7 +185,7 @@ function ariaSlot(s: StrumSlot): string {
   max-width: 60%;
 }
 .strum-bpm {
-  font-family: var(--cpv-font-chords, 'Space Mono', monospace);
+  font-family: var(--titan-chordpro-font-chords, 'Space Mono', monospace);
   font-size: 11px;
   font-weight: 700;
   color: var(--text);

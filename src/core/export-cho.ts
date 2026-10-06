@@ -1,34 +1,47 @@
 import { chartDocument } from './charts'
-import { transposeToken, usesFlats } from './transpose'
+import { buildChoFilename } from './filenames'
+import { parse } from './parse'
+import { EXPORT_MIME, textExportedFile, type ExportedFile } from './exported-file'
 
-export function exportCho(
-  source: string,
-  opts?: {
-    key?: string | null
-    semitones?: number
-    capo?: number
-    scope?: 'file' | 'chart'
-    chartId?: string
-  },
-): string {
+export type ExportChoOptions = {
+  key?: string | null
+  semitones?: number
+  capo?: number
+  title?: string
+  /** Prepended to the downloaded text (personal-version mark). */
+  preamble?: string
+  scope?: 'file' | 'chart'
+  chartId?: string
+}
+
+export function exportCho(source: string, opts?: ExportChoOptions): string {
   const n = opts?.semitones ?? 0
   const capo = opts?.capo ?? 0
   let out = opts?.scope === 'chart' ? chartDocument(source, opts.chartId) : source
-  const keyMatch = out.match(/\{\s*key\s*:\s*([^}]*)\}/i)
-  const sourceKey = keyMatch?.[1]?.trim() ?? opts?.key ?? null
-  const flats = usesFlats(sourceKey)
+  out = out.replace(/\{\s*transpose\s*:[^}]*\}[ \t]*\n?/gi, '')
   if (n) {
-    out = out
-      .replace(/\[([^\]]*)\]/g, (_, c: string) => `[${transposeToken(c, n, flats)}]`)
-      .replace(/^(\s*\{\s*key\s*:\s*)([^}]*)\}/gim, (_, a: string, k: string) => {
-        return `${a}${transposeToken(k.trim(), n, flats)}}`
-      })
+    const keyLine = out.match(/^\s*\{\s*key\s*:[^}]*\}[ \t]*\n?/im)
+    if (keyLine && keyLine.index != null) {
+      const at = keyLine.index + keyLine[0].length
+      out = `${out.slice(0, at)}{transpose:${n}}\n${out.slice(at)}`
+    } else {
+      out = `{transpose:${n}}\n${out}`
+    }
   }
   if (capo) {
     out = out.replace(/\{\s*capo\s*:[^}]*\}[ \t]*\n?/gi, '')
     out = `{capo: ${capo}}\n${out}`
   }
   return out
+}
+
+/** Host download without mounting the viewer. `exportCho` stays the source rewrite. */
+export function exportChoFile(source: string, opts: ExportChoOptions = {}): ExportedFile {
+  const text = `${opts.preamble ?? ''}${exportCho(source, opts)}`
+  const view = parse(source)
+  const title = (opts.title ?? view.meta.title ?? 'cifra').trim() || 'cifra'
+  const key = opts.key !== undefined ? opts.key : view.displayKey ?? null
+  return textExportedFile(text, buildChoFilename(title, key), title, EXPORT_MIME.cho)
 }
 
 /**
@@ -47,7 +60,7 @@ export function patchMeta(
     time?: string
     duration?: string
     capo?: string | number
-    x_source?: string
+    x_titan_source?: string
   },
 ): string {
   const lines = String(source ?? '').split('\n')
@@ -61,7 +74,7 @@ export function patchMeta(
     time: ['time'],
     duration: ['duration'],
     capo: ['capo'],
-    x_source: ['x_source', 'x_origem'],
+    x_titan_source: ['x_titan_source'],
   }
   const META = new Set([
     'title',
@@ -75,8 +88,7 @@ export function patchMeta(
     'time',
     'duration',
     'capo',
-    'x_source',
-    'x_origem',
+    'x_titan_source',
   ])
 
   const indexOfMeta = (names: string[]) =>

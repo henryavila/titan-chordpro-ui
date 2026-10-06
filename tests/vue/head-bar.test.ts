@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { memoryStore } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -59,7 +59,7 @@ function installFullscreen() {
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem('titan-chordpro:fitSeen', '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -78,14 +78,15 @@ const rehearsal = [
   { id: 'jesus', title: 'Jesus, Tu És a minha vida', source: JESUS },
 ]
 
-async function viewerAt(width: number) {
-  const w = mount(ChordproViewer, {
+async function viewerAt(width: number, extra: Record<string, unknown> = {}) {
+  const w = mount(TitanChordpro, {
     props: {
       source: '',
       songs: rehearsal,
       theme: 'dark',
       autoHide: false,
       storage: memoryStore(),
+      ...extra,
     },
     attachTo: document.body,
   })
@@ -97,7 +98,7 @@ async function viewerAt(width: number) {
 }
 
 function head(w: Awaited<ReturnType<typeof viewerAt>>) {
-  return w.get('[data-cpv-head]').element as HTMLElement
+  return w.get('[data-titan-chordpro-head]').element as HTMLElement
 }
 
 function titleEl(w: Awaited<ReturnType<typeof viewerAt>>) {
@@ -114,13 +115,19 @@ function minWidthPx(el: HTMLElement) {
 }
 
 describe('the identity bar keeps the song name when capo joins the list', () => {
-  it('adopts the capo written in the chart, so the pill really says capo', async () => {
+  it('does not adopt {capo:} from the file', async () => {
     const w = await viewerAt(390)
+    expect(w.get('[data-tone]').text()).not.toMatch(/capo/i)
+    expect(w.get('[data-tone]').text()).toMatch(/Ab/)
+  })
+
+  it('the pill says capo when the musician turns it on', async () => {
+    const w = await viewerAt(390, { initialCapo: 1 })
     expect(w.get('[data-tone]').text()).toMatch(/capo\s*1/i)
   })
 
   it('on a phone, the title cluster cannot shrink to nothing', async () => {
-    const w = await viewerAt(390)
+    const w = await viewerAt(390, { initialCapo: 1 })
     expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
     expect(titleEl(w).textContent).toContain('O Rei vem vindo')
     const name = titleEl(w).parentElement as HTMLElement
@@ -128,7 +135,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
   })
 
   it('on a phone, the bar wraps instead of clipping the name under capo + tela cheia', async () => {
-    const w = await viewerAt(390)
+    const w = await viewerAt(390, { initialCapo: 1 })
     const el = head(w)
     expect(getComputedStyle(el).flexWrap).toBe('wrap')
     expect(getComputedStyle(el).justifyContent).toBe('space-between')
@@ -143,7 +150,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
 
   it('drops the list glyph from the title — the whole title opens the list', async () => {
     const w = await viewerAt(390)
-    expect(w.find('[data-cpv-head] [data-icon=listMusic]').exists()).toBe(false)
+    expect(w.find('[data-titan-chordpro-head] [data-icon=listMusic]').exists()).toBe(false)
     expect(w.get('[data-setlist-open]').attributes('title')).toMatch(/lista/i)
   })
 
@@ -151,6 +158,53 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
     const w = await viewerAt(390)
     const kids = [...head(w).children] as HTMLElement[]
     expect(kids.at(-1)?.hasAttribute('data-fs')).toBe(true)
+  })
+
+  it('on a phone, the compass sits on the shared time chip next to Tom', async () => {
+    const w = await viewerAt(390)
+    const time = w.get('[data-head-time]')
+    expect(time.text()).toBe('3/4')
+    expect(time.classes()).toEqual(
+      expect.arrayContaining(['titan-chordpro-chip', 'is-time', 'is-on', 'titan-chordpro-head-chip']),
+    )
+    expect(time.element.tagName).toBe('DIV')
+  })
+
+  it('on a wide bar, the same time chip sits by Tom and leaves BPM/duration in the meta', async () => {
+    const w = await viewerAt(800)
+    const time = w.get('[data-head-time]')
+    expect(time.text()).toBe('3/4')
+    expect(time.classes()).toEqual(
+      expect.arrayContaining(['titan-chordpro-chip', 'is-time', 'is-on', 'titan-chordpro-head-chip']),
+    )
+    expect(w.get('.titan-chordpro-head-meta').text()).toMatch(/100/)
+    expect(w.get('.titan-chordpro-head-meta').text()).not.toMatch(/3\/4/)
+  })
+
+  it('keeps BPM and duration on the phone sub — compass lives on the chip', async () => {
+    const w = await viewerAt(390, {
+      songs: [
+        {
+          id: 'a',
+          title: 'Uma',
+          source: '{title: Uma}\n{tempo:60}\n{time:4/4}\n{duration: 03:03}\n[C]oi',
+        },
+        { id: 'b', title: 'Outra', source: '{title: Outra}\n{time:3/4}\n[G]oi' },
+      ],
+    })
+    expect(w.get('[data-head-time]').text()).toBe('4/4')
+    expect(w.get('.titan-chordpro-head-sub').text()).toMatch(/60/)
+    expect(w.get('.titan-chordpro-head-sub').text()).not.toMatch(/4\/4/)
+  })
+
+  it('hides the time chip when the cifra has no {time:}', async () => {
+    const w = await viewerAt(390, {
+      songs: [
+        { id: 'a', title: 'Uma', source: '{title: Uma}\n{key:C}\n[C]oi' },
+        { id: 'b', title: 'Outra', source: '{title: Outra}\n{key:G}\n[G]oi' },
+      ],
+    })
+    expect(w.find('[data-head-time]').exists()).toBe(false)
   })
 
   it('on a tablet column, the floating head may grow past the reading column', async () => {
@@ -166,7 +220,7 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
     expect(titleEl(w).textContent).toContain('O Rei vem vindo')
     const name = titleEl(w).parentElement as HTMLElement
     expect(minWidthPx(name)).toBeGreaterThanOrEqual(160)
-    expect(w.find('[data-cpv-head] [data-icon=listMusic]').exists()).toBe(false)
+    expect(w.find('[data-titan-chordpro-head] [data-icon=listMusic]').exists()).toBe(false)
   })
 
   it('keeps the phone head as a floating card with an inset above it', async () => {
@@ -178,8 +232,8 @@ describe('the identity bar keeps the song name when capo joins the list', () => 
   })
 
   it('without a list the title still has a floor, so a long capo pill cannot eat it', async () => {
-    const w = mount(ChordproViewer, {
-      props: { source: O_REI, theme: 'dark', autoHide: false, storage: memoryStore() },
+    const w = mount(TitanChordpro, {
+      props: { source: O_REI, theme: 'dark', autoHide: false, storage: memoryStore(), initialCapo: 1 },
       attachTo: document.body,
     })
     mounted.push(w)

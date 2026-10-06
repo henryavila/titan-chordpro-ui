@@ -1,0 +1,54 @@
+{
+  "captureVersion": "0.1",
+  "phaseId": "F4",
+  "slug": "diagramas-cifra-f4-d4-editor-sheet-define-in-that-file",
+  "title": "D4 Editor sheet + {define} in that file",
+  "goal": "Edit mode opens a dedicated shape sheet from ChordDialog Forma; saves {define-guitar: Am} when capo 2 and lyric is Bm; piano saves concert keys; global DB unchanged; D1 must already be green.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Diagram sheet in edit",
+      "scopeBoundary": [
+        "Do not open the editor grid from view; do not mutate chord-dict.ts when saving; do not patch transposed display into source."
+      ],
+      "acceptance": [
+        "ChordDialog shows Forma; sheet draws the playable shape with capoFret; save calls writeDefines; capo 2 lyric Bm guitar save contains define-guitar Am; unrecognized name shows empty grid and still saves a define in that file"
+      ],
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/diagram-editor.test.ts",
+        "expectExitCode": 0
+      },
+      "outputs": [
+        {
+          "kind": "file",
+          "path": "src/vue/overlay/DiagramModal.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/edit/ChordDialog.vue"
+        },
+        {
+          "kind": "file",
+          "path": "src/vue/ChordproViewer.vue"
+        },
+        {
+          "kind": "file",
+          "path": "tests/vue/diagram-editor.test.ts"
+        }
+      ]
+    }
+  ],
+  "exitGates": [
+    {
+      "id": "F4-G1",
+      "description": "Editor sheet writes define on an existing fixture and round-trips. FAILS when the saved name is the lyric Bm under capo 2 instead of shape Am, or when the package dictionary file changes.",
+      "verifier": {
+        "kind": "shell",
+        "command": "pnpm exec vitest run tests/vue/diagram-editor.test.ts tests/core/define-directive.test.ts",
+        "expectExitCode": 0
+      },
+      "status": "pending"
+    }
+  ]
+}

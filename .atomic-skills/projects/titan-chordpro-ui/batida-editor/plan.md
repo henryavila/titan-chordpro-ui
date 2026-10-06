@@ -53,7 +53,7 @@ phases:
   - id: F0
     slug: batida-editor-f0-b0-create-edit-one-pattern-keep-local-en
     title: B0 Create/edit one pattern + keep-local enrich
-    summary: "Criar/editar um padrão {x_strum:} + enrich keep-local."
+    summary: Criar/editar um padrão {x_strum:} + enrich keep-local.
     goal: Musician can create and edit a single `{x_strum:}` pattern from the chart
       UI (CTA without batida, sheet with 1-beat-per-row on phone, slot→list
       picker); enrich no longer clobbers local batida; fixture + tests green;
@@ -101,7 +101,7 @@ phases:
   - id: F1
     slug: batida-editor-f1-b1-presets-embutidos
     title: B1 Presets embutidos
-    summary: "Catálogo de presets embutidos aplicados na folha Batida."
+    summary: Catálogo de presets embutidos aplicados na folha Batida.
     goal: Core catalog of named strum presets apply into the single `{x_strum:}`
       pattern from the Batida sheet with confirm-if-dirty; IDs stable; tests
       green.
@@ -123,7 +123,7 @@ phases:
   - id: F2
     slug: batida-editor-f2-b2-multi-pattern-named-persistence
     title: B2 Multi-pattern named + persistence
-    summary: "Vários padrões nomeados com persistência compatível."
+    summary: Vários padrões nomeados com persistência compatível.
     goal: Multiple named patterns selectable in UI; introduce a documented multi
       schema that keeps legacy single `{x_strum:}` parse; CC import keeps
       patterns 2..N when the multi writer exists.
@@ -146,9 +146,9 @@ phases:
   - id: F3
     slug: batida-editor-f3-b3-enrich-conflict-polish
     title: B3 Enrich conflict polish
-    summary: "Conflito explícito enrich CC vs batida local."
-    goal: When user explicitly wants CC batida over local, offer Manter / Trazer
-      CC (with named copy when multi exists); no silent clobber; ship only after
+    summary: Conflito explícito enrich CC vs batida local.
+    goal: When user explicitly wants CC batida over local, offer Manter / Trazer CC
+      (with named copy when multi exists); no silent clobber; ship only after
       B0–B2 exit gates are met.
     dependsOn:
       - F2
@@ -167,6 +167,7 @@ phases:
             expectExitCode: 0
     status: done
 references: []
+planTitle: Editor de batida — `titan-chordpro-ui`
 ---
 
 # Editor de batida — `titan-chordpro-ui`

@@ -7,8 +7,10 @@
  * can be reverted one by one, and reapplied on top of a new version.
  */
 
-import { readStrumPatterns } from './import-chordpro'
+import { canonicalMetaKey, readMeta, readStrumPatterns } from './import-chordpro'
 import type { StrumPattern, StrumSlot } from './strum'
+import { keyRootOf, signedSemitoneDelta } from './transpose'
+import { readScoreReference, type ScoreReference } from './score-reference'
 
 export type ReadingCtx = {
   /** Semitones the reader was transposed by when the edit was made. */
@@ -110,10 +112,74 @@ export function lcsHunks(a: string[], b: string[]): Hunk[] {
   return hunks
 }
 
+function chordsOf(src: string): string[] {
+  return [...String(src).matchAll(/\[([^\]]+)\]/g)].map((m) => m[1] ?? '').filter(Boolean)
+}
+
+function tokenDelta(from: string, to: string): number | null {
+  const a = from.split('/')
+  const b = to.split('/')
+  if (a.length !== b.length) return null
+  let k: number | null = null
+  for (let i = 0; i < a.length; i++) {
+    const ra = keyRootOf(a[i])
+    const rb = keyRootOf(b[i])
+    if (!ra || !rb) return null
+    if ((a[i] ?? '').slice(ra.length) !== (b[i] ?? '').slice(rb.length)) return null
+    const d = signedSemitoneDelta(ra, rb)
+    if (k == null) k = d
+    else if (k !== d) return null
+  }
+  return k
+}
+
+function isHeaderMetaLine(line: string): boolean {
+  const d = String(line).match(/^\s*\{\s*([a-zA-Z_]+)\s*:/)
+  if (!d) return false
+  return canonicalMetaKey(d[1] ?? '') != null
+}
+
+/** Body identity ignoring header meta and the pitch of chord tokens. */
+function bodyMask(src: string): string {
+  return String(src)
+    .split('\n')
+    .filter((l) => !isHeaderMetaLine(l) && l.trim() !== '')
+    .map((l) => l.replace(/\[[^\]]*\]/g, '[]'))
+    .join('\n')
+}
+
+function uniformChordDelta(oldSrc: string, newSrc: string): number | null {
+  const a = chordsOf(oldSrc)
+  const b = chordsOf(newSrc)
+  if (a.length < 2 || a.length !== b.length) return null
+  let k: number | null = null
+  for (let i = 0; i < a.length; i++) {
+    const d = tokenDelta(a[i] ?? '', b[i] ?? '')
+    if (d == null) return null
+    if (k == null) k = d
+    else if (k !== d) return null
+  }
+  return k
+}
+
+/**
+ * A whole-chart rewrite (fake-capo / transpose every token by the same k,
+ * lyrics untouched) is one suggestion, not one op per sung line. Comments
+ * and blank lines would otherwise split the LCS into N trechos.
+ */
+function isUniformChartRewrite(oldSrc: string, newSrc: string): boolean {
+  if (bodyMask(oldSrc) !== bodyMask(newSrc)) return false
+  const k = uniformChordDelta(oldSrc, newSrc)
+  return k != null && k !== 0
+}
+
 export function diffOps(oldSrc: string, newSrc: string, ctx: ReadingCtx): TextOp[] {
   const a = String(oldSrc).split('\n')
   const b = String(newSrc).split('\n')
-  return lcsHunks(a, b).map((h, k) => {
+  const hunks = isUniformChartRewrite(oldSrc, newSrc)
+    ? [{ ai: 0, aj: a.length, bi: 0, bj: b.length }]
+    : lcsHunks(a, b)
+  return hunks.map((h, k) => {
     const before = a.slice(h.ai, h.aj)
     const after = b.slice(h.bi, h.bj)
     const anchor = h.ai > 0 ? (a[h.ai - 1] ?? '') : ''
@@ -350,7 +416,7 @@ export function tuneText(op: TuneOp): string {
 }
 
 function isStrumDirective(line: string): boolean {
-  return /^\s*\{\s*x_strum(?:_set)?\s*:/i.test(line)
+  return /^\s*\{\s*x_titan_strum(?:_set)?\s*:/i.test(line)
 }
 
 function isDirectiveLine(line: string): boolean {
@@ -421,8 +487,63 @@ export function strumReviewFromOp(op: OverlayOp): StrumReview | null {
   return { previous, proposed }
 }
 
+export type ScoreAttachment = {
+  /** The source reference this file belongs to, before any review promotion. */
+  src: string
+  filename: string
+  contentType?: string
+  /** Original Guitar Pro/MusicXML bytes, base64 for JSON queues and APIs. */
+  base64: string
+}
+
+/** A score edit is a visual before/after pair, not raw ChordPro for review. */
+export function scoreReviewsFromOp(op: OverlayOp): Array<{ previous: ScoreReference | null; proposed: ScoreReference | null }> {
+  if (isTuneOp(op)) return []
+  const find = (lines: string[]): ScoreReference[] => {
+    const refs: ScoreReference[] = []
+    for (const line of lines) {
+      try {
+        const ref = readScoreReference(line)
+        if (ref) refs.push(ref)
+      } catch { /* malformed text remains in the ordinary diff */ }
+    }
+    return refs
+  }
+  const previous = find(op.before)
+  const proposed = find(op.after)
+  return Array.from({ length: Math.max(previous.length, proposed.length) }, (_, i) => ({
+    previous: previous[i] ?? null,
+    proposed: proposed[i] ?? null,
+  }))
+}
+
+export function scoreReviewFromOp(op: OverlayOp): { previous: ScoreReference | null; proposed: ScoreReference | null } | null {
+  return scoreReviewsFromOp(op)[0] ?? null
+}
+
+export function proposedScoreSources(ops: OverlayOp[]): string[] {
+  const sources = new Set<string>()
+  for (const op of ops) {
+    for (const review of scoreReviewsFromOp(op)) if (review.proposed) sources.add(review.proposed.src)
+  }
+  return [...sources]
+}
+
 export function opLabel(op: OverlayOp): string {
   if (isTuneOp(op)) return 'Tom e capo fixos'
+  const score = scoreReviewFromOp(op)
+  if (score) {
+    const name = score.proposed?.name ?? score.previous?.name ?? 'Solo'
+    return `${op.type === 'insert' ? 'Solo novo' : op.type === 'delete' ? 'Solo removido' : 'Solo alterado'} · ${name}`
+  }
+  if (
+    !isTuneOp(op) &&
+    op.type === 'replace' &&
+    isUniformChartRewrite(op.before.join('\n'), op.after.join('\n'))
+  ) {
+    const key = (readMeta(op.after.join('\n')).key ?? '').trim()
+    return key ? `Cifra reescrita no tom ${key}` : 'Cifra reescrita'
+  }
   const hunk = op.type === 'delete' ? op.before : [...op.before, ...op.after]
   const meaningful = hunk.filter((t) => String(t).trim())
   const hasBatida = meaningful.some(isStrumDirective)
@@ -546,6 +667,8 @@ export type Suggestion = {
   baseVersion: string
   /** Still-open ops waiting for review. */
   ops: OverlayOp[]
+  /** Original files used by proposed score excerpts. Persist with the suggestion. */
+  scoreAttachments?: ScoreAttachment[]
   /** Ops already accepted or refused (not deleted). */
   resolvedOps?: ResolvedOp[]
   /** Default `pending` on create. */

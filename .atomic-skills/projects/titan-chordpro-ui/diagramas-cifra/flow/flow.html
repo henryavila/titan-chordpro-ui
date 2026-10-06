@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-fl-slug="diagramas-cifra" data-fl-content-sha="0cc236781c609a705f8f0a67a1d683909253251ee96e8bce622cd0595d0a49b8">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluxo — Forma do acorde na cifra</title>
+<script>(function(){var K="as-color-scheme";function read(){try{var v=localStorage.getItem(K);return v==='light'||v==='dark'?v:'system'}catch(e){return'system'}}function apply(mode){var r=document.documentElement;if(mode==='light'||mode==='dark')r.setAttribute('data-theme',mode);else r.removeAttribute('data-theme');document.querySelectorAll('[data-theme-set]').forEach(function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-theme-set')===mode))})}apply(read());document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('[data-theme-set]');if(!b)return;var mode=b.getAttribute('data-theme-set');try{localStorage.setItem(K,mode)}catch(err){}apply(mode)});document.addEventListener('DOMContentLoaded',function(){apply(read())})})();</script>
+<style>
+/*
+ * Atomic Skills product docs — shared design-system tokens.
+ * Extracted from docs/design/project-onboarding/index.html (aiDeck foundations).
+ * Dark default. Light via prefers-color-scheme or html[data-theme=light].
+ * Site pages link this file; onboarding may keep its inline copy.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────
+   aiDeck Design System — Foundations (v2)
+   Dark default. Light is a second palette on the same token names.
+
+   Tokens are intentionally domain-agnostic — `status-success` not
+   `phase-done`, `chart-1..8` not `verifier-shell`.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Fonts — Inter (sans) + JetBrains Mono (identifiers). System stacks fall
+   back when webfonts are unavailable (offline-friendly). */
+
+:root {
+  color-scheme: dark;
+
+  /* ── Surfaces ───────────────────────────────────────────────── */
+  --bg-sunken:      #07090d;   /* inputs, code blocks, deepest wells */
+  --bg-canvas:      #0a0d12;   /* page background */
+  --bg-surface:     #12161d;   /* widget cards, section panels */
+  --bg-elevated:    #1a1f28;   /* hover, popovers, dropdowns */
+  --bg-overlay:     #232936;   /* selected rows, focus halos */
+  --bg-highlight:   #2d3340;   /* highest — used sparingly */
+
+  /* ── Glass ──────────────────────────────────────────────────── */
+  --glass-thin:     rgba(18, 22, 29, 0.55);
+  --glass-medium:   rgba(18, 22, 29, 0.72);
+  --glass-thick:    rgba(10, 13, 18, 0.85);
+  --glass-border:   rgba(255, 255, 255, 0.06);
+  --glass-blur:     saturate(180%) blur(20px);
+  --glass-blur-sm:  saturate(160%) blur(10px);
+
+  /* ── Borders ────────────────────────────────────────────────── */
+  --border-subtle:  #1a2029;
+  --border-default: #262d38;
+  --border-strong:  #3d4656;
+  --border-bright:  #555f72;
+
+  /* ── Foreground ─────────────────────────────────────────────── */
+  --fg-default:     #e9eef5;   /* primary text — body, headings */
+  --fg-muted:       #98a1ad;   /* secondary — captions, labels */
+  --fg-subtle:      #6b7585;   /* tertiary — metadata */
+  --fg-faint:       #424a5a;   /* lowest — disabled */
+  --fg-on-accent:   #08090d;   /* text on saturated chip fill */
+
+  /* ── Semantic status ────────────────────────────────────────── */
+  --status-success: #4cc28e;   /* emerald   — passed, done, healthy */
+  --status-warning: #e0a44a;   /* amber     — needs attention, blocked */
+  --status-error:   #ff5c5c;   /* coral red — failed, critical, broken */
+  --status-info:    #5fb1ff;   /* azure     — active, running, current */
+  --status-neutral: #8b95a3;   /* slate     — idle, pending, unknown */
+
+  --status-success-bg: color-mix(in srgb, var(--status-success) 14%, var(--bg-surface));
+  --status-warning-bg: color-mix(in srgb, var(--status-warning) 14%, var(--bg-surface));
+  --status-error-bg:   color-mix(in srgb, var(--status-error)   16%, var(--bg-surface));
+  --status-info-bg:    color-mix(in srgb, var(--status-info)    14%, var(--bg-surface));
+  --status-neutral-bg: var(--bg-elevated);
+
+  --status-success-line: color-mix(in srgb, var(--status-success) 42%, var(--border-default));
+  --status-warning-line: color-mix(in srgb, var(--status-warning) 42%, var(--border-default));
+  --status-error-line:   color-mix(in srgb, var(--status-error)   48%, var(--border-default));
+  --status-info-line:    color-mix(in srgb, var(--status-info)    42%, var(--border-default));
+  --status-neutral-line: var(--border-default);
+
+  /* ── Accents ────────────────────────────────────────────────── */
+  --accent-primary: var(--status-info);
+  --accent-focus:   #88c4ff;
+  --accent-link:    #88c4ff;
+
+  /* ── Typography stacks ──────────────────────────────────────── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+               "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono",
+               "Menlo", "Consolas", monospace;
+  --font-display: var(--font-sans);
+
+  /* ── Type scale ─────────────────────────────────────────────── */
+  --fs-2xs: 10px;
+  --fs-xs:  11px;
+  --fs-sm:  12px;
+  --fs-base:13px;
+  --fs-md:  14px;
+  --fs-lg:  16px;
+  --fs-xl:  20px;
+  --fs-2xl: 24px;
+  --fs-3xl: 32px;
+  --fs-4xl: 40px;
+  --fs-5xl: 56px;
+
+  --lh-tight:  1.15;
+  --lh-snug:   1.35;
+  --lh-normal: 1.5;
+  --lh-relaxed:1.65;
+
+  --tracking-tight:  -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-wider:  0.08em;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* ── Spacing (4px base) ─────────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  2px;
+  --space-2:  4px;
+  --space-3:  6px;
+  --space-4:  8px;
+  --space-5:  10px;
+  --space-6:  12px;
+  --space-7:  14px;
+  --space-8:  16px;
+  --space-10: 20px;
+  --space-12: 24px;
+  --space-14: 28px;
+  --space-16: 32px;
+  --space-20: 40px;
+  --space-24: 48px;
+  --space-32: 64px;
+
+  /* ── Radii ──────────────────────────────────────────────────── */
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-pill: 999px;
+
+  --border-width: 1px;
+
+  /* ── Elevation ──────────────────────────────────────────────── */
+  --highlight-inset:        inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --highlight-inset-strong: inset 0 1px 0 rgba(255, 255, 255, 0.075);
+  --shadow-sm:      0 2px 4px -2px rgba(0, 0, 0, 0.5),
+                    var(--highlight-inset);
+  --shadow-md:      0 8px 24px -8px rgba(0, 0, 0, 0.6),
+                    0 2px 6px -2px rgba(0, 0, 0, 0.4),
+                    var(--highlight-inset);
+  --shadow-focus:   0 0 0 2px var(--bg-canvas),
+                    0 0 0 4px var(--accent-focus);
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --bg-sunken:      #e8edf4;
+    --bg-canvas:      #f4f6fa;
+    --bg-surface:     #ffffff;
+    --bg-elevated:    #eef2f7;
+    --bg-overlay:     #e2e8f0;
+    --bg-highlight:   #d8dee8;
+
+    --glass-thin:     rgba(255, 255, 255, 0.55);
+    --glass-medium:   rgba(255, 255, 255, 0.78);
+    --glass-thick:    rgba(244, 246, 250, 0.9);
+    --glass-border:   rgba(15, 23, 42, 0.08);
+
+    --border-subtle:  #e8edf3;
+    --border-default: #d5dce6;
+    --border-strong:  #b8c2d0;
+    --border-bright:  #8b97a8;
+
+    --fg-default:     #12161d;
+    --fg-muted:       #4a5565;
+    --fg-subtle:      #6b7585;
+    --fg-faint:       #98a1ad;
+    --fg-on-accent:   #ffffff;
+
+    --accent-focus:   #1565c0;
+    --accent-link:    #1565c0;
+
+    --highlight-inset:        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    --highlight-inset-strong: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    --shadow-sm:      0 1px 2px rgba(15, 23, 42, 0.06),
+                      0 1px 3px rgba(15, 23, 42, 0.04);
+    --shadow-md:      0 8px 24px -8px rgba(15, 23, 42, 0.12),
+                      0 2px 6px -2px rgba(15, 23, 42, 0.08);
+  }
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-sunken:      #e8edf4;
+  --bg-canvas:      #f4f6fa;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #eef2f7;
+  --bg-overlay:     #e2e8f0;
+  --bg-highlight:   #d8dee8;
+
+  --glass-thin:     rgba(255, 255, 255, 0.55);
+  --glass-medium:   rgba(255, 255, 255, 0.78);
+  --glass-thick:    rgba(244, 246, 250, 0.9);
+  --glass-border:   rgba(15, 23, 42, 0.08);
+
+  --border-subtle:  #e8edf3;
+  --border-default: #d5dce6;
+  --border-strong:  #b8c2d0;
+  --border-bright:  #8b97a8;
+
+  --fg-default:     #12161d;
+  --fg-muted:       #4a5565;
+  --fg-subtle:      #6b7585;
+  --fg-faint:       #98a1ad;
+  --fg-on-accent:   #ffffff;
+
+  --accent-focus:   #1565c0;
+  --accent-link:    #1565c0;
+
+  --highlight-inset:        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --highlight-inset-strong: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --shadow-sm:      0 1px 2px rgba(15, 23, 42, 0.06),
+                    0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-md:      0 8px 24px -8px rgba(15, 23, 42, 0.12),
+                    0 2px 6px -2px rgba(15, 23, 42, 0.08);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-canvas);
+  color: var(--fg-default);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+pre,
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "calt" 0;
+}
+
+code {
+  font-size: 0.92em;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.35em;
+}
+
+pre {
+  margin: 0;
+  padding: var(--space-8);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── Layout chrome for product docs ───────────────────────────────── */
+
+.site-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-10) var(--space-24);
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
+  padding-bottom: var(--space-10);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.site-brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--fg-default);
+  text-decoration: none;
+}
+
+.site-brand:hover {
+  text-decoration: none;
+}
+
+.site-brand-title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.site-brand-sub {
+  font-size: var(--fs-xs);
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--fg-default);
+  background: var(--bg-elevated);
+  text-decoration: none;
+}
+
+.site-nav a.active {
+  color: var(--status-info);
+  background: var(--status-info-bg);
+  border-color: var(--status-info-line);
+}
+
+.site-header-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.theme-switch {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.theme-switch button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  height: 28px;
+  padding: 0 var(--space-5);
+  cursor: pointer;
+}
+
+.theme-switch button[aria-checked="true"] {
+  background: var(--bg-surface);
+  color: var(--fg-default);
+}
+
+.theme-switch button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.site-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.site-footer {
+  margin-top: var(--space-24);
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--border-default);
+  color: var(--fg-subtle);
+  font-size: var(--fs-sm);
+}
+
+h1, h2, h3 {
+  margin: 0;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--fw-semibold);
+}
+
+h1 {
+  font-size: var(--fs-3xl);
+}
+
+h2 {
+  font-size: var(--fs-xl);
+  margin-top: var(--space-4);
+}
+
+h3 {
+  font-size: var(--fs-lg);
+}
+
+.lede {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-md);
+  line-height: var(--lh-relaxed);
+  max-width: 68ch;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-12);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-8);
+}
+
+.card a.card-title {
+  color: var(--fg-default);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+}
+
+.card a.card-title:hover {
+  color: var(--accent-link);
+  text-decoration: underline;
+}
+
+.card .one-liner {
+  margin: var(--space-4) 0 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+
+.iron-law {
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  background: color-mix(in srgb, var(--status-warning) 10%, var(--bg-surface));
+  border: 1px solid var(--status-warning-line);
+  border-radius: var(--radius-md);
+  color: var(--status-warning);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.badge-tested {
+  background: var(--status-success-bg);
+  border-color: var(--status-success-line);
+  color: var(--status-success);
+}
+
+.badge-theoretical {
+  background: var(--status-neutral-bg);
+  border-color: var(--status-neutral-line);
+  color: var(--fg-muted);
+}
+
+.badge-module {
+  background: var(--status-info-bg);
+  border-color: var(--status-info-line);
+  color: var(--status-info);
+}
+
+ul.plain {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--fg-muted);
+}
+
+ul.plain li + li {
+  margin-top: var(--space-3);
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+}
+
+table.docs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+table.docs th,
+table.docs td {
+  padding: var(--space-6) var(--space-8);
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+
+table.docs th {
+  color: var(--fg-subtle);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--bg-elevated);
+}
+
+table.docs tr:last-child td {
+  border-bottom: 0;
+}
+
+table.docs td {
+  color: var(--fg-default);
+}
+
+.eyebrow {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.install-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.back-link {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
+
+.prose p {
+  margin: 0;
+  color: var(--fg-muted);
+  max-width: 70ch;
+  line-height: var(--lh-relaxed);
+}
+
+.prose p + p {
+  margin-top: var(--space-6);
+}
+
+.list-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-stack li {
+  padding: var(--space-6) var(--space-8);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.list-stack .cmd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--status-info);
+}
+
+.list-stack .desc {
+  margin-top: var(--space-2);
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+.footnote {
+  color: var(--fg-subtle);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  max-width: 70ch;
+}
+
+/* ── Project guide spine ────────────────────────────────────────────── */
+
+ol.spine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spine-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 7.5rem;
+  max-width: 11rem;
+  flex: 1 1 7.5rem;
+  padding: var(--space-6) var(--space-6);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.spine-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--status-info);
+}
+
+.spine-note {
+  font-size: var(--fs-2xs);
+  color: var(--fg-muted);
+  line-height: var(--lh-snug);
+}
+
+.spine-arrow {
+  display: none;
+}
+
+.list-stack .cmd-args {
+  margin-left: var(--space-2);
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* flow layout — tokens from inlined ds.css only */
+html,body{height:100%;overflow:hidden;margin:0;background:var(--bg-canvas);color:var(--fg-default);font-family:var(--font-sans)}
+.app{display:grid;grid-template-rows:auto 1fr;height:100%;min-height:0}
+.fl-header.top{z-index:20;background:color-mix(in srgb,var(--bg-canvas) 92%,transparent);border-bottom:1px solid var(--border-default);padding:var(--space-6) var(--space-8);display:flex;flex-direction:column;gap:var(--space-4)}
+.top-row{display:flex;flex-wrap:wrap;gap:var(--space-6) var(--space-8);align-items:center;justify-content:space-between}
+.brand{min-width:0;flex:1 1 220px}
+.fl-title{margin:0;font-size:var(--fs-3xl);font-weight:var(--fw-semibold);letter-spacing:var(--tracking-tight);line-height:var(--lh-tight)}
+.fl-scenario{margin:2px 0 0;font-size:var(--fs-sm);color:var(--fg-muted);max-width:72ch}
+.fl-toc{display:flex;flex-wrap:wrap;gap:var(--space-3);margin:0;padding:0}
+.fl-toc button{appearance:none;display:inline-flex;align-items:center;height:30px;padding:0 var(--space-6);border-radius:var(--radius-pill);border:1px solid var(--border-default);background:var(--bg-elevated);color:var(--fg-muted);font:500 12px var(--font-sans);cursor:pointer}
+.fl-toc button[aria-selected="true"]{color:var(--bg-canvas);background:var(--fg-default);border-color:var(--fg-default)}
+.fl-toc button:focus-visible,.fl-toolbar button:focus-visible{outline:none;box-shadow:var(--shadow-focus)}
+.fl-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
+.fl-toolbar button{appearance:none;height:28px;min-width:28px;padding:0 var(--space-4);border-radius:var(--radius-md);border:1px solid var(--border-default);background:var(--bg-surface);color:var(--fg-muted);font:600 12px var(--font-sans);cursor:pointer}
+.fl-toolbar .zoom{font:700 12px var(--font-mono);color:var(--fg-subtle);padding:0 var(--space-3);min-width:3.2rem;text-align:center}
+.theme-switch{display:inline-flex;gap:var(--space-2)}
+.theme-switch button{appearance:none;height:28px;padding:0 var(--space-4);border-radius:var(--radius-pill);border:1px solid var(--border-default);background:var(--bg-elevated);color:var(--fg-muted);font:500 12px var(--font-sans);cursor:pointer}
+.theme-switch button[aria-checked="true"]{background:var(--bg-surface);color:var(--fg-default)}
+.fl-hint{margin:0;font-size:var(--fs-sm);color:var(--fg-subtle);display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:center}
+.fl-meta{display:inline-flex;flex-wrap:wrap;gap:var(--space-6)}
+.fl-meta span{font-size:var(--fs-sm);color:var(--fg-subtle)}
+.fl-meta strong{color:var(--fg-muted);font-weight:var(--fw-medium)}
+.fl-footer{font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--fg-faint)}
+.fl-viewport{position:relative;overflow:auto;min-width:0;min-height:0;cursor:grab;background:radial-gradient(circle at 1px 1px,var(--border-default) 1px,transparent 0) 0 0/22px 22px,var(--bg-sunken)}
+.fl-viewport.is-panning{cursor:grabbing;user-select:none}
+#fl-sizer{position:relative;min-width:100%;min-height:100%}
+#fl-stage{position:absolute;top:0;left:0;padding:var(--space-12)}
+.fl-surface{display:inline-block}
+.fl-surface[hidden]{display:none !important}
+.fl-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.sheet{display:inline-block;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:18px 20px}
+svg.diagram{display:block;max-width:none;font-family:var(--font-sans);shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
+svg.diagram text{fill:var(--fg-default)}
+.actor-box{fill:var(--bg-elevated);stroke:var(--border-default);stroke-width:1}
+.actor-label{fill:var(--fg-default);font-size:11px;font-weight:600}
+.actor-stick-bg{fill:var(--bg-surface)}
+.actor-stick-rule{stroke:var(--border-default);stroke-width:1}
+.lifeline{stroke:var(--fg-faint);stroke-width:1;stroke-dasharray:3 5;pointer-events:none}
+.life-hit{stroke:transparent;stroke-width:20;fill:none}
+.arrow{stroke:var(--fg-muted);stroke-width:1.25;fill:none}
+.arrow.async{stroke-dasharray:5 4}
+.arrow-head{fill:var(--fg-muted)}
+.msg{fill:var(--fg-default);font-size:12px}
+.xor-wash{fill:color-mix(in srgb,var(--bg-elevated) 18%,transparent);stroke:none}
+.xor-rail{stroke:var(--status-warning-line);stroke-width:2;fill:none}
+.xor-q{fill:var(--status-warning);font-size:12px;font-weight:600}
+.hair{stroke:var(--border-subtle);stroke-width:1}
+.pill{fill:var(--bg-sunken);stroke:var(--status-warning-line);stroke-width:1}
+.pill-t{fill:var(--status-warning);font-size:11px;font-weight:600}
+.loop-arc{fill:none;stroke:var(--status-warning);stroke-width:1.25;stroke-dasharray:4 3}
+.loop-head{fill:var(--status-warning)}
+.act{fill:var(--bg-elevated);stroke:var(--border-default);stroke-width:1.25}
+.act-t{fill:var(--fg-default);font-size:12px;font-weight:500}
+.who{fill:var(--fg-subtle);font-size:10px;font-family:var(--font-mono)}
+.diamond{fill:color-mix(in srgb,var(--status-warning) 10%,var(--bg-surface));stroke:var(--status-warning-line);stroke-width:1.25}
+.xor-t{fill:var(--fg-default);font-size:12px;font-weight:600}
+.bar{fill:var(--fg-muted)}
+.evt{fill:var(--bg-canvas);stroke:var(--status-error-line);stroke-width:1.5}
+.sub-mark{fill:none;stroke:var(--border-default);stroke-width:1}
+.edge{stroke:var(--fg-faint);stroke-width:1.15;fill:none}
+.edge.back{stroke:var(--status-warning);stroke-dasharray:4 3}
+.edge-head{fill:var(--fg-muted)}
+.edge-head.back{fill:var(--status-warning)}
+.edge-t{fill:var(--fg-muted);font-size:11px}
+.end-ok{fill:var(--status-success);stroke:var(--status-success);stroke-width:1.5}
+.end-bad{fill:var(--status-error);stroke:var(--status-error);stroke-width:1.5}
+.end-t{fill:var(--fg-muted);font-size:11px}
+.end-hole{fill:var(--bg-canvas)}
+.st{fill:var(--bg-sunken);stroke:var(--border-default);stroke-width:1.15}
+.st.entry{stroke:var(--status-info);stroke-width:1.75}
+.st.term{stroke:var(--status-success);stroke-width:1.75}
+.st-t{fill:var(--fg-default);font-size:12px;font-weight:500}
+.mach-title{fill:var(--fg-muted);font-size:12px;font-weight:600}
+.mach-legend{fill:var(--fg-subtle);font-size:10px}
+.edge-cap{fill:var(--bg-surface);stroke:var(--border-default);stroke-width:1}
+.edge-title{fill:var(--fg-default);font-size:11px;font-weight:600}
+.fx{fill:var(--fg-subtle);font-size:10px;font-family:var(--font-sans)}
+.fx-pill{fill:var(--bg-sunken);stroke:var(--border-default);stroke-width:1}
+.fx-pill-t{fill:var(--fg-muted);font-size:9px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="fl-header top">
+    <div class="top-row">
+      <div class="brand">
+        <h1 class="fl-title">Forma do acorde na cifra</h1>
+        <p class="fl-scenario">Ver como se toca o acorde da cifra sem poluir a leitura; no edit, gravar override só naquele arquivo.</p>
+      </div>
+      <nav class="fl-toc" role="tablist" aria-label="Camadas do fluxo">
+        <button type="button" role="tab" data-tab="sequence" aria-selected="true" aria-controls="fl-sequence">Sequência</button>
+        <button type="button" role="tab" data-tab="bpm" aria-selected="false" aria-controls="fl-bpm">Fluxo</button>
+        <button type="button" role="tab" data-tab="machines" aria-selected="false" aria-controls="fl-machines">Máquinas</button>
+      </nav>
+      <div class="fl-toolbar">
+        <button type="button" data-zoom="out" aria-label="Diminuir">−</button>
+        <span class="zoom" id="z-lab">100%</span>
+        <button type="button" data-zoom="in" aria-label="Aumentar">+</button>
+        <button type="button" data-zoom="height">À altura</button>
+        <button type="button" data-zoom="width">À largura</button>
+        <button type="button" data-action="pdf" data-pdf-name="diagramas-cifra-fluxo.pdf">PDF</button>
+        <div class="theme-switch" role="radiogroup" aria-label="Aparência"><button type="button" role="radio" data-theme-set="system" aria-checked="true">Sistema</button><button type="button" role="radio" data-theme-set="light" aria-checked="false">Claro</button><button type="button" role="radio" data-theme-set="dark" aria-checked="false">Escuro</button></div>
+      </div>
+    </div>
+    <p class="fl-hint" id="fl-hint">
+      <span class="fl-meta"><span><strong>Ator:</strong> Músico</span><span><strong>Plano:</strong> diagramas-cifra</span></span>
+      <span class="fl-footer">content-sha 0cc236781c609a70 · schema 1.0</span>
+    </p>
+  </header>
+  <div class="fl-viewport" id="fl-viewport">
+    <div id="fl-sizer">
+      <div id="fl-stage">
+        <section id="fl-sequence" class="fl-surface" role="tabpanel" data-surface="sequence" aria-labelledby="fl-sequence-title">
+      <h2 id="fl-sequence-title" class="fl-sr-only">Sequência</h2>
+      <div class="sheet"><svg class="diagram" id="seq-svg" data-surface="sequence" width="668" height="1798" viewBox="0 0 668 1798" xmlns="http://www.w3.org/2000/svg" role="img">
+    <title>Diagrama de sequência — Forma do acorde na cifra</title>
+    <desc>Ver como se toca o acorde da cifra sem poluir a leitura; no edit, gravar override só naquele arquivo.</desc>
+    <rect class="xor-wash" x="8" y="152" width="652" height="1574" rx="10"/>
+    <g data-actor-id="M">
+        <line class="lifeline" data-lifeline="M" x1="150" y1="50" x2="150" y2="1754"/>
+        <line class="life-hit" data-actor-label="Músico" x1="150" y1="50" x2="150" y2="1754"/>
+      </g>
+<g data-actor-id="V">
+        <line class="lifeline" data-lifeline="V" x1="346" y1="50" x2="346" y2="1754"/>
+        <line class="life-hit" data-actor-label="Visualizador" x1="346" y1="50" x2="346" y2="1754"/>
+      </g>
+<g data-actor-id="C">
+        <line class="lifeline" data-lifeline="C" x1="542" y1="50" x2="542" y2="1754"/>
+        <line class="life-hit" data-actor-label="Core" x1="542" y1="50" x2="542" y2="1754"/>
+      </g>
+    <g data-xor-rail="leituraPermiteForma">
+        <line class="xor-rail" x1="22" y1="162" x2="22" y2="1718"/>
+        <text class="xor-q" x="38" y="174">◇ Esta leitura mostra forma?</text>
+      </g>
+<g data-xor-rail="resolveHit">
+        <line class="xor-rail" x1="36" y1="604" x2="36" y2="1718"/>
+        <text class="xor-q" x="52" y="616">◇ Tem forma neste instrumento?</text>
+      </g>
+<g data-xor-rail="trocaInstrumento">
+        <line class="xor-rail" x1="50" y1="790" x2="50" y2="1548"/>
+        <text class="xor-q" x="66" y="802">◇ Troca o instrumento da forma?</text>
+      </g>
+<g data-xor-rail="ensaioOuEdit">
+        <line class="xor-rail" x1="64" y1="934" x2="64" y2="1548"/>
+        <text class="xor-q" x="80" y="946">◇ Ensaio ou edit?</text>
+      </g>
+<g data-xor-rail="gravaOverride">
+        <line class="xor-rail" x1="78" y1="1182" x2="78" y2="1548"/>
+        <text class="xor-q" x="94" y="1194">◇ Grava override neste arquivo?</text>
+      </g>
+    <g data-from="M" data-to="V">
+          <line class="arrow" x1="158" y1="78" x2="330" y2="78"/>
+          <polygon class="arrow-head" points="338,78 330,74 330,82"/>
+          <text class="msg" x="248" y="70" text-anchor="middle">Abre a cifra</text>
+        </g>
+<g data-from="V" data-to="M">
+          <line class="arrow async" x1="338" y1="114" x2="166" y2="114"/>
+          <polygon class="arrow-head" points="158,114 166,110 166,118"/>
+          <text class="msg" x="248" y="94" text-anchor="middle">Mostra letra e acordes, sem</text><text class="msg" x="248" y="106" text-anchor="middle">lista de formas no corpo</text>
+        </g>
+
+<g>
+          <line class="hair" x1="22" y1="218" x2="40" y2="218"/>
+          <rect class="pill" x="40" y="206" width="181" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Sem forma nesta leitura" x="130.5" y="222" text-anchor="middle">Sem forma nesta leitura</text>
+        </g>
+<g>
+          <line class="hair" x1="22" y1="266" x2="40" y2="266"/>
+          <rect class="pill" x="40" y="254" width="104" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Mostra forma" x="92" y="270" text-anchor="middle">Mostra forma</text>
+        </g>
+<g data-from="M" data-to="V">
+          <line class="arrow" x1="158" y1="296" x2="330" y2="296"/>
+          <polygon class="arrow-head" points="338,296 330,292 330,300"/>
+          <text class="msg" x="248" y="276" text-anchor="middle">Toca o acorde (alvo botão, sem</text><text class="msg" x="248" y="288" text-anchor="middle">roubar zen nem trilho de troca)</text>
+        </g>
+<g data-from="V" data-to="V">
+          <circle cx="346" cy="334" r="3" class="arrow-head"/>
+          <text class="msg" x="356" y="338">Pausa rolagem e metrônomo se</text><text class="msg" x="356" y="350">estavam ligados</text>
+        </g>
+<g data-from="V" data-to="M">
+          <line class="arrow async" x1="338" y1="372" x2="166" y2="372"/>
+          <polygon class="arrow-head" points="158,372 166,368 166,376"/>
+          <text class="msg" x="248" y="340" text-anchor="middle">Abre a superfície grande de</text><text class="msg" x="248" y="352" text-anchor="middle">forma; seletor de instrumento</text><text class="msg" x="248" y="364" text-anchor="middle">fica nela</text>
+        </g>
+<g data-from="V" data-to="C">
+          <line class="arrow" x1="354" y1="424" x2="526" y2="424"/>
+          <polygon class="arrow-head" points="534,424 526,420 526,428"/>
+          <text class="msg" x="444" y="380" text-anchor="middle">Pede resolve com token tocável</text><text class="msg" x="444" y="392" text-anchor="middle">(shapeName nas cordas, concert</text><text class="msg" x="444" y="404" text-anchor="middle">no piano) e instrumento da</text><text class="msg" x="444" y="416" text-anchor="middle">preferência</text>
+        </g>
+<g data-from="C" data-to="C">
+          <circle cx="542" cy="490" r="3" class="arrow-head"/>
+          <text class="msg" x="552" y="494">Parse BR; depois override</text><text class="msg" x="552" y="506">deste .cho; depois</text><text class="msg" x="552" y="518">dicionário do pacote;</text><text class="msg" x="552" y="530">capoFret não entra no match</text>
+        </g>
+<g data-from="C" data-to="V">
+          <line class="arrow async" x1="534" y1="556" x2="362" y2="556"/>
+          <polygon class="arrow-head" points="354,556 362,552 362,560"/>
+          <text class="msg" x="444" y="536" text-anchor="middle">Devolve hit, miss ou nome sem</text><text class="msg" x="444" y="548" text-anchor="middle">parse (7+, aspas)</text>
+        </g>
+
+<g>
+          <line class="hair" x1="36" y1="660" x2="54" y2="660"/>
+          <rect class="pill" x="54" y="648" width="83" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Tem forma" x="95.5" y="664" text-anchor="middle">Tem forma</text>
+        </g>
+<g data-from="V" data-to="M">
+          <line class="arrow async" x1="338" y1="690" x2="166" y2="690"/>
+          <polygon class="arrow-head" points="158,690 166,686 166,694"/>
+          <text class="msg" x="248" y="658" text-anchor="middle">Violão/ukulele: shape da mão +</text><text class="msg" x="248" y="670" text-anchor="middle">barra Capo n; piano: teclas</text><text class="msg" x="248" y="682" text-anchor="middle">concert, sem capo</text>
+        </g>
+<g data-from="V" data-to="M">
+          <line class="arrow async" x1="338" y1="742" x2="166" y2="742"/>
+          <polygon class="arrow-head" points="158,742 166,738 166,746"/>
+          <text class="msg" x="248" y="722" text-anchor="middle">Mostra o nome que se toca (Am),</text><text class="msg" x="248" y="734" text-anchor="middle">não o grau Nashville</text>
+        </g>
+
+<g>
+          <line class="hair" x1="50" y1="846" x2="68" y2="846"/>
+          <rect class="pill" x="68" y="834" width="139" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Troca instrumento" x="137.5" y="850" text-anchor="middle">Troca instrumento</text>
+        </g>
+<g data-loop-ref="S3">
+          <path class="loop-arc" d="M150 742 C114 778, 78 888, 68 842"/>
+          <polygon class="loop-head" points="68,832 63,842 74,840"/>
+        </g>
+<g>
+          <line class="hair" x1="50" y1="894" x2="68" y2="894"/>
+          <rect class="pill" x="68" y="882" width="146" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Mantém instrumento" x="141" y="898" text-anchor="middle">Mantém instrumento</text>
+        </g>
+
+<g>
+          <line class="hair" x1="64" y1="990" x2="82" y2="990"/>
+          <rect class="pill" x="82" y="978" width="72" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Ensaio" x="118" y="994" text-anchor="middle">Ensaio</text>
+        </g>
+<g data-from="M" data-to="V">
+          <line class="arrow" x1="158" y1="1020" x2="330" y2="1020"/>
+          <polygon class="arrow-head" points="338,1020 330,1016 330,1024"/>
+          <text class="msg" x="248" y="988" text-anchor="middle">Fecha a superfície de forma</text><text class="msg" x="248" y="1000" text-anchor="middle">(Fechar, Escape ou scrim no</text><text class="msg" x="248" y="1012" text-anchor="middle">desktop)</text>
+        </g>
+<g data-from="V" data-to="V">
+          <circle cx="346" cy="1072" r="3" class="arrow-head"/>
+          <text class="msg" x="356" y="1076">Retoma só rolagem e</text><text class="msg" x="356" y="1088">metrônomo que estavam</text><text class="msg" x="356" y="1100">ligados</text>
+        </g>
+<g>
+          <line class="hair" x1="64" y1="1142" x2="82" y2="1142"/>
+          <rect class="pill" x="82" y="1130" width="72" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Edit" x="118" y="1146" text-anchor="middle">Edit</text>
+        </g>
+
+<g>
+          <line class="hair" x1="78" y1="1238" x2="96" y2="1238"/>
+          <rect class="pill" x="96" y="1226" width="153" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Grava neste arquivo" x="172.5" y="1242" text-anchor="middle">Grava neste arquivo</text>
+        </g>
+<g data-from="M" data-to="V">
+          <line class="arrow" x1="158" y1="1268" x2="330" y2="1268"/>
+          <polygon class="arrow-head" points="338,1268 330,1264 330,1272"/>
+          <text class="msg" x="248" y="1248" text-anchor="middle">Edita a grelha da mão (ou teclas</text><text class="msg" x="248" y="1260" text-anchor="middle">concert no piano) e confirma</text>
+        </g>
+<g data-from="V" data-to="C">
+          <line class="arrow" x1="354" y1="1306" x2="526" y2="1306"/>
+          <polygon class="arrow-head" points="534,1306 526,1302 526,1310"/>
+          <text class="msg" x="444" y="1262" text-anchor="middle">Pede gravar</text><text class="msg" x="444" y="1274" text-anchor="middle">{define-guitar}/{define-ukulele}</text><text class="msg" x="444" y="1286" text-anchor="middle">no shapeName ou {define} keys no</text><text class="msg" x="444" y="1298" text-anchor="middle">concert</text>
+        </g>
+<g data-from="C" data-to="C">
+          <circle cx="542" cy="1372" r="3" class="arrow-head"/>
+          <text class="msg" x="552" y="1376">Escreve o define neste .cho;</text><text class="msg" x="552" y="1388">o dicionário do pacote não</text><text class="msg" x="552" y="1400">muda; a letra do acorde</text><text class="msg" x="552" y="1412">permanece</text>
+        </g>
+<g>
+          <line class="hair" x1="78" y1="1456" x2="96" y2="1456"/>
+          <rect class="pill" x="96" y="1444" width="132" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Fecha sem gravar" x="162" y="1460" text-anchor="middle">Fecha sem gravar</text>
+        </g>
+<g data-from="M" data-to="V">
+          <line class="arrow" x1="158" y1="1486" x2="330" y2="1486"/>
+          <polygon class="arrow-head" points="338,1486 330,1482 330,1490"/>
+          <text class="msg" x="248" y="1454" text-anchor="middle">Fecha a superfície de forma</text><text class="msg" x="248" y="1466" text-anchor="middle">(Fechar, Escape ou scrim no</text><text class="msg" x="248" y="1478" text-anchor="middle">desktop)</text>
+        </g>
+<g data-from="V" data-to="V">
+          <circle cx="346" cy="1538" r="3" class="arrow-head"/>
+          <text class="msg" x="356" y="1542">Retoma só rolagem e</text><text class="msg" x="356" y="1554">metrônomo que estavam</text><text class="msg" x="356" y="1566">ligados</text>
+        </g>
+<g>
+          <line class="hair" x1="36" y1="1608" x2="54" y2="1608"/>
+          <rect class="pill" x="54" y="1596" width="209" height="24" rx="12"/>
+          <text class="pill-t" data-branch-label="Sem forma neste instrumento" x="158.5" y="1612" text-anchor="middle">Sem forma neste instrumento</text>
+        </g>
+<g data-from="V" data-to="M">
+          <line class="arrow async" x1="338" y1="1638" x2="166" y2="1638"/>
+          <polygon class="arrow-head" points="158,1638 166,1634 166,1642"/>
+          <text class="msg" x="248" y="1606" text-anchor="middle">Diz Sem forma neste instrumento</text><text class="msg" x="248" y="1618" text-anchor="middle">e deixa trocar o instrumento; no</text><text class="msg" x="248" y="1630" text-anchor="middle">ensaio não oferece criar</text>
+        </g>
+<g data-join-ref="1">
+          <line class="hair" x1="50" y1="1708" x2="68" y2="1708"/>
+          <rect class="pill" x="68" y="1696" width="210.20000000000002" height="24" rx="12"/>
+          <text class="pill-t" x="173.10000000000002" y="1712" text-anchor="middle">→ Troca o instrumento da forma?</text>
+        </g>
+    <g data-actor-id="M">
+        <rect class="actor-box" x="66" y="1762" width="168" height="26" rx="8"/>
+        <text class="actor-label" x="150" y="1780" text-anchor="middle">Músico</text>
+      </g>
+<g data-actor-id="V">
+        <rect class="actor-box" x="262" y="1762" width="168" height="26" rx="8"/>
+        <text class="actor-label" x="346" y="1780" text-anchor="middle">Visualizador</text>
+      </g>
+<g data-actor-id="C">
+        <rect class="actor-box" x="458" y="1762" width="168" height="26" rx="8"/>
+        <text class="actor-label" x="542" y="1780" text-anchor="middle">Core</text>
+      </g>
+    <g data-actor-stick>
+    <rect class="actor-stick-bg" x="0" y="0" width="668" height="42"/>
+    <line class="actor-stick-rule" x1="0" y1="41.5" x2="668" y2="41.5"/>
+    <g data-actor-id="M">
+        <rect class="actor-box" x="66" y="8" width="168" height="26" rx="8"/>
+        <text class="actor-label" x="150" y="26" text-anchor="middle">Músico</text>
+      </g>
+<g data-actor-id="V">
+        <rect class="actor-box" x="262" y="8" width="168" height="26" rx="8"/>
+        <text class="actor-label" x="346" y="26" text-anchor="middle">Visualizador</text>
+      </g>
+<g data-actor-id="C">
+        <rect class="actor-box" x="458" y="8" width="168" height="26" rx="8"/>
+        <text class="actor-label" x="542" y="26" text-anchor="middle">Core</text>
+      </g>
+  </g>
+  </svg></div>
+    </section>
+        <section id="fl-bpm" class="fl-surface" role="tabpanel" data-surface="bpm" aria-labelledby="fl-bpm-title" hidden>
+      <h2 id="fl-bpm-title" class="fl-sr-only">Fluxo BPM</h2>
+      <div class="sheet"><svg class="diagram" id="bpm-svg" data-surface="bpm" width="1764" height="1668" viewBox="0 0 1764 1668" xmlns="http://www.w3.org/2000/svg" role="img">
+    <title>Diagrama de processo — Forma do acorde na cifra</title>
+    <path class="edge" d="M924 96 L924 152"/>
+<path class="edge" d="M874 215 L108 215 L108 294"/>
+<path class="edge" d="M1060 348 L1060 404"/>
+<path class="edge" d="M1060 474 L1060 530"/>
+<path class="edge" d="M1010 593 L516 593 L516 670"/>
+<path class="edge" d="M1110 593 L1604 593 L1604 670"/>
+<path class="edge" d="M1060 888 L1060 404"/>
+<path class="edge" d="M1246 1007 L1332 1007 L1332 1450"/>
+<path class="edge" d="M1196 1294 L1196 1352"/>
+<path class="edge" d="M1282 1147 L1196 1147 L1196 1224"/>
+<path class="edge" d="M1332 1168 L1332 1450"/>
+<path class="edge" d="M1332 1520 L1332 1578"/>
+<path class="edge" d="M1196 1372 L1196 1485 L1232 1485"/>
+<path class="edge" d="M1246 1007 L1332 1007 L1332 1084"/>
+<path class="edge" d="M1332 1598 L1332 1450"/>
+<path class="edge" d="M1110 865 L1196 865 L1196 944"/>
+<path class="edge" d="M1332 1520 L1332 439 L1160 439"/>
+<path class="edge" d="M516 740 L516 842 L960 842"/>
+<path class="edge" d="M1604 726 L1604 842 L1160 842"/>
+<path class="edge" d="M974 215 L1060 215 L1060 292"/>
+    <g data-node-id="S1" data-node-type="activity" data-shape="rect" data-next="leituraPermiteForma">
+        <rect class="act" x="824" y="40" width="200" height="56" rx="8"/>
+
+        <text class="act-t" x="924" y="62" text-anchor="middle" dominant-baseline="central">Ler a cifra</text><text class="who" x="924" y="75" text-anchor="middle" dominant-baseline="central">Músico</text>
+      </g>
+<g data-node-id="leituraPermiteForma" data-node-type="xor" data-shape="diamond">
+          <polygon class="diamond" points="924,152 1024,194 924,236 824,194"/>
+          <text class="xor-t" x="924" y="181" text-anchor="middle" dominant-baseline="central">Esta leitura</text><text class="xor-t" x="924" y="195" text-anchor="middle" dominant-baseline="central">mostra forma?</text><text class="who" x="924" y="208" text-anchor="middle" dominant-baseline="central">Visualizador</text>
+        </g>
+<g data-node-id="end_leitura" data-node-type="end" data-shape="circle">
+          <circle class="end-ok" cx="108" cy="304" r="10"/>
+
+          <text class="end-t" x="108" y="328" text-anchor="middle">Fim · sem forma nesta leitura</text>
+        </g>
+<g data-node-id="S2" data-node-type="activity" data-shape="rect" data-next="S3">
+        <rect class="act" x="960" y="292" width="200" height="56" rx="8"/>
+
+        <text class="act-t" x="1060" y="314" text-anchor="middle" dominant-baseline="central">Pedir forma do acorde</text><text class="who" x="1060" y="327" text-anchor="middle" dominant-baseline="central">Músico</text>
+      </g>
+<g data-node-id="S3" data-node-type="activity" data-shape="rect" data-next="resolveHit">
+        <rect class="act" x="960" y="404" width="200" height="70" rx="8"/>
+
+        <text class="act-t" x="1060" y="426" text-anchor="middle" dominant-baseline="central">Resolver o token</text><text class="act-t" x="1060" y="440" text-anchor="middle" dominant-baseline="central">tocável</text><text class="who" x="1060" y="453" text-anchor="middle" dominant-baseline="central">Core</text>
+      </g>
+<g data-node-id="resolveHit" data-node-type="xor" data-shape="diamond">
+          <polygon class="diamond" points="1060,530 1160,572 1060,614 960,572"/>
+          <text class="xor-t" x="1060" y="559" text-anchor="middle" dominant-baseline="central">Tem forma neste</text><text class="xor-t" x="1060" y="573" text-anchor="middle" dominant-baseline="central">instrumento?</text><text class="who" x="1060" y="586" text-anchor="middle" dominant-baseline="central">Core</text>
+        </g>
+<g data-node-id="S4" data-node-type="activity" data-shape="rect" data-next="trocaInstrumento">
+        <rect class="act" x="416" y="670" width="200" height="70" rx="8"/>
+
+        <text class="act-t" x="516" y="692" text-anchor="middle" dominant-baseline="central">Desenhar a forma da</text><text class="act-t" x="516" y="706" text-anchor="middle" dominant-baseline="central">mão</text><text class="who" x="516" y="719" text-anchor="middle" dominant-baseline="central">Visualizador</text>
+      </g>
+<g data-node-id="S5" data-node-type="activity" data-shape="rect" data-next="trocaInstrumento">
+        <rect class="act" x="1504" y="670" width="200" height="56" rx="8"/>
+
+        <text class="act-t" x="1604" y="692" text-anchor="middle" dominant-baseline="central">Informar miss honesto</text><text class="who" x="1604" y="705" text-anchor="middle" dominant-baseline="central">Visualizador</text>
+      </g>
+<g data-node-id="trocaInstrumento" data-node-type="xor" data-shape="diamond">
+          <polygon class="diamond" points="1060,796 1160,842 1060,888 960,842"/>
+          <text class="xor-t" x="1060" y="822" text-anchor="middle" dominant-baseline="central">Troca o</text><text class="xor-t" x="1060" y="836" text-anchor="middle" dominant-baseline="central">instrumento da</text><text class="xor-t" x="1060" y="850" text-anchor="middle" dominant-baseline="central">forma?</text><text class="who" x="1060" y="863" text-anchor="middle" dominant-baseline="central">Músico</text>
+        </g>
+<g data-node-id="ensaioOuEdit" data-node-type="xor" data-shape="diamond">
+          <polygon class="diamond" points="1196,944 1296,986 1196,1028 1096,986"/>
+          <text class="xor-t" x="1196" y="980" text-anchor="middle" dominant-baseline="central">Ensaio ou edit?</text><text class="who" x="1196" y="993" text-anchor="middle" dominant-baseline="central">Músico</text>
+        </g>
+<g data-node-id="gravaOverride" data-node-type="xor" data-shape="diamond">
+          <polygon class="diamond" points="1332,1084 1432,1126 1332,1168 1232,1126"/>
+          <text class="xor-t" x="1332" y="1113" text-anchor="middle" dominant-baseline="central">Grava override</text><text class="xor-t" x="1332" y="1127" text-anchor="middle" dominant-baseline="central">neste arquivo?</text><text class="who" x="1332" y="1140" text-anchor="middle" dominant-baseline="central">Músico</text>
+        </g>
+<g data-node-id="S7" data-node-type="activity" data-shape="rect" data-next="end_edit">
+        <rect class="act" x="1096" y="1224" width="200" height="70" rx="8"/>
+
+        <text class="act-t" x="1196" y="1246" text-anchor="middle" dominant-baseline="central">Gravar define neste</text><text class="act-t" x="1196" y="1260" text-anchor="middle" dominant-baseline="central">arquivo</text><text class="who" x="1196" y="1273" text-anchor="middle" dominant-baseline="central">Core</text>
+      </g>
+<g data-node-id="end_edit" data-node-type="end" data-shape="circle">
+          <circle class="end-bad" cx="1196" cy="1362" r="10"/>
+          <circle class="end-hole" cx="1196" cy="1362" r="5"/>
+          <text class="end-t" x="1196" y="1386" text-anchor="middle">Fim · override neste arquivo</text>
+        </g>
+<g data-node-id="S6" data-node-type="activity" data-shape="rect" data-next="end_ensaio">
+        <rect class="act" x="1232" y="1450" width="200" height="70" rx="8"/>
+
+        <text class="act-t" x="1332" y="1472" text-anchor="middle" dominant-baseline="central">Fechar e retomar o</text><text class="act-t" x="1332" y="1486" text-anchor="middle" dominant-baseline="central">relógio</text><text class="who" x="1332" y="1499" text-anchor="middle" dominant-baseline="central">Visualizador</text>
+      </g>
+<g data-node-id="end_ensaio" data-node-type="end" data-shape="circle">
+          <circle class="end-ok" cx="1332" cy="1588" r="10"/>
+
+          <text class="end-t" x="1332" y="1612" text-anchor="middle">Fim · cifra de novo</text>
+        </g>
+    <polygon class="edge-head" points="924,152 927.6,144 920.4,144"/>
+<polygon class="edge-head" points="108,294 111.6,286 104.4,286"/>
+<polygon class="edge-head" points="1060,404 1063.6,396 1056.4,396"/>
+<polygon class="edge-head" points="1060,530 1063.6,522 1056.4,522"/>
+<polygon class="edge-head" points="516,670 519.6,662 512.4,662"/>
+<polygon class="edge-head" points="1604,670 1607.6,662 1600.4,662"/>
+<polygon class="edge-head" points="1060,404 1056.4,412 1063.6,412"/>
+<polygon class="edge-head" points="1332,1450 1335.6,1442 1328.4,1442"/>
+<polygon class="edge-head" points="1196,1352 1199.6,1344 1192.4,1344"/>
+<polygon class="edge-head" points="1196,1224 1199.6,1216 1192.4,1216"/>
+<polygon class="edge-head" points="1332,1450 1335.6,1442 1328.4,1442"/>
+<polygon class="edge-head" points="1332,1578 1335.6,1570 1328.4,1570"/>
+<polygon class="edge-head" points="1232,1485 1224,1481.4 1224,1488.6"/>
+<polygon class="edge-head" points="1332,1084 1335.6,1076 1328.4,1076"/>
+<polygon class="edge-head" points="1332,1450 1328.4,1458 1335.6,1458"/>
+<polygon class="edge-head" points="1196,944 1199.6,936 1192.4,936"/>
+<polygon class="edge-head" points="1160,439 1168,442.6 1168,435.4"/>
+<polygon class="edge-head" points="960,842 952,838.4 952,845.6"/>
+<polygon class="edge-head" points="1160,842 1168,845.6 1168,838.4"/>
+<polygon class="edge-head" points="1060,292 1063.6,284 1056.4,284"/>
+
+<text class="edge-t" x="491" y="195" text-anchor="middle">Sem forma nesta</text><text class="edge-t" x="491" y="207" text-anchor="middle">leitura</text>
+
+
+<text class="edge-t" x="763" y="585" text-anchor="middle">Tem forma</text>
+<text class="edge-t" x="1357" y="573" text-anchor="middle">Sem forma neste</text><text class="edge-t" x="1357" y="585" text-anchor="middle">instrumento</text>
+<text class="edge-t" x="1068" y="646" text-anchor="start">Troca instrumento</text>
+<text class="edge-t" x="1340" y="1228.5" text-anchor="start">Ensaio</text>
+
+<text class="edge-t" x="1239" y="1127" text-anchor="middle">Grava neste</text><text class="edge-t" x="1239" y="1139" text-anchor="middle">arquivo</text>
+<text class="edge-t" x="1340" y="1309" text-anchor="start">Fecha sem gravar</text>
+
+
+<text class="edge-t" x="1289" y="999" text-anchor="middle">Edit</text>
+
+<text class="edge-t" x="1153" y="857" text-anchor="middle">Mantém instrumento</text>
+
+
+
+<text class="edge-t" x="1017" y="207" text-anchor="middle">Mostra forma</text>
+  </svg></div>
+    </section>
+        <section id="fl-machines" class="fl-surface" role="tabpanel" data-surface="machines" aria-labelledby="fl-machines-title" hidden>
+      <h2 id="fl-machines-title" class="fl-sr-only">Máquinas</h2>
+      <div class="sheet"><svg class="diagram" id="mach-svg" data-surface="machines" width="1003" height="792" viewBox="0 0 1003 792" xmlns="http://www.w3.org/2000/svg" role="img">
+    <title>Diagrama de estados — Superfície de forma</title>
+    <g transform="translate(221 16)">
+    <g data-machine-id="forma">
+      <text class="mach-title" x="16" y="16">Superfície de forma</text>
+      <text class="mach-legend" x="16" y="30">Laço = permanece no estado · pastilha = o que o sistema faz</text>
+      <path class="edge" d="M240 228 L532 228"/>
+<path class="edge" d="M240 228 L532 416"/>
+<path class="edge back" d="M532 228 L36 228 L36 228 L72 228"/>
+<path class="edge back" d="M532 416 L36 416 L36 228 L72 228"/>
+<path class="edge" d="M700 416 L532 228"/>
+<path class="edge" d="M700 228 L532 416"/>
+<path class="edge" d="M144 212 C128 172, 184 172, 168 212"/>
+      <g data-state-id="fechada">
+        <rect class="st entry" x="72" y="212" width="168" height="32" rx="16"/>
+
+        <text class="st-t" x="156" y="228" text-anchor="middle" dominant-baseline="central">Fechada</text>
+      </g>
+<g data-state-id="aberta">
+        <rect class="st" x="532" y="212" width="168" height="32" rx="16"/>
+
+        <text class="st-t" x="616" y="228" text-anchor="middle" dominant-baseline="central">Aberta com forma</text>
+      </g>
+<g data-state-id="miss">
+        <rect class="st" x="532" y="400" width="168" height="32" rx="16"/>
+
+        <text class="st-t" x="616" y="416" text-anchor="middle" dominant-baseline="central">Aberta sem forma</text>
+      </g>
+      <polygon class="edge-head" points="532,228 524,224.4 524,231.6"/>
+<polygon class="edge-head" points="532,416 527.2223901529783,408.64238869267734 523.3247450897379,414.696177833455"/>
+<polygon class="edge-head back" points="72,228 64,224.4 64,231.6"/>
+<polygon class="edge-head back" points="72,228 64,224.4 64,231.6"/>
+<polygon class="edge-head" points="532,228 534.6462859060201,236.36404034564632 540.0150098304638,231.56645726422855"/>
+<polygon class="edge-head" points="532,416 540.0150098304638,412.4335427357715 534.6462859060201,407.6359596543537"/>
+<polygon class="edge-head" points="168,212 174.31364149801976,205.90919290779271 167.6286093236459,203.23518003804315"/>
+      <g data-transition-id="T_abre_hit" data-from="fechada" data-to="aberta"><rect class="edge-cap" x="215.5" y="156" width="341" height="46" rx="6"/><text class="edge-title" x="223.5" y="169" dominant-baseline="central">Resolve hit</text><rect class="fx-pill" x="223.5" y="180" width="40" height="14" rx="7"/><text class="fx-pill-t" x="243.5" y="187" text-anchor="middle" dominant-baseline="central">Avisa</text><text class="fx" x="269.5" y="187" dominant-baseline="central" data-effect-kind="notify" data-effect-target="M">Pausa relógio se estava ligado e desenha a forma</text></g>
+<g data-transition-id="T_abre_miss" data-from="fechada" data-to="miss"><rect class="edge-cap" x="241.5" y="156" width="289" height="46" rx="6"/><text class="edge-title" x="249.5" y="169" dominant-baseline="central">Resolve miss · miss honesto</text><rect class="fx-pill" x="249.5" y="180" width="40" height="14" rx="7"/><text class="fx-pill-t" x="269.5" y="187" text-anchor="middle" dominant-baseline="central">Avisa</text><text class="fx" x="295.5" y="187" dominant-baseline="central" data-effect-kind="notify" data-effect-target="M">Informa miss e deixa trocar instrumento</text></g>
+<g data-transition-id="T_fecha_ensaio_hit" data-from="aberta" data-to="fechada"><rect class="edge-cap" x="-205" y="189" width="233" height="46" rx="6"/><text class="edge-title" x="-197" y="202" dominant-baseline="central">Fecha no ensaio · retoma o relógio</text><rect class="fx-pill" x="-197" y="213" width="40" height="14" rx="7"/><text class="fx-pill-t" x="-177" y="220" text-anchor="middle" dominant-baseline="central">Avisa</text><text class="fx" x="-151" y="220" dominant-baseline="central" data-effect-kind="notify" data-effect-target="M">Retoma só o que estava ligado</text></g>
+<g data-transition-id="T_fecha_ensaio_miss" data-from="miss" data-to="fechada"><rect class="edge-cap" x="-203" y="283" width="231" height="46" rx="6"/><text class="edge-title" x="-195" y="296" dominant-baseline="central">Fecha miss no ensaio</text><rect class="fx-pill" x="-195" y="307" width="40" height="14" rx="7"/><text class="fx-pill-t" x="-175" y="314" text-anchor="middle" dominant-baseline="central">Avisa</text><text class="fx" x="-149" y="314" dominant-baseline="central" data-effect-kind="notify" data-effect-target="M">Retoma só o que estava ligado</text></g>
+<g data-transition-id="T_miss_para_hit" data-from="miss" data-to="aberta"><rect class="edge-cap" x="466" y="344" width="300" height="46" rx="6"/><text class="edge-title" x="474" y="357" dominant-baseline="central">Troca instrumento e acha forma</text><rect class="fx-pill" x="474" y="368" width="40" height="14" rx="7"/><text class="fx-pill-t" x="494" y="375" text-anchor="middle" dominant-baseline="central">Grava</text><text class="fx" x="520" y="375" dominant-baseline="central" data-effect-kind="write" data-effect-target="instrumento">Persiste diagramInstrument na preferência</text></g>
+<g data-transition-id="T_hit_para_miss" data-from="aberta" data-to="miss"><rect class="edge-cap" x="466" y="156" width="300" height="46" rx="6"/><text class="edge-title" x="474" y="169" dominant-baseline="central">Troca instrumento e perde a forma</text><rect class="fx-pill" x="474" y="180" width="40" height="14" rx="7"/><text class="fx-pill-t" x="494" y="187" text-anchor="middle" dominant-baseline="central">Grava</text><text class="fx" x="520" y="187" dominant-baseline="central" data-effect-kind="write" data-effect-target="instrumento">Persiste diagramInstrument na preferência</text></g>
+<g data-transition-id="T_sem_leitura" data-from="fechada" data-to="fechada"><rect class="edge-cap" x="45.5" y="126" width="221" height="40" rx="6"/><text class="edge-title" x="53.5" y="139" dominant-baseline="central">Lens letra ou diagrams off · não</text><text class="edge-title" x="53.5" y="153" dominant-baseline="central">abre</text></g>
+    </g>
+<g data-machine-id="override">
+      <text class="mach-title" x="16" y="640">Override neste arquivo</text>
+      <text class="mach-legend" x="16" y="654">Laço = permanece no estado · pastilha = o que o sistema faz</text>
+      <path class="edge" d="M240 744 L532 744"/>
+<path class="edge" d="M144 728 C128 688, 184 688, 168 728"/>
+      <g data-state-id="ausente">
+        <rect class="st entry" x="72" y="728" width="168" height="32" rx="16"/>
+
+        <text class="st-t" x="156" y="744" text-anchor="middle" dominant-baseline="central">Sem override neste arquivo</text>
+      </g>
+<g data-state-id="gravado_neste_arquivo">
+        <rect class="st term" x="532" y="728" width="168" height="32" rx="16"/>
+        <rect class="st term" x="535" y="731" width="162" height="26" rx="13" fill="none"/>
+        <text class="st-t" x="616" y="744" text-anchor="middle" dominant-baseline="central">Define gravado neste .cho</text>
+      </g>
+      <polygon class="edge-head" points="532,744 524,740.4 524,747.6"/>
+<polygon class="edge-head" points="168,728 174.31364149801976,721.9091929077927 167.6286093236459,719.2351800380432"/>
+      <g data-transition-id="T_grava" data-from="ausente" data-to="gravado_neste_arquivo"><rect class="edge-cap" x="227" y="672" width="318" height="46" rx="6"/><text class="edge-title" x="235" y="685" dominant-baseline="central">Edit grava {define} neste arquivo</text><rect class="fx-pill" x="235" y="696" width="40" height="14" rx="7"/><text class="fx-pill-t" x="255" y="703" text-anchor="middle" dominant-baseline="central">Grava</text><text class="fx" x="281" y="703" dominant-baseline="central" data-effect-kind="write" data-effect-target="arquivo">Escreve define no .cho; BD do pacote intacto</text></g>
+<g data-transition-id="T_nao_grava" data-from="ausente" data-to="ausente"><rect class="edge-cap" x="81" y="656" width="150" height="26" rx="6"/><text class="edge-title" x="89" y="669" dominant-baseline="central">Edit fecha sem gravar</text></g>
+    </g>
+    </g>
+  </svg></div>
+    </section>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+var MIN=0.3,MAX=2.8,PREFIX="as-flow-zoom:";
+var PDF_DIAGRAM_STYLE="svg{--bg-sunken:#e8edf4;--bg-canvas:#f4f6fa;--bg-surface:#ffffff;--bg-elevated:#eef2f7;--border-subtle:#e8edf3;--border-default:#d5dce6;--fg-default:#12161d;--fg-muted:#4a5565;--fg-subtle:#6b7585;--fg-faint:#98a1ad;--status-success:#4cc28e;--status-warning:#e0a44a;--status-error:#ff5c5c;--status-info:#5fb1ff;--status-success-line:#9bd1c1;--status-warning-line:#dac4a4;--status-error-line:#e99fa4;--status-info-line:#a3caf0;--font-sans:\"Inter\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;--font-mono:\"JetBrains Mono\", ui-monospace, \"SF Mono\", \"Menlo\", \"Consolas\", monospace}svg.diagram{display:block;max-width:none;font-family:var(--font-sans);shape-rendering:geometricPrecision;text-rendering:geometricPrecision}\nsvg.diagram text{fill:var(--fg-default)}\n.actor-box{fill:var(--bg-elevated);stroke:var(--border-default);stroke-width:1}\n.actor-label{fill:var(--fg-default);font-size:11px;font-weight:600}\n.actor-stick-bg{fill:var(--bg-surface)}\n.actor-stick-rule{stroke:var(--border-default);stroke-width:1}\n.lifeline{stroke:var(--fg-faint);stroke-width:1;stroke-dasharray:3 5;pointer-events:none}\n.life-hit{stroke:transparent;stroke-width:20;fill:none}\n.arrow{stroke:var(--fg-muted);stroke-width:1.25;fill:none}\n.arrow.async{stroke-dasharray:5 4}\n.arrow-head{fill:var(--fg-muted)}\n.msg{fill:var(--fg-default);font-size:12px}\n.xor-wash{fill:color-mix(in srgb,var(--bg-elevated) 18%,transparent);stroke:none}\n.xor-rail{stroke:var(--status-warning-line);stroke-width:2;fill:none}\n.xor-q{fill:var(--status-warning);font-size:12px;font-weight:600}\n.hair{stroke:var(--border-subtle);stroke-width:1}\n.pill{fill:var(--bg-sunken);stroke:var(--status-warning-line);stroke-width:1}\n.pill-t{fill:var(--status-warning);font-size:11px;font-weight:600}\n.loop-arc{fill:none;stroke:var(--status-warning);stroke-width:1.25;stroke-dasharray:4 3}\n.loop-head{fill:var(--status-warning)}\n.act{fill:var(--bg-elevated);stroke:var(--border-default);stroke-width:1.25}\n.act-t{fill:var(--fg-default);font-size:12px;font-weight:500}\n.who{fill:var(--fg-subtle);font-size:10px;font-family:var(--font-mono)}\n.diamond{fill:color-mix(in srgb,var(--status-warning) 10%,var(--bg-surface));stroke:var(--status-warning-line);stroke-width:1.25}\n.xor-t{fill:var(--fg-default);font-size:12px;font-weight:600}\n.bar{fill:var(--fg-muted)}\n.evt{fill:var(--bg-canvas);stroke:var(--status-error-line);stroke-width:1.5}\n.sub-mark{fill:none;stroke:var(--border-default);stroke-width:1}\n.edge{stroke:var(--fg-faint);stroke-width:1.15;fill:none}\n.edge.back{stroke:var(--status-warning);stroke-dasharray:4 3}\n.edge-head{fill:var(--fg-muted)}\n.edge-head.back{fill:var(--status-warning)}\n.edge-t{fill:var(--fg-muted);font-size:11px}\n.end-ok{fill:var(--status-success);stroke:var(--status-success);stroke-width:1.5}\n.end-bad{fill:var(--status-error);stroke:var(--status-error);stroke-width:1.5}\n.end-t{fill:var(--fg-muted);font-size:11px}\n.end-hole{fill:var(--bg-canvas)}\n.st{fill:var(--bg-sunken);stroke:var(--border-default);stroke-width:1.15}\n.st.entry{stroke:var(--status-info);stroke-width:1.75}\n.st.term{stroke:var(--status-success);stroke-width:1.75}\n.st-t{fill:var(--fg-default);font-size:12px;font-weight:500}\n.mach-title{fill:var(--fg-muted);font-size:12px;font-weight:600}\n.mach-legend{fill:var(--fg-subtle);font-size:10px}\n.edge-cap{fill:var(--bg-surface);stroke:var(--border-default);stroke-width:1}\n.edge-title{fill:var(--fg-default);font-size:11px;font-weight:600}\n.fx{fill:var(--fg-subtle);font-size:10px;font-family:var(--font-sans)}\n.fx-pill{fill:var(--bg-sunken);stroke:var(--border-default);stroke-width:1}\n.fx-pill-t{fill:var(--fg-muted);font-size:9px;font-weight:600}\n.xor-wash{fill:rgba(238,242,247,0.18);stroke:none}\n.diamond{fill:#fcf6ed;stroke:var(--status-warning-line);stroke-width:1.25}\n";
+var slug=document.documentElement.getAttribute("data-fl-slug")||"default";
+var key=PREFIX+slug;
+var viewport=document.getElementById("fl-viewport");
+var sizer=document.getElementById("fl-sizer");
+var stage=document.getElementById("fl-stage");
+var lab=document.getElementById("z-lab");
+var scale=1;
+function readZoom(){
+  try{
+    var n=parseFloat(localStorage.getItem(key));
+    if(Number.isFinite(n)) return Math.min(MAX,Math.max(MIN,n));
+  }catch(e){}
+  return 1;
+}
+function saveZoom(){try{localStorage.setItem(key,String(scale))}catch(e){}}
+function visiblePanel(){return document.querySelector(".fl-surface:not([hidden])")}
+function visibleSvg(){
+  var p=visiblePanel();
+  return p?p.querySelector("svg"):null;
+}
+function svgNative(svg){
+  if(!svg) return {w:0,h:0};
+  if(!svg.dataset.nw){
+    var vb=svg.viewBox&&svg.viewBox.baseVal;
+    svg.dataset.nw=String((vb&&vb.width)||0);
+    svg.dataset.nh=String((vb&&vb.height)||0);
+  }
+  return {w:+svg.dataset.nw,h:+svg.dataset.nh};
+}
+function applySvgScale(){
+  var svg=visibleSvg();
+  if(!svg) return;
+  var n=svgNative(svg);
+  svg.setAttribute("width",String(n.w*scale));
+  svg.setAttribute("height",String(n.h*scale));
+}
+function applyStageGeometry(){
+  applySvgScale();
+  var sheet=document.querySelector(".fl-surface:not([hidden]) .sheet");
+  if(!sheet||!viewport||!sizer||!stage) return null;
+  var w=sheet.offsetWidth,h=sheet.offsetHeight,pad=40;
+  var contentW=w+pad*2,contentH=h+pad*2;
+  sizer.style.width=Math.max(viewport.clientWidth,Math.ceil(contentW))+"px";
+  sizer.style.height=Math.max(viewport.clientHeight,Math.ceil(contentH))+"px";
+  var sizerW=Math.max(viewport.clientWidth,Math.ceil(contentW));
+  stage.style.left=Math.max(0,(sizerW-contentW)/2)+"px";
+  stage.style.top="0px";
+  if(lab) lab.textContent=Math.round(scale*100)+"%";
+  return {contentW:contentW};
+}
+function setScale(next){
+  scale=Math.min(MAX,Math.max(MIN,next));
+  applyStageGeometry();
+  saveZoom();
+}
+function selectTab(name){
+  var tabs=document.querySelectorAll('[role="tab"][data-tab]');
+  var i=0;
+  for(;i<tabs.length;i++){
+    var t=tabs[i];
+    var on=t.getAttribute("data-tab")===name;
+    t.setAttribute("aria-selected",on?"true":"false");
+    var panel=document.getElementById(t.getAttribute("aria-controls"));
+    if(!panel) continue;
+    if(on) panel.removeAttribute("hidden");
+    else panel.setAttribute("hidden","");
+  }
+  applyStageGeometry();
+}
+var toc=document.querySelector(".fl-toc");
+if(toc) toc.addEventListener("click",function(e){
+  var t=e.target.closest("[data-tab]");
+  if(!t||t.hidden) return;
+  selectTab(t.getAttribute("data-tab"));
+});
+function pdfFilename(slug){
+  var s=String(slug||"").trim().replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/^-+|-+$/g,"");
+  return s?s+"-fluxo.pdf":"fluxo.pdf";
+}
+function enc(s){return new TextEncoder().encode(s)}
+function concat(chunks){
+  var n=0,i=0;
+  for(;i<chunks.length;i++) n+=chunks[i].length;
+  var out=new Uint8Array(n),o=0;
+  for(i=0;i<chunks.length;i++){out.set(chunks[i],o);o+=chunks[i].length}
+  return out;
+}
+function buildFlowPdf(input){
+  var list=Array.isArray(input&&input.pages)?input.pages:[];
+  if(!list.length) throw new Error("buildFlowPdf: pages required");
+  var header=enc("%PDF-1.4\n%\x80\x80\x80\x80\n");
+  var bodyParts=[],offsets=[0],pos=header.length;
+  function pushObj(num,payload){
+    var start=enc(num+" 0 obj\n"),end=enc("\nendobj\n");
+    offsets[num]=pos;
+    var chunk=concat([start,payload,end]);
+    bodyParts.push(chunk);
+    pos+=chunk.length;
+  }
+  var n=list.length,kids=list.map(function(_,i){return (3+i*3)+" 0 R"}).join(" ");
+  pushObj(1,enc("<< /Type /Catalog /Pages 2 0 R >>"));
+  pushObj(2,enc("<< /Type /Pages /Kids [ "+kids+" ] /Count "+n+" >>"));
+  list.forEach(function(p,i){
+    var pageNo=3+i*3,contentNo=pageNo+1,imageNo=pageNo+2;
+    var ptW=Number(p.ptWidth)||Number(p.width)||595;
+    var ptH=Number(p.ptHeight)||Number(p.height)||842;
+    var raw=p.jpeg;
+    var jpeg=raw instanceof Uint8Array?raw:new Uint8Array(raw);
+    var pxW=Math.max(1,Number(p.width)||1),pxH=Math.max(1,Number(p.height)||1);
+    var content="q "+ptW+" 0 0 "+ptH+" 0 0 cm /Im0 Do Q";
+    pushObj(pageNo,enc("<< /Type /Page /Parent 2 0 R /MediaBox [ 0 0 "+ptW+" "+ptH+" ] /Resources << /XObject << /Im0 "+imageNo+" 0 R >> >> /Contents "+contentNo+" 0 R >>"));
+    pushObj(contentNo,enc("<< /Length "+content.length+" >>\nstream\n"+content+"\nendstream"));
+    pushObj(imageNo,concat([enc("<< /Type /XObject /Subtype /Image /Width "+pxW+" /Height "+pxH+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+jpeg.length+" >>\nstream\n"),jpeg,enc("\nendstream")]));
+  });
+  var xrefStart=pos,maxObj=2+n*3,xref="xref\n0 "+(maxObj+1)+"\n0000000000 65535 f \n",i;
+  for(i=1;i<=maxObj;i++) xref+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+  return concat([header].concat(bodyParts).concat([enc(xref),enc("trailer\n<< /Size "+(maxObj+1)+" /Root 1 0 R >>\nstartxref\n"+xrefStart+"\n%%EOF\n")]));
+}
+function svgForPdf(svg){
+  var clone=svg.cloneNode(true);
+  clone.removeAttribute("id");
+  var style=document.createElementNS("http://www.w3.org/2000/svg","style");
+  style.setAttribute("data-fl-pdf","1");
+  style.textContent=PDF_DIAGRAM_STYLE;
+  clone.insertBefore(style,clone.firstChild);
+  return clone;
+}
+function svgToJpeg(svg){
+  return new Promise(function(resolve,reject){
+    var vb=svg.viewBox&&svg.viewBox.baseVal;
+    var w=(vb&&vb.width)||svg.width.baseVal.value||1;
+    var h=(vb&&vb.height)||svg.height.baseVal.value||1;
+    var xml=new XMLSerializer().serializeToString(svgForPdf(svg));
+    if(xml.indexOf('xmlns="http://www.w3.org/2000/svg"')<0){
+      xml=xml.replace(/^<svg/,'<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    var blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"});
+    var url=URL.createObjectURL(blob);
+    var img=new Image();
+    img.onload=function(){
+      URL.revokeObjectURL(url);
+      var canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(w*2));
+      canvas.height=Math.max(1,Math.round(h*2));
+      var ctx=canvas.getContext("2d");
+      ctx.fillStyle="#ffffff";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      canvas.toBlob(function(b){
+        if(!b){reject(new Error("jpeg"));return}
+        b.arrayBuffer().then(function(buf){
+          resolve({jpeg:new Uint8Array(buf),width:canvas.width,height:canvas.height,ptWidth:539,ptHeight:539*(canvas.height/canvas.width)});
+        }).catch(reject);
+      },"image/jpeg",0.92);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);reject(new Error("svg"))};
+    img.src=url;
+  });
+}
+async function downloadPdf(btn){
+  if(btn.disabled) return;
+  btn.disabled=true;
+  var prev=btn.textContent;
+  btn.textContent="PDF…";
+  try{
+    var ids=["seq-svg","bpm-svg","mach-svg"],pages=[],i;
+    for(i=0;i<ids.length;i++){
+      var svg=document.getElementById(ids[i]);
+      if(svg) pages.push(await svgToJpeg(svg));
+    }
+    if(!pages.length) throw new Error("Nenhum diagrama para exportar");
+    var bytes=buildFlowPdf({pages:pages});
+    var url=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+    var name=btn.getAttribute("data-pdf-name")||pdfFilename(document.documentElement.getAttribute("data-fl-slug")||"");
+    var a=document.createElement("a");
+    a.href=url;a.download=name;a.click();
+    setTimeout(function(){URL.revokeObjectURL(url)},60000);
+  }catch(err){
+    var hint=document.getElementById("fl-hint");
+    if(hint) hint.appendChild(document.createTextNode(" "+((err&&err.message)||"Falha ao gerar PDF")));
+  }finally{
+    btn.disabled=false;
+    btn.textContent=prev||"PDF";
+  }
+}
+var bar=document.querySelector(".fl-toolbar");
+if(bar) bar.addEventListener("click",function(e){
+  var pdf=e.target.closest("[data-action=pdf]");
+  if(pdf){downloadPdf(pdf);return}
+  var b=e.target.closest("[data-zoom]");
+  if(!b) return;
+  var a=b.getAttribute("data-zoom");
+  if(a==="in") setScale(scale+0.1);
+  else if(a==="out") setScale(scale-0.1);
+  else if(a==="height"||a==="width"){
+    var n=svgNative(visibleSvg());
+    if(!n.w||!n.h||!viewport) return;
+    var fitX=(viewport.clientWidth-24)/(n.w+80);
+    var fitY=(viewport.clientHeight-24)/(n.h+80);
+    setScale(a==="height"?fitY:fitX);
+  } else {
+    setScale(1);
+  }
+});
+if(viewport){
+  var panning=false,px=0,py=0,sx=0,sy=0;
+  viewport.addEventListener("pointerdown",function(e){
+    if(e.button!==0) return;
+    panning=true;px=e.clientX;py=e.clientY;sx=viewport.scrollLeft;sy=viewport.scrollTop;
+    viewport.classList.add("is-panning");
+    viewport.setPointerCapture(e.pointerId);
+  });
+  viewport.addEventListener("pointermove",function(e){
+    if(!panning) return;
+    viewport.scrollLeft=sx-(e.clientX-px);
+    viewport.scrollTop=sy-(e.clientY-py);
+  });
+  function endPan(){panning=false;viewport.classList.remove("is-panning")}
+  viewport.addEventListener("pointerup",endPan);
+  viewport.addEventListener("pointercancel",endPan);
+  viewport.addEventListener("wheel",function(e){
+    if(!e.ctrlKey) return;
+    e.preventDefault();
+    setScale(scale+(e.deltaY<0?0.1:-0.1));
+  },{passive:false});
+}
+scale=readZoom();
+applyStageGeometry();
+window.addEventListener("resize",applyStageGeometry);
+})();
+</script>
+</body>
+</html>

@@ -2,23 +2,11 @@
 
 | Date | Topic | Skill | Provider | Verdict | Counts (final) | Framing Δ |
 |------|-------|-------|----------|---------|----------------|-----------|
-| 2026-09-23 12:23 | [versoes-cifra-f0](2026-09-23-1223-versoes-cifra-f0-codex.md) | code | codex | needs_changes | 0B/1C/2M/0m/0n | 0d/3=/0+ |
-| 2026-09-23 19:29 | [versoes-cifra-f0-product](2026-09-23-versoes-cifra-f0-product-both.md) | code | codex | needs_changes | 0B/0C/2M/0m/0n | 0d/2=/0+ |
-| 2026-09-24 07:28 | [versoes-cifra-f0-fix8](2026-09-24-versoes-cifra-f0-fix8-both.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 0d/3=/0+ |
-| 2026-09-24 07:48 | [versoes-cifra-f0-fix9](2026-09-24-versoes-cifra-f0-fix9-both.md) | code | codex | needs_changes | 0B/0C/2M/0m/0n | 0d/1=/1+ |
-| 2026-09-24 08:14 | [versoes-cifra-f0-fix10](2026-09-24-versoes-cifra-f0-fix10-both.md) | code | codex | needs_changes | 0B/0C/2M/0m/0n | 0d/1=/1+ |
-| 2026-09-24 08:40 | [versoes-cifra-f0-fix11](2026-09-24-versoes-cifra-f0-fix11-both.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 0d/2=/1+ |
-| 2026-09-24 12:20 | [versoes-cifra-f0-fix12](2026-09-24-versoes-cifra-f0-fix12-both.md) | code | codex | needs_changes | 0B/0C/2M/1m/0n | 0d/3=/0+ |
-| 2026-09-24 13:10 | [versoes-cifra-f0-fix13](2026-09-24-versoes-cifra-f0-fix13-both.md) | code | codex | needs_changes | 0B/0C/4M/0m/0n | 0d/4=/0+ |
-| 2026-09-24 13:50 | [versoes-cifra-f0-fix14](2026-09-24-versoes-cifra-f0-fix14-both.md) | code | codex | needs_changes | 0B/0C/4M/0m/0n | 0d/3=/1+ |
-| 2026-09-24 18:30 | [versoes-cifra-f0-blocks](2026-09-24-versoes-cifra-f0-blocks-both.md) | code | codex | needs_changes | 0B/0C/5M/0m/0n | 0d/4=/1+ |
-| 2026-09-24 23:40 | [versoes-cifra-f0-fix21](2026-09-24-2340-versoes-cifra-f0-fix21-both.md) | code | codex | needs_changes | 0B/0C/3M/1m/0n | 1d/2=/2+ |
-| 2026-09-24 21:40 | [versoes-cifra-f0-fix22](2026-09-24-fix22-both.md) | code | codex | needs_changes | 0B/0C/3M/1m/0n | 0d/4=/0+ |
-| 2026-09-24 22:10 | [versoes-cifra-f0-fix23](2026-09-24-fix23-both.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 0d/3=/0+ |
-| 2026-09-24 22:30 | [versoes-cifra-f0-fix24](2026-09-24-fix24-both.md) | code | codex | needs_changes | 0B/0C/2M/1m/0n | 0d/2=/1+ |
-| 2026-09-24 22:50 | [versoes-cifra-f0-fix25](2026-09-24-fix25-both.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
-| 2026-09-24 23:20 | [versoes-cifra-f0-fix27](2026-09-24-fix27-both.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
-| 2026-09-24 23:40 | [versoes-cifra-f0-fix28](2026-09-24-fix28-both.md) | code | codex | approve | 0B/0C/0M/0m/0n | 0d/0=/0+ |
-| 2026-09-25 13:40 | [versoes-cifra-f1](2026-09-25-1340-versoes-cifra-f1-both.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 1d/3=/0+ |
-| 2026-09-25 14:05 | [versoes-cifra-f1-fix](2026-09-25-1405-versoes-cifra-f1-fix-both.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 0d/3=/0+ |
-| 2026-09-25 14:25 | [versoes-cifra-f1-fix30](2026-09-25-1425-versoes-cifra-f1-fix30-both.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 0d/3=/0+ |
+| 2026-09-23 11:05 | [diagramas-cifra-f2-chord-identity-codex](2026-09-23-1105-diagramas-cifra-f2-chord-identity-codex.md) | code | codex | needs_changes | 0B/0C/2M/0m/0n | 0d/2=/0+ |
+| 2026-09-23 11:15 | [diagramas-cifra-f2-piano-tie-codex](2026-09-23-1115-diagramas-cifra-f2-piano-tie-codex.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
+| 2026-09-23 11:22 | [diagramas-cifra-f2-slash-bass-codex](2026-09-23-1122-diagramas-cifra-f2-slash-bass-codex.md) | code | codex | approve | 0B/0C/0M/0m/0n | 0d/0=/0+ |
+| 2026-09-23 18:28 | [diagramas-cifra-f2-piano-transpose-codex](2026-09-23-1828-diagramas-cifra-f2-piano-transpose-codex.md) | code | codex | needs_changes | 0B/0C/2M/0m/0n | 0d/2=/0+ |
+| 2026-09-23 19:06 | [diagramas-cifra-f2-transpose-reading-codex](2026-09-23-1906-diagramas-cifra-f2-transpose-reading-codex.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
+| 2026-09-23 19:53 | [diagramas-cifra-f2-roundtrip-throw-codex](2026-09-23-1953-diagramas-cifra-f2-roundtrip-throw-codex.md) | code | codex | needs_changes | 0B/0C/1M/0m/0n | 0d/1=/0+ |
+| 2026-09-24 07:13 | [diagramas-cifra-f2-midi-marker-codex](2026-09-24-0713-diagramas-cifra-f2-midi-marker-codex.md) | code | codex | needs_changes | 0B/0C/1M/1m/0n | 0d/2=/0+ |
+| 2026-09-24 11:33 | [diagramas-cifra-f2-fix9-codex](2026-09-24-1133-diagramas-cifra-f2-fix9-codex.md) | code | codex | needs_changes | 0B/0C/3M/0m/0n | 0d/3=/0+ |
