@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Revisão por versão:** a fila desenha a cifra do pedido, com a linha nova marcada e a linha apagada riscada. Cifra única sai com `chartId: default`. O pedido continua na Padrão quando o arquivo ganha outra versão, e na que sobrou quando volta a uma só (`{x_chart_id:}`). Versão apagada não aceita. Rascunho sujo da mesma versão espera o save. No editor «Só para mim» o menu só troca de versão.
 - **Variações no demo:** Verdadeira alegria (Padrão e Muralhas), Poder do Amor (Original e Hinário) e Jesus, Tu És a minha vida (sobe o tom / não sobe) abrem num só item. O chip **Cifra** troca o arranjo.
 - **Código fonte:** no editor, Código fonte ocupa a tela com o arquivo da música e um botão Copiar.
 - **Abrir primeiro:** no editor, o botão marca qual cifra abre com a música. Se ela já abre, o botão fica marcado e avisa. Não troca a cifra que está na tela.

@@ -25,6 +25,10 @@ const props = withDefaults(
     theme?: 'light' | 'dark'
     /** Source line → id of the personal adjustment that produced it. */
     mineLines?: Map<number, string> | null
+    /** Review: source line → op that wrote the line that stays. */
+    reviewLines?: Map<number, string> | null
+    /** Review: source line → op that removes the line when the request is accepted. */
+    struckLines?: Map<number, string> | null
     /** The block editor, when this surface is being written on (E1/E2). */
     edit?: BlockEditApi | null
     pillLane?: string
@@ -37,6 +41,8 @@ const props = withDefaults(
     autoInvertScores: true,
     theme: 'dark',
     mineLines: null,
+    reviewLines: null,
+    struckLines: null,
     edit: null,
     pillLane: '29px',
     pillH: '23px',
@@ -418,6 +424,13 @@ watch(
                 v-for="(row, ri) in block.rows"
                 :key="ri"
                 class="cpv-row cpv-reading-row"
+                :class="{
+                  'is-review': !!(reviewLines && reviewLines.get(row.li)),
+                  'is-struck': !!(struckLines && struckLines.get(row.li)),
+                }"
+                :data-review-li="reviewLines || struckLines ? row.li : undefined"
+                :data-review-op="(reviewLines && reviewLines.get(row.li)) || (struckLines && struckLines.get(row.li)) || undefined"
+                :data-review-struck="struckLines && struckLines.get(row.li) ? '' : undefined"
                 :style="{ padding: `${rowPad} 0` }"
               >
                 <!-- A line the reader changed carries their mark, and the mark is

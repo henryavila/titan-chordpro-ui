@@ -314,11 +314,12 @@ export function splitCho(source: string): SplitCho {
   // one chart, the whole text. A title before an unclosed start is that case.
   // Fence-only files stay an envelope below, even when an end fence is missing.
   if (!completed && (outside || charts.length === 0)) {
+    const ident = plainChartIdentity(raws)
     return {
       hasEnvelope: false,
       header: text,
-      charts: [{ id: 'default', label: null, inner: text, startLi: 0, endLi: raws.length }],
-      defaultId: 'default',
+      charts: [{ id: ident.id, label: ident.label, inner: text, startLi: 0, endLi: raws.length }],
+      defaultId: ident.id,
       raws,
     }
   }
@@ -454,6 +455,35 @@ export function writeMetaOneHeader(
     return (meta[k] ?? '').trim()
   }).map((k) => '{' + k + ':' + (meta[k] ?? '').trim() + '}')
   return [head.join('\n'), body.join('\n').replace(/^\n+/, '')].filter(Boolean).join('\n')
+}
+
+/**
+ * A one-chart file remembers the id it had inside an envelope.
+ * `{x_chart_id:}` is not a fence: the file stays implicit, and the chip stays hidden.
+ * The same directive inside tab or score is notation.
+ */
+/** Drop `{x_chart_id:}` that sits outside tab and score. A copy inside notation stays. */
+function stripOutsideChartId(text: string): string {
+  const raws = text ? text.split('\n') : []
+  const inside = notationInside(raws)
+  return raws
+    .filter((line, i) => inside[i] || dirOf(line)?.name !== 'x_chart_id')
+    .join('\n')
+    .replace(/^\n+/, '')
+}
+
+function plainChartIdentity(raws: string[]): { id: string; label: string | null } {
+  const inside = notationInside(raws)
+  let id = 'default'
+  let label: string | null = null
+  for (let i = 0; i < raws.length; i++) {
+    if (inside[i]) continue
+    const d = dirOf(raws[i] ?? '')
+    if (!d) continue
+    if (d.name === 'x_chart_id' && id === 'default' && isChartId(d.value)) id = d.value
+    if (d.name === 'x_chart_label' && label === null && d.value) label = d.value
+  }
+  return { id, label }
 }
 
 /** Implicit chart id when the file has no `{start_of_x_chart}`. */
@@ -1363,7 +1393,9 @@ export function replaceChart(file: string, chartId: string, doc: string): string
   const document = String(doc ?? '').replace(/\r\n?/g, '\n')
   const split = splitCho(src)
   if (!split.hasEnvelope) {
-    if (!isImplicitChartId(chartId)) return src
+    const implicit = split.charts[0]?.id ?? 'default'
+    const requested = String(chartId ?? '').trim() || 'default'
+    if (requested !== implicit) return src
     return document
   }
   const index = split.charts.findIndex((c) => c.id === chartId)
@@ -1426,10 +1458,10 @@ export function addChart(file: string, fromId: string, opts: { id: string; label
   if (split.charts.some((c) => c.id === id)) return src
   const from = split.charts.find((c) => c.id === fromId)
   if (!from) return src
-  const copy = withChartLabel(stripDefaultMarkers(from.inner), label)
+  const copy = withChartLabel(stripDefaultMarkers(stripOutsideChartId(from.inner)), label)
   const block = renderChartBlock(id, copy)
   if (!split.hasEnvelope) {
-    let inner = withChartLabel(from.inner, 'Padrão')
+    let inner = withChartLabel(stripOutsideChartId(from.inner), 'Padrão')
     if (!/\{\s*x_chart_default\s*:/i.test(inner)) inner = `{x_chart_default:${from.id}}\n${inner}`
     return `${renderChartBlock(from.id, inner)}\n\n${block}\n`
   }
@@ -1463,7 +1495,10 @@ export function deleteChart(file: string, chartId: string): string {
   if (index < 0) return src
   if (split.charts.length <= 2) {
     const keep = split.charts[index === 0 ? 1 : 0] ?? split.charts[0]
-    return keep ? keep.inner.replace(/^\n+/, '') : src
+    if (!keep) return src
+    let inner = stripOutsideChartId(keep.inner.replace(/^\n+/, ''))
+    if (keep.id !== 'default') inner = `{x_chart_id:${keep.id}}\n${inner}`
+    return inner
   }
   const chart = split.charts[index]!
   const from = chart.startLi

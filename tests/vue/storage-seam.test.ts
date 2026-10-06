@@ -269,12 +269,15 @@ const DEFAULT_BLOCK = [
   '{end_of_x_chart}',
 ].join('\n')
 
-it('does not adopt a legacy overlay or a chart-less suggestion into a block named default', async () => {
+it('keeps a legacy overlay off an envelope and reviews a chart-less suggestion on the default block', async () => {
   const store = hostStore()
   const songId = 'bloco'
   const legacy = `${STORE_KEYS.overlayPrefix}${songId}`
-  const changed = DEFAULT_BLOCK.replace('[G]linha do bloco', '[G]linha do bloco (legado)')
-  const ops = diffOps(DEFAULT_BLOCK, changed, { transpose: 0, capo: 0 })
+  const body = parse(DEFAULT_BLOCK, { chartId: 'default' }).source
+  const ops = diffOps(body, body.replace('[G]linha do bloco', '[G]linha do bloco (legado)'), {
+    transpose: 0,
+    capo: 0,
+  })
   const legacyPayload = JSON.stringify({ baseVersion: 'v1', ops, at: 1 })
   store.set(legacy, legacyPayload)
   store.set(
@@ -306,15 +309,18 @@ it('does not adopt a legacy overlay or a chart-less suggestion into a block name
   await flushPromises()
   await w.get('[data-q-sug]').trigger('click')
   await flushPromises()
-  expect(w.get('[data-q-batch]').text()).toMatch(/0 encaixam/)
-  expect(w.get('[data-q-batch]').text()).toMatch(/conflito/)
+  expect(w.get('[data-q-batch]').text()).toMatch(/1 encaixam/)
+  expect(w.get('[data-q-chart]').text()).toContain('linha do bloco (legado)')
+  expect(w.get('[data-cpv-scroll]').text()).not.toContain('(legado)')
 
   await w.get('[data-q-accept]').trigger('click')
   await flushPromises()
   const list = JSON.parse(store.get(STORE_KEYS.suggestions) ?? '[]')
-  expect(list[0].ops).toHaveLength(ops.length)
-  expect(list[0].resolvedOps).toHaveLength(0)
-  expect(w.emitted('save-content')).toBeUndefined()
+  expect(list[0].ops).toHaveLength(0)
+  expect(list[0].resolvedOps).toHaveLength(ops.length)
+  const saved = String(w.emitted('save-content')?.at(-1)?.[0] ?? '')
+  expect(saved).toContain('linha do bloco (legado)')
+  expect(saved).toContain('{start_of_x_chart:default}')
   expect(store.get(legacy)).toBe(legacyPayload)
   expect(store.get(overlayKey(songId, 'default'))).toBeNull()
   w.unmount()

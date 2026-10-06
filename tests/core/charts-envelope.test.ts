@@ -18,6 +18,7 @@ import {
   deleteBlock,
   inferWrittenKey,
   layoutChart,
+  hasChartEnvelope,
   listCharts,
   lintSource,
   parse,
@@ -2196,9 +2197,75 @@ describe('add rename delete default chart', () => {
     const out = deleteChart(TWO_CHART_SOURCE, 'oferta')
     expect(out).not.toMatch(/start_of_x_chart/)
     expect(out).not.toMatch(/end_of_x_chart/)
-    expect(listCharts(out)).toEqual([{ id: 'default', label: 'default', isDefault: true }])
+    expect(hasChartEnvelope(out)).toBe(false)
+    expect(out).toContain('{x_chart_id:completa}')
+    expect(listCharts(out)).toEqual([{ id: 'completa', label: 'Completa', isDefault: true }])
     expect(out).toContain('corpo da completa')
     expect(out).not.toContain('corpo da oferta')
+    const next = replaceChart(out, 'completa', out.replace('corpo da completa', 'corpo novo'))
+    expect(next).toContain('corpo novo')
+    expect(listCharts(next)[0]?.id).toBe('completa')
+    expect(replaceChart(out, 'default', '{title:Nope}')).toBe(out)
+    expect(replaceChart(out, 'oferta', '{title:Nope}')).toBe(out)
+  })
+
+  it('keeps the survivor id when a tab line looks like x_chart_id', () => {
+    const src = [
+      '{start_of_x_chart:completa}',
+      '{title:Uma}',
+      '{x_chart_label:Completa}',
+      '{sot}',
+      '{x_chart_id:fantasma}',
+      '{eot}',
+      '[G]corpo',
+      '{end_of_x_chart}',
+      '',
+      '{start_of_x_chart:oferta}',
+      '{title:Uma}',
+      '[C]outra',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const out = deleteChart(src, 'oferta')
+    expect(listCharts(out)[0]?.id).toBe('completa')
+    expect(out.startsWith('{x_chart_id:completa}')).toBe(true)
+    expect(out).toContain('{x_chart_id:fantasma}')
+  })
+
+  it('does not let a copied x_chart_id rename the version that remains', () => {
+    const collapsed = deleteChart(TWO_CHART_SOURCE, 'oferta')
+    const again = addChart(collapsed, 'completa', { id: 'oferta', label: 'Oferta' })
+    const back = deleteChart(again, 'completa')
+    expect(listCharts(back)[0]?.id).toBe('oferta')
+    expect(back).toContain('{x_chart_id:oferta}')
+    expect(back).not.toContain('{x_chart_id:completa}')
+  })
+
+  it('drops a stray x_chart_id when the survivor is the implicit chart', () => {
+    const src = [
+      '{start_of_x_chart:default}',
+      '{x_chart_id:foo}',
+      '{title:Uma}',
+      '[C]letra',
+      '{end_of_x_chart}',
+      '',
+      '{start_of_x_chart:oferta}',
+      '{title:Uma}',
+      '[C]outra',
+      '{end_of_x_chart}',
+    ].join('\n')
+    const out = deleteChart(src, 'oferta')
+    expect(listCharts(out)[0]?.id).toBe('default')
+    expect(out).not.toContain('x_chart_id')
+  })
+
+  it('deleteChart back to the implicit chart drops the envelope id', () => {
+    const wrapped = addChart('{title:Uma}\n[C]letra\n', 'default', { id: 'oferta', label: 'Oferta' })
+    const out = deleteChart(wrapped, 'oferta')
+    expect(hasChartEnvelope(out)).toBe(false)
+    expect(out).not.toContain('x_chart_id')
+    expect(listCharts(out)[0]?.id).toBe('default')
+    expect(out).toContain('[C]letra')
+    expect(replaceChart(out, 'default', out.replace('letra', 'letra nova'))).toContain('letra nova')
   })
 
   it('setDefaultChart writes x_chart_default on that chart', () => {

@@ -106,6 +106,7 @@ export {
   applyOps,
   checkUpdate,
   diffOps,
+  reviewProjection,
   hasRun,
   hashText,
   isTuneOp,
@@ -120,6 +121,7 @@ export {
 } from './overlay'
 export type {
   ApplyResult,
+  ReviewProjection,
   Hunk,
   Overlay,
   OverlayOp,

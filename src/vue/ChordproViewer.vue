@@ -997,6 +997,7 @@ const ov = useOverlay({
   onSuggestionAccepted: (p) => emit('suggestion-accepted', p),
   onSuggestionRefused: (p) => emit('suggestion-refused', p),
   onSuggestionQueue: (q) => emit('update:suggestionQueue', q),
+  chartDirty: (id) => session.chartDirty(id),
 })
 
 const phoneSub = computed(
@@ -3735,6 +3736,7 @@ defineExpose({
       :actor-name="ov.actorName.value"
       :name-error="ov.nameNeeded.value"
       :sent-suggestions="ov.mySuggestions.value"
+      :version-labels="ov.myVersionLabels.value"
       :revert-all-label="ov.revertAllLabel.value"
       :revert-all-danger="ov.revertAllLabel.value !== 'Voltar ao original'"
       @close="ov.closeMy"
@@ -3768,6 +3770,8 @@ defineExpose({
       :official-strum="ov.qOfficialStrum.value"
       :batch-applies="ov.qBatchPreview.value?.count ?? 0"
       :batch-conflicts="ov.qBatchPreview.value?.conflicts ?? 0"
+      :phone="phone"
+      :review="ov.qReview.value"
       @back="ov.qBack"
       @close="ov.closeQueue"
       @pick-song="(k) => (ov.qSong.value = k)"

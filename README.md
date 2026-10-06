@@ -36,7 +36,7 @@ npm [`@henryavila/titan-chordpro-ui`](https://www.npmjs.com/package/@henryavila/
   - Capa do host (quadrado 256–512 px + `width`/`height`); sem capa, arte genérica 512×512
   - O host grava no `.cho` com `setRehearsalAudio` — **não** existe prop `audioUrl` — [`docs/CONSUMER.md`](docs/CONSUMER.md) §6
 - Lista: anterior / próxima, lugar guardado por música
-- **Cifras nomeadas** no mesmo arquivo — chip **Cifra** ao lado do título (`chartId`); troca de arranjo não é troca de música. **Minha versão** continua o overlay pessoal, não o arranjo
+- **Versões** no mesmo arquivo — chip com o nome da versão ao lado do título (`chartId`); trocar de versão não é trocar de música. **Minha versão** continua o overlay pessoal
 - **Swipe no ensaio:** troca de música na borda (64px no celular, 128px no tablet; esquerda depois dos 24px do Safari). O centro só rola. Sem flick, sem carimbo, sem a cifra deslizando
 - Export ChordPro, PDF e slides LouvorJA (`.slja`)
 
@@ -131,7 +131,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | Prop | Default | Papel |
 |---|---|---|
 | `source` | `''` | Arquivo ChordPro/OnSong da **música** (1 string; pode ter cifras nomeadas) |
-| `chartId` | default do arquivo | Cifra nomeada inicial; o músico troca; emit `update:chartId` |
+| `chartId` | padrão do arquivo | Versão inicial quando não há lista. No ensaio, use `songs[].chartId`. O músico troca; emit `update:chartId` |
 | `mode` | `'view'` | `view` \| `edit`; a UI também alterna sozinha (`update:mode`) |
 | `theme` | `'auto'` | `auto` \| `light` \| `dark`; o leitor pode trocar |
 | `lens` | `'none'` | `none` \| `letra` \| `nashville` — projeção de leitura; `letra` = só a letra (cantor). Persiste entre músicas do ensaio |
@@ -147,7 +147,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `suggestions` | `true` | `false` tira do leitor o botão “Sugerir alteração” |
 | `persistSuggestion` | — | `(s) => Promise<void>` — o host confirma o POST (`return` da Promise), lida na hora do envio. reject ou sem Promise = nada na fila, retry. Fila só depois do ack. `@suggestion-created` é notify depois do ack, não o save |
 | `songId` | título da cifra | Identidade da **música** (não muda ao trocar cifra). Overlay = Minha versão |
-| `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?}`). **Duas ou mais** ligam o modo |
+| `songs` | — | Lista do ensaio (`{id,title,subtitle?,key?,source?,chartId?}`). **Duas ou mais** ligam o modo. `chartId` é a versão que o programa abre |
 | `loadSong` | — | `(id, song) => Promise<string> \| string` para as músicas que a lista não trouxe |
 | `fetchChart` | — | `(url) => Promise<string>` — busca a página de um link (é o backend do host) |
 | `readPdf` | — | `(file) => Promise<string>` — lê PDF com texto; use `pdfText` de `@henryavila/titan-chordpro-ui/pdf` |
@@ -210,8 +210,9 @@ trocar de música num ensaio não pode esperar rede. Uma que não chega vira pai
 *Não carregou*, com *Tentar de novo*; as outras seguem disponíveis.
 
 Trocar de música guarda e devolve **tom, capo, velocidade e posição de rolagem**
-daquela cifra. Num arquivo com várias cifras, `chartId` na entrada do programa
-é a que abre; o chip **Cifra** troca o arranjo sem mudar de música.
+daquela música. Num arquivo com versões, `chartId` na entrada do programa é a
+que abre; o chip troca a versão sem mudar de música. A troca do músico não
+regrava o programa.
 **Cifra | Letra** (e Nashville / comentários) são do ensaio —
 prop `lens` / `hideComments` — **não** resetam ao mudar de música. No celular, um deslize
 **na borda** da cifra (trilho 64px no celular, 128px no tablet; esquerda depois dos 24px do voltar do Safari)

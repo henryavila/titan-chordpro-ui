@@ -56,12 +56,12 @@ export default defineNuxtConfig({
 
 `vue` é peer. Uma segunda cópia de Vue no bundle quebra o componente.
 
-`source` é o **arquivo** da música (uma string). Pode trazer **cifras nomeadas**
-(`{start_of_x_chart:}`). O host escolhe a música; o pacote escolhe a cifra
-(`chartId`, chip no título). `update:source` / `save-content` devolvem o
-arquivo inteiro. ChordPro, PDF e slides baixados são a cifra aberta.
-Sugestão leva `chartId`. **Minha versão** é overlay, não o
-arranjo.
+`source` é o **arquivo** da música (uma string). Várias **versões** da mesma
+música vivem nesse arquivo (`{start_of_x_chart:}`). O host escolhe a música;
+no programa, `songs[].chartId` diz qual versão abre. O músico troca no chip.
+`update:source` / `save-content` devolvem o arquivo inteiro. ChordPro, PDF e
+slides baixados são a versão aberta. Sugestão leva `chartId`. **Minha versão**
+é o overlay pessoal, não uma versão do arquivo. Detalhe em [§6](#6-ensaio-lista).
 
 ---
 
@@ -276,7 +276,7 @@ type Song = {
   subtitle?: string
   key?: string
   source?: string // se já veio, toca offline
-  chartId?: string // cifra que o programa abre; o músico troca no chip
+  chartId?: string // versão que este programa abre; ausente = a padrão do arquivo
 }
 
 async function buscarCifra(id: string): Promise<string> {
@@ -290,14 +290,89 @@ Quem já tem o ChordPro manda em `source` na entrada; o resto é pedido por
 chega vira painel *Não carregou*.
 
 Trocar de música guarda tom, capo, velocidade e posição de rolagem **daquela**
-música. Se o arquivo traz várias cifras, `chartId` na entrada é a que abre.
-O chip **Cifra**, ao lado do título, troca o arranjo sem sair da música; essa
-escolha vale até o programa mandar outro `chartId`. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
+música. **Cifra | Letra** (`lens`) e `hideComments` são escolha do ensaio —
 **não** resetam ao mudar de cifra. No celular, deslize **na borda** da cifra pinta
 um fade + chevron e só confirma ao soltar depois do limiar — o centro só rola, não
 troca de música. Trilho 64px no celular, 128px no tablet. `capabilities.debugSwipe`
 pinta as zonas (demo: `?zonas=1`). No fim da auto-rolagem o viewer
 **oferece** a próxima; nunca avança sozinho.
+
+### Versões da mesma música
+
+O consumer **não** cria uma música por versão. Oferta e Hinário da mesma música
+são um `songId` e uma string. O programa só diz qual delas abre.
+
+| Palavra na UI | O que o consumer guarda |
+|---|---|
+| Música | `songId` + uma string ChordPro |
+| Versão | Um bloco `{start_of_x_chart:id}` dentro dessa string. `id` é estável; o nome visível é `{x_chart_label:}` |
+| Padrão | `{x_chart_default:id}` — a versão que abre quando o programa não manda `chartId` |
+| Minha versão | Overlay do músico (`cpv:my:{songId}:{chartId}`). Não é uma versão do arquivo |
+
+Arquivo sem versões é o `.cho` de sempre. Na leitura não há chip. No editor,
+**Nova versão** copia a cifra aberta; a que já existia passa a se chamar
+**Padrão**. O próximo `save-content` já traz o arquivo com as duas.
+
+```cho
+{start_of_x_chart:padrao}
+{x_chart_label:Padrão}
+{x_chart_default:padrao}
+{title:Poder do Amor}
+[G]corpo padrão
+{end_of_x_chart}
+
+{start_of_x_chart:hinario}
+{x_chart_label:Hinário}
+{title:Poder do Amor}
+[D]corpo do hinário
+{end_of_x_chart}
+```
+
+No ensaio, cada item carrega o arquivo inteiro e a versão daquele culto:
+
+```ts
+const repertorio = [
+  {
+    id: 'poder-do-amor',
+    title: 'Poder do Amor',
+    source: arquivoComVersoes,
+    chartId: 'hinario',
+  },
+  {
+    id: 'nasce-em-mim',
+    title: 'Nasce em Mim',
+    source: arquivoSemVersoes,
+    // sem chartId: não há versões
+  },
+]
+```
+
+`chartId` ausente, ou um id que não está no arquivo, abre a padrão
+(`x_chart_default`, ou a primeira, ou o arquivo único). O músico troca no chip
+sem sair da música. Essa troca **não** regrava o programa: vale neste ensaio,
+até o consumer mandar outro `chartId` naquela entrada. `update:chartId` avisa
+qual ficou na tela. Só grave isso de volta em `songs[].chartId` se o produto
+quiser que a escolha do músico vire a versão do culto.
+
+Persistir versão nova, renomeada ou apagada é o save de sempre: substitua a
+string da música pelo `save-content` / `update:source`. Não salve só a versão
+visível — isso apaga as outras. ChordPro, PDF e slides baixados são a versão
+aberta; o save do site é o arquivo.
+
+Para montar o seletor do culto no admin, sem abrir o viewer:
+
+```ts
+import { listCharts } from '@henryavila/titan-chordpro-ui'
+
+const versoes = listCharts(arquivo) // { id, label, isDefault }[]
+```
+
+Uma entrada só, com `id: 'default'`, é arquivo sem versões. Sugestão do músico
+traz `chartId` da versão em que o diff foi feito — numa cifra única esse id é
+`default`. Se o arquivo ganha versões, a que já existia continua `default`
+(rótulo Padrão) e o pedido pendente segue nela. Se volta a uma cifra só, o
+arquivo perde o envelope e guarda `{x_chart_id:}` com o id que sobrou, para o
+pedido dessa versão ainda encaixar. O pedido da versão apagada não grava.
 
 ### Áudio de referência
 
@@ -605,5 +680,6 @@ Mesmo `songId` + mesmo browser: edite em `local`, sugira, abra `persisted` e rev
 - [ ] Toque na cifra ≠ tela cheia
 - [ ] Intros/solos no `.cho` com `x///` — não uma fileira de acordes sem marca ([`MARCAS-X.md`](./MARCAS-X.md))
 - [ ] Áudio de referência: `setRehearsalAudio` no `.cho` → `source` (não existe prop `audioUrl`); GET com CORS se quiser cache/seek
+- [ ] Uma música = uma string. Versões ficam no arquivo. No programa, `songs[].chartId` é a que abre. `save-content` grava o arquivo inteiro
 
 Props, emits e o resto da API: [README](../README.md).

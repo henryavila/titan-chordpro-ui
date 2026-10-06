@@ -15,6 +15,7 @@ import {
   songLegacyKey,
   parse,
   replaceChart,
+  reviewProjection,
   STORE_KEYS,
   strumReviewFromOp,
   tuneText,
@@ -96,6 +97,25 @@ export type OverlayOpts = {
     status: SuggestionStatus
   }) => void
   onSuggestionQueue?: (q: Suggestion[]) => void
+  /**
+   * Unsaved editor draft of one chart. Accept waits until that draft is
+   * saved or discarded. A sibling chart still accepts.
+   */
+  chartDirty?: (chartId: string) => boolean
+}
+
+export type QueueReview = {
+  missing: boolean
+  /** The request belongs to another song. Accept explains that; it does not write. */
+  foreign: boolean
+  dirty: boolean
+  versionLabel: string | null
+  tuneLabel: string | null
+  source: string
+  mine: Map<number, string>
+  struck: Map<number, string>
+  opLine: Record<string, number>
+  canAccept: boolean
 }
 
 export type OpCard = {
@@ -238,15 +258,21 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   /**
-   * No chartId is a pre-envelope whole-file suggestion. It applies only when
-   * this file has no envelope — not when a block happens to be named `default`.
-   * Another song's ops never apply to the chart on screen.
+   * The chart a suggestion may write. An explicit id must be in the file.
+   * A row with no id is the implicit chart: a one-chart file whose id is
+   * `default`, or the `default` block after that file grew an envelope.
+   * A collapsed file keeps its real id (`{x_chart_id:}`), so an old row
+   * without an id does not land on the surviving copy.
    */
-  function sugApplies(file: string, s: Suggestion): boolean {
-    if (s.songId !== opts.songId.value) return false
+  function sugTarget(file: string, s: Suggestion): string | null {
+    if (s.songId !== opts.songId.value) return null
     const id = String(s.chartId ?? '').trim()
-    if (!id) return plainFile(file)
-    return chartInFile(file, id)
+    if (id) return chartInFile(file, id) ? id : null
+    if (plainFile(file)) {
+      const only = listCharts(file)[0]?.id ?? 'default'
+      return only === 'default' ? 'default' : null
+    }
+    return chartInFile(file, 'default') ? 'default' : null
   }
 
   /** One queue row per chart, not per song. The separator cannot appear in a chart id. */
@@ -623,7 +649,7 @@ export function useOverlay(opts: OverlayOpts) {
     const created: Suggestion = {
       id: `s${Date.now()}`,
       songId: opts.songId.value,
-      ...(plainFile(official.value) ? {} : { chartId: chartSlot.value }),
+      chartId: chartSlot.value,
       title: opts.title.value || opts.songId.value,
       at: Date.now(),
       baseVersion: officialVersion.value,
@@ -696,12 +722,32 @@ export function useOverlay(opts: OverlayOpts) {
     else qSong.value = null
   }
 
-  /** Missing chart id is the whole file: no ` · default`. Another song is not labeled from the file on screen. */
+  /**
+   * Version name on a queue row. A one-chart file has no suffix.
+   * Another song is labeled by the stored id, and `default` stays quiet.
+   */
   function queueChartLabel(s: Suggestion): string | null {
     const id = String(s.chartId ?? '').trim()
-    if (!id) return null
-    if (s.songId !== opts.songId.value) return id
-    return chartLabelOf(id)
+    if (s.songId !== opts.songId.value) return id && id !== 'default' ? id : null
+    let charts: { id: string; label: string }[] = []
+    try {
+      charts = listCharts(official.value)
+    } catch (err) {
+      if (!(err instanceof ChartEnvelopeError)) throw err
+    }
+    const slot = id || 'default'
+    const only = charts.length < 2 ? charts[0] : undefined
+    if (only?.id === slot) return null
+    if (!charts.some((c) => c.id === slot)) return id || 'default'
+    const label = chartLabelOf(slot)
+    return label === 'default' ? null : label
+  }
+
+  function tuneChip(op: TuneOp): string | null {
+    const bits: string[] = []
+    if (op.transpose) bits.push(`Tom ${op.transpose > 0 ? '+' : ''}${op.transpose}`)
+    if (op.capo) bits.push(`capo ${op.capo}`)
+    return bits.length ? bits.join(' · ') : null
   }
 
   const qSongs = computed<QueueRow[]>(() => {
@@ -746,11 +792,10 @@ export function useOverlay(opts: OverlayOpts) {
   const qOps = computed<QueueOpCard[]>(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s) return []
-    const id = sugChartId(s)
-    const present = sugApplies(official.value, s)
-    const off = chartText(official.value, id)
+    const id = sugTarget(official.value, s)
+    const off = id ? chartText(official.value, id) : ''
     return s.ops.map((op) => {
-      const fits = present && !applyOps(off, [op]).failed.length
+      const fits = !!id && !applyOps(off, [op]).failed.length
       return {
         id: op.id,
         label: opLabel(op),
@@ -762,7 +807,11 @@ export function useOverlay(opts: OverlayOpts) {
             ? '—'
             : op.after.join(' / ').slice(0, 90),
         fits,
-        warn: fits ? '' : 'Não encaixa mais na cifra atual',
+        warn: !id
+          ? 'Esta versão não existe mais'
+          : fits
+            ? ''
+            : 'Não encaixa mais na cifra atual',
         strum: strumReviewFromOp(op),
       }
     })
@@ -782,7 +831,8 @@ export function useOverlay(opts: OverlayOpts) {
 
   const qOfficialStrum = computed(() => {
     const s = allSug().find((x) => x.id === qSug.value)
-    const text = s ? chartText(official.value, sugChartId(s)) : chartText(official.value, chartSlot.value)
+    const id = s ? sugTarget(official.value, s) : null
+    const text = id ? chartText(official.value, id) : ''
     const set = readStrumPatterns(text)
     return set.patterns
   })
@@ -790,9 +840,9 @@ export function useOverlay(opts: OverlayOpts) {
   const qBatchPreview = computed(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s?.ops.length) return null
-    const id = sugChartId(s)
+    const id = sugTarget(official.value, s)
+    if (!id) return { text: '', count: 0, conflicts: s.ops.length }
     const doc = chartText(official.value, id)
-    if (!sugApplies(official.value, s)) return { text: doc, count: 0, conflicts: s.ops.length }
     const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
     if (!applies.length) return { text: doc, count: 0, conflicts: s.ops.length }
     const r = applyOps(doc, applies)
@@ -801,6 +851,52 @@ export function useOverlay(opts: OverlayOpts) {
       count: applies.length - r.failed.length,
       conflicts: s.ops.length - (applies.length - r.failed.length),
     }
+  })
+
+  const qReview = computed<QueueReview | null>(() => {
+    const s = allSug().find((x) => x.id === qSug.value)
+    if (!s) return null
+    const id = sugTarget(official.value, s)
+    const foreign = s.songId !== opts.songId.value
+    if (!id) {
+      return {
+        missing: !foreign,
+        foreign,
+        dirty: false,
+        versionLabel: queueChartLabel(s),
+        tuneLabel: null,
+        source: '',
+        mine: new Map(),
+        struck: new Map(),
+        opLine: {},
+        canAccept: foreign,
+      }
+    }
+    const doc = chartText(official.value, id)
+    const painted = reviewProjection(doc, s.ops)
+    const tune = s.ops.find(isTuneOp)
+    const dirty = !!opts.chartDirty?.(id)
+    return {
+      missing: false,
+      foreign: false,
+      dirty,
+      versionLabel: queueChartLabel(s),
+      tuneLabel: tune ? tuneChip(tune) : null,
+      source: painted.text,
+      mine: painted.mine,
+      struck: painted.struck,
+      opLine: painted.opLine,
+      canAccept: !dirty,
+    }
+  })
+
+  const myVersionLabels = computed<Record<string, string>>(() => {
+    const out: Record<string, string> = {}
+    for (const s of mySuggestions.value) {
+      const label = queueChartLabel(s)
+      if (label) out[s.id] = label
+    }
+    return out
   })
 
   const qTitle = computed(() => {
@@ -838,21 +934,30 @@ export function useOverlay(opts: OverlayOpts) {
    * published chart is reconciled against the chart document hash; a sibling
    * overlay is left alone. Ops are archived, not deleted.
    */
+  function acceptHold(s: Suggestion): string | null {
+    if (s.songId !== opts.songId.value) return 'Abra essa música para aceitar o pedido'
+    const id = sugTarget(official.value, s)
+    if (!id) return 'Esta versão não existe mais'
+    if (opts.chartDirty?.(id)) return 'Salve ou descarte o rascunho desta versão antes de aceitar'
+    return null
+  }
+
   function acceptOp(opId: string) {
     const sugId = qSug.value
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
     if (!s) return
-    if (s.songId !== opts.songId.value) {
-      opts.toast('Abra essa música para aceitar o pedido')
+    const hold = acceptHold(s)
+    if (hold) {
+      opts.toast(hold)
       return
     }
     const op = s.ops.find((o) => o.id === opId)
     if (!op) return
-    const id = sugChartId(s)
+    const id = sugTarget(official.value, s) ?? ''
     const doc = chartText(official.value, id)
-    const r = sugApplies(official.value, s) ? applyOps(doc, [op]) : null
-    if (!r || r.failed.length) {
+    const r = applyOps(doc, [op])
+    if (r.failed.length) {
       opts.toast('Este ajuste não encaixa mais na cifra atual')
       return
     }
@@ -899,15 +1004,14 @@ export function useOverlay(opts: OverlayOpts) {
     if (!sugId) return
     const s = allSug().find((x) => x.id === sugId)
     if (!s?.ops.length) return
-    if (s.songId !== opts.songId.value) {
-      opts.toast('Abra essa música para aceitar o pedido')
+    const hold = acceptHold(s)
+    if (hold) {
+      opts.toast(hold)
       return
     }
-    const id = sugChartId(s)
+    const id = sugTarget(official.value, s) ?? ''
     const doc = chartText(official.value, id)
-    const applies = sugApplies(official.value, s)
-      ? s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
-      : []
+    const applies = s.ops.filter((op) => !applyOps(doc, [op]).failed.length)
     if (!applies.length) {
       opts.toast('Nenhum ajuste encaixa na cifra atual')
       return
@@ -920,7 +1024,11 @@ export function useOverlay(opts: OverlayOpts) {
       if (okIds.has(op.id)) next = archiveOp(next, op.id, 'accepted')
     }
     const patched = patchSug(sugId, next)
-    publishChart(full, id)
+    const wroteText = [...okIds].some((opId) => {
+      const op = s.ops.find((item) => item.id === opId)
+      return op != null && !isTuneOp(op)
+    })
+    if (wroteText) publishChart(full, id)
     opts.toast(`Aceitos ${okIds.size} ajuste${okIds.size === 1 ? '' : 's'}`)
     try {
       opts.onSuggestionAccepted?.({
@@ -928,7 +1036,7 @@ export function useOverlay(opts: OverlayOpts) {
         songId: s.songId,
         opIds: [...okIds],
         status: patched.status ?? 'accepted',
-        officialText: full,
+        officialText: wroteText ? full : official.value,
       })
     } catch {
       /* host failure */
@@ -1076,6 +1184,8 @@ export function useOverlay(opts: OverlayOpts) {
     qSugs,
     qOps,
     qBatchPreview,
+    qReview,
+    myVersionLabels,
     qTitle,
     acceptOp,
     refuseOp,

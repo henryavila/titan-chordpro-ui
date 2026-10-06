@@ -210,8 +210,22 @@ describe('add rename delete default in edit', () => {
       w.emitted('update:source')?.at(-1)?.[0] ?? (w.vm as { getSource: () => string }).getSource(),
     )
     expect(saved).not.toMatch(/start_of_x_chart/)
+    expect(saved).toContain('{x_chart_id:completa}')
     expect(saved).toContain('corpo da completa')
     expect(saved).not.toContain('corpo da oferta')
+  })
+
+  it('local edit can switch versions and cannot create one', async () => {
+    const w = await mountViewer({ editMode: 'local' })
+    await w.get('[data-edit]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-chart-option="completa"]').exists()).toBe(true)
+    expect(w.find('[data-chart-add]').exists()).toBe(false)
+    expect(w.find('[data-chart-rename]').exists()).toBe(false)
+    expect(w.find('[data-chart-delete]').exists()).toBe(false)
+    expect(w.find('[data-chart-default]').exists()).toBe(false)
   })
 
   it('switches the open cifra without leaving edit', async () => {

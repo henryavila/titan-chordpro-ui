@@ -12,6 +12,7 @@ import {
   opCtxNote,
   opLabel,
   overlaid,
+  reviewProjection,
   strumReviewFromOp,
   tuneText,
 } from '../../src/core/overlay'
@@ -273,5 +274,43 @@ describe('overlayKey', () => {
 
   it('encodes a percent so an encoded colon is not another id', () => {
     expect(overlayKey('a:b')).not.toBe(overlayKey('a%3Ab'))
+  })
+})
+
+describe('reviewProjection', () => {
+  it('marks the line that stays and keeps a deleted line struck', () => {
+    const next = official.replace('[C]linha dois', '[C]linha dois (ok)')
+    const replaced = diffOps(official, next, CTX)
+    const painted = reviewProjection(official, replaced)
+    expect(painted.text).toContain('[C]linha dois (ok)')
+    expect(painted.text).not.toContain('[C]linha dois\n')
+    const stay = painted.text.split('\n').findIndex((line) => line.includes('linha dois (ok)'))
+    expect(painted.mine.get(stay)).toBe(replaced[0]?.id)
+
+    const removed = {
+      id: 'op-del',
+      type: 'delete' as const,
+      at: official.split('\n').findIndex((line) => line.includes('linha três')),
+      anchor: '',
+      anchorHash: '0',
+      before: ['[D]linha três'],
+      after: [],
+      ctx: CTX,
+    }
+    const gone = reviewProjection(official, [removed])
+    expect(gone.text).toContain('[D]linha três')
+    const at = gone.text.split('\n').findIndex((line) => line.includes('linha três'))
+    expect(gone.struck.get(at)).toBe(removed.id)
+    expect(gone.opLine[removed.id]).toBe(at)
+  })
+
+  it('leaves an op that no longer matches out of the paint', () => {
+    const ops = diffOps(official, official.replace('[G]linha um', '[G]linha um (ok)'), CTX)
+    const drifted = official.replace('[G]linha um', '[G]outra')
+    const painted = reviewProjection(drifted, ops)
+    expect(painted.failed).toHaveLength(1)
+    expect(painted.mine.size).toBe(0)
+    expect(painted.text).toContain('[G]outra')
+    expect(painted.text).not.toContain('linha um (ok)')
   })
 })

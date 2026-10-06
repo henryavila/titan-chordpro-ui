@@ -158,7 +158,7 @@ function makeDefault() {
         </span>
       </div>
 
-      <div class="cpv-version-chip">
+      <div v-if="named() || contentEdit" class="cpv-version-chip">
         <button
           type="button"
           data-chart-switch
@@ -194,12 +194,12 @@ function makeDefault() {
                 <span>{{ c.label === 'default' ? 'Padrão' : c.label }}</span>
                 <span v-if="c.isDefault" class="cpv-version-mark">padrão</span>
               </button>
-              <div class="cpv-version-rule" />
+              <div v-if="contentEdit" class="cpv-version-rule" />
             </template>
-            <button v-if="named()" type="button" data-chart-rename class="cpv-version-action" @click="openRename">Renomear</button>
-            <button type="button" data-chart-add class="cpv-version-action" @click="openAdd">Nova versão</button>
+            <button v-if="contentEdit && named()" type="button" data-chart-rename class="cpv-version-action" @click="openRename">Renomear</button>
+            <button v-if="contentEdit" type="button" data-chart-add class="cpv-version-action" @click="openAdd">Nova versão</button>
             <button
-              v-if="named()"
+              v-if="contentEdit && named()"
               type="button"
               data-chart-delete
               class="cpv-version-action"
@@ -207,7 +207,7 @@ function makeDefault() {
               @click="askDelete"
             >{{ confirmDelete ? `Apagar ${chipLabel()}` : 'Apagar' }}</button>
             <button
-              v-if="named() && !openIsDefault()"
+              v-if="contentEdit && named() && !openIsDefault()"
               type="button"
               data-chart-default
               class="cpv-version-action"
