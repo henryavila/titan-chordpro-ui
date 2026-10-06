@@ -18,6 +18,8 @@ withDefaults(
     /** The reader has a personal version: the file has to say which one it is. */
     hasOverlay?: boolean
     exportOrig?: boolean
+    /** Name of the open version, when the song has more than one. */
+    chartLabel?: string
   }>(),
   { compact: false, hasOverlay: false, exportOrig: false, slidesBusy: false, ppsxBusy: false },
 )
@@ -52,7 +54,7 @@ const notation = ref<'tab' | 'score' | 'none'>('score')
         ]"
         @pick="emit('pick', $event === 'orig')"
       />
-      <ExportFileButton id="cho" ext=".cho" label="ChordPro" @click="emit('cho')" />
+      <ExportFileButton id="cho" ext=".cho" label="ChordPro" :hint="chartLabel || undefined" @click="emit('cho')" />
       <ExportFileButton
         id="bundle"
         ext="ZIP"

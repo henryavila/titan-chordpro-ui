@@ -1,4 +1,4 @@
-import { hasChartEnvelope, replaceChart } from './charts'
+import { hasChartEnvelope, listCharts, replaceChart } from './charts'
 import { parse } from './parse'
 import { readMeta, writeMeta, type ChartMeta, type MetaKey } from './import-chordpro'
 import { lintSource } from './lint'
@@ -37,6 +37,11 @@ export type SourceSession = {
   discard: () => void
   lint: () => ReturnType<typeof lintSource>
   reset: (next: string) => void
+  /**
+   * The official file moved. Dirty charts keep their draft. Clean charts take
+   * the new official text. `getSource` stays the draft; the commit is official.
+   */
+  rebase: (nextOfficial: string) => void
   /**
    * Put one chart document into the working file and the last commit, without
    * dropping undo or a draft that still lives on a sibling.
@@ -130,6 +135,28 @@ export function createSourceSession(opts: {
       committed = next
       undoStack.length = 0
       redoStack.length = 0
+    },
+    rebase: (nextOfficial: string) => {
+      const prev = source
+      const prevCommitted = committed
+      let next = nextOfficial
+      try {
+        if (hasChartEnvelope(prev) && hasChartEnvelope(nextOfficial)) {
+          const ids = new Set(listCharts(nextOfficial).map((c) => c.id))
+          for (const chart of listCharts(prev)) {
+            if (!ids.has(chart.id)) continue
+            const was = parse(prev, { chartId: chart.id }).source
+            const before = parse(prevCommitted, { chartId: chart.id }).source
+            if (was !== before) next = replaceChart(next, chart.id, was)
+          }
+        } else if (prev !== prevCommitted) {
+          next = prev
+        }
+      } catch {
+        if (prev !== prevCommitted) next = prev
+      }
+      source = next
+      committed = nextOfficial
     },
     spliceChart: (chartId, doc) => {
       source = replaceChart(source, chartId, doc)

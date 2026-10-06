@@ -121,7 +121,6 @@ export function loadChartOverlay(deps: LoadChartOverlayDeps): TuneOp | null {
       30,
     )
   }
-  if (upd) return null
   return (ov?.ops.find(isTuneOp) as TuneOp | undefined) ?? null
 }
 

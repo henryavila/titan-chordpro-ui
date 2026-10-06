@@ -33,6 +33,7 @@ export type UseEditSessionOpts = {
     setOfficial: (text: string) => void
     reset: () => void
     load: () => { transpose?: number; capo?: number; dual?: boolean } | null
+    official: Ref<string>
     myPanel: Ref<boolean>
     showOriginal: Ref<boolean>
   }
@@ -58,9 +59,12 @@ export type UseEditSessionOpts = {
   beditReset: () => void
   clearScoreEditors: () => void
   hostSource: () => string
+  songId: () => string
   setlist: () => { takeRestore: () => SongSpot | null; on: Ref<boolean> }
   initialCapo: () => number | undefined
   initialDual: () => boolean | undefined
+  /** Tone of the chart just loaded. Null: the file's own capo and transpose. */
+  applyChartTone: (tune: { transpose?: number; capo?: number; dual?: boolean } | null) => void
   scroller: Ref<HTMLElement | null>
   mul: Ref<number>
   parkPlayhead: (u: number) => void
@@ -77,6 +81,7 @@ export function useEditSession(opts: UseEditSessionOpts) {
   const working = ref(opts.initialSource)
   const rev = ref(0)
   let lastSrc: string | null = null
+  let lastSong = ''
   const wMode = ref<WriteMode | null>(null)
   const localMode = ref<'view' | 'edit' | null>(null)
   const confirmDiscard = ref(false)
@@ -137,6 +142,13 @@ export function useEditSession(opts: UseEditSessionOpts) {
    * is why reverting an adjustment drops what was typed on top of it.
    */
   function forceBase() {
+    // A persisted draft stays in the working file. Only clean charts take the
+    // new official text, so accepting a sibling does not eat this rascunho.
+    if (session.dirty() && wMode.value !== 'local') {
+      session.rebase(opts.ov().official.value)
+      touch()
+      return
+    }
     const b = opts.ov().baseFor(wMode.value)
     // Also when the text already matches: `reset` is what moves the saved
     // baseline, and a local edit that ends level with its base is not a draft.
@@ -273,11 +285,12 @@ export function useEditSession(opts: UseEditSessionOpts) {
     opts.metaOpen.value = false
     opts.beditReset()
     opts.clearScoreEditors()
+    // Local still: forceBase paints the overlay instead of keeping the editor
+    // copy as a persisted draft. A "for everyone" draft stays when we leave.
+    if (local) forceBase()
     wMode.value = null
     localMode.value = 'view'
-    // The local draft has already become the overlay; a "for everyone" draft
-    // that was never saved stays on screen, so it cannot be lost by leaving.
-    if (local || !session.dirty()) forceBase()
+    if (!local && !session.dirty()) forceBase()
     opts.offset.value = enterCtx.transpose
     opts.capo.value = enterCtx.capo
     opts.capoMap.value = !!enterCtx.dual
@@ -291,7 +304,10 @@ export function useEditSession(opts: UseEditSessionOpts) {
    */
   function syncHostSource() {
     const raw = opts.hostSource()
-    if (raw === lastSrc) return
+    const song = opts.songId()
+    // Same bytes can still be another song. Its personal version is a different slot.
+    if (raw === lastSrc && song === lastSong) return
+    lastSong = song
     // Where the song being opened was left, when it has been read before.
     const spot: SongSpot | null = opts.setlist().takeRestore()
     const first = lastSrc === null
@@ -331,12 +347,7 @@ export function useEditSession(opts: UseEditSessionOpts) {
     // The reader's own version of THIS chart, and the key they pinned to it.
     const ov = opts.ov()
     ov.reset()
-    const tune = ov.load()
-    if (tune) {
-      opts.offset.value = tune.transpose || 0
-      opts.capo.value = tune.capo || 0
-      opts.capoMap.value = !!tune.dual
-    }
+    opts.applyChartTone(ov.load())
     forceBase()
     // The stored BPM belongs to the song: it reloads with the chart.
     opts.met().loadBpm()

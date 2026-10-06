@@ -5,6 +5,7 @@ import {
   isTuneOp,
   listCharts,
   overlayKey,
+  STORE_KEYS,
   overlaid,
   parse,
   replaceChart,
@@ -17,7 +18,6 @@ import {
   fixTuneOp,
   mineVersionLabel,
   opCards,
-  readingBase,
   revertAllButtonLabel,
   revertEveryOp,
   revertOverlayOp,
@@ -85,6 +85,8 @@ export type OverlayOpts = {
   store: ChartStore
   /** The base text changed under the reader: the editor has to re-baseline. */
   onBaseChange: () => void
+  /** Tune of the chart just loaded. Null means the chart has no pinned tone. */
+  onOpenTune?: (tune: TuneOp | null) => void
   onSaveContent?: (text: string) => void
   onSuggestionCreated?: (s: Suggestion) => void
   /**
@@ -281,43 +283,12 @@ export function useOverlay(opts: OverlayOpts) {
     return paintedFile(wMode)
   }
 
-  function storedOverlay(key: string): Overlay | null {
-    const raw = opts.store.get(key)
-    if (!raw) return null
-    try {
-      const ov = JSON.parse(raw) as Overlay
-      return ov && Array.isArray(ov.ops) && ov.ops.length ? ov : null
-    } catch {
-      return null
-    }
-  }
-
   function paintedFile(wMode: WriteMode | null): string {
     const file = official.value
-    if (wMode === 'persisted') return file
-    if (plainFile(file)) {
-      const painted = readingBase(wMode, showOriginal.value, chartText(file, chartSlot.value), applied.value.text)
-      return fileWithChart(file, chartSlot.value, painted)
-    }
-    let out = file
-    let charts
-    try {
-      charts = listCharts(file)
-    } catch (err) {
-      if (err instanceof ChartEnvelopeError) return file
-      throw err
-    }
-    for (const chart of charts) {
-      const ov =
-        chart.id === chartSlot.value
-          ? showOriginal.value
-            ? null
-            : overlay.value
-          : storedOverlay(overlayKey(opts.songId.value, chart.id))
-      const painted = overlaid(chartText(out, chart.id), ov).text
-      out = fileWithChart(out, chart.id, painted)
-    }
-    return out
+    if (wMode === 'persisted' || showOriginal.value) return file
+    const id = chartSlot.value
+    const painted = overlaid(chartText(file, id), overlay.value).text
+    return fileWithChart(file, id, painted)
   }
 
   function load(): TuneOp | null {
@@ -340,9 +311,21 @@ export function useOverlay(opts: OverlayOpts) {
     })
   }
 
+  function songFromOverlayKey(key: string): string {
+    const rest = key.startsWith(STORE_KEYS.overlayPrefix) ? key.slice(STORE_KEYS.overlayPrefix.length) : key
+    const cut = rest.indexOf(':')
+    return cut < 0 ? rest : rest.slice(0, cut)
+  }
+
   watch(ovKey, (next, prev) => {
     if (!prev || next === prev) return
-    load()
+    // A save pins the previous song as official. The next song must be read
+    // from the host again, or its personal version is judged against the wrong file.
+    if (songFromOverlayKey(prev) !== songFromOverlayKey(next)) {
+      officialSrc.value = null
+      officialV.value = null
+    }
+    opts.onOpenTune?.(load())
     opts.onBaseChange()
   })
 
@@ -456,6 +439,7 @@ export function useOverlay(opts: OverlayOpts) {
       },
       toast: opts.toast,
     })
+    opts.onOpenTune?.(overlay.value?.ops.find(isTuneOp) ?? null)
   }
 
   const canSuggest = computed(() => hasOverlay.value && opts.suggestions.value)
@@ -653,6 +637,14 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   function setOfficial(text: string, reconcile = false) {
+    const prev = official.value
+    const open = chartSlot.value
+    let unchanged = false
+    try {
+      unchanged = chartText(prev, open) === chartText(text, open)
+    } catch (err) {
+      if (!(err instanceof ChartEnvelopeError)) throw err
+    }
     applyOfficial({
       text,
       reconcile,
@@ -663,7 +655,16 @@ export function useOverlay(opts: OverlayOpts) {
         officialV.value = next
       },
       onSaveContent: opts.onSaveContent,
-      reload: load,
+      reload: () => {
+        // Publishing a sibling must not ask about this chart's personal version.
+        if (unchanged && overlay.value) {
+          const stamped = { ...overlay.value, baseVersion: officialV.value || opts.version.value || 'v1' }
+          overlay.value = saveOverlayValue(opts.store, ovKey.value, stamped)
+          updDlg.value = null
+          return null
+        }
+        return load()
+      },
       onBaseChange: opts.onBaseChange,
     })
   }

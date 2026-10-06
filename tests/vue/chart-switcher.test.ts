@@ -184,7 +184,8 @@ describe('chart switch is not a song change', () => {
     expect(w.get('[data-display-key]').text()).toBe('C')
     await w.get('[data-transpose-up]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-display-key]').text()).toBe('C#')
+    expect(w.get('[data-display-key]').text()).toBe('C')
+    expect(w.get('[data-tone-shift]').text()).toMatch(/tocando em C#/)
     await w.get('[data-capo]').trigger('click')
     await flushPromises()
     await w.get('[aria-label="Capo acima"]').trigger('click')
@@ -211,7 +212,8 @@ describe('chart switch is not a song change', () => {
 
     await pickChart(w, 'oferta')
     await frames()
-    expect(w.get('[data-display-key]').text()).toBe('C#')
+    expect(w.get('[data-display-key]').text()).toBe('C')
+    expect(w.get('[data-tone-shift]').text()).toMatch(/tocando em C#/)
     expect(w.get('[data-capo]').text()).toMatch(/1/)
     expect(el.scrollTop).toBe(180)
     observers.forEach((cb) => cb([{ contentRect: { width: 800, height: 800 } }]))
@@ -259,7 +261,7 @@ const WITH_AUDIO = `{start_of_x_chart:completa}
 {x_chart_label:Completa}
 {key:G}
 {duration:04:26}
-{x_audio_sung:https://cdn.sda/completa.m4a?h=1}
+{x_titan_audio_sung:https://cdn.sda/completa.m4a?h=1}
 [G]corpo da completa
 {end_of_x_chart}
 
@@ -270,7 +272,7 @@ const WITH_AUDIO = `{start_of_x_chart:completa}
 {x_chart_default:oferta}
 {key:C}
 {duration:02:00}
-{x_audio_sung:https://cdn.sda/oferta.m4a?h=2}
+{x_titan_audio_sung:https://cdn.sda/oferta.m4a?h=2}
 [C]corpo da oferta
 {end_of_x_chart}
 `
@@ -291,7 +293,7 @@ const AUDIO_INHERIT = `{start_of_x_chart:completa}
 {x_chart_default:oferta}
 {key:C}
 {duration:02:00}
-{x_audio_sung:https://cdn.sda/song.m4a?h=9}
+{x_titan_audio_sung:https://cdn.sda/song.m4a?h=9}
 [C]corpo da oferta
 {end_of_x_chart}
 `

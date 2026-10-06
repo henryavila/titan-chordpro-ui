@@ -41,7 +41,7 @@ export function exportChoFile(source: string, opts: ExportChoOptions = {}): Expo
   const view = parse(source)
   const title = (opts.title ?? view.meta.title ?? 'cifra').trim() || 'cifra'
   const key = opts.key !== undefined ? opts.key : view.displayKey ?? null
-  return textExportedFile(text, buildChoFilename(title, key), title, EXPORT_MIME.cho)
+  return textExportedFile(text, buildChoFilename(title, key, opts.chartId), title, EXPORT_MIME.cho)
 }
 
 /**
