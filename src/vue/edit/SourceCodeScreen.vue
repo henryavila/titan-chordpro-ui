@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 
 const props = defineProps<{
   source: string
@@ -47,27 +48,24 @@ async function copy() {
 </script>
 
 <template>
-  <div class="cpv-source-screen" data-source-screen role="dialog" aria-modal="true" aria-label="Código fonte">
-    <div class="cpv-source-screen-bar">
-      <span class="cpv-source-screen-title">Código fonte</span>
-      <span style="flex:1;" />
+  <div class="titan-chordpro-source-screen" data-source-screen role="dialog" aria-modal="true" aria-label="Código fonte">
+    <div class="titan-chordpro-source-screen-bar">
+      <span class="titan-chordpro-source-screen-title">Código fonte</span>
+      <span v-if="note" class="titan-chordpro-source-screen-note">{{ note }}</span>
       <button
         type="button"
         data-copy-source
-        class="cpv-source-screen-copy"
+        class="titan-chordpro-source-screen-copy"
         @click="copy"
       >
         <TitanChordproIcon name="copy" :size="14" />
         {{ copied ? 'Copiado' : 'Copiar' }}
       </button>
-      <button type="button" class="cpv-ghost" aria-label="Fechar código fonte" @click="emit('close')">
-        <TitanChordproIcon name="x" :size="16" />
-      </button>
-      <span v-if="note" class="cpv-source-screen-note">{{ note }}</span>
+      <TitanChordproIconButton icon="x" muted aria-label="Fechar código fonte" @click="emit('close')" />
     </div>
     <textarea
       ref="area"
-      class="cpv-source-screen-code"
+      class="titan-chordpro-source-screen-code"
       readonly
       spellcheck="false"
       aria-label="Código fonte da música"

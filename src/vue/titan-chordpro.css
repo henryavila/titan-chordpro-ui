@@ -2231,6 +2231,70 @@ div.titan-chordpro-head-id {
 .titan-chordpro-src textarea:focus {
   outline: none;
 }
+.titan-chordpro-source-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+}
+.titan-chordpro-source-screen-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.titan-chordpro-source-screen-title {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+.titan-chordpro-source-screen-note {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.titan-chordpro-source-screen-copy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.titan-chordpro-source-screen-code {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow: auto;
+  resize: none;
+}
+.titan-chordpro-source-screen-code:focus {
+  outline: none;
+}
 .titan-chordpro-bottom-sheet {
   position: absolute;
   left: 0;

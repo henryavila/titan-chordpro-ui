@@ -331,7 +331,7 @@ it('keeps a legacy overlay off an envelope and reviews a chart-less suggestion o
   await flushPromises()
   expect(w.get('[data-q-batch]').text()).toMatch(/1 encaixam/)
   expect(w.get('[data-q-chart]').text()).toContain('linha do bloco (legado)')
-  expect(w.get('[data-cpv-scroll]').text()).not.toContain('(legado)')
+  expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('(legado)')
 
   await w.get('[data-q-accept]').trigger('click')
   await flushPromises()

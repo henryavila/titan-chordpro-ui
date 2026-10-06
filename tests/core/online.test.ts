@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OFFLINE_SUGGEST_TOAST, resolveOnline } from '../../src/core/online'
+import { OFFLINE_CIFRACLUB_LINE, OFFLINE_LABEL, OFFLINE_SUGGEST_TOAST, resolveOnline } from '../../src/core/online'
 
 describe('resolveOnline', () => {
   it('the host hint wins over the browser flag', () => {
@@ -18,5 +18,6 @@ describe('offline copy', () => {
   it('tells the musician the suggestion stays on this device', () => {
     expect(OFFLINE_SUGGEST_TOAST).toMatch(/sem internet/i)
     expect(OFFLINE_SUGGEST_TOAST).toMatch(/minha versão/i)
+    expect(OFFLINE_CIFRACLUB_LINE).toBe(`${OFFLINE_LABEL}. Use Arquivo ou Texto.`)
   })
 })

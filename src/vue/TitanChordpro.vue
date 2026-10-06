@@ -2947,7 +2947,7 @@ defineExpose({
     <div class="titan-chordpro-glow" />
 
     <div class="titan-chordpro-stage">
-    <div v-if="isPopulated" ref="scroller" class="titan-chordpro-scroll cpv-chart" data-titan-chordpro-scroll data-cpv-scroll @click="onSurfaceTap">
+    <div v-if="isPopulated" ref="scroller" class="titan-chordpro-scroll" data-titan-chordpro-scroll @click="onSurfaceTap">
       <div :ref="bindPage" class="titan-chordpro-page" :style="{ maxWidth: columnMax, padding: pagePad, '--titan-chordpro-notation-outset': notationOutset }">
         <div :style="{ padding: pageBodyPad }">
         <TitanChordproCapoLegend v-if="legend && !scoreReading" :shape="legend.shape" :real="legend.real" :capo="capo" @close="toggleMap" />
@@ -3044,7 +3044,7 @@ defineExpose({
       :prev-title="setlist.prevTitle.value"
     />
     </div>
-    <div class="titan-chordpro-progress cpv-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
+    <div class="titan-chordpro-progress" :class="{ 'is-live': scrolling }"><span :style="{ width: `${(progress * 100).toFixed(1)}%` }" /></div>
 
     <!-- Identity card — fades with zen. A plain name takes the same band while chrome is gone. -->
     <div
@@ -3549,7 +3549,7 @@ defineExpose({
       @close="srcOpen = false"
     />
 
-    <div class="titan-chordpro-live cpv-toast" role="status" aria-live="polite">{{ toast }}</div>
+    <div class="titan-chordpro-live" data-titan-chordpro-toast role="status" aria-live="polite">{{ toast }}</div>
     <div class="titan-chordpro-live" role="alert" aria-live="assertive">{{ fatal || (pdf === 'error' ? 'A exportação em PDF falhou.' : slides === 'error' ? 'A exportação em slides falhou.' : ppsx === 'error' ? 'A exportação em PowerPoint falhou.' : '') }}</div>
   </div>
 </template>

@@ -6,7 +6,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { addChart, deleteChart, parse, renameChart } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 
 const TWO = `{start_of_x_chart:completa}
 {title:Uma}
@@ -37,7 +37,7 @@ afterEach(() => {
 })
 
 function mountViewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: { source: TWO, theme: 'dark', autoHide: false, songId: 'uma', ...props },
     attachTo: document.body,
   })
@@ -156,7 +156,7 @@ describe('suggestion versions regression', () => {
   it('sends the version the program opened and reviews it while another is on screen', async () => {
     const w = mountViewer({ chartId: 'completa', editMode: 'local' })
     await flushPromises()
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
     await editPlain(w, 'corpo da completa', 'corpo da completa (meu)')
     await send(w)
     await w.get('[data-open-my]').trigger('click')
@@ -174,13 +174,13 @@ describe('suggestion versions regression', () => {
 
     const admin = mountViewer({ source: TWO, songId: 'uma', editMode: 'persisted' })
     await flushPromises()
-    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(admin.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
     await openReview(admin, 'Uma · Completa')
     expect(admin.get('[data-q-version]').text()).toBe('Completa')
     const chart = admin.get('[data-q-chart]').text()
     expect(chart).toContain('corpo da completa (meu)')
     expect(chart).not.toContain('corpo da oferta')
-    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(admin.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
 
     await admin.get('[data-q-accept]').trigger('click')
     await flushPromises()
@@ -188,8 +188,8 @@ describe('suggestion versions regression', () => {
     expect(parse(saved, { chartId: 'completa' }).source).toContain('corpo da completa (meu)')
     expect(parse(saved, { chartId: 'oferta' }).source).toContain('corpo da oferta')
     expect(parse(saved, { chartId: 'oferta' }).source).not.toContain('(meu)')
-    expect(admin.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
-    expect(admin.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    expect(admin.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
+    expect(admin.get('[data-titan-chordpro-scroll]').text()).not.toContain('(meu)')
   })
 
   it('keeps a one-chart suggestion on Padrão after the file grows a second version', async () => {
@@ -446,7 +446,7 @@ describe('suggestion versions regression', () => {
     expect(parse(saved, { chartId: 'completa' }).source).toContain('corpo da completa (ok)')
     expect(parse(saved, { chartId: 'oferta' }).source).toContain('corpo da oferta')
     expect(parse(saved, { chartId: 'oferta' }).source).not.toContain('rascunho')
-    expect(admin.get('[data-cpv-scroll]').text()).toContain('rascunho da oferta')
+    expect(admin.get('[data-titan-chordpro-scroll]').text()).toContain('rascunho da oferta')
   })
 
   it('hides version creation while the edit is only for this phone', async () => {

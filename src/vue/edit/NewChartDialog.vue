@@ -6,7 +6,7 @@ import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproChartIdentityFields from '../ui/TitanChordproChartIdentityFields.vue'
 import {
   convert, detect, durationFromYoutubeHtml, hostOk, missingOf, MISSING_LABEL,
-  normalizeDurationMmSs, OFFLINE_CIFRACLUB_HINT, OFFLINE_LABEL, readMeta, rewriteToKey, titleFromUrl, writeMeta,
+  normalizeDurationMmSs, OFFLINE_CIFRACLUB_HINT, OFFLINE_CIFRACLUB_LINE, OFFLINE_LABEL, readMeta, rewriteToKey, titleFromUrl, writeMeta,
   type ChartMeta, type KeyRewriteOffer, type MetaKey,
 } from '@henryavila/titan-chordpro-ui'
 import type { TitanChordproIconName } from '../icon/paths'
@@ -133,7 +133,7 @@ const lede = computed(() => {
   if (tab.value === 'url')
     return netOk.value
       ? 'Cole o link da página. O Titan monta a cifra e pede o que o site não traz.'
-      : 'Sem internet. Use Arquivo ou Texto.'
+      : OFFLINE_CIFRACLUB_LINE
   if (tab.value === 'file') return 'ChordPro, OnSong ou acordes sobre a letra. Arraste ou toque para escolher.'
   return 'Cole ChordPro, OnSong ou a cifra com acordes sobre a letra.'
 })
@@ -399,7 +399,7 @@ onMounted(() => {
             v-if="canFetch && !netOk"
             data-offline-hint
             style="font-size:12px;font-weight:700;color:var(--muted);"
-          >Sem internet</span>
+          >{{ OFFLINE_LABEL }}</span>
           <div
             v-if="!canFetch"
             role="status"

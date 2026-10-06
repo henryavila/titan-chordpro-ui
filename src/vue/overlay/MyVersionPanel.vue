@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-import type { Suggestion } from '@henryavila/titan-chordpro-ui'
+import { OFFLINE_LABEL, type Suggestion } from '@henryavila/titan-chordpro-ui'
 import type { OpCard } from '../use/useOverlay'
 import TitanChordproDialogShell from '../ui/TitanChordproDialogShell.vue'
 
@@ -133,7 +133,7 @@ function statusLabel(s: Suggestion): string {
         @click="emit('suggest')"
       >
         <span>{{ suggestLabel }}</span>
-        <span v-if="offline" data-offline-hint style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em;">Sem internet</span>
+        <span v-if="offline" data-offline-hint style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em;">{{ OFFLINE_LABEL }}</span>
       </button>
 
       <div

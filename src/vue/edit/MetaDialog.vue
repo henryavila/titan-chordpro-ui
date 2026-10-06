@@ -11,6 +11,8 @@ import {
   hostOk,
   missingOf,
   MISSING_LABEL,
+  OFFLINE_CIFRACLUB_LINE,
+  OFFLINE_LABEL,
   normalizeDurationMmSs,
   proposeCifraClubEnrich,
   readMeta,
@@ -180,7 +182,7 @@ async function runEnrich() {
     return
   }
   if (!netOk.value) {
-    enrichErr.value = 'Sem internet. Use Arquivo ou Texto.'
+    enrichErr.value = OFFLINE_CIFRACLUB_LINE
     enrichPhase.value = 'error'
     return
   }
@@ -218,7 +220,7 @@ function onEnrichPaste(e: ClipboardEvent) {
   enrichUrl.value = t
   enrichErr.value = ''
   if (!netOk.value) {
-    enrichErr.value = 'Sem internet. Use Arquivo ou Texto.'
+    enrichErr.value = OFFLINE_CIFRACLUB_LINE
     enrichPhase.value = 'error'
     return
   }
@@ -369,7 +371,7 @@ onMounted(() => {
           <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Cifra Club</span>
           <span style="font-size:13px;font-weight:700;letter-spacing:-0.02em;">Completar com Cifra Club</span>
           <span v-if="canFetch && netOk" style="font-size:11.5px;line-height:1.45;color:var(--muted);text-wrap:pretty;">Traz batida, YouTube e o que faltar — sem substituir a cifra.</span>
-          <span v-else-if="canFetch" data-offline-hint style="font-size:12px;font-weight:700;color:var(--muted);">Sem internet</span>
+          <span v-else-if="canFetch" data-offline-hint style="font-size:12px;font-weight:700;color:var(--muted);">{{ OFFLINE_LABEL }}</span>
         </div>
 
         <template v-if="!canFetch">

@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING CHANGE — solos e partituras no arquivo:** referências a Guitar Pro/MusicXML passam de `{score: …}` para `{x_titan_score: …}`. Para a notação escrita na cifra, substitua `{sos}` / `{start_of_score}` por `{x_titan_start_of_score}` e `{eos}` / `{end_of_score}` por `{x_titan_end_of_score}`, mantendo os atributos e o conteúdo. O consumer precisa atualizar as cifras salvas e qualquer código que monte ou leia esses trechos; `ParsedScore.from` passa de `sos` para `x_titan_start_of_score`. Os nomes anteriores não são reconhecidos.
 
 ### Fixed
+- **Código fonte:** a tela do arquivo inteiro cobre a cifra, com título, copiar e fechar no mesmo visual do restante.
 - **Slides grandes demais no projetor:** uma linha da cifra que junta duas frases (a segunda começando com maiúscula) vira um slide só daquelas duas linhas. Duas linhas longas e independentes deixam de ir no mesmo slide — vale para o Louvor JA e para o PowerPoint.
 - **Demo público:** ao abrir uma pull request, o Cloudflare publica um preview do demo. O site de demonstração usa o mesmo build. Importar cifra pelo Cifra Club e a duração do YouTube seguem em `/__cifra_fetch` e `/__youtube_duration`.
 - **Metadados no tema escuro:** os cartões de duração, andamento, compasso e tom deixam de ter contornos brancos fortes. O campo **Referência** ganha a mesma altura e aparência do campo de endereço do Cifra Club.

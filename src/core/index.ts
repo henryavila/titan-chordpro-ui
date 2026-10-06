@@ -26,10 +26,12 @@ export type {
 export type { ChartStore } from './storage'
 export {
   OFFLINE_CIFRACLUB_HINT,
+  OFFLINE_CIFRACLUB_LINE,
   OFFLINE_LABEL,
   OFFLINE_SUGGEST_TOAST,
   resolveOnline,
 } from './online'
+export { chartIdFromLabel } from './chart-id'
 export {
   STORE_KEYS,
   browserStore,

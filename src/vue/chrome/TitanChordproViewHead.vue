@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
+import TitanChordproChartSwitch from '../ui/TitanChordproChartSwitch.vue'
 import TitanChordproChip from '../ui/TitanChordproChip.vue'
 import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
@@ -9,7 +9,6 @@ import type { ViewHeadModel } from './view-head'
 defineProps<ViewHeadModel>()
 
 const capoOpen = defineModel<boolean>('capoOpen', { default: false })
-const chartOpen = ref(false)
 
 const emit = defineEmits<{
   'open-setlist': []
@@ -30,7 +29,6 @@ const emit = defineEmits<{
     class="titan-chordpro-hit titan-chordpro-veil titan-chordpro-head"
     :class="[variant === 'phone' ? 'is-phone' : 'is-wide', hitClass]"
     data-titan-chordpro-head
-    data-cpv-head
     :style="variant === 'wide' ? { '--titan-chordpro-page-max': pageMax } : undefined"
   >
     <button
@@ -43,42 +41,36 @@ const emit = defineEmits<{
       <span class="titan-chordpro-head-pos titan-chordpro-head-chip">{{ posLabel }}</span>
       <span class="titan-chordpro-head-name">
         <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
-        <span v-if="charts.length > 1" class="titan-chordpro-version-chip">
-          <button type="button" data-chart-switch class="titan-chordpro-head-chip cpv-head-chip" aria-label="Versão" @click="chartOpen = !chartOpen">
-            <span class="titan-chordpro-chart-switch-label">{{ chartLabel }}</span>
-          </button>
-          <div v-if="chartOpen" class="titan-chordpro-chart-menu titan-chordpro-version-menu" role="dialog" aria-label="Versão">
-            <button v-for="c in charts" :key="c.id" type="button" :data-chart-option="c.id" class="titan-chordpro-version-row" @click="chartOpen = false; emit('select-chart', c.id)">{{ c.label }}</button>
-          </div>
-        </span>
+        <TitanChordproChartSwitch
+          v-if="charts.length > 1"
+          :charts="charts"
+          :label="chartLabel"
+          @select="emit('select-chart', $event)"
+        />
         <span class="titan-chordpro-head-sub">{{ variant === 'phone' ? phoneSub : nextChip }}</span>
       </span>
     </button>
     <span v-else-if="variant === 'phone'" class="titan-chordpro-head-id">
       <span class="titan-chordpro-head-name">
         <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
-        <span v-if="charts.length > 1" class="titan-chordpro-version-chip">
-          <button type="button" data-chart-switch class="titan-chordpro-head-chip cpv-head-chip" aria-label="Versão" @click="chartOpen = !chartOpen">
-            <span class="titan-chordpro-chart-switch-label">{{ chartLabel }}</span>
-          </button>
-          <div v-if="chartOpen" class="titan-chordpro-chart-menu titan-chordpro-version-menu" role="dialog" aria-label="Versão">
-            <button v-for="c in charts" :key="c.id" type="button" :data-chart-option="c.id" class="titan-chordpro-version-row" @click="chartOpen = false; emit('select-chart', c.id)">{{ c.label }}</button>
-          </div>
-        </span>
+        <TitanChordproChartSwitch
+          v-if="charts.length > 1"
+          :charts="charts"
+          :label="chartLabel"
+          @select="emit('select-chart', $event)"
+        />
         <span class="titan-chordpro-head-sub">{{ phoneSub }}</span>
       </span>
     </span>
     <div v-else class="titan-chordpro-head-id">
       <span class="titan-chordpro-head-name">
         <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
-        <span v-if="charts.length > 1" class="titan-chordpro-version-chip">
-          <button type="button" data-chart-switch class="titan-chordpro-head-chip cpv-head-chip" aria-label="Versão" @click="chartOpen = !chartOpen">
-            <span class="titan-chordpro-chart-switch-label">{{ chartLabel }}</span>
-          </button>
-          <div v-if="chartOpen" class="titan-chordpro-chart-menu titan-chordpro-version-menu" role="dialog" aria-label="Versão">
-            <button v-for="c in charts" :key="c.id" type="button" :data-chart-option="c.id" class="titan-chordpro-version-row" @click="chartOpen = false; emit('select-chart', c.id)">{{ c.label }}</button>
-          </div>
-        </span>
+        <TitanChordproChartSwitch
+          v-if="charts.length > 1"
+          :charts="charts"
+          :label="chartLabel"
+          @select="emit('select-chart', $event)"
+        />
         <span v-if="subtitle" class="titan-chordpro-head-sub">{{ subtitle }}</span>
       </span>
     </div>
@@ -125,7 +117,7 @@ const emit = defineEmits<{
         <span v-if="metaDuration">{{ metaDuration }}</span>
       </div>
       <div v-if="hasKey" :ref="(el) => emit('bind-capo', el)" style="position:relative;flex:none;">
-        <div class="titan-chordpro-keypill cpv-keypill titan-chordpro-head-chip cpv-head-chip">
+        <div class="titan-chordpro-keypill titan-chordpro-head-chip">
           <button data-transpose-down aria-label="Baixar meio tom" title="Baixar meio tom (−)" style="width:34px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--chord);font-size:15px;line-height:1;cursor:pointer;" @click="emit('shift', -1)">−</button>
           <div style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 5px;">
             <span style="display:flex;align-items:baseline;gap:5px;">

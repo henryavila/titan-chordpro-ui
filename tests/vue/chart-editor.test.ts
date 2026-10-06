@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 
 /** Same N>1 file as `TWO_CHART_SOURCE` in tests/core/charts-envelope.test.ts. */
 const TWO_CHART_SOURCE = `{start_of_x_chart:completa}
@@ -50,7 +50,7 @@ afterEach(() => {
 })
 
 async function mountViewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: TWO_CHART_SOURCE,
       theme: 'dark',
@@ -82,7 +82,7 @@ async function editLyric(w: Awaited<ReturnType<typeof mountViewer>>, from: strin
 describe('session edits the chart document', () => {
   it('changing oferta lyric emits the full file with completa unchanged', async () => {
     const w = await mountViewer()
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
     await editLyric(w, 'corpo da oferta', 'corpo da oferta nova')
@@ -101,11 +101,11 @@ describe('session edits the chart document', () => {
 
   it('edits the chartId that is open, not the file default', async () => {
     const w = await mountViewer({ chartId: 'completa' })
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
     await w.get('[data-edit]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
     await w.get('[data-source]').trigger('click')
     await flushPromises()
     const shown = String((w.get('textarea[aria-label="Fonte ChordPro"]').element as HTMLTextAreaElement).value)
@@ -238,8 +238,8 @@ describe('add rename delete default in edit', () => {
     await w.get('[data-chart-option="completa"]').trigger('click')
     await flushPromises()
     expect(w.get('[data-chart-edit-label]').text()).toMatch(/Completa/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
     expect(w.emitted('update:chartId')?.flat()).toContain('completa')
   })
 

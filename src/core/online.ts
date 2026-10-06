@@ -8,6 +8,9 @@ export const OFFLINE_SUGGEST_TOAST =
 /** Hint under Cifra Club when the page cannot be fetched. */
 export const OFFLINE_CIFRACLUB_HINT = 'Use Arquivo ou Texto.'
 
+/** Label plus the Cifra Club hint, as one sentence. */
+export const OFFLINE_CIFRACLUB_LINE = `${OFFLINE_LABEL}. ${OFFLINE_CIFRACLUB_HINT}`
+
 /**
  * Host `online` wins. Otherwise the browser flag. Missing both → treat as
  * online so a kiosk without `navigator.onLine` does not lock the chrome.

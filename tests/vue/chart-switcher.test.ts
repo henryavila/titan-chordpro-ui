@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { diffOps, overlayKey, parse } from '../../src/core'
-import { ChordproViewer } from '../../src/vue'
+import { TitanChordpro } from '../../src/vue'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
 /** Same N>1 file as `TWO_CHART_SOURCE` in tests/core/charts-envelope.test.ts. */
@@ -53,7 +53,7 @@ afterEach(() => {
 })
 
 async function mountViewer(props: Record<string, unknown> = {}) {
-  const w = mount(ChordproViewer, {
+  const w = mount(TitanChordpro, {
     props: {
       source: TWO_CHART_SOURCE,
       theme: 'dark',
@@ -85,8 +85,8 @@ describe('title chip and chartId prop', () => {
     expect(chip.text()).not.toMatch(/Cifra/i)
     expect(chip.text()).toMatch(/Oferta/)
     expect(chip.text()).not.toMatch(/Completa/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da completa')
   })
 
   it('selecting Completa emits update:chartId and re-parses that chart only', async () => {
@@ -95,15 +95,15 @@ describe('title chip and chartId prop', () => {
     expect(w.emitted('update:chartId')?.flat()).toContain('completa')
     expect(w.get('[data-chart-switch]').text()).toMatch(/Completa/)
     expect(w.get('[data-chart-switch]').text()).not.toMatch(/Oferta/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
   })
 
   it('opens on the chartId prop', async () => {
     const w = await mountViewer({ chartId: 'completa' })
     expect(w.get('[data-chart-switch]').text()).toMatch(/Completa/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
   })
 
   it('hides the control on a one-chart file', async () => {
@@ -111,12 +111,12 @@ describe('title chip and chartId prop', () => {
     expect(w.find('[data-chart-switch]').exists()).toBe(false)
   })
 
-  it('uses cpv-head-chip invert class and does not steal the Tom chip', async () => {
+  it('keeps the version chip and the Tom chip on the head-chip class', async () => {
     const w = await mountViewer()
     const chip = w.get('[data-chart-switch]')
-    expect(chip.classes()).toContain('cpv-head-chip')
-    expect(w.get('.cpv-keypill').classes()).toContain('cpv-head-chip')
-    expect(w.get('.cpv-keypill').text()).toMatch(/Tom/i)
+    expect(chip.classes()).toContain('titan-chordpro-head-chip')
+    expect(w.get('.titan-chordpro-keypill').classes()).toContain('titan-chordpro-head-chip')
+    expect(w.get('.titan-chordpro-keypill').text()).toMatch(/Tom/i)
     expect(chip.text()).not.toMatch(/Tom/i)
   })
 })
@@ -143,7 +143,7 @@ describe('chart switch is not a song change', () => {
     await pickChart(w, 'completa')
     expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
     expect(w.get('[data-chart-title]').text()).toMatch(/Uma/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
     expect(w.find('[data-chart-switch]').exists()).toBe(true)
 
     await w.get('[data-song-next]').trigger('click')
@@ -161,21 +161,21 @@ describe('chart switch is not a song change', () => {
     localStorage.setItem(overlayKey('uma', 'oferta'), seeded)
 
     const w = await mountViewer()
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta (meu)')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta (meu)')
     await pickChart(w, 'completa')
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('(meu)')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('(meu)')
     expect(localStorage.getItem(overlayKey('uma', 'oferta'))).toBe(seeded)
     expect(localStorage.getItem(overlayKey('uma', 'completa'))).toBeNull()
 
     await pickChart(w, 'oferta')
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta (meu)')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta (meu)')
     expect(localStorage.getItem(overlayKey('uma', 'oferta'))).toBe(seeded)
   })
 
   it('restores live transpose, capo, speed and scroll per chartId', async () => {
     const w = await mountViewer()
-    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
     Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
     observers.forEach((cb) => cb([{ contentRect: { width: 800, height: 800 } }]))
@@ -251,7 +251,7 @@ describe('chart switch is not a song change', () => {
     await pickChart(w, 'completa')
     expect(w.get('[data-reading=letra]').attributes('aria-pressed')).toBe('true')
     expect(w.get('[data-comments-toggle]').attributes('aria-pressed')).toBe('true')
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
   })
 })
 
@@ -301,16 +301,16 @@ const AUDIO_INHERIT = `{start_of_x_chart:completa}
 describe('timeline and audio follow the chart', () => {
   it('rebuilds duration from the open chart document', async () => {
     const w = await mountViewer()
-    expect(w.get('[data-cpv-head]').text()).toContain('02:00')
-    expect(w.get('[data-cpv-head]').text()).not.toContain('04:26')
+    expect(w.get('[data-titan-chordpro-head]').text()).toContain('02:00')
+    expect(w.get('[data-titan-chordpro-head]').text()).not.toContain('04:26')
     await pickChart(w, 'completa')
-    expect(w.get('[data-cpv-head]').text()).toContain('04:26')
-    expect(w.get('[data-cpv-head]').text()).not.toContain('02:00')
+    expect(w.get('[data-titan-chordpro-head]').text()).toContain('04:26')
+    expect(w.get('[data-titan-chordpro-head]').text()).not.toContain('02:00')
   })
 
   it('does not keep the previous chart playhead', async () => {
     const w = await mountViewer()
-    const el = w.get('[data-cpv-scroll]').element as HTMLElement
+    const el = w.get('[data-titan-chordpro-scroll]').element as HTMLElement
     Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 4000 })
     Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 })
     observers.forEach((cb) => cb([{ contentRect: { width: 800, height: 800 } }]))
@@ -324,12 +324,12 @@ describe('timeline and audio follow the chart', () => {
     await w.get('[data-scroll]').trigger('click')
     await flushPromises()
     el.scrollTop = 220
-    const bar = w.get('.cpv-progress span')
+    const bar = w.get('.titan-chordpro-progress span')
     bar.element.setAttribute('style', 'width: 40%')
 
     await pickChart(w, 'completa')
     expect(el.scrollTop).toBe(0)
-    expect((w.get('.cpv-progress span').element as HTMLElement).style.width).toMatch(/^0/)
+    expect((w.get('.titan-chordpro-progress span').element as HTMLElement).style.width).toMatch(/^0/)
     expect(w.get('[data-scroll]').text()).toMatch(/Rolar/)
   })
 
@@ -489,8 +489,8 @@ describe('program opens the cifra it named', () => {
       ],
     })
     expect(w.get('[data-chart-switch]').text()).toMatch(/Completa/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da completa')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
   })
 
   it('keeps the musician pick across songs and does not borrow chartId', async () => {
@@ -508,14 +508,14 @@ describe('program opens the cifra it named', () => {
     await w.get('[data-song-next]').trigger('click')
     await flushPromises()
     expect(w.get('[data-chart-switch]').text()).toMatch(/Culto/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo do culto')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo do ensaio')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo do culto')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo do ensaio')
 
     await w.get('[data-song-prev]').trigger('click')
     await flushPromises()
     expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
     expect(w.get('[data-chart-switch]').text()).toMatch(/Oferta/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
   })
 
   it('keeps the pick when the program repeats the same cifra', async () => {
@@ -533,7 +533,7 @@ describe('program opens the cifra it named', () => {
     })
     await flushPromises()
     expect(w.get('[data-chart-switch]').text()).toMatch(/Oferta/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da oferta')
   })
 
   it('opens the new cifra when the program changes it', async () => {
@@ -553,7 +553,7 @@ describe('program opens the cifra it named', () => {
     })
     await flushPromises()
     expect(w.get('[data-chart-switch]').text()).toMatch(/Louvor/)
-    expect(w.get('[data-cpv-scroll]').text()).toContain('corpo do louvor')
-    expect(w.get('[data-cpv-scroll]').text()).not.toContain('corpo da oferta')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo do louvor')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
   })
 })
