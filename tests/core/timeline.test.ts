@@ -1,4 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { buildTimeline as clockBuildTimeline } from '../../src/core/clock/build'
+import { lineBeats as clockLineBeats } from '../../src/core/clock/marks'
+import { beatsPerBar as clockBeatsPerBar } from '../../src/core/clock/meter'
+import { beatsPerBar as scoreBeatsPerBar } from '../../src/core/score'
 import {
   ANCHOR_RATIO,
   barsAtPx,
@@ -522,5 +529,27 @@ describe('scroll hold on a compact intro', () => {
     expect(scrollAtPlayhead(t, 0, viewport)).toBe(0)
     const atRest = barsAtPx(t, rest)
     expect(scrollAtPlayhead(t, Math.min(0.99, (atRest + 1) / t.bars), viewport)).toBeGreaterThan(0)
+  })
+})
+
+describe('timeline barrel', () => {
+  it('re-exports the clock modules', () => {
+    const text = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/core/timeline.ts'), 'utf8')
+    expect(text).not.toMatch(/\b(function|class|const|let)\b/)
+    const specs = [...text.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!)
+    expect(specs).toEqual([
+      './clock/anchor',
+      './clock/build',
+      './clock/duration',
+      './clock/inputs',
+      './clock/marks',
+      './clock/meter',
+      './clock/playhead',
+      './clock/types',
+    ])
+    expect(lineBeats).toBe(clockLineBeats)
+    expect(buildTimeline).toBe(clockBuildTimeline)
+    expect(beatsPerBar).toBe(clockBeatsPerBar)
+    expect(beatsPerBar).not.toBe(scoreBeatsPerBar)
   })
 })

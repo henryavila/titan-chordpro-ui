@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { layoutChartFull as chartLayoutFull } from '../../src/core/chart-layout/full'
 import { layoutChartFull, parse, transpose, type ChartLayout, type ChartSeg } from '../../src/core'
 import { JESUS_1, loadFixture } from '../helpers/load-fixture'
 
@@ -252,5 +256,33 @@ describe('transpose is applied once', () => {
     const s = firstChord(laid)
     expect(s.chord).toBe('D')
     expect(s.concert).toBe('D')
+  })
+})
+
+describe('layout barrel', () => {
+  it('re-exports chart-layout and keeps the lyric lens off the clock reader', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
+    const text = readFileSync(join(root, 'src/core/layout.ts'), 'utf8')
+    expect(text).not.toMatch(/\b(function|class|const|let)\b/)
+    const specs = [...text.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!)
+    expect(specs).toEqual([
+      './chart-layout/full',
+      './chart-layout/full',
+      './chart-layout/scale',
+      './chart-layout/tab',
+      './chart-layout/work',
+    ])
+    expect(layoutChartFull).toBe(chartLayoutFull)
+    const full = readFileSync(join(root, 'src/core/chart-layout/full.ts'), 'utf8')
+    expect(full).toMatch(/from ['"]\.\/group['"]/)
+    expect(full).toMatch(/from ['"]\.\/letra['"]/)
+    expect(full).toMatch(/from ['"]\.\/music['"]/)
+    expect(full).toMatch(/from ['"]\.\/work['"]/)
+    const music = readFileSync(join(root, 'src/core/chart-layout/music.ts'), 'utf8')
+    expect(music).toMatch(/from ['"]\.\.\/clock\/marks['"]/)
+    const letra = readFileSync(join(root, 'src/core/chart-layout/letra.ts'), 'utf8')
+    expect(letra).toContain('function stripChordClock')
+    expect(letra).toContain('function stripBeatMarks')
+    expect(letra).not.toContain('lineBeats')
   })
 })

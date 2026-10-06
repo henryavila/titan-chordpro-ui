@@ -1,16 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import {
-  ChartEnvelopeError,
-  hasChartEnvelope,
-  isTuneOp,
-  listCharts,
-  overlayKey,
-  STORE_KEYS,
-  overlaid,
-  parse,
-  replaceChart,
-  reviewProjection,
-} from '@henryavila/titan-chordpro-ui'
+import { isTuneOp, overlayKey, overlaid } from '@henryavila/titan-chordpro-ui'
 import type { ChartStore, Overlay, ReadingCtx, Suggestion, SuggestionStatus, TuneOp } from '@henryavila/titan-chordpro-ui'
 import type { WriteMode } from '../public'
 import {
@@ -57,6 +46,18 @@ import {
   type SuggestHost,
 } from './overlay/queue'
 import { adoptUpdateChoice, keepUpdateChoice, toggledUpdate, updateCards } from './overlay/update'
+import {
+  activeChartId,
+  chartOf as chartInFile,
+  chartText,
+  fileWithChart,
+  paintedFile,
+  plainFile,
+  queueChartLabel as chartVersionLabel,
+  reviewScreen,
+  sameChartDocument,
+  songFromOverlayKey,
+} from './overlay/chart'
 
 export type { WriteMode } from '../public'
 export type { OpCard } from './overlay/mine'
@@ -159,7 +160,9 @@ export function useOverlay(opts: OverlayOpts) {
   // "for everyone" save takes over from here on.
   const official = computed(() => officialSrc.value ?? opts.hostSource.value ?? '')
   const officialVersion = computed(() => officialV.value || opts.version.value || 'v1')
-  const chartSlot = computed(() => activeChartId(official.value))
+  const chartSlot = computed(() =>
+    activeChartId(official.value, String(opts.chartId?.value ?? '').trim()),
+  )
   const ovKey = computed(() => {
     const song = opts.songId.value
     if (plainFile(official.value)) return overlayKey(song)
@@ -199,96 +202,12 @@ export function useOverlay(opts: OverlayOpts) {
    * The screen's base: "for everyone" and reading the original see the raw
    * official text; reading and local editing see it with the overlay applied.
    */
-  function activeChartId(file: string): string {
-    const requested = String(opts.chartId?.value ?? '').trim()
-    try {
-      const charts = listCharts(file)
-      if (requested && charts.some((c) => c.id === requested)) return requested
-      return charts.find((c) => c.isDefault)?.id || charts[0]?.id || 'default'
-    } catch (err) {
-      if (err instanceof ChartEnvelopeError) return requested || 'default'
-      throw err
-    }
-  }
-
-  function plainFile(file: string): boolean {
-    try {
-      return !hasChartEnvelope(file)
-    } catch (err) {
-      if (err instanceof ChartEnvelopeError) return false
-      throw err
-    }
-  }
-
-  function chartText(file: string, chartId: string): string {
-    try {
-      return parse(file, { chartId }).source
-    } catch (err) {
-      if (err instanceof ChartEnvelopeError) return file
-      throw err
-    }
-  }
-
-  function fileWithChart(file: string, chartId: string, doc: string): string {
-    if (doc === chartText(file, chartId)) return file
-    try {
-      return replaceChart(file, chartId, doc)
-    } catch (err) {
-      if (err instanceof ChartEnvelopeError) return file
-      throw err
-    }
-  }
-
-  function sugTarget(file: string, s: Suggestion): string | null {
-    if (s.songId !== opts.songId.value) return null
-    const id = String(s.chartId ?? '').trim()
-    try {
-      const charts = listCharts(file)
-      if (id) return charts.some((c) => c.id === id) ? id : null
-      const only = charts[0]?.id ?? 'default'
-      if (plainFile(file)) return only === 'default' ? 'default' : null
-      return charts.some((c) => c.id === 'default') ? 'default' : null
-    } catch (err) {
-      if (err instanceof ChartEnvelopeError) return null
-      throw err
-    }
+  function baseFor(wMode: WriteMode | null): string {
+    return paintedFile(official.value, wMode, showOriginal.value, chartSlot.value, overlay.value)
   }
 
   function queueChartLabel(s: Suggestion): string | null {
-    const id = String(s.chartId ?? '').trim()
-    if (s.songId !== opts.songId.value) return id && id !== 'default' ? id : null
-    let charts: { id: string; label: string }[] = []
-    try {
-      charts = listCharts(official.value)
-    } catch (err) {
-      if (!(err instanceof ChartEnvelopeError)) throw err
-    }
-    const slot = id || 'default'
-    const only = charts.length < 2 ? charts[0] : undefined
-    if (only?.id === slot) return null
-    if (!charts.some((c) => c.id === slot)) return id || 'default'
-    const hit = charts.find((c) => c.id === slot)
-    const label = hit?.label || slot
-    return label === 'default' ? null : label
-  }
-
-  function chartOf(s: Suggestion): { id: string; text: string } | { blocked: string } {
-    if (s.songId !== opts.songId.value) return { blocked: 'Abra essa música para aceitar o pedido' }
-    const id = sugTarget(official.value, s)
-    if (!id) return { blocked: 'Esta versão não existe mais' }
-    return { id, text: chartText(official.value, id) }
-  }
-
-  function baseFor(wMode: WriteMode | null): string {
-    return paintedFile(wMode)
-  }
-
-  function paintedFile(wMode: WriteMode | null): string {
-    const file = official.value
-    if (wMode === 'persisted' || showOriginal.value) return file
-    const id = chartSlot.value
-    const painted = overlaid(chartText(file, id), overlay.value).text
-    return fileWithChart(file, id, painted)
+    return chartVersionLabel(official.value, opts.songId.value, s)
   }
 
   function load(): TuneOp | null {
@@ -309,12 +228,6 @@ export function useOverlay(opts: OverlayOpts) {
       },
       toast: opts.toast,
     })
-  }
-
-  function songFromOverlayKey(key: string): string {
-    const rest = key.startsWith(STORE_KEYS.overlayPrefix) ? key.slice(STORE_KEYS.overlayPrefix.length) : key
-    const cut = rest.indexOf(':')
-    return cut < 0 ? rest : rest.slice(0, cut)
   }
 
   watch(ovKey, (next, prev) => {
@@ -551,7 +464,7 @@ export function useOverlay(opts: OverlayOpts) {
   const qReviewText = computed(() => {
     const s = allSug().find((x) => x.id === qSug.value)
     if (!s) return official.value
-    const hit = chartOf(s)
+    const hit = chartInFile(official.value, opts.songId.value, s)
     return 'text' in hit ? hit.text : ''
   })
   const qOps = computed(() => opQueueCards(allSug().find((x) => x.id === qSug.value), qReviewText.value))
@@ -560,41 +473,14 @@ export function useOverlay(opts: OverlayOpts) {
   const qPreviewStrum = computed(() => previewStrumChange(qBatchPreview.value?.text, qReviewText.value))
   const qOfficialStrum = computed(() => officialStrumPatterns(qReviewText.value))
   const qTitle = computed(() => queueHeading(qSug.value, qActorName.value, qSong.value))
-  const qReview = computed(() => {
-    const s = allSug().find((x) => x.id === qSug.value)
-    if (!s) return null
-    const hit = chartOf(s)
-    const versionLabel = queueChartLabel(s)
-    if ('blocked' in hit) {
-      return {
-        missing: hit.blocked.includes('não existe'),
-        foreign: hit.blocked.includes('Abra'),
-        dirty: hit.blocked.includes('rascunho'),
-        versionLabel,
-        tuneLabel: null as string | null,
-        lines: [] as { text: string; struck: boolean; op: boolean }[],
-      }
-    }
-    const painted = reviewProjection(hit.text, s.ops)
-    const tune = s.ops.find(isTuneOp)
-    const tuneLabel = tune
-      ? [`Tom ${tune.transpose > 0 ? '+' : ''}${tune.transpose}`, tune.capo ? `capo ${tune.capo}` : '']
-          .filter(Boolean)
-          .join(' · ')
-      : null
-    return {
-      missing: false,
-      foreign: false,
-      dirty: !!opts.chartDirty?.(hit.id),
-      versionLabel,
-      tuneLabel,
-      lines: painted.text.split('\n').map((text, i) => ({
-        text,
-        struck: painted.struck.has(i),
-        op: painted.mine.has(i) || painted.struck.has(i),
-      })),
-    }
-  })
+  const qReview = computed(() =>
+    reviewScreen({
+      suggestion: allSug().find((x) => x.id === qSug.value),
+      file: official.value,
+      songId: opts.songId.value,
+      dirty: (id) => !!opts.chartDirty?.(id),
+    }),
+  )
 
   function reviewHost(): ReviewHost {
     return {
@@ -609,7 +495,7 @@ export function useOverlay(opts: OverlayOpts) {
       all: allSug,
       write: writeSug,
       official: () => official.value,
-      chartOf,
+      chartOf: (s) => chartInFile(official.value, opts.songId.value, s),
       splice: fileWithChart,
       dirty: (id) => !!opts.chartDirty?.(id),
       toast: opts.toast,
@@ -637,14 +523,7 @@ export function useOverlay(opts: OverlayOpts) {
   }
 
   function setOfficial(text: string, reconcile = false) {
-    const prev = official.value
-    const open = chartSlot.value
-    let unchanged = false
-    try {
-      unchanged = chartText(prev, open) === chartText(text, open)
-    } catch (err) {
-      if (!(err instanceof ChartEnvelopeError)) throw err
-    }
+    const unchanged = sameChartDocument(official.value, text, chartSlot.value)
     applyOfficial({
       text,
       reconcile,

@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
-import TitanChordproActionButton from '../ui/TitanChordproActionButton.vue'
+import { OFFLINE_CIFRACLUB_LINE, readMeta, type ChartMeta, type KeyRewriteOffer } from '@henryavila/titan-chordpro-ui'
 import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
-import TitanChordproChartIdentityFields from '../ui/TitanChordproChartIdentityFields.vue'
-import {
-  convert, detect, durationFromYoutubeHtml, hostOk, missingOf, MISSING_LABEL,
-  normalizeDurationMmSs, OFFLINE_CIFRACLUB_HINT, OFFLINE_CIFRACLUB_LINE, OFFLINE_LABEL, readMeta, rewriteToKey, titleFromUrl, writeMeta,
-  type ChartMeta, type KeyRewriteOffer, type MetaKey,
-} from '@henryavila/titan-chordpro-ui'
-import type { TitanChordproIconName } from '../icon/paths'
+import { BLANK_NOTE } from './ficha/blank-chart'
+import ChartFicha from './ficha/ChartFicha.vue'
+import ChartImport from './ficha/ChartImport.vue'
+import type { ChartOrigin } from './ficha/origins'
+import type { FichaFrom, FichaOpen } from './ficha/types'
 
 /**
  * A song with no chart is not a dead end: whoever may write for everyone starts
@@ -47,76 +44,21 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ close: []; commit: [source: string] }>()
 
-
-const BLANK_BODY = '{c:INTRODUÇÃO}\n[G] [C] [D]\n\n{c:Verso 1}\n[G]Primeira linha da letra'
-
-const BLANK_NOTE =
-  'Cifra em branco. Identifique a música e o editor abre com INTRODUÇÃO e Verso 1 — é só digitar por cima e inserir o resto.'
-
-type Origin = 'url' | 'file' | 'text'
-const ORIGINS: Array<{ id: Origin; title: string; hint: string; icon: TitanChordproIconName }> = [
-  { id: 'url', title: 'Cifra Club', hint: 'Link da página', icon: 'link' },
-  { id: 'file', title: 'Arquivo', hint: '.cho, texto ou PDF', icon: 'fileInput' },
-  { id: 'text', title: 'Texto', hint: 'Colar a cifra', icon: 'alignLeft' },
-]
-
 const step = ref<'import' | 'ficha'>(props.start === 'import' ? 'import' : 'ficha')
-const tab = ref<Origin>('url')
-const busy = ref(false)
+const tab = ref<ChartOrigin>('url')
 const err = ref('')
 const errHint = ref('')
 const note = ref(props.start === 'blank' ? BLANK_NOTE : props.initialNote)
-const from = ref<'url' | 'arquivo' | 'texto' | 'blank' | 'save'>(
-  props.start === 'blank' ? 'blank' : props.start === 'ficha' ? 'save' : 'url',
-)
-
+const from = ref<FichaFrom>(props.start === 'blank' ? 'blank' : props.start === 'ficha' ? 'save' : 'url')
 const url = ref('')
 const pasted = ref('')
-const drag = ref(false)
-const fileEl = ref<HTMLInputElement | null>(null)
-const urlEl = ref<HTMLInputElement | null>(null)
-
 const source = ref(props.initialSource)
 const meta = ref<ChartMeta>({ ...readMeta(props.initialSource) })
 const keyEdit = ref(!String(readMeta(props.initialSource).key ?? '').trim())
 const keyRewrite = ref<KeyRewriteOffer | null>(null)
+const importEl = ref<{ focusUrl: () => void } | null>(null)
 
-const sniff = computed(() => (pasted.value.trim() ? detect(pasted.value) : ''))
-const SNIFF_LABEL: Record<string, string> = {
-  chordpro: 'ChordPro',
-  onsong: 'OnSong',
-  plain: 'acordes sobre a letra',
-  cifraclub: 'Cifra Club',
-}
-
-const missing = computed(() => missingOf(meta.value))
-const durationMissing = computed(() => missing.value.includes('duration'))
-const durationNote = computed(() => {
-  if (!durationMissing.value) return ''
-  return String(meta.value.duration ?? '').trim()
-    ? 'Essa duração não serve para a rolagem — use minutos e segundos (ex.: 4:26), pelo menos 20s.'
-    : 'Falta a duração. Sem ela a cifra não rola — olhe o tempo no YouTube ou no Spotify.'
-})
-const softMissing = computed(() => missing.value.filter((k) => k !== 'duration'))
-const missingList = computed(() => {
-  const w = softMissing.value.map((k) => MISSING_LABEL[k] ?? k)
-  return w.length > 1 ? `${w.slice(0, -1).join(', ')} e ${w[w.length - 1]}` : (w[0] ?? '')
-})
-const others = computed(() => origins.value.filter((o) => o.id !== tab.value))
-const canFetch = computed(() => !!props.fetchChart)
 const netOk = computed(() => props.online !== false)
-const origins = computed(() =>
-  ORIGINS.map((o) =>
-    o.id === 'url' && !netOk.value ? { ...o, hint: OFFLINE_LABEL } : o,
-  ),
-)
-const urlGuess = computed(() => {
-  const u = url.value.trim()
-  if (!hostOk(u)) return null
-  const g = titleFromUrl(u)
-  return g.title ? g : null
-})
-
 const label = computed(() => {
   if (step.value === 'import') return 'Importar cifra'
   if (from.value === 'blank') return 'Cifra em branco'
@@ -138,214 +80,34 @@ const lede = computed(() => {
   return 'Cole ChordPro, OnSong ou a cifra com acordes sobre a letra.'
 })
 
-function fail(message: string, hint = '') {
-  err.value = message
-  errHint.value = hint
-  busy.value = false
-}
-
-function pickTab(next: Origin) {
-  tab.value = next
-  err.value = ''
-  errHint.value = ''
-}
-
-function toFicha(text: string, origin: typeof from.value, why: string) {
-  const r = convert(text)
-  source.value = r.source
-  meta.value = { ...readMeta(r.source) }
-  keyEdit.value = !String(meta.value.key ?? '').trim()
-  keyRewrite.value = r.keyRewrite ?? null
-  from.value = origin
-  note.value = why
-  err.value = ''
-  busy.value = false
-  step.value = 'ficha'
-}
-
-function startBlank() {
-  source.value = ''
-  meta.value = {}
-  keyEdit.value = true
-  from.value = 'blank'
-  note.value = BLANK_NOTE
-  keyRewrite.value = null
-  step.value = 'ficha'
-}
-
-async function fillDurationFromYoutube(m: ChartMeta): Promise<ChartMeta> {
-  const id = String(m.x_titan_youtube ?? '').trim()
-  if (!id || !props.fetchYoutubeDuration) return m
-  try {
-    const raw = await props.fetchYoutubeDuration(id)
-    const dur =
-      /^\d{1,2}:\d{2}$/.test(raw.trim()) || /^\d+:\d{2}:\d{2}$/.test(raw.trim())
-        ? normalizeDurationMmSs(raw.trim())
-        : durationFromYoutubeHtml(raw)
-    if (dur) return { ...m, duration: dur }
-  } catch {
-    /* keep asking on the ficha */
-  }
-  return m
-}
-
-async function runUrl() {
-  const u = url.value.trim()
-  if (!u)
-    return fail(
-      'Cole o endereço do Cifra Club',
-      'Exemplo: https://www.cifraclub.com.br/ministerio-jovem/meu-farol/',
-    )
-  if (!hostOk(u))
-    return fail(
-      'Só o Cifra Club',
-      'Cole um endereço de cifraclub.com.br. Arquivo ou Texto aceitam cifra de outro lugar.',
-    )
-  if (!netOk.value) return fail(OFFLINE_LABEL, OFFLINE_CIFRACLUB_HINT)
-  if (!props.fetchChart)
-    return fail('Buscar no Cifra Club não está disponível', 'A página precisa ser buscada pelo servidor do site. Use Arquivo ou Texto.')
-  busy.value = true
-  err.value = ''
-  try {
-    const text = await props.fetchChart(u)
-    const r = convert(text)
-    if (!r.source.trim()) throw new Error('vazio')
-    const guess = titleFromUrl(u)
-    let m: ChartMeta = { ...readMeta(r.source), x_titan_source: u }
-    if (!m.title) m.title = guess.title
-    if (!m.subtitle) m.subtitle = guess.subtitle
-    m = await fillDurationFromYoutube(m)
-    source.value = writeMeta(r.source, m)
-    meta.value = m
-    keyEdit.value = !String(m.key ?? '').trim()
-    keyRewrite.value = r.keyRewrite ?? null
-    from.value = 'url'
-    const still = missingOf(m)
-    note.value = still.length
-      ? still.includes('duration')
-        ? 'Convertido do Cifra Club. Falta a duração para a rolagem — confira no YouTube se o site não trouxe.'
-        : `Convertido do Cifra Club. Complete: ${still.map((k) => MISSING_LABEL[k] ?? k).join(', ')}.`
-      : 'Convertido do Cifra Club — tempo, compasso e duração vieram preenchidos.'
-    busy.value = false
-    step.value = 'ficha'
-  } catch {
-    fail('Não deu para ler essa cifra no Cifra Club', 'Confira o endereço, ou use Arquivo ou Texto.')
-  }
-}
-
-function onUrlPaste(e: ClipboardEvent) {
-  const t = (e.clipboardData?.getData('text') ?? '').trim()
-  if (!hostOk(t)) return
-  e.preventDefault()
-  url.value = t
-  err.value = ''
-  if (!netOk.value) {
-    fail(OFFLINE_LABEL, OFFLINE_CIFRACLUB_HINT)
-    return
-  }
-  if (props.fetchChart) void runUrl()
-}
-
-function runText() {
-  const t = pasted.value
-  if (!t.trim()) return fail('Nada colado ainda', 'Cole a cifra na caixa acima.')
-  const r = convert(t)
-  if (!r.source.trim()) return fail('Não deu para ler esse texto', 'Nenhuma linha de letra ou acorde foi reconhecida.')
-  toFicha(
-    t,
-    'texto',
-    r.changed ? `Convertido de ${r.label} para ChordPro.` : 'Já estava em ChordPro — nada precisou ser convertido.',
-  )
-}
-
-async function takeFile(f: File) {
-  busy.value = true
-  err.value = ''
-  errHint.value = ''
-  const isPdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf'
-  try {
-    if (isPdf && !props.readPdf) throw new Error('sem-pdf')
-    const text = isPdf ? await (props.readPdf as (file: File) => Promise<string>)(f) : await f.text()
-    const r = convert(text)
-    if (!r.source.trim()) throw new Error('sem-texto')
-    toFicha(
-      text,
-      'arquivo',
-      `Lido de ${f.name}${r.changed ? ` e convertido de ${r.label}.` : ' — já estava em ChordPro.'}`,
-    )
-  } catch (e) {
-    const why = String((e as Error)?.message)
-    if (why === 'sem-pdf') fail('PDF não está disponível aqui', 'Abra a versão em texto, ou cole o conteúdo na aba Texto.')
-    else if (why === 'sem-texto')
-      fail('Este PDF não tem texto', 'Parece um PDF digitalizado (imagem). Abra a versão em texto ou cole o conteúdo na aba Texto.')
-    else fail('Não deu para ler o arquivo', 'Tente um .cho, .txt ou um PDF com texto selecionável.')
-  }
-}
-
-function onFile(e: Event) {
-  const input = e.target as HTMLInputElement
-  const f = input.files?.[0]
-  if (f) void takeFile(f)
-  input.value = ''
-}
-function onDrop(e: DragEvent) {
-  e.preventDefault()
-  drag.value = false
-  const f = e.dataTransfer?.files?.[0]
-  if (f) void takeFile(f)
-}
-
-function setMeta(k: MetaKey, v: string) {
-  meta.value = { ...meta.value, [k]: v }
-}
-
-function back() {
-  if (from.value === 'blank' || from.value === 'save') return emit('close')
-  step.value = 'import'
-  tab.value = from.value === 'url' ? 'url' : from.value === 'arquivo' ? 'file' : 'text'
-  err.value = ''
-}
-function acceptKeyRewrite() {
-  const offer = keyRewrite.value
-  if (!offer) return
-  const r = rewriteToKey(source.value, offer.declaredKey)
-  if (!r?.changed) return
-  const user = meta.value
-  source.value = r.source
-  meta.value = {
-    ...readMeta(r.source),
-    title: user.title,
-    subtitle: user.subtitle,
-    tempo: user.tempo,
-    time: user.time,
-    duration: user.duration,
-    x_titan_source: user.x_titan_source,
-  }
-  keyRewrite.value = null
-}
-
-function keepKeyRewrite() {
-  keyRewrite.value = null
-}
-
-function go() {
-  if (durationMissing.value || keyRewrite.value) return
-  const next = { ...meta.value, duration: normalizeDurationMmSs(meta.value.duration ?? '') }
-  meta.value = next
-  const body = source.value.trim() ? source.value : BLANK_BODY
-  emit('commit', writeMeta(body, next))
-}
-const goLabel = computed(() =>
-  from.value === 'save' ? 'Salvar para todos' : from.value === 'blank' ? 'Abrir editor vazio' : 'Abrir no editor',
-)
-
 const geom = computed(() =>
   props.compact
     ? { align: 'flex-end', wrapPad: '0', max: '100%', maxH: '92%', pad: '18px 16px calc(18px + env(safe-area-inset-bottom))', radius: '22px 22px 0 0', cols: 'minmax(0,1fr)', titleSize: '18px', textH: '150px' }
     : { align: 'center', wrapPad: '20px', max: step.value === 'ficha' ? '480px' : '420px', maxH: step.value === 'ficha' ? '92%' : '86%', pad: '20px 18px 16px', radius: '20px', cols: 'minmax(0,1fr) minmax(0,1fr)', titleSize: '20px', textH: '160px' },
 )
+
+function onOpen(payload: FichaOpen) {
+  source.value = payload.source
+  meta.value = { ...payload.meta }
+  keyEdit.value = payload.keyEdit
+  keyRewrite.value = payload.keyRewrite
+  from.value = payload.from
+  note.value = payload.note
+  step.value = 'ficha'
+}
+
+function back() {
+  if (from.value === 'blank' || from.value === 'save') {
+    emit('close')
+    return
+  }
+  step.value = 'import'
+  tab.value = from.value === 'url' ? 'url' : from.value === 'arquivo' ? 'file' : 'text'
+  err.value = ''
+}
+
 onMounted(() => {
-  if (step.value === 'import' && tab.value === 'url') urlEl.value?.focus()
+  if (step.value === 'import' && tab.value === 'url') importEl.value?.focusUrl()
 })
 </script>
 
@@ -372,188 +134,35 @@ onMounted(() => {
         <TitanChordproIconButton icon="x" :density="compact ? 'phone' : 'bar'" muted aria-label="Fechar" @click="emit('close')" />
       </div>
 
-      <!-- Step one: where the chart comes from. Cifra Club is the normal way in. -->
-      <template v-if="step === 'import'">
-        <div
-          v-if="tab === 'url'"
-          style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:color-mix(in srgb, var(--chord) 12%, var(--canvas));border:1px solid var(--chord-edge);"
-        >
-          <input
-            ref="urlEl"
-            v-model="url"
-            type="url"
-            placeholder="cifraclub.com.br/artista/musica"
-            aria-label="Endereço no Cifra Club"
-            spellcheck="false"
-            data-nova-url
-            :disabled="busy"
-            style="width:100%;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:13px;background:var(--canvas);color:var(--text);font-family:inherit;font-size:14.5px;"
-            @keydown.enter.prevent="runUrl"
-            @paste="onUrlPaste"
-          />
-          <span v-if="urlGuess" style="font-size:12.5px;line-height:1.4;font-weight:600;">
-            {{ urlGuess.title }}<span v-if="urlGuess.subtitle" style="font-weight:500;color:var(--muted);"> · {{ urlGuess.subtitle }}</span>
-          </span>
-          <span v-else style="font-size:11.5px;line-height:1.45;color:var(--muted);">Só Cifra Club — cole o endereço da página da cifra.</span>
-          <span
-            v-if="canFetch && !netOk"
-            data-offline-hint
-            style="font-size:12px;font-weight:700;color:var(--muted);"
-          >{{ OFFLINE_LABEL }}</span>
-          <div
-            v-if="!canFetch"
-            role="status"
-            style="display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line-soft);"
-          >
-            <span style="font-size:12.5px;font-weight:700;">Buscar no Cifra Club não está disponível</span>
-            <span style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">A página precisa ser buscada pelo servidor do site. Use Arquivo ou Texto.</span>
-          </div>
-          <TitanChordproActionButton block data-nova-url-go :disabled="busy || !canFetch" @click="runUrl">
-            <span v-if="busy" class="titan-chordpro-spin" style="width:14px;height:14px;" />{{ busy ? 'Buscando…' : 'Buscar cifra' }}
-          </TitanChordproActionButton>
-        </div>
-
-        <div
-          v-else-if="tab === 'file'"
-          data-nova-drop
-          :style="{ borderColor: drag ? 'var(--chord)' : 'var(--line)', background: drag ? 'var(--chord-soft)' : 'var(--canvas)' }"
-          style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:168px;padding:22px 16px;border:1px dashed;border-radius:16px;cursor:pointer;text-align:center;transition:background .15s ease,border-color .15s ease;"
-          @click="fileEl?.click()"
-          @dragover.prevent="drag = true"
-          @dragleave="drag = false"
-          @drop="onDrop"
-        >
-          <span style="width:40px;height:40px;border-radius:12px;background:var(--chord-soft);color:var(--chord);display:flex;align-items:center;justify-content:center;"><TitanChordproIcon name="fileInput" :size="18" /></span>
-          <span style="font-size:14.5px;font-weight:700;">{{ busy ? 'Lendo o arquivo…' : drag ? 'Solte aqui' : 'Solte o arquivo ou toque para escolher' }}</span>
-          <span style="font-size:11.5px;line-height:1.5;color:var(--muted);max-width:280px;text-wrap:pretty;">ChordPro, OnSong, texto com acordes sobre a letra{{ readPdf ? ', ou PDF que tenha texto de verdade.' : '.' }}</span>
-          <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-            <span v-for="ext in readPdf ? ['.cho', '.txt', '.pro', 'PDF com texto'] : ['.cho', '.txt', '.pro']" :key="ext" style="font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 6px;">{{ ext }}</span>
-          </span>
-          <input ref="fileEl" type="file" accept=".cho,.crd,.chopro,.pro,.txt,.onsong,.pdf,text/plain,application/pdf" style="display:none;" @change="onFile" />
-        </div>
-
-        <div v-else style="display:flex;flex-direction:column;gap:10px;">
-          <textarea
-            v-model="pasted"
-            spellcheck="false"
-            data-nova-text
-            placeholder="Cole aqui a cifra — ChordPro, OnSong ou acordes sobre a letra."
-            :style="{ height: geom.textH }"
-            style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--canvas);color:var(--text);font-family:var(--titan-chordpro-font-chords,'Space Mono',monospace);font-size:12px;line-height:1.6;resize:vertical;"
-          />
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <TitanChordproActionButton data-nova-text-go style="flex:1;min-width:140px" @click="runText">Converter</TitanChordproActionButton>
-            <span v-if="sniff && sniff !== 'vazio'" style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);">
-              <span style="width:7px;height:7px;border-radius:50%;background:var(--chord);" />reconhecido: {{ SNIFF_LABEL[sniff] }}
-            </span>
-          </div>
-        </div>
-
-        <div v-if="err" role="alert" style="display:flex;flex-direction:column;gap:4px;padding:11px 12px;border:1px solid var(--danger);border-radius:13px;background:var(--danger-soft);">
-          <span style="font-size:12.5px;font-weight:700;color:var(--danger);">{{ err }}</span>
-          <span v-if="errHint" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ errHint }}</span>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Outras origens</span>
-          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
-            <button
-              v-for="o in others"
-              :key="o.id"
-              :data-tab="o.id"
-              style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;"
-              @click="pickTab(o.id)"
-            >
-              <span style="flex:none;width:28px;height:28px;border-radius:9px;background:var(--hover);color:var(--muted);display:flex;align-items:center;justify-content:center;"><TitanChordproIcon :name="o.icon" :size="14" /></span>
-              <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-                <span style="font-size:13px;font-weight:700;">{{ o.title }}</span>
-                <span style="font-size:11px;line-height:1.35;color:var(--muted);">{{ o.hint }}</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <button data-nova-blank style="align-self:flex-start;min-height:36px;padding:0;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" @click="startBlank">Começar em branco</button>
-      </template>
-
-      <!-- Step two: who the song is. -->
-      <template v-else>
-        <div v-if="note" style="display:flex;align-items:flex-start;gap:9px;padding:11px 13px;border-radius:14px;background:color-mix(in srgb, var(--chord) 12%, var(--canvas));border:1px solid var(--chord-edge);">
-          <span style="flex:none;width:7px;height:7px;margin-top:5px;border-radius:50%;background:var(--chord);" />
-          <span style="font-size:12px;line-height:1.5;color:var(--text);text-wrap:pretty;">{{ note }}</span>
-        </div>
-
-        <div
-          v-if="keyRewrite"
-          data-nova-key-rewrite
-          style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;background:var(--chord-soft);border:1px solid var(--chord-edge);"
-        >
-          <span style="font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;">Tom declarado e cifras não batem</span>
-          <span style="font-size:13px;line-height:1.5;color:var(--text);text-wrap:pretty;">
-            Declarado: <strong>{{ keyRewrite.declaredKey }}</strong>.
-            Escrito: <strong>{{ keyRewrite.writtenKey }}</strong>.
-            Reescrever guarda o original ({{ keyRewrite.declaredKey }}) e continua tocando em {{ keyRewrite.writtenKey }}.
-            Quem quiser {{ keyRewrite.declaredKey }} de verdade usa “Voltar ao tom original”.
-          </span>
-          <span
-            v-if="keyRewrite.capo"
-            data-nova-key-rewrite-capo
-            style="font-size:12px;line-height:1.45;color:var(--muted);"
-          >Cifra sugere capo {{ keyRewrite.capo }}. O capo é o seu, no aparelho — começa em 0.</span>
-          <div style="display:flex;flex-direction:column;gap:7px;">
-            <TitanChordproActionButton
-              data-nova-key-rewrite-go
-              tone="chord"
-              size="md"
-              block
-              @click="acceptKeyRewrite"
-            >Reescrever em {{ keyRewrite.declaredKey }}</TitanChordproActionButton>
-            <TitanChordproActionButton
-              data-nova-key-rewrite-keep
-              tone="ghost"
-              size="sm"
-              bordered
-              block
-              @click="keepKeyRewrite"
-            >Manter</TitanChordproActionButton>
-          </div>
-        </div>
-
-        <TitanChordproChartIdentityFields
-          :meta="meta"
-          missing-edge="chord"
-          chip-hook="plain"
-          v-model:key-edit="keyEdit"
-          :title-size="geom.titleSize"
-          :columns="geom.cols"
-          :strict="from === 'save'"
-          show-source
-          duration-hint="Tempo da música, como no YouTube. A rolagem precisa disso."
-          @patch="setMeta"
-        >
-          <template #duration-extra>
-            <a
-              v-if="meta.x_titan_youtube"
-              :href="'https://www.youtube.com/watch?v=' + meta.x_titan_youtube"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-nova-youtube
-              style="font-size:11.5px;font-weight:600;color:var(--chord);text-decoration:none;"
-            >Abrir no YouTube</a>
-          </template>
-        </TitanChordproChartIdentityFields>
-
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <span v-if="softMissing.length" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Falta {{ missingList }}. Dá para seguir e preencher depois — vai ser pedido de novo ao salvar.</span>
-          <span v-if="durationMissing" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">{{ durationNote }}</span>
-          <span v-if="keyRewrite" style="font-size:11.5px;line-height:1.5;color:var(--muted);text-wrap:pretty;">Confirme o tom e o capo acima antes de abrir no editor.</span>
-        </div>
-
-        <div style="position:sticky;bottom:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 0;margin-top:4px;background:var(--canvas);border-top:1px solid var(--line-soft);">
-          <TitanChordproActionButton tone="ghost" @click="back">{{ from === 'blank' || from === 'save' ? 'Cancelar' : 'Voltar' }}</TitanChordproActionButton>
-          <TitanChordproActionButton data-nova-go :disabled="durationMissing || !!keyRewrite" @click="go">{{ goLabel }}</TitanChordproActionButton>
-        </div>
-      </template>
+      <ChartImport
+        v-if="step === 'import'"
+        ref="importEl"
+        v-model:tab="tab"
+        v-model:url="url"
+        v-model:pasted="pasted"
+        v-model:err="err"
+        v-model:err-hint="errHint"
+        :text-height="geom.textH"
+        :online="netOk"
+        :fetch-chart="props.fetchChart"
+        :fetch-youtube-duration="props.fetchYoutubeDuration"
+        :read-pdf="props.readPdf"
+        @open="onOpen"
+      />
+      <ChartFicha
+        v-else
+        :source="source"
+        :meta="meta"
+        :key-edit="keyEdit"
+        :key-rewrite="keyRewrite"
+        :from="from"
+        :note="note"
+        :title-size="geom.titleSize"
+        :columns="geom.cols"
+        @commit="emit('commit', $event)"
+        @close="emit('close')"
+        @back="back"
+      />
     </div>
   </div>
 </template>
