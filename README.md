@@ -173,6 +173,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `autoInvertScores` | `true` | Inverte partitura escaneada quando o papel briga com o tema |
 | `capabilities.sourcePane` | `true` | `false` esconde o painel de source no editor |
 | `capabilities.diagrams` | `true` | `false` tira o toque no acorde e o modal de forma (violão / ukulele / piano) |
+| `capabilities.chartVersions` | `true` | `false` tira do editor o chip Versão e as ações Nova versão / Renomear / Apagar / Tornar padrão — para o host que guarda cada arranjo como uma cifra própria. Arquivo que já tem versões continua trocando entre elas |
 | `capabilities.debugSwipe` | `false` | `true` pinta as zonas do swipe no ensaio (Safari / anterior / rolar / próxima). Demo: `?zonas=1` |
 | `editMode` | `'local'` | `local` \| `persisted` \| `none`. Um papel por mount (frontend vs backend). Ortogonal a `mode` view\|edit |
 | `modes` | — | **Deprecated:** use `editMode`. `content`→`persisted`; `both`→`local` + warning |

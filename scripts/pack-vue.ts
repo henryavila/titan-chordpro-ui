@@ -20,8 +20,16 @@ import type { TitanChordproProps } from './public'
 export type {
   TitanChordproEmits,
   TitanChordproProps,
+  EditMode,
   ImageChoice,
+  Lens,
+  LoadSong,
+  NoteNameFormat,
   ModesProp,
+  RehearsalFocus,
+  SetlistSong,
+  SlideImage,
+  SuggestionStatus,
   TitanChordproCapabilities,
   WriteMode,
 } from './public'

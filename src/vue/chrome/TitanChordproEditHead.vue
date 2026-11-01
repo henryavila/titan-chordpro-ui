@@ -71,7 +71,7 @@ function goAdd() {
       </div>
 
       <TitanChordproChartSwitch
-        v-if="named() || contentEdit"
+        v-if="named() || (contentEdit && versions)"
         v-model:open="chartOpen"
         edit
         :charts="charts"
@@ -82,7 +82,7 @@ function goAdd() {
           <span>{{ chart.label === 'default' ? 'Padrão' : chart.label }}</span>
           <span v-if="chart.isDefault" class="titan-chordpro-version-mark">padrão</span>
         </template>
-        <template v-if="contentEdit">
+        <template v-if="contentEdit && versions">
             <button v-if="named()" type="button" data-chart-rename class="titan-chordpro-version-action" @click="renameOpen = !renameOpen">Renomear</button>
             <button type="button" data-chart-add class="titan-chordpro-version-action" @click="addOpen = !addOpen">Nova versão</button>
             <button v-if="named()" type="button" data-chart-delete class="titan-chordpro-version-action" @click="confirmDelete ? emit('chart-delete') : (confirmDelete = true)">{{ confirmDelete ? `Apagar ${chipLabel()}` : 'Apagar' }}</button>

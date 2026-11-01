@@ -103,6 +103,7 @@ import type {
 import TitanChordproCapoLegend from './chrome/TitanChordproCapoLegend.vue'
 import TitanChordproStates from './chrome/TitanChordproStates.vue'
 import TitanChordproEditHead from './chrome/TitanChordproEditHead.vue'
+import { editHeadCharts } from './chrome/edit-head-charts'
 import TitanChordproWideDock from './chrome/TitanChordproWideDock.vue'
 import TitanChordproPhoneDock from './chrome/TitanChordproPhoneDock.vue'
 import TitanChordproAudioRef from './chrome/TitanChordproAudioRef.vue'
@@ -2182,9 +2183,7 @@ const editHeadBind = computed((): EditHeadModel => ({
   canRedo: canRedo.value,
   confirmDiscard: confirmDiscard.value,
   discardLabel: discardLabel.value,
-  charts: fileCharts.value,
-  chartId: screenChartId.value,
-  chartLabel: fileCharts.value.find((c) => c.id === screenChartId.value)?.label || '',
+  ...editHeadCharts(fileCharts.value, screenChartId.value, props.capabilities?.chartVersions !== false),
 }))
 
 const editDockBind = computed((): EditDockModel => ({
