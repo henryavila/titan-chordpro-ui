@@ -111,7 +111,7 @@ const CHART_SWITCH_FILES = ['src/vue/ui/TitanChordproChartSwitch.vue']
 const LINE_CEILING: Array<{ test: (rel: string) => boolean; max: number }> = [
   { test: (rel) => rel === 'src/core/charts.ts', max: 1538 },
   { test: (rel) => rel.startsWith('src/core/') && rel.endsWith('.ts'), max: 700 },
-  { test: (rel) => rel === 'src/vue/TitanChordpro.vue', max: 3555 },
+  { test: (rel) => rel === 'src/vue/TitanChordpro.vue', max: 3554 },
   { test: (rel) => rel === 'src/vue/use/useOverlay.ts', max: 761 },
   { test: (rel) => rel === 'src/vue/use/overlay/queue.ts', max: 634 },
   { test: (rel) => rel === 'src/vue/use/strum-sample-data.ts', max: 1171 },

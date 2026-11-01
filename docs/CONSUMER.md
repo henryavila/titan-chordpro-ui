@@ -58,6 +58,12 @@ gravar. `save-content` devolve o arquivo inteiro. O overlay pessoal é
 **Minha versão** é esse overlay, não um bloco do arquivo. Sugestão leva o
 `chartId` da versão em que o diff foi feito; aceitar altera só esse bloco.
 
+Host que guarda cada arranjo como uma cifra própria (uma linha por arranjo no
+banco, com nome e principal geridos no app) passa
+`:capabilities="{ chartVersions: false }"`: o editor não mostra o chip Versão
+nem cria, renomeia, apaga ou torna padrão uma versão. Um arquivo que já chega
+com versões continua lendo e trocando entre elas.
+
 ---
 
 Demo neste repo (`pnpm dev`): índice em `/`. O mesmo `<TitanChordpro>`;

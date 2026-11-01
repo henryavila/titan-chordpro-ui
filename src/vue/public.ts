@@ -9,9 +9,34 @@ import type {
   SuggestionStatus,
   ThemeId,
 } from '@henryavila/titan-chordpro-ui'
-import type { LoadSong, SetlistSong } from './use/useSetlist'
 
-export type { LoadSong, SetlistSong, Lens, SaveStrumPresetPayload, StrumPreset }
+export type { Lens, SaveStrumPresetPayload, StrumPreset }
+
+/**
+ * One entry of the rehearsal list, as the host describes it. Declared here, not
+ * in `use/useSetlist`, because this file is what the package ships as types.
+ */
+export type SetlistSong = {
+  id: string
+  title: string
+  subtitle?: string
+  key?: string
+  /** `{tempo:}` when the host already knows it, even without the ChordPro. */
+  tempo?: string | number
+  /** `{time:}` when the host already knows it, even without the ChordPro. */
+  time?: string
+  /** The ChordPro itself, when the host already has it. */
+  source?: string
+  /**
+   * Cifra this song opens on. The file may hold several named charts;
+   * absent uses the file default. The musician can switch; that choice
+   * stays for this rehearsal until the program sends a different id.
+   */
+  chartId?: string
+}
+
+/** Asked for a song's ChordPro when the list did not carry it. */
+export type LoadSong = (id: string, song: SetlistSong) => Promise<string> | string
 
 /** A score the host already has on file, offered when inserting `{image:}`. */
 export type ImageChoice = { file: string; label?: string }
@@ -73,6 +98,13 @@ export type TitanChordproCapabilities = {
    * The instrument switch lives on that screen, not in Mais.
    */
   diagrams?: boolean
+  /**
+   * Named versions inside one file, managed from the editor (Nova versão,
+   * Renomear, Apagar, Tornar padrão). On unless the host passes `false` — for
+   * a host that keeps each arrangement as a chart of its own. A file that
+   * already has versions still reads and switches between them.
+   */
+  chartVersions?: boolean
 }
 
 /** Cover or lyric-slide background the host wants in the `.slja`. */

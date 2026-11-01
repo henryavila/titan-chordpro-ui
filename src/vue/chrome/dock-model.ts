@@ -111,6 +111,8 @@ export type EditHeadModel = {
   charts: { id: string; label: string; isDefault: boolean }[]
   chartId: string
   chartLabel: string
+  /** The editor may create and manage named versions (`capabilities.chartVersions`). */
+  versions: boolean
 }
 
 /** Props of the phone overflow sheet. */

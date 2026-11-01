@@ -1,25 +1,8 @@
 import { computed, ref, type Ref } from 'vue'
 import { sheetBpm } from '@henryavila/titan-chordpro-ui'
+import type { LoadSong, SetlistSong } from '../public'
 
-/** One entry of the rehearsal list, as the host describes it. */
-export type SetlistSong = {
-  id: string
-  title: string
-  subtitle?: string
-  key?: string
-  /** `{tempo:}` when the host already knows it, even without the ChordPro. */
-  tempo?: string | number
-  /** `{time:}` when the host already knows it, even without the ChordPro. */
-  time?: string
-  /** The ChordPro itself, when the host already has it. */
-  source?: string
-  /**
-   * Cifra this song opens on. The file may hold several named charts;
-   * absent uses the file default. The musician can switch; that choice
-   * stays for this rehearsal until the program sends a different id.
-   */
-  chartId?: string
-}
+export type { LoadSong, SetlistSong }
 
 /** `{tempo:72}` from a chart body — enough to label the list without a parse. */
 function bpmFromCho(source: string | undefined): string {
@@ -46,7 +29,6 @@ function timeLabelOf(song: SetlistSong, cached?: string): string {
   return timeFromCho(song.source ?? cached)
 }
 
-export type LoadSong = (id: string, song: SetlistSong) => Promise<string> | string
 
 /** Where a musician left a song: tone, capo, speed and place on the page. */
 export type SongSpot = {
