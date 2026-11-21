@@ -4751,4 +4751,27 @@ div.titan-chordpro-chip {
 }
 .titan-chordpro-version-mark { font-size: 11px; color: var(--muted); }
 .titan-chordpro-version-form { display: flex; gap: 6px; padding: 6px; }
-.titan-chordpro-version-form input { flex: 1; min-width: 0; }
+.titan-chordpro-version-form input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+}
+.titan-chordpro-version-form button {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-hover);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}

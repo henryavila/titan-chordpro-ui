@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Nome da versão:** o campo e o botão de Nova versão e Renomear, no menu Versão, ganham borda e fundo. A letra do campo tem 16px para o telefone não aproximar a tela.
 - **Lista em cache pelo endereço antigo:** `/?ensaio=cache` abre as três músicas com o cache ligado. No GitHub Pages, Hinário Exemplo e Demos Titan no shell do site voltam ao hub do PWA.
 - **Fontes no guia:** Sora e Space Mono vêm no CSS do pacote. O host só troca os tokens se quiser outras famílias.
 - **Nova cifra e a tecla Esc:** Esc fecha a cifra nova antes dos outros painéis, na leitura e na edição.
