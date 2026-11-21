@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import TitanChordproChartSwitch from '../ui/TitanChordproChartSwitch.vue'
 import TitanChordproChip from '../ui/TitanChordproChip.vue'
@@ -6,7 +7,14 @@ import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 import type { ViewHeadModel } from './view-head'
 
-defineProps<ViewHeadModel>()
+const props = defineProps<ViewHeadModel>()
+
+const subLabel = computed(() =>
+  props.variant === 'phone' ? props.phoneSub : props.nextChip,
+)
+const listLabel = computed(
+  () => `Abrir a lista do ensaio — ${props.posLabel} · ${props.title}`,
+)
 
 const capoOpen = defineModel<boolean>('capoOpen', { default: false })
 
@@ -31,25 +39,40 @@ const emit = defineEmits<{
     data-titan-chordpro-head
     :style="variant === 'wide' ? { '--titan-chordpro-page-max': pageMax } : undefined"
   >
-    <button
-      v-if="setlistOn"
-      data-setlist-open
-      class="titan-chordpro-head-id"
-      title="Abrir a lista do ensaio"
-      @click="emit('open-setlist')"
-    >
-      <span class="titan-chordpro-head-pos titan-chordpro-head-chip">{{ posLabel }}</span>
+    <div v-if="setlistOn" class="titan-chordpro-head-id">
+      <button
+        type="button"
+        data-setlist-open
+        class="titan-chordpro-head-pos titan-chordpro-head-chip"
+        title="Abrir a lista do ensaio"
+        :aria-label="listLabel"
+        @click="emit('open-setlist')"
+      >{{ posLabel }}</button>
       <span class="titan-chordpro-head-name">
-        <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
+        <button
+          type="button"
+          data-setlist-open
+          data-chart-title
+          class="titan-chordpro-head-open titan-chordpro-head-title"
+          tabindex="-1"
+          @click="emit('open-setlist')"
+        >{{ title }}</button>
         <TitanChordproChartSwitch
           v-if="charts.length > 1"
           :charts="charts"
           :label="chartLabel"
           @select="emit('select-chart', $event)"
         />
-        <span class="titan-chordpro-head-sub">{{ variant === 'phone' ? phoneSub : nextChip }}</span>
+        <button
+          v-if="subLabel"
+          type="button"
+          data-setlist-open
+          class="titan-chordpro-head-open titan-chordpro-head-sub"
+          tabindex="-1"
+          @click="emit('open-setlist')"
+        >{{ subLabel }}</button>
       </span>
-    </button>
+    </div>
     <span v-else-if="variant === 'phone'" class="titan-chordpro-head-id">
       <span class="titan-chordpro-head-name">
         <span data-chart-title class="titan-chordpro-head-title">{{ title }}</span>
