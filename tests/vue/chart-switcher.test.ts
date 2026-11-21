@@ -128,6 +128,52 @@ async function frames() {
   await flushPromises()
 }
 
+describe('the version chip is not the rehearsal list', () => {
+  const rehearsal = [
+    { id: 'uma', title: 'Uma', source: TWO_CHART_SOURCE },
+    { id: 'escuta', title: 'Escuta meu clamor', source: loadFixture('sda/084-escuta-meu-clamor.cho') },
+  ]
+
+  function listOpen(w: Awaited<ReturnType<typeof mountViewer>>) {
+    return w.find('[data-setlist-item]').exists()
+  }
+
+  it('tapping the chip opens the version menu and leaves the list closed', async () => {
+    const w = await mountViewer({ source: '', songs: rehearsal })
+    expect(w.get('[data-setlist-open]').text()).toMatch(/1\/2/)
+    await w.get('[data-chart-switch]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-chart-option="completa"]').exists()).toBe(true)
+    expect(listOpen(w)).toBe(false)
+  })
+
+  it('tapping an option swaps the cifra and leaves the list closed', async () => {
+    const w = await mountViewer({ source: '', songs: rehearsal })
+    await pickChart(w, 'completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).toContain('corpo da completa')
+    expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da oferta')
+    expect(listOpen(w)).toBe(false)
+  })
+
+  it('tapping the pos/title still opens the list', async () => {
+    const w = await mountViewer({ source: '', songs: rehearsal })
+    await w.get('[data-setlist-open]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-setlist-item]').exists()).toBe(true)
+  })
+
+  it('never nests one head button inside another', async () => {
+    const w = await mountViewer({ source: '', songs: rehearsal })
+    const head = w.get('[data-titan-chordpro-head]').element
+    const buttons = [...head.querySelectorAll('button')]
+    expect(buttons.length).toBeGreaterThan(1)
+    const nested = buttons.filter((button) => button.querySelector('button') !== null)
+    expect(nested, 'a <button> inside a <button> is invalid HTML').toEqual([])
+    const chip = w.get('[data-chart-switch]').element
+    expect(chip.closest('[data-setlist-open]')).toBeNull()
+  })
+})
+
 describe('chart switch is not a song change', () => {
   it('does not call setlist go and leaves songId on the same item', async () => {
     const other = loadFixture('sda/084-escuta-meu-clamor.cho')
