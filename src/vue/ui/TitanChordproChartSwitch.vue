@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
+import { versionMenuOffset } from './TitanChordproVersionMenuOffset'
+
 export type ChartSwitchItem = { id: string; label: string; isDefault?: boolean }
 
 const open = defineModel<boolean>('open', { default: false })
@@ -13,6 +16,35 @@ defineProps<{
 const emit = defineEmits<{
   select: [id: string]
 }>()
+
+/** Room kept between the menu and the edges of the root. */
+const MENU_MARGIN = 8
+
+const menu = ref<HTMLElement | null>(null)
+const menuShift = ref(0)
+
+function measure() {
+  if (typeof window === 'undefined') return
+  const el = menu.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const root = el.closest('[data-titan-chordpro-root]')
+  const limit = root instanceof HTMLElement ? root.getBoundingClientRect() : null
+  const left = limit ? limit.left : 0
+  const right = limit ? limit.right : window.innerWidth
+  menuShift.value = versionMenuOffset(rect.left, rect.right, left, right, MENU_MARGIN)
+}
+
+watch(
+  open,
+  async (isOpen) => {
+    menuShift.value = 0
+    if (!isOpen) return
+    await nextTick()
+    measure()
+  },
+  { immediate: true },
+)
 
 function choose(id: string) {
   open.value = false
@@ -32,7 +64,14 @@ function choose(id: string) {
     >
       <span class="titan-chordpro-chart-switch-label">{{ label }}</span>
     </button>
-    <div v-if="open" class="titan-chordpro-chart-menu titan-chordpro-version-menu" role="dialog" aria-label="Versão">
+    <div
+      v-if="open"
+      ref="menu"
+      class="titan-chordpro-chart-menu titan-chordpro-version-menu titan-chordpro-veil-2"
+      role="dialog"
+      aria-label="Versão"
+      :style="{ transform: `translateX(${menuShift}px)` }"
+    >
       <button
         v-for="chart in charts"
         :key="chart.id"
