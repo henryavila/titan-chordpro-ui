@@ -1305,11 +1305,14 @@ div.titan-chordpro-head-id {
  * version chip must stay a sibling (no <button> inside a <button>). These are
  * the button resets for that branch — nothing else on the bar uses them.
  */
-.titan-chordpro-head-open {
+.titan-chordpro-head .titan-chordpro-head-open {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   text-align: left;
   cursor: pointer;
 }
@@ -1324,7 +1327,7 @@ div.titan-chordpro-head-id {
 .titan-chordpro-head.is-wide .titan-chordpro-head-id:has([data-setlist-open]:hover) {
   background: var(--hover);
 }
-.titan-chordpro-head-pos {
+.titan-chordpro-head .titan-chordpro-head-pos {
   flex: none;
   display: flex;
   align-items: center;
@@ -1352,7 +1355,7 @@ div.titan-chordpro-head-id {
   flex-direction: column;
   gap: 1px;
 }
-.titan-chordpro-head-title {
+.titan-chordpro-head .titan-chordpro-head-title {
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -1365,12 +1368,13 @@ div.titan-chordpro-head-id {
   font-size: 15px;
   line-height: 1.25;
 }
-.titan-chordpro-head-sub {
+.titan-chordpro-head .titan-chordpro-head-sub {
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 600;
+  line-height: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

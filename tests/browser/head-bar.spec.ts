@@ -145,6 +145,50 @@ test('wide floating head may grow past the reading column when capo is on', asyn
   await page.screenshot({ path: test.info().outputPath('wide-head.png'), clip: { x: 0, y: 0, width: 800, height: 160 } })
 })
 
+test('list targets keep the span look — pos fill and muted subtitle', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 900 })
+  await page.goto('/?lista=1')
+  await page.locator('[data-titan-chordpro-head]').waitFor()
+  const looks = await page.evaluate(() => {
+    const head = document.querySelector('[data-titan-chordpro-head]') as HTMLElement
+    const root = document.querySelector('.titan-chordpro-root') as HTMLElement
+    const pos = head.querySelector('.titan-chordpro-head-pos') as HTMLElement
+    const sub = head.querySelector('.titan-chordpro-head-sub') as HTMLElement
+    const title = head.querySelector('[data-chart-title]') as HTMLElement
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--muted)'
+    root.appendChild(probe)
+    const muted = getComputedStyle(probe).color
+    probe.style.color = 'var(--downbeat)'
+    const downbeat = getComputedStyle(probe).color
+    probe.style.color = 'var(--downbeat-ink)'
+    const downbeatInk = getComputedStyle(probe).color
+    probe.remove()
+    const idlePosBg = getComputedStyle(pos).backgroundColor
+    head.classList.add('titan-chordpro-head-hit-1')
+    const beat = {
+      posBg: getComputedStyle(pos).backgroundColor,
+      posColor: getComputedStyle(pos).color,
+      titleColor: getComputedStyle(title).color,
+    }
+    head.classList.remove('titan-chordpro-head-hit-1')
+    return {
+      idlePosBg,
+      subColor: getComputedStyle(sub).color,
+      muted,
+      downbeat,
+      downbeatInk,
+      beat,
+    }
+  })
+  expect(looks.idlePosBg, 'the button reset ate the list-index fill').not.toMatch(/^rgba?\(0, 0, 0, 0\)$|^transparent$/)
+  expect(looks.subColor, `subtitle was ${looks.subColor}, --muted is ${looks.muted}`).toBe(looks.muted)
+  // Beat 1 inverts the strip exactly as it did around the old span.
+  expect(looks.beat.posBg).toBe(looks.downbeatInk)
+  expect(looks.beat.posColor).toBe(looks.downbeat)
+  expect(looks.beat.titleColor).toBe(looks.downbeatInk)
+})
+
 test('zen pins a plain song name — not a second card', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')

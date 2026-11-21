@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import TitanChordproChartSwitch from '../ui/TitanChordproChartSwitch.vue'
 import TitanChordproChip from '../ui/TitanChordproChip.vue'
@@ -6,7 +7,14 @@ import TitanChordproIconButton from '../ui/TitanChordproIconButton.vue'
 import TitanChordproSwitchRow from '../ui/TitanChordproSwitchRow.vue'
 import type { ViewHeadModel } from './view-head'
 
-defineProps<ViewHeadModel>()
+const props = defineProps<ViewHeadModel>()
+
+const subLabel = computed(() =>
+  props.variant === 'phone' ? props.phoneSub : props.nextChip,
+)
+const listLabel = computed(
+  () => `Abrir a lista do ensaio — ${props.posLabel} · ${props.title}`,
+)
 
 const capoOpen = defineModel<boolean>('capoOpen', { default: false })
 
@@ -37,6 +45,7 @@ const emit = defineEmits<{
         data-setlist-open
         class="titan-chordpro-head-pos titan-chordpro-head-chip"
         title="Abrir a lista do ensaio"
+        :aria-label="listLabel"
         @click="emit('open-setlist')"
       >{{ posLabel }}</button>
       <span class="titan-chordpro-head-name">
@@ -45,7 +54,7 @@ const emit = defineEmits<{
           data-setlist-open
           data-chart-title
           class="titan-chordpro-head-open titan-chordpro-head-title"
-          title="Abrir a lista do ensaio"
+          tabindex="-1"
           @click="emit('open-setlist')"
         >{{ title }}</button>
         <TitanChordproChartSwitch
@@ -55,12 +64,13 @@ const emit = defineEmits<{
           @select="emit('select-chart', $event)"
         />
         <button
+          v-if="subLabel"
           type="button"
           data-setlist-open
           class="titan-chordpro-head-open titan-chordpro-head-sub"
-          title="Abrir a lista do ensaio"
+          tabindex="-1"
           @click="emit('open-setlist')"
-        >{{ variant === 'phone' ? phoneSub : nextChip }}</button>
+        >{{ subLabel }}</button>
       </span>
     </div>
     <span v-else-if="variant === 'phone'" class="titan-chordpro-head-id">
