@@ -53,6 +53,17 @@ describe('the version menu is a floating surface', () => {
     expect(rule).not.toMatch(/(^|[;\s])border\s*:/)
   })
 
+  it('draws the name field and its button, 16px so the phone does not zoom on focus', () => {
+    const field = block('.titan-chordpro-version-form input')
+    expect(field).toMatch(/border:\s*1px solid var\(--line\)/)
+    expect(field).toMatch(/background:\s*var\(--surface\)/)
+    expect(field).toMatch(/color:\s*var\(--text\)/)
+    expect(field).toMatch(/font-size:\s*16px/)
+    const go = block('.titan-chordpro-version-form button')
+    expect(go).toMatch(/border:\s*1px solid var\(--line\)/)
+    expect(go).toMatch(/color:\s*var\(--text\)/)
+  })
+
   it('wears the shared veil-2 surface', () => {
     const veil = block('.titan-chordpro-veil-2')
     expect(veil).toMatch(/background:\s*var\(--veil-2\)/)
