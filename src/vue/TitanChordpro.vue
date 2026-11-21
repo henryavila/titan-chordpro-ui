@@ -667,8 +667,8 @@ function onChartAdd(opts: { id: string; label: string }) {
   const next = addChart(session.getSource(), fromId, opts)
   if (next === session.getSource()) return
   session.replace(next)
-  musicianChartId.value = opts.id
   touch()
+  selectChart(opts.id)
   const from = fileCharts.value.find((c) => c.id === fromId)?.label || fromId
   toastMsg(`Versão ${opts.label} criada a partir de ${from}`)
 }
@@ -686,8 +686,8 @@ function onChartDelete() {
   const next = deleteChart(session.getSource(), id)
   if (next === session.getSource()) return
   session.replace(next)
-  musicianChartId.value = null
   touch()
+  selectChart(screenChartId.value)
 }
 function onChartDefault() {
   const id = screenChartId.value

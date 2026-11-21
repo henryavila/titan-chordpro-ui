@@ -51,12 +51,15 @@ Uma música continua sendo **uma string**. Várias versões da mesma cifra
 moram nela, entre `{start_of_x_chart:id}` e `{end_of_x_chart}`. O nome
 visível é `{x_chart_label:}`. `{x_chart_default:id}` é a versão que abre
 quando o programa não manda `songs[].chartId`. O músico troca no chip e o
-componente emite `update:chartId`; isso não reescreve o programa até o host
+componente emite `update:chartId`; criar ou apagar uma versão também emite,
+com o id da que fica na tela. Isso não reescreve o programa até o host
 gravar. `save-content` devolve o arquivo inteiro. O overlay pessoal é
 `titan-chordpro:my:{songId}` na cifra única e
 `titan-chordpro:my:{songId}:{chartId}` quando a versão tem id próprio.
 **Minha versão** é esse overlay, não um bloco do arquivo. Sugestão leva o
 `chartId` da versão em que o diff foi feito; aceitar altera só esse bloco.
+Para guardar só o texto de uma versão, `chartDocument(source, chartId)`
+devolve o bloco como está, sem as cercas e sem conversão de formato.
 
 ---
 

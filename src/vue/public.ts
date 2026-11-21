@@ -163,6 +163,7 @@ export type TitanChordproProps = {
   /**
    * Named cifra inside `source` when the file has more than one.
    * Absent → the file default. The musician can change it; emit `update:chartId`.
+   * The same event also comes when a version is created or deleted.
    */
   chartId?: string
   /**
@@ -274,6 +275,7 @@ export type TitanChordproEmits = {
   /** Request only in host mode: the host accepts by updating its theme prop. */
   'update:theme': [value: ThemeId]
   'update:mode': [value: 'view' | 'edit']
+  /** Other version on screen: the musician picked one on the chip, or created / deleted one. */
   'update:chartId': [value: string]
   'update:lens': [value: Lens]
   'update:hideComments': [value: boolean]
