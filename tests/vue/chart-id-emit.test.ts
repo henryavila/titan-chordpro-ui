@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { STORE_KEYS } from '../../src/core'
 import { TitanChordpro } from '../../src/vue'
 
 /** Same N>1 file as `TWO_CHART_SOURCE` in tests/core/charts-envelope.test.ts. */
@@ -43,7 +44,7 @@ let realRO: typeof ResizeObserver
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('cpv:fitSeen', '1')
+  localStorage.setItem(STORE_KEYS.fitSeen, '1')
   observers.length = 0
   realRO = globalThis.ResizeObserver
   globalThis.ResizeObserver = TestRO as unknown as typeof ResizeObserver
@@ -83,6 +84,18 @@ async function openVersions(w: Awaited<ReturnType<typeof mountViewer>>) {
   await flushPromises()
 }
 
+/** Records the two host props in emission order, which `emitted()` alone loses. */
+function recordOrder() {
+  const order: { event: string; value: string }[] = []
+  return {
+    order,
+    props: {
+      'onUpdate:source': (value: string) => order.push({ event: 'update:source', value }),
+      'onUpdate:chartId': (value: string) => order.push({ event: 'update:chartId', value }),
+    },
+  }
+}
+
 async function createVersion(w: Awaited<ReturnType<typeof mountViewer>>, label: string) {
   await openVersions(w)
   await w.get('[data-chart-add]').trigger('click')
@@ -100,6 +113,34 @@ describe('update:chartId follows the version on screen', () => {
 
     expect(w.emitted('update:chartId')?.flat()).toEqual(['louvor'])
     expect(w.get('[data-chart-switch]').text()).toMatch(/Louvor/)
+  })
+
+  it('sends the file with the new version before announcing its chart id', async () => {
+    const { order, props } = recordOrder()
+    const w = await mountViewer(props)
+    await enterEdit(w)
+    order.length = 0
+    await createVersion(w, 'Louvor')
+
+    expect(order.map((e) => e.event)).toEqual(['update:source', 'update:chartId'])
+    expect(order[0]?.value).toContain('{x_chart_label:Louvor}')
+    expect(order[1]?.value).toBe('louvor')
+  })
+
+  it('sends the file with the removed version before announcing the remaining chart id', async () => {
+    const { order, props } = recordOrder()
+    const w = await mountViewer(props)
+    await enterEdit(w)
+    await openVersions(w)
+    order.length = 0
+    await w.get('[data-chart-delete]').trigger('click')
+    await flushPromises()
+    await w.get('[data-chart-delete]').trigger('click')
+    await flushPromises()
+
+    expect(order.map((e) => e.event)).toEqual(['update:source', 'update:chartId'])
+    expect(order[0]?.value).not.toContain('{x_chart_label:Oferta}')
+    expect(order[1]?.value).toBe('completa')
   })
 
   it('emits when the first version is created on a file with no envelope', async () => {

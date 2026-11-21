@@ -30,7 +30,7 @@ describe('chartDocument exported from the package root', () => {
 {sot}
 e|---0---|
 {x_chart_default}
-{/sot}`
+{eot}`
     const source = `{start_of_x_chart:original}\n${block}\n{end_of_x_chart}\n`
 
     expect(chartDocument(source, 'original')).toBe(block)
