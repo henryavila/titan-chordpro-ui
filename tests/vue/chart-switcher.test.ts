@@ -210,6 +210,51 @@ describe('the version chip is not the rehearsal list', () => {
   })
 })
 
+describe('the open version menu stays inside the root', () => {
+  function rect(left: number, right: number): DOMRect {
+    return {
+      left,
+      right,
+      top: 0,
+      bottom: 0,
+      width: right - left,
+      height: 0,
+      x: left,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect
+  }
+
+  it('shifts back inside the root, wears the floating surface, and measures again on reopen', async () => {
+    const w = await mountViewer()
+    const original = Element.prototype.getBoundingClientRect
+    let menuLeft = 300
+    const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      if (this.classList.contains('titan-chordpro-version-menu')) return rect(menuLeft, menuLeft + 360)
+      if (this.hasAttribute('data-titan-chordpro-root')) return rect(0, 390)
+      return original.call(this)
+    })
+    try {
+      await w.get('[data-chart-switch]').trigger('click')
+      await flushPromises()
+      const menu = w.get('.titan-chordpro-version-menu')
+      expect(menu.classes()).toContain('titan-chordpro-veil-2')
+      expect(menu.attributes('style')).toContain('translateX(-278px)')
+
+      await w.get('[data-chart-switch]').trigger('click')
+      await flushPromises()
+      expect(w.find('.titan-chordpro-version-menu').exists()).toBe(false)
+
+      menuLeft = 20
+      await w.get('[data-chart-switch]').trigger('click')
+      await flushPromises()
+      expect(w.get('.titan-chordpro-version-menu').attributes('style')).toContain('translateX(0px)')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})
+
 describe('chart switch is not a song change', () => {
   it('does not call setlist go and leaves songId on the same item', async () => {
     const other = loadFixture('sda/084-escuta-meu-clamor.cho')
