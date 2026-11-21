@@ -195,7 +195,7 @@ Guia: [`docs/CONSUMER.md`](docs/CONSUMER.md). Demo: `pnpm dev` — `/` índice
 | `storage` | `localStorage` | Onde o que o TitanChordpro lembra é gravado — ver abaixo |
 | `surfaceGuard` | `true` | Avisa (console + tela) quando o host embute sem dar altura ao pai |
 
-Emite `update:source`, `update:mode`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
+Emite `update:source`, `update:mode`, `update:chartId`, `update:lens`, `update:hideComments`, `save`, `save-content`, `suggestion-created`, `suggestion-accepted`, `suggestion-refused`, `update:suggestionQueue`, `dirty`, `state`.
 
 Não há prop de URL de áudio. Cantado, playback e capa da cifra vão no ChordPro (`setRehearsalAudio`) e entram em `source`. Capa padrão da marca: `defaultAudioArt`. Guia: [Áudio de referência](#áudio-de-referência-no-ensaio) e [`docs/CONSUMER.md`](docs/CONSUMER.md) §6.
 
