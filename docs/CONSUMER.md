@@ -58,6 +58,8 @@ gravar. `save-content` devolve o arquivo inteiro. O overlay pessoal é
 `titan-chordpro:my:{songId}:{chartId}` quando a versão tem id próprio.
 **Minha versão** é esse overlay, não um bloco do arquivo. Sugestão leva o
 `chartId` da versão em que o diff foi feito; aceitar altera só esse bloco.
+Para guardar só o texto de uma versão, `chartDocument(source, chartId)`
+devolve o bloco como está, sem as cercas e sem conversão de formato.
 
 ---
 

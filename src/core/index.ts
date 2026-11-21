@@ -65,6 +65,15 @@ export {
   setDefaultChart,
 } from './charts'
 export type { ChartInfo } from './charts'
+/**
+ * Raw text of the requested chart block — the block that opens when `chartId`
+ * is absent or unknown. The `{start_of_x_chart}` / `{end_of_x_chart}` fences
+ * are not included; `{x_chart_label:}` and `{x_chart_default:}` lines inside
+ * the block stay. No format conversion is applied: the text comes back exactly
+ * as written, except line endings, where `\r\n` and `\r` become `\n`.
+ * A file with no envelope returns in full.
+ */
+export { chartDocument } from './charts'
 export { parseDefineDirective, serializeDefine, writeDefines } from './define'
 export type { ChordDefine, DefineDirective, DefineInstrument, DefineResult } from './define'
 export { parseChordToken } from './parse-chord'
