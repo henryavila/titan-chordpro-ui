@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import TitanChordproIcon from '../icon/TitanChordproIcon.vue'
 import { versionMenuOffset } from './TitanChordproVersionMenuOffset'
 
 export type ChartSwitchItem = { id: string; label: string; isDefault?: boolean }
@@ -92,12 +93,20 @@ function choose(id: string) {
     <button
       type="button"
       data-chart-switch
-      class="titan-chordpro-head-chip"
+      class="titan-chordpro-head-chip titan-chordpro-chart-switch"
       :data-chart-edit-label="edit ? '' : undefined"
       aria-label="Versão"
+      aria-haspopup="dialog"
+      :aria-expanded="open"
       @click="open = !open"
     >
       <span class="titan-chordpro-chart-switch-label">{{ label }}</span>
+      <TitanChordproIcon
+        name="chevronDown"
+        :size="11"
+        class="titan-chordpro-chart-switch-caret"
+        :data-open="open ? '' : undefined"
+      />
     </button>
     <div
       v-if="open"

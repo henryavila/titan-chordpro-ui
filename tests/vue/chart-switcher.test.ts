@@ -89,6 +89,18 @@ describe('title chip and chartId prop', () => {
     expect(w.get('[data-titan-chordpro-scroll]').text()).not.toContain('corpo da completa')
   })
 
+  it('the chip carries a caret that tells it opens a list, and it turns when open', async () => {
+    const w = await mountViewer()
+    const chip = w.get('[data-chart-switch]')
+    const caret = chip.get('[data-icon="chevronDown"]')
+    expect(chip.attributes('aria-expanded')).toBe('false')
+    expect(caret.attributes('data-open')).toBeUndefined()
+    await chip.trigger('click')
+    await flushPromises()
+    expect(chip.attributes('aria-expanded')).toBe('true')
+    expect(chip.get('[data-icon="chevronDown"]').attributes('data-open')).toBe('')
+  })
+
   it('selecting Completa emits update:chartId and re-parses that chart only', async () => {
     const w = await mountViewer()
     await pickChart(w, 'completa')

@@ -4715,6 +4715,18 @@ div.titan-chordpro-chip {
 }
 
 .titan-chordpro-version-chip { position: relative; min-width: 0; }
+.titan-chordpro-chart-switch {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+}
+.titan-chordpro-chart-switch-caret {
+  flex: none;
+  opacity: 0.75;
+  transition: transform 0.18s ease;
+}
+.titan-chordpro-chart-switch-caret[data-open] { transform: rotate(180deg); }
 .titan-chordpro-chart-switch-label {
   display: block;
   max-width: 9rem;
