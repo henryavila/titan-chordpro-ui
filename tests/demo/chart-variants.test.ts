@@ -31,7 +31,7 @@ describe('fixture variants become one song', () => {
     const song = songs.find((item) => item.id === '009-verdadeira-alegria')
     expect(song?.chartId).toBe('padrao')
     expect(song?.source).toContain('{x_chart_label:Muralhas}')
-    expect(songs[0]?.source).toMatch(/start_of_x_chart/)
+    expect(song?.source).toMatch(/start_of_x_chart/)
   })
 
   it('pairs Poder do Amor with versions and one song without', () => {

@@ -47,7 +47,8 @@ describe('fixtures/sda — corpus de produção para validar a aplicação', () 
   it('é a única lista do demo — cifras antigas ficam de fora', () => {
     const f = allFixtures()
     const ids = Object.keys(f).filter((k) => k !== 'vazio')
-    expect(ids).toHaveLength(148)
+    // 148 arquivos; quatro pares de variante viram uma música com versões cada.
+    expect(ids).toHaveLength(144)
     expect(f['001-tudo-que-ha-de-bom-em-mim']).toContain('{duration: 03:03}')
     expect(f['013-ele-vive-em-mim']).toMatch(/\{sot/i)
     expect(f['013-ele-vive-em-mim-partitura']).toBeUndefined()
